@@ -39,19 +39,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.mediagram.android.core.designsystem.R
+import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
-
-/** One row the rail draws — the web's `rail-nav`, System held apart the way `.apart` sits a little away from the rest. */
-enum class RailItem(val label: String, val icon: Int) {
-    MY_LIST("My List", R.drawable.core_designsystem_ic_rail_my_list),
-    CONTINUE_WATCHING("Continue watching", R.drawable.core_designsystem_ic_rail_continue),
-    LATEST("Latest", R.drawable.core_designsystem_ic_rail_latest),
-    GENRES("Genres", R.drawable.core_designsystem_ic_rail_genres),
-    SETTINGS("Settings", R.drawable.core_designsystem_ic_rail_settings),
-    SYSTEM("System", R.drawable.core_designsystem_ic_settings_system),
-}
+import ui.RailItem
 
 /**
  * What the rail needs beside its own click handlers — computed once where

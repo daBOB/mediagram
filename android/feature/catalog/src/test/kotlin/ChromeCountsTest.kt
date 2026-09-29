@@ -1,10 +1,5 @@
-package ui.chrome
+package catalog
 
-import catalog.CollectionKind
-import catalog.DOCUMENTARIES
-import catalog.Division
-import catalog.Entry
-import catalog.Shelf
 import model.Kind
 import model.ListOfSets
 import model.MediaSet
@@ -68,9 +63,9 @@ class ChromeCountsTest {
             key = "ANIME/Dragonball", kind = CollectionKind.SHOW, name = "Dragonball", posterPath = null, posterKey = null,
             count = 2, chapters = 1, divisions = emptyList(),
         )
-        val shelves = listOf(Shelf(catalog.ANIME, listOf(show, Entry.Film(film("Your Name")))))
+        val shelves = listOf(Shelf(ANIME, listOf(show, Entry.Film(film("Your Name")))))
 
-        assertEquals(2, chromeCountsOf(shelves, WatchSnapshot.Empty).departmentCount(catalog.ANIME))
+        assertEquals(2, chromeCountsOf(shelves, WatchSnapshot.Empty).departmentCount(ANIME))
     }
 
     @Test

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.tv.material3.LocalContentColor
@@ -68,7 +69,7 @@ class TvAppTest {
             sets = films(1),
         )
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Home").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Ada").assertExists()
+        compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
         compose.onNodeWithText("Film 0").assertExists()
     }
 

@@ -40,6 +40,7 @@ import kotlin.math.roundToInt
 import ui.BrowseActions
 import ui.MenuActions
 import ui.ProfileBarState
+import ui.RailItem
 import ui.railSelect
 import ui.setup.StartOverConfirmation
 

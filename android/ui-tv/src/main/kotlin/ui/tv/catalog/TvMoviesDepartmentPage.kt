@@ -12,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.MoviesDepartment
-import designsystem.Overscan
 import designsystem.Spacing
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
 
 /** The kicker every department hero carries — `department-hero.js`'s own words, unlike the magazine cover's "Cover story". */
 internal const val DeptKicker = "Only in your library"
@@ -53,18 +53,19 @@ internal fun TvMoviesDepartmentPage(
         if (takesFocus) (if (target.first == "hero") heroFocus else first).requestFocus()
     }
 
+    val pagePadding = LocalTvPagePadding.current
     TvPage(takesArrivalFocus = takesFocus) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = Overscan.vertical),
+                    .padding(top = pagePadding.top, bottom = pagePadding.bottom),
         ) {
             dept.lead?.let { lead ->
                 // Inset like Home's cover: full-bleed, a 21:9 hero is taller than the space under
-                // the masthead and its words sit outside the overscan-safe margin.
-                Box(modifier = Modifier.padding(horizontal = Overscan.horizontal)) {
+                // the bar and its words sit outside the overscan-safe margin.
+                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
                     TvCoverStory(
                         films = listOf(lead),
                         onPlay = onPlay,
@@ -75,7 +76,7 @@ internal fun TvMoviesDepartmentPage(
                     )
                 }
             }
-            Column(modifier = Modifier.padding(horizontal = Overscan.horizontal)) {
+            Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
                 DeptRow(
                     "Featured",
                     dept.featured,

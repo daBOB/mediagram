@@ -1,35 +1,23 @@
 package ui.tv.system
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -37,12 +25,11 @@ import androidx.tv.material3.Text
 import com.mediagram.android.core.designsystem.R
 import designsystem.Eyebrow
 import designsystem.LocalCatalogueTones
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.settings.IndexStatus
 import ui.settings.SettingsSection
-import ui.tv.TvFocus
+import ui.tv.TvIndexRow
 
 /** The index pane's own width on a television — narrower than the phone's 320dp EXPANDED pane; there is no wordmark or tally competing with it here. */
 internal val TvSettingsIndexWidth = 260.dp
@@ -119,51 +106,36 @@ private fun TvSettingsIndexRow(
     onFocusSection: (SettingsSection) -> Unit,
     onEnterSection: (SettingsSection) -> Unit,
 ) {
+    TvIndexRow(
+        icon = icon,
+        label = section.title,
+        selected = selected,
+        focusRequester = focusRequester,
+        onSelect = { onEnterSection(section) },
+        minHeight = 56.dp,
+        status = status?.let { { TvSettingsIndexStatus(it) } },
+        onFocusChanged = { state -> if (state.isFocused) onFocusSection(section) },
+    )
+}
+
+/** [IndexStatus]'s own line under a settings row — the held dot, then its words. */
+@Composable
+private fun TvSettingsIndexStatus(status: IndexStatus) {
     val tones = LocalCatalogueTones.current
-    var focused by remember { mutableStateOf(false) }
-    val baseColor = if (selected) MaterialTheme.colorScheme.onBackground else tones.quiet
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 56.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { state ->
-                    focused = state.isFocused
-                    if (state.isFocused) onFocusSection(section)
-                }
-                .then(if (selected) Modifier.background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)) else Modifier)
-                .selectable(selected = selected, role = Role.Tab, onClick = { onEnterSection(section) })
-                .padding(horizontal = Spacing.small, vertical = Spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
+        modifier = Modifier.padding(top = 2.dp),
     ) {
-        Image(
-            painter = icon,
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(if (focused) Palette.Imprint else baseColor),
-            modifier = Modifier.size(22.dp),
-        )
-        Column {
-            Text(text = section.title, style = TvFocus.textStyle(TvTypeScale.body.copy(color = baseColor), focused))
-            status?.let {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
-                    modifier = Modifier.padding(top = 2.dp),
-                ) {
-                    if (it.held) {
-                        Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary))
-                    }
-                    Text(
-                        text = it.text,
-                        style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
-                        color = tones.quiet,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+        if (status.held) {
+            Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary))
         }
+        Text(
+            text = status.text,
+            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+            color = tones.quiet,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

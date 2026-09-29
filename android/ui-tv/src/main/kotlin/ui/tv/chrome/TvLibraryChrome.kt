@@ -1,0 +1,214 @@
+package ui.tv.chrome
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import catalog.ChromeCounts
+import designsystem.Overscan
+import ui.RailItem
+import ui.tv.profile.TvChosenProfile
+
+/** The bar's own row height, before its top inset — the tablet's own `DepartmentsBarHeight` (`ChromeControls.kt`), reused since both draw the same pills. */
+internal val TvDepartmentsBarHeight = 76.dp
+
+/** The gutter between the collapsed rail's own edge and whatever the content or the bar draws next — [Overscan.horizontal] is the screen's own safe margin from x=0; this is the rail's own, measured from its own far edge instead. */
+internal val TvContentGutter = 32.dp
+
+/** The rail's own collapsed width — [TvLibraryRail] is the one composable that draws it; declared here too, ahead of [TvContentStart], only so the outer column knows where to start clear of it. */
+private val RailCollapsedWidth = 96.dp
+
+/**
+ * Where the bar and the content both start, regardless of whether the rail
+ * is open — it overlays past this line rather than pushing it, so this
+ * never changes with the rail's own width. [TvContentGutter] is layered on
+ * top of this, in [LocalTvPagePadding] alone, not here: a focused plate's
+ * own left edge needs the extra 32dp room [TvContentGutter] names, but a
+ * cramped 96dp is already clear of the collapsed rail's own icons.
+ */
+internal val TvContentStart = RailCollapsedWidth
+
+/**
+ * What a page under the chrome is padded by, read instead of [Overscan]
+ * directly by every composable [TvCatalogBody] can show — [TvWall],
+ * [TvHome], a kept wall, the Collections and Movies department pages.
+ * Provided only by [TvLibraryChrome]; every pushed frame (a title, Latest,
+ * Search…) never sits under it, so those composables read the default
+ * here instead — plain [Overscan] on every side, the inset they always
+ * used — without any of them needing to ask which is true.
+ */
+internal data class TvPagePadding(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp)
+
+internal val LocalTvPagePadding =
+    compositionLocalOf { TvPagePadding(Overscan.horizontal, Overscan.vertical, Overscan.horizontal, Overscan.vertical) }
+
+/** [TvPagePadding] as a [PaddingValues] — every reader wants it as one, not as four separate [Dp]s. */
+internal fun TvPagePadding.asPaddingValues(): PaddingValues = PaddingValues(start = start, top = top, end = end, bottom = bottom)
+
+/**
+ * Everything [TvLibraryChrome] hands its own rows and pills their focus
+ * through, and everything a restore key resolves to once it names one of
+ * them — built once per [ui.tv.catalog.TvCatalogScreen] by
+ * [rememberTvChromeFocus] so a screen coming back to "the search button"
+ * or "the Latest row" always reaches the very requester [TvLibraryChrome]
+ * itself renders onto.
+ */
+internal class TvChromeFocus(
+    val regionFocus: FocusRequester,
+    val selectedPillFocus: FocusRequester,
+    val searchFocus: FocusRequester,
+    val menuButtonFocus: FocusRequester,
+    val railRowFocus: Map<RailItem, FocusRequester>,
+    val contentFocus: FocusRequester,
+)
+
+@Composable
+internal fun rememberTvChromeFocus(): TvChromeFocus =
+    TvChromeFocus(
+        regionFocus = remember { FocusRequester() },
+        selectedPillFocus = remember { FocusRequester() },
+        searchFocus = remember { FocusRequester() },
+        menuButtonFocus = remember { FocusRequester() },
+        railRowFocus = remember { RailItem.entries.associateWith { FocusRequester() } },
+        contentFocus = remember { FocusRequester() },
+    )
+
+/**
+ * The chrome around the catalogue's own body: [TvLibraryRail] overlaying
+ * the start edge, [TvDepartmentsBar] drawn opaque above [content], and the
+ * three-region Back chain the plan settled on — content leaves for the
+ * selected pill (or, on a kept wall, the rail's own active row); the bar
+ * leaves for the rail; the rail is left unhandled, so a further Back closes
+ * the app the way Back at the top of any television app does.
+ *
+ * [focus] is [rememberTvChromeFocus]'s own bundle — built by the caller so
+ * a restore key it already knows about (`masthead:search`, `rail:latest`…)
+ * can drive the very requesters this composable renders onto, without this
+ * composable needing to know what a restore key even is.
+ *
+ * [content] draws under the bar at [LocalTvPagePadding]'s own inset; it
+ * never repaints or remeasures when the rail opens over it, since the rail
+ * is a sibling overlay in this [Box], not a sibling in a [Row] the rail's
+ * own width could push against.
+ */
+@Composable
+internal fun TvLibraryChrome(
+    pills: List<TvDepartmentPill>,
+    selectedPill: Int,
+    onSelectPill: (Int) -> Unit,
+    railActive: RailItem?,
+    counts: ChromeCounts,
+    tally: List<String>,
+    onRailSelect: (RailItem) -> Unit,
+    onSearch: () -> Unit,
+    profile: TvChosenProfile,
+    onMenu: () -> Unit,
+    focus: TvChromeFocus,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    var barHasFocus by remember { mutableStateOf(false) }
+    var contentHasFocus by remember { mutableStateOf(false) }
+
+    fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
+
+    // "Back: page -> the selected pill (no pill selected, i.e. a kept wall
+    // -> its rail row)" — enabled only while the remote is actually inside
+    // content, the same guard `TvCatalogRoot` once put on its own single
+    // Back-to-masthead step.
+    BackHandler(enabled = contentHasFocus) {
+        if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
+    }
+    // "bar (pill, search, avatar, ⋮) -> rail" — the rail's own active row,
+    // or My List with nothing kept showing.
+    BackHandler(enabled = barHasFocus) {
+        railArrivalTarget().requestFocus()
+    }
+    // Rail: no handler here at all — a further Back falls through to
+    // whatever the caller (or, at the root, the activity itself) does with
+    // an unhandled Back, "the activity finishes" at the top of this app.
+
+    // `top` matches the bar's own rendered height: the bar draws opaquely
+    // over this same region (a `Box`, not a `Column` — see the doc above),
+    // so a page's first stop needs exactly this much clearance to sit
+    // below it rather than under it; a lower plate scrolling up into that
+    // same band is then hidden by the bar drawn on top of it, one hero's
+    // worth of bleed away from becoming visible instead once a cover here
+    // has one to bleed under it.
+    val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = Overscan.horizontal, bottom = Overscan.vertical) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = TvContentStart)
+                    .focusRequester(focus.regionFocus)
+                    .focusRestorer()
+                    .focusProperties {
+                        onExit = {
+                            if (requestedFocusDirection == FocusDirection.Left) railArrivalTarget().requestFocus()
+                        }
+                    },
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .focusRequester(focus.contentFocus)
+                        .onFocusChanged { state -> contentHasFocus = state.hasFocus }
+                        .focusProperties {
+                            onExit = {
+                                if (requestedFocusDirection == FocusDirection.Up) {
+                                    (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
+                                }
+                            }
+                        },
+            ) {
+                CompositionLocalProvider(LocalTvPagePadding provides padding, content = content)
+            }
+            TvDepartmentsBar(
+                pills = pills,
+                selected = selectedPill,
+                onSelect = onSelectPill,
+                onSearch = onSearch,
+                profile = profile,
+                onMenu = onMenu,
+                downTarget = focus.contentFocus,
+                selectedPillFocus = focus.selectedPillFocus,
+                searchFocus = focus.searchFocus,
+                menuFocus = focus.menuButtonFocus,
+                modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state -> barHasFocus = state.hasFocus },
+            )
+        }
+
+        TvLibraryRail(
+            active = railActive,
+            counts = counts,
+            tally = tally,
+            rowRequesters = focus.railRowFocus,
+            onSelect = onRailSelect,
+            regionFocus = focus.regionFocus,
+            onHasFocusChanged = {},
+            modifier = Modifier.align(Alignment.CenterStart),
+        )
+    }
+}

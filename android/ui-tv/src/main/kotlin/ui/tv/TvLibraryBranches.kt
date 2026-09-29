@@ -1,30 +1,28 @@
 package ui.tv
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
 import ui.LibraryPositions
+import ui.MenuActions
 import ui.tv.catalog.TvCatalogScreen
+import ui.tv.catalog.TvGenresRailKey
+import ui.tv.catalog.TvLatestRailKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
 /**
- * The catalogue at the top of the library, where Back has nowhere further
- * in to go: the first press takes the remote up to the masthead, the way a
- * television app's Back first backs out of its content, and a press with
- * the remote already there is left alone so the app closes, as Back at the
- * top of any app does. Without the first step, Back from deep in a wall
- * would close the app on a viewer who only meant to go up a level.
+ * The catalogue at the top of the library — a thin pass-through onto
+ * [TvCatalogScreen], kept apart from [TvLibraryHomeFrame] for the same
+ * reason that composable already is: a dispatcher of its own. Back at the
+ * catalogue's own root is [TvCatalogScreen]'s own chrome's business now —
+ * content leaves for the selected pill, the bar leaves for the rail, the
+ * rail is left unhandled so the app closes — not a step this composable
+ * has to add on top of it.
  */
 @Composable
 internal fun TvCatalogRoot(
@@ -36,21 +34,19 @@ internal fun TvCatalogRoot(
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
-    onTabChanged: () -> Unit,
-    onOpenSearch: () -> Unit,
-    onOpenMenu: () -> Unit,
-    onEntryRestored: () -> Unit,
     onFinish: (setId: String) -> Unit,
+    menu: MenuActions = MenuActions(onSystem = {}, onSettings = {}, onUpdate = {}, onTmdbKey = {}, onStartOver = {}),
+    onTabChanged: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenMenu: () -> Unit = {},
+    onOpenLatest: () -> Unit = {},
+    onOpenGenresIndex: () -> Unit = {},
+    onEntryRestored: () -> Unit = {},
     onOpenGenre: (name: String) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenMoviesPage: () -> Unit = {},
     onPlay: (setId: String) -> Unit = onOpenTitle,
 ) {
-    val masthead = remember { FocusRequester() }
-    var onMasthead by remember { mutableStateOf(false) }
-    // Composed ahead of the screen, so a Back handler a screen inside it
-    // registers — naming a new list — is asked first.
-    BackHandler(enabled = !onMasthead) { masthead.requestFocus() }
     TvCatalogScreen(
         state = state,
         profile = profile,
@@ -58,13 +54,14 @@ internal fun TvCatalogRoot(
         onOpenCollection = onOpenCollection,
         onOpenList = onOpenList,
         onCreateList = onCreateList,
-        mastheadFocus = masthead,
+        menu = menu,
         fetching = fetching,
         restoreKey = restoreKey,
-        onMastheadFocusChanged = { onMasthead = it },
         onTabChanged = onTabChanged,
         onOpenSearch = onOpenSearch,
         onOpenMenu = onOpenMenu,
+        onOpenLatest = onOpenLatest,
+        onOpenGenresIndex = onOpenGenresIndex,
         onEntryRestored = onEntryRestored,
         onFinish = onFinish,
         onOpenGenre = onOpenGenre,
@@ -103,9 +100,9 @@ internal fun TvPlayerBranch(
  * The shelves, with nothing open over them — [TvLibrary]'s own "nothing
  * else is showing" frame, kept apart from its dispatcher for the same
  * reason [TvCatalogRoot] already is. [saved] holds [TvCatalogRoot]'s own
- * state — which masthead tab was chosen, how far its wall had scrolled —
- * apart from the rest of the library's, so Back finds the tab it left
- * rather than Home once whatever covered it is gone.
+ * state — which tab was chosen, how far its wall had scrolled — apart from
+ * the rest of the library's, so Back finds the tab it left rather than
+ * Home once whatever covered it is gone.
  */
 @Composable
 internal fun TvLibraryHomeFrame(
@@ -117,6 +114,7 @@ internal fun TvLibraryHomeFrame(
     here: Int,
     at: LibraryPositions,
     catalogViewModel: CatalogViewModel,
+    menu: MenuActions,
     onOpenMenu: () -> Unit,
 ) {
     saved.SaveableStateProvider(CatalogStateKey) {
@@ -125,6 +123,7 @@ internal fun TvLibraryHomeFrame(
             profile = profile,
             fetching = fetching,
             restoreKey = restore.of(here),
+            menu = menu,
             onOpenTitle = { setId ->
                 restore.opened(here, setId)
                 at.openTitle(setId)
@@ -146,6 +145,14 @@ internal fun TvLibraryHomeFrame(
             onOpenMenu = {
                 restore.forget(here)
                 onOpenMenu()
+            },
+            onOpenLatest = {
+                restore.opened(here, TvLatestRailKey)
+                at.openLatest()
+            },
+            onOpenGenresIndex = {
+                restore.opened(here, TvGenresRailKey)
+                at.openGenresIndex()
             },
             onEntryRestored = { restore.forget(here) },
             onFinish = catalogViewModel::markFinished,

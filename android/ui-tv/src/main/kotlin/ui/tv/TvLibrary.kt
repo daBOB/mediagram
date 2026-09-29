@@ -139,38 +139,17 @@ internal fun TvLibrary(
 
         FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
-        // Nothing open, the menu page chosen from the masthead: Back from
-        // it puts the remote back on the masthead's Menu.
+        // Nothing open, the trimmed menu page chosen from the bar's own ⋮:
+        // Back from it puts the remote back on that button.
         null if menuOpen ->
-            TvMenuPage(
-                menu = menu,
-                restoreKey = restore.of(here),
-                onMyList = {
-                    menuOpen = false
-                    restore.opened(here, TvWatchlistEntryKey)
-                },
-                onContinueWatching = {
-                    menuOpen = false
-                    restore.opened(here, TvContinueEntryKey)
-                },
-                onLatest = {
-                    menuOpen = false
-                    restore.forget(here)
-                    at.openLatest()
-                },
-                onGenres = {
-                    menuOpen = false
-                    restore.forget(here)
-                    at.openGenresIndex()
-                },
-            ) {
+            TvMenuPage(menu = menu, restoreKey = restore.of(here)) {
                 menuOpen = false
                 restore.opened(here, TvMenuEntryKey)
             }
 
         // Nothing open: the shelves.
         null ->
-            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel) { menuOpen = true }
+            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu) { menuOpen = true }
     }
 
     // Every branch but the player, for the phone's reason: a result held
@@ -183,9 +162,3 @@ internal fun TvLibrary(
         )
     }
 }
-
-/** The catalogue's restore key for "My List was opened from the overflow menu" — [TvMasthead]'s own sentinels' counterpart. */
-internal const val TvWatchlistEntryKey = "menu:mylist"
-
-/** The catalogue's restore key for "Continue watching was opened from the overflow menu". */
-internal const val TvContinueEntryKey = "menu:continue"

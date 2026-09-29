@@ -28,40 +28,33 @@ import ui.tv.setup.START_OVER_BODY
 import ui.tv.setup.TvConfirmDialog
 
 /**
- * The phone's overflow menu as a page: a television has no dropdown to
- * hang off a bar, so the phone's five fixed items, in [MenuActions]' order
- * and with its words, stand as rows of their own, followed by the four
- * browse utilities and then a conditional row of their own for whatever
- * else the menu carries (currently, "Preloads · n"). Update library says
- * under itself what the phone's item says — why it is waiting, or what it
- * will leave out — and is drawn faint while it waits.
+ * The phone's overflow menu as a page, trimmed to its own Android-only rows
+ * — Update library, TMDB key…, Start over, and a conditional row for
+ * whatever else the menu carries (currently, "Preloads · n") — the same
+ * three the tablet's own `AndroidOnlyMenu` keeps once its rail already
+ * carries My List, Continue watching, Latest, Genres, Settings and System.
+ * This television's own rail carries the same six, so this page never
+ * offers them either. Update library says under itself what the phone's
+ * item says — why it is waiting, or what it will leave out — and is drawn
+ * faint while it waits.
  *
- * [restoreKey] is the row whose screen was just left, so Back from System
- * lands on System; with none, the first row takes the remote. Start over
- * asks first, in the phone's words, with Cancel under the remote. The
- * column itself scrolls: enough rows (a TMDB-key note, a larger font
- * scale) can push the last of them below the fold of a ten-foot screen,
- * where a fixed column would leave them impossible to reach at all.
- *
- * [onMyList]/[onContinueWatching]/[onLatest]/[onGenres] are the four
- * utilities `mastheadSplitOf` moved off the masthead's own tab row and into
- * this overflow — reachable once each, as the web's side rail offers them
- * (see `CatalogTabs.kt`'s `UtilityDestination`), appended after the phone's five
- * so every existing row keeps its place and this page's own tests of them.
+ * [restoreKey] is the row whose screen was just left, so Back from TMDB
+ * key… lands on TMDB key…; with none, the first row takes the remote.
+ * Start over asks first, in the phone's words, with Cancel under the
+ * remote. The column itself scrolls: enough rows (a TMDB-key note, a
+ * larger font scale) can push the last of them below the fold of a
+ * ten-foot screen, where a fixed column would leave them impossible to
+ * reach at all.
  */
 @Composable
 internal fun TvMenuPage(
     menu: MenuActions,
     restoreKey: String?,
-    onMyList: () -> Unit = {},
-    onContinueWatching: () -> Unit = {},
-    onLatest: () -> Unit = {},
-    onGenres: () -> Unit = {},
     onBack: () -> Unit,
 ) {
     var askingStartOver by rememberSaveable { mutableStateOf(false) }
     val rows = remember { MenuRow.entries.associateWith { FocusRequester() } }
-    val landing = MenuRow.entries.firstOrNull { it.key != null && it.key == restoreKey } ?: MenuRow.System
+    val landing = MenuRow.entries.firstOrNull { it.key != null && it.key == restoreKey } ?: MenuRow.Update
     LaunchedEffect(Unit) { rows.getValue(landing).requestFocus() }
     BackHandler(onBack = onBack)
 
@@ -70,8 +63,6 @@ internal fun TvMenuPage(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(text = "Menu", style = TvTypeScale.title)
-        TvTextRow(text = "System", onClick = menu.onSystem, focusRequester = rows.getValue(MenuRow.System))
-        TvTextRow(text = "Settings", onClick = menu.onSettings, focusRequester = rows.getValue(MenuRow.Settings))
         Column {
             TvTextRow(
                 text = "Update library",
@@ -83,10 +74,6 @@ internal fun TvMenuPage(
         }
         TvTextRow(text = "TMDB key…", onClick = menu.onTmdbKey, focusRequester = rows.getValue(MenuRow.TmdbKey))
         TvTextRow(text = "Start over", onClick = { askingStartOver = true }, focusRequester = rows.getValue(MenuRow.StartOver))
-        TvTextRow(text = "My List", onClick = onMyList, focusRequester = rows.getValue(MenuRow.MyList))
-        TvTextRow(text = "Continue watching", onClick = onContinueWatching, focusRequester = rows.getValue(MenuRow.ContinueWatching))
-        TvTextRow(text = "Latest", onClick = onLatest, focusRequester = rows.getValue(MenuRow.Latest))
-        TvTextRow(text = "Genres", onClick = onGenres, focusRequester = rows.getValue(MenuRow.Genres))
         menu.onPreloads?.let { onPreloads -> TvTextRow(text = "Preloads · ${menu.preloadCount}", onClick = onPreloads) }
     }
 
@@ -106,21 +93,15 @@ internal fun TvMenuPage(
 
 /**
  * The page's rows, and the restore key each is remembered by when it opens
- * a screen: the key screen's own name for the three that do, and none for
- * the two that never leave the page for a screen of their own.
+ * a screen: TMDB key…'s own screen name, and none for the two that never
+ * leave the page for a screen of their own.
  */
 private enum class MenuRow(
     val key: String?,
 ) {
-    System(menuRestoreKey(MenuScreen.System)),
-    Settings(menuRestoreKey(MenuScreen.Settings)),
     Update(null),
     TmdbKey(menuRestoreKey(MenuScreen.TmdbKey)),
     StartOver(null),
-    MyList(null),
-    ContinueWatching(null),
-    Latest(null),
-    Genres(null),
 }
 
 /** What the menu page remembers it opened [screen] by — never a plate's id, so never mistaken for one. */

@@ -17,10 +17,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
-import designsystem.Overscan
 import designsystem.Spacing
 import java.io.File
 import model.ListOfSets
+import ui.tv.chrome.LocalTvPagePadding
 
 /** How wide a franchise card is on the Collections page's own row. */
 private val FranchiseTileWidth = 140.dp
@@ -80,8 +80,9 @@ internal fun TvCollectionsPage(
     // fills whatever is left (`Modifier.weight`) with its own scroll intact.
     // Only the franchises and the headings take this page's horizontal inset:
     // `TvLists` insets itself, and padding it here too indented every list twice.
-    Column(modifier = Modifier.fillMaxSize().padding(top = Overscan.vertical)) {
-        Column(modifier = Modifier.padding(horizontal = Overscan.horizontal)) {
+    val pagePadding = LocalTvPagePadding.current
+    Column(modifier = Modifier.fillMaxSize().padding(top = pagePadding.top)) {
+        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
             if (franchises.isNotEmpty()) {
                 TvCountedHeading("Franchises", franchises.size)
                 // Lazy: seventy franchise posters composed at once is a stall on a television's CPU.

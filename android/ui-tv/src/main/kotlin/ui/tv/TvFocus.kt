@@ -1,6 +1,8 @@
 package ui.tv
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
@@ -21,6 +23,7 @@ import androidx.tv.material3.ClickableSurfaceScale
 import androidx.tv.material3.ClickableSurfaceShape
 import androidx.tv.material3.MaterialTheme
 import designsystem.Palette
+import designsystem.Radius
 
 /**
  * One focus treatment for every TV screen, so a card or a text row reads
@@ -69,8 +72,14 @@ object TvFocus {
      */
     private val Shape: Shape = RectangleShape
 
+    /** A department pill, a cover button — fully round, matching the web's own pill-shaped controls. */
+    val PillShape: Shape = CircleShape
+
+    /** A rail row — [designsystem.Radius.control], the same corner Settings' own index row already draws. */
+    val ControlShape: Shape = RoundedCornerShape(Radius.control)
+
     @Composable
-    fun cardShape(): CardShape = CardDefaults.shape(shape = Shape, focusedShape = Shape, pressedShape = Shape)
+    fun cardShape(shape: Shape = Shape): CardShape = CardDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape)
 
     @Composable
     fun cardScale(): CardScale = CardDefaults.scale(focusedScale = Scale, pressedScale = Scale)
@@ -84,9 +93,9 @@ object TvFocus {
      * square one passed below. Nothing here can default to a rounded shape.
      */
     @Composable
-    fun cardBorder(): CardBorder =
+    fun cardBorder(shape: Shape = Shape): CardBorder =
         CardDefaults.border(
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = Shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
         )
 
     /** Explicit, not just the tv-material default: this catalogue never glows. */
@@ -94,13 +103,13 @@ object TvFocus {
     fun cardGlow(): CardGlow = CardDefaults.glow()
 
     @Composable
-    fun surfaceShape(): ClickableSurfaceShape =
+    fun surfaceShape(shape: Shape = Shape): ClickableSurfaceShape =
         ClickableSurfaceDefaults.shape(
-            shape = Shape,
-            focusedShape = Shape,
-            pressedShape = Shape,
-            disabledShape = Shape,
-            focusedDisabledShape = Shape,
+            shape = shape,
+            focusedShape = shape,
+            pressedShape = shape,
+            disabledShape = shape,
+            focusedDisabledShape = shape,
         )
 
     @Composable
@@ -123,17 +132,17 @@ object TvFocus {
      * screen reader; focus still wins with the accent ring.
      */
     @Composable
-    fun surfaceBorder(selected: Boolean = false): ClickableSurfaceBorder =
+    fun surfaceBorder(selected: Boolean = false, shape: Shape = Shape): ClickableSurfaceBorder =
         ClickableSurfaceDefaults.border(
             border =
                 if (selected) {
-                    Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.onSurface), shape = Shape)
+                    Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.onSurface), shape = shape)
                 } else {
                     Border.None
                 },
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = Shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
             focusedDisabledBorder =
-                Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.border), shape = Shape),
+                Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.border), shape = shape),
         )
 
     /** Explicit for the same reason as [cardGlow]: no glow on a plain surface either. */
@@ -150,10 +159,10 @@ object TvFocus {
      * invented locally.
      */
     @Composable
-    fun fieldBorder(focused: Boolean): Border =
+    fun fieldBorder(focused: Boolean, shape: Shape = Shape): Border =
         Border(
             border = BorderStroke(BorderWidth, if (focused) Palette.Imprint else MaterialTheme.colorScheme.border),
-            shape = Shape,
+            shape = shape,
         )
 
     /**

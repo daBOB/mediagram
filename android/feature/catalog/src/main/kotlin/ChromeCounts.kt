@@ -1,12 +1,5 @@
-package ui.chrome
+package catalog
 
-import catalog.DOCUMENTARIES
-import catalog.HOME
-import catalog.KeptKind
-import catalog.Shelf
-import catalog.continueWall
-import catalog.documentaryCountOf
-import catalog.watchlistWall
 import model.WatchSnapshot
 
 /**
@@ -15,9 +8,10 @@ import model.WatchSnapshot
  * `refreshShelfCounts` (114-135) and its `onData` handler (416-421), read
  * fresh from the shelves and this viewer's watch state rather than kept
  * beside them. No Compose import here on purpose: every reader of this —
- * the rail beside a pushed frame, the bar over the root — wants the same
- * numbers, and a plain data class is what lets both reach for it without
- * either owning where it came from.
+ * the tablet's rail beside a pushed frame, its bar over the root, the
+ * television's own rail and departments bar — wants the same numbers, and
+ * a plain data class is what lets every one of them reach for it without
+ * any of them owning where it came from.
  */
 data class ChromeCounts(
     val myList: Int,

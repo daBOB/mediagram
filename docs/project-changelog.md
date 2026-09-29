@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.82.0 — Android TV: the library wears the web player's chrome
+
+**Added**
+
+- The television's masthead is gone; in its place, the web player's own
+  chrome: a left rail (icons alone until the remote reaches it, opening then
+  to My List, Continue watching, Latest, Genres, Settings, System and the
+  library's own tally) beside a departments bar across the top (Home, the
+  shelves, Collections, search, the viewer's avatar, ⋮). Pressing a
+  department pill swaps the page but keeps the remote on the pill — Down is
+  what steps it into the page — and Back walks out one region at a time:
+  content to the selected pill (or, on a kept wall, the rail's own active
+  row), the bar to the rail, the rail unhandled so a further Back closes the
+  app. The ⋮ menu keeps only the phone's three Android-only rows (Update
+  library, TMDB key…, Start over) plus Preloads; every pushed page (a title,
+  Search, Latest, Genres, Settings, System…) still fills the whole screen,
+  rail included — a deliberate difference from the tablet, which keeps its
+  rail beside a pushed frame (`docs/system-architecture.md` § Television
+  differs). `TvFocus` gained two more shapes beside its square plate — fully
+  round for a pill, and Settings' own rounded corner for a rail row — both
+  cut from the same constant as the border drawn on top of them.
+- `ChromeCounts` and the `RailItem` enum moved to `feature:catalog` and
+  `ui-common` respectively so the television's own rail and departments bar
+  can read the same counts and rows the tablet's rail already does, without
+  either surface owning the other's copy.
+
 ## 0.81.1 — an upload-lock test that failed on a busy run
 
 **Fixed**

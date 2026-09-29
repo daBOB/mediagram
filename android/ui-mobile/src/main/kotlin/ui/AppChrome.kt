@@ -34,7 +34,6 @@ import catalog.showsSearchAction
 import ui.chrome.ChromeAvatar
 import ui.chrome.LibraryRail
 import ui.chrome.LocalRailData
-import ui.chrome.RailItem
 import ui.setup.StartOverConfirmation
 
 /**

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
@@ -99,26 +100,28 @@ class TvHousekeepingTest {
     }
 
     /**
-     * Continue has no masthead tab of its own since this phase moved it to
-     * the overflow menu — the remote it lands on instead is the masthead's
-     * own row ([TvCatalogScreen]'s `mastheadFocus`), which enters at Home,
-     * the first thing on it, rather than a tab that no longer exists.
+     * Continue has no pill of its own — the rail chooses it directly — so
+     * the remote it lands on instead is the rail's own Continue watching
+     * row, which is where a wall that empties under the viewer always
+     * falls back to (see [ui.tv.catalog.TvKeptWall]'s own doc).
      */
     @Test
-    fun markingTheLastTitleFinishedEmptiesContinueAndLandsOnTheMasthead() {
+    fun markingTheLastTitleFinishedEmptiesContinueAndLandsOnItsRailRow() {
         launch(watch = started("film-0"), films = 1)
         openContinueWatching()
 
         press(compose.onNodeWithText("Mark finished"))
 
         compose.onNodeWithText("Nothing started yet.").assertExists()
-        compose.onNodeWithText("Home").assertIsFocused()
+        // The rail is open now that the remote actually landed on it, so
+        // its row reads by its visible label rather than by the
+        // content description a collapsed row falls back to.
+        compose.onNodeWithText("Continue watching").assertIsFocused()
     }
 
-    /** Continue watching is reached from the overflow menu now, not a masthead tab — see `mastheadSplitOf`. */
+    /** Continue watching is a rail row now, not a masthead tab — see `mastheadSplitOf`. */
     private fun openContinueWatching() {
-        press(compose.onNodeWithText("Menu"))
-        press(compose.onNodeWithText("Continue watching"))
+        press(compose.onNodeWithContentDescription("Continue watching"))
     }
 
     @Test
@@ -155,8 +158,8 @@ class TvHousekeepingTest {
     @Test
     fun removingTheProfileBeingWatchedStopsOfferingToStayAsIt() {
         launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = "ada", films = 1)
-        // The masthead's last entry is the viewer's name, and reopens the picker.
-        press(compose.onNode(hasText("Ada") and hasClickAction()))
+        // The bar's own avatar is the viewer's own initial, and reopens the picker.
+        press(compose.onNodeWithContentDescription("Who's watching: Ada"))
         compose.onNodeWithText("Stay as I am").assertExists()
 
         press(compose.onNodeWithText("Remove a profile…"))

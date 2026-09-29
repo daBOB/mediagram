@@ -12,12 +12,13 @@ import catalog.franchisesIn
 import catalog.homeRowsOf
 import catalog.magazineHomeOf
 import model.MediaSet
+import ui.RailItem
 
 /**
- * What shows below the masthead once a tab is chosen — Home, a shelf's wall
- * (or its department front page), Collections, or one of the kept walls —
+ * What shows below the bar once a tab is chosen — Home, a shelf's wall (or
+ * its department front page), Collections, or one of the two kept walls —
  * [TvCatalogScreen]'s own content, split out so that composable reads as
- * "which tab, and what the masthead does", not also every screen a tab can
+ * "which tab, and what the chrome does", not also every screen a tab can
  * open.
  */
 @Composable
@@ -30,9 +31,8 @@ internal fun TvCatalogBody(
     selected: Int,
     collectionsIndex: Int,
     wallKey: String?,
-    mastheadSelected: Int,
-    selectedTabFocus: FocusRequester,
-    mastheadFocus: FocusRequester,
+    railActive: RailItem?,
+    railRowFocus: Map<RailItem, FocusRequester>,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -110,16 +110,12 @@ internal fun TvCatalogBody(
                 onOpenTitle = onOpenTitle,
                 onOpenList = onOpenList,
                 onCreateList = onCreateList,
-                // Continue and Watchlist have no masthead tab of their own
-                // any more (reached from the overflow menu instead), so
-                // `selectedTabFocus` — attached only to whichever tab the
-                // masthead itself currently marks selected — is never
-                // claimed while one of them is showing, and asking it to
-                // take focus would find nothing to land on. `mastheadFocus`
-                // is the row's own requester, always attached, so it is
-                // what a wall that empties under the viewer falls back to
-                // instead.
-                tabFocus = if (mastheadSelected >= 0) selectedTabFocus else mastheadFocus,
+                // My List and Continue watching have no pill of their own
+                // (the rail chooses either directly), so a wall that
+                // empties under the viewer falls back to its own rail row
+                // rather than to a pill that was never selected in the
+                // first place.
+                tabFocus = railRowFocus.getValue(railActive ?: RailItem.MY_LIST),
                 restoreKey = wallKey,
                 heldIds = ready.heldIds,
                 onFinish = onFinish,

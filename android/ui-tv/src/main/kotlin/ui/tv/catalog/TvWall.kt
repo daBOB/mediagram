@@ -18,9 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
-import designsystem.Overscan
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.asPaddingValues
 
 /**
  * Six plates across, fixed rather than worked out from the window: every
@@ -52,12 +53,17 @@ private val CacheBehind = 320.dp
  * on the phone: a grid that keys by position rather than identity loses
  * scroll and focus state under a reorder.
  *
- * [Overscan] is applied as `contentPadding` rather than a wrapping
- * `Modifier.padding`, for the reason [ui.tv.TvShell] documents on every
- * other lazy wall this app draws: a focused plate against the grid's edge
- * grows under [ui.tv.TvFocus.Scale] into the padding the grid itself
- * reserves for it, instead of being clipped by a fixed inset outside the
- * scrollable viewport.
+ * [ui.tv.chrome.LocalTvPagePadding] is applied as `contentPadding` rather
+ * than a wrapping `Modifier.padding`, for the reason [ui.tv.TvShell]
+ * documents on every other lazy wall this app draws: a focused plate
+ * against the grid's edge grows under [ui.tv.TvFocus.Scale] into the
+ * padding the grid itself reserves for it, instead of being clipped by a
+ * fixed inset outside the scrollable viewport. Reading the ambient value
+ * rather than the plain [designsystem.Overscan] it defaults to is what
+ * lets this same wall draw both under the root catalogue's own chrome
+ * (its content column's own start/top inset) and as a pushed frame's own
+ * full-screen wall (plain [designsystem.Overscan] on every side) without
+ * either caller having to say which one it is.
  *
  * Focus restoration is the one thing this wall does that the web reference
  * never had to: television has no pointer to remember a hover position for,
@@ -126,7 +132,7 @@ fun <T> TvWall(
         columns = GridCells.Fixed(Columns),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        contentPadding = LocalTvPagePadding.current.asPaddingValues(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {

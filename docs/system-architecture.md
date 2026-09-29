@@ -295,7 +295,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
-| `ui-tv` | television surface: masthead, home, catalog, player, system and settings, driven by remote |
+| `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
@@ -620,13 +620,17 @@ lifecycle is the same shared contract (`feature:player`). Shared pure rules that
 state and control mechanics) moved into `ui-common` so both surfaces call one copy.
 
 The TV surface's own responsibility is navigation and focus: a D-pad and remote
-buttons (center/play-pause/left/right/back) steer every screen. The masthead tabs
-(Home, Movies, Series, …, System, profile name) are reached by Up from any content.
-Home holds shelves of up to 6 plates each, no sideways scroll. Walls are 2:3 posters
-in a 6-column grid; focus restores to the plate that was opened when Back returns.
-The system menu is a page reachable only from the masthead; Settings there include
-cache volume choice ("Where" — a USB drive must be set up as *portable* storage to
-appear; adopted storage never shows), and the home cache server status and pairing.
+buttons (center/play-pause/left/right/back) steer every screen. Its chrome mirrors the
+web player's own: a left rail (collapsed to icons until the remote reaches it, then
+opening to My List, Continue watching, Latest, Genres, Settings, System and the
+library's own tally) beside a departments bar across the top (Home, the shelves,
+Collections, search, the viewer's avatar, ⋮) — see § Television differs, above, for
+where the two surfaces deliberately part. Home holds shelves of up to 6 plates each,
+no sideways scroll. Walls are 2:3 posters in a 6-column grid; focus restores to the
+plate that was opened when Back returns. Settings and System are reached straight from
+the rail; Settings there includes cache volume choice ("Where" — a USB drive must be
+set up as *portable* storage to appear; adopted storage never shows), and the home
+cache server status and pairing.
 
 ### Television differs from the web player
 
@@ -651,9 +655,26 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   is not ported; the seven accents are, at their dark values (user decision,
   2026-09-26), and so is the Artwork setting (Default/Blurred/Artwork/Solid) added
   2026-09-27 — a hero's art softens or drops the same way it does on phone and tablet.
-- **Continue and My List live in the Menu, not the masthead.** The web moved them to its
-  side rail's utilities; the Menu is the television's rail, so they sit there with Latest
-  and Genres, reachable once each.
+- **The rail collapses to icons until the remote reaches it.** The web's own rail is
+  always the width its counts and tally need; a television at ten-foot floors would
+  spend 30% of a 960dp screen on it if it stayed that wide over every cover and hero, so
+  it opens to the web's own width only while focused and stays icons-only (no counts, no
+  tally) the rest of the time, matching the box's own launcher.
+- **Continue watching, My List, Latest, Genres, Settings and System live on the rail,
+  not the departments bar.** The web's own side rail carries the same six as utilities;
+  the bar mirrors only its `nav.departments` row (Home, the shelves, Collections). The
+  ⋮ menu keeps just the phone's three Android-only actions (Update library, TMDB key…,
+  Start over) plus Preloads.
+- **Pressing a department pill keeps the remote on the pill.** The page swaps and shows
+  from its own top; Down is what steps the remote into it. Jumping straight to a plate
+  the instant a pill is pressed would scroll a department's own hero away before a
+  viewer had seen it.
+- **A pushed frame (a title, a season, Search, Latest, Genres, Settings, System…) fills
+  the whole screen, rail included.** The tablet keeps its rail beside a pushed frame;
+  a television's pushed pages are laid out and focus-tested for the full 960dp, Settings
+  and System already draw their own index rail for the same reason the tablet exempts
+  them, and the player is full screen regardless. Back returns to whichever pill, rail
+  row or plate opened the frame.
 - **No voice search.** Search is typed through the system keyboard.
 - **Artwork needs a TMDB key on the device.** As on the phone, posters and backdrops come
   from TMDB; a device without a key shows initials on plain plates.

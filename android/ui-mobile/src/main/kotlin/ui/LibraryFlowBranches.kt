@@ -32,10 +32,10 @@ import ui.catalog.SeasonScreen
 import ui.catalog.posterColumnsFor
 import ui.catalog.rememberDepartmentScrollStates
 import ui.catalog.visibleTabIndices
+import catalog.chromeCountsOf
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
 import ui.chrome.RailData
-import ui.chrome.chromeCountsOf
 import ui.player.PlayerScreen
 
 /**

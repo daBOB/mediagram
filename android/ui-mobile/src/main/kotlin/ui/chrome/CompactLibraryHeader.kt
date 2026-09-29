@@ -38,6 +38,7 @@ import designsystem.LocalCatalogueTones
 import ui.AndroidOnlyMenu
 import ui.MenuActions
 import ui.ProfileBarState
+import ui.RailItem
 
 /** The wordmark's own narrow-width sizes — the web's `.brand` at ≤900px, then ≤480px (`shell.css:184, 199`). */
 private val CompactWordmarkBreakpoint = 480.dp

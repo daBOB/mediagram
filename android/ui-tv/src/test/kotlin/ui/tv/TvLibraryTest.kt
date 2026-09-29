@@ -149,18 +149,26 @@ class TvLibraryTest {
     }
 
     /**
-     * The remembered plate belongs to the tab it was opened from: Film 1
-     * is Home's first plate but the second on Movies, where the wall's own
-     * first plate is where a viewer arriving at the tab should land.
+     * The pill-press rule: pressing a pill keeps the remote on it rather
+     * than jumping straight to a plate, and Down is what steps it into the
+     * page's own first stop — Movies' own second plate here, since Film 1
+     * is Home's first but not this shelf's.
      */
     @Test
-    fun choosingAnotherTabLandsOnItsFirstPlateNotOneOpenedElsewhere() {
+    fun choosingAnotherPillKeepsTheRemoteOnItUntilDownEntersItsFirstPlate() {
         press(plate("Film 1"))
         back()
         plate("Film 1").assertIsFocused()
 
+        // A semantics click alone never moves focus the way a real remote's
+        // centre press does — focused first, as "Series" already is a few
+        // lines down in `TvCatalogScreenStateTest`'s own equivalent walk.
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
+        compose.onNodeWithText("Movies").assertIsFocused()
+
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
 
         // Movies' own department front page can carry "Film 0" under more
         // than one heading with only two films in the shelf (Featured and
@@ -170,15 +178,20 @@ class TvLibraryTest {
     }
 
     @Test
-    fun backAtTheCatalogRootGoesUpToTheMastheadFirst() {
+    fun backAtTheCatalogRootGoesUpThroughThePillThenTheRailBeforeTheAppFinishes() {
         compose.onNodeWithText("Film 1").assertIsFocused()
 
         back()
-
         compose.onNodeWithText("Home").assertIsFocused()
+
+        back()
+        // The rail is open now that the remote actually landed on it, so
+        // its row reads by its visible label rather than by the content
+        // description a collapsed row falls back to.
+        compose.onNodeWithText("My List").assertIsFocused()
         compose.runOnUiThread {
             val dispatcher = controller.get().onBackPressedDispatcher
-            kotlin.test.assertFalse(dispatcher.hasEnabledCallbacks(), "a second Back is left to close the app")
+            kotlin.test.assertFalse(dispatcher.hasEnabledCallbacks(), "a third Back is left to close the app")
         }
     }
 
@@ -186,6 +199,12 @@ class TvLibraryTest {
 
     private fun press(node: SemanticsNodeInteraction) {
         node.performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+    }
+
+    private fun key(code: Int) {
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code)) }
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code)) }
         compose.waitForIdle()
     }
 

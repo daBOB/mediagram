@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
@@ -34,9 +35,9 @@ import kotlin.test.assertEquals
 
 /**
  * What Robolectric can check about [TvCatalogScreen] without a real window
- * manager: which masthead entries, rows, plates and messages compose, and
- * where a press leads. Focus moving between the masthead and Home is real
- * window-manager behaviour and lives in `TvCatalogScreenTest` instead.
+ * manager: which bar pills, rows, plates and messages compose, and where a
+ * press leads. Focus moving between the bar and Home is real window-manager
+ * behaviour and lives in `TvCatalogScreenTest` instead.
  *
  * Presses go through `SemanticsActions.OnClick` rather than
  * `performClick()`, which misbehaves against tv-material here (see
@@ -57,28 +58,28 @@ class TvCatalogScreenStateTest {
     }
 
     /**
-     * `mastheadSplitOf`'s own split: the masthead's tab row is departments
-     * only — Home, the shelves, Collections — and Continue/Watchlist are no
-     * longer drawn there at all, reachable
-     * instead from the overflow menu (`TvMenuTest` covers reaching them).
+     * `mastheadSplitOf`'s own split: the bar's own pill row is departments
+     * only — Home, the shelves, Collections — and Continue/Watchlist are
+     * the rail's own two kept rows now, never pills.
      */
     @Test
-    fun theMastheadCarriesHomeTheShelvesCollectionsAndTheViewerButNotContinueOrWatchlist() {
+    fun theBarCarriesHomeTheShelvesCollectionsAndTheViewerButNotContinueOrWatchlist() {
         show(ready(films(2) + courses(1)))
 
-        for (entry in listOf("Home", "Movies", "Tutorials", "Collections", "Ada")) {
+        for (entry in listOf("Home", "Movies", "Tutorials", "Collections")) {
             compose.onAllNodesWithText(entry).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "missing $entry" } }
         }
+        compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
         compose.onNodeWithText("Continue").assertDoesNotExist()
         compose.onNodeWithText("Watchlist").assertDoesNotExist()
     }
 
     @Test
-    fun choosingTheViewersNameReopensThePicker() {
+    fun choosingTheViewersAvatarReopensThePicker() {
         var reopened = 0
         show(ready(films(2)), onChoose = { reopened++ })
 
-        compose.onNodeWithText("Ada").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Who's watching: Ada").performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(1, reopened)
     }
@@ -186,23 +187,27 @@ class TvCatalogScreenStateTest {
     }
 
     /**
-     * Every shelf draws through the same wall; moving from one shelf to the
-     * next still hands the remote down to the new wall's first plate rather
-     * than leaving it on the tab.
+     * The plan's own pill-press rule: choosing another pill swaps the wall
+     * shown but keeps the remote on the pill itself, rather than leaving it
+     * on whatever plate the previous pill's wall happened to focus — Down
+     * is what steps it into the new wall's first plate, which is real
+     * window-manager focus search and lives in `TvCatalogScreenTest` instead.
      */
     @Test
-    fun choosingAnotherShelfLandsOnItsFirstPlate() {
+    fun choosingAnotherPillKeepsTheRemoteOnItRatherThanOnThePreviousWallsPlate() {
         val pilot = set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 5, episode = 1)
         show(ready(films(2) + pilot))
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNode(hasText("Film", substring = true) and isFocused()).assertExists()
+        compose.onNodeWithText("Movies").assertIsFocused()
+        compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Movies' own wall never composed" } }
 
         // Walked along to and pressed, as a remote does.
         compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.OnClick)
 
-        compose.onNode(hasText("A Show") and isFocused()).assertExists()
+        compose.onNodeWithText("Series").assertIsFocused()
+        compose.onAllNodesWithText("A Show").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Series' own wall never composed" } }
     }
 
     @Test
@@ -246,18 +251,18 @@ class TvCatalogScreenStateTest {
         for ((state, message) in messages) {
             show(state)
             compose.onNodeWithText(message).assertExists()
-            compose.onNodeWithText("Ada").assertExists()
+            compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
             compose.onNodeWithText("Home").assertDoesNotExist()
             close()
         }
     }
 
-    /** Start over is behind Menu, and a library that cannot be read is exactly when it is needed. */
+    /** Start over is behind ⋮, and a library that cannot be read is exactly when it is needed. */
     @Test
     fun menuIsOfferedWithNoShelvesAndComingBackFromItLandsThere() {
         show(CatalogUiState.Failed("Could not reach the channel."), restoreKey = TvMenuEntryKey)
 
-        compose.onNodeWithText("Menu").assertIsFocused()
+        compose.onNodeWithContentDescription("Menu").assertIsFocused()
     }
 
     /**
@@ -292,12 +297,12 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
         compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "department page never opened" } }
 
-        // Search opened from the masthead, then Back — the catalogue's own
+        // Search opened from the bar, then Back — the catalogue's own
         // sentinel for it.
         compose.runOnUiThread { restoreKey.value = TvSearchEntryKey }
         compose.waitForIdle()
 
-        compose.onNodeWithText("Search").assertIsFocused()
+        compose.onNodeWithContentDescription("Search").assertIsFocused()
         compose.onNode(hasText("Film", substring = true) and isFocused()).assertDoesNotExist()
     }
 

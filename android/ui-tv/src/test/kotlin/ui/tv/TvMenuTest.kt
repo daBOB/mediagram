@@ -38,11 +38,12 @@ import uniffi.mediagram_core.SessionSummary
 import kotlin.test.assertEquals
 
 /**
- * The menu walked with a remote over the real [TvLibrary]: the masthead's
- * Menu opens the phone's five items as a page, each screen it opens takes
- * the remote on arrival, and Back walks out one step at a time — the
- * screen, then the page with the remote on the item that opened it, then
- * the masthead's Menu.
+ * The menu walked with a remote over the real [TvLibrary]: the bar's own ⋮
+ * opens the phone's three Android-only rows as a trimmed page; System and
+ * Settings are reached straight from the rail instead, each screen taking
+ * the remote on arrival and Back walking out one step at a time — the
+ * screen, then whatever opened it (the rail row directly for System and
+ * Settings, the trimmed page's own row for TMDB key…).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -76,23 +77,22 @@ class TvMenuTest {
     }
 
     @Test
-    fun theMenuIsThePhonesFiveItemsInItsOrderAndBackReturnsToTheMastheadsMenu() {
+    fun theMenuIsTheAndroidOnlyRowsInThePhonesOrderAndBackReturnsToTheBarsMenuButton() {
         openMenu()
 
-        compose.onNodeWithText("System").assertIsFocused()
-        val order = listOf("System", "Settings", "Update library", "TMDB key…", "Start over")
+        compose.onNodeWithText("Update library").assertIsFocused()
+        val order = listOf("Update library", "TMDB key…", "Start over")
         val tops = order.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals(tops.sorted(), tops, "the rows stand in the phone's order")
         compose.onNodeWithText("Artwork and descriptions need a TMDB key").assertExists()
 
         back()
-        compose.onNodeWithText("Menu").assertIsFocused()
+        compose.onNodeWithContentDescription("Menu").assertIsFocused()
     }
 
     @Test
     fun systemLandsOnItsIndexRowThenOkEntersItAndBackWalksOutOneStepAtATime() {
-        openMenu()
-        press(compose.onNodeWithText("System"))
+        press(compose.onNodeWithContentDescription("System"))
 
         // Selecting the index alone does not step in yet — a real remote's
         // own directional focus, not a click, would have moved the remote
@@ -106,11 +106,10 @@ class TvMenuTest {
 
         back()
         compose.onNodeWithText("System").assertIsFocused()
-        // This back leaves the two-pane frame itself for the masthead's own
-        // System row, not yet the closed menu's Menu button — a further
-        // back (untested here, the menu overlay's own business) would reach
-        // that; the index row shares System's name, so the page having
-        // actually gone is what the eyebrow below proves.
+        // This back leaves the two-pane frame itself for the rail's own
+        // System row directly — the rail has no intermediate menu page to
+        // land on first; the index row shares System's name, so the page
+        // having actually gone is what the eyebrow below proves.
         back()
         compose.onNodeWithText("System").assertIsFocused()
         compose.onNodeWithText("WHAT THIS PLAYER IS DOING, REFRESHED AS IT HAPPENS", substring = true).assertDoesNotExist()
@@ -118,8 +117,7 @@ class TvMenuTest {
 
     @Test
     fun settingsLandsOnItsIndexRowThenOkEntersTelegramAndBackWalksOutOneStepAtATime() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
 
         telegramRow().assertIsFocused()
 
@@ -136,8 +134,7 @@ class TvMenuTest {
 
     @Test
     fun movingTheIndexOnlySwapsThePageHeadWithoutEnteringTheSection() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         compose.onNodeWithText("TELEGRAM").assertExists()
 
         compose.onNodeWithText("Storage").performSemanticsAction(SemanticsActions.RequestFocus)
@@ -154,8 +151,7 @@ class TvMenuTest {
 
     @Test
     fun upAtTheTopOfASectionStaysThereRatherThanJumpingIntoTheIndex() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(telegramRow())
         compose.onNodeWithText("Change library").assertIsFocused()
 
@@ -167,8 +163,7 @@ class TvMenuTest {
 
     @Test
     fun leftAmongTheAccentSwatchesMovesToThePreviousOneRatherThanLeavingTheSection() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Appearance"))
         compose.onNodeWithContentDescription("Coral").assertIsFocused()
 
@@ -181,8 +176,7 @@ class TvMenuTest {
 
     @Test
     fun leftFromTheLeftmostSwatchReturnsToTheAppearanceRow() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Appearance"))
         compose.onNodeWithContentDescription("Coral").assertIsFocused()
 
@@ -193,8 +187,7 @@ class TvMenuTest {
 
     @Test
     fun eachSectionOpensScrolledToItsOwnTopRatherThanKeepingAnotherSectionsOffset() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         val freshTelegramTitleTop = compose.onNodeWithText("TELEGRAM").fetchSemanticsNode().boundsInRoot.top
 
         press(compose.onNodeWithText("Storage"))
@@ -218,8 +211,7 @@ class TvMenuTest {
     fun aFailedPollWithAStaleSnapshotDoesNotStealFocusFromWhereTheViewerAlreadyIs() {
         val failure = MutableStateFlow<String?>(null)
         every { fixture.system.failure } returns failure
-        openMenu()
-        press(compose.onNodeWithText("System"))
+        press(compose.onNodeWithContentDescription("System"))
         press(compose.onNodeWithText("System"))
         compose.onNode(hasText("Catalogue")).assertIsFocused()
 
@@ -235,8 +227,7 @@ class TvMenuTest {
 
     @Test
     fun aSettingsPanelIsLeftForTelegramThenTheIndexThenTheMenu() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(telegramRow())
         press(compose.onNodeWithText("Application id and hash…"))
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertIsFocused()
@@ -251,8 +242,7 @@ class TvMenuTest {
 
     @Test
     fun signOutAsksFirstInThePhonesWords() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(telegramRow())
         press(compose.onNodeWithText("Sign out"))
 
@@ -286,7 +276,7 @@ class TvMenuTest {
         openMenu()
         press(compose.onNodeWithText("Update library"))
 
-        compose.onNodeWithText("Menu").assertExists()
+        compose.onNodeWithContentDescription("Menu").assertExists()
         compose.onNodeWithText("Update library").assertDoesNotExist()
     }
 
@@ -296,7 +286,7 @@ class TvMenuTest {
         compose.onNode(hasText("Preloads", substring = true)).assertDoesNotExist()
     }
 
-    /** M5: the page scrolls, so a row this far down (ninth, past a screen this short) is still reachable by remote, not just by a semantics click a real D-pad walk could not perform. */
+    /** The page scrolls, so a row this far down (fourth, past a screen this short) is still reachable by remote, not just by a semantics click a real D-pad walk could not perform. */
     @Test
     fun thePreloadsRowIsReachableByRemoteNamesTheCountAndOpensTheRealPreloadsPage() {
         fixture.filmPreloading.setQueueOverview(
@@ -306,11 +296,10 @@ class TvMenuTest {
         )
         compose.waitForIdle()
         openMenu()
-        compose.onNodeWithText("System").assertIsFocused()
+        compose.onNodeWithText("Update library").assertIsFocused()
 
-        // System, Settings, Update library, TMDB key…, Start over, My List,
-        // Continue watching, Latest, Genres, then Preloads — nine rows down.
-        repeat(9) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        // Update library, TMDB key…, Start over, then Preloads — three rows down.
+        repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
         compose.onNodeWithText("Preloads · 1").assertIsFocused()
 
         press(compose.onNodeWithText("Preloads · 1"))
@@ -318,17 +307,17 @@ class TvMenuTest {
         compose.onNodeWithText("2.0 of 5.0 GB · 40%").assertExists()
 
         // Specifically the home wall, not merely a screen that happens to
-        // carry a "Menu" node too (the menu page's own title reads the
-        // same word): Preloads clears the menu page before it pushes its
-        // own frame, so Back lands past it, on the shelves themselves.
+        // carry a "Menu" node too (the bar's own ⋮ reads the same
+        // description): Preloads clears the trimmed menu page before it
+        // pushes its own frame, so Back lands past it, on the shelves
+        // themselves.
         back()
         compose.onNode(hasText("Film 1") and hasClickAction()).assertExists()
     }
 
     @Test
     fun settingsOffersEveryCacheVolumeAndChoosingOneReachesTheModel() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         compose.onNodeWithText("Where").assertExists()
         compose.onNodeWithText("●  Internal storage", substring = true).assertExists()
@@ -339,8 +328,7 @@ class TvMenuTest {
     @Test
     fun settingsShowsTheHomeCacheServerAndAnAcceptedAddressReturnsToItsRow() {
         every { fixture.lanCache.setManualAddress("192.168.0.9:7788") } returns true
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         compose.onNodeWithText("Not found").assertExists()
         compose.onNodeWithText("Use the home cache server — on").assertExists()
@@ -356,8 +344,7 @@ class TvMenuTest {
     @Test
     fun aRefusedTokenKeepsItsQuestionOpen() {
         every { fixture.lanCache.saveToken("short") } returns false
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Pairing token — none"))
         compose.onNode(hasSetTextAction()).performTextInput("short")
@@ -371,8 +358,7 @@ class TvMenuTest {
 
     @Test
     fun reopeningAQuestionClearsTheLastRefusal() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Server address — found on the network"))
         verify { fixture.lanCache.clearErrors() }
@@ -380,8 +366,7 @@ class TvMenuTest {
 
     @Test
     fun theSwitchRowTurnsTheServerOff() {
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         press(compose.onNodeWithText("Use the home cache server — on"))
         verify { fixture.lanCache.setEnabled(false) }
@@ -397,8 +382,7 @@ class TvMenuTest {
                     sessions = listOf(session("1", "Living room TV", current = true), session("2", "Old laptop", current = false)),
                 ),
             )
-        openMenu()
-        press(compose.onNodeWithText("Settings"))
+        press(compose.onNodeWithContentDescription("Settings"))
         press(telegramRow())
         compose.onNodeWithText("Living room TV (this device)").assertExists()
         compose.onNodeWithText("Sign out Living room TV").assertDoesNotExist()
@@ -415,7 +399,7 @@ class TvMenuTest {
     ) = SessionSummary(id, device, "Android", "Mediagram", "0.61.0", "Berlin", 0, 0, current, false)
 
     private fun openMenu() {
-        press(compose.onNodeWithText("Menu"))
+        press(compose.onNodeWithContentDescription("Menu"))
     }
 
     /**

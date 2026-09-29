@@ -19,10 +19,10 @@ import catalog.KeptKind
 import catalog.SetCard
 import catalog.resumeLine
 import catalog.watchedFractionOf
-import designsystem.Overscan
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
+import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * One of the two kept walls that hold titles directly — Continue and
@@ -113,11 +113,11 @@ private fun KeptSetPlate(
 /**
  * The heading still stands over an empty wall, as on the phone — it says
  * which tab this is — with the phone's own empty text under it. Nothing
- * here takes focus, so the remote goes up to this wall's own tab on the
- * masthead: already there when the tab was just chosen, but not when the
- * wall empties under the viewer — the last title taken off the Watchlist
- * from its own page — when it would otherwise be left resting on nothing,
- * or on whatever tab the window's own search picked for it.
+ * here takes focus, so the remote goes up to this wall's own row on the
+ * rail: already there when the row was just chosen, but not when the wall
+ * empties under the viewer — the last title taken off the Watchlist from
+ * its own page — when it would otherwise be left resting on nothing, or on
+ * whatever the window's own search picked for it.
  */
 @Composable
 private fun EmptyKeptWall(
@@ -126,7 +126,8 @@ private fun EmptyKeptWall(
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
     LaunchedEffect(Unit) { if (takesFocus) tabFocus.requestFocus() }
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
+    val pagePadding = LocalTvPagePadding.current
+    Column(modifier = Modifier.fillMaxSize().padding(start = pagePadding.start, top = pagePadding.top, end = pagePadding.end, bottom = pagePadding.bottom)) {
         TvCountedHeading(kind.label, 0)
         // Centred in what is left, not through TvCenteredMessage: this
         // column already stands inside the overscan inset.

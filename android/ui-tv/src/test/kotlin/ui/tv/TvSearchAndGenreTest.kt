@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
@@ -45,7 +46,8 @@ import ui.tv.player.TvPlayerScreenTag
  * Search and genre pages walked the way a remote walks them, over the real
  * `CatalogViewModel` and `SearchViewModel` [TvAppFixture] builds: something
  * has the remote the moment each appears, and Back lands on whatever opened
- * it — the masthead's Search, the row that played, the genre link pressed.
+ * it — the bar's own Search button, the row that played, the genre link
+ * pressed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -88,17 +90,17 @@ class TvSearchAndGenreTest {
 
     @Test
     fun searchOpensOnItsFieldAndBackReturnsToTheMastheadEntry() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         field().assertIsFocused()
 
         back()
 
-        compose.onNodeWithText("Search").assertIsFocused()
+        compose.onNodeWithContentDescription("Search").assertIsFocused()
     }
 
     @Test
     fun theSearchKeyHandsTheRemoteToTheFirstRowAndUpGoesBackToTheField() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
         compose.onNodeWithText("2 results").assertExists()
 
@@ -117,7 +119,7 @@ class TvSearchAndGenreTest {
      */
     @Test
     fun downFromTheFieldReachesTheFirstRow() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
         compose.onNodeWithText("2 results").assertExists()
         field().assertIsFocused()
@@ -129,7 +131,7 @@ class TvSearchAndGenreTest {
     /** The second row, so landing back on it is the row that played rather than simply the first. */
     @Test
     fun aRowPlaysAndBackFromThePlayerLandsOnThatRow() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
 
         press(row("Film 1"))
@@ -144,7 +146,7 @@ class TvSearchAndGenreTest {
 
     @Test
     fun aQueryNothingMentionsSaysSoInThePhonesWords() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("zebra")
 
         compose.onNodeWithText("No title, folder or summary in the library mentions that.").assertExists()
@@ -158,7 +160,7 @@ class TvSearchAndGenreTest {
      */
     @Test
     fun typingThroughNoHitsAfterTheSearchKeyKeepsTheRemoteInTheField() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
         field().performImeAction()
         compose.waitForIdle()
@@ -177,7 +179,7 @@ class TvSearchAndGenreTest {
 
     @Test
     fun aNewQueryAfterComingBackFromThePlayerKeepsTheRemoteInTheField() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
         press(row("Film 1"))
         back()
@@ -199,9 +201,9 @@ class TvSearchAndGenreTest {
     /** Down from Search enters Home by its own first stop, and the way back to Search is spent once used. */
     @Test
     fun downFromTheMastheadsSearchLandsOnHomesFirstStop() {
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         back()
-        compose.onNodeWithText("Search").assertIsFocused()
+        compose.onNodeWithContentDescription("Search").assertIsFocused()
 
         key(KeyEvent.KEYCODE_DPAD_DOWN)
 
@@ -254,7 +256,7 @@ class TvSearchAndGenreTest {
         val hit = PersonHit(personId = 9L, name = "Ada Actor", portraitPath = null, titleKeys = listOf("poster-film-0"))
         coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
 
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
 
         compose.onNodeWithText("Ada Actor").assertExists()
@@ -279,7 +281,7 @@ class TvSearchAndGenreTest {
         val hit = PersonHit(personId = 9L, name = "Ada Actor", portraitPath = null, titleKeys = listOf("poster-film-0"))
         coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
 
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
         press(compose.onNodeWithText("Ada Actor"))
         back()
@@ -294,7 +296,7 @@ class TvSearchAndGenreTest {
         val hit = PersonHit(personId = 9L, name = "Nobody Here", portraitPath = null, titleKeys = listOf("no-such-poster"))
         coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
 
-        press(compose.onNodeWithText("Search"))
+        press(compose.onNodeWithContentDescription("Search"))
         type("film")
 
         compose.onNodeWithText("Nobody Here").assertDoesNotExist()

@@ -15,9 +15,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import catalog.HomeRow
 import catalog.MagazineHome
-import designsystem.Overscan
-import designsystem.Spacing
 import model.WatchSnapshot
+import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The start page — the television twin of the phone's `HomeScreen`: what
@@ -105,18 +104,19 @@ internal fun TvHome(
         if (landOnCover) coverFocus.requestFocus() else if (allRows.isNotEmpty()) first.requestFocus()
     }
 
+    val pagePadding = LocalTvPagePadding.current
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                // Coming down from the masthead lands where the viewer last
-                // was on this page, or on its first stop, rather than on
+                // Coming down from the bar lands where the viewer last was
+                // on this page, or on its first stop, rather than on
                 // whichever plate happens to sit under the tab the remote
                 // left from.
                 .focusRestorer(if (hasCover) coverFocus else first)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Overscan.horizontal)
-                .padding(bottom = Overscan.vertical, top = Spacing.small),
+                .padding(start = pagePadding.start, end = pagePadding.end)
+                .padding(bottom = pagePadding.bottom, top = pagePadding.top),
     ) {
         magazine?.editorial?.let { editorial ->
             if (editorial.cover.isNotEmpty()) {

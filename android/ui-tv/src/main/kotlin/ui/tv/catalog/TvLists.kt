@@ -21,6 +21,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import model.ListOfSets
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The lists a viewer has built, each a door to its own — `listsView` in
@@ -72,10 +73,15 @@ internal fun TvLists(
         focus.requestFocus()
     }
 
+    // Horizontal only, from the ambient page inset: vertical stays a plain
+    // breathing-room gap regardless of the chrome, since this list is never
+    // itself the page's very first content — [TvCollectionsPage]'s own
+    // outer padding already cleared the bar above whatever precedes it.
+    val pagePadding = LocalTvPagePadding.current
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        contentPadding = PaddingValues(start = pagePadding.start, end = pagePadding.end, top = Overscan.vertical, bottom = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         if (focusNew) {
