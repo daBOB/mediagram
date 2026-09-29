@@ -193,9 +193,18 @@ internal fun TvLibraryChrome(
                 Modifier
                     .fillMaxSize()
                     .padding(start = TvContentStart)
+                    // The one exit rule for bar and page both: a focus target
+                    // keeps a single `onExit`, and this outer one is the one it
+                    // keeps, so a second rule on the page's own Box below never
+                    // ran — Up out of a page went wherever geometry pointed.
                     .focusProperties {
                         onExit = {
-                            if (requestedFocusDirection == FocusDirection.Left) railArrivalTarget().requestFocus()
+                            when (requestedFocusDirection) {
+                                FocusDirection.Left -> railArrivalTarget().requestFocus()
+                                FocusDirection.Up ->
+                                    if (contentHasFocus) (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
+                                else -> Unit
+                            }
                         }
                     },
         ) {
@@ -207,13 +216,6 @@ internal fun TvLibraryChrome(
                         .onFocusChanged { state ->
                             contentHasFocus = state.hasFocus
                             if (state.hasFocus) lastInBar = false
-                        }
-                        .focusProperties {
-                            onExit = {
-                                if (requestedFocusDirection == FocusDirection.Up) {
-                                    (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
-                                }
-                            }
                         },
             ) {
                 CompositionLocalProvider(LocalTvPagePadding provides padding, content = content)
