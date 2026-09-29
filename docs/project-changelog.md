@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.81.1 — an upload-lock test that failed on a busy run
+
+**Fixed**
+
+- The upload-lock tests asserted that a lock is free the instant its holder
+  drops it. It is, unless a test running beside them starts a child process
+  (the `prepare` tests run ffmpeg) at that moment: the child holds a copy of
+  every open descriptor until its `exec` closes them, and `flock` stays held
+  through that copy for a moment. The two affected checks now wait up to a
+  second for the release. Nothing in the lock itself changed; it had failed a
+  pre-push run once.
+
 ## 0.81.0 — Android: Tutorials and Documentaries grouped by category
 
 **Added**

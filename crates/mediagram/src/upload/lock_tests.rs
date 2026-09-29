@@ -2,6 +2,21 @@
 
 use super::*;
 
+/// Whether `free` turns true within a second. A holder lets go the moment it
+/// drops the lock, but a test running beside this one that starts a child
+/// process (ffmpeg, ffprobe) hands the child a copy of every open descriptor
+/// until its `exec` closes them, and `flock` stays held through that copy for
+/// that moment — the same "true a moment after it was false" [`is_held`]
+/// already warns its callers about.
+fn soon(mut free: impl FnMut() -> bool) -> bool {
+    (0..50).any(|_| {
+        free() || {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            false
+        }
+    })
+}
+
 #[tokio::test]
 async fn a_second_holder_waits_and_is_told_it_is_waiting() {
     let dir = tempfile::tempdir().unwrap();
@@ -14,8 +29,8 @@ async fn a_second_holder_waits_and_is_told_it_is_waiting() {
     let file = open(&path_in(dir.path())).unwrap();
     assert!(!try_lock(&file).unwrap());
     drop(held);
-    assert!(!is_held(dir.path()));
-    assert!(try_lock(&file).unwrap());
+    assert!(soon(|| !is_held(dir.path())));
+    assert!(soon(|| try_lock(&file).unwrap()));
 }
 
 #[tokio::test]
@@ -39,7 +54,7 @@ async fn two_slots_take_two_uploads_and_a_third_waits() {
     assert!(third.is_err(), "a third upload must wait while two run");
 
     drop(first);
-    assert!(!all_held(dir.path(), 2));
+    assert!(soon(|| !all_held(dir.path(), 2)));
     drop(second);
 }
 
