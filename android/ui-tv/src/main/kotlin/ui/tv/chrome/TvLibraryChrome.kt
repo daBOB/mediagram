@@ -18,7 +18,6 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,7 +71,6 @@ internal fun TvPagePadding.asPaddingValues(): PaddingValues = PaddingValues(star
  * itself renders onto.
  */
 internal class TvChromeFocus(
-    val regionFocus: FocusRequester,
     val selectedPillFocus: FocusRequester,
     val searchFocus: FocusRequester,
     val menuButtonFocus: FocusRequester,
@@ -83,7 +81,6 @@ internal class TvChromeFocus(
 @Composable
 internal fun rememberTvChromeFocus(): TvChromeFocus =
     TvChromeFocus(
-        regionFocus = remember { FocusRequester() },
         selectedPillFocus = remember { FocusRequester() },
         searchFocus = remember { FocusRequester() },
         menuButtonFocus = remember { FocusRequester() },
@@ -146,6 +143,12 @@ internal fun TvLibraryChrome(
     var barHasFocus by remember { mutableStateOf(false) }
     var contentHasFocus by remember { mutableStateOf(false) }
     var railHasFocus by remember { mutableStateOf(false) }
+    // Which side of the bar the remote was last on, so the rail's Right can
+    // go back there. Not a `focusRestorer` over bar and page together: that
+    // restores into the first child with a remembered focus, and the bar
+    // always has one — it turned a page's own arrival (Home back from the
+    // player) and the rail's Right from a plate into the bar's pill.
+    var lastInBar by remember { mutableStateOf(false) }
 
     fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
 
@@ -190,8 +193,6 @@ internal fun TvLibraryChrome(
                 Modifier
                     .fillMaxSize()
                     .padding(start = TvContentStart)
-                    .focusRequester(focus.regionFocus)
-                    .focusRestorer()
                     .focusProperties {
                         onExit = {
                             if (requestedFocusDirection == FocusDirection.Left) railArrivalTarget().requestFocus()
@@ -203,7 +204,10 @@ internal fun TvLibraryChrome(
                     Modifier
                         .fillMaxSize()
                         .focusRequester(focus.contentFocus)
-                        .onFocusChanged { state -> contentHasFocus = state.hasFocus }
+                        .onFocusChanged { state ->
+                            contentHasFocus = state.hasFocus
+                            if (state.hasFocus) lastInBar = false
+                        }
                         .focusProperties {
                             onExit = {
                                 if (requestedFocusDirection == FocusDirection.Up) {
@@ -226,7 +230,10 @@ internal fun TvLibraryChrome(
                 searchFocus = focus.searchFocus,
                 menuFocus = focus.menuButtonFocus,
                 blend = blend,
-                modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state -> barHasFocus = state.hasFocus },
+                modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
+                        barHasFocus = state.hasFocus
+                        if (state.hasFocus) lastInBar = true
+                    },
             )
         }
 
@@ -236,7 +243,8 @@ internal fun TvLibraryChrome(
             tally = tally,
             rowRequesters = focus.railRowFocus,
             onSelect = onRailSelect,
-            regionFocus = focus.regionFocus,
+            // The page's own restorer puts the remote back on the plate it left.
+            onRight = { (if (lastInBar && selectedPill >= 0) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
             onHasFocusChanged = { railHasFocus = it },
             modifier = Modifier.align(Alignment.CenterStart),
         )

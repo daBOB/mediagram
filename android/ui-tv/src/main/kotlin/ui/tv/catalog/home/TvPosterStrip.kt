@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -65,56 +66,59 @@ internal fun TvPosterStrip(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         shows.forEachIndexed { index, show ->
-            // Poster, name and caption all inside the one `Card` — the same
-            // shape [ui.tv.TvPlate] draws — rather than a caption sitting
-            // outside it as a layout sibling: `mergeDescendants` below only
-            // ever folds a focusable node's own descendants into it, never
-            // a sibling's, so a caption a viewer reads as part of "this
-            // plate" has to actually be one of its children to read as
-            // focused along with it.
-            Card(
-                onClick = { onOpen(show.key) },
-                modifier =
-                    Modifier
-                        .width(PosterWidth)
-                        .semantics(mergeDescendants = true) {}
-                        .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
-                        .let { if (index == shows.lastIndex) it.then(lastStop) else it },
-                shape = TvFocus.cardShape(),
-                scale = TvFocus.cardScale(),
-                border = TvFocus.cardBorder(),
-                glow = TvFocus.cardGlow(),
-                colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            ) {
-                Column {
-                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
-                        val poster = show.posterPath
-                        if (poster != null) {
-                            AsyncImage(model = File(poster), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                        } else {
-                            Text(
-                                text = initialsOf(show.name),
-                                style = TvTypeScale.title,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.align(Alignment.Center),
-                            )
+            key(show.key) {
+                // Poster, name and caption all inside the one `Card` — the same
+                // shape [ui.tv.TvPlate] draws — rather than a caption sitting
+                // outside it as a layout sibling: `mergeDescendants` below only
+                // ever folds a focusable node's own descendants into it, never
+                // a sibling's, so a caption a viewer reads as part of "this
+                // plate" has to actually be one of its children to read as
+                // focused along with it.
+                Card(
+                    onClick = { onOpen(show.key) },
+                    modifier =
+                        Modifier
+                            .keepsInViewWhenMoved(index)
+                            .width(PosterWidth)
+                            .semantics(mergeDescendants = true) {}
+                            .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
+                            .let { if (index == shows.lastIndex) it.then(lastStop) else it },
+                    shape = TvFocus.cardShape(),
+                    scale = TvFocus.cardScale(),
+                    border = TvFocus.cardBorder(),
+                    glow = TvFocus.cardGlow(),
+                    colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column {
+                        Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
+                            val poster = show.posterPath
+                            if (poster != null) {
+                                AsyncImage(model = File(poster), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                            } else {
+                                Text(
+                                    text = initialsOf(show.name),
+                                    style = TvTypeScale.title,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.align(Alignment.Center),
+                                )
+                            }
                         }
+                        Text(
+                            text = show.name,
+                            style = CoverTitle.copy(fontSize = 18.sp),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
+                        )
+                        Text(
+                            text = "${spelledCountOf(show.count, "episode")} · ${spelledCountOf(show.chapters, "season")}",
+                            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp, start = Spacing.small, end = Spacing.small, bottom = Spacing.small),
+                        )
                     }
-                    Text(
-                        text = show.name,
-                        style = CoverTitle.copy(fontSize = 18.sp),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
-                    )
-                    Text(
-                        text = "${spelledCountOf(show.count, "episode")} · ${spelledCountOf(show.chapters, "season")}",
-                        style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp, start = Spacing.small, end = Spacing.small, bottom = Spacing.small),
-                    )
                 }
             }
         }

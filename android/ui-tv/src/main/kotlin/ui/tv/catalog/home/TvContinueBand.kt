@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,12 +75,14 @@ internal fun TvContinueBand(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                 ) {
                     cards.forEachIndexed { index, card ->
-                        TvResumeCard(
-                            card = card,
-                            onOpen = { onPlay(card.set.setId) },
-                            focusRequester = if (index == focusAt) focus else null,
-                            modifier = if (index == cards.lastIndex) link.lastStop else Modifier,
-                        )
+                        key(card.set.setId) {
+                            TvResumeCard(
+                                card = card,
+                                onOpen = { onPlay(card.set.setId) },
+                                focusRequester = if (index == focusAt) focus else null,
+                                modifier = (if (index == cards.lastIndex) link.lastStop else Modifier).keepsInViewWhenMoved(index),
+                            )
+                        }
                     }
                 }
             }

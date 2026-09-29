@@ -31,6 +31,17 @@ class TvHomeTargetsTest {
         assertEquals(TvHomeTarget(TvHomeSection.RECENT, 1), target)
     }
 
+    /** A new upload that is also trending sits in two bands; Back returns to the one it was opened from. */
+    @Test
+    fun aKeyTwoBandsCarryGoesBackToTheBandTheRemoteWasIn() {
+        val features = TvHomeSection.FEATURES to listOf("film-e")
+        val sections = listOf(cover, features, recent)
+
+        assertEquals(TvHomeTarget(TvHomeSection.RECENT, 1), homeTargetOf(sections, "film-e", lastSection = TvHomeSection.RECENT))
+        assertEquals(TvHomeTarget(TvHomeSection.FEATURES, 0), homeTargetOf(sections, "film-e", lastSection = null))
+        assertEquals(TvHomeTarget(TvHomeSection.FEATURES, 0), homeTargetOf(sections, "film-e", lastSection = TvHomeSection.COVER))
+    }
+
     @Test
     fun aRestoreKeyInTheCoverFindsThatFilmsOwnStop() {
         val target = homeTargetOf(listOf(cover, continueBand), restoreKey = "film-b")

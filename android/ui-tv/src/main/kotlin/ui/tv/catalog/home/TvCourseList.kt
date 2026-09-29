@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -52,41 +53,44 @@ internal fun TvCourseList(
     if (courses.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         courses.forEachIndexed { index, course ->
-            Card(
-                onClick = { onOpen(course.key) },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .semantics(mergeDescendants = true) {}
-                        .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
-                        .let { if (index == courses.lastIndex) it.then(lastStop) else it },
-                shape = TvFocus.cardShape(),
-                scale = TvFocus.cardScale(),
-                border = TvFocus.cardBorder(),
-                glow = TvFocus.cardGlow(),
-                colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(Spacing.small),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                    verticalAlignment = Alignment.CenterVertically,
+            key(course.key) {
+                Card(
+                    onClick = { onOpen(course.key) },
+                    modifier =
+                        Modifier
+                            .keepsInViewWhenMoved(index)
+                            .fillMaxWidth()
+                            .semantics(mergeDescendants = true) {}
+                            .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
+                            .let { if (index == courses.lastIndex) it.then(lastStop) else it },
+                    shape = TvFocus.cardShape(),
+                    scale = TvFocus.cardScale(),
+                    border = TvFocus.cardBorder(),
+                    glow = TvFocus.cardGlow(),
+                    colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
-                    Box(modifier = Modifier.width(64.dp).aspectRatio(2f / 3f).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                        Text(
-                            text = initialsOf(course.name),
-                            style = TvTypeScale.title,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.align(Alignment.Center),
-                        )
-                    }
-                    Column {
-                        Text(text = course.name, style = TvTypeScale.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            text = "${spelledCountOf(course.count, "lesson")} · ${spelledCountOf(course.chapters, "chapter")}",
-                            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 2.dp),
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(Spacing.small),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(modifier = Modifier.width(64.dp).aspectRatio(2f / 3f).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                            Text(
+                                text = initialsOf(course.name),
+                                style = TvTypeScale.title,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.align(Alignment.Center),
+                            )
+                        }
+                        Column {
+                            Text(text = course.name, style = TvTypeScale.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                text = "${spelledCountOf(course.count, "lesson")} · ${spelledCountOf(course.chapters, "chapter")}",
+                                style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
                     }
                 }
             }

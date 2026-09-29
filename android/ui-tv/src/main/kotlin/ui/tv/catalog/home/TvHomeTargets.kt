@@ -17,7 +17,10 @@ internal data class TvHomeTarget(val section: TvHomeSection, val stop: Int)
  *
  * A [restoreKey] found in some band's own keys always wins, wherever it
  * sits — the cover rotates through five films and a `Back` from the third
- * one's title page must find that film again, not always the first. With no
+ * one's title page must find that film again, not always the first. A key
+ * two bands carry at once (a new upload that is also trending) goes back to
+ * [lastSection], the band the remote was last in, when that band still has
+ * it; otherwise to the first band down the page that does. With no
  * match (`restoreKey` is `null`, names nothing here, or named a title this
  * band no longer carries) the default is the first band with any stops at
  * all, at its own first one — `null` only when every band is empty, which a
@@ -26,8 +29,13 @@ internal data class TvHomeTarget(val section: TvHomeSection, val stop: Int)
 internal fun homeTargetOf(
     sections: List<Pair<TvHomeSection, List<String>>>,
     restoreKey: String?,
+    lastSection: TvHomeSection? = null,
 ): TvHomeTarget? {
     if (restoreKey != null) {
+        lastSection?.let { last ->
+            val stop = sections.firstOrNull { it.first == last }?.second?.indexOf(restoreKey) ?: -1
+            if (stop >= 0) return TvHomeTarget(last, stop)
+        }
         for ((section, keys) in sections) {
             val stop = keys.indexOf(restoreKey)
             if (stop >= 0) return TvHomeTarget(section, stop)

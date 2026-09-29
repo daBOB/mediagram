@@ -16,6 +16,7 @@ import catalog.RowContent
 import catalog.SetCard
 import model.Kind
 import model.WatchSnapshot
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -151,6 +152,43 @@ class TvHomeStateTest : TvScreenStateTest() {
         compose.waitForIdle()
 
         compose.onNodeWithText("A Show").assertIsFocused()
+    }
+
+    /**
+     * What the box showed after leaving the player: the played card's own
+     * position write lands with Home already on screen and moves it to the
+     * front of Continue. The remote must go with the title, not stay on the
+     * slot it used to occupy, which now draws a different one — and the row
+     * must scroll with it, or the card sits past the row's own edge.
+     */
+    @Test
+    fun aRestoredCardKeepsTheRemoteWhenItsRowReordersUnderIt() {
+        val a = SetCard(set = film("a", "Card A"), caption = "", progress = 0.3f, watched = false)
+        val others = (1..5).map { SetCard(set = film("o$it", "Card $it"), caption = "", progress = 0.3f, watched = false) }
+        val magazine = mutableStateOf(continueMagazine(others + a))
+        show {
+            TvHome(
+                magazine = magazine.value,
+                rows = listOf(seriesRow("A Show")),
+                watch = WatchSnapshot.Empty,
+                listState = rememberLazyListState(),
+                onPlay = {},
+                onOpenTitle = {},
+                onOpenCollection = {},
+                onToggleWatchlist = { _, _ -> },
+                onSeeAll = {},
+                upExit = remember { FocusRequester() },
+                restoreKey = "a",
+            )
+        }
+        compose.onNodeWithText("Card A").assertIsFocused()
+
+        compose.runOnUiThread { magazine.value = continueMagazine(listOf(a) + others) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Card A").assertIsFocused()
+        val node = compose.onNodeWithText("Card A").fetchSemanticsNode()
+        assertEquals(node.size.width.toFloat(), node.boundsInRoot.width, 1f)
     }
 
     private fun film(

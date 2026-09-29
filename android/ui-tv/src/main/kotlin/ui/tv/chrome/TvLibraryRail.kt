@@ -62,9 +62,8 @@ private val TvWordmarkSize = 24.sp
  *
  * Up/Down stop at the rail's own ends rather than escaping to whatever
  * geometrically sits above or below across the rail's edge; Right from any
- * row leaves for [regionFocus] — the combined bar-and-content area's own
- * `focusRestorer`, which is "the region it was entered from" wherever that
- * turns out to be.
+ * row runs [onRight], which sends the remote back to where it came from:
+ * the bar's pill, or the page's own last stop.
  */
 @Composable
 internal fun TvLibraryRail(
@@ -73,7 +72,7 @@ internal fun TvLibraryRail(
     tally: List<String>,
     rowRequesters: Map<RailItem, FocusRequester>,
     onSelect: (RailItem) -> Unit,
-    regionFocus: FocusRequester,
+    onRight: () -> Unit,
     onHasFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -95,7 +94,7 @@ internal fun TvLibraryRail(
                     onExit = {
                         when (requestedFocusDirection) {
                             FocusDirection.Up, FocusDirection.Down -> cancelFocusChange()
-                            FocusDirection.Right -> regionFocus.requestFocus()
+                            FocusDirection.Right -> onRight()
                             else -> Unit
                         }
                     }

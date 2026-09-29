@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -105,33 +106,36 @@ private fun TvRecentPosterRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         films.forEachIndexed { index, set ->
-            Card(
-                onClick = { onOpenTitle(set.setId) },
-                modifier =
-                    Modifier
-                        .width(RecentPosterWidth)
-                        .semantics(mergeDescendants = true) {}
-                        .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
-                        .let { if (index == films.lastIndex) it.then(lastStop) else it },
-                shape = TvFocus.cardShape(),
-                scale = TvFocus.cardScale(),
-                border = TvFocus.cardBorder(),
-                glow = TvFocus.cardGlow(),
-                colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            ) {
-                Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
-                    val poster = set.posterPath
-                    if (poster != null) {
-                        AsyncImage(model = File(poster), contentDescription = set.title, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                    } else {
-                        Text(
-                            text = set.title,
-                            style = TvTypeScale.body,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.align(Alignment.Center).padding(Spacing.small),
-                        )
+            key(set.setId) {
+                Card(
+                    onClick = { onOpenTitle(set.setId) },
+                    modifier =
+                        Modifier
+                            .keepsInViewWhenMoved(index)
+                            .width(RecentPosterWidth)
+                            .semantics(mergeDescendants = true) {}
+                            .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
+                            .let { if (index == films.lastIndex) it.then(lastStop) else it },
+                    shape = TvFocus.cardShape(),
+                    scale = TvFocus.cardScale(),
+                    border = TvFocus.cardBorder(),
+                    glow = TvFocus.cardGlow(),
+                    colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
+                        val poster = set.posterPath
+                        if (poster != null) {
+                            AsyncImage(model = File(poster), contentDescription = set.title, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                        } else {
+                            Text(
+                                text = set.title,
+                                style = TvTypeScale.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.align(Alignment.Center).padding(Spacing.small),
+                            )
+                        }
                     }
                 }
             }

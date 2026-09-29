@@ -9,17 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import catalog.Entry
@@ -29,6 +34,7 @@ import catalog.RowContent
 import designsystem.Overscan
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import model.WatchSnapshot
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
@@ -118,7 +124,15 @@ internal fun TvHome(
             )
         }
     val included = remember(sections) { sections.filter { (_, keys) -> keys.isNotEmpty() }.map { it.first } }
-    val target = remember(sections, restoreKey) { homeTargetOf(sections, restoreKey) }
+    // The band the remote was last in, saved with the catalog like the
+    // list's own scroll: a title two bands carry at once — a new upload
+    // that is also trending — comes back to the band it was opened from.
+    // Read, not keyed, so moving between bands never re-aims the arrival.
+    var lastSection by rememberSaveable { mutableStateOf<TvHomeSection?>(null) }
+    val target = remember(sections, restoreKey) { homeTargetOf(sections, restoreKey, lastSection) }
+
+    fun Modifier.remembersBand(section: TvHomeSection) = onFocusChanged { if (it.hasFocus) lastSection = section }
+    val scope = rememberCoroutineScope()
 
     val coverFocus = remember { FocusRequester() }
     val featuresFocus = remember { FocusRequester() }
@@ -220,21 +234,32 @@ internal fun TvHome(
         ) {
             if (hasCover) {
                 item(key = "cover") {
-                    TvHomeCover(
-                        films = editorial.cover,
-                        watchlist = watchlist,
-                        initialFilmId = stopAt(TvHomeSection.COVER)?.let { editorial.cover.getOrNull(it)?.setId },
-                        onPlay = { onPlay(it.setId) },
-                        onOpenTitle = onOpenTitle,
-                        onToggleWatchlist = onToggleWatchlist,
-                        arrivalFocus = coverFocus,
-                        upExit = upExit,
-                    )
+                    // Entering the cover from the rows below scrolls only far
+                    // enough to show the stop Up landed on, leaving the cover's
+                    // own heading under the bar: asks for the whole cover
+                    // instead, which the focused stop's own request is part of.
+                    val coverInView = remember { BringIntoViewRequester() }
+                    val wholeCover =
+                        Modifier
+                            .bringIntoViewRequester(coverInView)
+                            .onFocusChanged { if (it.hasFocus) scope.launch { coverInView.bringIntoView() } }
+                    Box(Modifier.remembersBand(TvHomeSection.COVER).then(wholeCover)) {
+                        TvHomeCover(
+                            films = editorial.cover,
+                            watchlist = watchlist,
+                            initialFilmId = stopAt(TvHomeSection.COVER)?.let { editorial.cover.getOrNull(it)?.setId },
+                            onPlay = { onPlay(it.setId) },
+                            onOpenTitle = onOpenTitle,
+                            onToggleWatchlist = onToggleWatchlist,
+                            arrivalFocus = coverFocus,
+                            upExit = upExit,
+                        )
+                    }
                 }
             }
             if (editorial.features.isNotEmpty()) {
                 item(key = "features") {
-                    Box(gutter.padding(top = Spacing.extraLarge)) {
+                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.FEATURES)) {
                         // No `takesFocus` of its own to gate: this row has no
                         // internal scrolling effect at all — the top-level
                         // effect above is what calls `requestFocus()` for
@@ -245,7 +270,7 @@ internal fun TvHome(
             }
             if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) {
                 item(key = "continue") {
-                    Box(gutter.padding(top = Spacing.extraLarge)) {
+                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.CONTINUE)) {
                         // Reset to the platform's own default for this band's
                         // inner, sideways-scrolling row of cards — see this
                         // function's own doc on `homeBringIntoView` above.
@@ -265,7 +290,7 @@ internal fun TvHome(
             }
             if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) {
                 item(key = "recent") {
-                    Box(gutter.padding(top = Spacing.extraLarge)) {
+                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.RECENT)) {
                         CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                             TvRecentBand(
                                 recentlyAdded = magazine.recentlyAdded,
@@ -282,7 +307,7 @@ internal fun TvHome(
             }
             if (series.isNotEmpty()) {
                 item(key = "series") {
-                    Box(gutter.padding(top = Spacing.extraLarge)) {
+                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.SERIES)) {
                         Column {
                             TvBandHeading(title = "Latest series", count = seriesTotal)
                             CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
@@ -299,7 +324,7 @@ internal fun TvHome(
             }
             if (courses.isNotEmpty()) {
                 item(key = "courses") {
-                    Box(gutter.padding(top = Spacing.extraLarge)) {
+                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.COURSES)) {
                         Column {
                             TvBandHeading(title = "Latest courses", count = coursesTotal)
                             TvCourseList(

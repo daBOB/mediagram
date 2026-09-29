@@ -36,6 +36,20 @@ to `main`. Full phase-by-phase detail lives in
   dropped by mistake when Continue moved from a plain row into this band,
   which would have been a silent loss of something a viewer relied on before
   pressing Watch now.
+- Back from the player lands on the title just played, now first in Continue
+  watching, and the row scrolls to show it. Home's cards were matched by
+  position rather than by title, so focus stayed in the old slot and fell on
+  whichever title had moved into it; the four home rows now key their cards
+  by title.
+- A title two bands carry at once (a new upload that is also trending) comes
+  back to the band it was opened from, not the first one down the page.
+- Home's own return focus is no longer turned into the bar's pill after the
+  remote has passed through the bar. The chrome restored focus over bar and
+  page together, and that restore always found the bar; the rail's Right now
+  goes back to the side it was left from, the bar's pill or the page.
+- Entering the cover from the rows below brings the whole cover into view, so
+  its heading no longer sits under the bar.
+
 ## 0.82.3 — a runtime that rounds up to the hour no longer reads "2h 60m"
 
 **Fixed**
