@@ -1,0 +1,2 @@
+- [Scratchpad is shared between agents](scratchpad-is-shared-between-agents.md) — use unique probe subdir names; "build" in a command is hook-blocked
+- [Robolectric graphics mode for layout probes](robolectric-graphics-mode-for-layout-probes.md) — LEGACY text metrics are fake; NATIVE + GetTextLayoutResult for size/wrap
