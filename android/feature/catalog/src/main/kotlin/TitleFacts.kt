@@ -25,8 +25,10 @@ import model.ageLabelOf
  */
 fun humanDuration(seconds: Int?): String? {
     if (seconds == null || seconds <= 0) return null
-    val hours = seconds / 3600
-    val minutes = Math.round((seconds % 3600) / 60.0).toInt()
+    // Rounded to whole minutes before splitting, so 2h 59m 40s reads "3h", not "2h 60m".
+    val total = Math.round(seconds / 60.0).toInt()
+    val hours = total / 60
+    val minutes = total % 60
     if (hours == 0) return "${maxOf(1, minutes)}m"
     return if (minutes == 0) "${hours}h" else "${hours}h ${minutes}m"
 }

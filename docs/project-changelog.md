@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.82.3 — a runtime that rounds up to the hour no longer reads "2h 60m"
+
+**Fixed**
+
+- `humanDuration` rounded only the minutes left over after the whole hours,
+  so a film of 2h 59m 40s printed as "2h 60m" and a 59m 50s one as "60m".
+  It now rounds the whole runtime to minutes first and splits that, giving
+  "3h" and "1h". The web player's `format.js` and Android's `TitleFacts.kt`
+  had the same code, so the fix is in both; the TV cover on the box is where
+  it was seen.
+- The Android Movies department cut its "hours of film" total down to the
+  whole hour while the web player rounds it, so the two could disagree by
+  one. Android now rounds too.
+
 ## 0.82.2 — a backdrop kept only in the index's artwork table now shows on Android too
 
 **Fixed**

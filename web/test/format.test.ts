@@ -37,6 +37,11 @@ describe("durations", () => {
     expect(humanDuration(7200)).toBe("2h");
   });
 
+  test("carry a rounded-up hour instead of printing sixty minutes", () => {
+    expect(humanDuration(10780)).toBe("3h");
+    expect(humanDuration(3590)).toBe("1h");
+  });
+
   test("never claim zero minutes for something that has a length", () => {
     expect(humanDuration(20)).toBe("1m");
     expect(humanDuration(0)).toBe("");

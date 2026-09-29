@@ -22,8 +22,10 @@ export function humanSize(bytes) {
 /** A duration in seconds as hours and minutes; a film is "2h 2m". */
 export function humanDuration(seconds) {
   if (!seconds || seconds < 0) return "";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.round((seconds % 3600) / 60);
+  // Rounded to whole minutes before splitting, so 2h 59m 40s reads "3h", not "2h 60m".
+  const total = Math.round(seconds / 60);
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
   if (hours === 0) return `${Math.max(1, minutes)}m`;
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }

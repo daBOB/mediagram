@@ -71,6 +71,13 @@ class DepartmentsTest {
         assertEquals(3, dept.hours)
     }
 
+    /** Rounded like the web player's department hero, not truncated: 2h 40m of film is "3 hours". */
+    @Test
+    fun hoursRoundToTheNearestHourAsTheWebPlayerDoes() {
+        val dept = moviesDepartmentOf(listOf(film("a", durationSecs = 9_600)), watched = { false })!!
+        assertEquals(3, dept.hours)
+    }
+
     private fun show(
         name: String,
         popularity: Double? = null,

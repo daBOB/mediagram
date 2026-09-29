@@ -34,7 +34,7 @@ fun moviesDepartmentOf(films: List<MediaSet>, watched: (String) -> Boolean): Mov
     val unwatched = films.filterNot { watched(it.setId) }
     val byPopularity = unwatched.sortedByDescending { it.popularity ?: 0.0 }
     val lead = byPopularity.firstOrNull { it.backdropPath != null }
-    val hours = (films.sumOf { it.durationSecs ?: 0 } / 3600)
+    val hours = Math.round(films.sumOf { it.durationSecs ?: 0 } / 3600.0).toInt()
     return MoviesDepartment(
         filmCount = films.size,
         hours = hours,

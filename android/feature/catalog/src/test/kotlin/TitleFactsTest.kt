@@ -34,6 +34,13 @@ class TitleFactsTest {
      * A clip that rounds away to nothing is still a minute to a viewer
      * deciding whether to start it, and "0m" would read as broken.
      */
+    /** Minutes that round up to a whole hour carry into it; "2h 60m" is not a runtime. */
+    @Test
+    fun aRoundedUpHourCarriesInsteadOfPrintingSixtyMinutes() {
+        assertEquals("3h", humanDuration(10_780))
+        assertEquals("1h", humanDuration(3_590))
+    }
+
     @Test
     fun somethingShorterThanAMinuteIsStillAMinute() {
         assertEquals("1m", humanDuration(20))
