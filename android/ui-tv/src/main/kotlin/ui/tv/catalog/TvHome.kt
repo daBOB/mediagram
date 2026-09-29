@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -146,8 +149,22 @@ internal fun TvHome(
     // still read fresh inside, the same "gate the action, not the key" the
     // rows below repeat for their own delegated effects.
     val takesFocus = LocalTakesArrivalFocus.current
+    // Grants arrival focus once per time this page is shown, not once per
+    // value `target` happens to take: a resumed position keeps reordering
+    // Continue for as long as its own write is still landing, and a
+    // restore whose own row moves *while this wait is still pending* would
+    // otherwise restart the wait on every move — a burst of them can ask
+    // for focus faster than Compose's own search resolves any one attempt,
+    // indistinguishable, to whatever is above this list, from nothing
+    // having asked at all, which is what actually sends the remote to the
+    // chrome's own bar-pill fallback. Once the one grant below lands,
+    // later reorders move the card, not the remote — the same rule this
+    // page already keeps for content arriving into a section the viewer
+    // has since left, extended to cover the wait for the very first grant
+    // too, not only the time after it.
+    var arrived by remember { mutableStateOf(false) }
     LaunchedEffect(target) {
-        if (target == null || !takesFocus) return@LaunchedEffect
+        if (target == null || !takesFocus || arrived) return@LaunchedEffect
         val itemIndex = included.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
         // Scrolled into place — and its own composition confirmed present,
         // via the same item turning up in `visibleItemsInfo` — before the
@@ -164,6 +181,7 @@ internal fun TvHome(
         listState.scrollToItem(itemIndex)
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.first { info -> info.any { it.index == itemIndex } }
         entryFocus.getValue(target.section).requestFocus()
+        arrived = true
     }
 
     val pagePadding = LocalTvPagePadding.current
