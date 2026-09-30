@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
@@ -98,6 +99,31 @@ class TvHomeKeptAliveTest {
         back()
         plate("Film 1").assertIsFocused()
     }
+
+    /**
+     * The cold-start shape the box caught: a refresh lands while the
+     * covered layer's own state is held (`heldWhile`), so it is Home's
+     * *own* uncovering, not a live reorder while Home is on screen, that
+     * first shows the row with the new upload in it — the one case
+     * [ui.tv.catalog.home.TvKeepFocusedCardInView]'s own doc (a proven fix
+     * for a live reorder) had never actually been exercised through.
+     */
+    @Test
+    fun aRefreshHeldWhileCoveredStillRestoresThePosterOnceRecomposed() {
+        press(plate("Film 1"))
+
+        compose.runOnUiThread {
+            coEvery { fixture.repository.sets() } returns (films(2) + newUpload())
+            fixture.catalog.reload()
+        }
+        compose.waitForIdle()
+
+        back()
+        plate("Film 1").assertIsFocused()
+    }
+
+    private fun newUpload() =
+        set("film-new", Kind.MOVIE, "Film New", addedAt = 5L).copy(posterPath = "new.jpg", backdropPath = "new-bd.jpg")
 
     private fun plate(name: String) = compose.onNode(hasText(name) and hasClickAction())
 

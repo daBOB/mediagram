@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.3 — Android TV: a safety net for the first return after a cold-start refresh
+
+**Added**
+
+- Found on the box after 0.84.2: on the very first return from a title page
+  after a cold start — but not on later ones — focus still landed on the
+  Home pill, 2/2. A startup refresh completing while the title page covered
+  Home released a changed catalogue the moment Back uncovered it
+  (`heldWhile`), and the resulting lazy-layout churn cleared the arrival
+  grant's own request a few frames after it had already landed, past
+  `TvRecentBand`'s own row. Not reproduced in Robolectric despite trying the
+  box's own shape (a Recently Added list gaining an item, with and without a
+  cover appearing for the first time alongside it) — Home's own arrival
+  grant now asks again once, a few frames later, if nothing in it still
+  holds focus by then: far sooner than a viewer could press anything to
+  explain the loss honestly, so it never answers for a deliberate move to
+  the bar instead.
+
 ## 0.84.2 — Android TV: a title-page return landed on the Home pill, not the poster
 
 **Fixed**
