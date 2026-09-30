@@ -4,7 +4,7 @@
  * Caching only what was requested helps a second viewing and does nothing for
  * the first: playback walks forward, so every chunk is a miss until someone
  * has already watched it. Each miss is a Telegram round trip of 150-450 ms,
- * and a 4 Mbit/s stream wants a 512 KiB chunk about every second — misses in
+ * and an 8 Mbit/s stream wants a 1 MiB chunk about every second — misses in
  * series are what makes playback stutter.
  *
  * Reading ahead amortises one round trip over several chunks. It is done only

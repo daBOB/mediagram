@@ -118,18 +118,18 @@ describe("planning the reads", () => {
     expect(steps).toHaveLength(1);
     expect(steps[0]!.partIdx).toBe(0);
     expect(steps[0]!.take).toBe(1_000_000);
-    // 1,000,000 rounded down to a 4 KiB boundary is 999,424.
-    expect(steps[0]!.offset).toBe(999_424);
-    expect(steps[0]!.headDrop).toBe(576);
+    // 1,000,000 rounded down to a 1 MiB boundary is the start of the part.
+    expect(steps[0]!.offset).toBe(0);
+    expect(steps[0]!.headDrop).toBe(1_000_000);
   });
 
   test("a range inside the second part offsets from that part's start", () => {
-    const start = P0 + 8192; // exactly two alignment units into part 1
+    const start = P0 + 2 * ALIGN; // exactly two alignment units into part 1
     const steps = planReads(film(), { start, end: start + 999 });
 
     expect(steps).toHaveLength(1);
     expect(steps[0]!.partIdx).toBe(1);
-    expect(steps[0]!.offset).toBe(8192);
+    expect(steps[0]!.offset).toBe(2 * ALIGN);
     expect(steps[0]!.headDrop).toBe(0);
     expect(steps[0]!.take).toBe(1000);
   });
@@ -209,6 +209,32 @@ describe("planning the reads", () => {
       }
     }
   });
+
+  /**
+   * Telegram refuses any request that crosses a 1 MiB boundary of the file,
+   * whatever its size, and teleproto steps each request on by the size of
+   * the last — so every request a read makes must stay in one block, not
+   * only its first. A 4 KiB-aligned start broke this on seeks.
+   */
+  test("every request a planned read makes stays inside one 1 MiB block", () => {
+    const BLOCK = 1_048_576;
+    const cases: [number, number][] = [
+      [0, 99],
+      [BLOCK - 100, BLOCK + 99],
+      [12_345, 2_345_678],
+      [P0 - 5_000, P0 + 5_000],
+      [TOTAL - 2, TOTAL - 1],
+    ];
+
+    for (const [start, end] of cases) {
+      for (const step of planReads(film(), { start, end })) {
+        const size = requestSizeFor(step.headDrop + step.take);
+        for (let at = step.offset; at < step.offset + step.headDrop + step.take; at += size) {
+          expect(Math.floor(at / BLOCK)).toBe(Math.floor((at + size - 1) / BLOCK));
+        }
+      }
+    }
+  });
 });
 
 describe("choosing a request size", () => {
@@ -217,11 +243,11 @@ describe("choosing a request size", () => {
    * Found by running it: the type definitions claim otherwise.
    */
   test("every legal size is a 4 KiB multiple that divides 1 MiB", () => {
-    for (const bytes of [1, 4096, 4097, 100_000, 524_288, 999_999]) {
+    for (const bytes of [1, 4096, 4097, 100_000, 524_288, 999_999, 1_048_576, 5_000_000]) {
       const size = requestSizeFor(bytes);
-      expect(size % ALIGN).toBe(0);
+      expect(size % 4096).toBe(0);
       expect(1_048_576 % size).toBe(0);
-      expect(size).toBeLessThanOrEqual(524_288);
+      expect(size).toBeLessThanOrEqual(1_048_576);
     }
   });
 
@@ -232,6 +258,7 @@ describe("choosing a request size", () => {
   });
 
   test("a large read uses the biggest legal chunk", () => {
-    expect(requestSizeFor(1_000_000)).toBe(524_288);
+    expect(requestSizeFor(1_000_000)).toBe(1_048_576);
+    expect(requestSizeFor(5_000_000)).toBe(1_048_576);
   });
 });

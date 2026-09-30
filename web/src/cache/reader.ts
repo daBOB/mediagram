@@ -16,6 +16,7 @@
  * finished, and a player that gave up long before.
  */
 
+import { InFlightChunks } from "./in-flight-chunks";
 import { CACHE_CHUNK, chunksCovering } from "./key";
 import { ReadaheadTracker } from "./strategy";
 import type { ChunkCache } from "./store";
@@ -27,7 +28,7 @@ import type { ChunkCache } from "./store";
  * chunk at a time, small enough that the first bytes reach the viewer in
  * about a second and memory stays flat however long the range is.
  */
-export const MAX_RUN_BYTES = 8 * CACHE_CHUNK;
+export const MAX_RUN_BYTES = 4 * CACHE_CHUNK;
 
 /** Fetches `length` bytes at `offset` within a part, from upstream. */
 export type FetchRange = (offset: number, length: number) => Promise<Uint8Array>;
@@ -51,6 +52,7 @@ interface Run {
 
 export class CachedReader {
   private readonly tracker: ReadaheadTracker;
+  private readonly inFlight = new InFlightChunks();
   /** Readahead fetches in flight, so tests and shutdown can wait for them. */
   private readonly warming = new Set<Promise<void>>();
   /**
@@ -122,8 +124,9 @@ export class CachedReader {
         slice.index,
         expectedSize(slice.index, partLength),
       );
-      if (held !== null) {
-        yield held.subarray(slice.skip, slice.skip + slice.take);
+      const chunk = held ?? await this.inFlight.get(setId, partIdx, slice.index);
+      if (chunk) {
+        yield chunk.subarray(slice.skip, slice.skip + slice.take);
         at += 1;
         continue;
       }
@@ -142,13 +145,12 @@ export class CachedReader {
       while (end + 1 < slices.length && end + 1 - at < maxChunks) {
         const next = slices[end + 1]!;
         const cached = await this.cache.has(setId, partIdx, next.index, expectedSize(next.index, partLength));
-        if (cached) break;
+        if (cached || this.inFlight.get(setId, partIdx, next.index)) break;
         end += 1;
       }
 
       const run = { first: slice.index, last: slices[end]!.index };
-      const chunks = new Map<number, Uint8Array>();
-      await this.fillRun(setId, partIdx, run, partLength, fetch, chunks);
+      const chunks = await this.fillRun(setId, partIdx, run, partLength, fetch, true);
 
       for (let i = at; i <= end; i++) {
         const piece = slices[i]!;
@@ -171,24 +173,25 @@ export class CachedReader {
    *
    * For taking a whole title ahead of time. No readahead: that exists to stay
    * in front of a viewer, and there is no viewer here — it would only fetch
-   * the chunks this loop is about to fetch anyway.
+   * the chunks this loop is about to fetch anyway. Nor shared: the preload's
+   * fetches are paced and yield to every foreground read, so none may be waited on.
    */
   async fill(setId: string, partIdx: number, partLength: number, fetch: FetchRange): Promise<void> {
     const lastInPart = Math.floor((partLength - 1) / CACHE_CHUNK);
-    await this.fillMissing(setId, partIdx, 0, lastInPart, partLength, fetch);
+    await this.fillMissing(setId, partIdx, 0, lastInPart, partLength, fetch, false);
   }
 
-  /** Fetches whichever chunks from `first` to `last` are not cached yet, a run at a time. */
+  /** Fetches whichever chunks from `first` to `last` are neither cached nor on their way, a run at a time. */
   private async fillMissing(
-    setId: string, partIdx: number, first: number, last: number, partLength: number, fetch: FetchRange,
+    setId: string, partIdx: number, first: number, last: number, partLength: number, fetch: FetchRange, share: boolean,
   ): Promise<void> {
     const missing: number[] = [];
     for (let index = first; index <= last; index++) {
       const held = await this.cache.has(setId, partIdx, index, expectedSize(index, partLength));
-      if (!held) missing.push(index);
+      if (!held && !this.inFlight.get(setId, partIdx, index)) missing.push(index);
     }
     for (const run of runsOf(missing)) {
-      await this.fillRun(setId, partIdx, run, partLength, fetch, new Map());
+      await this.fillRun(setId, partIdx, run, partLength, fetch, share);
     }
   }
 
@@ -200,40 +203,37 @@ export class CachedReader {
    * than that is bytes that did not come back — and a reader that carried on
    * would serve the next run's bytes where these belong, which is a corrupt
    * video under a Content-Length that says it is whole.
+   *
+   * With `share`, a reader asking for one of these chunks while the fetch is
+   * running waits for it (`in-flight-chunks.ts`) rather than fetching again.
    */
-  private async fillRun(
-    setId: string,
-    partIdx: number,
-    run: Run,
-    partLength: number,
-    fetch: FetchRange,
-    into: Map<number, Uint8Array>,
-  ): Promise<void> {
+  private fillRun(
+    setId: string, partIdx: number, run: Run, partLength: number, fetch: FetchRange, share: boolean,
+  ): Promise<Map<number, Uint8Array>> {
     const offset = run.first * CACHE_CHUNK;
-    const end = Math.min((run.last + 1) * CACHE_CHUNK, partLength);
-    const wanted = end - offset;
-    const bytes = await fetch(offset, wanted);
-    this.fetchedBytes += bytes.length;
-    if (bytes.length < wanted) {
-      throw new Error(
-        `short read of part ${partIdx}: asked for ${wanted} bytes at ${offset}, got ${bytes.length}`,
-      );
-    }
-
-    for (let index = run.first; index <= run.last; index++) {
-      const at = (index - run.first) * CACHE_CHUNK;
-      const chunk = bytes.subarray(at, at + Math.min(CACHE_CHUNK, bytes.length - at));
-      if (chunk.length === 0) break;
-      into.set(index, chunk);
-      // Cached per chunk, not per run, so a later read of any part of this
-      // stretch hits without knowing how it was fetched. Not awaited: the
-      // bytes above are already in `into` for the caller to yield, and
-      // `ChunkCache` keeps them visible to a concurrent `get` of the same
-      // chunk while the write is still in flight, so nothing here can cost a
-      // second fetch upstream. `put` never rejects, so this is safe to track
-      // rather than handle.
-      this.background(this.cache.put(setId, partIdx, index, chunk));
-    }
+    const wanted = Math.min((run.last + 1) * CACHE_CHUNK, partLength) - offset;
+    const fetched = fetch(offset, wanted).then((bytes) => {
+      this.fetchedBytes += bytes.length;
+      if (bytes.length < wanted) {
+        throw new Error(`short read of part ${partIdx}: asked for ${wanted} bytes at ${offset}, got ${bytes.length}`);
+      }
+      const chunks = new Map<number, Uint8Array>();
+      for (let index = run.first; index <= run.last; index++) {
+        const at = (index - run.first) * CACHE_CHUNK;
+        const chunk = bytes.subarray(at, at + Math.min(CACHE_CHUNK, bytes.length - at));
+        if (chunk.length === 0) break;
+        chunks.set(index, chunk);
+        // Cached per chunk, so a later read of any part of this stretch hits
+        // without knowing how it was fetched. Not awaited: `ChunkCache` shows
+        // a chunk to `get` from the moment `put` is called, before it reaches
+        // disk — which is also before a shared fetch stops being shared — and
+        // `put` never rejects.
+        this.background(this.cache.put(setId, partIdx, index, chunk));
+      }
+      return chunks;
+    });
+    if (share) this.inFlight.share(setId, partIdx, run.first, run.last, fetched);
+    return fetched;
   }
 
   /** Tracks a fire-and-forget cache write so `settle`/`stop` can wait for it. */
@@ -267,7 +267,7 @@ export class CachedReader {
     const last = Math.min(firstAfter + ahead - 1, lastInPart);
     if (last < firstAfter) return;
 
-    const task = this.fillMissing(setId, partIdx, firstAfter, last, partLength, fetch)
+    const task = this.fillMissing(setId, partIdx, firstAfter, last, partLength, fetch, true)
       .catch(() => {})
       .finally(() => this.warming.delete(task));
     this.warming.add(task);

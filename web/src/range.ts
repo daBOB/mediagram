@@ -8,22 +8,32 @@
  *
  * The Rust server in `crates/mediagram/src/serve/range.rs` computes the same
  * thing and is the oracle this is checked against. The one difference is the
- * seek unit: grammers skips whole 512 KiB chunks, while Telegram's
- * `upload.getFile` takes a byte offset it requires to be 4 KiB aligned.
+ * seek unit: grammers skips whole 512 KiB chunks, while a read here starts on
+ * a 1 MiB boundary (below).
  */
 
 /**
- * Telegram refuses an offset that is not a multiple of this, with
- * `OFFSET_INVALID`. Verified against the live API; teleproto's own type
- * documentation claims offsets are handled precisely, and they are not.
+ * Where every read starts: a 1 MiB boundary of the part.
+ *
+ * Telegram answers `LIMIT_INVALID` to any `upload.getFile` that crosses a
+ * 1 MiB boundary of the file, whatever its size — 512 KiB at 1 MiB − 4 KiB
+ * is refused just as 1 MiB at 12 KiB is (both verified against the live
+ * API, `precise` set). teleproto advances each request by the size of the
+ * last, so a read that starts here and asks in a size dividing 1 MiB keeps
+ * every request inside one block. The cost is at most one block of bytes
+ * dropped at the head of a read, never an extra request.
  */
-export const ALIGN = 4096;
+export const ALIGN = 1024 * 1024;
 
 /**
  * Legal values for a request's `limit`: 4 KiB multiples that divide 1 MiB.
- * Anything else answers `LIMIT_INVALID`.
+ * Anything else answers `LIMIT_INVALID`. The largest is also Telegram's
+ * ceiling, and the one that costs the fewest requests per byte.
  */
-export const REQUEST_SIZES = [4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288];
+export const REQUEST_SIZES = [4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576];
+
+/** The largest legal request: what a read with no smaller need should ask for. */
+export const MAX_REQUEST = 1048576;
 
 /** One part's place in the virtual file. */
 export interface PartSpan {
@@ -74,7 +84,7 @@ export function rangeLength(range: ByteRange): number {
 
 /** The smallest legal request size that covers `bytes`. */
 export function requestSizeFor(bytes: number): number {
-  return REQUEST_SIZES.find((size) => size >= bytes) ?? 524288;
+  return REQUEST_SIZES.find((size) => size >= bytes) ?? MAX_REQUEST;
 }
 
 /** Parses an integer that is entirely digits, or `null`. */

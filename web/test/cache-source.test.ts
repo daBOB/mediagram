@@ -179,10 +179,10 @@ describe("filling misses efficiently", () => {
     const part = upstream(CACHE_CHUNK * 20);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 8, partLength: part.bytes.length, fetch: part.fetch });
+    await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: MAX_RUN_BYTES, partLength: part.bytes.length, fetch: part.fetch });
 
     expect(part.asked).toHaveLength(1);
-    expect(part.asked[0]!.length).toBe(CACHE_CHUNK * 8);
+    expect(part.asked[0]!.length).toBe(MAX_RUN_BYTES);
   });
 
   test("the bytes are still exactly right", async () => {
@@ -297,19 +297,19 @@ describe("streaming rather than buffering", () => {
     const part = upstream(CACHE_CHUNK * 40);
     const reader = new CachedReader(new ChunkCache(root, 100_000_000));
 
-    const out: number[] = [];
+    const out: Uint8Array[] = [];
     for await (const piece of reader.readStream({ setId: SET, partIdx: 0, start: 100, length: CACHE_CHUNK * 39, partLength: part.bytes.length, fetch: part.fetch })) {
-      out.push(...piece);
+      out.push(piece);
     }
 
-    expect(new Uint8Array(out)).toEqual(part.bytes.subarray(100, 100 + CACHE_CHUNK * 39));
+    expect(new Uint8Array(Buffer.concat(out))).toEqual(part.bytes.subarray(100, 100 + CACHE_CHUNK * 39));
   });
 
   test("streaming still batches consecutive misses into one request", async () => {
     const part = upstream(CACHE_CHUNK * 10);
     const reader = new CachedReader(new ChunkCache(root, 10_000_000));
 
-    for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK * 6, partLength: part.bytes.length, fetch: part.fetch })) { /* drain */ }
+    for await (const _ of reader.readStream({ setId: SET, partIdx: 0, start: 0, length: MAX_RUN_BYTES, partLength: part.bytes.length, fetch: part.fetch })) { /* drain */ }
 
     expect(part.asked).toHaveLength(1);
   });
@@ -373,5 +373,60 @@ describe("upstream giving back less than it was asked for", () => {
       if (held === null) continue;
       expect(held).toEqual(part.bytes.subarray(index * CACHE_CHUNK, (index + 1) * CACHE_CHUNK));
     }
+  });
+});
+
+/**
+ * A demuxer seeking around a file opens a new request for every seek, and
+ * each landed on the same missing chunks while the first fetch of them was
+ * still queued: one run was fetched 47 times in 45 seconds.
+ */
+describe("reads that overlap in time", () => {
+  /** An upstream whose answers wait for `release()`, so reads can overlap. */
+  function slow(partLength: number) {
+    const part = upstream(partLength);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const fetch = async (offset: number, length: number) => {
+      const bytes = await part.fetch(offset, length);
+      await gate;
+      return bytes;
+    };
+    return { ...part, fetch, release };
+  }
+
+  async function asked(part: { asked: unknown[] }): Promise<void> {
+    while (part.asked.length === 0) await Bun.sleep(1);
+  }
+
+  test("a read of chunks another read is already fetching waits for that fetch", async () => {
+    const part = slow(CACHE_CHUNK * 4);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+    const request = { setId: SET, partIdx: 0, start: 100, length: CACHE_CHUNK * 2, partLength: part.bytes.length, fetch: part.fetch };
+
+    const first = collectRead(reader, request);
+    await asked(part);
+    const second = collectRead(reader, { ...request, start: 200 });
+    await Bun.sleep(20);
+    part.release();
+
+    expect(await first).toEqual(part.bytes.subarray(100, 100 + CACHE_CHUNK * 2));
+    expect(await second).toEqual(part.bytes.subarray(200, 200 + CACHE_CHUNK * 2));
+    expect(part.asked).toHaveLength(1);
+  });
+
+  test("a read never waits on the preload's fetch of the same chunks", async () => {
+    const preload = slow(CACHE_CHUNK * 2);
+    const viewer = upstream(CACHE_CHUNK * 2);
+    const reader = new CachedReader(new ChunkCache(root, 100_000_000));
+
+    const filling = reader.fill(SET, 0, preload.bytes.length, preload.fetch);
+    await asked(preload);
+    const got = await collectRead(reader, { setId: SET, partIdx: 0, start: 0, length: CACHE_CHUNK, partLength: viewer.bytes.length, fetch: viewer.fetch });
+
+    expect(got).toEqual(viewer.bytes.subarray(0, CACHE_CHUNK));
+    expect(viewer.asked).toHaveLength(1);
+    preload.release();
+    await filling;
   });
 });

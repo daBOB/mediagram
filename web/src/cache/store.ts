@@ -57,7 +57,7 @@ export class ChunkCache {
    * Counters, kept in memory and only ever incremented.
    *
    * Plain integers rather than anything structured: `get` is on the byte path
-   * and runs for every 512 KiB of every stream, so the bookkeeping has to
+   * and runs for every 1 MiB of every stream, so the bookkeeping has to
    * cost nothing. They are a running total since startup, not a rate — a
    * reader that wants a rate can take two readings.
    */
@@ -150,7 +150,7 @@ export class ChunkCache {
    *
    * For callers that only need to know a chunk is already there — deciding
    * where a fetch run may stop, or which of a title's chunks are still
-   * missing — reading the whole 512 KiB just to test for `null` cost as much
+   * missing — reading the whole 1 MiB just to test for `null` cost as much
    * disk I/O as serving it, twice over during steady playback. A `stat` is
    * one syscall's worth of metadata and does not count as a hit or a miss:
    * it is not a read on anyone's behalf, so the status page's rate would

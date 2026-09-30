@@ -1,11 +1,11 @@
 /**
  * Turning planned reads into bytes.
  *
- * Telegram's `upload.getFile` will not accept an offset that is not 4 KiB
- * aligned (`OFFSET_INVALID`), nor a limit that is not a 4 KiB multiple
- * dividing 1 MiB (`LIMIT_INVALID`) — both verified against the live API,
- * both contradicting teleproto's own type documentation. So a read starts at
- * the aligned offset the plan chose and discards the head.
+ * Telegram's `upload.getFile` will not accept a limit that is not a 4 KiB
+ * multiple dividing 1 MiB, nor a request that crosses a 1 MiB boundary of the
+ * file (`LIMIT_INVALID` for both) — verified against the live API, and
+ * contradicting teleproto's own type documentation. So a read starts at the
+ * block boundary the plan chose (`range.ts`'s `ALIGN`) and discards the head.
  *
  * Offsets go in through `returnBigInt` rather than as a native `bigint`: the
  * client advances the offset between requests with big-integer arithmetic,

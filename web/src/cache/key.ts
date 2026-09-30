@@ -8,15 +8,18 @@
  * no partial-overlap arithmetic.
  */
 
+import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 /**
  * The block size, and also the size fetched on a miss.
  *
- * 512 KiB is Telegram's own maximum request size, so a miss costs exactly one
- * upstream request and nothing is wasted rounding up.
+ * 1 MiB is Telegram's own maximum request size, and every chunk starts on a
+ * 1 MiB boundary — the only place a request that large is legal
+ * (`range.ts`'s `ALIGN`) — so a miss costs exactly one upstream request and
+ * nothing is wasted rounding up.
  */
-export const CACHE_CHUNK = 512 * 1024;
+export const CACHE_CHUNK = 1024 * 1024;
 
 /** One chunk's part in answering a range. */
 export interface ChunkSlice {
@@ -61,4 +64,19 @@ export function chunkPath(root: string, setId: string, partIdx: number, index: n
     throw new Error(`refusing a set id that is not plain alphanumeric: ${setId}`);
   }
   return join(root, String(CACHE_CHUNK), setId, String(partIdx), String(index));
+}
+
+/**
+ * Deletes the directories of chunk sizes no longer in use.
+ *
+ * Nothing reads their chunks again, but they still count against the budget
+ * until eviction happens to reach them — 52 GB of a 64 GB budget the day the
+ * chunk grew to 1 MiB. Only an all-digit name is a chunk size; anything else
+ * in the directory is left alone.
+ */
+export async function retireOtherChunkSizes(root: string): Promise<void> {
+  const names = await readdir(root).catch(() => [] as string[]);
+  await Promise.all(names
+    .filter((name) => /^\d+$/.test(name) && name !== String(CACHE_CHUNK))
+    .map((name) => rm(join(root, name), { recursive: true, force: true })));
 }

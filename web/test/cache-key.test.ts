@@ -8,7 +8,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { CACHE_CHUNK, chunkPath, chunksCovering } from "../src/cache/key";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { CACHE_CHUNK, chunkPath, chunksCovering, retireOtherChunkSizes } from "../src/cache/key";
+import { ALIGN, requestSizeFor } from "../src/range";
 
 describe("the chunks a range needs", () => {
   test("a range inside one chunk needs that chunk alone", () => {
@@ -84,4 +88,35 @@ describe("where a chunk lives", () => {
       expect(() => chunkPath("/cache", hostile, 0, 0)).toThrow();
     }
   });
+});
+
+describe("chunk sizes no longer in use", () => {
+  test("their directories go, the current one and anything else stays", async () => {
+    const root = await mkdtemp(join(tmpdir(), "mediagram-retire-"));
+    try {
+      for (const dir of ["524288/01SET/0", `${CACHE_CHUNK}/01SET/0`, "subtitles"]) await mkdir(join(root, dir), { recursive: true });
+      await writeFile(join(root, "524288/01SET/0/0"), new Uint8Array(8));
+      await writeFile(join(root, "readme"), "kept");
+
+      await retireOtherChunkSizes(root);
+
+      expect((await readdir(root)).sort()).toEqual([String(CACHE_CHUNK), "readme", "subtitles"].sort());
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("a cache directory that does not exist yet is not an error", async () => {
+    await retireOtherChunkSizes(join(tmpdir(), "mediagram-retire-missing-dir"));
+  });
+});
+
+/**
+ * A miss fetches from a chunk's own offset in the largest request that fits,
+ * and Telegram refuses any request crossing a 1 MiB boundary. Only a chunk
+ * that is whole blocks keeps every one of those requests inside one.
+ */
+test("every chunk starts on a 1 MiB block, and a miss asks for no more than one", () => {
+  expect(CACHE_CHUNK % ALIGN).toBe(0);
+  expect(requestSizeFor(CACHE_CHUNK)).toBeLessThanOrEqual(ALIGN);
 });

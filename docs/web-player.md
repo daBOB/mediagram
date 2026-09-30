@@ -61,7 +61,7 @@ http/              request/response contracts, browser-write checks, static
 catalog/           catalog/search presentation, metadata readers, asset and
                    artwork endpoints, audio-track probing, and subtitle
                    tracks/bundles (below)
-range.ts           byte ranges to per-part reads, and the 4 KiB alignment
+range.ts           byte ranges to per-part reads, and the 1 MiB alignment
 login.ts           issues this host's session; writes web/.env, mode 600
 catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
 client-reach.ts    a viewer on this network, or one across an uplink
@@ -71,7 +71,8 @@ status/            what the player is doing: the startup facts worth keeping,
                    is answered on
 telegram/          teleproto client, turning planned reads into bytes, and
                    dependency-free caption conventions shared by channel policy
-cache/             512 KiB chunks on disk: keys, store with quota, reader,
+cache/             1 MiB chunks on disk: keys, store with quota, reader and
+                   the fetches it shares while they run,
                    the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
                    which sets are held in full, for the offline badge
 package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
@@ -112,7 +113,7 @@ per account, so every reader of every title shares it. The series preload
 (`cache/series-preload.ts`) runs its slot `background`: a background task
 never starts fresh while a foreground one (anything a viewer is waiting on) is
 running or queued, and a freed slot always goes to a waiting foreground task
-first. The preload also paces itself independently of the gate — one 512 KiB
+first. The preload also paces itself independently of the gate — one 1 MiB
 chunk per second (`PRELOAD_REQUEST_INTERVAL_MS`) — because a whole episode
 fetched flat-out is by itself enough requests to trip the flood limit even
 with no other reader active.

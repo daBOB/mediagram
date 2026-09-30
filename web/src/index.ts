@@ -23,6 +23,7 @@ import { FfmpegRunner } from "./transcode/ffmpeg";
 import { TranscodeRegistry } from "./transcode/registry";
 import { TranscodeFiles } from "./transcode/server";
 import { ChunkCache } from "./cache/store";
+import { retireOtherChunkSizes } from "./cache/key";
 import { startBudget } from "./cache/budget";
 import { HeldSets, expectedChunks } from "./cache/held";
 import { AudioTrackReader } from "./catalog/audio-tracks";
@@ -142,13 +143,12 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const cache = cacheMaxBytes > 0 ? new ChunkCache(config.cacheDir, cacheMaxBytes) : null;
 
     // None of the four below need Telegram or each other, and none of their
-    // results are needed until the lines that log or use them: a cold count
-    // of the cache (a full stat of every chunk file), probing what ffmpeg can
-    // encode with and whether it can pace a read, and clearing a previous
-    // run's leftovers. Run together rather than one after another so a
-    // restart is not the sum of four waits nobody is blocked on until here.
+    // results are needed until the lines that log or use them: a cold count of
+    // the cache (once chunk sizes no longer read are gone), probing ffmpeg's
+    // encoders and paced reads, and clearing a previous run's leftovers — run
+    // together so a restart is not the sum of four waits nobody is blocked on.
     const [cacheBytes, encoder, pacedReads] = await Promise.all([
-      cache ? cache.sizeOnDisk() : Promise.resolve(null),
+      cache ? retireOtherChunkSizes(config.cacheDir).then(() => cache.sizeOnDisk()) : Promise.resolve(null),
       io.detectEncoder(),
       io.detectPacedReads(),
       rm(config.transcodeDir, { recursive: true, force: true }),

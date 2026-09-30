@@ -27,10 +27,10 @@ import type { FetchRange } from "./reader";
 /**
  * How long to wait before each request the preload makes.
  *
- * One 512 KiB chunk per second is about 4 Mbit/s — comfortably under
- * whatever rate trips Telegram's `upload.getFile` flood limit, and still
- * fast enough that the next episode is cached in roughly the time it takes
- * to watch this one.
+ * One 1 MiB chunk per second is about 8 Mbit/s — comfortably under
+ * whatever rate trips Telegram's `upload.getFile` flood limit, which counts
+ * requests rather than bytes, and still fast enough that the next episode is
+ * cached in roughly the time it takes to watch this one.
  */
 export const PRELOAD_REQUEST_INTERVAL_MS = 1000;
 

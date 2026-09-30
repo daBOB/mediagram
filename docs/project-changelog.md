@@ -5,6 +5,46 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.88.2 — the web player stops fetching the same bytes over and over
+
+What the viewer saw: `Sleeping for Ns on flood wait (Caused by
+upload.GetFile)` in bursts of four whenever a title started or seeked — every
+download slot hitting Telegram's limit at once. The limit counts requests,
+not bytes, and every request asked for 512 KiB when Telegram allows 1 MiB.
+
+**Changed**
+
+- The cache chunk, and so the request a miss makes, is 1 MiB
+  (`cache/key.ts`). The same bytes now cost half the `upload.getFile` calls;
+  the series preload's one request a second now fetches 8 Mbit/s, not 4. The
+  chunk size is part of the cache path, so the old `524288/` chunks are never
+  read again; startup deletes any chunk-size directory but the current one
+  (`retireOtherChunkSizes`), rather than leave it counted against the budget
+  — 52 GB of 64 GB here.
+- A fetch run stays 4 MiB (`MAX_RUN_BYTES`, now 4 chunks), so a cold seek
+  waits for no more bytes than before.
+- The channel index downloads in 1 MiB requests too.
+
+**Fixed**
+
+- The same chunks were fetched from Telegram many times over. ffmpeg opens a
+  new range request for every seek while it finds its way around a file, and
+  each one that landed on a chunk not yet fetched started its own fetch of it:
+  one 4 MiB run went out 47 times in 45 seconds, all of them queued for the
+  four download slots and drawing the flood waits that slowed the next. A read
+  now waits for a fetch already bringing its chunks (`cache/in-flight-chunks.ts`).
+  The same reproduction afterwards: 136 MiB fetched, 136 MiB cached, one flood
+  wait. The series preload's own fetches are not shared — they are paced and
+  yield to every viewer's read, so no viewer is left waiting on one.
+- Telegram refuses any request that crosses a 1 MiB boundary of the file,
+  whatever its size (`LIMIT_INVALID`; checked against the live API). Reads
+  without a cache started on a 4 KiB boundary and broke on their second
+  request after most seeks. Every read now starts on a 1 MiB boundary
+  (`range.ts`'s `ALIGN`), which keeps each request inside one block.
+
+The Android app still asks for 512 KiB: grammers 0.10 caps `chunk_size` there,
+so matching this means a `upload.getFile` loop of the app's own.
+
 ## 0.88.1 — TV subtitle tests follow the track-based, off-by-default rule
 
 **Fixed**
