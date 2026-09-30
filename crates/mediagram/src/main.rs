@@ -66,6 +66,7 @@ async fn main() -> Result<()> {
             yes,
         } => commands::remove::run(&cfg, set_id, dry_run, yes).await,
         Cmd::Rescan => commands::rescan::run(&cfg).await,
+        Cmd::Subtitles { action } => commands::subtitles::run(&cfg, action).await,
         Cmd::SmokeUpload { file } => commands::smoke_upload::run(&cfg, &file).await,
         Cmd::FinishSet {
             set_id,

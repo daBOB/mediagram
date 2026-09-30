@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# Reads what a title's mp4 actually carries once it sits in the channel, by
-# probing only its head through a loopback `mediagram serve` — no download,
-# no send, no pin — and compares that against the audio languages
-# library.db recorded when the file first went up. A gap here means the
-# remux that ran before subtitle streams were mapped also dropped an audio
-# track, silently, on some earlier upload.
+# Reads what a title's uploaded copy actually carries, by probing only its
+# head through a loopback `mediagram serve` — no download, no send, no pin.
 #
-# Usage: uploaded-stream-headers.sh audio [library.db path]
-#   audio   the only mode today: one TSV row per complete mp4 movie/ep/docu
-#           set with more than one source audio language, then a totals
-#           line. A subtitle mode is a later addition to this same script.
+# Usage: uploaded-stream-headers.sh audio|subs [library.db path]
+#   audio   one TSV row per complete mp4 movie/ep/docu set with more than one
+#           source audio language, comparing that against what the upload
+#           actually carries. A gap means the remux that ran before subtitle
+#           streams were mapped also dropped an audio track, silently, on
+#           some earlier upload.
+#   subs    one TSV row per complete movie/ep/docu set whose `slang` lists
+#           de or en, counting the upload's own de/en text subtitle tracks
+#           and picture-only (PGS/VobSub/DVB/xsub) tracks. Paired with
+#           `mediagram subtitles backfill --dry-run`'s source-side count, so
+#           a title's row in each report says whether it already has
+#           subtitles in the channel, could gain them from a local source,
+#           or neither.
 #
 # Requires: an installed `mediagram` on PATH, `mediagram pull-index` already
 # run on this machine, sqlite3, ffprobe, jq, curl, and no upload already
@@ -17,9 +22,8 @@
 set -euo pipefail
 
 mode="${1:-}"
-if [[ "$mode" != "audio" ]]; then
-  echo "usage: $(basename "$0") audio [library.db path]" >&2
-  echo "only the 'audio' mode is implemented" >&2
+if [[ "$mode" != "audio" && "$mode" != "subs" ]]; then
+  echo "usage: $(basename "$0") audio|subs [library.db path]" >&2
   exit 1
 fi
 
@@ -89,44 +93,83 @@ def lang_code:
   end;
 '
 
+probe_set() {
+  ffprobe -v error -probesize 65536 -analyzeduration 0 -of json \
+    -show_entries stream=codec_type,codec_name:stream_tags=language \
+    "$base_url/sets/$1/stream" 2>/dev/null || echo '{"streams":[]}'
+}
+
 rows=()
 total=0
-short=0
+flagged=0
 
-while IFS= read -r row; do
-  set_id=$(jq -r '.set_id' <<<"$row")
-  kind=$(jq -r '.kind' <<<"$row")
-  title=$(jq -r '.title' <<<"$row")
-  alang=$(jq -c '.alang | fromjson' <<<"$row")
+if [[ "$mode" == "audio" ]]; then
+  while IFS= read -r row; do
+    set_id=$(jq -r '.set_id' <<<"$row")
+    kind=$(jq -r '.kind' <<<"$row")
+    title=$(jq -r '.title' <<<"$row")
+    alang=$(jq -c '.alang | fromjson' <<<"$row")
 
-  probe=$(ffprobe -v error -probesize 65536 -analyzeduration 0 -of json \
-    -show_entries stream=codec_type,codec_name:stream_tags=language \
-    "$base_url/sets/$set_id/stream" 2>/dev/null || echo '{"streams":[]}')
+    probe=$(probe_set "$set_id")
+    line=$(jq -r "$lang_code_jq"'
+        ( [.streams[] | select(.codec_type == "audio") | (.tags.language // null) | lang_code]
+          | map(select(. != null)) | unique ) as $uploaded
+        | ($ALANG | map(lang_code) | map(select(. != null)) | unique) as $expected
+        | [$SET, $KIND, $TITLE, ($expected | join(",")), ($uploaded | join(",")),
+           (($expected - $uploaded) | join(","))]
+        | @tsv
+      ' --argjson ALANG "$alang" --arg SET "$set_id" --arg KIND "$kind" --arg TITLE "$title" \
+      <<<"$probe")
 
-  line=$(jq -r "$lang_code_jq"'
-      ( [.streams[] | select(.codec_type == "audio") | (.tags.language // null) | lang_code]
-        | map(select(. != null)) | unique ) as $uploaded
-      | ($ALANG | map(lang_code) | map(select(. != null)) | unique) as $expected
-      | [$SET, $KIND, $TITLE, ($expected | join(",")), ($uploaded | join(",")),
-         (($expected - $uploaded) | join(","))]
-      | @tsv
-    ' --argjson ALANG "$alang" --arg SET "$set_id" --arg KIND "$kind" --arg TITLE "$title" \
-    <<<"$probe")
+    rows+=("$line")
+    total=$((total + 1))
+    [[ -n "$(cut -f6 <<<"$line")" ]] && flagged=$((flagged + 1))
+  done < <(sqlite3 -readonly -json "$db" "
+      SELECT set_id, kind, title, alang
+      FROM sets
+      WHERE status = 'complete' AND container = 'mp4'
+        AND kind IN ('movie', 'ep', 'docu')
+        AND json_array_length(alang) > 1
+      ORDER BY set_id
+    " | jq -c '.[]')
 
-  rows+=("$line")
-  total=$((total + 1))
-  [[ -n "$(cut -f6 <<<"$line")" ]] && short=$((short + 1))
-done < <(sqlite3 -readonly -json "$db" "
-    SELECT set_id, kind, title, alang
-    FROM sets
-    WHERE status = 'complete' AND container = 'mp4'
-      AND kind IN ('movie', 'ep', 'docu')
-      AND json_array_length(alang) > 1
-    ORDER BY set_id
-  " | jq -c '.[]')
+  printf 'set_id\tkind\ttitle\talang\tuploaded_audio\tmissing_audio\n'
+  [[ "$total" -gt 0 ]] && printf '%s\n' "${rows[@]}"
+  echo "# totals: $total candidate sets checked, $flagged missing at least one uploaded audio language"
+else
+  # Subtitle codecs that are images rather than text — mirrors
+  # crates/mediagram/src/media/prepare/plan.rs's `PICTURE_SUBTITLES`.
+  picture_jq='["hdmv_pgs_subtitle","dvd_subtitle","dvb_subtitle","xsub"]'
 
-printf 'set_id\tkind\ttitle\talang\tuploaded_audio\tmissing_audio\n'
-if [[ "$total" -gt 0 ]]; then
-  printf '%s\n' "${rows[@]}"
+  while IFS= read -r row; do
+    set_id=$(jq -r '.set_id' <<<"$row")
+    kind=$(jq -r '.kind' <<<"$row")
+    title=$(jq -r '.title' <<<"$row")
+    container=$(jq -r '.container' <<<"$row")
+
+    probe=$(probe_set "$set_id")
+    line=$(jq -r "$lang_code_jq"'
+        (.streams | map(select(.codec_type == "subtitle"))) as $subs
+        | ([$subs[] | select(.codec_name as $c | '"$picture_jq"' | index($c) != null)] | length) as $picture
+        | ([$subs[] | select(.codec_name as $c | ('"$picture_jq"' | index($c)) == null)
+            | (.tags.language // null) | lang_code | select(. == "de" or . == "en")] | length) as $text
+        | [$SET, $KIND, $TITLE, $CONTAINER, $text, $picture]
+        | @tsv
+      ' --arg SET "$set_id" --arg KIND "$kind" --arg TITLE "$title" --arg CONTAINER "$container" \
+      <<<"$probe")
+
+    rows+=("$line")
+    total=$((total + 1))
+    [[ "$(cut -f5 <<<"$line")" -gt 0 ]] && flagged=$((flagged + 1))
+  done < <(sqlite3 -readonly -json "$db" "
+      SELECT set_id, kind, title, container
+      FROM sets
+      WHERE status = 'complete' AND kind IN ('movie', 'ep', 'docu')
+        AND EXISTS (SELECT 1 FROM json_each(sets.slang) WHERE value IN ('de', 'en'))
+      ORDER BY set_id
+    " | jq -c '.[]')
+
+  printf 'set_id\tkind\ttitle\tcontainer\tde_en_text\tpicture_only\n'
+  [[ "$total" -gt 0 ]] && printf '%s\n' "${rows[@]}"
+  echo "# totals: $total de/en-subtitled sets checked, $flagged already carry de/en text in the channel"
 fi
-echo "# totals: $total candidate sets checked, $short missing at least one uploaded audio language"

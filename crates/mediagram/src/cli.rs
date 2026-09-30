@@ -11,7 +11,7 @@ use mediagram::commands::args::{
 };
 use mediagram::commands::{
     metadata::MetadataArgs, pull_index::PullIndexArgs, push_index::PushIndexArgs,
-    sync_index::SyncIndexArgs,
+    subtitles::SubtitlesAction, sync_index::SyncIndexArgs,
 };
 
 #[derive(Parser)]
@@ -125,6 +125,11 @@ pub enum Cmd {
     },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
+    /// Match existing files against subtitled titles the channel carries, or (later) send bundles
+    Subtitles {
+        #[command(subcommand)]
+        action: SubtitlesAction,
+    },
     /// Upload one small file with a smoke caption, print the message id, delete it
     #[command(hide = true)]
     SmokeUpload { file: PathBuf },

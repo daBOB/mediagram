@@ -5,6 +5,29 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.88.0 — Measure existing titles before any subtitle backfill
+
+**Added**
+
+- `mediagram subtitles backfill <folder>... --dry-run`: matches local video
+  files against every complete `movie`/`ep`/`docu` set in the local index by
+  exact byte size first (a size shared by more than one set is ambiguous,
+  never sent); an `.mp4` whose size names no set falls back to its parsed
+  show/SxxEyy or title/year plus a duration within 2 s, only when that names
+  exactly one set, and is listed apart from the matches — a later phase
+  sends it only with an explicit per-file opt-in. Two files naming the same
+  set are both rejected as a conflict. A header `ffprobe` of each matched or
+  fallback source then counts its de/en text and picture-only subtitle
+  tracks; the command prints a TSV per file plus totals by kind/container,
+  and lists the de/en-subtitled sets no file matched. Nothing is extracted
+  or sent — `--dry-run` is required until a later phase adds sending.
+- `reports/uploaded-stream-headers.sh` gains a `subs` mode alongside `audio`:
+  the same loopback-`serve` header probe, over every complete set whose
+  `slang` lists de or en, counting the uploaded copy's own de/en text and
+  picture-only subtitle tracks. Paired with the dry run above, a title's two
+  rows say whether it already has subtitles in the channel, could gain them
+  from a local source, or neither.
+
 ## 0.87.0 — Android: subtitle tracks, bundle cache, and the shared playback rule
 
 **Added**

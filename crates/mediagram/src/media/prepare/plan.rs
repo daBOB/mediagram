@@ -162,7 +162,8 @@ fn language_wanted(stream: &Stream, keep: &[&str]) -> bool {
 }
 
 /// Subtitle codecs that are images rather than text.
-const PICTURE_SUBTITLES: &[&str] = &["hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle", "xsub"];
+pub(crate) const PICTURE_SUBTITLES: &[&str] =
+    &["hdmv_pgs_subtitle", "dvd_subtitle", "dvb_subtitle", "xsub"];
 
 /// Streams an mp4 cannot carry: a picture-based subtitle (Blu-ray PGS, DVD
 /// VobSub), which `mov_text` cannot express, and anything that is neither
