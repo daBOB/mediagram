@@ -46,6 +46,9 @@ CC / 'c' shown when a regular track exists (state = regular showing); style/offs
 | 08 | [Sync subtitle preferences](phase-08-sync-subtitle-preferences-across-devices.md) | `web/src/state/**`, `web/src/routes.ts` (after 03), `crates/mediagram-core/src/state/**` | minor | code complete (0.89.0; reviewed; cross-device check pending) |
 | 09 | [Remove inline read path (gated)](phase-09-remove-inline-subtitle-read-path.md) | inline branches in `subtitle-tracks.ts`, `catalog_subtitles.rs`, preview helper | patch | pending |
 
+## State 2026-09-30 23:00 (code complete through 08; 09 gated)
+Merged on `main`: 03 wiring 0.88.3 + polish 0.88.4 · 08 0.89.0 · 05 0.90.0 · 06 0.91.0 · 07 0.92.0 — each reviewed (code-reviewer), findings fixed before merge, `scripts/check.sh` green at 0.91.0. The dev web player (`bun --watch`) reloaded onto each merge and runs current code (healthy, 0 failed reads). Not yet: this machine's uploader is 0.83.0 (no guard); the channel index is still v12 (1,266 inline rows) and the other machine pushed a v12 index at 22:26 (so it is < 0.85). Next gates below, in order, each needing the user.
+
 ## Rollout order (gates)
 0. **Shared guard first** (decided 2026-09-30, shared with the Quest VR plan): the newer-schema pull/publish guard from phase 02 (incl. `--force`) ships alone as a patch release to BOTH uploaders before any v13 (or the VR plan's v14) index is pushed.
 1. 01 (+ audio audit), then 07a; 07a runs on both uploaders after `pull-index` → user picks 07's film/series scope.
