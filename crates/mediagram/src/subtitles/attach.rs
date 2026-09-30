@@ -88,6 +88,17 @@ pub async fn attach(
         matches!(input, Input::File(_)),
     )
     .await;
+    // A copy read over the network can end early without ffmpeg saying so.
+    // Dropping the missing track would record a short bundle, or nothing,
+    // and a later run would believe the title has no subtitles. An oversized
+    // track is left out instead: every run would find it oversized again.
+    if matches!(input, Input::Url(_))
+        && let Some(index) = indexes
+            .iter()
+            .find(|i| !texts.contains_key(i) && !extract::too_large(dir.path(), **i))
+    {
+        bail!("stream {index} of the copy could not be read in full; nothing was recorded");
+    }
     let mut tracks: Vec<Extracted> = found
         .wanted
         .into_iter()

@@ -70,6 +70,37 @@ pub fn languages(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
         .context("reading a subtitle language")
 }
 
+/// A set's inline subtitle rows as `(lang, body)`, in `lang` order: the order
+/// the readers' inline fallback numbers them in, which a bundle must keep so
+/// nothing a viewer remembered changes meaning.
+pub fn inline_subtitles(conn: &Connection, set_id: &str) -> Result<Vec<(String, String)>> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT lang, body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' ORDER BY lang",
+        )
+        .context("preparing the inline subtitle query")?;
+    let rows = stmt
+        .query_map([set_id], |row| Ok((row.get(0)?, row.get(1)?)))
+        .with_context(|| format!("listing the inline subtitles of {set_id}"))?;
+    rows.collect::<rusqlite::Result<_>>()
+        .context("reading an inline subtitle")
+}
+
+/// Sets that still carry inline subtitle rows and have no bundle.
+pub fn sets_with_inline_subtitles(conn: &Connection) -> Result<Vec<String>> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT set_id FROM assets WHERE kind = 'subtitle'
+               AND set_id NOT IN (SELECT set_id FROM subtitle_files) ORDER BY set_id",
+        )
+        .context("preparing the inline subtitle set query")?;
+    let rows = stmt
+        .query_map([], |row| row.get(0))
+        .context("listing sets with inline subtitles")?;
+    rows.collect::<rusqlite::Result<_>>()
+        .context("reading a set id")
+}
+
 /// Whether a set has a summary, without reading it.
 pub fn has_summary(conn: &Connection, set_id: &str) -> Result<bool> {
     let found: Option<i64> = conn

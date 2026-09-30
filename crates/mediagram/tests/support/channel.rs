@@ -35,6 +35,8 @@ pub struct Channel {
     pub unpin_lies: HashSet<i32>,
     pub captions_fail: bool,
     pub send_fails: bool,
+    /// Documents come back with their last byte changed.
+    pub corrupt_downloads: bool,
 }
 
 impl Channel {
@@ -158,7 +160,13 @@ impl ChannelRemote for FakeChannel {
     async fn download(&self, id: i32) -> Result<Option<Vec<u8>>> {
         self.with(|c| {
             c.downloads += 1;
-            Ok(c.get(id).and_then(|m| m.document.clone()))
+            let mut document = c.get(id).and_then(|m| m.document.clone());
+            if let (true, Some(bytes)) = (c.corrupt_downloads, document.as_mut())
+                && let Some(last) = bytes.last_mut()
+            {
+                *last ^= 0xff;
+            }
+            Ok(document)
         })
     }
 
@@ -177,7 +185,13 @@ impl ChannelRemote for FakeChannel {
         CHAT_ID
     }
 
-    async fn send_document(&self, bytes: &[u8], _name: &str, _mime: &str, caption: &str) -> Result<i32> {
+    async fn send_document(
+        &self,
+        bytes: &[u8],
+        _name: &str,
+        _mime: &str,
+        caption: &str,
+    ) -> Result<i32> {
         tokio::task::yield_now().await;
         if self.with(|c| c.send_fails) {
             bail!("the channel refused the document");
@@ -187,6 +201,11 @@ impl ChannelRemote for FakeChannel {
             c.sends += 1;
             c.post(caption.to_string(), Some(bytes), false, true)
         }))
+    }
+
+    async fn delete_message(&self, id: i32) -> Result<()> {
+        self.with(|c| c.messages.retain(|m| m.id != id));
+        Ok(())
     }
 
     async fn pin(&self, id: i32) -> Result<()> {

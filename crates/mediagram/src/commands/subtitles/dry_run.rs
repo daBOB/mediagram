@@ -18,17 +18,31 @@ use crate::media::streams::{self, Probed};
 use crate::media::video_files::collect_videos;
 
 use super::dry_run_report::print_report;
-use super::match_source::{self, SourceFile};
+use super::match_source::{self, Match, SourceFile};
+
+/// Everything a backfill knows about the folders before it sends anything.
+pub struct Survey {
+    pub sets: Vec<SetRow>,
+    pub files: Vec<SourceFile>,
+    pub probes: Vec<Option<Probed>>,
+    pub matches: Vec<Match>,
+}
 
 pub async fn run(cfg: &Config, folders: &[PathBuf]) -> Result<()> {
     let conn = db::open_read_only(&cfg.data_dir()?, "measure a subtitles backfill")?;
-    let sets = load_candidate_sets(&conn)?;
-    drop(conn);
+    let found = survey(&conn, folders).await?;
+    print_report(&found.files, &found.probes, &found.matches, &found.sets);
+    Ok(())
+}
+
+/// Walks, probes and matches; reads the index, writes nothing.
+pub async fn survey(conn: &Connection, folders: &[PathBuf]) -> Result<Survey> {
+    let sets = load_candidate_sets(conn)?;
 
     let mut files = Vec::new();
     for folder in folders {
-        let found = collect_videos(folder)
-            .with_context(|| format!("walking {}", folder.display()))?;
+        let found =
+            collect_videos(folder).with_context(|| format!("walking {}", folder.display()))?;
         files.extend(found);
     }
     files.sort();
@@ -67,8 +81,12 @@ pub async fn run(cfg: &Config, folders: &[PathBuf]) -> Result<()> {
     }
 
     let matches = match_source::match_sources(&source_files, &sets);
-    print_report(&source_files, &probes, &matches, &sets);
-    Ok(())
+    Ok(Survey {
+        sets,
+        files: source_files,
+        probes,
+        matches,
+    })
 }
 
 /// Every complete `movie`/`ep`/`docu` set, whether or not it already has a

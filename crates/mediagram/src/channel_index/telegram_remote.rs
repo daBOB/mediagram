@@ -101,7 +101,13 @@ impl ChannelRemote for TelegramRemote {
         self.chat_id
     }
 
-    async fn send_document(&self, bytes: &[u8], name: &str, mime: &str, caption: &str) -> Result<i32> {
+    async fn send_document(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+        caption: &str,
+    ) -> Result<i32> {
         let mut cursor = std::io::Cursor::new(bytes);
         let uploaded = self
             .client
@@ -113,8 +119,12 @@ impl ChannelRemote for TelegramRemote {
         // Not idempotent: a lost response after a committed send would
         // duplicate the message, so only FLOOD_WAIT is retried.
         let message = with_flood_wait_only(self.max_attempts, move || {
-            let (client, uploaded, mime, caption) =
-                (client.clone(), uploaded.clone(), mime.clone(), caption.clone());
+            let (client, uploaded, mime, caption) = (
+                client.clone(),
+                uploaded.clone(),
+                mime.clone(),
+                caption.clone(),
+            );
             async move {
                 let input = InputMessage::new()
                     .mime_type(&mime)
@@ -125,6 +135,18 @@ impl ChannelRemote for TelegramRemote {
         })
         .await?;
         Ok(message.id())
+    }
+
+    async fn delete_message(&self, id: i32) -> Result<()> {
+        let (client, channel) = (self.client.clone(), self.channel);
+        // Deleting a missing id reports zero affected, not an error, so a
+        // retry after a lost response is harmless.
+        with_retry(self.max_attempts, move || {
+            let client = client.clone();
+            async move { client.delete_messages(channel, &[id]).await }
+        })
+        .await
+        .map(|_| ())
     }
 
     async fn pin(&self, id: i32) -> Result<()> {

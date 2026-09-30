@@ -200,6 +200,25 @@ planned by an older build falls back to its recorded source. `attach` takes a
 file (sidecars are found in its folder) or a URL (none are): the backfill
 reads the uploaded copy through the player's loopback server.
 
+`mediagram subtitles` (`commands/subtitles/`) does the same after the fact,
+holding the upload lock (one slot) and one Telegram session for the whole run,
+with a pause between sends and a publish every 100 recorded sets and at the
+end. `move-inline` builds a bundle from a set's inline `assets` subtitle rows
+(track n is the n-th row by `lang`, so numbering is unchanged), sends it,
+downloads it again and records it only if the hash and the decoded bodies
+match. `backfill <folder>` feeds `attach` the file of a size (or, opted in
+with `--accept-fallback`, name-and-duration) match; `--redo` records the new
+bundle and `ChannelRemote::delete_message` removes the old one only after the
+index naming the new one is published. A channel read that ends short
+(ffmpeg run with `-xerror`; a wanted track missing) is a failure, never a
+short bundle or a `subs-none` mark.
+`backfill --channel` starts `serve::routes::router` on `127.0.0.1:0` over a
+read-only index and a `TelegramSource` built from the sending client, and
+gives `attach` `http://127.0.0.1:<port>/sets/<id>/stream`: one client, never a
+second on the same auth key. Its candidates are complete, non-document sets
+with German or English in `slang`, no bundle and no `subs-none:<set>` mark,
+MP4 before the rest.
+
 `inspect` runs `ffprobe` to read container/codec/duration/language tracks
 and classifies quality/HDR from stream metadata. `resolve` turns a file
 name plus any explicit `--tmdb/--tvdb/--imdb` flags into provider ids and

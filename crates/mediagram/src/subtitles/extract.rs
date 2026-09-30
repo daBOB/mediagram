@@ -33,8 +33,18 @@ pub async fn embedded(
         Ok(said) if !bad_utf8(&said) => {}
         Ok(_) if !alone => tracing::warn!("subtitles: a track is not UTF-8 and was left as read"),
         Err(err) if !alone => {
-            tracing::warn!("subtitles: extraction failed: {err:#}");
-            return HashMap::new();
+            // With `-xerror` a track that is not UTF-8 fails the pass. Which
+            // track is unknown unless there is only one, and reading the
+            // others as Windows-1252 would garble them, so only a lone track
+            // gets the one extra read.
+            let retried = match indexes {
+                [_] if bad_utf8(&format!("{err:#}")) => ffmpeg(target, indexes, dir, true).await,
+                _ => Err(err),
+            };
+            if let Err(err) = retried {
+                tracing::warn!("subtitles: extraction failed: {err:#}");
+                return HashMap::new();
+            }
         }
         outcome => {
             if let Err(err) = outcome {
@@ -108,7 +118,14 @@ pub async fn srt_to_vtt(srt: &Path, dir: &Path, n: usize) -> Result<String> {
 /// Returns what ffmpeg said on stderr.
 async fn ffmpeg(target: &Path, indexes: &[u32], dir: &Path, cp1252: bool) -> Result<String> {
     let mut args = base_args();
-    args.extend(network_args(target).iter().map(OsString::from));
+    let network = network_args(target);
+    args.extend(network.iter().map(OsString::from));
+    // A read that ends early (the server lost the channel mid-stream) makes
+    // ffmpeg exit 0 with the cues seen so far; over a network that must be a
+    // failure, not a short track.
+    if !network.is_empty() {
+        args.push("-xerror".into());
+    }
     if cp1252 {
         args.extend(["-sub_charenc".into(), "CP1252".into()]);
     }
@@ -136,6 +153,10 @@ fn base_args() -> Vec<OsString> {
 async fn run(args: Vec<OsString>) -> Result<String> {
     let output = tokio::process::Command::new("ffmpeg")
         .args(args)
+        // Its own process group and gone with us: Ctrl-C is for mediagram,
+        // which finishes the set in hand, not for the extraction under it.
+        .process_group(0)
+        .kill_on_drop(true)
         .output()
         .await
         .context("running ffmpeg")?;
@@ -153,6 +174,13 @@ async fn run(args: Vec<OsString>) -> Result<String> {
     Ok(said)
 }
 
+/// Whether stream `index`'s output came out past what a bundle accepts: a
+/// property of the track, not of the read, so a retry would find it again.
+pub fn too_large(dir: &Path, index: u32) -> bool {
+    std::fs::metadata(dir.join(format!("{index}.vtt")))
+        .is_ok_and(|m| m.len() > MAX_TRACK_BYTES as u64)
+}
+
 /// The track's text, unless it is missing, not UTF-8, or past what a
 /// bundle accepts (which would refuse the whole bundle).
 fn read_output(path: &Path) -> Option<String> {
@@ -166,3 +194,7 @@ fn read_output(path: &Path) -> Option<String> {
     }
     String::from_utf8(bytes).ok()
 }
+
+#[cfg(test)]
+#[path = "extract_tests.rs"]
+mod tests;

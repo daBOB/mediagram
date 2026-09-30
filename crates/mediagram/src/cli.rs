@@ -125,7 +125,7 @@ pub enum Cmd {
     },
     /// Rebuild library.db from channel captions (additive: never demotes local sets; use verify for that)
     Rescan,
-    /// Match existing files against subtitled titles the channel carries, or (later) send bundles
+    /// Give titles German and English subtitle bundles: move the lessons' inline ones, or backfill from folders or the channel
     Subtitles {
         #[command(subcommand)]
         action: SubtitlesAction,

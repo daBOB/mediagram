@@ -52,7 +52,17 @@ pub trait ChannelRemote {
     /// `caption`, returning its message id. One send path for every small
     /// document this uploader posts to the channel: the index snapshot, and
     /// a subtitle bundle.
-    async fn send_document(&self, bytes: &[u8], name: &str, mime: &str, caption: &str) -> Result<i32>;
+    async fn send_document(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+        caption: &str,
+    ) -> Result<i32>;
+
+    /// Deletes one message. A message that is already gone is not an error:
+    /// the caller wanted it gone.
+    async fn delete_message(&self, id: i32) -> Result<()>;
 
     async fn pin(&self, id: i32) -> Result<()>;
 

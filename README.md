@@ -153,6 +153,34 @@ With no language in the name, the video's first audio language is assumed.
 A `.vtt` wins over an `.srt` of the same track, and an `.srt` that is not
 UTF-8 is read as Windows-1252. Picture subtitles (PGS, VobSub) are not read.
 
+#### Subtitles for what is already uploaded
+
+Run these after `pull-index`, with no upload running (they hold the upload
+lock, and refuse when `upload_slots` is above 1). Each sends its bundles one
+set at a time, two seconds apart, publishes the index every 100 sets and at
+the end (`--no-push` skips that), and stops cleanly after the set in hand on
+Ctrl-C. Every mode takes `--dry-run`, which prints counts and writes nothing.
+
+```sh
+# lessons kept their .vtt in the index: give each a bundle, then drop the rows
+mediagram subtitles move-inline
+# local files: match by size (or name and duration), then send
+mediagram subtitles backfill ~/Movies ~/Shows
+mediagram subtitles backfill ~/Movies --accept-fallback ~/Movies/Film.mp4
+mediagram subtitles backfill ~/Movies --redo <set-id>
+# no local file: read the copy in the channel (MP4 first; --mkv adds the rest)
+mediagram subtitles backfill --channel --limit 20
+```
+
+`move-inline` reads each bundle back from the channel and compares it with
+what it sent before it removes the rows; after three mismatches it stops. A
+name-and-duration match is listed but sent only when its file is named with
+`--accept-fallback`. `--redo <set>` records a new bundle and deletes the
+old message once the index naming the new one is published (with `--no-push`
+the old message stays, and the run lists it). `--channel` reads through a loopback server that shares the one
+Telegram session; a set whose copy has no German or English text track is
+remembered (`meta` `subs-none:<set>`) and skipped next time until `--redo`.
+
 ### Watch it
 
 ```sh

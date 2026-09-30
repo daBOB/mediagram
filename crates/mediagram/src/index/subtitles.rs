@@ -81,6 +81,28 @@ pub fn bundle_message(conn: &Connection, set_id: &str) -> Result<Option<i64>> {
     .with_context(|| format!("reading the bundle message of {set_id}"))
 }
 
+/// The channel the set's bundle message lives in.
+pub fn bundle_chat_id(conn: &Connection, set_id: &str) -> Result<Option<i64>> {
+    conn.query_row(
+        "SELECT chat_id FROM subtitle_files WHERE set_id = ?1",
+        [set_id],
+        |row| row.get(0),
+    )
+    .optional()
+    .with_context(|| format!("reading the bundle channel of {set_id}"))
+}
+
+/// When the set's bundle was last recorded, if it has one.
+pub fn bundle_uploaded_at(conn: &Connection, set_id: &str) -> Result<Option<i64>> {
+    conn.query_row(
+        "SELECT uploaded_at FROM subtitle_files WHERE set_id = ?1",
+        [set_id],
+        |row| row.get(0),
+    )
+    .optional()
+    .with_context(|| format!("reading when the bundle of {set_id} was recorded"))
+}
+
 #[cfg(test)]
 #[path = "subtitles_tests.rs"]
 mod tests;

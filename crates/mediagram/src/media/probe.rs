@@ -115,6 +115,9 @@ pub(crate) async fn run(path: &Path) -> Result<Report> {
             "-show_streams",
         ])
         .arg(path)
+        // Ctrl-C is for mediagram, not for the probe under it.
+        .process_group(0)
+        .kill_on_drop(true)
         .output()
         .await
         .with_context(|| format!("running ffprobe on {}", path.display()))?;

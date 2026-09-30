@@ -12,4 +12,5 @@ mod extract;
 mod select;
 mod sidecars;
 
+pub use arrange::label as track_label;
 pub use attach::{Attached, Input, attach, attach_and_report};

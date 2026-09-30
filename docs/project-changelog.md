@@ -5,6 +5,36 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.92.0 — lesson subtitles move into bundles; subtitles backfill from folders or the channel
+
+**Added**
+
+- `mediagram subtitles move-inline` gives each lesson whose subtitles sat
+  inline in the index a `#mlib-subs` bundle (track numbers unchanged) and
+  removes the rows only after the bundle, read back from the channel, matches
+  what was sent. Three mismatches stop the run with an error; one publish at
+  the end.
+- `mediagram subtitles backfill` now sends:
+  - from folders, matching files to uploaded sets by size (a name-and-duration
+    match is sent only when named with `--accept-fallback`);
+  - with `--channel`, reading the German and English text tracks from the
+    uploaded copy through a loopback server on the same Telegram session —
+    MP4 first, `--mkv` for the rest, `--limit N` per run — and remembering
+    sets that have none (`subs-none:<set>`);
+  - `--redo <set>` replaces a bundle; the old message is deleted only after
+    the index naming the new one is published (with `--no-push` its id is
+    listed instead).
+- Runs hold the upload lock, pace sends 2 s apart, publish every 100 sets and
+  at the end, finish the set in hand on Ctrl-C (a second Ctrl-C quits), and
+  stop with an error after five failures in a row; `--dry-run` writes nothing.
+  ffmpeg and ffprobe run in their own process group, so Ctrl-C never cuts an
+  extraction short.
+- A channel read that ends early is a failure — never a short bundle and
+  never a `subs-none` mark: ffmpeg exits 0 on a cut HTTP read, so channel
+  extraction runs with `-xerror` and every wanted track must come out. An
+  oversized track (over 4 MiB) is left out rather than failed, since every
+  run would find it oversized again.
+
 ## 0.91.0 — the uploader attaches German and English subtitles when a set completes
 
 **Added**
