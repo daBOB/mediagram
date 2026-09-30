@@ -177,12 +177,12 @@ impl ChannelRemote for FakeChannel {
         CHAT_ID
     }
 
-    async fn send_index(&self, path: &Path, caption: &str) -> Result<i32> {
+    async fn send_document(&self, bytes: &[u8], _name: &str, _mime: &str, caption: &str) -> Result<i32> {
         tokio::task::yield_now().await;
         if self.with(|c| c.send_fails) {
-            bail!("the channel refused the index document");
+            bail!("the channel refused the document");
         }
-        let bytes = std::fs::read(path)?;
+        let bytes = bytes.to_vec();
         Ok(self.with(|c| {
             c.sends += 1;
             c.post(caption.to_string(), Some(bytes), false, true)

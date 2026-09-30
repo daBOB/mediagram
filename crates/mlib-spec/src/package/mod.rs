@@ -11,7 +11,10 @@ mod artwork_key;
 mod charset;
 pub mod naming;
 
-use charset::is_lower_hex;
+// Re-exported `pub(crate)`, not just `use`d: `subtitle_bundle::valid_sha256`
+// (a sibling module, not a descendant of `package`) reuses the same check on
+// a bundle's own `sha256`, rather than a second copy of the character class.
+pub(crate) use charset::is_lower_hex;
 
 pub use artwork_key::{
     BACKDROP_SUFFIX, backdrop_key, is_backdrop_key, poster_key_is_valid, season_poster_key,

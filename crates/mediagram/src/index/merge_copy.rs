@@ -24,6 +24,11 @@ pub(super) fn insert_row(
 
 /// For every set now in `main` — just added or already shared — adds any
 /// `(kind, lang)` combination the channel has that the local index lacks.
+///
+/// Excludes a `kind = 'subtitle'` row of any set that already has a
+/// `main.subtitle_files` row: that set's subtitles are a bundle now, and its
+/// legacy per-language rows must not be refilled from a channel that still
+/// carries them.
 pub(super) fn fill_missing_assets(conn: &Connection) -> Result<()> {
     let cols = shared_columns(conn, "assets")?;
     let col_list = cols.join(", ");
@@ -33,7 +38,9 @@ pub(super) fn fill_missing_assets(conn: &Connection) -> Result<()> {
          WHERE EXISTS (SELECT 1 FROM main.sets s WHERE s.set_id = ch.set_id)
            AND NOT EXISTS (
              SELECT 1 FROM main.assets m
-             WHERE m.set_id = ch.set_id AND m.kind = ch.kind AND m.lang = ch.lang)"
+             WHERE m.set_id = ch.set_id AND m.kind = ch.kind AND m.lang = ch.lang)
+           AND NOT (ch.kind = 'subtitle' AND EXISTS (
+             SELECT 1 FROM main.subtitle_files sf WHERE sf.set_id = ch.set_id))"
     );
     conn.execute(&sql, [])
         .context("filling in missing assets from the channel")?;

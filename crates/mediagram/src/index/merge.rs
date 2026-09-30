@@ -15,6 +15,7 @@
 //! | `credits`, `franchises`, `artwork` | Missing keys inserted whole; never partially filled. |
 //! | `anime_overrides` | Missing keys inserted; shared keys take the later `set_at`. |
 //! | `categories` | Missing keys inserted; shared keys take the later `set_at`. |
+//! | `subtitle_files`, `subtitle_tracks` | Newer `uploaded_at` wins per set; tracks replaced whole, not filled column by column. |
 //! | `meta` | Never touched — machine-local state, not library content. |
 //!
 //! A shared set whose metadata differs between the two is not decided here:
@@ -35,6 +36,7 @@ use crate::index::merge_copy::{fill_missing_assets, insert_row};
 use crate::index::merge_credits;
 use crate::index::merge_diff::conflicting_sets;
 use crate::index::merge_shows;
+use crate::index::merge_subtitles;
 
 /// Re-exported here: `merge_from`'s callers (outside `index`) build its
 /// `keep_if_live` closure from this, so it belongs on this module's face
@@ -59,6 +61,11 @@ pub struct MergeReport {
     pub artwork_added: usize,
     pub anime_overrides_taken: usize,
     pub categories_taken: usize,
+    pub subtitles_taken: usize,
+    /// The channel snapshot has no `subtitle_files` table while this index
+    /// holds subtitle rows: an uploader older than this schema published
+    /// over a channel that had them.
+    pub channel_lacks_subtitles: bool,
 }
 
 /// Merges `channel_path`'s index into `local`, one transaction, via `ATTACH`.
@@ -155,6 +162,10 @@ fn copy_kept(
     }
 
     let conflicts = conflicting_sets(conn)?;
+    // Before `fill_missing_assets`, which stops filling in a bundled set's
+    // legacy inline rows only once this has recorded its `subtitle_files`
+    // row.
+    let subtitles = merge_subtitles::merge(conn)?;
     fill_missing_assets(conn)?;
     let (shows_added, shows_filled) = merge_shows::merge(conn)?;
     let (credits_added, franchises_added) = merge_credits::merge(conn)?;
@@ -172,6 +183,8 @@ fn copy_kept(
         artwork_added,
         anime_overrides_taken,
         categories_taken,
+        subtitles_taken: subtitles.subtitles_taken,
+        channel_lacks_subtitles: subtitles.channel_lacks_subtitles,
         ..MergeReport::default()
     })
 }

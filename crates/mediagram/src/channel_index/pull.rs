@@ -102,6 +102,9 @@ async fn merge_in(
     let live = live_sets(remote, &merge::channel_candidates(&local, channel_path)?).await?;
     let merged = merge::merge_from(&local, channel_path, |_| Ok(live))
         .context("merging the channel index")?;
+    if merged.channel_lacks_subtitles {
+        pins::owe_publish(&local).context("recording the subtitle re-publish owed")?;
+    }
     // Reported before the re-read: the merge has committed, and a failure
     // re-reading captions must not hide what it already changed.
     report::print(&merged, false);

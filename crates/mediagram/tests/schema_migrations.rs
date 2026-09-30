@@ -158,3 +158,51 @@ fn a_database_at_v11_gains_the_categories_table_on_upgrade() {
     upgraded_cols.sort();
     assert_eq!(fresh_cols, upgraded_cols, "one definition of the schema");
 }
+
+/// A v12 database — the layout before the subtitle tables existed — must
+/// gain both on open, keeping its rows, which is what an upgrade on a real
+/// uploading machine looks like.
+#[test]
+fn a_database_at_v12_gains_the_subtitle_tables_on_upgrade() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.db");
+    {
+        let conn = mediagram::index::sqlite_init::open(&path).unwrap();
+        for statement in mlib_spec::schema::migrations_up_to(12) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.execute(
+            "INSERT INTO meta(key, value) VALUES('schema_version', '12')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO sets(set_id, kind, container, total, part_count, created_at, spec_version)
+             VALUES('01OLDSET0000000000000002', 'movie', 'mkv', 10, 1, 1700000000, 4)",
+            [],
+        )
+        .unwrap();
+        assert!(!has_table(&conn, "subtitle_files"), "v12 has no subtitle_files table");
+        assert!(!has_table(&conn, "subtitle_tracks"), "v12 has no subtitle_tracks table");
+    }
+
+    let upgraded = db::open(dir.path()).unwrap();
+
+    assert!(has_table(&upgraded, "subtitle_files"), "upgrade adds subtitle_files");
+    assert!(has_table(&upgraded, "subtitle_tracks"), "upgrade adds subtitle_tracks");
+    assert_eq!(schema_version(&upgraded), mlib_spec::schema::SCHEMA_VERSION);
+    let kept: i64 = upgraded
+        .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(kept, 1, "an upgrade keeps existing rows");
+
+    let fresh_dir = tempfile::tempdir().unwrap();
+    let fresh = db::open(fresh_dir.path()).unwrap();
+    for table in ["subtitle_files", "subtitle_tracks"] {
+        let mut fresh_cols = column_names(&fresh, table);
+        let mut upgraded_cols = column_names(&upgraded, table);
+        fresh_cols.sort();
+        upgraded_cols.sort();
+        assert_eq!(fresh_cols, upgraded_cols, "one definition of the schema");
+    }
+}

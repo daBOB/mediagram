@@ -3,9 +3,9 @@
 
 #[path = "schema_versions.rs"]
 mod schema_versions;
-use schema_versions::{V1, V2, V3, V4, V5, V6};
+use schema_versions::{V1, V2, V3, V4, V5, V6, V7, V8, V9};
 
-pub const SCHEMA_VERSION: i64 = 12;
+pub const SCHEMA_VERSION: i64 = 13;
 
 /// The oldest index a *reader* of someone else's snapshot still accepts.
 ///
@@ -15,10 +15,11 @@ pub const SCHEMA_VERSION: i64 = 12;
 /// `shows.popularity`, v9 only `shows.collection_id`/`collection_name`/
 /// `series_type` plus the wholly new `credits` and `franchises` tables, v10
 /// only the wholly new `artwork` table, v11 only `shows.original_language`
-/// plus the wholly new `anime_overrides` table, and v12 only the wholly new
-/// `categories` table — every one of which every reader treats as optional.
-/// The web player's `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`) is the
-/// same number. The uploader's own index is still held to
+/// plus the wholly new `anime_overrides` table, v12 only the wholly new
+/// `categories` table, and v13 only the wholly new `subtitle_files` and
+/// `subtitle_tracks` tables — every one of which every reader treats as
+/// optional. The web player's `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`)
+/// is the same number. The uploader's own index is still held to
 /// [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 
@@ -26,7 +27,7 @@ pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 /// [`SCHEMA_VERSION`], each one. Spelled out because a package pointer is
 /// checked by membership — listing only the two ends once refused every
 /// version between them. A test holds this to the range.
-pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10, 11, 12];
+pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10, 11, 12, 13];
 
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
@@ -40,7 +41,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -52,57 +53,6 @@ pub fn migrations_up_to(version: i64) -> Vec<&'static str> {
         .flat_map(|group| group.iter().copied())
         .collect()
 }
-
-/// v6 → v7: the age rating a title carries in the library's country.
-///
-/// What decides whether a title may sit on the Kids shelf without anyone
-/// having marked it. Text, as the provider writes it (`12`, `FSK 16` is never
-/// the form), because some countries rate with letters.
-const V7: &[&str] = &["ALTER TABLE shows ADD COLUMN certification TEXT"];
-
-/// v7 → v8: how much attention a title draws at the provider.
-///
-/// What ranks a "trending" pick. TMDB's figure as of the cached payload, so
-/// it ages; readers treat it as optional, like `certification`.
-const V8: &[&str] = &["ALTER TABLE shows ADD COLUMN popularity REAL"];
-
-/// v8 → v9: who is credited on a title, and the franchise a film belongs to.
-///
-/// `shows` gains a film's TMDB "collection" — the id and name eleven `Star
-/// Trek` films share, say — and a series' TMDB `type` (`Scripted`,
-/// `Miniseries`, …). Both wholly new tables are keyed the way `shows` is,
-/// with one difference each: `credits` adds `ord`, because a title credits
-/// more than one person and each needs its own row; `franchises` drops
-/// `kind`, because a collection is a movie-only idea and does not need one.
-///
-/// `credits.profile` carries the TMDB `profile_path` a portrait is fetched
-/// from — bare, like a poster path, not a full URL — so a device with no
-/// TMDB cache of its own can still show a face: it reads this column out of
-/// whatever snapshot reached it rather than asking the provider again.
-const V9: &[&str] = &[
-    "ALTER TABLE shows ADD COLUMN collection_id INTEGER",
-    "ALTER TABLE shows ADD COLUMN collection_name TEXT",
-    "ALTER TABLE shows ADD COLUMN series_type TEXT",
-    "CREATE TABLE IF NOT EXISTS credits(
-        source TEXT NOT NULL,
-        kind TEXT NOT NULL,
-        id INTEGER NOT NULL,
-        ord INTEGER NOT NULL,
-        person_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        role TEXT,
-        dept TEXT NOT NULL,
-        profile TEXT,
-        PRIMARY KEY(source, kind, id, ord)
-    )",
-    "CREATE TABLE IF NOT EXISTS franchises(
-        source TEXT NOT NULL,
-        id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        overview TEXT,
-        PRIMARY KEY(source, id)
-    )",
-];
 
 /// v9 → v10: custom poster and backdrop art the uploader supplies directly,
 /// an additive group on top of v9 so nobody has to coordinate who publishes
@@ -169,6 +119,38 @@ const V12: &[&str] = &["CREATE TABLE IF NOT EXISTS categories(
         set_at INTEGER NOT NULL,
         PRIMARY KEY(department, item_key)
     )"];
+
+/// v12 → v13: a set's subtitle bundle — one small gzip'd file per set,
+/// self-describing, carrying every subtitle track the uploader extracted —
+/// and the tracks it holds, listed here so a reader can offer a track
+/// without fetching the bundle first.
+///
+/// Kept apart from `assets`: a bundle is one message per set, fetched once
+/// and cached, not text that rides every index push whether or not anyone
+/// ever plays that title. `subtitle_files` names where the bundle lives —
+/// `chat_id`/`message_id` the way `parts` already does, `bytes` and `sha256`
+/// so a reader can verify what it downloaded before caching it — and
+/// `uploaded_at` is what a merge compares to decide whose bundle is newer,
+/// the way `anime_overrides.set_at` and `categories.set_at` already do.
+/// `subtitle_tracks.track` is the track's position inside the bundle's own
+/// list, so a reader can show a label and pick a track before ever fetching
+/// the file.
+const V13: &[&str] = &[
+    "CREATE TABLE IF NOT EXISTS subtitle_files(
+        set_id TEXT PRIMARY KEY REFERENCES sets(set_id) ON DELETE CASCADE,
+        chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL,
+        bytes INTEGER NOT NULL, sha256 TEXT NOT NULL, uploaded_at INTEGER NOT NULL
+    )",
+    "CREATE TABLE IF NOT EXISTS subtitle_tracks(
+        set_id TEXT NOT NULL REFERENCES subtitle_files(set_id) ON DELETE CASCADE,
+        track INTEGER NOT NULL,
+        lang TEXT NOT NULL,
+        forced INTEGER NOT NULL DEFAULT 0,
+        sdh INTEGER NOT NULL DEFAULT 0,
+        label TEXT NOT NULL,
+        PRIMARY KEY(set_id, track)
+    )",
+];
 
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other

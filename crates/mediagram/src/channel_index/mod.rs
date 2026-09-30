@@ -22,14 +22,18 @@ mod report;
 mod telegram_remote;
 mod unpin;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
 use crate::config::Config;
+use crate::index::{db, pins};
 use crate::telegram::client::Tg;
 use remote::ChannelRemote;
 pub use telegram_remote::{TelegramRemote, message_is_gone};
+
+/// MIME type the index document is sent under.
+const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
 /// Which kind of publish.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -72,14 +76,39 @@ impl<'r, R: ChannelRemote> ChannelIndex<'r, R> {
     }
 }
 
-/// `pull-index`: connects, pulls, disconnects.
+/// `pull-index`: connects, pulls, disconnects. When the pull finds that the
+/// channel has lost its subtitle tables — an uploader older than this
+/// schema published over them — it also republishes, restoring them: the
+/// only case where a plain pull sends anything.
 pub async fn pull_from_channel(cfg: &Config, dry_run: bool) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let remote = TelegramRemote::new(&tg, cfg.max_attempts);
-    let result = ChannelIndex::new(&remote, data_dir).pull(dry_run).await;
+    let index = ChannelIndex::new(&remote, data_dir.clone());
+    let owed_before = pins::publish_owed(&db::open(&data_dir)?)?;
+    let result = index.pull(dry_run).await;
+    let result = match result {
+        Ok(()) if !dry_run => republish_if_newly_owed(&index, &data_dir, owed_before).await,
+        other => other,
+    };
     tg.shutdown().await;
     result
+}
+
+/// Republishes when this pull just recorded a publish owed that was not
+/// already there: the channel's subtitle tables were missing, and pulling
+/// is the only thing between the two checks that could have caused it.
+async fn republish_if_newly_owed(
+    index: &ChannelIndex<'_, TelegramRemote>,
+    data_dir: &Path,
+    owed_before: Option<u64>,
+) -> Result<()> {
+    let owed_after = pins::publish_owed(&db::open(data_dir)?)?;
+    if owed_after.is_some() && owed_before.is_none() {
+        println!("publishing again to restore the channel's subtitle tables");
+        index.publish(Mode::AfterPull).await?;
+    }
+    Ok(())
 }
 
 /// Every command that publishes: connects, publishes, disconnects, and

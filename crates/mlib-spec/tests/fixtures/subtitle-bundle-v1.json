@@ -1,0 +1,33 @@
+{
+  "v": 1,
+  "set": "01JQ8F2K9M4XZ00000000042",
+  "tracks": [
+    {
+      "lang": "de",
+      "forced": true,
+      "sdh": false,
+      "label": "German (Forced)",
+      "source": "embedded",
+      "codec": "subrip",
+      "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nAchtung!\n\n00:41:15.000 --> 00:41:17.500\nDa drüben.\n"
+    },
+    {
+      "lang": "de",
+      "forced": false,
+      "sdh": false,
+      "label": "German",
+      "source": "embedded",
+      "codec": "subrip",
+      "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nGuten Morgen.\n\n00:41:15.000 --> 00:41:18.000\nWie geht es dir?\n"
+    },
+    {
+      "lang": "en",
+      "forced": false,
+      "sdh": true,
+      "label": "English (SDH)",
+      "source": "embedded",
+      "codec": "subrip",
+      "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n[door creaks]\nGood morning.\n\n00:41:15.000 --> 00:41:18.000\n[phone rings]\nHow are you?\n"
+    }
+  ]
+}

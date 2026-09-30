@@ -5,6 +5,39 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.85.0 — Index v13: subtitle bundle tables, merge, publish guard
+
+**Added**
+
+- `library.db` schema v13: `subtitle_files` and `subtitle_tracks`, additive —
+  every deployed reader keeps working against a v13 index, the web player's
+  `EXPECTED_SCHEMA` included. A merge takes a channel bundle whose
+  `uploaded_at` is newer than the local one, tracks replaced whole rather
+  than filled row by row, since the two uploaders never split one set's
+  bundle between them; a bundled set keeps no inline `assets` rows, and the
+  channel-side exclusion stops a stale inline row from being refilled once a
+  set is bundled.
+- The subtitle bundle format itself (`mlib_spec::subtitle_bundle`): gzip'd
+  JSON, one document per set, decoded through capped reads at every stage —
+  compressed size, decompressed size, each track's cue text — before any of
+  it is trusted, with its own channel caption (`#mlib-subs`) that collides
+  with neither a part's marker nor an index snapshot's.
+- A push or pull now refuses a channel index whose caption names a schema
+  newer than the build understands, `--force` included; a pull that finds
+  the channel missing its subtitle tables while the local index still holds
+  rows records a publish owed and republishes to restore them, printing why.
+- `ChannelRemote::send_index` is now `send_document`, taking bytes rather
+  than a path: one send path for the index snapshot and, once the uploader
+  writes them, a subtitle bundle — no second way to post a small document to
+  the channel.
+
+**Changed**
+
+- `crates/mlib-spec/src/schema.rs` moved v7–v9 into `schema_versions.rs`
+  alongside v1–v6, keeping both files under the crate's line limit as v13
+  landed; a new version still lands in `schema.rs` itself, and the next one
+  to force a move takes the oldest group there, not the newest.
+
 ## 0.84.8 — Faststart remux keeps every stream mp4 can hold
 
 **Fixed**

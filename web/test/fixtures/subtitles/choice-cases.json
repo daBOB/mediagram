@@ -1,0 +1,284 @@
+[
+  {
+    "name": "nothing set, German audio: forced German only, full picker, style visible",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)" },
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": "de",
+    "toggleOn": "de",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "remembered off: no regular, forced still shows",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)" },
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": "off",
+    "preferred": null,
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": "de",
+    "toggleOn": "de",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "toggle on with last unset falls to a set profile preference",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)" },
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": "en",
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": "en:sdh",
+    "forced": null,
+    "toggleOn": "en:sdh",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "toggle on with preferred off skips it for the audio language",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)" },
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": "off",
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": "de",
+    "toggleOn": "de",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "toggle on with nothing else set falls to the first regular track",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": null,
+    "alang": [],
+    "last": null,
+    "audio": null,
+    "regular": null,
+    "forced": null,
+    "toggleOn": "de",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "toggle on with a remembered last wins over everything else",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": "de",
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": "en:sdh",
+    "audio": "de",
+    "regular": "de",
+    "forced": null,
+    "toggleOn": "en:sdh",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "a profile preference for English resolves to its only SDH track",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": "en",
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": "en:sdh",
+    "forced": null,
+    "toggleOn": "en:sdh",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "a remembered language the show no longer has falls back to the profile preference",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" },
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": "fr",
+    "preferred": "de",
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": "de",
+    "forced": null,
+    "toggleOn": "de",
+    "pickerRows": ["off", "de", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "forced-only title (Boardwalk shape): no picker, no CC, style stays visible",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "Forced (SRT)" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": "ger",
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": "de",
+    "toggleOn": null,
+    "pickerRows": [],
+    "ccVisible": false,
+    "styleVisible": true
+  },
+  {
+    "name": "a null audio tag falls back to the set's own alang",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": null,
+    "alang": ["de"],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": null,
+    "toggleOn": "de",
+    "pickerRows": ["off", "de"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "a bibliographic German audio tag normalises to de",
+    "tracks": [
+      { "lang": "de", "forced": false, "sdh": false, "label": "German" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": "ger",
+    "alang": [],
+    "last": null,
+    "audio": "de",
+    "regular": null,
+    "forced": null,
+    "toggleOn": "de",
+    "pickerRows": ["off", "de"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "an English audio tag normalises to en",
+    "tracks": [
+      { "lang": "en", "forced": false, "sdh": true, "label": "English (SDH)" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": "eng",
+    "alang": [],
+    "last": null,
+    "audio": "en",
+    "regular": null,
+    "forced": null,
+    "toggleOn": "en:sdh",
+    "pickerRows": ["off", "en:sdh"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "a lesson's und track is never reached through a profile preference",
+    "tracks": [
+      { "lang": "und", "forced": false, "sdh": false, "label": "Lesson" }
+    ],
+    "remembered": "fr",
+    "preferred": "de",
+    "audioTag": null,
+    "alang": [],
+    "last": null,
+    "audio": null,
+    "regular": null,
+    "forced": null,
+    "toggleOn": "und",
+    "pickerRows": ["off", "und"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "a remembered und matches only a remembered und",
+    "tracks": [
+      { "lang": "und", "forced": false, "sdh": false, "label": "Lesson" }
+    ],
+    "remembered": "und",
+    "preferred": "de",
+    "audioTag": null,
+    "alang": [],
+    "last": null,
+    "audio": null,
+    "regular": "und",
+    "forced": null,
+    "toggleOn": "und",
+    "pickerRows": ["off", "und"],
+    "ccVisible": true,
+    "styleVisible": true
+  },
+  {
+    "name": "an unknown audio language never shows a forced track",
+    "tracks": [
+      { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)" }
+    ],
+    "remembered": null,
+    "preferred": null,
+    "audioTag": null,
+    "alang": [],
+    "last": null,
+    "audio": null,
+    "regular": null,
+    "forced": null,
+    "toggleOn": null,
+    "pickerRows": [],
+    "ccVisible": false,
+    "styleVisible": true
+  }
+]

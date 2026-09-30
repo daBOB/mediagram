@@ -20,6 +20,7 @@ mod merge_copy;
 mod merge_credits;
 mod merge_diff;
 mod merge_shows;
+mod merge_subtitles;
 mod migrations;
 pub mod parts;
 pub mod pins;

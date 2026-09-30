@@ -8,7 +8,6 @@
 //! against a channel that can misbehave on cue.
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use anyhow::Result;
 
@@ -49,8 +48,11 @@ pub trait ChannelRemote {
     /// The channel's chat id, as the index records it on every part.
     fn chat_id(&self) -> i64;
 
-    /// Sends the snapshot at `path` as the index document, returning its id.
-    async fn send_index(&self, path: &Path, caption: &str) -> Result<i32>;
+    /// Sends `bytes` as a document named `name`, MIME type `mime`, with
+    /// `caption`, returning its message id. One send path for every small
+    /// document this uploader posts to the channel: the index snapshot, and
+    /// a subtitle bundle.
+    async fn send_document(&self, bytes: &[u8], name: &str, mime: &str, caption: &str) -> Result<i32>;
 
     async fn pin(&self, id: i32) -> Result<()>;
 

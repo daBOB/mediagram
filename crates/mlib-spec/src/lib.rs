@@ -11,6 +11,8 @@
 //! - [`schema`]: SQLite DDL for `library.db`
 //! - [`slug`]: default derivation of a collection id
 //! - [`package`]: the prebuilt metadata package published for a player
+//! - [`subtitle_bundle`]: a set's subtitle tracks, as the one gzip'd document
+//!   the channel carries them in
 
 pub mod caption;
 pub mod caption_codec;
@@ -25,6 +27,7 @@ pub mod part_plan;
 pub mod schema;
 pub mod set_hash;
 pub mod slug;
+pub mod subtitle_bundle;
 
 pub use caption::{Caption, Episode, Kind, Part};
 pub use caption_codec::{CaptionError, check_budget, parse, to_text};

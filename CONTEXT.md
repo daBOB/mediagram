@@ -41,3 +41,22 @@ _Avoid_: push (except as the `push-index` command's name), upload (reserved for 
 A hand-set label on a course, a documentary collection or a standalone
 documentary, one each, that files it into a row on its department page.
 _Avoid_: genre, tag
+
+**Subtitle bundle**:
+One set's subtitle tracks, gzip'd JSON, sent as its own small channel
+document and fetched once. The index records where it lives and a summary
+of each track; the bundle itself is the durable copy.
+_Avoid_: subtitle file, subtitle asset (reserved for the older, inline rows
+a bundle replaces)
+
+**Forced track**:
+A subtitle track meant to show even when subtitles are off — on-screen text
+in a language the audience is assumed not to read, not a second copy of the
+dialogue.
+_Avoid_: default track
+
+**SDH track**:
+A subtitle track written for a deaf or hard-of-hearing audience: dialogue
+plus the sound a hearing viewer would otherwise infer.
+_Avoid_: CC, closed captions (this format carries only text tracks, never a
+broadcast-style closed-caption stream)

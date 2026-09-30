@@ -378,6 +378,94 @@ compares — the newer value wins outright, `category` included.
 A reader on v10 or older simply never sees this column or table; its next
 snapshot, once it upgrades, refreshes both from the channel.
 
+### Schema v13 additions
+
+Version 13 adds a set's subtitle bundle — one small gzip'd file per set — and
+the tracks it holds:
+
+```sql
+-- Where a set's subtitle bundle lives, and how a merge decides whose is
+-- newer.
+CREATE TABLE IF NOT EXISTS subtitle_files(
+    set_id TEXT PRIMARY KEY REFERENCES sets(set_id) ON DELETE CASCADE,
+    chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL,  -- where to fetch it
+    bytes INTEGER NOT NULL, sha256 TEXT NOT NULL,           -- to verify a download
+    uploaded_at INTEGER NOT NULL                            -- Unix seconds; decides a merge
+);
+
+-- One row per track in the bundle, so a reader can show a label and pick a
+-- track before ever fetching the file.
+CREATE TABLE IF NOT EXISTS subtitle_tracks(
+    set_id TEXT NOT NULL REFERENCES subtitle_files(set_id) ON DELETE CASCADE,
+    track INTEGER NOT NULL,               -- position inside the bundle's own track list
+    lang TEXT NOT NULL,                   -- 'de' | 'en' | 'und'
+    forced INTEGER NOT NULL DEFAULT 0,
+    sdh INTEGER NOT NULL DEFAULT 0,
+    label TEXT NOT NULL,
+    PRIMARY KEY(set_id, track)
+);
+```
+
+Kept apart from `assets`: a bundle is one small message per set, fetched once
+and cached, not text that rides every index push whether or not anyone ever
+plays that title. `assets` keeps its inline `kind = 'subtitle'` rows only
+until every reader has moved to the bundle (a later schema removes the inline
+read path); a set with a `subtitle_files` row keeps no inline rows of its own.
+
+`subtitle_files.sha256` is the lowercase 64-hex digest of the bundle's gzip
+bytes — the same shape `mlib_spec::subtitle_bundle::valid_sha256` checks
+before it becomes a file name. `uploaded_at` is what a merge compares to
+decide whose bundle is newer, `subtitle_tracks` included: unlike `shows`, a
+bundled set is not filled in column by column — the newer upload for that set
+is the whole truth, and its tracks are replaced whole rather than merged
+row by row, because the two uploaders never split one set's bundle between
+them.
+
+A reader on v12 or older simply never sees these tables; its next snapshot,
+once it upgrades, refreshes them from the channel. A push over a channel that
+already has these tables but whose own build predates them (an old uploader
+publishing after a v13 push) drops them from the channel — the uploader
+guards against this: a push or pull refuses a channel index whose caption
+names a newer schema than the build understands, and a pull that finds the
+tables missing while the local index still holds rows republishes to restore
+them.
+
+### The `#mlib-subs` bundle document
+
+A set's subtitle bundle travels as its own small channel document, never
+pinned and never mistaken for a part or an index snapshot: its caption starts
+`#mlib-subs`, distinct from a part's `#mlib v=` and an index's `#mlib-index`,
+so `rescan` and the index-snapshot search skip it without special-casing it.
+
+```text
+#mlib-subs v=1
+{"set":"01JQ8F2K9M4XZ00000000042"}
+```
+
+The document itself (name `<set_id>.subs.json.gz`, MIME type
+`application/gzip`) is gzip'd JSON:
+
+```json
+{
+  "v": 1,
+  "set": "01JQ8F2K9M4XZ00000000042",
+  "tracks": [
+    { "lang": "de", "forced": true, "sdh": false, "label": "German (Forced)",
+      "source": "embedded", "codec": "subrip", "vtt": "WEBVTT\n\n…" }
+  ]
+}
+```
+
+`tracks[i]` corresponds to `subtitle_tracks.track = i` for that set. `source`
+is `embedded` or `sidecar` — where the uploader read the track from; `codec`
+is the original codec (`subrip`, `ass`, `mov_text`, `webvtt`, `srt`, `vtt`),
+kept for reference, though every reader plays the `vtt` field regardless.
+A reader decodes the bundle through capped reads at every stage — compressed
+size, decompressed size, and each track's cue text — before trusting any of
+it, and refuses a `v` newer than it understands. `mlib_spec::subtitle_bundle`
+is the one place this shape is written down; the uploader and every reader
+share it from there.
+
 ### Playable invariant
 
 A set is considered complete/playable exactly when:
@@ -436,7 +524,7 @@ all choose with it.
 | `index_message_id` | Message id of the currently pinned `#mlib-index` document. |
 | `stale_index_message_id` | Set when unpinning a previous index message failed; retried on the next push, cleared once it succeeds (or the message turns out to already be gone). |
 | `pulled_index_message_id` | Message id of the channel index this index last took in, pulled or published from here. A publish that finds it still current pulls nothing. Uploader bookkeeping; readers ignore it. |
-| `publish_owed` | Set when an upload session completed sets it did not publish (`--no-push`, another upload about to publish, a failed publish); a counter, so a publish settles only the debt it read before its snapshot. The next session that may publish does. Uploader bookkeeping; readers ignore it. |
+| `publish_owed` | Set when an upload session completed sets it did not publish (`--no-push`, another upload about to publish, a failed publish), or when a pull finds the channel missing its subtitle tables while this index holds rows; a counter, so a publish settles only the debt it read before its snapshot. The next session that may publish does. Uploader bookkeeping; readers ignore it. |
 | `source:<set_id>` | Absolute path of the source file for a still-`pending` set, so `resume` can find it again. Deleted once the set completes. |
 | `tmp:<set_id>` | Path of a faststart-remux temp file `add` produced for a set, so it can be cleaned up once the set completes. Only set when a remux actually happened. |
 

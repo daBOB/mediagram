@@ -7,7 +7,7 @@ use anyhow::{Context, Result, bail};
 use rusqlite::Connection;
 
 use super::remote::{Candidate, ChannelRemote};
-use super::{Mode, pull, unpin};
+use super::{INDEX_MIME_TYPE, Mode, pull, unpin};
 use crate::clock::now_unix;
 use crate::index::{db, pins, sets, snapshot};
 use crate::upload::lock;
@@ -78,8 +78,9 @@ async fn send(
     owed: Option<u64>,
 ) -> Result<i32> {
     let caption = mlib_spec::index_caption::render(now_unix(), i64::try_from(sets::count(conn)?)?);
+    let bytes = std::fs::read(path).with_context(|| format!("reading {}", path.display()))?;
     let id = remote
-        .send_index(path, &caption)
+        .send_document(&bytes, mlib_spec::schema::INDEX_FILE, INDEX_MIME_TYPE, &caption)
         .await
         .context("sending the index document")?;
     remote.pin(id).await.context("pinning the index message")?;

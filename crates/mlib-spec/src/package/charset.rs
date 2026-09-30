@@ -12,7 +12,7 @@ pub(super) fn is_digits(s: &str) -> bool {
 /// the cipher or a file name: it keeps `key_id` free of any character a JSON
 /// writer might escape differently, which is what makes the associated data
 /// reproducible by a reader using a different JSON library.
-pub(super) fn is_lower_hex(s: &str, len: usize) -> bool {
+pub(crate) fn is_lower_hex(s: &str, len: usize) -> bool {
     s.len() == len
         && s.bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))

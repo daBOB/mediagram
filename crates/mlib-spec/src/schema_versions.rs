@@ -1,6 +1,8 @@
-//! `v1` through `v6` of `schema.rs`'s migration groups, split out to keep
+//! `v1` through `v9` of `schema.rs`'s migration groups, split out to keep
 //! that file under this crate's line limit. History nobody needs to touch
-//! again; a new group belongs in `schema.rs` itself, beside `V7` onward.
+//! again; a new group belongs in `schema.rs` itself. Once that file grows
+//! past the limit again, move its oldest group here rather than the new one
+//! — the growing edge stays in `schema.rs`, settled history moves out.
 
 /// v0 → v1: the original tables.
 pub(super) const V1: &[&str] = &[
@@ -92,4 +94,55 @@ pub(super) const V5: &[&str] = &["CREATE TABLE IF NOT EXISTS shows(
 pub(super) const V6: &[&str] = &[
     "ALTER TABLE shows ADD COLUMN total_seasons INTEGER",
     "ALTER TABLE shows ADD COLUMN total_episodes INTEGER",
+];
+
+/// v6 → v7: the age rating a title carries in the library's country.
+///
+/// What decides whether a title may sit on the Kids shelf without anyone
+/// having marked it. Text, as the provider writes it (`12`, `FSK 16` is never
+/// the form), because some countries rate with letters.
+pub(super) const V7: &[&str] = &["ALTER TABLE shows ADD COLUMN certification TEXT"];
+
+/// v7 → v8: how much attention a title draws at the provider.
+///
+/// What ranks a "trending" pick. TMDB's figure as of the cached payload, so
+/// it ages; readers treat it as optional, like `certification`.
+pub(super) const V8: &[&str] = &["ALTER TABLE shows ADD COLUMN popularity REAL"];
+
+/// v8 → v9: who is credited on a title, and the franchise a film belongs to.
+///
+/// `shows` gains a film's TMDB "collection" — the id and name eleven `Star
+/// Trek` films share, say — and a series' TMDB `type` (`Scripted`,
+/// `Miniseries`, …). Both wholly new tables are keyed the way `shows` is,
+/// with one difference each: `credits` adds `ord`, because a title credits
+/// more than one person and each needs its own row; `franchises` drops
+/// `kind`, because a collection is a movie-only idea and does not need one.
+///
+/// `credits.profile` carries the TMDB `profile_path` a portrait is fetched
+/// from — bare, like a poster path, not a full URL — so a device with no
+/// TMDB cache of its own can still show a face: it reads this column out of
+/// whatever snapshot reached it rather than asking the provider again.
+pub(super) const V9: &[&str] = &[
+    "ALTER TABLE shows ADD COLUMN collection_id INTEGER",
+    "ALTER TABLE shows ADD COLUMN collection_name TEXT",
+    "ALTER TABLE shows ADD COLUMN series_type TEXT",
+    "CREATE TABLE IF NOT EXISTS credits(
+        source TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        id INTEGER NOT NULL,
+        ord INTEGER NOT NULL,
+        person_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT,
+        dept TEXT NOT NULL,
+        profile TEXT,
+        PRIMARY KEY(source, kind, id, ord)
+    )",
+    "CREATE TABLE IF NOT EXISTS franchises(
+        source TEXT NOT NULL,
+        id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        overview TEXT,
+        PRIMARY KEY(source, id)
+    )",
 ];

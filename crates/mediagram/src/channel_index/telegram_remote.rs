@@ -2,7 +2,6 @@
 //! `channel_index` that touches Telegram.
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use anyhow::{Context, Result};
 use grammers_client::Client;
@@ -14,8 +13,6 @@ use crate::telegram::client::Tg;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
 use crate::verify::download_hash::fetch_messages;
 use mediagram_core::transport::document::message_document;
-
-const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
 
 /// How many pins, and how many marker-search hits, to read: the same bounds
 /// the players read with (`mediagram-core`, `api/channel/search.rs`), so the
@@ -104,30 +101,23 @@ impl ChannelRemote for TelegramRemote {
         self.chat_id
     }
 
-    async fn send_index(&self, path: &Path, caption: &str) -> Result<i32> {
-        let size = tokio::fs::metadata(path)
-            .await
-            .with_context(|| format!("stat {}", path.display()))?
-            .len() as usize;
-        let mut file = tokio::fs::File::open(path)
-            .await
-            .with_context(|| format!("opening {}", path.display()))?;
-        // An explicit name lets the document be called `library.db`
-        // whatever the snapshot's name on disk.
+    async fn send_document(&self, bytes: &[u8], name: &str, mime: &str, caption: &str) -> Result<i32> {
+        let mut cursor = std::io::Cursor::new(bytes);
         let uploaded = self
             .client
-            .upload_stream(&mut file, size, mlib_spec::schema::INDEX_FILE.to_string())
+            .upload_stream(&mut cursor, bytes.len(), name.to_string())
             .await
-            .with_context(|| format!("uploading {}", path.display()))?;
+            .with_context(|| format!("uploading {name}"))?;
         let (client, channel) = (self.client.clone(), self.channel);
-        let caption = caption.to_string();
+        let (mime, caption) = (mime.to_string(), caption.to_string());
         // Not idempotent: a lost response after a committed send would
-        // duplicate the index message, so only FLOOD_WAIT is retried.
+        // duplicate the message, so only FLOOD_WAIT is retried.
         let message = with_flood_wait_only(self.max_attempts, move || {
-            let (client, uploaded, caption) = (client.clone(), uploaded.clone(), caption.clone());
+            let (client, uploaded, mime, caption) =
+                (client.clone(), uploaded.clone(), mime.clone(), caption.clone());
             async move {
                 let input = InputMessage::new()
-                    .mime_type(INDEX_MIME_TYPE)
+                    .mime_type(&mime)
                     .text(caption)
                     .document(uploaded);
                 client.send_message(channel, input).await
