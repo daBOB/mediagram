@@ -65,12 +65,6 @@ data class MediaSet(
      * which is what the uploader extracted as a separate, playable track.
      */
     val slang: List<String> = emptyList(),
-    /**
-     * [subtitles]' own languages, deduplicated — kept for a surface that
-     * still shows one row per language rather than [subtitles]' full
-     * track shape (forced/SDH/label included).
-     */
-    val subtitleLanguages: List<String> = emptyList(),
     /** Whether the index holds a plot summary for this set. */
     val hasSummary: Boolean = false,
     /**

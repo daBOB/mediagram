@@ -20,6 +20,7 @@ import data.CatalogRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import model.Kind
+import model.SubtitleTrackInfo
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,9 +34,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The settings panel on a title with English subtitles: the two subtitle
- * sections join it, with the phone's rows, and what they choose is the
- * shared choice the picture's own subtitles are drawn from.
+ * The settings panel on a title with one regular English subtitle track:
+ * the two subtitle sections join it, with the phone's rows, off selected
+ * by default — nothing is remembered or preferred for this show — and what
+ * a row chosen by hand picks is the shared choice the picture's own
+ * subtitles are drawn from.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -45,28 +48,42 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
     override fun makeFixture(): TvPlayerFixture {
         val subtitled =
             set("set-one", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 1, episode = 4, durationSecs = 600)
-                .copy(subtitleLanguages = listOf("en"))
+                .copy(subtitles = listOf(ENGLISH_TRACK))
         val catalog = mockk<CatalogRepository>(relaxed = true)
         coEvery { catalog.mediaSet("set-one") } returns subtitled
         val subtitles = mockk<SubtitleTrackSource>()
-        coEvery { subtitles.load("set-one", "en") } returns listOf(TimedCue(40_000, 50_000, "Hello."))
+        coEvery { subtitles.load("set-one", ENGLISH_TRACK.track) } returns listOf(TimedCue(40_000, 50_000, "Hello."))
         return TvPlayerFixture(catalog = catalog, subtitles = subtitles)
     }
 
     @Test
-    fun bothSubtitleSectionsAppearWithThePhonesRows() {
-        openWithSubtitles()
+    fun bothSubtitleSectionsAppearWithThePhonesRowsOffSelectedByDefault() {
+        openSettingsPanel()
         for (text in listOf("Subtitles", "Off", "English", "Subtitle style", "Small", "Normal", "Large", "Larger", "Shadow", "Box", "None", "Sync")) {
             inPanel(text).assertExists()
         }
-        inPanel("English").assertIsSelected()
+        inPanel("Off").assertIsSelected()
         inPanel("Normal").assertIsSelected()
         inPanel("Shadow").assertIsSelected()
+        compose.onNodeWithText("Hello.").assertDoesNotExist()
+    }
+
+    @Test
+    fun choosingEnglishTurnsSubtitlesOnAndShowsItsCue() {
+        openSettingsPanel()
+
+        inPanel("English").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        inPanel("English").assertIsSelected()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test
     fun sizeAndBackingChosenAreTheSharedChoices() {
-        openWithSubtitles()
+        openSettingsPanel()
         inPanel("Larger").performSemanticsAction(SemanticsActions.OnClick)
         inPanel("Box").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
@@ -78,7 +95,7 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
 
     @Test
     fun theSyncRowNudgesAndResets() {
-        openWithSubtitles()
+        openSettingsPanel()
         compose.onNodeWithContentDescription("Subtitles later").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
         inPanel("+0.1s").assertExists()
@@ -91,7 +108,13 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
 
     @Test
     fun offTurnsTheSubtitlesOff() {
-        openWithSubtitles()
+        openSettingsPanel()
+        inPanel("English").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
+        }
+
         inPanel("Off").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
@@ -102,7 +125,7 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
 
     @Test
     fun theSyncButtonsFitInsideThePanelOnOneLine() {
-        openWithSubtitles()
+        openSettingsPanel()
         // Bounds are clipped to what the panel's scroll shows; bring the row into it first.
         compose.onNodeWithTag(TvSyncButtonsTag).performScrollTo()
         val panel = compose.onNodeWithTag(TvSettingsPanelTag).getBoundsInRoot()
@@ -117,12 +140,17 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
         assertTrue(reset.width > earlier.width, "Reset is ${reset.width} wide, − is ${earlier.width}")
     }
 
-    private fun openWithSubtitles() {
+    /** Opens the panel once the set's own track is known — a regular track makes the sections appear regardless of the (now off) default choice. */
+    private fun openSettingsPanel() {
         compose.waitUntil(timeoutMillis = 5_000) {
-            compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
+            controller.get().playerViewModel.choices.value.subtitleOptions.isNotEmpty()
         }
         openSettings()
     }
 
     private fun inPanel(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(TvSettingsPanelTag)))
+
+    private companion object {
+        val ENGLISH_TRACK = SubtitleTrackInfo(track = 0, lang = "en", forced = false, sdh = false, label = "")
+    }
 }

@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.88.1 — TV subtitle tests follow the track-based, off-by-default rule
+
+**Fixed**
+
+- `:ui-tv:testDebugUnitTest`'s three subtitle-cue tests now mock
+  `SubtitleTrackSource.load(setId, track: Int)` and set up a forced track in
+  the file's own audio language, or a regular track chosen by hand, rather
+  than assuming the retired "first language wins" default. The two
+  compatibility shims kept only for those tests —
+  `SubtitleTrackSource`'s deprecated `load(setId, lang: String)` overload and
+  `MediaSet.subtitleLanguages` — are removed now that nothing calls either.
+
 ## 0.88.0 — Measure existing titles before any subtitle backfill
 
 **Added**

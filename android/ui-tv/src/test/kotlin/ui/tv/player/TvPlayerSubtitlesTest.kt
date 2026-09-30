@@ -12,6 +12,7 @@ import designsystem.Overscan
 import io.mockk.coEvery
 import io.mockk.mockk
 import model.Kind
+import model.SubtitleTrackInfo
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,10 +26,12 @@ import ui.tv.catalog.set
 import kotlin.test.assertTrue
 
 /**
- * [TvPlayerScreen] playing a title with English subtitles, which the player
- * picks by the shared default rule: the cue at the playhead is drawn, clear
- * of the controls while they are up and inside the overscan margin always,
- * and the viewer's shared size and sync offset apply to it as on the phone.
+ * [TvPlayerScreen] playing a title with one forced English track in its own
+ * audio language — the one tier the default rule turns on with nothing
+ * remembered or chosen; see `SubtitleChoice.kt`. The cue at the playhead is
+ * drawn, clear of the controls while they are up and inside the overscan
+ * margin always, and the viewer's shared size and sync offset apply to it
+ * as on the phone.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -37,11 +40,11 @@ class TvPlayerSubtitlesTest : TvPlayerScreenHarness() {
     override fun makeFixture(): TvPlayerFixture {
         val subtitled =
             set("set-one", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 1, episode = 4, durationSecs = 600)
-                .copy(subtitleLanguages = listOf("en"))
+                .copy(subtitles = listOf(FORCED_TRACK), alang = listOf("en"))
         val catalog = mockk<CatalogRepository>(relaxed = true)
         coEvery { catalog.mediaSet("set-one") } returns subtitled
         val subtitles = mockk<SubtitleTrackSource>()
-        coEvery { subtitles.load("set-one", "en") } returns
+        coEvery { subtitles.load("set-one", FORCED_TRACK.track) } returns
             listOf(
                 // Spans the fixture's playhead at 42s.
                 TimedCue(40_000, 50_000, SPOKEN),
@@ -116,5 +119,6 @@ class TvPlayerSubtitlesTest : TvPlayerScreenHarness() {
     private companion object {
         const val SPOKEN = "We have to go back."
         const val LATE = "Not yet."
+        val FORCED_TRACK = SubtitleTrackInfo(track = 0, lang = "en", forced = true, sdh = false, label = "Forced")
     }
 }

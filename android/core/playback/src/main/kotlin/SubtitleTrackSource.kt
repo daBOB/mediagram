@@ -16,15 +16,6 @@ import kotlinx.coroutines.withContext
 interface SubtitleTrackSource {
     /** [track]'s cues for [setId] — its position among the set's own subtitle tracks — or empty when the read/parse failed. */
     suspend fun load(setId: String, track: Int): List<TimedCue>
-
-    /**
-     * Unused by any production caller — [load] is keyed by track position
-     * now, not a language. Kept only so `ui-tv`'s own in-flight branch,
-     * which still mocks the old by-language shape, keeps compiling; drop
-     * once that branch has moved onto [load]'s own overload.
-     */
-    @Deprecated("kept for ui-tv's in-flight branch; use load(setId, track: Int)")
-    suspend fun load(setId: String, lang: String): List<TimedCue> = emptyList()
 }
 
 class DefaultSubtitleTrackSource(

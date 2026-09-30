@@ -9,6 +9,7 @@ import data.CatalogRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import model.Kind
+import model.SubtitleTrackInfo
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,6 +26,10 @@ import kotlin.test.assertTrue
  * only as far as the title along the top allows — never printed over it —
  * and, with the settings panel open, into what the panel leaves of the
  * picture rather than under it.
+ *
+ * The title carries one forced track in its own audio language — the one
+ * tier the default rule turns on with nothing remembered or chosen; see
+ * `SubtitleChoice.kt`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -35,12 +40,12 @@ class TvPlayerCueRoomTest : TvPlayerScreenHarness() {
     override fun makeFixture(): TvPlayerFixture {
         val subtitled =
             set("set-one", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 1, episode = 4, durationSecs = 600)
-                .copy(subtitleLanguages = listOf("en"))
+                .copy(subtitles = listOf(FORCED_TRACK), alang = listOf("en"))
         val catalog = mockk<CatalogRepository>(relaxed = true)
         coEvery { catalog.mediaSet("set-one") } returns subtitled
         coEvery { catalog.mediaSet("set-two") } returns set("set-two", Kind.EPISODE, "After", show = "A Show", addedAt = 1, episode = 5, durationSecs = 600)
         val subtitles = mockk<SubtitleTrackSource>()
-        coEvery { subtitles.load("set-one", "en") } returns listOf(TimedCue(40_000, 50_000, THREE_LINES), TimedCue(585_000, 600_000, CLOSING))
+        coEvery { subtitles.load("set-one", FORCED_TRACK.track) } returns listOf(TimedCue(40_000, 50_000, THREE_LINES), TimedCue(585_000, 600_000, CLOSING))
         return TvPlayerFixture(catalog = catalog, subtitles = subtitles)
     }
 
@@ -84,5 +89,6 @@ class TvPlayerCueRoomTest : TvPlayerScreenHarness() {
     private companion object {
         const val CLOSING = "And that is where the long closing line of this episode runs on past the middle."
         const val THREE_LINES = "The first line of it,\nthe second line of it,\nand the third."
+        val FORCED_TRACK = SubtitleTrackInfo(track = 0, lang = "en", forced = true, sdh = false, label = "Forced")
     }
 }

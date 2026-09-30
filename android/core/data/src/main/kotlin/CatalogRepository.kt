@@ -213,7 +213,6 @@ class DefaultCatalogRepository(
             subtitles = summary.subtitles.map { it.toSubtitleTrackInfo() },
             alang = summary.alang,
             slang = summary.slang,
-            subtitleLanguages = summary.subtitles.map { it.lang }.distinct(),
             hasSummary = summary.hasSummary,
             backdropPath = summary.backdropPath,
             seasonPosterPath = summary.seasonPosterPath,
