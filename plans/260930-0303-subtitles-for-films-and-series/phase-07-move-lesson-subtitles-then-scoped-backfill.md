@@ -18,7 +18,7 @@ Priority P1. Effort 1d code + unattended runs. Version: next **minor** (sending 
 - The other machine is verified at schema ≥ 13 by the caption of its own push.
 - The pre-move snapshot message id is recorded.
 
-**Film/series scope: _to be filled from 07a_** (buckets S/U/N/P and the user's choice). Until then only part A runs, plus part B's minimum.
+**Film/series scope (user, 2026-09-30, from 07a's counts):** extract from the *uploaded copies* through the channel — MP4 first (~2,164 sets, ≈1 min each), then MKV (~692, full reads) — paced and resumable; local sources where present. Picture-only titles (188 films) stay without subtitles. Part B below is re-planned around this (2026-09-30).
 
 ## Part A — `mediagram subtitles move-inline [--dry-run] [--no-push]` (always in scope)
 - Runs on **this machine only**, after `pull-index`, so it covers all 1,266 rows including the other machine's 31.
@@ -37,8 +37,12 @@ Priority P1. Effort 1d code + unattended runs. Version: next **minor** (sending 
   - `--redo <set>` ignores an existing bundle, records the new one, then deletes the old message.
 - Holds the upload lock for the whole run, and refuses to start when `upload_slots` > 1 (it holds only slot 0) until the config says 1.
 - Resumable: a set whose bundle `uploaded_at` is newer than the run start is skipped. Ctrl-C finishes the current record, then stops.
-- The historical run covers only the buckets the user chose in 07a.
-  - Bucket U (extract from the Telegram copy) is a separate decision. If chosen, it needs its own small step that downloads the whole file through `serve`. It is not planned here.
+- **Channel source (re-planned 2026-09-30):** `backfill --channel [--mkv] [--limit N]` takes no folders. It walks the index for complete non-`doc` sets whose facts list a `de`/`en` subtitle language and that have no bundle — MP4 sets (`container`/file name) before MKV, MKV only with `--mkv` — and extracts from the uploaded copy:
+  - One process, one Telegram session: the command starts the `serve` router (`serve::routes::router` over a read-only index + `TelegramSource` from the **same** `Tg` client that sends) on `127.0.0.1:0` in a spawned task, and hands `attach` the input `http://127.0.0.1:<port>/sets/<id>/stream` (phase 06's `Input::Url`; no sidecars). Never a second client on the same key (lessons 2026-09-22).
+  - ffprobe/ffmpeg read through HTTP Range: MP4 range-reads the subtitle samples (~1 min/set measured in 07a); MKV is a full read.
+  - A set whose uploaded copy has no de/en text track (picture-only, none) is noted in `meta` as `subs-none:<set>` so later runs skip it; `--redo <set>` clears it.
+  - Pace: 2 s between sets; `--limit N` bounds a night's run. Same lock, slot check, resume and Ctrl-C rules as the folder mode. One publish at the end (and every 100 sets, so a crash loses little).
+- Folder mode (local sources, 07a's matcher) stays for the ~62 local sets and new uploads' crash repair.
 
 ## Runbook (lead; one machine at a time; no upload running on either)
 1. **This machine:**
@@ -46,8 +50,8 @@ Priority P1. Effort 1d code + unattended runs. Version: next **minor** (sending 
    - Other machine: confirm it is idle and on ≥ phase 06, and that its last push printed a message id whose caption reads `"schema":13`.
 2. `mediagram pull-index`. Record in `reports/rollout-log.md` the channel index message id pulled (`meta.pulled_index_message_id`): that is the **pre-move backup** snapshot.
 3. `mediagram subtitles move-inline --dry-run`, then `mediagram subtitles move-inline`.
-4. Only in the scope from 07a, with the media folders listed there (never drive roots): `backfill --dry-run`, review, then `backfill`, re-run until nothing is left to send.
-5. **Other machine:** steps 1–2 and 4 with its own folders. Never `move-inline` there.
+4. Local sources, with the media folders from 07a (never drive roots): `backfill --dry-run`, review, then `backfill`. Then the channel: `backfill --channel --dry-run` (counts only), `backfill --channel --limit 20` (spot-check the first bundles on web/tablet), then unattended `backfill --channel` until nothing is left, then `--channel --mkv`.
+5. **Other machine:** steps 1–2 and the *folder* half of 4 with its own folders. Never `move-inline` or `--channel` there (this machine covers every set in the channel).
 6. Record the totals, the remaining gap list (`reports/`) and the channel index size in `reports/rollout-log.md`.
 
 ## Related code files

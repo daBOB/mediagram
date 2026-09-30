@@ -37,7 +37,7 @@ CC / 'c' shown when a regular track exists (state = regular showing); style/offs
 |---|---|---|---|---|
 | 01 | [Remux keeps every stream; audio audit](phase-01-remux-keeps-every-stream-and-audit.md) | `media/{remux,test_fixtures}.rs`, `reports/uploaded-stream-headers.sh` | patch | completed (0.84.8) |
 | 02 | [v13, bundle, merge, guard, send_document](phase-02-index-v13-subtitle-tables-bundle-format-merge.md) | `crates/mlib-spec/**`, `index/merge*.rs`, `channel_index/**`, `tests/support/channel.rs`, `web/src/catalog.ts`, shared fixtures | minor | completed (0.85.0) |
-| 03 | [Web: files, rule, picker, setting, holds](phase-03-web-subtitle-files-default-rule-and-settings.md) | `web/**` except `web/src/state/**`, `web/src/catalog.ts`, the other session's files (`index.ts` only after it lands) | minor | in-review (0.86.0; web/src/index.ts wiring + headed preview check pending) |
+| 03 | [Web: files, rule, picker, setting, holds](phase-03-web-subtitle-files-default-rule-and-settings.md) | `web/**` except `web/src/state/**`, `web/src/catalog.ts`, the other session's files (`index.ts` only after it lands) | minor | in-review (0.86.0; `index.ts` wired 0.88.3; headed preview check pending) |
 | 04 | [Android core + player](phase-04-android-core-subtitle-files-and-default-rule.md) | `crates/mediagram-core/src/{catalog*,api/{subtitles,set_text,channel,store},dto}`, `android/core/**`, `android/feature/{player,catalog}/**`, `TitleDetailScreen.kt` | minor | in-review (0.87.0; device check pending) |
 | 05 | [Android: CC, captions key, style gate, setting](phase-05-android-quick-toggles-captions-key-profile-setting.md) | `android/ui-mobile/**` (not `TitleDetailScreen.kt`), `android/ui-tv/**`, `android/ui-common/**/settings`, `android/feature/setup/**` | minor | pending |
 | 06 | [Uploader: attach at completion](phase-06-uploader-extracts-sidecars-and-uploads-bundles.md) | `src/subtitles/**`, `media/{probe,streams}.rs`, `upload/{session/item,plan,prepare_set}.rs`, `index/{lifecycle,subtitles}.rs`, `course/sidecars.rs`, `remove/**` | minor | pending |
@@ -77,9 +77,9 @@ Session 2026-09-30: four reviewers (reports under `reports/from-code-reviewer-to
 ## Decided after review (2026-09-30)
 - Android lesson hold: the opened lesson + the next 10 lessons (phase 04), not the whole course.
 - Phase 07's send / `--redo` mode (crash repair for new uploads) stays in scope whatever 07a decides for films and series.
-- **07a result → backfill scope:** 2,856 of 3,058 de/en-subtitled sets already carry de/en text in their *uploaded* copies (local sources here: 62). The film/series backfill extracts from the uploaded copies through the channel — MP4 first (~2,164, ≈1 min each), then MKV (~692, full reads) — paced, resumable; phase 07 Part B is re-planned around this before building. Numbers: [reports/rollout-log.md](reports/rollout-log.md).
+- **07a result → backfill scope:** 2,856 of 3,058 de/en-subtitled sets already carry de/en text in their *uploaded* copies (local sources here: 62). The film/series backfill extracts from the uploaded copies through the channel — MP4 first (~2,164, ≈1 min each), then MKV (~692, full reads) — paced, resumable; phase 07 Part B re-planned: `backfill --channel` through an in-process loopback `serve` on the sending session. Numbers: [reports/rollout-log.md](reports/rollout-log.md).
 
 ## Unresolved questions
-1. Phase 07 film/series scope: pending 07a's counts (buckets S/U/N/P).
+1. ~~Phase 07 film/series scope~~ — decided: channel extraction (see above).
 2. Course hold on Android fetches up to 864 bundles (~20 MB) on the first lesson opened in Wall Street Story. Keep it whole-course as accepted, or bound it to the chapter or the next N lessons?
 3. Keep: lessons' 1,076 `und` tracks never match a profile language; sidecars in other languages are skipped. Open: re-upload of 01's audio-damaged sets (follow-up); the other machine's source folders and `upload_slots`.
