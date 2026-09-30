@@ -64,13 +64,13 @@ The command and script are ready for the lead's operator runs (phase 07a's own n
 cargo install --path crates/mediagram --locked
 mediagram --version   # confirm it matches this branch
 mediagram pull-index
-# confirm mounts before walking — /run/media/andre/Storage18TB_2 errored I/O today
-findmnt /media/andre/Storage18TB /media/DBI/HiDrive /run/media/andre/Storage18TB_2
+# confirm mounts before walking — <second data drive> errored I/O today
+findmnt <media drive> <NAS share> <second data drive>
 
 mediagram subtitles backfill \
-  /media/andre/Storage18TB/xstream \
-  /media/DBI/HiDrive/xstream \
-  /run/media/andre/Storage18TB_2/<film and series folders only, never the drive root> \
+  <media drive>/<series folder> \
+  <NAS share> \
+  <second data drive> and series folders only, never the drive root> \
   --dry-run > plans/260930-0303-subtitles-for-films-and-series/reports/backfill-dry-run-<machine>-<date>.tsv
 
 plans/260930-0303-subtitles-for-films-and-series/reports/uploaded-stream-headers.sh subs \
@@ -78,7 +78,7 @@ plans/260930-0303-subtitles-for-films-and-series/reports/uploaded-stream-headers
 ```
 No upload may be running (the script self-checks via `pgrep`; the backfill command itself only reads, but the shared Telegram session used by `serve` still applies to the script). Expect the dry run to take a while if the media folders are large — it probes every walked file once; the header-probe script paces per set through `mediagram serve` similarly to the existing `audio` mode. Bring back both TSVs.
 
-**Other machine** (`/home/andre/bandentv/...`):
+**Other machine** (`<other machine's media folder>`):
 ```
 git pull   # or however this branch reaches it
 cargo install --path crates/mediagram --locked
