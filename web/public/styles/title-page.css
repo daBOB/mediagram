@@ -141,7 +141,8 @@
 .fact dt { color: var(--ink-3); font-size: 0.6875rem; letter-spacing: 0.24em; text-transform: uppercase; padding-top: 3px; }
 .fact dd { margin: 0; color: var(--ink); font-size: 0.9375rem; overflow-wrap: anywhere; }
 
-.season-pick select {
+.season-pick select,
+.setting select {
   min-height: 44px;
   margin-bottom: 20px;
   padding: 0 40px 0 18px;

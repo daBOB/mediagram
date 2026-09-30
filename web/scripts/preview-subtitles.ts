@@ -39,8 +39,10 @@ function ensureTables(db: Database): void {
  * treats an absent one exactly as it would an uploader that predates v13.
  */
 export function wirePreviewSubtitles(db: Database, heldDir: string): Pick<SubtitleBundles, "vtt" | "hold" | "reconcile"> | undefined {
-  const setId = process.env.PREVIEW_SUBTITLES;
-  if (!setId) return undefined;
+  // Comma-separated set ids; `forced:<id>` lists only the forced track, the
+  // shape a dubbed film with sign subtitles alone has.
+  const ids = process.env.PREVIEW_SUBTITLES?.split(",").filter(Boolean) ?? [];
+  if (ids.length === 0) return undefined;
 
   const raw = readFileSync(FIXTURE_PATH, "utf8");
   const bundle = JSON.parse(raw) as { v: number; tracks: FixtureTrack[] };
@@ -48,17 +50,21 @@ export function wirePreviewSubtitles(db: Database, heldDir: string): Pick<Subtit
   const sha256 = createHash("sha256").update(gz).digest("hex");
 
   ensureTables(db);
-  db.run("DELETE FROM subtitle_tracks WHERE set_id = ?1", [setId]);
-  db.run("INSERT OR REPLACE INTO subtitle_files(set_id, chat_id, message_id, bytes, sha256, uploaded_at) VALUES (?1, -1001, 1, ?2, ?3, ?4)", [
-    setId, gz.byteLength, sha256, Math.floor(Date.now() / 1000),
-  ]);
   const insertTrack = db.query(
     "INSERT INTO subtitle_tracks(set_id, track, lang, forced, sdh, label) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
   );
-  bundle.tracks.forEach((track, index) => {
-    insertTrack.run(setId, index, track.lang, track.forced ? 1 : 0, track.sdh ? 1 : 0, track.label);
-  });
-
-  console.log(`preview: wired the subtitle fixture onto set ${setId} (${bundle.tracks.length} tracks)`);
+  for (const id of ids) {
+    const forcedOnly = id.startsWith("forced:");
+    const setId = forcedOnly ? id.slice("forced:".length) : id;
+    db.run("DELETE FROM subtitle_tracks WHERE set_id = ?1", [setId]);
+    db.run("INSERT OR REPLACE INTO subtitle_files(set_id, chat_id, message_id, bytes, sha256, uploaded_at) VALUES (?1, -1001, 1, ?2, ?3, ?4)", [
+      setId, gz.byteLength, sha256, Math.floor(Date.now() / 1000),
+    ]);
+    bundle.tracks.forEach((track, index) => {
+      if (forcedOnly && !track.forced) return;
+      insertTrack.run(setId, index, track.lang, track.forced ? 1 : 0, track.sdh ? 1 : 0, track.label);
+    });
+    console.log(`preview: wired the subtitle fixture onto set ${setId}${forcedOnly ? " (forced only)" : ""}`);
+  }
   return new SubtitleBundles({ fetch: async () => gz, background: async () => gz, heldDir });
 }

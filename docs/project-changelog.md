@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.88.4 — the Settings subtitle choice looks like the rest of the page
+
+**Fixed**
+
+- Settings › Profile › Subtitles was a bare browser `<select>` beside the
+  page's pill controls. It now shares the season picker's pill style
+  (`title-page.css`).
+
+**Changed**
+
+- `PREVIEW_SUBTITLES` takes several set ids, comma-separated, and
+  `forced:<id>` lists only the forced track, so the whole subtitle
+  walkthrough — the rule across two episodes of one show, a forced-only film —
+  runs in one preview.
+
 ## 0.88.3 — the web player serves subtitle bundles
 
 **Fixed**
