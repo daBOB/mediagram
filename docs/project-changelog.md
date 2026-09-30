@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.8 — Faststart remux keeps every stream mp4 can hold
+
+**Fixed**
+
+- The faststart remux (`ensure_faststart`) no longer relies on ffmpeg's
+  default stream selection, which kept one video and one audio stream and
+  dropped every subtitle. The map is now built from a probe: every video
+  stream that is not an attached picture, every audio stream, and one
+  `-map` per subtitle stream whose codec the mp4 muxer accepts
+  (`mov_text`, `dvd_subtitle`). A source whose mapped remux the muxer
+  refuses — a stream that today's blanket copy would have silently
+  dropped — falls back once to today's unmapped arguments rather than
+  failing the whole upload.
+- Added a one-off, read-only audit script
+  (`plans/260930-0303-subtitles-for-films-and-series/reports/uploaded-stream-headers.sh`)
+  that probes already-uploaded mp4 sets over a loopback `mediagram serve`
+  and reports which lost an audio language under the old remux.
+
 ## 0.84.7 — the uploader refuses a channel index newer than it understands
 
 **Added**

@@ -37,6 +37,115 @@ pub fn make_faststart_mp4(dir: &Path) -> PathBuf {
     build_fixture(dir, "faststart.mp4", &["-movflags", "+faststart"])
 }
 
+/// Builds a trailing-moov MP4 with two audio languages and two `mov_text`
+/// subtitle streams (`ger` forced, `eng` plain), proving a mapped remux
+/// keeps every stream a plain `-c copy` (no `-map`) would have kept only
+/// one language of, and no subtitle at all.
+pub fn make_trailing_moov_mp4_multi(dir: &Path) -> PathBuf {
+    let ger_srt = dir.join("multi_ger.srt");
+    let eng_srt = dir.join("multi_eng.srt");
+    std::fs::write(&ger_srt, "1\n00:00:00,000 --> 00:00:01,000\nHallo\n")
+        .expect("writing the German subtitle fixture");
+    std::fs::write(&eng_srt, "1\n00:00:00,000 --> 00:00:01,000\nHello\n")
+        .expect("writing the English subtitle fixture");
+
+    let out = dir.join("trailing_moov_multi.mp4");
+    let status = Command::new("ffmpeg")
+        .args(["-v", "error", "-y"])
+        .args(["-f", "lavfi", "-i", "testsrc=duration=1:size=64x64:rate=10"])
+        .args(["-f", "lavfi", "-i", "sine=duration=1"])
+        .args(["-f", "lavfi", "-i", "sine=duration=1:frequency=880"])
+        .arg("-i")
+        .arg(&ger_srt)
+        .arg("-i")
+        .arg(&eng_srt)
+        .args([
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-map",
+            "2:a",
+            "-map",
+            "3",
+            "-map",
+            "4",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-c:s",
+            "mov_text",
+            "-metadata:s:a:0",
+            "language=ger",
+            "-metadata:s:a:1",
+            "language=eng",
+            "-metadata:s:s:0",
+            "language=ger",
+            "-metadata:s:s:1",
+            "language=eng",
+            "-disposition:s:0",
+            "forced",
+        ])
+        .arg(&out)
+        .status()
+        .expect("spawning ffmpeg for the multi-stream test fixture");
+    assert!(status.success(), "ffmpeg multi-stream fixture build failed");
+    out
+}
+
+/// Builds a trailing-moov file, named `.mp4` as a real source might be even
+/// when it is really QuickTime's more lenient `mov` layout, whose second
+/// video stream is raw, uncompressed video — a codec the mp4 muxer refuses
+/// to copy in. Today's unmapped remux silently keeps only the first video
+/// stream and so never notices; an explicit `-map 0:V?` remux forces the
+/// raw stream in and is refused, proving `ensure_faststart`'s one-time
+/// fallback to today's arguments.
+pub fn make_trailing_moov_mp4_unmuxable_stream(dir: &Path) -> PathBuf {
+    let raw = dir.join("second_stream.yuv");
+    // One second of 64x64 yuv420p at 10fps: 6144 bytes/frame * 10 frames.
+    // Content is irrelevant; only the raw, uncompressed codec matters here.
+    std::fs::write(&raw, vec![0u8; 6144 * 10]).expect("writing the raw video fixture frames");
+
+    let out = dir.join("trailing_moov_unmuxable.mp4");
+    let status = Command::new("ffmpeg")
+        .args(["-v", "error", "-y"])
+        .args(["-f", "lavfi", "-i", "testsrc=duration=1:size=64x64:rate=10"])
+        .args([
+            "-f", "rawvideo", "-pix_fmt", "yuv420p", "-s", "64x64", "-r", "10", "-i",
+        ])
+        .arg(&raw)
+        .args(["-f", "lavfi", "-i", "sine=duration=1"])
+        .args([
+            "-map",
+            "0:v",
+            "-map",
+            "1:v",
+            "-map",
+            "2:a",
+            "-c:v:0",
+            "libx264",
+            "-pix_fmt:v:0",
+            "yuv420p",
+            "-c:v:1",
+            "copy",
+            "-c:a",
+            "aac",
+            "-f",
+            "mov",
+        ])
+        .arg(&out)
+        .status()
+        .expect("spawning ffmpeg for the unmuxable-stream test fixture");
+    assert!(
+        status.success(),
+        "ffmpeg unmuxable-stream fixture build failed"
+    );
+    out
+}
+
 fn build_fixture(dir: &Path, name: &str, extra_args: &[&str]) -> PathBuf {
     let out = dir.join(name);
     let status = Command::new("ffmpeg")
