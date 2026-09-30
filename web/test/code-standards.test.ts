@@ -37,7 +37,9 @@ const ROOT = join(import.meta.dir, "..");
  * 5, for the `ids` getter the subtitle bundle reconcile enumerates held sets
  * through. Lowered the same day for `playback/transport.js`, once its
  * subtitle picker, 'c' toggle and menu-building moved out to the new
- * `playback/subtitle-picker.js`.
+ * `playback/subtitle-picker.js`. Raised 2026-09-30 for `src/index.ts`, by 10,
+ * wiring the subtitle bundle store into the router, the catalog follower and
+ * the startup reconcile of held titles.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 753,
@@ -60,7 +62,7 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 441,
+  "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 267,

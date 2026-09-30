@@ -27,6 +27,8 @@ import { retireOtherChunkSizes } from "./cache/key";
 import { startBudget } from "./cache/budget";
 import { HeldSets, expectedChunks } from "./cache/held";
 import { AudioTrackReader } from "./catalog/audio-tracks";
+import { SubtitleBundles, heldSubtitlesDir } from "./catalog/subtitle-bundles";
+import { connectionFetcher } from "./telegram/part-fetch";
 import { WatchState } from "./state/store";
 import { PosterStore } from "./package/posters";
 import type { RefreshOptions } from "./package/refresh";
@@ -199,6 +201,12 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // stores distinct language codes, not stream ordinals.
     const audio = new AudioTrackReader(endpoint);
     resources.audio = audio;
+    // Subtitle bundles: fetched whole on first use, kept in memory, on disk only for held titles.
+    const subtitles = new SubtitleBundles({
+      fetch: (id, offset, length) => connectionFetcher(connection, id)(offset, length),
+      background: (id, offset, length) => backgroundFetcher(connection, id)(offset, length),
+      heldDir: heldSubtitlesDir(config.cacheDir),
+    });
 
     /**
      * Sharing that state with this account's other devices, if asked.
@@ -258,6 +266,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     if (held) {
       await held.refresh();
       console.log(`held: ${held.count} title(s) cached in full`);
+      void subtitles.reconcile(db, held).catch((error) => console.warn("subtitles: reconcile failed:", error));
     }
     const facts: StartupFacts = {
       catalog: {
@@ -352,6 +361,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       onWrite: () => writeDebounce?.touch(),
       hls: new TranscodeFiles(transcodes),
       audio,
+      subtitles,
       source: bytes,
       cacheSource: reader ? { stream: (...args) => bytes.streamCached(...args) } : undefined,
       posters,
@@ -383,7 +393,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     boundUrl = server.baseUrl;
     resources.server = server;
     const follower = new CatalogFollower({
-      db, catalog, server, facts, events, held: held ?? undefined,
+      db, catalog, server, facts, events, held: held ?? undefined, subtitles,
       root: config.channelIndexDir,
       find: findViaConnection,
       fetchPosters: (index) => io.fetchPosters(config.postersCommand, index),

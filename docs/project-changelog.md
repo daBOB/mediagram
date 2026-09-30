@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.88.3 — the web player serves subtitle bundles
+
+**Fixed**
+
+- The player now builds its `SubtitleBundles` store at startup and hands it to
+  the router, the catalog follower and the preload route (`src/index.ts`).
+  Until now a title whose subtitles live in a bundle listed its tracks but
+  answered no `.vtt`: phase 03 had built the store but could not wire it.
+  Titles held in full have their bundles reconciled to disk at startup and
+  after every catalog swap, so they keep their subtitles offline. The store is
+  built even with the cache off; only the held copies need it.
+
 ## 0.88.2 — the web player stops fetching the same bytes over and over
 
 What the viewer saw: `Sleeping for Ns on flood wait (Caused by
