@@ -21,9 +21,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import model.MediaSet
+import ui.tv.LocalLibraryCovered
 
-/** The web's own `HOLD_MS` (`home-cover.js:20`) — the phone cover holds by the same clock. */
-private const val HOLD_MS = 9_000L
+/** The web's own `HOLD_MS` (`home-cover.js:20`) — the phone cover holds by the same clock. Not private: a test drives the same clock this rotates by. */
+internal const val HOLD_MS = 9_000L
 
 /** The web's own crossfade duration (`home.css`'s `cover-fade`, `1400ms`) — the phone cover fades by the same clock. */
 private const val CROSSFADE_MS = 1_400
@@ -82,10 +83,16 @@ internal fun TvHomeCover(
     var hasFocus by remember { mutableStateOf(false) }
     val current = films.firstOrNull { it.setId == currentId } ?: films.first()
     val rotates = films.size > 1
+    // Paused, not merely uncomposed, while a pushed frame covers this page:
+    // the page stays laid out under it now rather than being torn down, so
+    // without this the hold clock would keep counting down — and the film
+    // underneath would keep changing — for as long as whatever is on top
+    // stays open.
+    val covered = LocalLibraryCovered.current
 
     if (rotates) {
-        LaunchedEffect(currentId, hasFocus) {
-            if (hasFocus) return@LaunchedEffect
+        LaunchedEffect(currentId, hasFocus, covered) {
+            if (hasFocus || covered) return@LaunchedEffect
             delay(HOLD_MS)
             val at = films.indexOfFirst { it.setId == currentId }.coerceAtLeast(0)
             currentId = films[(at + 1) % films.size].setId

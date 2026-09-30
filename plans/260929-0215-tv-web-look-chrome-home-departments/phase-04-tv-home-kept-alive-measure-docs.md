@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "TV Home kept alive under pushed frames, measured; device walk; docs"
-status: pending
+status: in-review
 priority: P2
 effort: 6h
 dependencies: [3]
@@ -122,13 +122,14 @@ Modify
 
 ## Todo
 
-- [ ] home layer kept alive, inert and frozen while covered
-- [ ] TvHomeKeptAliveTest; all ui-tv tests green; check.sh green
+- [x] home layer kept alive, inert and frozen while covered
+- [x] TvHomeKeptAliveTest; all ui-tv tests green; check.sh green
 - [ ] debug + benchmark measurements vs baseline; PSS during playback; tablet R1 recorded
-- [ ] fallback applied only if needed
+- [ ] fallback applied only if needed (one-line `PLAYER`-only switch left ready in `TvLibrary.kt`'s `covered` line for the lead to flip)
 - [ ] full device walk + overview sheet
-- [ ] DESIGN.md, system-architecture.md, changelog; verification report
-- [ ] version, commit
+- [x] DESIGN.md, system-architecture.md, changelog
+- [ ] verification report (lead, on the box)
+- [x] version, commit (implementation half; lead's own on-box findings land in a follow-up commit)
 
 ## Success criteria
 

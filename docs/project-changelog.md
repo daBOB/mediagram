@@ -5,6 +5,36 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.1 — Android TV: Home kept alive under a pushed frame
+
+**Added**
+
+- The television catalogue's own root — the rail, the departments bar and
+  whichever tab is chosen — stays composed and laid out under a title, the
+  player, Search, Latest, Genres, Settings/System, a list or the menu page,
+  rather than being torn down and rebuilt every time one of them opens and
+  every time Back leaves it: hidden (not drawn, not focusable, its semantics
+  cleared) and inert (its own `BackHandler`s off, the cover's rotation
+  paused, its `CatalogUiState` frozen at the moment it was covered) while
+  covered, so a return is a focus restore rather than a full
+  compose/measure/place (`ui-tv/.../TvHomeLayer.kt`). Tab switches are still
+  a rebuild, by design: a new tab must not inherit the old one's scroll.
+- Every arrival effect this touches now re-runs on that same return, not
+  only once per mount, which no longer happens: `TvWall`, the two kept
+  tabs' own empty state, and the Collections/lists row all gained the key
+  they were missing; Home's own arrival grant now re-arms itself the moment
+  a pushed frame covers it, rather than staying spent from the first time
+  the app ever opened it; and the chrome's own six sentinel restores
+  (Search, ⋮, Latest, Genres, Settings, System) now wait out being covered
+  before consuming their own restore key, so a Back from any of them still
+  finds it there instead of a key already forgotten the instant that frame
+  opened.
+- DESIGN.md now documents the television's own chrome (rail, departments
+  bar, cover remote, focus treatment) as its own section rather than only
+  in passing beside the Pill and Artwork entries, and both the Wall Rule
+  and its Don't now say plainly that Home's own curated bands and a
+  department's own rows were never the shelf wall they describe.
+
 ## 0.84.0 — Android TV: department pages in the web player's own layout
 
 **Added**

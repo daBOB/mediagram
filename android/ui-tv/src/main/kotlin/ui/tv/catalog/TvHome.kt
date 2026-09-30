@@ -34,6 +34,7 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import model.WatchSnapshot
+import ui.tv.LocalLibraryCovered
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvCourseList
@@ -160,6 +161,11 @@ internal fun TvHome(
     // still read fresh inside, the same "gate the action, not the key" the
     // rows below repeat for their own delegated effects.
     val takesFocus = LocalTakesArrivalFocus.current
+    // Raw, not the combined `takesFocus` above: a pushed frame opening or
+    // closing over this page is its own event, distinct from a sentinel's
+    // own transient dip, and `arrived` below needs exactly that one to
+    // decide when a fresh grant is owed again.
+    val covered = LocalLibraryCovered.current
     // Grants arrival focus once per time this page is shown, not once per
     // value `target` happens to take: a resumed position keeps reordering
     // Continue for as long as its own write is still landing, and a
@@ -173,8 +179,18 @@ internal fun TvHome(
     // page already keeps for content arriving into a section the viewer
     // has since left, extended to cover the wait for the very first grant
     // too, not only the time after it.
+    //
+    // With this page kept alive under a pushed frame rather than rebuilt
+    // on every Back, "once" can no longer mean "once ever": a fresh pushed
+    // frame primes `arrived` back to false the moment it covers this page,
+    // so the very next uncover grants again — `covered` joins `target` as
+    // a key for exactly that reason, restarting this effect right when a
+    // real visit ends, never when a sentinel's own transient dip settles
+    // (that dip never touches `covered`, which only moves when something
+    // is actually pushed onto, or popped off, the frame above this one).
     var arrived by remember { mutableStateOf(false) }
-    LaunchedEffect(target) {
+    LaunchedEffect(covered) { if (covered) arrived = false }
+    LaunchedEffect(target, covered) {
         if (target == null || !takesFocus || arrived) return@LaunchedEffect
         val itemIndex = included.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
         // Scrolled into place — and its own composition confirmed present,

@@ -638,6 +638,16 @@ reached straight from the rail; Settings there includes cache volume choice ("Wh
 a USB drive must be set up as *portable* storage to appear; adopted storage never
 shows), and the home cache server status and pairing.
 
+The catalogue's own root — the chrome and whichever tab is chosen — is kept composed
+and laid out under every pushed frame (a title, the player, Search, Latest, Genres,
+Settings/System, a list, the menu page…) rather than torn down and rebuilt on every
+Back (`ui-tv/.../TvHomeLayer.kt`): hidden (not drawn, not focusable, semantics
+cleared) and inert (its own `BackHandler`s disabled, the cover's rotation paused, its
+`CatalogUiState` frozen at the moment it was covered) while something else is on top,
+so a return is a focus restore rather than a full compose/measure/place. Switching
+tabs (a different pill, a kept row) still rebuilds that tab alone, by design: a new
+tab must not inherit the old one's scroll.
+
 ### Television differs from the web player
 
 Deliberate differences between television and web, all in the context of the Surface
@@ -681,6 +691,22 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   and System already draw their own index rail for the same reason the tablet exempts
   them, and the player is full screen regardless. Back returns to whichever pill, rail
   row or plate opened the frame.
+- **The cover fits 540dp, with no pause button and no drift zoom.** Sized to clear the
+  bar on a television screen rather than the phone's taller `clamp(620px, 63.5vh,
+  705px)`; a toggle to hold rotation is redundant once focus resting anywhere on the
+  cover already does that job; the phone's own Ken Burns-style drift on its hero art
+  is a pointer-era touch a D-pad has no equivalent gesture for. A focused dot shows its
+  film before OK is ever pressed — focus-selecting, the same rule a Settings-index row
+  already reads by.
+- **A department hero and the Collections hero's own pull-quote credit are not focus
+  stops.** Neither is a control; a D-pad has nothing to do by landing the remote on
+  either.
+- **Ten-foot text floors, and no blur behind the bar.** Every television body size in
+  `designsystem.TvTypeScale` floors well short of what a system font-scale setting
+  could shrink it to — legible from a couch is the constraint, not a phone's own
+  dynamic-type range; the bar draws opaque or blended over Home's own cover (`ui.chrome.
+  coverBlend`, shared with the tablet), never blurred, the one tablet-hero treatment
+  television does not carry over.
 - **No voice search.** Search is typed through the system keyboard.
 - **Artwork needs a TMDB key on the device.** As on the phone, posters and backdrops come
   from TMDB; a device without a key shows initials on plain plates.

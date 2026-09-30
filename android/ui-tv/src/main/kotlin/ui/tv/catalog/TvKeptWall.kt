@@ -125,7 +125,12 @@ private fun EmptyKeptWall(
     tabFocus: FocusRequester,
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
-    LaunchedEffect(Unit) { if (takesFocus) tabFocus.requestFocus() }
+    // Not `Unit`: with this tab kept alive under a pushed frame rather than
+    // rebuilt on every Back, `Unit` never changes again after the very
+    // first mount, so this would only ever run once — `takesFocus` is what
+    // actually flips at the moment a cover lifts, and is the one thing this
+    // empty wall has to restart on to put the remote back on its own row.
+    LaunchedEffect(takesFocus) { if (takesFocus) tabFocus.requestFocus() }
     val pagePadding = LocalTvPagePadding.current
     Column(modifier = Modifier.fillMaxSize().padding(start = pagePadding.start, top = pagePadding.top, end = pagePadding.end, bottom = pagePadding.bottom)) {
         TvCountedHeading(kind.label, 0)

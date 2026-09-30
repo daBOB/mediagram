@@ -147,7 +147,11 @@ fun <T> TvWall(
     // Keyed on the restore key as well as the index it resolves to: a caller
     // naming a new plate means "go there" even when it happens to sit at the
     // index the old one did — the next title after one taken off a list.
-    LaunchedEffect(focusIndex, restoreKey) {
+    // Also on `takesFocus` itself: with this wall kept alive under a pushed
+    // frame rather than rebuilt on every Back, `focusIndex`/`restoreKey`
+    // rarely change across a visit, so nothing but this flip would ever
+    // restart the request that puts the remote back once the cover lifts.
+    LaunchedEffect(focusIndex, restoreKey, takesFocus) {
         if (focusIndex != null && takesFocus) {
             val cell = cells.indexOf(WallCell.Plate(focusIndex))
             if (focusIndex < Columns) {

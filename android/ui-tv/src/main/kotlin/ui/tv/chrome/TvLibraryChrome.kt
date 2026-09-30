@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.Overscan
 import ui.RailItem
+import ui.tv.LocalLibraryCovered
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own row height, before its top inset — the tablet's own `DepartmentsBarHeight` (`ChromeControls.kt`), reused since both draw the same pills. */
@@ -149,6 +150,12 @@ internal fun TvLibraryChrome(
     // always has one — it turned a page's own arrival (Home back from the
     // player) and the rail's Right from a plate into the bar's pill.
     var lastInBar by remember { mutableStateOf(false) }
+    // This chrome is kept composed under whatever is pushed over it rather
+    // than torn down, so its own three `BackHandler`s below would otherwise
+    // still be live while a title, the player or Search is what Back is
+    // actually meant to answer for — every one of them is `enabled` only
+    // while this chrome is the thing actually on screen.
+    val covered = LocalLibraryCovered.current
 
     fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
 
@@ -156,12 +163,12 @@ internal fun TvLibraryChrome(
     // -> its rail row)" — enabled only while the remote is actually inside
     // content, the same guard `TvCatalogRoot` once put on its own single
     // Back-to-masthead step.
-    BackHandler(enabled = contentHasFocus) {
+    BackHandler(enabled = contentHasFocus && !covered) {
         if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
     }
     // "bar (pill, search, avatar, ⋮) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
-    BackHandler(enabled = barHasFocus) {
+    BackHandler(enabled = barHasFocus && !covered) {
         railArrivalTarget().requestFocus()
     }
     // Rail: still no handler that goes anywhere — Back there falls
@@ -176,7 +183,7 @@ internal fun TvLibraryChrome(
     // (never redirecting: the arrival-focus effect already queued below
     // settles this on its own a frame later) is what keeps a Back that
     // lands in that gap from reading as the rail's own "close the app".
-    BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus) {}
+    BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus && !covered) {}
 
     // `top` matches the bar's own rendered height: the bar draws opaquely
     // over this same region (a `Box`, not a `Column` — see the doc above),

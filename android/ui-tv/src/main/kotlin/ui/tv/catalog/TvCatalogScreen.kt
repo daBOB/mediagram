@@ -35,6 +35,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.MenuActions
 import ui.RailItem
+import ui.tv.LocalLibraryCovered
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
 import ui.tv.chrome.TvLibraryChrome
@@ -241,7 +242,12 @@ fun TvCatalogScreen(
                     modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
                 )
             }
-            CompositionLocalProvider(LocalTakesArrivalFocus provides nav.takesArrivalFocus) {
+            // Never true while this screen sits under a pushed frame: every
+            // arrival effect this local gates would otherwise run against a
+            // hidden node the moment something changes what it targets,
+            // ready to fire the instant `covered` itself turns false again.
+            val covered = LocalLibraryCovered.current
+            CompositionLocalProvider(LocalTakesArrivalFocus provides (!covered && nav.takesArrivalFocus)) {
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                     // One composition per tab, not one reused across them:
                     // every shelf draws through the same wall, which would
