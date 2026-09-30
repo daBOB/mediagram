@@ -120,3 +120,6 @@ Revert and restart the player. The index is untouched; held bundles are inert fi
 
 ## Next
 Phase 06's first real upload exercises the bundle path end to end; phase 08 syncs the profile preference; phase 09 removes the inline path.
+
+## Results (2026-09-30)
+Preview walkthrough (headless Chromium, `PREVIEW_SUBTITLES=<ep1>,<ep2>,forced:<film>`), all as specified: episode opens Off with the forced German `<track>` showing (audio from `alang`); picker Off / German / English (SDH), no Forced row; 'c' → German on, forced off; 'c' → off, forced back; the next episode of the show opens with German on; forced-only film → forced showing, style trigger, no picker; film page Details: "Audio languages German, English", "Subtitles German"; Settings › Profile shows the Subtitles row (restyled as a pill select, 0.88.4). `index.ts` wiring landed in 0.88.3. Left: restart the running player (lead, with the user).
