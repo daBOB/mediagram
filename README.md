@@ -132,6 +132,27 @@ indexed) and leaves the bytes to a background process that outlives the
 terminal; its output goes to `<data dir>/background.log`. Pass `--watch` to
 stay in the foreground with a live progress line.
 
+#### Subtitles beside a video
+
+When a set is complete, the background process reads its German and English
+text subtitles, from inside the file and from files beside it, and sends them
+as one small bundle; the log shows `subtitles: German (Forced), German, …`
+after `set … added`. A failure only costs the bundle, never the upload.
+
+A file belongs to a video when it is named `<video name>` and then, optionally,
+words separated by space, `.`, `_` or `-`, then `.vtt` or `.srt`. Each word is
+a language (`de`, `deu`, `ger`, `german`, `deutsch`, `en`, `eng`, `english`,
+`englisch`) or a flag (`forced`, `sdh`, `cc`, `hi`); any other word means the
+file is another video's (so `Lesson 1` never takes `Lesson 10.srt`).
+
+```text
+Film.mkv   Film.srt   Film.de.srt   Film.en.forced.srt   Film.English.SDH.srt
+```
+
+With no language in the name, the video's first audio language is assumed.
+A `.vtt` wins over an `.srt` of the same track, and an `.srt` that is not
+UTF-8 is read as Windows-1252. Picture subtitles (PGS, VobSub) are not read.
+
 ### Watch it
 
 ```sh
@@ -289,7 +310,8 @@ uploads, with `L` marking a lesson and `D` a document.
 PDFs are uploaded as documents: a handout beside its lesson, or a workbook in
 a folder with no video at all. A document is numbered inside its chapter like
 a lesson, so `03 Signal.pdf` sits beside `03 Signal.mp4` in the player.
-Subtitles, artwork and other files are ignored. Adding PDFs to a course that
+Artwork and other files are ignored. A lesson's subtitles are the ones beside
+its video (see [Subtitles](#subtitles-beside-a-video)). Adding PDFs to a course that
 is already uploaded moves nothing: a re-run uploads the documents and skips
 every finished lesson.
 

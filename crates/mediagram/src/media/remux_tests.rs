@@ -11,6 +11,10 @@ fn stream(index: u32, kind: StreamKind, language: Option<&str>, codec: &str) -> 
         language: language.map(str::to_string),
         bit_rate: None,
         codec: Some(codec.to_string()),
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     }
 }
 

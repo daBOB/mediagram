@@ -9,7 +9,7 @@ use anyhow::{Context, Result, bail};
 use rusqlite::Connection;
 
 use crate::config::Config;
-use crate::index::{db, parts, sets};
+use crate::index::{db, parts, sets, subtitles};
 use crate::remove::apply::{apply_removals, delete_messages};
 use crate::remove::plan::{Removal, plan_removal};
 use crate::telegram::client::Tg;
@@ -41,7 +41,8 @@ async fn run_with(
         let set = sets::get_set(&conn, set_id)?
             .with_context(|| format!("no set {set_id} in the index"))?;
         let part_rows = parts::all_parts(&conn, set_id)?;
-        removals.push(plan_removal(&set, &part_rows));
+        let bundle = subtitles::bundle_message(&conn, set_id)?;
+        removals.push(plan_removal(&set, &part_rows, bundle));
     }
 
     println!("This will permanently delete:\n");

@@ -53,7 +53,11 @@ fn document(dir: &TempDir, number: u32) -> Item<u32> {
 /// A set planned as `add` plans one, its source `bytes` long on disk.
 fn planned(dir: &TempDir, id: &str, bytes: u64) -> Item<String> {
     let mut conn = db::open(dir.path()).unwrap();
-    let set = SetRow::from_caption(&sample_caption(id, bytes, 1), 1);
+    // A document, so completing it asks nothing of ffprobe: a child process
+    // would inherit the other tests' lock files and make them look held.
+    let mut caption = sample_caption(id, bytes, 1);
+    caption.t = Kind::Doc;
+    let set = SetRow::from_caption(&caption, 1);
     let tx = conn.transaction().unwrap();
     sets::insert_set(&tx, &set).unwrap();
     parts::insert_parts(&tx, id, &mlib_spec::plan_parts(bytes, 1024 * 1024).unwrap()).unwrap();

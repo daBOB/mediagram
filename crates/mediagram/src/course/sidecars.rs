@@ -1,10 +1,9 @@
-//! The files sitting next to a lesson's video.
+//! The summary sitting next to a lesson's video.
 //!
 //! A transcription leaves several forms of the same words beside each video:
 //! `.vtt`, `.srt`, `.txt`, and Whisper's `.json` and `.tsv` working files.
-//! Only the `.vtt` travels. It is what a browser's `<track>` element wants,
-//! the `.srt` and `.txt` say the same thing in formats nothing here reads,
-//! and the working files come to 16 MB per course.
+//! The subtitles travel as a bundle (`crate::subtitles`); the `.txt` and the
+//! working files stay behind.
 //!
 //! A summary is optional and is not something a transcriber produces, so it
 //! carries its own suffix rather than competing with the transcript for
@@ -19,29 +18,26 @@ const SUMMARY_SUFFIXES: &[&str] = &[".summary.md", ".summary.txt"];
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Sidecars {
-    /// WebVTT, as the `<track>` element wants it.
-    pub subtitle: Option<String>,
     pub summary: Option<String>,
 }
 
 /// Reads the sidecars beside `video`, if any.
 ///
-/// Missing files are ordinary: most lessons have no summary, and a course
-/// that was never transcribed has no subtitles. Only a file that exists and
-/// cannot be used is worth a word, and that word is a warning rather than an
-/// error — a lesson is still worth uploading without its subtitle.
+/// Missing files are ordinary: most lessons have no summary. Only a file
+/// that exists and cannot be used is worth a word, and that word is a
+/// warning rather than an error — a lesson is still worth uploading without
+/// its summary.
 pub fn find_sidecars(video: &Path) -> Sidecars {
     let Some(stem) = base_stem(video) else {
         return Sidecars::default();
     };
     let folder = video.parent().unwrap_or(Path::new("."));
 
-    let subtitle = read_text(&folder.join(format!("{stem}.vtt")));
     let summary = SUMMARY_SUFFIXES
         .iter()
         .find_map(|suffix| read_text(&folder.join(format!("{stem}{suffix}"))));
 
-    Sidecars { subtitle, summary }
+    Sidecars { summary }
 }
 
 /// The stem a lesson's sidecars are named after.
@@ -87,33 +83,21 @@ fn read_text(path: &Path) -> Option<String> {
     }
 }
 
-/// Stores the subtitle and summary sitting beside a video, if any.
+/// Stores the summary sitting beside a video, if any.
 ///
 /// Read from the source the user named rather than from a faststart remux:
 /// the remux is a temporary file `add` wrote, and the sidecars belong
 /// to the original.
 ///
 /// A missing sidecar is the ordinary case and says nothing. A present one
-/// that cannot be stored is worth a warning, and no more: a lesson without
-/// its subtitle is still worth having.
+/// that cannot be stored is worth a warning, and no more.
 pub fn store_sidecars(
     conn: &rusqlite::Connection,
     set_id: &str,
     source: &Path,
-    caption: &mlib_spec::Caption,
 ) -> anyhow::Result<()> {
-    let found = find_sidecars(source);
-
-    if let Some(subtitle) = &found.subtitle {
-        // The subtitle is the audio written down, so it is in the audio's
-        // language; `und` when the file never said.
-        let lang = caption.alang.first().map(String::as_str).unwrap_or("und");
-        if let Err(err) = assets::put(conn, set_id, assets::Kind::Subtitle, lang, subtitle) {
-            tracing::warn!("subtitle for {set_id} not stored: {err:#}");
-        }
-    }
-    if let Some(summary) = &found.summary
-        && let Err(err) = assets::put(conn, set_id, assets::Kind::Summary, "", summary)
+    if let Some(summary) = find_sidecars(source).summary
+        && let Err(err) = assets::put(conn, set_id, assets::Kind::Summary, "", &summary)
     {
         tracing::warn!("summary for {set_id} not stored: {err:#}");
     }

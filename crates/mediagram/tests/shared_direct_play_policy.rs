@@ -90,6 +90,10 @@ fn stream(kind: StreamKind, codec: &str) -> Stream {
         language: None,
         bit_rate: None,
         codec: Some(codec.into()),
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     }
 }
 

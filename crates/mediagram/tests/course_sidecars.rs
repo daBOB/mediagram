@@ -1,10 +1,9 @@
 //! The files sitting next to a lesson's video.
 //!
 //! The real course has `Begrüßung.mp4` beside `Begrüßung.vtt`, `.srt` and
-//! `.txt`, all produced by the same transcription. Only the `.vtt` travels:
-//! it is what a browser's `<track>` wants, and the `.srt` and `.txt` carry
-//! the same words in formats nothing here can use. The Whisper `.json` and
-//! `.tsv` are working files — 16 MB per course of them — and stay behind.
+//! `.txt`, all produced by the same transcription. The subtitles travel as a
+//! bundle; the `.txt` and the Whisper `.json` and `.tsv` working files —
+//! 16 MB per course of them — stay behind.
 //!
 //! A summary is optional and is not something Whisper produces, so it gets
 //! its own suffix rather than competing with the transcript for `.txt`.
@@ -21,20 +20,8 @@ fn folder(files: &[(&str, &str)]) -> tempfile::TempDir {
     dir
 }
 
-#[test]
-fn the_vtt_beside_a_video_is_its_subtitle() {
-    let dir = folder(&[
-        ("Begrüßung.mp4", "video"),
-        ("Begrüßung.vtt", "WEBVTT\n\nhallo"),
-    ]);
-
-    let found = find_sidecars(&dir.path().join("Begrüßung.mp4"));
-
-    assert_eq!(found.subtitle.as_deref(), Some("WEBVTT\n\nhallo"));
-}
-
-/// Everything else in that folder is the same words in a format nothing here
-/// uses, or a working file. None of it should travel.
+/// Everything else in that folder is a transcript or a working file. The
+/// subtitles travel as a bundle, and none of this is a summary.
 #[test]
 fn transcripts_and_working_files_are_left_behind() {
     let dir = folder(&[
@@ -85,13 +72,11 @@ fn a_lesson_with_nothing_beside_it_has_no_sidecars() {
 fn a_remuxed_video_still_finds_the_originals_sidecars() {
     let dir = folder(&[
         ("L.faststart.mp4", "video"),
-        ("L.vtt", "WEBVTT\n\nhallo"),
         ("L.summary.md", "kurz"),
     ]);
 
     let found = find_sidecars(&dir.path().join("L.faststart.mp4"));
 
-    assert_eq!(found.subtitle.as_deref(), Some("WEBVTT\n\nhallo"));
     assert_eq!(found.summary.as_deref(), Some("kurz"));
 }
 
@@ -102,21 +87,21 @@ fn an_oversized_sidecar_is_skipped_rather_than_stored() {
     let dir = folder(&[
         ("L.mp4", "video"),
         (
-            "L.vtt",
+            "L.summary.md",
             &"x".repeat(mediagram::index::assets::MAX_ASSET_BYTES + 1),
         ),
     ]);
 
     let found = find_sidecars(&dir.path().join("L.mp4"));
 
-    assert_eq!(found.subtitle, None, "an oversized subtitle is not carried");
+    assert_eq!(found.summary, None, "an oversized summary is not carried");
 }
 
 #[test]
 fn a_file_that_is_not_text_is_not_carried() {
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("L.mp4"), "video").unwrap();
-    fs::write(dir.path().join("L.vtt"), [0xff, 0xfe, 0x00, 0x01]).unwrap();
+    fs::write(dir.path().join("L.summary.md"), [0xff, 0xfe, 0x00, 0x01]).unwrap();
 
-    assert_eq!(find_sidecars(&dir.path().join("L.mp4")).subtitle, None);
+    assert_eq!(find_sidecars(&dir.path().join("L.mp4")).summary, None);
 }

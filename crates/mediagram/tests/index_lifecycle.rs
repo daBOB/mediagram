@@ -137,3 +137,23 @@ fn a_set_no_longer_in_the_index_cannot_be_completed() {
     );
     assert_eq!(pins::publish_owed(&conn).unwrap(), None);
 }
+
+/// Completion forgets the source and deletes the remux, but the subtitles
+/// are read from the file the person named afterwards, and another upload
+/// must not delete it meanwhile: it is kept until explicitly forgotten.
+#[test]
+fn the_original_survives_completion_until_it_is_forgotten() {
+    let (_dir, conn) = planned(true);
+    let original = Path::new("/media/film.mkv");
+    assert_eq!(lifecycle::original_of(&conn, SET).unwrap(), None);
+
+    lifecycle::record_original(&conn, SET, original).unwrap();
+    lifecycle::complete(&conn, SET, &"a".repeat(64)).unwrap();
+    assert_eq!(
+        lifecycle::original_of(&conn, SET).unwrap().as_deref(),
+        Some(original)
+    );
+
+    lifecycle::forget_original(&conn, SET).unwrap();
+    assert_eq!(lifecycle::original_of(&conn, SET).unwrap(), None);
+}

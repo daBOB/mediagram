@@ -40,9 +40,10 @@ impl Removal {
     }
 }
 
-/// Works out what removing `set` costs.
-pub fn plan_removal(set: &SetRow, parts: &[PartRow]) -> Removal {
-    let mut message_ids = Vec::new();
+/// Works out what removing `set` costs. `bundle` is the message holding its
+/// subtitle bundle, which goes with it; its few kilobytes are not counted.
+pub fn plan_removal(set: &SetRow, parts: &[PartRow], bundle: Option<i64>) -> Removal {
+    let mut message_ids: Vec<i64> = bundle.into_iter().collect();
     let mut bytes = 0u64;
 
     for part in parts {

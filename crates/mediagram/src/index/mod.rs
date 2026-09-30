@@ -35,3 +35,4 @@ pub mod shows;
 pub mod snapshot;
 pub mod sqlite_init;
 pub mod status;
+pub mod subtitles;

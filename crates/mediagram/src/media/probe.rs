@@ -32,12 +32,25 @@ pub(crate) struct RawStream {
     pub height: Option<u32>,
     pub color_transfer: Option<String>,
     pub tags: Option<RawTags>,
+    pub disposition: Option<RawDisposition>,
     pub side_data_list: Option<Vec<RawSideData>>,
 }
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct RawTags {
     pub language: Option<String>,
+    pub title: Option<String>,
+}
+
+/// The flags a muxer can set on a stream; ffprobe prints each as 0 or 1.
+#[derive(Deserialize, Debug, Default)]
+pub(crate) struct RawDisposition {
+    #[serde(default)]
+    pub default: u8,
+    #[serde(default)]
+    pub forced: u8,
+    #[serde(default)]
+    pub hearing_impaired: u8,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,9 +87,25 @@ pub(crate) fn parse(json: &[u8]) -> Result<Report> {
     serde_json::from_slice(json).context("ffprobe output is not valid JSON")
 }
 
-/// Probes a file on disk.
+/// How long a read from a network input may stall before ffprobe or ffmpeg
+/// gives up, in microseconds. Without it a server that stops answering
+/// stalls the caller for good.
+const NETWORK_RW_TIMEOUT_US: &str = "60000000";
+
+/// The options that bound a stalled network input; none for a file.
+pub(crate) fn network_args(target: &Path) -> &'static [&'static str] {
+    let target = target.to_string_lossy();
+    if target.starts_with("http://") || target.starts_with("https://") {
+        &["-rw_timeout", NETWORK_RW_TIMEOUT_US]
+    } else {
+        &[]
+    }
+}
+
+/// Probes a file on disk, or a URL.
 pub(crate) async fn run(path: &Path) -> Result<Report> {
     let output = tokio::process::Command::new("ffprobe")
+        .args(network_args(path))
         .args([
             "-v",
             "error",
@@ -98,4 +127,19 @@ pub(crate) async fn run(path: &Path) -> Result<Report> {
         );
     }
     parse(&output.stdout).with_context(|| format!("probing {}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_network_input_gets_a_read_timeout() {
+        assert_eq!(
+            network_args(Path::new("http://127.0.0.1:8770/file")),
+            ["-rw_timeout", NETWORK_RW_TIMEOUT_US]
+        );
+        assert!(network_args(Path::new("/media/film.mkv")).is_empty());
+        assert!(network_args(Path::new("file:///media/film.mkv")).is_empty());
+    }
 }

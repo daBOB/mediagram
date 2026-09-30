@@ -8,6 +8,7 @@
 
 pub mod channel;
 pub mod export;
+pub mod media;
 pub mod rescan;
 pub mod session;
 pub mod tmdb;

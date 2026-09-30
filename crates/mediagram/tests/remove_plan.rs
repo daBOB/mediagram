@@ -75,10 +75,25 @@ fn every_uploaded_message_is_listed_for_deletion() {
     let removal = plan_removal(
         &row("01SET0000000000000000001", "One"),
         &[part(0, Some(100), 10), part(1, Some(101), 20)],
+        None,
     );
 
     assert_eq!(removal.message_ids, vec![100, 101]);
     assert_eq!(removal.bytes, 30);
+}
+
+/// The subtitle bundle is a message of its own, and a removal that left it
+/// behind would leave a message nothing refers to.
+#[test]
+fn the_subtitle_bundle_message_goes_with_its_set() {
+    let removal = plan_removal(
+        &row("01SET0000000000000000001", "One"),
+        &[part(0, Some(100), 10)],
+        Some(55),
+    );
+
+    assert_eq!(removal.message_ids, vec![55, 100]);
+    assert_eq!(removal.bytes, 10);
 }
 
 /// A part never uploaded has nothing in the channel to delete; its row still
@@ -88,6 +103,7 @@ fn a_part_that_was_never_uploaded_contributes_no_message() {
     let removal = plan_removal(
         &row("01SET0000000000000000001", "One"),
         &[part(0, Some(100), 10), part(1, None, 20)],
+        None,
     );
 
     assert_eq!(removal.message_ids, vec![100]);
@@ -99,6 +115,7 @@ fn a_set_with_nothing_uploaded_deletes_no_messages() {
     let removal = plan_removal(
         &row("01SET0000000000000000001", "One"),
         &[part(0, None, 10)],
+        None,
     );
 
     assert!(removal.message_ids.is_empty());
@@ -112,6 +129,7 @@ fn the_summary_names_what_will_be_lost() {
     let removal = plan_removal(
         &row("01SET0000000000000000001", "Dominus"),
         &[part(0, Some(100), 10)],
+        None,
     );
 
     let described = removal.describe();

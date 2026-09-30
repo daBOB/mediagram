@@ -19,7 +19,7 @@ fn seed(conn: &Connection, id: &str, messages: std::ops::Range<i64>) -> Removal 
         .unwrap();
     }
     let row = sets::get_set(conn, id).unwrap().unwrap();
-    crate::remove::plan::plan_removal(&row, &parts::all_parts(conn, id).unwrap())
+    crate::remove::plan::plan_removal(&row, &parts::all_parts(conn, id).unwrap(), None)
 }
 
 #[tokio::test]

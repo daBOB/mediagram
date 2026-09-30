@@ -45,6 +45,7 @@ serde_json.workspace = true
 sha2.workspace = true
 strsim = "0.11.1"
 tar.workspace = true
+tempfile.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs", "io-util", "net", "signal", "time", "process"] }
 toml = "1.1.6"
@@ -53,5 +54,4 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 ulid.workspace = true
 
 [dev-dependencies]
-tempfile.workspace = true
 tokio = { workspace = true, features = ["test-util"] }

@@ -1,10 +1,12 @@
 //! A set's life in the local index between planning and completion: the
-//! file it is uploaded from, and — when `add` remuxed it — the temporary copy
-//! to delete once it is up.
+//! file it is uploaded from, the file the person named (what the subtitles
+//! are read from), and — when `add` remuxed it — the temporary copy to
+//! delete once it is up.
 //!
-//! Both live in `meta` under per-set keys that only this module spells, so
+//! All three live in `meta` under per-set keys that only this module spells, so
 //! planning, uploading, resuming and removing a set cannot disagree about
-//! them. Completing a set clears them in the same transaction that marks it
+//! them. Completing a set clears the source and the remux (not the original, which
+//! the subtitles are read from next) in the same transaction that marks it
 //! complete — and records the publish it is now owed — so a set is either
 //! pending with a source to resume from, or complete with nothing left
 //! behind and a publish owed until one settles it. `rescan`, which completes
@@ -43,6 +45,18 @@ pub fn record_source(
     Ok(())
 }
 
+/// Records the file the person named, which a remux replaces as the
+/// upload's source. Completion deletes the remux and forgets the source, but
+/// the subtitles are read from this one afterwards.
+pub fn record_original(conn: &Connection, set_id: &str, original: &Path) -> Result<()> {
+    db::set_meta(conn, &original_key(set_id), &original.to_string_lossy())
+}
+
+/// The file the person named, for a set planned since it was recorded.
+pub fn original_of(conn: &Connection, set_id: &str) -> Result<Option<PathBuf>> {
+    Ok(db::get_meta(conn, &original_key(set_id))?.map(PathBuf::from))
+}
+
 /// Where a pending set uploads from, if the index knows.
 pub fn source_of(conn: &Connection, set_id: &str) -> Result<Option<PathBuf>> {
     Ok(db::get_meta(conn, &source_key(set_id))?.map(PathBuf::from))
@@ -62,20 +76,38 @@ pub fn complete(conn: &Connection, set_id: &str, hash: &str) -> Result<Completed
     ensure!(tx.changes() == 1, "set {set_id} is no longer in the index");
     pins::owe_publish(&tx)?;
     let temp = db::get_meta(&tx, &temp_key(set_id))?.map(PathBuf::from);
-    forget(&tx, set_id)?;
+    // The original stays: the subtitles are still to be read from it, and
+    // until they are, another upload must not delete it.
+    forget_upload(&tx, set_id)?;
     tx.commit()
         .with_context(|| format!("committing the completion of set {set_id}"))?;
     Ok(Completed { temp })
 }
 
-/// Forgets a set's source and temporary copy, for a set that is gone.
+/// Forgets a set's source, original and temporary copy, for a set that is
+/// gone.
 pub fn forget(conn: &Connection, set_id: &str) -> Result<()> {
+    forget_upload(conn, set_id)?;
+    forget_original(conn, set_id)
+}
+
+/// Forgets the original once its subtitles have been read (or given up on).
+/// While it is recorded, the file the person named is still in use.
+pub fn forget_original(conn: &Connection, set_id: &str) -> Result<()> {
+    db::delete_meta(conn, &original_key(set_id))
+}
+
+fn forget_upload(conn: &Connection, set_id: &str) -> Result<()> {
     db::delete_meta(conn, &source_key(set_id))?;
     db::delete_meta(conn, &temp_key(set_id))
 }
 
 fn source_key(set_id: &str) -> String {
     format!("source:{set_id}")
+}
+
+fn original_key(set_id: &str) -> String {
+    format!("orig:{set_id}")
 }
 
 fn temp_key(set_id: &str) -> String {

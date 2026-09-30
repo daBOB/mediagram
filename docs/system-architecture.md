@@ -120,6 +120,11 @@ media/             probe (the one ffprobe runner and report), inspect (what a
                    MP4 trailing-moov detection and faststart remux, the
                    direct-play policy, prepare/ (plan, paths, check), and the
                    reader that turns `ffmpeg -progress` into a terminal line
+subtitles/         at set completion: which German/English text tracks and
+                   sidecars to keep (select, sidecars), forced by flag,
+                   title or sparse cues and the duplicate rules (arrange),
+                   the one ffmpeg pass (extract), and sending and recording
+                   the bundle (attach)
 metadata/          interactive resolution of provider ids over
                    `mediagram-tmdb`: search, lookup, and the prompt for an
                    ambiguous match
@@ -176,9 +181,24 @@ file ──▶ inspect (ffprobe) ──▶ resolve (TMDB / --manual / explicit i
    mark_done; once every part is `done`, compute set_hash, mark `complete`
                      │
                      ▼
+   (not for documents) subtitles::attach, from the file the person named:
+   ffprobe → sidecars → select → one ffmpeg pass into a temp dir → bundle →
+   `send_document("#mlib-subs v=1")` → `subtitle_files`/`subtitle_tracks`
+   recorded in one transaction (publish owed). Any failure: one warning,
+   the set stays complete without a bundle. Runs before `--delete-source`
+                     │
+                     ▼
         upload session end: publish once (unless --no-push, or another
         upload is running and publishes when it ends), pull, snapshot, pin
 ```
+
+Subtitles are read at completion, never at planning, in the process that
+uploads (for `add`, the background `finish-set`), so the terminal never waits
+for them. Planning records the file the person named under `orig:<set>` in
+`meta` because completion deletes the remux and forgets the source; a set
+planned by an older build falls back to its recorded source. `attach` takes a
+file (sidecars are found in its folder) or a URL (none are): the backfill
+reads the uploaded copy through the player's loopback server.
 
 `inspect` runs `ffprobe` to read container/codec/duration/language tracks
 and classifies quality/HDR from stream metadata. `resolve` turns a file

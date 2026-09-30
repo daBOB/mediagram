@@ -5,6 +5,43 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.91.0 — the uploader attaches German and English subtitles when a set completes
+
+**Added**
+
+- At set completion (after the last part is up, before `--delete-source`), the
+  uploader reads a film's, episode's or lesson's German and English text
+  subtitles and sends them as one `#mlib-subs` bundle per set, recorded in
+  `subtitle_files`/`subtitle_tracks` with a publish owed. Tracks come from the
+  file the person named, read in one ffmpeg pass into a private temp folder:
+  embedded `subrip`, `ass`/`ssa`, `mov_text`, `webvtt` and `text` streams, and
+  sidecars named `<video>[ ._-]<language and flag words>.vtt|.srt`
+  (`de|deu|ger|german|deutsch`, `en|eng|english|englisch`; `forced`, `sdh`,
+  `cc`, `hi`; any other word means another video's file; `.vtt` beats `.srt`).
+  Non-UTF-8 SRT sidecars and embedded tracks are read as Windows-1252 — ffmpeg
+  otherwise drops every line with an umlaut and still exits 0.
+- Forced is the flag, a `forced`/`erzwungen` title, or an embedded track with
+  no forced flag or forced title (and not SDH) of at most 120 cues an hour
+  (measured on 78 tracks: signs-only German runs 1–86, full tracks 442 and up)
+  or a quarter of its language's densest track. SDH is the flag or a title
+  naming SDH, CC, hearing or hörgeschädigt. Picture subtitles are skipped and
+  counted. A failure costs only the bundle, never the upload.
+- `subtitles::attach` takes a file or a URL, so the backfill can read an
+  uploaded copy through a loopback server; URL reads time out after 60 s of
+  silence and are never retried per track; sidecars are found for files only.
+- Planning records the file the person named (`orig:<set>`), because
+  completion deletes the remux and forgets the source. The key outlives
+  completion until extraction is done, and `--delete-source` keeps the file
+  while it is recorded, so a second process can never delete it mid-read.
+- `remove` deletes a set's bundle message along with its parts.
+
+**Changed**
+
+- A lesson's `.vtt` no longer lands in `assets` at planning; it travels in the
+  bundle like every other subtitle. Summaries are unchanged. Readers older
+  than 0.86.0 (web) / 0.87.0 (Android) do not see bundled subtitles, so
+  install this uploader only once every player is on those.
+
 ## 0.90.0 — Android: a CC button, the remote's captions key, and a Profile section in Settings
 
 **Added**

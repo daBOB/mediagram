@@ -29,6 +29,13 @@ pub struct Stream {
     /// ffprobe's `codec_name`, which decides whether a browser can open the
     /// result without the player converting it first.
     pub codec: Option<String>,
+    /// The track's own name, where a release says what it is (`German
+    /// (Forced)`, `English (SDH)`) when its flags do not.
+    pub title: Option<String>,
+    /// The muxer's `default`, `forced` and `hearing_impaired` flags.
+    pub default: bool,
+    pub forced: bool,
+    pub hearing_impaired: bool,
 }
 
 /// What one probe tells us about a file.
@@ -57,17 +64,25 @@ fn from_report(report: Report) -> Result<Probed> {
     let streams = report
         .streams
         .into_iter()
-        .map(|s| Stream {
-            index: s.index,
-            kind: match s.codec_type.as_deref() {
-                Some("video") => StreamKind::Video,
-                Some("audio") => StreamKind::Audio,
-                Some("subtitle") => StreamKind::Subtitle,
-                _ => StreamKind::Other,
-            },
-            language: s.language().map(str::to_string),
-            bit_rate: s.bit_rate.as_deref().and_then(|b| b.parse().ok()),
-            codec: s.codec_name,
+        .map(|s| {
+            let flags = s.disposition.as_ref();
+            let flag = |pick: fn(&probe::RawDisposition) -> u8| flags.is_some_and(|d| pick(d) == 1);
+            Stream {
+                index: s.index,
+                kind: match s.codec_type.as_deref() {
+                    Some("video") => StreamKind::Video,
+                    Some("audio") => StreamKind::Audio,
+                    Some("subtitle") => StreamKind::Subtitle,
+                    _ => StreamKind::Other,
+                },
+                language: s.language().map(str::to_string),
+                bit_rate: s.bit_rate.as_deref().and_then(|b| b.parse().ok()),
+                title: s.tags.as_ref().and_then(|t| t.title.clone()),
+                default: flag(|d| d.default),
+                forced: flag(|d| d.forced),
+                hearing_impaired: flag(|d| d.hearing_impaired),
+                codec: s.codec_name,
+            }
         })
         .collect();
     Ok(Probed {

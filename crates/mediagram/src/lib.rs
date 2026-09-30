@@ -14,6 +14,7 @@ pub mod metadata;
 pub mod paths;
 pub mod remove;
 pub mod serve;
+pub mod subtitles;
 pub mod telegram;
 pub mod term;
 #[cfg(test)]

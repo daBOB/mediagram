@@ -13,6 +13,10 @@ fn video() -> Stream {
         language: Some("eng".into()),
         bit_rate: None,
         codec: None,
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     }
 }
 fn audio(index: u32, lang: &str, bit_rate: u64) -> Stream {
@@ -22,6 +26,10 @@ fn audio(index: u32, lang: &str, bit_rate: u64) -> Stream {
         language: Some(lang.into()),
         bit_rate: Some(bit_rate),
         codec: None,
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     }
 }
 fn subtitle(index: u32, lang: &str) -> Stream {
@@ -31,6 +39,10 @@ fn subtitle(index: u32, lang: &str) -> Stream {
         language: Some(lang.into()),
         bit_rate: None,
         codec: None,
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     }
 }
 
@@ -114,6 +126,10 @@ fn a_track_with_no_language_tag_is_kept() {
             language: None,
             bit_rate: Some(768_000),
             codec: None,
+            title: None,
+            default: false,
+            forced: false,
+            hearing_impaired: false,
         },
         audio(2, "spa", 384_000),
     ];
@@ -179,6 +195,10 @@ fn a_dropped_track_with_no_bitrate_contributes_nothing_to_the_estimate() {
             language: Some("spa".into()),
             bit_rate: None,
             codec: None,
+            title: None,
+            default: false,
+            forced: false,
+            hearing_impaired: false,
         },
     ];
     let plan = plan_prepare(&streams, 4_400_000_000, 2547.136, KEEP, KEEP, LIMIT);
@@ -248,6 +268,10 @@ fn an_mp4_leaves_attachments_behind() {
         language: None,
         bit_rate: None,
         codec: None,
+        title: None,
+        default: false,
+        forced: false,
+        hearing_impaired: false,
     };
     let streams = vec![
         video(),

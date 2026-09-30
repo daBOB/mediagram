@@ -1,0 +1,103 @@
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "h264",
+      "codec_type": "video",
+      "tags": {
+        "language": "eng"
+      }
+    },
+    {
+      "index": 1,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "bit_rate": "384000",
+      "tags": {
+        "language": "eng"
+      }
+    },
+    {
+      "index": 2,
+      "codec_name": "ac3",
+      "codec_type": "audio",
+      "bit_rate": "384000",
+      "tags": {
+        "language": "ger"
+      }
+    },
+    {
+      "codec_name": "subrip",
+      "codec_type": "subtitle",
+      "disposition": {
+        "default": 0,
+        "forced": 1,
+        "hearing_impaired": 0
+      },
+      "tags": {
+        "language": "ger",
+        "title": "Forced (SRT)"
+      },
+      "index": 3
+    },
+    {
+      "codec_name": "hdmv_pgs_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {
+        "default": 0,
+        "forced": 1,
+        "hearing_impaired": 0
+      },
+      "tags": {
+        "language": "ger",
+        "title": "Forced"
+      },
+      "index": 4
+    },
+    {
+      "codec_name": "hdmv_pgs_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {
+        "default": 0,
+        "forced": 0,
+        "hearing_impaired": 0
+      },
+      "tags": {
+        "language": "ger"
+      },
+      "index": 5
+    },
+    {
+      "codec_name": "hdmv_pgs_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {
+        "default": 0,
+        "forced": 0,
+        "hearing_impaired": 1
+      },
+      "tags": {
+        "language": "eng",
+        "title": "SDH"
+      },
+      "index": 6
+    },
+    {
+      "codec_name": "hdmv_pgs_subtitle",
+      "codec_type": "subtitle",
+      "disposition": {
+        "default": 0,
+        "forced": 0,
+        "hearing_impaired": 0
+      },
+      "tags": {
+        "language": "eng",
+        "title": "SDH"
+      },
+      "index": 7
+    }
+  ],
+  "format": {
+    "duration": "4200.0",
+    "size": "1000000"
+  }
+}

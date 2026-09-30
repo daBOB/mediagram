@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::{Caption, Part};
 
 use crate::config::Config;
-use crate::index::{db, shows};
+use crate::index::{db, lifecycle, shows};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
@@ -140,7 +140,11 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
         remux: source_path != new.file,
     };
     record_planned(&mut conn, &caption, &part_ranges, source, |tx| {
-        crate::course::sidecars::store_sidecars(tx, &set_id, &new.file, &caption)
+        // The remux is deleted on completion; the subtitles are read from
+        // the file the person named.
+        let original = new.file.canonicalize().unwrap_or_else(|_| new.file.clone());
+        lifecycle::record_original(tx, &set_id, &original)?;
+        crate::course::sidecars::store_sidecars(tx, &set_id, &new.file)
     })?;
 
     Ok(Planned {

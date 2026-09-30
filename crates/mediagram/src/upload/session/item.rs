@@ -8,10 +8,12 @@ use super::link::Link;
 use super::{Item, Outcome, Session, Set, Step, identity};
 use crate::index::status::SetStatus;
 use crate::index::{lifecycle, sets};
+use crate::subtitles::{Input, attach_and_report};
 use crate::upload::pipeline::run_set;
 use crate::upload::prepare_set::prepare_and_record_set;
 use crate::upload::record_document::record_document_set;
 use crate::upload::{finish, lock};
+use mlib_spec::caption::Kind;
 
 impl<L: Link> Session<'_, L> {
     /// `None` when the session stopped before this item began: it was not
@@ -39,6 +41,15 @@ impl<L: Link> Session<'_, L> {
             // one had finished it.
             (Set::Planned(id), Some(SetStatus::Complete)) => {
                 if let Some(path) = &item.delete_source {
+                    // The upload that finished it may still be reading the
+                    // subtitles from this very file.
+                    if matches!(lifecycle::original_of(&self.conn, id), Ok(Some(_))) {
+                        println!(
+                            "  {} kept: its subtitles are still being read",
+                            path.display()
+                        );
+                        return Some(Outcome::AlreadyHeld);
+                    }
                     let total = sets::get_set(&self.conn, id)
                         .ok()
                         .flatten()
@@ -88,6 +99,13 @@ impl<L: Link> Session<'_, L> {
             Ok(recorded) => recorded,
             Err(err) => return self.stop(err, planned),
         };
+        // Read before the upload: completing the set forgets it. A set
+        // planned before it was recorded falls back to its source, which is
+        // the original unless it was remuxed.
+        let original = match lifecycle::original_of(&self.conn, set_id) {
+            Ok(original) => original.or_else(|| recorded.clone()),
+            Err(err) => return self.stop(err, planned),
+        };
         // Checked before connecting: a run whose every source is gone
         // never connects at all.
         let source = match finish::available_source(&set, recorded.as_deref()).await {
@@ -102,8 +120,8 @@ impl<L: Link> Session<'_, L> {
             stopped,
             ..
         } = self;
-        let transport = match link.open().await {
-            Ok((transport, _)) => transport,
+        let (transport, remote) = match link.open().await {
+            Ok(linked) => linked,
             Err(err) => {
                 *stopped = Some(err);
                 return planned;
@@ -135,6 +153,16 @@ impl<L: Link> Session<'_, L> {
         // owed, and the next session pays it.
         if complete {
             println!("set {set_id} added");
+            // Before the source is deleted, which is what it reads from. A
+            // document has no streams to ask about.
+            if let (Some(original), false) = (original, set.kind == Kind::Doc) {
+                attach_and_report(conn, remote, set_id, &Input::File(original)).await;
+            }
+            // Only now may another upload delete the original; a crash
+            // before this leaves the file kept, the safe side.
+            if let Err(err) = lifecycle::forget_original(conn, set_id) {
+                tracing::warn!("original of {set_id} still recorded: {err:#}");
+            }
         }
         if let Some(path) = delete {
             report_deletion(path, complete, set.total);

@@ -466,6 +466,37 @@ it, and refuses a `v` newer than it understands. `mlib_spec::subtitle_bundle`
 is the one place this shape is written down; the uploader and every reader
 share it from there.
 
+#### What the uploader writes
+
+Once a set is complete the uploader reads its German and English text
+subtitles (from the file the person named, not from a remux) and sends one
+bundle per set, in one ffmpeg pass into a private temp folder:
+
+- **Tracks:** embedded `subrip`, `ass`/`ssa`, `mov_text`, `webvtt` and `text`
+  streams, and sidecar files `<stem>[ ._-]<words>.vtt|.srt` beside the video,
+  where every word is a language (`de|deu|ger|german|deutsch`,
+  `en|eng|english|englisch`) or a flag (`forced`, `sdh`, `cc`, `hi`). A
+  sidecar with no language is in the video's first audio language, else `und`;
+  other languages are skipped. Picture subtitles (PGS, VobSub) are skipped.
+  Tracks tagged in neither language, or titled as commentary, are skipped.
+- **Forced:** the `forced` disposition; else a title naming `forced` or
+  `erzwungen`; else, for an embedded track claiming neither that nor SDH, few
+  cues: at most 120 an hour, or at most a quarter of the cues of the densest
+  track in its language. Sidecars are forced by their name only.
+- **SDH:** the `hearing_impaired` disposition, or a title naming `SDH`, `CC`,
+  `hearing` or `hörgeschädigt`. Forced wins when both are claimed.
+- **One track per (`lang`, `forced`, `sdh`):** a sidecar beats an embedded
+  track, a `default` embedded track beats a later one, a `.vtt` beats an
+  `.srt`.
+- **Labels and order:** `German`, `German (Forced)`, `English (SDH)`,
+  `Subtitles` for `und`; by language, forced before regular.
+- **Recording:** in one transaction, the tracks replace the set's
+  `subtitle_tracks`, the `subtitle_files` row is upserted with
+  `uploaded_at = now`, the set's inline `assets` subtitle rows are deleted and
+  a publish is owed. Removing a set deletes its bundle message too.
+
+A failure anywhere in this leaves the set complete without a bundle.
+
 ### Playable invariant
 
 A set is considered complete/playable exactly when:
