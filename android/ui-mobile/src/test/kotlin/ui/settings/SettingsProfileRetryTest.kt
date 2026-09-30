@@ -37,6 +37,8 @@ import designsystem.InMemoryAppearanceSettings
 import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
+import ui.profileSettingsModel
 import setup.Libraries
 import setup.SettingsViewModel
 import system.CacheBudgetViewModel
@@ -103,6 +105,7 @@ class SettingsProfileRetryTest {
             val models = mapOf<Class<out ViewModel>, ViewModel>(
                 SettingsViewModel::class.java to model,
                 AppearanceViewModel::class.java to appearanceModel,
+                ProfileSettingsViewModel::class.java to profileSettingsModel(),
                 CacheBudgetViewModel::class.java to cacheModel,
                 LanCacheViewModel::class.java to lanModel,
                 SystemViewModel::class.java to systemModel,

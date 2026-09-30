@@ -24,7 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import designsystem.Spacing
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import designsystem.Radius
+import designsystem.Spacing
 
 /**
  * Settings' own controls, at the tokens the approved round-2 mockups draw
@@ -107,19 +108,19 @@ internal fun SettingsChip(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier, enabled: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     Box(
         modifier =
-            modifier
+            modifier.alpha(if (enabled) 1f else 0.4f)
                 .heightIn(min = 48.dp)
                 .border(
                     width = 1.dp,
                     color = if (selected) colors.primary else colors.outlineVariant,
                     shape = RoundedCornerShape(Radius.control),
                 )
-                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
+                .selectable(selected = selected, enabled = enabled, onClick = onClick, role = Role.RadioButton),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -48,11 +48,11 @@ Settings › Profile › Subtitles ─> preferences(profile_id, "profile", "subt
 4. `./gradlew test detekt`; bump by pattern; changelog.
 
 ## Todo
-- [ ] captions key + table test
-- [ ] CC buttons phone/tablet and TV
-- [ ] style section follows `subtitleStyleVisible` (forced-only included)
-- [ ] Profile section phone + TV, preference read/write
-- [ ] tests, detekt, manifests, changelog
+- [x] captions key + table test
+- [x] CC buttons phone/tablet and TV
+- [x] style section follows `subtitleStyleVisible` (forced-only included)
+- [x] Profile section phone + TV, preference read/write
+- [x] tests, lint (no detekt in this project); manifests and changelog left to the lead
 
 ## Success criteria
 - Unit tests green; detekt clean.

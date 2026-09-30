@@ -59,6 +59,8 @@ private const val FASTEST_AFTER = 60
  * not arrive as a key — a gesture, a test — does the same thing as one
  * that does.
  *
+ * The captions key is taken the same way in every state.
+ *
  * Next and Previous are always taken, press and release both, even at
  * either end of the run where there is nowhere to go: whatever the window
  * does not take goes on to the playback session, and its own answer to
@@ -68,6 +70,7 @@ private const val FASTEST_AFTER = 60
 internal class TvPlayerRemote(
     private val onNext: () -> Unit = {},
     private val onPrevious: () -> Unit = {},
+    private val onToggleSubtitles: () -> Unit = {},
     private val show: (TvControlsLanding) -> Unit,
 ) {
     private val taken = mutableSetOf<Key>()
@@ -140,6 +143,15 @@ internal class TvPlayerRemote(
             }
             TvKeyAction.Previous -> {
                 if (repeat == 0) onPrevious()
+                true
+            }
+            // Toggles, then shows the controls on whatever they were doing so
+            // the CC button reads the new state; a held key is one toggle.
+            TvKeyAction.ToggleSubtitles -> {
+                if (repeat == 0) {
+                    onToggleSubtitles()
+                    show(TvControlsLanding.PlayPause)
+                }
                 true
             }
             TvKeyAction.CancelUpNext, TvKeyAction.ClosePanel, TvKeyAction.CloseNotes, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false

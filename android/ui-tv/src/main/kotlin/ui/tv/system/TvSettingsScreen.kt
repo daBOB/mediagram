@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
+import setup.profileStatus
 import setup.SettingsViewModel
 import setup.telegramStatus
 import system.CacheBudgetViewModel
@@ -47,6 +49,9 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
     val state by settingsViewModel.state.collectAsStateWithLifecycle()
     val appearanceViewModel: AppearanceViewModel = hiltViewModel()
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
+    val profileViewModel: ProfileSettingsViewModel = hiltViewModel()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle()
+    val profileSubtitle by profileViewModel.subtitle.collectAsStateWithLifecycle()
     val cacheViewModel: CacheBudgetViewModel = hiltViewModel()
     val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
     val lanViewModel: LanCacheViewModel = hiltViewModel()
@@ -101,6 +106,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                 SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                 SettingsSection.APPEARANCE to IndexStatus("${appearance.accent.label} · ${appearance.backdrop.label}"),
+                SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
             )
         TvSettingsPanes(
@@ -144,6 +150,15 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onSelectAccent = appearanceViewModel::chooseAccent,
                         onSelectBackdrop = appearanceViewModel::chooseBackdrop,
+                    )
+
+                SettingsSection.PROFILE ->
+                    TvProfileBlock(
+                        profile = profile,
+                        subtitle = profileSubtitle,
+                        focusInContent = entered,
+                        entryFocusRequester = entryRequester,
+                        onChooseSubtitle = profileViewModel::chooseSubtitle,
                     )
 
                 SettingsSection.SYSTEM ->

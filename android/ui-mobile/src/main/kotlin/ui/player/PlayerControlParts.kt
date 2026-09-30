@@ -31,6 +31,8 @@ internal fun GlyphButton(
     description: String,
     enabled: Boolean,
     onClick: () -> Unit,
+    // A toggle's off state: drawn faint, where a bar of white glyphs has no other way to show it.
+    dimmed: Boolean = false,
 ) {
     TextButton(
         onClick = onClick,
@@ -39,7 +41,7 @@ internal fun GlyphButton(
     ) {
         Text(
             text = glyph,
-            color = Color.White,
+            color = if (dimmed) Color.White.copy(alpha = 0.5f) else Color.White,
             style = MaterialTheme.typography.headlineMedium,
         )
     }

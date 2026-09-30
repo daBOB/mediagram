@@ -226,6 +226,65 @@ class SubtitleChoiceControllerTest {
         assertEquals("en", selected(vm), "the last regular track this session wins over the first one")
     }
 
+    @Test
+    fun togglingOnAForcedOnlyTitleRemembersNothingAndLeavesTheForcedLinesAlone() = runTest {
+        installMainDispatcher()
+        val set = withSubtitles(show, alang = listOf("de")).copy(subtitles = listOf(track("de", forced = true)))
+        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to 0) to listOf(cue("Forced only"))))
+        val preferences = FakePlayerPreferences()
+        val vm = buildViewModel(
+            catalogRepository = FakeCatalogRepository(mapOf(show.setId to set)),
+            preferences = preferences,
+            subtitleTrackSource = trackSource,
+        )
+        vm.open(show.setId)
+        advanceUntilIdle()
+
+        vm.toggleSubtitles()
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), preferences.remembered)
+        assertEquals(listOf(cue("Forced only")), vm.subtitleCues.value)
+    }
+
+    @Test
+    fun togglingOnATitleWithNoTracksRemembersNothing() = runTest {
+        installMainDispatcher()
+        val preferences = FakePlayerPreferences()
+        val vm = buildViewModel(
+            catalogRepository = FakeCatalogRepository(mapOf(show.setId to show)),
+            preferences = preferences,
+        )
+        vm.open(show.setId)
+        advanceUntilIdle()
+
+        vm.toggleSubtitles()
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), preferences.remembered)
+    }
+
+    @Test
+    fun togglingBeforeTheChoiceHasSettledDoesNothing() = runTest {
+        installMainDispatcher()
+        val gate = CompletableDeferred<Unit>()
+        val preferences = FakePlayerPreferences(gate = gate)
+        val vm = buildViewModel(
+            catalogRepository = FakeCatalogRepository(mapOf(show.setId to withSubtitles(show, "de", "en"))),
+            preferences = preferences,
+        )
+        vm.open(show.setId)
+        advanceUntilIdle()
+
+        vm.toggleSubtitles()
+        advanceUntilIdle()
+
+        assertEquals(SUBTITLES_OFF, selected(vm))
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(emptyList(), preferences.remembered)
+    }
+
     // -- a pick that races the preference round trip --
 
     @Test

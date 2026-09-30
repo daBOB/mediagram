@@ -57,11 +57,12 @@ private val IconOf =
         SettingsSection.TELEGRAM to R.drawable.core_designsystem_ic_settings_telegram,
         SettingsSection.STORAGE to R.drawable.core_designsystem_ic_settings_storage,
         SettingsSection.APPEARANCE to R.drawable.core_designsystem_ic_settings_appearance,
+        SettingsSection.PROFILE to R.drawable.core_designsystem_ic_settings_profile,
         SettingsSection.SYSTEM to R.drawable.core_designsystem_ic_settings_system,
     )
 
 /**
- * The index: back arrow and wordmark, the SETTINGS eyebrow, the four
+ * The index: back arrow and wordmark, the SETTINGS eyebrow, the five
  * section rows each with their own status, and — only on a width wide
  * enough to show it beside the page — the library's own tally underneath.
  */

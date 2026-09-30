@@ -5,6 +5,29 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.90.0 — Android: a CC button, the remote's captions key, and a Profile section in Settings
+
+**Added**
+
+- A CC button in the phone/tablet transport row and the TV tool row turns
+  regular subtitles on and off, and the remote's captions key does the same
+  from any player state, showing the controls briefly. The button appears only
+  for a title with a regular subtitle track; the key does nothing (and
+  remembers nothing) on a title without one. Forced lines keep following their
+  own rule.
+- Settings has a Profile section showing who is watching and that profile's
+  default subtitle language (Off, German, English) — the same preference the
+  web player's Profile panel writes, and since 0.89.0 synced between devices.
+  Disabled until a profile is chosen.
+
+**Changed**
+
+- The player settings' size, backing and sync rows show for any title with a
+  subtitle track that can show, forced-only titles included; the language rows
+  still need a regular track.
+- The phone transport row wraps instead of squeezing its last buttons to
+  nothing on a narrow portrait screen.
+
 ## 0.89.0 — subtitle language and cue style follow the profile to every device
 
 **Added**

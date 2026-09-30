@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Overscan
 import model.MediaSet
 import player.PlayerUiState
+import player.toggleSubtitles
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
@@ -86,7 +87,6 @@ fun TvPlayerScreen(
     val upNextShown = upNext.phase != UpNextPhase.HIDDEN
     val notesOpen = notes?.open == true
     val failed = state is PlayerUiState.Failed
-
     PlayerLifecycle(viewModel)
     PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch)
     // The phone's rule: the countdown drops playing (the title has ended)
@@ -128,7 +128,7 @@ fun TvPlayerScreen(
                     controlsShown = true
                 },
                 onNext = { steps.next() },
-                onPrevious = { steps.previous() },
+                onPrevious = { steps.previous() }, onToggleSubtitles = { viewModel.toggleSubtitles() },
             )
         }
     TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || onSeekBar })
@@ -178,7 +178,7 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown),
+                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown, choices.ccVisible, choices.subtitlesOn),
                     actions =
                         TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },

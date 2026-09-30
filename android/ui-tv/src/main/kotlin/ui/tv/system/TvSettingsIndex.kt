@@ -39,11 +39,12 @@ private val IconOf =
         SettingsSection.TELEGRAM to R.drawable.core_designsystem_ic_settings_telegram,
         SettingsSection.STORAGE to R.drawable.core_designsystem_ic_settings_storage,
         SettingsSection.APPEARANCE to R.drawable.core_designsystem_ic_settings_appearance,
+        SettingsSection.PROFILE to R.drawable.core_designsystem_ic_settings_profile,
         SettingsSection.SYSTEM to R.drawable.core_designsystem_ic_settings_system,
     )
 
 /**
- * Settings' left pane on a television: the SETTINGS eyebrow and the four
+ * Settings' left pane on a television: the SETTINGS eyebrow and the five
  * section rows, each with its own status — the phone index's own content
  * (`ui.settings.SettingsIndex`), without its wordmark or back arrow (the
  * remote's own Back already does that job) or the library tally

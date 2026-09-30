@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings index's Profile row — a head and shoulders in the same 1.4 line as its neighbours. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8.5,8 A3.5,3.5 0 1,0 15.5,8 A3.5,3.5 0 1,0 8.5,8 M4,20 C4,15.5 7.5,14 12,14 C16.5,14 20,15.5 20,20" />
+</vector>

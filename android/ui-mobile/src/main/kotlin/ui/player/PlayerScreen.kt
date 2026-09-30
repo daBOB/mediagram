@@ -36,6 +36,7 @@ import player.createListAndAdd
 import player.retry
 import player.setInList
 import player.toggleKids
+import player.toggleSubtitles
 import player.toggleWatchlist
 
 /**
@@ -99,14 +100,12 @@ fun PlayerScreen(
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var barTop by remember { mutableStateOf<Float?>(null) }
     ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, settingsShown, onHide = { controlsShown = false })
-
     // One predicate, read twice, because the bar and the statistics sit in
     // different corners and cannot be nested under a single `if`. Both are
     // the bar being on screen, so both ask the same question rather than two
     // that could drift apart. `!isInPip` folds in here too: there is no
     // touch surface of this app's own inside that window to show a bar on.
     val barShown = controlsShown && controlsMayShow(state) && !isInPip
-
     // The up-next card appearing is itself a reason to bring the bar back —
     // a viewer who let it fade is exactly who most wants to see the panel.
     LaunchedEffect(upNext.phase) { if (upNext.phase != UpNextPhase.HIDDEN) controlsShown = true }
@@ -135,6 +134,7 @@ fun PlayerScreen(
                         onToggleStats = { statsShown = !statsShown },
                         speed = choices.speed,
                         onOpenSettings = { settingsShown = true },
+                        hasSubtitles = choices.ccVisible, subtitlesOn = choices.subtitlesOn, onToggleSubtitles = viewModel::toggleSubtitles,
                         catalogedDurationSecs = openSet?.durationSecs,
                         hasNext = upNext.hasNext,
                         nextTitleLine = upNext.titleLine,

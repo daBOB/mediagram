@@ -11,6 +11,15 @@ import uniffi.mediagram_core.CoreInterface
  * show, and what "the whole show" means is `feature:player`'s question,
  * not this repository's.
  */
+/** The scope a profile's own defaults are filed under, apart from any show's scope. */
+const val PROFILE_SCOPE = "profile"
+
+/** The preference name that holds a subtitle choice, whether for a show or a profile. */
+const val SUBTITLE_PREFERENCE = "subtitle"
+
+/** The stored value of a subtitle choice made off, which is a choice like any other. */
+const val SUBTITLE_OFF = "off"
+
 interface PlayerPreferences {
     /** Every choice this profile has filed under [scope], by name. */
     suspend fun load(profileId: String, scope: String): Map<String, String>

@@ -18,6 +18,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
+import setup.profileStatus
 import setup.SettingsViewModel
 import setup.telegramStatus
 import system.CacheBudgetViewModel
@@ -59,6 +61,9 @@ internal fun SettingsScreen(
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     val cacheViewModel: CacheBudgetViewModel = hiltViewModel()
     val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
+    val profileViewModel: ProfileSettingsViewModel = hiltViewModel()
+    val profile by profileViewModel.profile.collectAsStateWithLifecycle()
+    val profileSubtitle by profileViewModel.subtitle.collectAsStateWithLifecycle()
     val lanViewModel: LanCacheViewModel = hiltViewModel()
     val lanState by lanViewModel.state.collectAsStateWithLifecycle()
     val systemViewModel: SystemViewModel = hiltViewModel()
@@ -120,6 +125,7 @@ internal fun SettingsScreen(
                     SettingsSection.TELEGRAM to IndexStatus(telegramStatus(settingsState)),
                     SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                     SettingsSection.APPEARANCE to IndexStatus("${appearance.theme.label} · ${appearance.accent.label}"),
+                    SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
                     SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
                 )
             SettingsPanes(
@@ -151,6 +157,9 @@ internal fun SettingsScreen(
                     onChooseTheme = appearanceViewModel::chooseTheme,
                     onChooseAccent = appearanceViewModel::chooseAccent,
                     onChooseBackdrop = appearanceViewModel::chooseBackdrop,
+                    profile = profile,
+                    profileSubtitle = profileSubtitle,
+                    onChooseProfileSubtitle = profileViewModel::chooseSubtitle,
                 )
             }
         }

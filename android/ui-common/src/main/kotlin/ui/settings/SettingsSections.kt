@@ -1,7 +1,7 @@
 package ui.settings
 
 /**
- * Settings' four sections, one per index row and one per page: a title for
+ * Settings' five sections, one per index row and one per page: a title for
  * the row and the page head alike, and the small sentence under the page's
  * own huge title — the same per-section line the web's Settings/System pages
  * carry (`settings-page.js`, `status-view.js:85-113`).
@@ -14,6 +14,7 @@ enum class SettingsSection(val title: String, val pageEyebrow: String) {
     TELEGRAM("Telegram", "Your account and where it's signed in"),
     STORAGE("Storage", "What this device keeps and where it comes from"),
     APPEARANCE("Appearance", "Make it yours"),
+    PROFILE("Profile", "Who is watching and how"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
 }
 

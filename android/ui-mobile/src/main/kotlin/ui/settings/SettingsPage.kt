@@ -22,6 +22,7 @@ import designsystem.Backdrop
 import designsystem.LocalCatalogueTones
 import designsystem.PageHead
 import designsystem.ThemeChoice
+import model.Profile
 import setup.SettingsUiState
 import ui.system.SystemScreen
 
@@ -50,6 +51,9 @@ internal fun SettingsPage(
     onChooseTheme: (ThemeChoice) -> Unit,
     onChooseAccent: (Accent) -> Unit,
     onChooseBackdrop: (Backdrop) -> Unit,
+    profile: Profile?,
+    profileSubtitle: String,
+    onChooseProfileSubtitle: (String) -> Unit,
 ) {
     val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     val tones = LocalCatalogueTones.current
@@ -94,6 +98,7 @@ internal fun SettingsPage(
                     onChooseBackdrop = onChooseBackdrop,
                 )
 
+            SettingsSection.PROFILE -> ProfileSettingsSection(profile, profileSubtitle, onChooseProfileSubtitle)
             SettingsSection.SYSTEM -> SystemScreen(expanded = expanded)
         }
     }

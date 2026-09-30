@@ -60,6 +60,11 @@ internal class TvPlayerExtras(
     /** The chosen playback speed, read out beside the settings gear while it is not the default. */
     val speed: Float = 1f,
     val onOpenSettings: () -> Unit = {},
+    /** Whether the title has a regular subtitle track; the CC button is left out without one. */
+    val hasSubtitles: Boolean = false,
+    /** Whether a regular track is showing. */
+    val subtitlesOn: Boolean = false,
+    val onToggleSubtitles: () -> Unit = {},
     /** Whether anything follows in the run — the standing "Play next" stays even once the up-next card is cancelled, as on the phone. */
     val hasNext: Boolean = false,
     val nextTitleLine: String = "",

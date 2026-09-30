@@ -37,5 +37,7 @@ dependencies {
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    // Declares the ComponentActivity createAndroidComposeRule launches; without it the rule has no host.
+    debugImplementation(libs.findLibrary("androidx.compose.ui.test.manifest").get())
     testImplementation(project(":core:testing"))
 }

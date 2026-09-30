@@ -30,6 +30,7 @@ internal fun PlayerSettingsSheetForViewModel(
         audioOptions = choices.audioOptions,
         onAudioChosen = viewModel::chooseAudioTrack,
         subtitleOptions = choices.subtitleOptions,
+        subtitleStyleVisible = choices.subtitleStyleVisible,
         onSubtitleChosen = viewModel::chooseSubtitleLanguage,
         subtitleSizePercent = choices.subtitleSizePercent,
         onSubtitleSizeChosen = viewModel::setSubtitleSize,

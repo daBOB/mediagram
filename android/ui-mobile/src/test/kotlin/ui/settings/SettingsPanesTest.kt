@@ -31,6 +31,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
+import ui.profileSettingsModel
 import setup.SettingsUiState
 import setup.SettingsViewModel
 import system.CacheBudgetViewModel
@@ -92,6 +94,7 @@ class SettingsPanesTest {
             mapOf<Class<out ViewModel>, ViewModel>(
                 SettingsViewModel::class.java to settingsModel,
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                ProfileSettingsViewModel::class.java to profileSettingsModel(),
                 CacheBudgetViewModel::class.java to cacheModel,
                 LanCacheViewModel::class.java to lanModel,
                 SystemViewModel::class.java to systemModel,

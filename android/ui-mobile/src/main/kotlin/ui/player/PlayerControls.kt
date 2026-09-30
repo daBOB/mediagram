@@ -8,7 +8,7 @@ package ui.player
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -56,6 +56,11 @@ fun PlayerControls(
     onToggleStats: () -> Unit,
     speed: Float,
     onOpenSettings: () -> Unit,
+    /** Whether the title has a regular subtitle track; the CC button is left out without one. */
+    hasSubtitles: Boolean,
+    /** Whether a regular track is showing. */
+    subtitlesOn: Boolean,
+    onToggleSubtitles: () -> Unit,
     /** The catalogue's own runtime, in whole seconds — trusted over media3's until it has one; see [endsLine]. */
     catalogedDurationSecs: Int?,
     /** Whether a next title exists at all — the standing button stays even once the up-next card is cancelled. */
@@ -109,9 +114,12 @@ fun PlayerControls(
             .padding(Spacing.medium),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.large),
-            verticalAlignment = Alignment.CenterVertically,
+        // Wraps rather than squeezes: on a 360-411dp phone the extra buttons
+        // (CC, Next) crowded the gear to nothing. Wide screens still fit one line.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.large, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.Center,
+            itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             // Both labels are read back off the player rather than written
             // here, so a button cannot come to say one thing and do another.
@@ -153,6 +161,15 @@ fun PlayerControls(
             }
             // As the web shows it: a number beside the gear only while it differs from the default.
             if (speed != 1f) TimeText(speedLabel(speed))
+            if (hasSubtitles) {
+                GlyphButton(
+                    glyph = "CC",
+                    description = if (subtitlesOn) "Subtitles on" else "Subtitles off",
+                    enabled = true,
+                    onClick = onToggleSubtitles,
+                    dimmed = !subtitlesOn,
+                )
+            }
             GlyphButton(glyph = "⚙", description = "Playback settings", enabled = true, onClick = onOpenSettings)
         }
         PlayerScrubber(

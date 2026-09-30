@@ -4,7 +4,7 @@ import model.SubtitleTrackInfo
 import playback.audioLanguageLabel
 
 /** The value a chosen-off subtitle is remembered as — a choice like any other, never "nothing remembered". */
-const val SUBTITLES_OFF: String = "off"
+const val SUBTITLES_OFF: String = data.SUBTITLE_OFF
 
 /** One row the Subtitles section offers: "Off", or a track marked selected against whichever is shown. */
 data class SubtitleOption(val value: String, val label: String, val selected: Boolean)

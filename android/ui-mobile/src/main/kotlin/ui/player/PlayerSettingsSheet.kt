@@ -33,9 +33,10 @@ import player.speedLabel
  * [audioOptions] is empty for a title with only one audio track (or before
  * the file's own tracks and any remembered choice have both resolved),
  * which is exactly when the Audio section stays off the sheet entirely.
- * [subtitleOptions] is empty on the same terms for a file with no subtitles
- * at all, which hides both subtitle sections — a size or a backing is
- * nothing to offer for text that never appears.
+ * [subtitleOptions] is empty for a file with no regular track, which hides the
+ * language rows; [subtitleStyleVisible] is on for any file with a track that
+ * can show, forced-only included, because a size or an offset still applies
+ * to forced lines. With neither, both sections are gone.
  *
  * Scrolls (more sections than fit a short landscape sheet is routine once
  * Audio and Subtitles join Speed) and pads for the navigation bar itself,
@@ -51,6 +52,7 @@ fun PlayerSettingsSheet(
     audioOptions: List<AudioOption>,
     onAudioChosen: (AudioOption) -> Unit,
     subtitleOptions: List<SubtitleOption>,
+    subtitleStyleVisible: Boolean,
     onSubtitleChosen: (String) -> Unit,
     subtitleSizePercent: Int,
     onSubtitleSizeChosen: (Int) -> Unit,
@@ -80,6 +82,8 @@ fun PlayerSettingsSheet(
             }
             if (subtitleOptions.isNotEmpty()) {
                 SubtitleSection(options = subtitleOptions, onChosen = onSubtitleChosen)
+            }
+            if (subtitleStyleVisible) {
                 SubtitleStyleSection(
                     sizePercent = subtitleSizePercent,
                     onSizeChosen = onSubtitleSizeChosen,

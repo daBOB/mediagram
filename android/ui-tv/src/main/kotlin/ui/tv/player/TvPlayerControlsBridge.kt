@@ -12,6 +12,7 @@ import player.UpNextUiState
 import player.createListAndAdd
 import player.setInList
 import player.toggleKids
+import player.toggleSubtitles
 import player.toggleWatchlist
 import ui.tv.setup.LocalTvDialogKeys
 
@@ -22,6 +23,10 @@ internal class TvControlsView(
     val speed: Float,
     val upNext: UpNextUiState,
     val statsShown: Boolean,
+    /** Whether the title has a regular subtitle track; the CC button is left out without one. */
+    val hasSubtitles: Boolean = false,
+    /** Whether a regular track is showing. */
+    val subtitlesOn: Boolean = false,
 )
 
 /** What pressing the controls does to the screen's own state rather than to the player. */
@@ -70,6 +75,9 @@ internal fun TvPlayerControlsForViewModel(
                 held = view.held,
                 speed = view.speed,
                 onOpenSettings = actions.onOpenSettings,
+                hasSubtitles = view.hasSubtitles,
+                subtitlesOn = view.subtitlesOn,
+                onToggleSubtitles = viewModel::toggleSubtitles,
                 hasNext = view.upNext.hasNext,
                 nextTitleLine = view.upNext.titleLine,
                 onPlayNext = actions.onPlayNext,

@@ -38,6 +38,9 @@ sealed interface TvKeyAction {
     /** Puts the up-next card away for this title, as its own Cancel does. */
     data object CancelUpNext : TvKeyAction
 
+    /** Turns regular subtitles on or off and brings the controls up briefly, so the CC state can be read — the remote's captions key. */
+    data object ToggleSubtitles : TvKeyAction
+
     /** Closes the settings panel, and only that: the controls stay up behind it. */
     data object ClosePanel : TvKeyAction
 
@@ -123,6 +126,10 @@ fun tvKeyAction(
 ): TvKeyAction {
     if (key == Key.MediaNext) return TvKeyAction.Next
     if (key == Key.MediaPrevious) return TvKeyAction.Previous
+    // Like Next, meaning the same in every state: a viewer who presses
+    // captions with the settings panel or the notes column open still wants
+    // the subtitles toggled, and nothing else on this screen uses the key.
+    if (key == Key.Captions) return TvKeyAction.ToggleSubtitles
     if (panelOpen) {
         return when (key) {
             Key.Back -> TvKeyAction.ClosePanel

@@ -44,6 +44,17 @@ internal fun TvToolGroup(
         if (extras.speed != 1f) {
             Text(text = speedLabel(extras.speed), style = TvTypeScale.body, color = Palette.Text)
         }
+        // Before the gear, where the phone and the web put it. A filled or an
+        // empty dot says which way it stands, as the settings rows do.
+        if (extras.hasSubtitles) {
+            TvGlyphButton(
+                glyph = if (extras.subtitlesOn) "CC ●" else "CC ○",
+                description = if (extras.subtitlesOn) "Subtitles on" else "Subtitles off",
+                enabled = true,
+                onClick = extras.onToggleSubtitles,
+                padding = Spacing.medium,
+            )
+        }
         TvGlyphButton(
             glyph = "⚙",
             description = "Playback settings",

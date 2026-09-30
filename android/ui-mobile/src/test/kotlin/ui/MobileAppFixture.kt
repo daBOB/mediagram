@@ -13,6 +13,7 @@ import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
 import setup.Libraries
 import setup.SettingsViewModel
 import setup.SetupViewModel
@@ -85,6 +86,7 @@ internal class MobileAppFixture :
                 // hiltViewModel() for MediagramTheme; this owner has to hand it
                 // back too, the same reason it hands back the other two above.
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                ProfileSettingsViewModel::class.java to profileSettingsModel(),
             )
         val held =
             ViewModelProvider(

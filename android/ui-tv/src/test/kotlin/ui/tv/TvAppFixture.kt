@@ -37,6 +37,7 @@ import settings.InMemoryLibrarySettings
 import settings.InMemoryTelegramSettings
 import settings.InMemoryTmdbSettings
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
 import setup.Libraries
 import setup.SettingsCompletion
 import setup.SettingsUiState
@@ -268,6 +269,7 @@ internal class TvAppFixture(
                 // every other entry in this map exists (see the comment above
                 // login/profile/etc.).
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                ProfileSettingsViewModel::class.java to profileSettingsModel(),
                 // TvLibrary resolves BrowseViewModel through hiltViewModel()
                 // for the same reason every entry above exists — see that
                 // comment.

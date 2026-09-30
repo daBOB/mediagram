@@ -124,6 +124,9 @@ class SubtitleChoiceController(
 
     /** The captions key or CC control: on turns [toggleOn] on, on turns off. */
     fun toggle() {
+        // Nothing regular to turn on — a forced-only or subtitle-less title,
+        // or one still loading: pressing must not file an "off" for the show.
+        if (!settled || tracks.none { !it.forced }) return
         userChose = true
         val next = if (regularKey != null) null else toggleOn(last, preferred, audio, tracks)
         applySelection(next, remember = true)

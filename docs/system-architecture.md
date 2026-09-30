@@ -577,7 +577,7 @@ over them no longer clears. What differs on purpose, and why, is recorded in
 
 ### Settings and System
 
-Settings is a two-pane index — Telegram, Storage, Appearance, System — on phone,
+Settings is a two-pane index — Telegram, Storage, Appearance, Profile, System — on phone,
 tablet and television alike (`260927-1731-android-settings-system-redesign`), set in
 the web player's own dark tokens (`DESIGN.md`). Compact width shows the index or one
 open section, never both, with Back returning to the index; expanded width (tablet
@@ -585,7 +585,10 @@ landscape, television) shows both panes together. System is a Settings entry, no
 screen of its own — the app menu also keeps its own direct shortcut to System, so
 "what is this player doing right now" stays one tap away without detouring through
 the index. Storage merges the local cache and the home cache server into one section;
-Appearance offers Theme, Accent and Artwork (see `DESIGN.md` § Artwork). Television
+Appearance offers Theme, Accent and Artwork (see `DESIGN.md` § Artwork). Profile
+shows the chosen profile and its default subtitle language (Off, German or English,
+stored as preference `profile`/`subtitle`, disabled until a profile is chosen), as the
+web player's Profile panel does. Television
 polls System every 2 seconds while it is visible, the same as the web player.
 
 ### Film preload (Android only)
@@ -748,6 +751,13 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   stay as words; Back and the Notes button close the panel instead of a ✕.
 - **Tools at the end of the marks row.** The remote has no top bar to press; Notes,
   settings and info sit at the row's end alongside marks, where focus can reach them.
+- **Captions key and a CC button.** The remote's captions key (`KEYCODE_CAPTIONS`) toggles
+  regular subtitles in every player state, like Next, and brings the controls up briefly;
+  the CC button before the settings gear does the same for remotes without the key.
+  The phone has the same CC button in its transport row, and the web its `c` key. Both
+  show only for a title with a regular track (the key is a no-op elsewhere and never files a choice); forced tracks follow their own rule. The
+  settings panel's size and sync rows show for any title with a track that can show,
+  forced-only included; its language rows need a regular track.
 - **Up-next card floats opaque, bottom-right.** The web's card is translucent; a
   countdown read through a bright scene is unreadable on a TV.
 - **Mark finished as a row under a Continue plate.** The phone's long-press menu has

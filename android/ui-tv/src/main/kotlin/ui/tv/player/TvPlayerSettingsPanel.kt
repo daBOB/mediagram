@@ -37,8 +37,9 @@ internal const val TvSettingsPanelTag = "tv-player-settings"
  * The phone's settings sheet as a panel down the right-hand side of the
  * picture, which the transport's gear opens: Speed, Audio, Subtitles,
  * Subtitle style and Framing, in the phone's order, on the phone's terms —
- * Audio only for a title with more than one track, the two subtitle
- * sections only for a file that carries subtitles at all.
+ * Audio only for a title with more than one track, the language rows
+ * only for a file with a regular subtitle track, and the style rows for any
+ * file with a track that can show, forced-only included.
  *
  * To one side rather than over the middle, and not dimming the rest, so a
  * subtitle size or a sync nudge can be judged against the film it applies
@@ -79,6 +80,10 @@ internal fun TvPlayerSettingsPanel(
         }
         if (choices.subtitleOptions.isNotEmpty()) {
             TvSubtitleSection(options = choices.subtitleOptions, onChosen = viewModel::chooseSubtitleLanguage)
+        }
+        // Apart from the language rows: a forced-only title has no regular
+        // track to pick, but its lines still take a size and an offset.
+        if (choices.subtitleStyleVisible) {
             TvSubtitleStyleSection(
                 sizePercent = choices.subtitleSizePercent,
                 onSizeChosen = viewModel::setSubtitleSize,

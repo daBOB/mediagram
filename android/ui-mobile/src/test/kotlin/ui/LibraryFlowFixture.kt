@@ -44,6 +44,7 @@ import catalog.ShelfViewModel
 import catalog.SearchViewModel
 import settings.InMemoryShelfViewSettings
 import setup.AppearanceViewModel
+import setup.ProfileSettingsViewModel
 
 /** Real routing and catalog/profile/player ViewModels; only external IO and unrelated menu facts are controlled. */
 internal class LibraryFlowFixture(
@@ -143,6 +144,7 @@ internal class LibraryFlowFixture(
                 // this flow's own menu) each resolve an AppearanceViewModel
                 // through hiltViewModel(); this owner has to hand it back too.
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                ProfileSettingsViewModel::class.java to profileSettingsModel(),
             )
         val provider =
             ViewModelProvider(

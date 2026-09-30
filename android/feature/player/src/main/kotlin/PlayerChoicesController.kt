@@ -1,5 +1,7 @@
 package player
 
+import data.PROFILE_SCOPE
+import data.SUBTITLE_PREFERENCE
 import data.CatalogRepository
 import data.PlayerPreferences
 import data.WatchStateRepository
@@ -15,8 +17,6 @@ import playback.Framing
 import playback.SubtitleTrackSource
 import playback.TimedCue
 
-/** Where a profile's default subtitle language sits — not a show's own scope, which only ever remembers "for this show". */
-private const val PROFILE_SCOPE = "profile"
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
@@ -142,7 +142,7 @@ class PlayerChoicesController(
         // The profile's own default subtitle language, apart from this
         // show's own scope: `chooseSubtitles`'s "profile preference" tier.
         val profileSubtitle =
-            if (profileId == null) null else safely(emptyMap()) { preferences.load(profileId, PROFILE_SCOPE) }["subtitle"]
+            if (profileId == null) null else safely(emptyMap()) { preferences.load(profileId, PROFILE_SCOPE) }[SUBTITLE_PREFERENCE]
         if (session.openSetId != setId) return
 
         if (userChoseSpeed) {

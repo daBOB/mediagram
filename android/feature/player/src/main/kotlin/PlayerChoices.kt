@@ -45,6 +45,12 @@ data class PlayerChoices(
     /** How the picture sits in the window — the sheet's own row, or a pinch. */
     val framing: Framing = Framing.Default,
 ) {
+    /** Whether the CC control has a regular track to act on. */
+    val ccVisible: Boolean get() = subtitleOptions.isNotEmpty()
+
+    /** Whether a regular subtitle track is showing. */
+    val subtitlesOn: Boolean get() = subtitleOptions.any { it.selected && it.value != SUBTITLES_OFF }
+
     companion object {
         val Default = PlayerChoices()
     }
