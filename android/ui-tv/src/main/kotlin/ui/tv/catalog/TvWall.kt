@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
@@ -31,9 +32,11 @@ import ui.tv.chrome.asPaddingValues
  * Six plates across, fixed rather than worked out from the window: every
  * television this draws for is 960dp wide whatever its pixels, so there is
  * no narrower screen to fit, and six is what that width holds at a size
- * read from across a room — the same six Home's rows show.
+ * read from across a room — the same six Home's rows show. Internal, not
+ * private: `TvWallCells.kt`'s own `sectionCrossingsOf` needs this same
+ * number, rather than a second one that could drift from it.
  */
-private const val Columns = 6
+internal const val Columns = 6
 
 /**
  * How far past the screen's edge the wall keeps plates composed. A line of
@@ -100,19 +103,29 @@ fun <T> TvWall(
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
-    // Every heading and plate cell below is wrapped to read [barClearance]
-    // rather than the ambient default — moving one up or down inside this
-    // grid used to leave the focused cell's own top behind the bar, the same
-    // risk `TvHome`'s own vertical list already carries a fix for. [header]'s
-    // own cell is wrapped back to [defaultBringIntoView] instead, captured
-    // here before the override exists: a horizontal row inside it (Anime's
-    // own Continue watching) reads the vertical clearance as a horizontal
-    // offset otherwise, reserving blank space on its own left the bar never
-    // touches, for no reason — `TvHome`'s own doc on why it resets the same
-    // way for its own bands.
+    // Read once here, above the grid, and provided around it below —
+    // `TvHome`'s own vertical list wraps its whole `LazyColumn` the same
+    // way, not each item inside it: the grid's own scroll-into-view
+    // machinery (what actually moves it up or down to keep a newly focused
+    // cell visible) reads whatever spec is ambient at the grid's *own*
+    // position in composition, not at each item's — a provider nested
+    // inside `items { }` sits below that point and the grid's own
+    // machinery never sees it, which is why an earlier version of this fix
+    // (wrapping each cell instead) left Up still landing plates behind the
+    // bar while Down happened to look clear by accident (a downward reveal
+    // settles with the target's own bottom flush against the viewport's
+    // bottom, which is nowhere near the bar to begin with). [header]'s own
+    // cell resets back to [defaultBringIntoView] below, captured here
+    // before the override exists: a horizontal row inside it (Anime's own
+    // Continue watching) reads the vertical clearance as a horizontal
+    // offset otherwise, reserving blank space on its own left the bar
+    // never touches, for no reason — `TvHome`'s own doc on why it resets
+    // the same way for its own bands.
     val defaultBringIntoView = LocalBringIntoViewSpec.current
     val barClearance = rememberTvBarClearanceBringIntoView()
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }
+    val crossings = remember(items.size, headings) { sectionCrossingsOf(items.size, headings) }
+    val crossingFocusRequesters = remember(crossings) { (crossings.up.keys + crossings.up.values).associateWith { FocusRequester() } }
     val focusIndex =
         remember(items, restoreKey) {
             if (items.isEmpty()) {
@@ -148,40 +161,49 @@ fun <T> TvWall(
         }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(Columns),
-        state = gridState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = LocalTvPagePadding.current.asPaddingValues(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.medium),
-    ) {
-        items(
-            items = cells,
-            key = { cell ->
-                when (cell) {
-                    WallCell.Header -> "header"
-                    is WallCell.Heading -> "heading-${cell.label}"
-                    is WallCell.Plate -> key(items[cell.index])
-                }
-            },
-            span = { cell -> if (cell is WallCell.Plate) GridItemSpan(1) else GridItemSpan(maxLineSpan) },
-            // A plate scrolled off is recomposed as the next plate scrolled
-            // on, never as a heading — the reuse a lazy grid only does
-            // between items of one declared type.
-            contentType = { cell -> cell::class },
-        ) { cell ->
-            when (cell) {
-                WallCell.Header ->
-                    CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) { header?.invoke() }
-                is WallCell.Heading ->
-                    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
-                        TvBandHeading(title = cell.label, count = null)
+    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(Columns),
+            state = gridState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = LocalTvPagePadding.current.asPaddingValues(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+        ) {
+            items(
+                items = cells,
+                key = { cell ->
+                    when (cell) {
+                        WallCell.Header -> "header"
+                        is WallCell.Heading -> "heading-${cell.label}"
+                        is WallCell.Plate -> key(items[cell.index])
                     }
-                is WallCell.Plate -> {
-                    val item = items[cell.index]
-                    val itemModifier = if (cell.index == focusIndex) Modifier.focusRequester(focusRequester) else Modifier
-                    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+                },
+                span = { cell -> if (cell is WallCell.Plate) GridItemSpan(1) else GridItemSpan(maxLineSpan) },
+                // A plate scrolled off is recomposed as the next plate scrolled
+                // on, never as a heading — the reuse a lazy grid only does
+                // between items of one declared type.
+                contentType = { cell -> cell::class },
+            ) { cell ->
+                when (cell) {
+                    WallCell.Header ->
+                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) { header?.invoke() }
+                    is WallCell.Heading -> TvBandHeading(title = cell.label, count = null)
+                    is WallCell.Plate -> {
+                        val item = items[cell.index]
+                        val crossingRequester = crossingFocusRequesters[cell.index]
+                        val upTarget = crossings.up[cell.index]?.let(crossingFocusRequesters::getValue)
+                        val downTarget = crossings.down[cell.index]?.let(crossingFocusRequesters::getValue)
+                        var itemModifier: Modifier = Modifier
+                        if (cell.index == focusIndex) itemModifier = itemModifier.focusRequester(focusRequester)
+                        if (crossingRequester != null) itemModifier = itemModifier.focusRequester(crossingRequester)
+                        if (upTarget != null || downTarget != null) {
+                            itemModifier =
+                                itemModifier.focusProperties {
+                                    upTarget?.let { up = it }
+                                    downTarget?.let { down = it }
+                                }
+                        }
                         plate(item, itemModifier) { onOpen(item) }
                     }
                 }
@@ -190,29 +212,3 @@ fun <T> TvWall(
     }
 }
 
-/**
- * One line of a wall as the grid lays it out: the optional header across
- * the top, a section's label, or one plate — so a plate's place in the grid
- * is looked up here rather than worked out again wherever the grid has to be
- * scrolled to one.
- */
-private sealed interface WallCell {
-    data object Header : WallCell
-
-    data class Heading(val label: String) : WallCell
-
-    data class Plate(val index: Int) : WallCell
-}
-
-private fun cellsOf(
-    items: List<*>,
-    hasHeader: Boolean,
-    headings: Map<Int, String>,
-): List<WallCell> =
-    buildList {
-        if (hasHeader) add(WallCell.Header)
-        items.indices.forEach { index ->
-            headings[index]?.let { add(WallCell.Heading(it)) }
-            add(WallCell.Plate(index))
-        }
-    }

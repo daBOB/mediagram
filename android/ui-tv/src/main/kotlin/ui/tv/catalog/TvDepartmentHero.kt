@@ -89,36 +89,39 @@ internal fun TvDepartmentHero(
                 Box(artModifier.background(Brush.horizontalGradient(0f to paper, 0.26f to paper.copy(alpha = 0.7f), 0.64f to Color.Transparent)))
             }
         }
-        Column(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.large)
-                    .widthIn(max = HeroCopyMaxWidth),
-        ) {
-            Text(text = kicker.uppercase(), style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow), color = tones.quiet)
-            BasicText(
-                text = title.uppercase(),
-                style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
-                autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
-                maxLines = 1,
-                modifier = Modifier.padding(top = Spacing.small).testTag(TvDepartmentHeroTitleTestTag),
-            )
-            Text(text = line, style = TvTypeScale.body, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
-        }
-        if (art != null) {
-            lead.tagline?.takeIf(String::isNotBlank)?.let { tagline ->
-                TvDeptQuote(
-                    tagline = tagline,
-                    leadName = leadName ?: lead.title,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = pagePadding.end, top = pagePadding.top + Spacing.large)
-                            .widthIn(max = HeroQuoteMaxWidth),
-                )
-            }
-        }
+        TvHeroWordsAboveQuote(
+            quoteTopFloor = pagePadding.top + Spacing.large,
+            gap = Spacing.large,
+            words = {
+                Column(
+                    modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.large).widthIn(max = HeroCopyMaxWidth),
+                ) {
+                    Text(text = kicker.uppercase(), style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow), color = tones.quiet)
+                    BasicText(
+                        text = title.uppercase(),
+                        style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
+                        autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
+                        maxLines = 1,
+                        modifier = Modifier.padding(top = Spacing.small).testTag(TvDepartmentHeroTitleTestTag),
+                    )
+                    Text(text = line, style = TvTypeScale.body, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
+                }
+            },
+            quote =
+                if (art != null) {
+                    lead.tagline?.takeIf(String::isNotBlank)?.let { tagline ->
+                        {
+                            TvDeptQuote(
+                                tagline = tagline,
+                                leadName = leadName ?: lead.title,
+                                modifier = Modifier.padding(end = pagePadding.end).widthIn(max = HeroQuoteMaxWidth),
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
+        )
     }
 }
 
@@ -172,10 +175,11 @@ private val HeroTitleSize = 81.6f.sp
  * tagline once actually did, on Collections. 480dp instead leaves the two
  * their own [pagePadding]-gutters plus a real, unconditional 80dp gap
  * between them, for every department's own title and quote, not only the
- * one that first showed it. Internal, not private: `TvDepartmentHeroGeometryTest`
+ * one that first showed it. Internal, not private: `TvDepartmentHeroStateTest`
  * pins the arithmetic this doc claims directly, rather than trusting a
  * rendered measurement Robolectric's own font fallback cannot be held to
- * (Fraunces measures narrower there than on a real device).
+ * (Fraunces measures narrower there than on a real device). Horizontal
+ * only — [TvHeroWordsAboveQuote] is what keeps the two apart vertically.
  */
 internal val HeroCopyMaxWidth = 480.dp
 

@@ -1,13 +1,20 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.Overscan
@@ -18,6 +25,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import ui.tv.chrome.TvContentGutter
+import kotlin.math.abs
 import kotlin.test.assertTrue
 
 /**
@@ -101,5 +109,67 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
         show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead()) }
 
         compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag(TvDepartmentHeroTestTag))).assertCountEquals(0)
+    }
+
+    /**
+     * [TvHeroWordsAboveQuote]'s own decision, driven with fixed-size fakes
+     * rather than real words/a real quote: the actual overlap this reports
+     * — a real title plus a real tagline — depends on font metrics
+     * Robolectric cannot be held to (this file's own doc on
+     * [theCopyAndQuoteColumnsNeverOverlapAtTheFixedTvWidth] says so
+     * already); driving the layout with a fake of a known height instead
+     * proves the *rule* holds for any words tall enough to ask for it,
+     * not only whichever string Collections happens to hold today.
+     */
+    @Test
+    fun quoteSitsAtItsOwnFloorWhenTheWordsLeaveRoom() {
+        showHeroLayout(heroHeight = 300.dp, wordsHeight = 100.dp, quoteHeight = 60.dp, floor = 50.dp, gap = 20.dp)
+
+        assertTop("quote", 50.dp)
+        assertTop("words", 200.dp) // Still flush against the bottom: 300 - 100.
+    }
+
+    @Test
+    fun quoteRetreatsAboveTheWordsRatherThanOverlapThem() {
+        showHeroLayout(heroHeight = 300.dp, wordsHeight = 200.dp, quoteHeight = 60.dp, floor = 50.dp, gap = 10.dp)
+
+        // Its own floor (50) would land inside the words (which now start
+        // at 100); pushed up to sit flush above them instead: 100 - 10 - 60.
+        assertTop("quote", 30.dp)
+    }
+
+    @Test
+    fun quoteIsLeftOutWhenEvenTheVeryTopHasNoRoomForIt() {
+        showHeroLayout(heroHeight = 300.dp, wordsHeight = 280.dp, quoteHeight = 60.dp, floor = 50.dp, gap = 10.dp)
+
+        compose.onNodeWithTag("quote").assertDoesNotExist()
+    }
+
+    private fun showHeroLayout(
+        heroHeight: Dp,
+        wordsHeight: Dp,
+        quoteHeight: Dp,
+        floor: Dp,
+        gap: Dp,
+    ) {
+        show {
+            Box(Modifier.size(400.dp, heroHeight)) {
+                TvHeroWordsAboveQuote(
+                    quoteTopFloor = floor,
+                    gap = gap,
+                    words = { Box(Modifier.testTag("words").size(200.dp, wordsHeight)) },
+                    quote = { Box(Modifier.testTag("quote").size(100.dp, quoteHeight)) },
+                )
+            }
+        }
+    }
+
+    private fun assertTop(
+        tag: String,
+        expected: Dp,
+    ) {
+        val expectedPx = with(compose.density) { expected.toPx() }
+        val top = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.top
+        assertTrue(abs(top - expectedPx) <= 1f, "$tag top at ${top}px, expected ${expectedPx}px")
     }
 }

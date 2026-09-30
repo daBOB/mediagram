@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
@@ -118,11 +122,21 @@ internal fun TvCollectionsPage(
     val targetKey = if (franchiseIndex != null) "franchises" else if (listIsNew) "new" else "list:$listIndex"
     val takesFocus = LocalTakesArrivalFocus.current
     var sectionInView by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
     LaunchedEffect(targetKey, takesFocus) {
         sectionInView = false
         if (!takesFocus) return@LaunchedEffect
         val itemIndex = included.indexOf(targetKey)
+        // `scrollToItem` alone lands the target flush against this list's
+        // own top — every arrival target here is past "hero" (never "hero"
+        // itself, which the fixed [CompositionLocalProvider] below never
+        // touches either, since it is allowed to bleed under the bar at
+        // scroll 0) — so a `scrollBy` right after it, backing off by the
+        // bar's own clearance, is what actually keeps the target clear:
+        // `scrollToItem` never reads [LocalBringIntoViewSpec] at all, the
+        // focus-triggered mechanism that spec exists for.
         listState.scrollToItem(itemIndex)
+        listState.scrollBy(-with(density) { TvBarClearance.toPx() })
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.first { info -> info.any { it.index == itemIndex } }
         sectionInView = true
     }
@@ -140,70 +154,82 @@ internal fun TvCollectionsPage(
     }
 
     val pagePadding = LocalTvPagePadding.current
-    LazyColumn(
-        state = listState,
-        // Scoped to this list alone — [TvMoviesDepartmentPage]'s own doc on
-        // why this coexists with the explicit requests above.
-        modifier =
-            Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag)
-                .focusRestorer(fallback = if (franchiseIndex != null) franchiseFocus else listFocus),
-        contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
-    ) {
-        item(key = "hero") {
-            Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                TvDepartmentHero(title = "Collections", line = collectionsLineOf(franchises.size, lists.size), lead = lead)
-            }
-        }
-        if (franchises.isNotEmpty()) {
-            item(key = "franchises") {
+    // [TvWall]'s own doc on why this wraps the whole scrollable rather than
+    // each item inside it — this list's own "Franchises · N" heading landed
+    // half behind the bar after Down scrolled it to the top the same way a
+    // plate once did. The franchise row resets to the ambient default for
+    // the same reason [TvWall]'s own header does: a sideways row reading
+    // the vertical clearance as a horizontal offset otherwise.
+    val defaultBringIntoView = LocalBringIntoViewSpec.current
+    val barClearance = rememberTvBarClearanceBringIntoView()
+    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+        LazyColumn(
+            state = listState,
+            // Scoped to this list alone — [TvMoviesDepartmentPage]'s own doc on
+            // why this coexists with the explicit requests above.
+            modifier =
+                Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag)
+                    .focusRestorer(fallback = if (franchiseIndex != null) franchiseFocus else listFocus),
+            contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
+        ) {
+            item(key = "hero") {
                 Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvCountedHeading("Franchises", franchises.size)
-                    LazyRow(
-                        state = franchiseRowState,
-                        modifier = Modifier.padding(top = Spacing.small),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                    ) {
-                        itemsIndexed(franchises, key = { _, franchise -> franchise.id }) { index, franchise ->
-                            TvPlate(
-                                title = franchise.name,
-                                posterPath = franchise.art?.let(::File),
-                                onOpen = { onOpenFranchise(franchise.id) },
-                                modifier =
-                                    Modifier.width(FranchiseTileWidth).let {
-                                        if (index == franchiseIndex) it.focusRequester(franchiseFocus) else it
-                                    },
-                                caption = "${franchise.films.size} films",
-                            )
+                    TvDepartmentHero(title = "Collections", line = collectionsLineOf(franchises.size, lists.size), lead = lead)
+                }
+            }
+            if (franchises.isNotEmpty()) {
+                item(key = "franchises") {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        TvCountedHeading("Franchises", franchises.size)
+                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
+                            LazyRow(
+                                state = franchiseRowState,
+                                modifier = Modifier.padding(top = Spacing.small),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                            ) {
+                                itemsIndexed(franchises, key = { _, franchise -> franchise.id }) { index, franchise ->
+                                    TvPlate(
+                                        title = franchise.name,
+                                        posterPath = franchise.art?.let(::File),
+                                        onOpen = { onOpenFranchise(franchise.id) },
+                                        modifier =
+                                            Modifier.width(FranchiseTileWidth).let {
+                                                if (index == franchiseIndex) it.focusRequester(franchiseFocus) else it
+                                            },
+                                        caption = "${franchise.films.size} films",
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
-        item(key = "lists-heading") {
-            Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.large)) {
-                TvSectionHeading("Your lists")
-            }
-        }
-        if (lists.isEmpty()) {
-            item(key = "empty") {
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                    TvQuietLine(KeptKind.COLLECTIONS.empty)
+            item(key = "lists-heading") {
+                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.large)) {
+                    TvSectionHeading("Your lists")
                 }
             }
-        } else {
-            itemsIndexed(lists, key = { _, list -> list.id }) { index, list ->
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                    TvListRow(list, onOpen = onOpenList, focusRequester = listFocus.takeIf { index == listIndex && franchiseIndex == null })
+            if (lists.isEmpty()) {
+                item(key = "empty") {
+                    Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
+                        TvQuietLine(KeptKind.COLLECTIONS.empty)
+                    }
+                }
+            } else {
+                itemsIndexed(lists, key = { _, list -> list.id }) { index, list ->
+                    Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
+                        TvListRow(list, onOpen = onOpenList, focusRequester = listFocus.takeIf { index == listIndex && franchiseIndex == null })
+                    }
                 }
             }
-        }
-        item(key = "new") {
-            Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                TvTextRow(
-                    text = "＋ New list",
-                    onClick = { naming = true },
-                    focusRequester = listFocus.takeIf { listIsNew && franchiseIndex == null },
-                )
+            item(key = "new") {
+                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
+                    TvTextRow(
+                        text = "＋ New list",
+                        onClick = { naming = true },
+                        focusRequester = listFocus.takeIf { listIsNew && franchiseIndex == null },
+                    )
+                }
             }
         }
     }
