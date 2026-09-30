@@ -20,3 +20,11 @@ Build: phase 07a branch (0.85.0) against a scratch copy of the channel index (v1
 ## Decision (user, 2026-09-30)
 
 Film/series backfill **extracts from the uploaded copies through the channel**: MP4 titles first (~2,164, ≈1 min each, ≈1.5 days paced in the background), then MKV titles (~692: 201 episodes + 491 films, full reads, several TB, days), resumable and paced; local sources used where present. Picture-only titles (188 films) stay without subtitles. Phase 07 Part B must be re-planned around channel-side extraction before it is built.
+
+## 2026-09-30 23:40 — v13 live; TV box on 0.92.0
+
+- Other uploader: ≥ 0.84.7 (newer-schema guard) per the user; it pushed a v12 index at 22:26 (so < 0.85). Its next pull/publish is now refused until it runs ≥ 0.85 (upgrade to 0.92.0).
+- This machine: uploader reinstalled 0.83.0 → 0.92.0. `pull-index` +553 sets, 3 shows, 21 credits (backup `library.before-channel-merge-260930-2136-*.db`, pulled message 12106); local index schema 13. `push-index` → **message 12130** (v13, first v13 index in the channel; no subtitle bundles yet, 1,266 inline rows).
+- Web player: `bun --watch` dev player reloaded onto each merge; runs 0.92.0 code, healthy (0 failed reads).
+- TV box `192.168.0.35:5555`: native core rebuilt, `installBenchmark` 0.84.6 → 0.92.0, `compile -m speed`. On its "TV test" profile: launches on the v13 index; Settings index has five sections (Profile = "TV test", System "0.92.0 · all current"); Profile pane shows Subtitles Off/German/English (Off), focus walk in and out without selecting. Geldhochschule 7 (`und` inline track): `keyevent 175` → cues on, controls shown, CC ●, focus on Pause; again → CC ○; CC button by D-pad → ● and back ○, focus stays on CC. Played for the test: Geldhochschule lesson 7 (resumed from its Continue position to its end) and a few seconds of the next lesson ("Trading · Tools"), both on "TV test". Storage read "70 MB of 8.0 GB" before the walk — not touched.
+- Not done yet: tablet `caad49da` (not connected); forced-only title check (needs a bundle); one real end-to-end upload; move-inline + backfill runbook (phase 07); cross-device preference check (phase 08).
