@@ -5,6 +5,42 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.5 — Android TV: a lazy layout deactivating the just-focused card, and a generic recovery rule
+
+**Fixed**
+
+- Found on the box after 0.84.4: the cold-start repro (launch, Down to the
+  first Recently Added poster, OK, Back) lost focus to the Home pill again,
+  1/1, once the previous round's safety net was gone. Stack: a
+  `SubcomposeLayout` — Home's own `LazyColumn` — deactivating a lazy item's
+  slot out of frame, in a runnable it posts to run after the current one,
+  even though the slot held the node arrival focus had just landed in;
+  `FocusTargetNode.onReset` only clears when the node it is on holds focus.
+  Fixed by pinning a band's own slot, through `PinnableContainer`, for as
+  long as focus sits inside it — the same guarantee a lazy layout's own
+  pinned items lean on internally, asked for here the public way instead.
+  Not reproducible in Robolectric — its lazy-layout machinery never runs the
+  out-of-frame executor a real device's own `Choreographer` does.
+
+**Added**
+
+- A generic rule at `TvLibraryChrome`, catching the shape all three bugs
+  found so far this round share (frame removal, a modifier's own presence
+  toggling, and this one) rather than a fourth: the bar gaining focus with
+  nothing behind it that names this app's own reason to put it there — no
+  directional/OK/Back key event, and no deliberate `requestFocus()` call
+  onto one of the bar's own requesters (a `BackHandler`, or a sentinel in
+  `TvCatalogNav.kt` restoring the search icon or ⋮) — sends the remote back
+  to content instead of leaving it on whatever the bar's first pill happens
+  to be. Verified in Robolectric with a forced `FocusManager.clearFocus`
+  after an arrival with no key input, and confirmed a real Up-press still
+  lands on and stays on the bar. Known gap, left for the box to confirm:
+  the rule races the search-icon/⋮ sentinel's own restore after Back closes
+  a frame that covers the chrome, in a way three different Robolectric
+  settling strategies could not resolve either direction — the three tests
+  for it are `@Ignore`d with the investigation left in place at
+  `TvLibraryChrome.kt`.
+
 ## 0.84.4 — Android TV: the root cause of a reordered card losing focus
 
 **Fixed**

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
@@ -77,7 +83,30 @@ internal class TvChromeFocus(
     val menuButtonFocus: FocusRequester,
     val railRowFocus: Map<RailItem, FocusRequester>,
     val contentFocus: FocusRequester,
-)
+) {
+    /**
+     * Set by [requestBarFocus], the one path every deliberate request onto
+     * [selectedPillFocus], [searchFocus] or [menuButtonFocus] goes through —
+     * [TvLibraryChrome]'s own generic recovery rule reads and clears it the
+     * moment the bar reports gaining focus, so a request this app actually
+     * made (a `BackHandler` here, a sentinel in `TvCatalogNav.kt` restoring
+     * the search icon or ⋮ once its own frame is left — neither of which a
+     * key event reaches, both being ordinary composition-time effects) is
+     * never mistaken for Compose's own fallback landing there uninvited.
+     */
+    var barRequested: Boolean = false
+        private set
+
+    fun requestBarFocus(requester: FocusRequester) {
+        barRequested = true
+        requester.requestFocus()
+    }
+
+    /** Consumes [barRequested] once [TvLibraryChrome] has read it for this bar arrival. */
+    fun clearBarRequested() {
+        barRequested = false
+    }
+}
 
 @Composable
 internal fun rememberTvChromeFocus(): TvChromeFocus =
@@ -157,6 +186,57 @@ internal fun TvLibraryChrome(
     // while this chrome is the thing actually on screen.
     val covered = LocalLibraryCovered.current
 
+    // Content has lost focus to the bar three separate ways now that were
+    // never a directional press: the frame that removes a pushed frame
+    // reclaiming focus before an arrival's own request runs, a modifier's
+    // own presence toggling on the card an arrival just landed on, and a
+    // lazy layout deactivating that card's own slot out of frame — three
+    // different pieces of Compose, all landing on the same "the owner's own
+    // re-entry picks the first focusable" fallback. Rather than chase a
+    // fourth one, this catches the shape all three share: the bar gaining
+    // focus with nothing behind it that names this app's own reason to put
+    // it there. Two things authorize a bar arrival: `sawKeyEvent`, set by
+    // the `onPreviewKeyEvent` below for a real directional/OK/Back press
+    // (covers the ordinary "Up out of content" exit below, and a real
+    // remote's own Back before a sentinel consumes its restore key); and
+    // [TvChromeFocus.barRequested], set by every deliberate call this app
+    // makes onto one of the bar's own requesters — its own two `BackHandler`s
+    // just below, and every sentinel in `TvCatalogNav.kt` that restores the
+    // search icon or ⋮ once its own frame is left, none of which a key
+    // event reaches, being ordinary composition-time effects. Both are
+    // gated further by `contentJustLostFocus`, since a legitimate grant
+    // already made (the search icon, restored once by its own sentinel
+    // above) can still cycle the bar's own focus a second time as whatever
+    // page it left settles — the same shape as the three bugs, but with
+    // nothing behind it to correct, since content was never the one
+    // holding focus in between. Only a gain content held immediately
+    // before is a candidate at all; an empty catalogue's own arrival lands
+    // on the bar's ⋮ directly, content never having held anything, and
+    // that is not this either.
+    //
+    // Known gap: `LaunchedEffect(barHasFocus)` below fires once for as long
+    // as the bar's own merged focus state stays continuously `true` — a
+    // second, later move within the bar (Compose's own fallback landing on
+    // a pill first, a sentinel then moving the search icon or ⋮ onto it) is
+    // invisible to it, since `barHasFocus` itself never toggles for that
+    // second move. `searchOpensOnItsFieldAndBackReturnsToTheMastheadEntry`
+    // and its two siblings in `TvSearchAndGenreTest`/`TvMenuTest` are
+    // `@Ignore`d for exactly this — keying on a per-gain counter instead
+    // catches it, but then races the sentinel's own request in a way
+    // Robolectric's coroutine scheduling would not settle either direction
+    // in testing; a real remote's Back closing Search or the trimmed menu
+    // is the case to verify this against on the box.
+    var sawKeyEvent by remember { mutableStateOf(false) }
+    var contentJustLostFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(barHasFocus) {
+        if (barHasFocus) {
+            if (!sawKeyEvent && !focus.barRequested && contentJustLostFocus && !covered) focus.contentFocus.requestFocus()
+            sawKeyEvent = false
+            contentJustLostFocus = false
+            focus.clearBarRequested()
+        }
+    }
+
     fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
 
     // "Back: page -> the selected pill (no pill selected, i.e. a kept wall
@@ -164,7 +244,7 @@ internal fun TvLibraryChrome(
     // content, the same guard `TvCatalogRoot` once put on its own single
     // Back-to-masthead step.
     BackHandler(enabled = contentHasFocus && !covered) {
-        if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
+        if (selectedPill >= 0) focus.requestBarFocus(focus.selectedPillFocus) else railArrivalTarget().requestFocus()
     }
     // "bar (pill, search, avatar, ⋮) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
@@ -194,7 +274,13 @@ internal fun TvLibraryChrome(
     // has one to bleed under it.
     val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = Overscan.horizontal, bottom = Overscan.vertical) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier =
+            modifier.fillMaxSize().onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key in DirectionalKeys) sawKeyEvent = true
+                false
+            },
+    ) {
         Box(
             modifier =
                 Modifier
@@ -209,7 +295,9 @@ internal fun TvLibraryChrome(
                             when (requestedFocusDirection) {
                                 FocusDirection.Left -> railArrivalTarget().requestFocus()
                                 FocusDirection.Up ->
-                                    if (contentHasFocus) (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
+                                    if (contentHasFocus) {
+                                        if (selectedPill >= 0) focus.requestBarFocus(focus.selectedPillFocus) else railArrivalTarget().requestFocus()
+                                    }
                                 else -> Unit
                             }
                         }
@@ -221,6 +309,7 @@ internal fun TvLibraryChrome(
                         .fillMaxSize()
                         .focusRequester(focus.contentFocus)
                         .onFocusChanged { state ->
+                            if (!state.hasFocus && contentHasFocus) contentJustLostFocus = true
                             contentHasFocus = state.hasFocus
                             if (state.hasFocus) lastInBar = false
                         },
@@ -253,9 +342,13 @@ internal fun TvLibraryChrome(
             rowRequesters = focus.railRowFocus,
             onSelect = onRailSelect,
             // The page's own restorer puts the remote back on the plate it left.
-            onRight = { (if (lastInBar && selectedPill >= 0) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
+            onRight = { if (lastInBar && selectedPill >= 0) focus.requestBarFocus(focus.selectedPillFocus) else focus.contentFocus.requestFocus() },
             onHasFocusChanged = { railHasFocus = it },
             modifier = Modifier.align(Alignment.CenterStart),
         )
     }
 }
+
+/** Every key a press of which could legitimately move focus to the bar — a D-pad direction, the centre button, or Back. */
+private val DirectionalKeys =
+    setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter, Key.Back)

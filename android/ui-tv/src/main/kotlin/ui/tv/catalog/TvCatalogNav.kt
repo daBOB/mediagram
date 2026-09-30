@@ -116,8 +116,14 @@ internal fun rememberTvCatalogRestore(
     val takesArrivalFocus = wallKey != null || (!pillPressed && !redirectsFocus)
 
     // With no wall below to take focus, the bar is the one thing on
-    // screen the remote can rest on.
-    LaunchedEffect(!ready) { if (!ready) chromeFocus.menuButtonFocus.requestFocus() }
+    // screen the remote can rest on. `requestBarFocus` — not a plain
+    // `requestFocus()` — marks this a deliberate arrival on the bar for
+    // `TvLibraryChrome`'s own generic recovery rule, the same way every
+    // sentinel below does: none of these run from a key event, so without
+    // it Compose's own re-entry fallback landing on the bar right before
+    // one of them runs would be indistinguishable from this app's own
+    // choice to be there.
+    LaunchedEffect(!ready) { if (!ready) chromeFocus.requestBarFocus(chromeFocus.menuButtonFocus) }
     // Every sentinel below is set the moment its own frame opens — Search's
     // restore key names "search" from the instant `at.openSearch()` runs,
     // not only once it closes — so each one also waits out `covered` before
@@ -127,7 +133,7 @@ internal fun rememberTvCatalogRestore(
     // the remote back to the search button, ⋮ or a rail row at all.
     LaunchedEffect(backFromSearch, ready, covered) {
         if (backFromSearch && ready && !covered) {
-            chromeFocus.searchFocus.requestFocus()
+            chromeFocus.requestBarFocus(chromeFocus.searchFocus)
             onEntryRestored()
         }
     }
@@ -135,7 +141,7 @@ internal fun rememberTvCatalogRestore(
     // bar, so ⋮ is where it rests rather than the viewer's own avatar.
     LaunchedEffect(backFromMenu, covered) {
         if (backFromMenu && !covered) {
-            chromeFocus.menuButtonFocus.requestFocus()
+            chromeFocus.requestBarFocus(chromeFocus.menuButtonFocus)
             onEntryRestored()
         }
     }

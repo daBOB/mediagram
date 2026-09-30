@@ -163,6 +163,14 @@ class TvLibraryTest {
         // A semantics click alone never moves focus the way a real remote's
         // centre press does — focused first, as "Series" already is a few
         // lines down in `TvCatalogScreenStateTest`'s own equivalent walk.
+        // A directional key has to precede `RequestFocus`, not just the
+        // click: `RequestFocus` alone already moves focus onto the pill,
+        // which is what `TvLibraryChrome`'s generic recovery rule reacts to
+        // — reading it, with no key event yet seen, as Compose's own
+        // fallback rather than this app's, and sending it straight back.
+        // Right, not the centre button: "Film 1" still holds focus at this
+        // point, and a real OK there would open its title.
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
@@ -208,8 +216,15 @@ class TvLibraryTest {
         compose.waitForIdle()
     }
 
+    /**
+     * A real remote's own Back key — not the direct dispatcher call this
+     * helper used to make, which skips Compose's key-event dispatch
+     * entirely, so `TvLibraryChrome`'s own `onPreviewKeyEvent` (a real
+     * `KEYCODE_BACK` always reaches it first) never saw it either.
+     */
     private fun back() {
-        compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)) }
+        compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)) }
         compose.waitForIdle()
     }
 

@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -31,6 +32,14 @@ abstract class TvScreenStateTest {
             controller = built
             built.get().setContent { TvTheme { content() } }
         }
+        compose.waitForIdle()
+    }
+
+    /** A real D-pad press — [ui.tv.TvSearchAndGenreTest]'s own helper drives one the same way. */
+    protected fun key(code: Int) {
+        val activity = requireNotNull(controller) { "key() needs an activity from show() first" }.get()
+        compose.runOnUiThread { activity.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code)) }
+        compose.runOnUiThread { activity.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code)) }
         compose.waitForIdle()
     }
 }

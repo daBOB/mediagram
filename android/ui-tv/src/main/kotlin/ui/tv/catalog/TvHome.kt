@@ -12,6 +12,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.LocalPinnableContainer
+import androidx.compose.ui.layout.PinnableContainer
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.HomeRow
@@ -129,7 +132,32 @@ internal fun TvHome(
     var lastSection by rememberSaveable { mutableStateOf<TvHomeSection?>(null) }
     val target = remember(sections, restoreKey) { homeTargetOf(sections, restoreKey, lastSection) }
 
-    fun Modifier.remembersBand(section: TvHomeSection) = onFocusChanged { if (it.hasFocus) lastSection = section }
+    // Pinned, not only tracked, while focus sits in this band: Compose's own
+    // lazy-layout bookkeeping can decide, in a runnable it posts to run
+    // after the current frame, that a slot it did not see used this pass is
+    // free to deactivate — including the very slot arrival focus just
+    // landed in, found on the box straight after a cold-start refresh
+    // released the state this page had been frozen behind, once, though
+    // nothing here ever disposed it (a `DisposableEffect` on the section
+    // never logged one — deactivation, not disposal). A pinned slot is
+    // never a candidate for that at all, the same guarantee `LazyColumn`'s
+    // own internals lean on for a pinned item, asked for here the public
+    // way instead of reached for through them.
+    @Composable
+    fun Modifier.remembersBand(section: TvHomeSection): Modifier {
+        val container = LocalPinnableContainer.current
+        var pinned by remember { mutableStateOf<PinnableContainer.PinnedHandle?>(null) }
+        DisposableEffect(Unit) { onDispose { pinned?.release() } }
+        return onFocusChanged { state ->
+            if (state.hasFocus) {
+                lastSection = section
+                if (pinned == null) pinned = container?.pin()
+            } else {
+                pinned?.release()
+                pinned = null
+            }
+        }
+    }
     val scope = rememberCoroutineScope()
 
     val coverFocus = remember { FocusRequester() }

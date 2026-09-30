@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
@@ -252,12 +253,24 @@ class TvCatalogScreenStateTest {
     fun choosingAnotherPillKeepsTheRemoteOnItRatherThanOnThePreviousWallsPlate() {
         val pilot = set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 5, episode = 1)
         show(ready(films(2) + pilot))
+        // The key event has to precede `RequestFocus` below, not just the
+        // click: `RequestFocus` alone already moves focus onto the pill,
+        // which is what `TvLibraryChrome`'s generic recovery rule reacts to
+        // — reading it, with no key event yet seen, as Compose's own
+        // fallback rather than this app's, and sending it straight back.
+        // `performClick()` is what misbehaves against tv-material here (see
+        // the class doc), so the click itself stays a semantics action —
+        // Right rather than the centre button, since whatever plate already
+        // holds focus at this point would otherwise open its own title for
+        // real.
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Movies").assertIsFocused()
         compose.onAllNodesWithText("Film 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Movies' own wall never composed" } }
 
         // Walked along to and pressed, as a remote does.
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
         compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Series").performSemanticsAction(SemanticsActions.OnClick)
 
@@ -401,6 +414,14 @@ class TvCatalogScreenStateTest {
                 "no region has taken arrival focus yet, so a Back landing right now must still be caught rather than falling through",
             )
         }
+        compose.waitForIdle()
+    }
+
+    /** A real D-pad press — [TvSearchAndGenreTest]'s own helper drives one the same way. */
+    private fun key(code: Int) {
+        val activity = requireNotNull(controller) { "key() needs an activity from show() first" }.get()
+        compose.runOnUiThread { activity.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code)) }
+        compose.runOnUiThread { activity.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code)) }
         compose.waitForIdle()
     }
 
