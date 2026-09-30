@@ -242,12 +242,15 @@ fun TvCatalogScreen(
                     modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
                 )
             }
-            // Never true while this screen sits under a pushed frame: every
-            // arrival effect this local gates would otherwise run against a
-            // hidden node the moment something changes what it targets,
-            // ready to fire the instant `covered` itself turns false again.
+            // Never true while this screen sits under a pushed frame, and
+            // — see `rememberArrivalReady`'s own doc — not for one frame
+            // after it stops being one either: every arrival effect this
+            // local gates asks for focus the moment it turns true, and it
+            // must not ask before Android's own reset from the pushed
+            // frame's removal has already happened and lost.
             val covered = LocalLibraryCovered.current
-            CompositionLocalProvider(LocalTakesArrivalFocus provides (!covered && nav.takesArrivalFocus)) {
+            val arrivalReady = rememberArrivalReady(covered)
+            CompositionLocalProvider(LocalTakesArrivalFocus provides (arrivalReady && nav.takesArrivalFocus)) {
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                     // One composition per tab, not one reused across them:
                     // every shelf draws through the same wall, which would

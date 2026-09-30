@@ -124,8 +124,16 @@ internal fun TvLibrary(
     val covered = top != null || menuOpen
 
     Box {
+        // `HomeDepth`, not `here`: the catalogue itself always sits at the
+        // stack's own depth 0, no matter how many frames are pushed over
+        // it now that it stays composed and keeps recomposing under all of
+        // them. Handing it `here` (`at.depth`, the *pushed frame's* own
+        // depth, once anything is pushed) read a *pushed frame's* own
+        // restore key back as if it were the catalogue's, the moment
+        // anything covered it — the root cause of a return landing on the
+        // bar's pill instead of the plate that opened it, found on the box.
         TvHomeLayer(covered = covered) {
-            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu) { menuOpen = true }
+            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, HomeDepth, at, catalogViewModel, menu) { menuOpen = true }
         }
 
         when (top) {
@@ -184,3 +192,6 @@ internal fun TvLibrary(
         )
     }
 }
+
+/** The catalogue's own, fixed place on [LibraryPositions]'s stack — see the doc where [TvLibraryHomeFrame] is called. */
+private const val HomeDepth = 0

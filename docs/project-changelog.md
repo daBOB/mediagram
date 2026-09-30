@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.2 — Android TV: a title-page return landed on the Home pill, not the poster
+
+**Fixed**
+
+- Found on the box, 3/3: Back from a title page (or a season, a collection,
+  a franchise…) opened from Home returned focus to the departments bar's
+  Home pill rather than the poster that opened it, Home left scrolled to
+  Features/Continue with the poster's own row off screen. Root cause: the
+  frame that removes the pushed frame from the composition is also the
+  frame Android notices that frame's own focused view just detached, clears
+  focus on the whole `AndroidComposeView`, and re-grants it to the first
+  focusable it finds — ahead of whatever Home's own arrival effect asked
+  for a moment earlier in that same frame. Fixed generically, not per
+  effect: `rememberArrivalReady` (`TvArrivalFocus.kt`) delays "safe to take
+  arrival focus" by one frame past a pushed frame's own removal, so a real
+  return's request is the last one standing rather than the one the reset
+  undoes.
+- A second, separate bug the same fix uncovered: the catalogue's own root
+  was reading and writing its restore keys at whatever depth was currently
+  on top of the position stack, rather than always at its own fixed depth
+  — harmless before this phase, since the catalogue only ever existed at
+  the top; wrong now that it stays composed under every pushed frame. A
+  return from two or three frames deep (an episode played from a show
+  opened from Home) restored correctly regardless, by coincidence, until
+  the arrival fix above made the correct depth matter.
+
 ## 0.84.1 — Android TV: Home kept alive under a pushed frame
 
 **Added**

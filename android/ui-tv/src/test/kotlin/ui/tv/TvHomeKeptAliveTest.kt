@@ -16,6 +16,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
@@ -38,6 +39,8 @@ import ui.tv.catalog.TvScreenStateTest
 import ui.tv.catalog.films
 import ui.tv.catalog.home.HOLD_MS
 import ui.tv.catalog.home.TvHomeCover
+import ui.tv.catalog.set
+import ui.tv.player.TvSeekBarTag
 
 /**
  * [TvLibrary]'s root, kept composed and laid out under a pushed frame
@@ -113,6 +116,67 @@ class TvHomeKeptAliveTest {
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
+}
+
+/**
+ * The player, opened straight from the cover's own "Watch now" rather than
+ * through a title page — [TvLibraryTest] already walks the title-page route
+ * into the player; this is the other way a viewer reaches it from a kept-
+ * alive Home. Two films with art so a cover exists: the newer is always
+ * taken by the editorial "New in the library" feature card first, leaving
+ * exactly one for the cover, so `Watch now` names one film regardless of
+ * the day-seeded shuffle that would otherwise choose between two.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w960dp-h540dp")
+class TvHomeCoverWatchNowKeptAliveTest {
+    @get:Rule val compose = createEmptyComposeRule()
+    private lateinit var fixture: TvAppFixture
+    private lateinit var controller: ActivityController<TvAppTestActivity>
+
+    @Before
+    fun open() {
+        mockkStatic(::HiltViewModelFactory)
+        every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
+        compose.runOnUiThread {
+            val withArt =
+                listOf("film-2" to 2L, "film-3" to 3L).map { (id, addedAt) ->
+                    set(id, Kind.MOVIE, "Film ${addedAt.toInt()}", addedAt = addedAt).copy(posterPath = "$id.jpg", backdropPath = "$id-bd.jpg")
+                }
+            fixture = TvAppFixture(TvSetupStage.READY, listOf(Profile(id = "ada", name = "Ada")), "ada", withArt)
+            TvAppTestActivity.fixture = fixture
+            controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
+        }
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(watchNow()).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @After
+    fun close() {
+        try {
+            compose.runOnUiThread {
+                if (::controller.isInitialized) controller.close()
+                if (::fixture.isInitialized) fixture.close()
+            }
+        } finally {
+            unmockkStatic(::HiltViewModelFactory)
+        }
+    }
+
+    @Test
+    fun watchNowIntoThePlayerAndBackRestoresFocusToWatchNow() {
+        compose.onNode(watchNow()).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNodeWithTag(TvSeekBarTag).assertExists()
+
+        compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() } // controls away
+        compose.waitForIdle()
+        compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() } // the player
+        compose.waitForIdle()
+
+        compose.onNode(watchNow()).assertIsFocused()
+    }
+
+    private fun watchNow() = hasText("Watch now", substring = true) and hasClickAction()
 }
 
 /**

@@ -150,21 +150,15 @@ internal fun TvHome(
             )
         }
 
-    // Keyed on `target` alone, not also on `takesFocus`: a sentinel
-    // elsewhere (Search, the bar's own ⋮) sends the remote there instead of
-    // here by making `takesFocus` read `false` for exactly one composition,
-    // then flips it back to `true` the moment that sentinel is consumed —
-    // with `target` itself unchanged (the wall key this page was handed
-    // stayed `null` throughout both reads). Were `takesFocus` also a key,
-    // that flip alone would re-run this effect and pull the remote straight
-    // back from the field or button it had just reached. `takesFocus` is
-    // still read fresh inside, the same "gate the action, not the key" the
-    // rows below repeat for their own delegated effects.
+    // `takesFocus` is `rememberArrivalReady`'s own delayed signal, combined
+    // with whatever a sentinel elsewhere (Search, the bar's own ⋮) is doing
+    // (`TvCatalogScreen`'s own doc on the combination) — a real return to
+    // this page turns it `true` one frame after the pushed frame that
+    // covered it is actually gone, never in the same frame that removal
+    // happens in.
     val takesFocus = LocalTakesArrivalFocus.current
-    // Raw, not the combined `takesFocus` above: a pushed frame opening or
-    // closing over this page is its own event, distinct from a sentinel's
-    // own transient dip, and `arrived` below needs exactly that one to
-    // decide when a fresh grant is owed again.
+    // Raw, not `takesFocus` above — see the doc on `arrived`'s own reset
+    // below, which needs this one alongside `restoreKey`.
     val covered = LocalLibraryCovered.current
     // Grants arrival focus once per time this page is shown, not once per
     // value `target` happens to take: a resumed position keeps reordering
@@ -181,17 +175,30 @@ internal fun TvHome(
     // too, not only the time after it.
     //
     // With this page kept alive under a pushed frame rather than rebuilt
-    // on every Back, "once" can no longer mean "once ever": a fresh pushed
-    // frame primes `arrived` back to false the moment it covers this page,
-    // so the very next uncover grants again — `covered` joins `target` as
-    // a key for exactly that reason, restarting this effect right when a
-    // real visit ends, never when a sentinel's own transient dip settles
-    // (that dip never touches `covered`, which only moves when something
-    // is actually pushed onto, or popped off, the frame above this one).
+    // on every Back, "once" can no longer mean "once ever": a real content
+    // stop opening here re-arms it, so the very next uncover grants again.
+    // Keyed on `covered` *and* `restoreKey`, and only firing when both say
+    // "a real stop, freshly opened" (`covered` true, `restoreKey` non-null):
+    // a sentinel's own redirect (Search, ⋮, Latest, Genres, Settings,
+    // System) covers this page too, but leaves `restoreKey` `null` the
+    // whole time, on the way in and after its own consumption alike — this
+    // must never re-arm the fallback stop below, or the moment that
+    // consumption clears `takesFocus` (`TvCatalogNav.kt`'s own restore,
+    // which does not wait a frame the way this page's own grant does) this
+    // effect would fire the fallback and steal the remote right back from
+    // wherever the sentinel just sent it — reproduced in Robolectric
+    // (`TvMenuTest`/`TvSearchAndGenreTest`) before this guard existed.
     var arrived by remember { mutableStateOf(false) }
-    LaunchedEffect(covered) { if (covered) arrived = false }
-    LaunchedEffect(target, covered) {
-        if (target == null || !takesFocus || arrived) return@LaunchedEffect
+    LaunchedEffect(covered, restoreKey) { if (covered && restoreKey != null) arrived = false }
+    // `covered`, read fresh rather than trusted through `takesFocus` alone:
+    // the moment a real stop opens, `target` and the reset above both react
+    // in the same composition `covered` itself turns `true` in, but
+    // `rememberArrivalReady`'s own `false` for that same instant is one
+    // recomposition behind — read here, `takesFocus` can still say `true`
+    // for that one pass. `covered` never lags, so it is what actually keeps
+    // this effect from granting into a page nothing can see yet.
+    LaunchedEffect(target, takesFocus) {
+        if (target == null || covered || !takesFocus || arrived) return@LaunchedEffect
         val itemIndex = included.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
         // Scrolled into place — and its own composition confirmed present,
         // via the same item turning up in `visibleItemsInfo` — before the
