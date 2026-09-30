@@ -21,6 +21,7 @@ pub mod lists;
 mod lists_exchange;
 pub mod merge;
 pub mod preferences;
+mod preferences_exchange;
 pub mod profiles;
 pub mod record;
 mod repair;

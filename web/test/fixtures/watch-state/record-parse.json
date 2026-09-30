@@ -487,5 +487,64 @@
         }
       ]
     }
+  },
+  {
+    "name": "preferences are parsed: synced names only, bad rows dropped (times past 2^53 or fractional too), strings trimmed",
+    "input": "{\"format\":1,\"device\":\"tablet\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"preferences\":[{\"scope\":\"profile\",\"name\":\"subtitle\",\"value\":\" en:sdh \",\"updatedAt\":1789000000000},{\"scope\":\"show:severance\",\"name\":\"cue-size\",\"value\":\"125\",\"updatedAt\":1789000000001},{\"scope\":\"key:01A\",\"name\":\"cue-backing\",\"value\":\"shadow\",\"updatedAt\":1789000000000},{\"scope\":\"key:01A\",\"name\":\"cue-offset\",\"value\":\"0\",\"updatedAt\":1789000000000},{\"scope\":\"key:01A\",\"name\":\"audio\",\"value\":\"eng\",\"updatedAt\":1789000000000},{\"scope\":\"key:01A\",\"name\":\"speed\",\"value\":\"1.5\",\"updatedAt\":1789000000000},{\"scope\":\"key:01A\",\"name\":\"subtitle\",\"value\":7,\"updatedAt\":1789000000000},{\"scope\":\"key:01A\",\"name\":\"subtitle\",\"value\":\"   \",\"updatedAt\":1789000000000},{\"scope\":\"\",\"name\":\"subtitle\",\"value\":\"de\",\"updatedAt\":1789000000000},{\"scope\":\"key:01B\",\"name\":\"subtitle\",\"value\":\"de\",\"updatedAt\":0},{\"scope\":\"key:01B\",\"name\":\"subtitle\",\"value\":\"de\",\"updatedAt\":\"soon\"},{\"scope\":\"key:01B\",\"name\":\"subtitle\",\"value\":\"de\"},{\"scope\":\"key:01B\",\"name\":\"subtitle\",\"value\":\"de\",\"updatedAt\":1.8e18},{\"scope\":\"key:01B\",\"name\":\"subtitle\",\"value\":\"de\",\"updatedAt\":1789000000000.5},\"not a row\"]}]}",
+    "expect": {
+      "format": 1,
+      "device": "tablet",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "preferences": [
+            {
+              "scope": "profile",
+              "name": "subtitle",
+              "value": "en:sdh",
+              "updatedAt": 1789000000000
+            },
+            {
+              "scope": "show:severance",
+              "name": "cue-size",
+              "value": "125",
+              "updatedAt": 1789000000001
+            },
+            {
+              "scope": "key:01A",
+              "name": "cue-backing",
+              "value": "shadow",
+              "updatedAt": 1789000000000
+            },
+            {
+              "scope": "key:01A",
+              "name": "cue-offset",
+              "value": "0",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "preferences that are not a list read as none",
+    "input": "{\"format\":1,\"device\":\"tablet\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"preferences\":{\"subtitle\":\"de\"}}]}",
+    "expect": {
+      "format": 1,
+      "device": "tablet",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "preferences": []
+        }
+      ]
+    }
   }
 ]

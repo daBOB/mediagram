@@ -30,7 +30,9 @@ use unicode_normalization::UnicodeNormalization;
 mod hostile_json;
 mod list_record;
 mod parse;
+mod preference_record;
 pub use list_record::{CollectionRow, ListRow};
+pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use parse::parse_record;
 
 /// Bumped when a reader could no longer make sense of an older document.
@@ -86,6 +88,10 @@ pub struct ProfileState {
     pub watchlist: Vec<ListRow>,
     #[serde(default)]
     pub collections: Vec<CollectionRow>,
+    /// The synced subtitle choices; a new key like `kids`, not a format
+    /// bump — a build that predates it drops it and keeps merging.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub preferences: Vec<SyncPreference>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

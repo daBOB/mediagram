@@ -69,14 +69,14 @@ export interface RouterOptions extends CatalogRouterOptions {
  * to the same PUT the periodic tick already uses, and inferring "final"
  * from the method would then silently stop triggering a round at all for
  * that browser. A `DELETE` under `/progress/` — forgetting a position — is
- * always deliberate and always counts, no marker needed. A preference is a
- * per-device, unsynced choice and is never worth one.
+ * always deliberate and always counts, no marker needed. A preference write
+ * counts too: the subtitle choices sync, and it is one write per deliberate
+ * choice, not a stream.
  */
 function writeWorthSyncing(request: PlayerRequest): boolean {
   if (request.path.includes("/progress/")) {
     return request.method === "DELETE" || request.final === "1";
   }
-  if (request.path.endsWith("/preferences")) return false;
   return true;
 }
 

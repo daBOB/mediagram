@@ -6,7 +6,7 @@
 //! a row back, so a preference the file no longer supports has to be
 //! survivable rather than a title that will not open.
 
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 
 use super::profiles::now_ms;
 
@@ -35,7 +35,9 @@ pub fn list_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<Pre
     rows.collect()
 }
 
-/// Remembers a choice, or forgets it (`value: None`). An empty value forgets
+/// Remembers a choice, or forgets it (`value: None`). Synced names
+/// (`preferences_exchange.rs`) must never be forgotten: a delete would come
+/// back from any device that still holds the row. An empty value forgets
 /// too, rather than storing an empty string that every reader would then
 /// have to recognise as meaning nothing.
 ///
@@ -60,12 +62,25 @@ pub fn set(
             )?;
         }
         Some(value) => {
+            // Never earlier than the stored row: this row syncs, and the
+            // newest write wins, so a clock that stepped back (or a row
+            // imported from a device whose clock runs ahead) must not let an
+            // older choice beat one made now.
+            let stored: i64 = conn
+                .query_row(
+                    "SELECT updated_at FROM preferences
+                       WHERE profile_id = ?1 AND scope = ?2 AND name = ?3",
+                    params![profile_id, scope, name],
+                    |row| row.get(0),
+                )
+                .optional()?
+                .unwrap_or(0);
             conn.execute(
                 "INSERT INTO preferences(profile_id, scope, name, value, updated_at)
                    VALUES (?1, ?2, ?3, ?4, ?5)
                    ON CONFLICT(profile_id, scope, name)
                      DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-                params![profile_id, scope, name, value, now_ms()],
+                params![profile_id, scope, name, value, now_ms().max(stored.saturating_add(1))],
             )?;
         }
     }

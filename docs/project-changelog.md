@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.89.0 — subtitle language and cue style follow the profile to every device
+
+**Added**
+
+- Subtitle language and cue style (size, backing, offset) now follow the
+  profile to every device through the existing watch-state sync: an optional
+  `preferences` list on each profile in the `#mlib-state` document, merged
+  newest-write-wins per scope and name with the device-id tie-break, on both
+  the web player and the Rust core. Audio, speed and framing stay per device.
+  No format bump: older builds drop the key and keep syncing positions. A
+  local write is stamped no earlier than the row it replaces, and the web
+  player now runs a debounced sync round after a preference write.
+- A preference row whose time is fractional or past 2^53 is dropped on read:
+  beyond that a local write's `stored + 1` stamp stops advancing and the
+  peer's row would win every tie.
+
 ## 0.88.4 — the Settings subtitle choice looks like the rest of the page
 
 **Fixed**

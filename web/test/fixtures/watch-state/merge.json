@@ -965,5 +965,216 @@
         "unwatched": [{ "setId": "01A", "updatedAt": 2000, "lastFinishedAt": 1500 }]
       }]
     }
+  },
+  {
+    "name": "a preference is decided per scope and name, the newer write winning",
+    "records": [
+      {
+        "format": 1,
+        "device": "tablet",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "preferences": [
+              {
+                "scope": "profile",
+                "name": "subtitle",
+                "value": "en",
+                "updatedAt": 2000
+              },
+              {
+                "scope": "show:x",
+                "name": "cue-size",
+                "value": "125",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "preferences": [
+              {
+                "scope": "profile",
+                "name": "subtitle",
+                "value": "off",
+                "updatedAt": 1500
+              },
+              {
+                "scope": "show:x",
+                "name": "cue-size",
+                "value": "150",
+                "updatedAt": 3000
+              },
+              {
+                "scope": "key:y",
+                "name": "cue-offset",
+                "value": "200",
+                "updatedAt": 500
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [],
+          "preferences": [
+            {
+              "scope": "key:y",
+              "name": "cue-offset",
+              "value": "200",
+              "updatedAt": 500
+            },
+            {
+              "scope": "profile",
+              "name": "subtitle",
+              "value": "en",
+              "updatedAt": 2000
+            },
+            {
+              "scope": "show:x",
+              "name": "cue-size",
+              "value": "150",
+              "updatedAt": 3000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "equal-time preferences are decided by device id, the greater one winning",
+    "records": [
+      {
+        "format": 1,
+        "device": "tablet",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "preferences": [
+              {
+                "scope": "profile",
+                "name": "subtitle",
+                "value": "en",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "preferences": [
+              {
+                "scope": "profile",
+                "name": "subtitle",
+                "value": "de",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [],
+          "preferences": [
+            {
+              "scope": "profile",
+              "name": "subtitle",
+              "value": "de",
+              "updatedAt": 1000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a document without preferences leaves the other device's preferences in place",
+    "records": [
+      {
+        "format": 1,
+        "device": "old-build",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tablet",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "progress": [],
+            "watched": [],
+            "preferences": [
+              {
+                "scope": "profile",
+                "name": "subtitle",
+                "value": "de",
+                "updatedAt": 1000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "progress": [],
+          "watched": [],
+          "preferences": [
+            {
+              "scope": "profile",
+              "name": "subtitle",
+              "value": "de",
+              "updatedAt": 1000
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

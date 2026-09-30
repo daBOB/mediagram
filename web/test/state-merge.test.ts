@@ -139,7 +139,7 @@ describe("nothing to merge", () => {
       profiles: [
         {
           name: "andré", displayName: "André", progress: [], watched: [], unwatched: [],
-          watchlist: [], collections: [],
+          watchlist: [], collections: [], preferences: [],
         },
       ],
       kids: [],

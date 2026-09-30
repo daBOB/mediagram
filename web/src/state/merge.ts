@@ -38,6 +38,7 @@ import {
   type UnwatchedRow,
   type WatchedRow,
 } from "./sync-record";
+import type { PreferenceRow } from "./preferences-record";
 import { reconcileWatched } from "./watched-reconcile";
 import { keep, type Held } from "./tie-break";
 
@@ -65,6 +66,7 @@ export interface MergedProfile {
   unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
+  preferences?: PreferenceRow[];
 }
 
 export interface MergedState {
@@ -96,6 +98,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       unwatched: Map<string, Held<UnwatchedRow>>;
       watchlist: Map<string, Held<ListRow>>;
       collections: Map<string, Held<CollectionRow>>;
+      preferences: Map<string, Held<PreferenceRow>>;
     }
   >();
   // Kids sits at the top level, not per viewer: marking a title as a
@@ -124,6 +127,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
           unwatched: new Map(),
           watchlist: new Map(),
           collections: new Map(),
+          preferences: new Map(),
         };
         byViewer.set(name, held);
       } else if (device > held.nameFrom) {
@@ -147,6 +151,11 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       // item: two devices editing the same list within a merge round have
       // the later edit win outright, name and membership together.
       for (const row of profile.collections ?? []) keep(held.collections, row.id, row, device);
+      // Per scope and name, so the language and the cue size of one show are
+      // decided independently. JSON for the key: a scope may hold any text.
+      for (const row of profile.preferences ?? []) {
+        keep(held.preferences, JSON.stringify([row.scope, row.name]), row, device);
+      }
     }
   }
 
@@ -174,6 +183,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       unwatched,
       watchlist: [...held.watchlist.values()].map((one) => one.row),
       collections: [...held.collections.values()].map((one) => one.row),
+      preferences: [...held.preferences.values()].map((one) => one.row),
     });
   }
   return {

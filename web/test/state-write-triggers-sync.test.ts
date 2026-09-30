@@ -115,13 +115,13 @@ describe("onWrite", () => {
     expect(writes).toBe(2);
   });
 
-  test("never fires for a preference — per-device, unsynced", async () => {
+  test("fires for a preference — the subtitle choices travel with the profile", async () => {
     const route = router();
     const response = await route(
-      request(`/api/profiles/${me}/preferences`, "PUT", { scope: "s", name: "audio", value: "en" }),
+      request(`/api/profiles/${me}/preferences`, "PUT", { scope: "profile", name: "subtitle", value: "en" }),
     );
     expect(response.status).toBe(204);
-    expect(writes).toBe(0);
+    expect(writes).toBe(1);
   });
 
   test("never fires for a read", async () => {

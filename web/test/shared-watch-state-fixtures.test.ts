@@ -71,6 +71,10 @@ describe("merge fixtures", () => {
           ...(profile.unwatched?.length
             ? { unwatched: [...profile.unwatched].sort((a, b) => a.setId.localeCompare(b.setId)) }
             : {}),
+          ...(profile.preferences?.length
+            ? { preferences: [...profile.preferences].sort((a, b) =>
+                `${a.scope}\u0000${a.name}`.localeCompare(`${b.scope}\u0000${b.name}`)) }
+            : {}),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     };

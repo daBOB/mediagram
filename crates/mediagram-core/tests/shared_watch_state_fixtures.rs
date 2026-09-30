@@ -84,6 +84,9 @@ fn canonical(mut state: MergedState) -> MergedState {
         profile.unwatched.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.watchlist.sort_by(|a, b| a.set_id.cmp(&b.set_id));
         profile.collections.sort_by(|a, b| a.id.cmp(&b.id));
+        profile
+            .preferences
+            .sort_by(|a, b| (&a.scope, &a.name).cmp(&(&b.scope, &b.name)));
     }
     state.profiles.sort_by(|a, b| a.name.cmp(&b.name));
     state

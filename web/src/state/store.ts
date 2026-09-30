@@ -23,14 +23,8 @@ import { GROUPS } from "./schema";
 import { Settings } from "./settings";
 import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
-import {
-  exportCollections,
-  exportTitleMarks,
-  exportWatchlist,
-  importCollections,
-  importTitleMarks,
-  importWatchlist,
-} from "./lists-exchange";
+import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
+import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
 
 export interface Progress {
@@ -306,6 +300,8 @@ export class WatchState {
    * An empty value forgets, rather than storing an empty string that every
    * reader would then have to recognise as meaning nothing.
    *
+   * Synced names (`preferences-record.ts`) must never be forgotten: a delete returns from other devices.
+   *
    * Everything is length-capped and nothing is interpreted. This does not
    * know what an audio track or a subtitle offset is, and should not: a
    * preference the file no longer supports has to be survivable, so the
@@ -328,6 +324,7 @@ export class WatchState {
       return true;
     }
 
+    const stamp = preferenceStamp(this.db, profileId, at, called);
     return tolerate(() =>
       this.db
         ?.query(
@@ -336,7 +333,7 @@ export class WatchState {
              ON CONFLICT(profile_id, scope, name)
                DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
         )
-        .run(profileId, at, called, held, Date.now()),
+        .run(profileId, at, called, held, stamp),
     );
   }
 
@@ -397,6 +394,7 @@ export class WatchState {
         unwatched,
         watchlist: exportWatchlist(this.db, profile.id),
         collections: exportCollections(this.db, profile.id),
+        preferences: exportPreferences(this.db, profile.id),
       };
     });
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
@@ -467,6 +465,7 @@ export class WatchState {
         changed += importUnwatched(this.db, profileId, profile.unwatched ?? []);
         changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
         changed += importCollections(this.db, profileId, profile.collections ?? []);
+        changed += importPreferences(this.db, profileId, profile.preferences ?? []);
       }
       this.db.exec("COMMIT");
       return changed;

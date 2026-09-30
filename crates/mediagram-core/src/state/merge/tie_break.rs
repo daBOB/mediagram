@@ -3,7 +3,9 @@
 
 use std::collections::HashMap;
 
-use crate::state::record::{CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow};
+use crate::state::record::{
+    CollectionRow, ListRow, ProgressRow, SyncPreference, UnwatchedRow, WatchedRow,
+};
 
 /// Which device a held row (or spelling) came from, for the tie-break below.
 pub(super) struct Held<T> {
@@ -12,7 +14,7 @@ pub(super) struct Held<T> {
 }
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
-/// watchlist or Kids mark, or a collection.
+/// watchlist or Kids mark, a collection, or a preference.
 pub(super) trait Timestamped {
     fn updated_at(&self) -> f64;
 }
@@ -26,7 +28,14 @@ macro_rules! timestamped_by_own_field {
         })+
     };
 }
-timestamped_by_own_field!(ProgressRow, WatchedRow, UnwatchedRow, ListRow, CollectionRow);
+timestamped_by_own_field!(
+    ProgressRow,
+    WatchedRow,
+    UnwatchedRow,
+    ListRow,
+    CollectionRow,
+    SyncPreference
+);
 
 /// Keeps whichever of two rows should win.
 ///

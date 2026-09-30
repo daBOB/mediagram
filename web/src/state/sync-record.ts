@@ -53,6 +53,8 @@
  * than "nothing there".
  */
 
+import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
+
 /** Bumped when a reader could no longer make sense of an older document. */
 export const SYNC_FORMAT = 1;
 
@@ -124,6 +126,8 @@ export interface ProfileState {
   unwatched?: UnwatchedRow[];
   watchlist?: ListRow[];
   collections?: CollectionRow[];
+  /** The synced subtitle choices; absent from any build that predates them. */
+  preferences?: PreferenceRow[];
 }
 
 export interface SyncRecord {
@@ -191,17 +195,12 @@ export function parseRecord(text: string): SyncRecord | null {
       // Only a literal `true`: a flag that restricts what a child sees must
       // not be switched on by a string that merely looks truthy.
       ...(row.kids === true ? { kids: true as const } : {}),
-      progress: asArray(row.progress).flatMap((entry) => {
-        const at = progressRow(entry);
-        return at === null ? [] : [at];
-      }),
-      watched: asArray(row.watched).flatMap((entry) => {
-        const at = watchedRow(entry);
-        return at === null ? [] : [at];
-      }),
-      unwatched: row.unwatched === undefined ? undefined : parseUnwatchedRows(row.unwatched),
-      watchlist: row.watchlist === undefined ? undefined : parseListRows(row.watchlist),
-      collections: row.collections === undefined ? undefined : parseCollectionRows(row.collections),
+      progress: parseRows(row.progress, progressRow),
+      watched: parseRows(row.watched, watchedRow),
+      unwatched: row.unwatched === undefined ? undefined : parseRows(row.unwatched, unwatchedRow),
+      watchlist: row.watchlist === undefined ? undefined : parseRows(row.watchlist, listRow),
+      collections: row.collections === undefined ? undefined : parseRows(row.collections, collectionRow),
+      preferences: row.preferences === undefined ? undefined : parsePreferenceRows(row.preferences),
     });
   }
 
@@ -210,8 +209,8 @@ export function parseRecord(text: string): SyncRecord | null {
     device,
     writtenAt: numberFromScalar(held.writtenAt) || 0,
     profiles,
-    kids: held.kids === undefined ? undefined : parseListRows(held.kids),
-    editorsChoice: held.editorsChoice === undefined ? undefined : parseListRows(held.editorsChoice),
+    kids: held.kids === undefined ? undefined : parseRows(held.kids, listRow),
+    editorsChoice: held.editorsChoice === undefined ? undefined : parseRows(held.editorsChoice, listRow),
   };
 }
 
@@ -243,13 +242,6 @@ function watchedRow(value: unknown): WatchedRow | null {
   return { setId, updatedAt };
 }
 
-function parseUnwatchedRows(value: unknown): UnwatchedRow[] {
-  return asArray(value).flatMap((entry) => {
-    const row = unwatchedRow(entry);
-    return row === null ? [] : [row];
-  });
-}
-
 function unwatchedRow(value: unknown): UnwatchedRow | null {
   const raw = objectRow(value);
   if (raw === null) return null;
@@ -261,13 +253,6 @@ function unwatchedRow(value: unknown): UnwatchedRow | null {
   return { setId, updatedAt, lastFinishedAt };
 }
 
-function parseListRows(value: unknown): ListRow[] {
-  return asArray(value).flatMap((entry) => {
-    const row = listRow(entry);
-    return row === null ? [] : [row];
-  });
-}
-
 function listRow(value: unknown): ListRow | null {
   const raw = objectRow(value);
   if (raw === null) return null;
@@ -275,13 +260,6 @@ function listRow(value: unknown): ListRow | null {
   const updatedAt = numberFromScalar(raw.updatedAt);
   if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
   return raw.removed === true ? { setId, updatedAt, removed: true } : { setId, updatedAt };
-}
-
-function parseCollectionRows(value: unknown): CollectionRow[] {
-  return asArray(value).flatMap((entry) => {
-    const row = collectionRow(entry);
-    return row === null ? [] : [row];
-  });
 }
 
 /** How long a list's name from another device's document may be — not
@@ -302,6 +280,14 @@ function collectionRow(value: unknown): CollectionRow | null {
     return setId === null ? [] : [setId];
   });
   return raw.removed === true ? { id, name, items, updatedAt, removed: true } : { id, name, items, updatedAt };
+}
+
+/** Each entry through its own check: a bad row is dropped, not the list. */
+function parseRows<T>(value: unknown, one: (entry: unknown) => T | null): T[] {
+  return asArray(value).flatMap((entry) => {
+    const row = one(entry);
+    return row === null ? [] : [row];
+  });
 }
 
 function asArray(value: unknown): unknown[] {

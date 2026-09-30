@@ -43,7 +43,7 @@ CC / 'c' shown when a regular track exists (state = regular showing); style/offs
 | 06 | [Uploader: attach at completion](phase-06-uploader-extracts-sidecars-and-uploads-bundles.md) | `src/subtitles/**`, `media/{probe,streams}.rs`, `upload/{session/item,plan,prepare_set}.rs`, `index/{lifecycle,subtitles}.rs`, `course/sidecars.rs`, `remove/**` | minor | pending |
 | 07a | [Measure before backfill](phase-07a-measure-existing-titles-before-backfill.md) | `commands/subtitles/**`, `commands/mod.rs`, `cli.rs`, `PICTURE_SUBTITLES` visibility, script `subs` mode | minor | completed (0.88.0; this machine measured) |
 | 07 | [Move lesson subtitles; scoped backfill](phase-07-move-lesson-subtitles-then-scoped-backfill.md) | `commands/subtitles/**`, `cli.rs`, `index/assets.rs` | minor | pending |
-| 08 | [Sync subtitle preferences](phase-08-sync-subtitle-preferences-across-devices.md) | `web/src/state/**`, `web/src/routes.ts` (after 03), `crates/mediagram-core/src/state/**` | minor | pending |
+| 08 | [Sync subtitle preferences](phase-08-sync-subtitle-preferences-across-devices.md) | `web/src/state/**`, `web/src/routes.ts` (after 03), `crates/mediagram-core/src/state/**` | minor | code complete (0.89.0; reviewed; cross-device check pending) |
 | 09 | [Remove inline read path (gated)](phase-09-remove-inline-subtitle-read-path.md) | inline branches in `subtitle-tracks.ts`, `catalog_subtitles.rs`, preview helper | patch | pending |
 
 ## Rollout order (gates)

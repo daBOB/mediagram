@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use super::hostile_json::{as_array, is_integer, js_number, text_};
 use super::list_record::{collection_row, list_row};
+use super::preference_record::preference_row;
 use super::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow};
 
 /// Reads a document from the channel, or `None` if it cannot be trusted.
@@ -87,6 +88,10 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
         collections: as_array(row.get("collections"))
             .iter()
             .filter_map(collection_row)
+            .collect(),
+        preferences: as_array(row.get("preferences"))
+            .iter()
+            .filter_map(preference_row)
             .collect(),
     })
 }

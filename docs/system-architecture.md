@@ -444,6 +444,24 @@ watchlist, Kids and collections travel as rows with times, and a removal as
 a `removed` flag on the same row, so a merge cannot bring back what was
 taken off. A kids profile also carries `kids: true`; see Kids profiles.
 
+**The subtitle choices travel too, as an optional `preferences` list on each
+profile** of the document: `{scope, name, value, updatedAt}` for `subtitle`,
+`cue-size`, `cue-backing` and `cue-offset` in every scope (`key:`, `show:`,
+`set:`, and `profile` for the preferred language). Audio, speed and framing
+stay on the device. No format bump: a build that predates the key drops it,
+keeps syncing positions and rebuilds its document from its own rows. The merge
+is newest-write-wins per (profile, scope, name) with the device-id tie-break
+every other row uses; an import writes only a row newer than the local one (or
+an equal-time one the tie-break chose differently). A local write is stamped
+`max(now, stored + 1)`, so a row's time never goes backwards on one device.
+Synced names are never deleted — every writer stores a value (`off`, a track
+key, a size), because a delete would come back from any device still holding
+the row and no tombstone exists for it. One known difference: the scope of an
+untagged manual film or episode is keyed differently on the two surfaces (the
+web slugs any kind, the core only courses and documentaries), so such a
+title's per-show choices do not meet across them; the profile-wide language
+always does.
+
 **Un-marking `watched` travels under its own key, `unwatched`, not a
 `removed` flag.** A reader that predates this feature cannot both
 understand that flag and not — and at the moment this shipped there were
@@ -490,7 +508,8 @@ to the same PUT the periodic tick uses when a browser refuses `sendBeacon`
 a JSON body, and inferring "final" from the verb would then silently drop
 the trigger for that browser. Forgetting a position outright (`DELETE`)
 always counts, no marker needed, and so do watched, watchlist, Kids and
-profile writes; a preference, being per-device and unsynced, never does.
+profile writes; so does a preference (only the subtitle names travel, but
+the route does not look at the name, and the round is debounced anyway).
 `WatchSync` mirrors that cadence on Android: a round on start, every five
 minutes while the app is in front, when a film is left, when the app goes
 to the background, and within seconds of another device's write, heard

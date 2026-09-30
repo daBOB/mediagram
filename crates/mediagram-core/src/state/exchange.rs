@@ -6,6 +6,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::lists_exchange;
 use super::merge::MergedState;
+use super::preferences_exchange;
 use super::profiles;
 use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
@@ -32,6 +33,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         let (watched, unwatched) = watched_exchange::export_watched(conn, &profile.id)?;
         let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
         let collections = lists_exchange::export_collections(conn, &profile.id)?;
+        let preferences = preferences_exchange::export_preferences(conn, &profile.id)?;
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
@@ -41,6 +43,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             unwatched,
             watchlist,
             collections,
+            preferences,
         });
     }
     let kids = lists_exchange::export_kids(conn)?;
@@ -96,6 +99,8 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed += watched_exchange::import_unwatched(conn, &profile_id, &profile.unwatched)?;
         changed += lists_exchange::import_watchlist(conn, &profile_id, &profile.watchlist)?;
         changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
+        changed +=
+            preferences_exchange::import_preferences(conn, &profile_id, &profile.preferences)?;
     }
     transaction.commit()?;
     Ok(changed)

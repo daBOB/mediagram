@@ -99,3 +99,27 @@ fn deleting_a_profile_cascades_to_its_preferences() {
         db.with(|conn| conn.query_row("SELECT COUNT(*) FROM preferences", [], |row| row.get(0))).unwrap();
     assert_eq!(left, 0);
 }
+
+#[test]
+fn a_write_is_never_stamped_earlier_than_the_row_it_replaces() {
+    let (_dir, db) = db();
+    let profile = a_profile(&db);
+    let ahead = crate::state::profiles::now_ms() + 60_000;
+    db.with(|conn| {
+        conn.execute(
+            "INSERT INTO preferences(profile_id, scope, name, value, updated_at)
+               VALUES (?1, 'profile', 'subtitle', 'de', ?2)",
+            params![profile, ahead],
+        )
+    })
+    .unwrap();
+
+    db.with(|conn| set(conn, &profile, "profile", "subtitle", Some("en"))).unwrap();
+
+    let stamped: i64 = db
+        .with(|conn| {
+            conn.query_row("SELECT updated_at FROM preferences", [], |row| row.get(0))
+        })
+        .unwrap();
+    assert_eq!(stamped, ahead + 1);
+}
