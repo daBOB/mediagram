@@ -66,5 +66,5 @@ Gate 2 in plan.md: this phase → reinstall the uploader here → `push-index` (
 **Summary:** Schema v13 (`subtitle_files`/`subtitle_tracks`, additive), the bundle codec+caps+fixtures, the merge module (newer-wins, tracks replaced whole, inline-row exclusion + cleanup), the caption-schema publish/pull guard on every path including `--force`, the stale-uploader alarm with auto-republish on `pull-index`, and `send_document` generalised from `send_index` are all implemented, tested, and green end to end (`scripts/check.sh` passes in full). Version bumped to 0.84.0 across all manifests and the five workspace crates in `Cargo.lock`; `cargo metadata --locked --offline` confirms consistency. Committed.
 **Concerns:** See the three numbered points above — none block merge; all are informational for the lead's release steps.
 **Branch:** `worktree-agent-aa581a9d67fed3199`
-**Commit:** (recorded after commit, see below)
+**Commit:** `0b634af4`
 **Report path:** `/home/andre/Workspace/mediagram/.claude/worktrees/agent-aa581a9d67fed3199/plans/260930-0303-subtitles-for-films-and-series/reports/fullstack-developer-260930-0953-index-v13-subtitle-tables-report.md`
