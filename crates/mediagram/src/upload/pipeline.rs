@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use rusqlite::Connection;
 
 use super::part_upload::SetUpload;
@@ -37,7 +37,14 @@ pub async fn run_set<T: Transport>(
         HashMap::new()
     } else {
         let scan_limit = 3 * total_parts as usize;
-        adoption_map(&set.set_id, &transport.recent_messages(scan_limit).await?)
+        let scan = adoption_map(&set.set_id, &transport.recent_messages(scan_limit).await?);
+        ensure!(
+            !scan.blocked_by_newer_caption,
+            "{}'s parts are already in the channel under a caption version this build cannot \
+             read; finish this upload on the machine that started it",
+            set.set_id
+        );
+        scan.adopted
     };
 
     // Said before the first byte moves: connecting, resolving and hashing all

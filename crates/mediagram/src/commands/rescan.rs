@@ -34,6 +34,12 @@ pub async fn run(cfg: &Config) -> Result<()> {
         summary.parts_seen,
         summary.duplicates_skipped,
     );
+    if summary.newer_version > 0 {
+        println!(
+            "{} caption(s) use a newer #mlib version this build cannot read — reinstall mediagram",
+            summary.newer_version
+        );
+    }
     if summary.index_messages > 1 {
         println!(
             "{} index snapshots are pinned in the channel; the next `push-index` unpins them and pins its own",
@@ -126,6 +132,7 @@ fn flush_batch(
     totals.parts_seen += summary.parts_seen;
     totals.duplicates_skipped += summary.duplicates_skipped;
     totals.unparsed += summary.unparsed;
+    totals.newer_version += summary.newer_version;
     batch.clear();
     Ok(())
 }

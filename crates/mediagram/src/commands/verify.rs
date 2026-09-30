@@ -23,7 +23,8 @@ pub async fn run(
     }
 
     let conn = db::open(&cfg.data_dir()?)?;
-    let set_ids = verify::resolve_set_ids(&conn, set_id.as_deref(), all)?;
+    let (set_ids, skipped_kinds) = verify::resolve_set_ids(&conn, set_id.as_deref(), all)?;
+    crate::index::sets_pending::print_skipped(&skipped_kinds);
     if set_ids.is_empty() {
         println!("no sets to verify");
         return Ok(());

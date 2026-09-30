@@ -41,8 +41,12 @@ pub struct RescanSummary {
     pub sets_incomplete: usize,
     /// Times a part index was seen again under a different message id.
     pub duplicates_skipped: usize,
-    /// Captions carrying the mlib marker that failed to parse (e.g. a newer spec version).
+    /// Captions carrying the mlib marker that failed to parse for a reason
+    /// other than a newer version — malformed JSON, most often.
     pub unparsed: usize,
+    /// Captions carrying a `#mlib v=N` newer than this build reads: from a
+    /// newer uploader, not corruption.
+    pub newer_version: usize,
     /// Index snapshots found in the channel. More than one means more than
     /// one is pinned, which the next push resolves.
     pub index_messages: usize,
@@ -59,6 +63,7 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
     let mut duplicates_skipped = 0usize;
 
     let mut unparsed = 0usize;
+    let mut newer_version = 0usize;
 
     for msg in seen {
         // `is_mlib` only matches the `#mlib v=` part marker, so the
@@ -69,6 +74,11 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         }
         let caption = match mlib_spec::parse(&msg.caption) {
             Ok(caption) => caption,
+            Err(mlib_spec::CaptionError::UnsupportedVersion(version)) => {
+                tracing::warn!(message_id = msg.message_id, version, "skipping a caption from a newer uploader");
+                newer_version += 1;
+                continue;
+            }
             Err(err) => {
                 tracing::warn!(message_id = msg.message_id, error = %err, "skipping unparsable mlib caption");
                 unparsed += 1;
@@ -121,6 +131,7 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         sets_incomplete,
         duplicates_skipped,
         unparsed,
+        newer_version,
         // Counted by the caller, which is the only place that sees the index
         // snapshots: this function is given part captions only.
         index_messages: 0,

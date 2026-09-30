@@ -7,127 +7,84 @@
 //! from a caption, via the same [`crate::index::set_row::SetRow::from_caption`]
 //! mapping `rescan` uses to rebuild a set from scratch.
 
-use anyhow::{Context, Result};
-use rusqlite::Connection;
+use anyhow::{Context, Result, bail};
+use rusqlite::{Connection, OptionalExtension};
 
 use crate::index::set_row::SetRow;
 use crate::index::sets;
+
+/// What trying to resolve one conflicting set from its captions found.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct ConflictOutcome {
+    /// The row was rewritten from a caption.
+    pub applied: bool,
+    /// The set's own `kind`, read straight from the column rather than
+    /// decoded — not one this build knows, so the row was left exactly as
+    /// it was rather than risking a decode failure over it.
+    pub unknown_kind: Option<String>,
+    /// Candidate captions skipped because their `#mlib v=N` is newer than
+    /// this build reads — not necessarily this set's own, since a caption
+    /// that unreadable names no set this build can check.
+    pub newer_captions: usize,
+}
 
 /// Rewrites `set_id`'s metadata from the first caption in `captions` that
 /// parses as one of its own parts. `captions` is raw message text, gone
 /// entries included as empty strings — this only reads what parses.
 ///
 /// Pure: a test supplies caption text directly instead of a Telegram fetch.
-/// Returns whether a caption was found and applied.
-pub fn resolve_from_captions(conn: &Connection, set_id: &str, captions: &[String]) -> Result<bool> {
+pub fn resolve_from_captions(
+    conn: &Connection,
+    set_id: &str,
+    captions: &[String],
+) -> Result<ConflictOutcome> {
+    let kind: Option<String> = conn
+        .query_row("SELECT kind FROM sets WHERE set_id = ?1", [set_id], |row| {
+            row.get(0)
+        })
+        .optional()?;
+    let Some(kind) = kind else {
+        bail!("set {set_id} vanished before its conflict could be resolved");
+    };
+    if kind.parse::<mlib_spec::Kind>().is_err() {
+        return Ok(ConflictOutcome {
+            unknown_kind: Some(kind),
+            ..ConflictOutcome::default()
+        });
+    }
     let existing = sets::get_set(conn, set_id)?
         .with_context(|| format!("set {set_id} vanished before its conflict could be resolved"))?;
+
+    let mut newer_captions = 0usize;
     for text in captions {
         if !mlib_spec::caption_codec::is_mlib(text) {
             continue;
         }
-        let Ok(caption) = mlib_spec::parse(text) else {
-            continue;
+        let caption = match mlib_spec::parse(text) {
+            Ok(caption) => caption,
+            Err(mlib_spec::CaptionError::UnsupportedVersion(_)) => {
+                newer_captions += 1;
+                continue;
+            }
+            Err(_) => continue,
         };
         if caption.set != set_id {
             continue;
         }
         let row = SetRow::from_caption(&caption, existing.created_at);
         sets::update_metadata(conn, &row)?;
-        return Ok(true);
+        return Ok(ConflictOutcome {
+            applied: true,
+            newer_captions,
+            ..ConflictOutcome::default()
+        });
     }
-    Ok(false)
+    Ok(ConflictOutcome {
+        newer_captions,
+        ..ConflictOutcome::default()
+    })
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use mlib_spec::caption::{Caption, Kind, Part};
-    use mlib_spec::ids::ProviderIds;
-
-    fn caption_text(set_id: &str, title: &str) -> String {
-        let caption = Caption {
-            cid: None,
-            chap: None,
-            path: None,
-            t: Kind::Movie,
-            ids: ProviderIds {
-                tmdb: Some(42),
-                tvdb: None,
-                imdb: None,
-            },
-            show: None,
-            title: Some(title.to_string()),
-            year: Some(2020),
-            s: None,
-            e: None,
-            abs: None,
-            q: None,
-            hdr: None,
-            container: "mkv".into(),
-            vcodec: None,
-            acodec: None,
-            alang: vec![],
-            slang: vec![],
-            dur: None,
-            variant: None,
-            set: set_id.to_string(),
-            part: Part {
-                i: 0,
-                n: 1,
-                off: 0,
-                len: 10,
-                sha256: "a".repeat(64),
-            },
-            total: 10,
-        };
-        mlib_spec::to_text(&caption, "").unwrap()
-    }
-
-    fn seeded_set(conn: &Connection, set_id: &str) {
-        let caption = {
-            let text = caption_text(set_id, "Old Title");
-            mlib_spec::parse(&text).unwrap()
-        };
-        let row = SetRow::from_caption(&caption, 1_700_000_000);
-        sets::insert_set(conn, &row).unwrap();
-    }
-
-    #[test]
-    fn the_first_parseable_caption_for_this_set_rewrites_the_row() {
-        let dir = tempfile::tempdir().unwrap();
-        let conn = crate::index::db::open(dir.path()).unwrap();
-        seeded_set(&conn, "01JQ8F2K9M4XZ00000000001");
-
-        let captions = vec![
-            "not mlib at all".to_string(),
-            caption_text("01JQ8F2K9M4XZ00000000099", "Wrong Set"),
-            caption_text("01JQ8F2K9M4XZ00000000001", "New Title"),
-        ];
-        let applied = resolve_from_captions(&conn, "01JQ8F2K9M4XZ00000000001", &captions).unwrap();
-        assert!(applied);
-
-        let row = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000001")
-            .unwrap()
-            .unwrap();
-        assert_eq!(row.title.as_deref(), Some("New Title"));
-        // Metadata-only: the byte-describing fields stay as they were.
-        assert_eq!(row.total, 10);
-    }
-
-    #[test]
-    fn no_matching_caption_applies_nothing() {
-        let dir = tempfile::tempdir().unwrap();
-        let conn = crate::index::db::open(dir.path()).unwrap();
-        seeded_set(&conn, "01JQ8F2K9M4XZ00000000001");
-
-        let captions = vec!["gone".to_string()];
-        let applied = resolve_from_captions(&conn, "01JQ8F2K9M4XZ00000000001", &captions).unwrap();
-        assert!(!applied);
-
-        let row = sets::get_set(&conn, "01JQ8F2K9M4XZ00000000001")
-            .unwrap()
-            .unwrap();
-        assert_eq!(row.title.as_deref(), Some("Old Title"));
-    }
-}
+#[path = "merge_conflicts_tests.rs"]
+mod tests;

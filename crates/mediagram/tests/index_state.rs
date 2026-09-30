@@ -2,7 +2,7 @@
 
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, parts, set_lookup, sets};
+use mediagram::index::{db, parts, set_lookup, sets, sets_pending};
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
 use mlib_spec::ids::ProviderIds;
 use mlib_spec::part_plan::PartRange;
@@ -54,10 +54,10 @@ fn sets_insert_get_list_pending_and_complete() {
 
     let fetched = sets::get_set(&conn, &row.set_id).unwrap().unwrap();
     assert_eq!(fetched, row);
-    assert_eq!(sets::list_pending(&conn).unwrap().len(), 1);
+    assert_eq!(sets_pending::list_pending(&conn).unwrap().0.len(), 1);
 
     sets::set_hash_and_complete(&conn, &row.set_id, "abc").unwrap();
-    assert_eq!(sets::list_pending(&conn).unwrap().len(), 0);
+    assert_eq!(sets_pending::list_pending(&conn).unwrap().0.len(), 0);
     let done = sets::get_set(&conn, &row.set_id).unwrap().unwrap();
     assert_eq!(done.status, SetStatus::Complete);
     assert_eq!(done.set_hash.as_deref(), Some("abc"));

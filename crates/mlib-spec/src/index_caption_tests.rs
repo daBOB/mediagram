@@ -20,14 +20,26 @@ fn what_is_written_reads_back() {
     assert!(caption.starts_with(MARKER));
     assert_eq!(pushed_at(&caption), Some(1_781_568_000));
     assert!(caption.ends_with(&format!(
-        "{{\"pushed_at\":1781568000,\"schema\":{},\"sets\":538}}",
-        crate::schema::SCHEMA_VERSION
+        "{{\"pushed_at\":1781568000,\"schema\":{},\"sets\":538,\"uploader\":\"{}\"}}",
+        crate::schema::SCHEMA_VERSION,
+        env!("CARGO_PKG_VERSION"),
     )));
 }
 
 #[test]
 fn a_part_caption_is_not_an_index() {
     assert!(!is_index("#mlib v=2\n{}"));
+}
+
+#[test]
+fn the_schema_a_caption_records_reads_back() {
+    let caption = render(1_781_568_000, 538);
+    assert_eq!(schema(&caption), Some(crate::schema::SCHEMA_VERSION));
+}
+
+#[test]
+fn a_caption_with_no_json_line_has_no_schema() {
+    assert_eq!(schema(MARKER), None);
 }
 
 #[test]

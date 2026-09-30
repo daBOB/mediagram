@@ -29,6 +29,7 @@ pub mod rescan_parts;
 pub mod set_lookup;
 pub mod set_row;
 pub mod sets;
+pub mod sets_pending;
 pub mod shows;
 pub mod snapshot;
 pub mod sqlite_init;

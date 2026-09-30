@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use rusqlite::Connection;
 
 use super::backup_path::free_backup_path;
@@ -16,6 +16,10 @@ use crate::index::{db, pins, snapshot};
 /// The channel index: the newest snapshot the channel itself posted, among
 /// its pins and the marker search (spec §7, `index_caption::newest`) — the
 /// same candidates and the same choice every player makes.
+///
+/// Refuses a chosen snapshot whose caption names a schema newer than this
+/// build understands — on every path, `--force` included, since every
+/// publish and every plain pull starts here.
 pub(super) async fn current(remote: &impl ChannelRemote) -> Result<Option<Candidate>> {
     let own: Vec<Candidate> = remote
         .candidates()
@@ -28,7 +32,19 @@ pub(super) async fn current(remote: &impl ChannelRemote) -> Result<Option<Candid
         .iter()
         .map(|p| (p.caption.as_str(), i64::from(p.id)))
         .collect();
-    Ok(mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone()))
+    let chosen =
+        mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone());
+    if let Some(candidate) = &chosen {
+        if let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption) {
+            ensure!(
+                schema <= mlib_spec::schema::SCHEMA_VERSION,
+                "the channel index is schema v{schema}, newer than this build (v{}); \
+                 reinstall mediagram before pulling or publishing",
+                mlib_spec::schema::SCHEMA_VERSION
+            );
+        }
+    }
+    Ok(chosen)
 }
 
 /// Merges `current` into the local index and records it as pulled; with
@@ -89,14 +105,9 @@ async fn merge_in(
     // Reported before the re-read: the merge has committed, and a failure
     // re-reading captions must not hide what it already changed.
     report::print(&merged, false);
-    let resolved = conflicts::resolve(&local, remote, &merged.conflicts).await?;
-    if !merged.conflicts.is_empty() {
-        println!(
-            "{resolved} of {} conflicting set(s) re-read from captions",
-            merged.conflicts.len()
-        );
-    }
-    Ok(resolved == merged.conflicts.len())
+    let summary = conflicts::resolve(&local, remote, &merged.conflicts).await?;
+    report::print_conflicts(merged.conflicts.len(), &summary);
+    Ok(summary.resolved == merged.conflicts.len())
 }
 
 /// Runs the merge against a throwaway copy of the local index, so a dry run

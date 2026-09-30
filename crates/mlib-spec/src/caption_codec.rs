@@ -13,12 +13,10 @@ use thiserror::Error;
 
 use crate::caption::Caption;
 
-/// Marker written on every new caption. Readers accept older versions too;
-/// see [`parse`].
+/// Marker written on every new caption. Readers accept older versions too; see [`parse`].
 pub const MARKER: &str = "#mlib v=4";
 pub const MARKER_PREFIX: &str = "#mlib v=";
-/// Free-tier caption limit, counted in UTF-16 code units like Telegram does;
-/// Premium-independent by design.
+/// Free-tier caption limit, in UTF-16 code units like Telegram; Premium-independent by design.
 pub const CAPTION_BUDGET: usize = 1024;
 
 /// Length as Telegram measures it.
@@ -110,8 +108,7 @@ fn validate(caption: &Caption) -> Result<(), CaptionError> {
 /// finished.
 ///
 /// # Errors
-/// Returns a serialization error or [`CaptionError::BudgetExceeded`] when
-/// the conservative last-part caption cannot fit the wire budget.
+/// A serialization error, or [`CaptionError::BudgetExceeded`] when the conservative last-part caption cannot fit the wire budget.
 pub fn check_budget(template: &Caption) -> Result<(), CaptionError> {
     let n = template.part.n;
     let last = template.with_part(crate::caption::Part {
@@ -186,6 +183,16 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
     let caption: Caption = serde_json::from_str(json)?;
     validate(&caption)?;
     Ok(caption)
+}
+
+/// The `set` a caption names, read without checking its version — later
+/// versions only add fields, so `set` keeps its name. For a caller that must
+/// recognise which set an otherwise-unreadable caption belongs to.
+#[must_use]
+pub fn unread_set(text: &str) -> Option<String> {
+    let (_, json) = text.trim_start().split_once('\n')?;
+    let value: serde_json::Value = serde_json::from_str(json.trim()).ok()?;
+    value.get("set")?.as_str().map(str::to_string)
 }
 
 #[cfg(test)]

@@ -5,6 +5,28 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.7 — the uploader refuses a channel index newer than it understands
+
+**Added**
+
+- `pull-index` and `push-index` (`--force` included) now refuse when the
+  channel's own index caption names a `library.db` schema newer than this
+  build's, naming both versions and asking for a reinstall rather than
+  silently dropping rows it cannot read or overwriting them with an older
+  copy.
+- The index caption now carries the uploader's own version (`"uploader"`),
+  so a push can be checked from the *other* machine's own pin without
+  running a command there.
+- `resume`, `verify --all` and merge-conflict resolution skip a set whose
+  `kind` this build cannot decode — from a newer uploader, not corruption —
+  and print one line naming the kind and how many were skipped, rather than
+  aborting the whole run. Naming a set explicitly still fails on it.
+- `rescan` and merge-conflict resolution now count and print captions whose
+  `#mlib v=N` is newer than this build reads, instead of only a debug log.
+- A set already finished on another machine under a caption version this
+  build cannot read is refused rather than adopted or resent: `resume`
+  now says to finish it on the machine that started it.
+
 ## 0.84.6 — Android TV: keep-alive withdrawn; stable card focus across reorders kept
 
 **Changed**

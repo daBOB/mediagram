@@ -291,3 +291,88 @@ async fn two_publishes_on_one_machine_take_turns() {
     assert_eq!(pinned(&channel), [last]);
     assert_eq!(downloads(&channel), 0);
 }
+
+/// A channel whose index caption names a schema newer than this build
+/// understands is refused rather than merged into the local index, naming
+/// both versions so an operator knows to reinstall.
+mod newer_schema_guard {
+    use super::*;
+
+    fn newer_than_this_build() -> i64 {
+        mlib_spec::schema::SCHEMA_VERSION + 1
+    }
+
+    #[tokio::test]
+    async fn a_pull_refuses_a_newer_schema() {
+        let channel = FakeChannel::new();
+        let theirs = snapshot_of(&channel, &["THEIRS"]);
+        let schema = newer_than_this_build();
+        channel.with(|c| c.publish_with_schema(theirs, now_unix() - 100, schema));
+        let dir = this_machine(&channel, &["OURS"]);
+
+        let err = ChannelIndex::new(&channel, dir.path())
+            .pull(false)
+            .await
+            .unwrap_err();
+
+        let msg = format!("{err:#}");
+        assert!(msg.contains(&schema.to_string()), "{msg}");
+        assert!(
+            msg.contains(&mlib_spec::schema::SCHEMA_VERSION.to_string()),
+            "{msg}"
+        );
+        assert_eq!(local_sets(&dir), ["OURS"]);
+    }
+
+    #[tokio::test]
+    async fn an_after_pull_publish_refuses_a_newer_schema() {
+        let channel = FakeChannel::new();
+        let theirs = snapshot_of(&channel, &["THEIRS"]);
+        channel.with(|c| c.publish_with_schema(theirs, now_unix() - 100, newer_than_this_build()));
+        let dir = this_machine(&channel, &["OURS"]);
+
+        ChannelIndex::new(&channel, dir.path())
+            .publish(Mode::AfterPull)
+            .await
+            .unwrap_err();
+
+        assert_eq!(channel.with(|c| c.sends), 0);
+    }
+
+    /// `--force` is meant to overwrite a channel without pulling first, but
+    /// it must still refuse one it cannot read — a stale uploader forcing
+    /// over a newer schema would erase every set the newer one added.
+    #[tokio::test]
+    async fn a_force_publish_still_refuses_a_newer_schema() {
+        let channel = FakeChannel::new();
+        let theirs = snapshot_of(&channel, &["THEIRS"]);
+        channel.with(|c| c.publish_with_schema(theirs, now_unix() - 100, newer_than_this_build()));
+        let dir = this_machine(&channel, &["OURS"]);
+
+        ChannelIndex::new(&channel, dir.path())
+            .publish(Mode::Force)
+            .await
+            .unwrap_err();
+
+        assert_eq!(channel.with(|c| c.sends), 0);
+    }
+
+    /// A caption at exactly this build's schema is not "newer" and pulls
+    /// normally — the guard is `>`, not `>=`.
+    #[tokio::test]
+    async fn a_pull_accepts_its_own_schema_version() {
+        let channel = FakeChannel::new();
+        let theirs = snapshot_of(&channel, &["THEIRS"]);
+        channel.with(|c| {
+            c.publish_with_schema(theirs, now_unix() - 100, mlib_spec::schema::SCHEMA_VERSION)
+        });
+        let dir = this_machine(&channel, &["OURS"]);
+
+        ChannelIndex::new(&channel, dir.path())
+            .pull(false)
+            .await
+            .unwrap();
+
+        assert_eq!(local_sets(&dir), ["OURS", "THEIRS"]);
+    }
+}

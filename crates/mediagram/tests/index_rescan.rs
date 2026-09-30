@@ -425,6 +425,29 @@ mod ignored_and_malformed_input {
         assert_eq!(summary.sets_seen, 0);
         assert_eq!(summary.parts_seen, 0);
         assert_eq!(summary.unparsed, 1);
+        assert_eq!(summary.newer_version, 0);
+    }
+
+    /// A caption whose `#mlib v=N` is newer than this build reads is
+    /// skipped and counted separately from a malformed one — it is a set
+    /// from a newer uploader, not a corrupted message.
+    #[test]
+    fn a_caption_from_a_newer_uploader_is_skipped_and_counted_as_newer_version() {
+        let (_dir, conn) = open_db();
+
+        let seen = vec![Seen {
+            message_id: 102,
+            doc_id: Some(9002),
+            caption: "#mlib v=99\n{}".to_string(),
+            sent_at: 0,
+        }];
+
+        let summary = rescan::apply_seen(&conn, CHAT_ID, &seen).unwrap();
+
+        assert_eq!(summary.sets_seen, 0);
+        assert_eq!(summary.parts_seen, 0);
+        assert_eq!(summary.unparsed, 0);
+        assert_eq!(summary.newer_version, 1);
     }
 }
 

@@ -66,6 +66,18 @@ impl Channel {
         )
     }
 
+    /// Another machine publishing `snapshot` under a caption claiming
+    /// `schema` — for pinning the guard that refuses one newer than this
+    /// build's own `mlib_spec::schema::SCHEMA_VERSION`, without a real
+    /// migration to reach that schema.
+    pub fn publish_with_schema(&mut self, snapshot: Vec<u8>, at: i64, schema: i64) -> i32 {
+        let caption = format!(
+            "{}\n{{\"pushed_at\":{at},\"schema\":{schema},\"sets\":0,\"uploader\":\"9.9.9\"}}",
+            mlib_spec::index_caption::MARKER
+        );
+        self.post(caption, Some(snapshot), true, true)
+    }
+
     /// Every pinned index message, oldest first.
     pub fn pinned_indexes(&self) -> Vec<i32> {
         self.messages

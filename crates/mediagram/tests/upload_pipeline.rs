@@ -5,7 +5,7 @@
 
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, parts, sets};
+use mediagram::index::{db, parts, sets, sets_pending};
 use mediagram::upload::part_reader::PartReader;
 use mediagram::upload::pipeline::run_set;
 use mlib_spec::caption::{Caption, Episode, Kind, Part};
@@ -407,6 +407,33 @@ mod resume_and_recovery {
         assert_eq!(transport.send_count(), 2);
     }
 
+    /// A channel message naming this set's own id but carrying a newer
+    /// `#mlib v=N` this build cannot read refuses the whole resume instead
+    /// of silently re-sending a part that is already in the channel.
+    #[tokio::test]
+    async fn a_newer_caption_naming_this_set_refuses_the_resume() {
+        let tmp = tempfile::tempdir().unwrap();
+        let data: Vec<u8> = (0..2 * 1024 * 1024u32).map(|i| (i % 256) as u8).collect();
+        let src = tmp.path().join("movie.mkv");
+        tokio::fs::write(&src, &data).await.unwrap();
+
+        let caption = sample_caption("01J0000000000000000000FST9A", data.len() as u64, 2);
+        let (_db_dir, conn, set_row, _plan) = seeded_index(&caption).await;
+
+        let transport = FakeTransport::new();
+        transport.seed(format!(
+            "#mlib v=99\n{{\"set\":\"{}\"}}",
+            set_row.set_id
+        ));
+
+        let err = run_set(&conn, &transport, 0, &set_row, &src, None)
+            .await
+            .unwrap_err();
+
+        assert!(format!("{err:#}").contains("finish this upload"), "{err:#}");
+        assert_eq!(transport.send_count(), 0);
+    }
+
     /// A channel message that cannot be parsed as an mlib caption at all is
     /// simply ignored as an adoption candidate, not treated as an error.
     #[tokio::test]
@@ -524,9 +551,10 @@ mod index_and_storage {
 
         sets::set_hash_and_complete(&conn, &set1.set_id, "somehash1234").unwrap();
 
-        let pending = sets::list_pending(&conn).unwrap();
+        let (pending, skipped) = sets_pending::list_pending(&conn).unwrap();
         let pending_ids: Vec<String> = pending.iter().map(|s| s.set_id.clone()).collect();
         assert_eq!(pending_ids, vec!["01J0000000000000000000FST9"]);
+        assert!(skipped.is_empty());
     }
 
     /// Opening the index under a read-only parent directory fails cleanly

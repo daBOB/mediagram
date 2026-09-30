@@ -12,7 +12,7 @@ use std::cell::Cell;
 use mediagram::config::Config;
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
-use mediagram::index::{db, lifecycle, parts, pins, sets};
+use mediagram::index::{db, lifecycle, parts, pins, sets, sets_pending};
 use mediagram::upload::lock;
 use mediagram::upload::new_set::{LessonOf, NewSet};
 use mediagram::upload::record_document::Document;
@@ -301,8 +301,9 @@ async fn a_walked_item_started_elsewhere_is_left_pending() {
         }
     );
     assert_eq!(
-        sets::list_pending(&db::open(dir.path()).unwrap())
+        sets_pending::list_pending(&db::open(dir.path()).unwrap())
             .unwrap()
+            .0
             .len(),
         1
     );

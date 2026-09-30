@@ -3,7 +3,7 @@
 use anyhow::{Result, ensure};
 
 use crate::config::Config;
-use crate::index::{db, sets};
+use crate::index::{db, sets_pending};
 use crate::upload::session::link::TelegramLink;
 use crate::upload::session::{Item, Outcome, Session, Set, Step};
 
@@ -11,7 +11,8 @@ use crate::upload::session::{Item, Outcome, Session, Set, Step};
 /// at the end (unless `no_push`). A set a background `add` is finishing right
 /// now is waited for and then found complete, not sent twice.
 pub async fn run(cfg: &Config, no_push: bool) -> Result<()> {
-    let pending = sets::list_pending(&db::open(&cfg.data_dir()?)?)?;
+    let (pending, skipped) = sets_pending::list_pending(&db::open(&cfg.data_dir()?)?)?;
+    sets_pending::print_skipped(&skipped);
     if pending.is_empty() {
         println!("no pending sets");
         return Ok(());

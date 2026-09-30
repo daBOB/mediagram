@@ -1,6 +1,8 @@
 //! What a pull says it did.
 
+use super::conflicts::ResolveSummary;
 use crate::index::merge::MergeReport;
+use crate::index::sets_pending;
 
 /// How many added set ids a report names, so it says what it found without
 /// printing hundreds.
@@ -56,5 +58,22 @@ pub(super) fn print(report: &MergeReport, dry_run: bool) {
     }
     if report.categories_taken > 0 {
         println!("{} category row(s) taken", report.categories_taken);
+    }
+}
+
+/// What resolving the merge's conflicting sets from their captions did.
+pub(super) fn print_conflicts(total: usize, summary: &ResolveSummary) {
+    if total > 0 {
+        println!(
+            "{} of {total} conflicting set(s) re-read from captions",
+            summary.resolved
+        );
+    }
+    sets_pending::print_skipped(&summary.skipped_kinds);
+    if summary.newer_captions > 0 {
+        println!(
+            "{} caption(s) among the conflicts use a newer #mlib version this build cannot read",
+            summary.newer_captions
+        );
     }
 }

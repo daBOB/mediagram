@@ -34,6 +34,10 @@ pub(super) async fn publish(
     .await?;
     let conn = db::open(data_dir)?;
     if mode == Mode::Force {
+        // The schema guard lives in `pull::current`, which nothing else on
+        // this path calls; run it for its check alone, or `--force` would be
+        // the one publish that skips it.
+        pull::current(remote).await?;
         let owed = pins::publish_owed(&conn)?;
         let snapshot = Snapshot::take(&conn, data_dir)?;
         return send(remote, &conn, &snapshot.0, owed).await;

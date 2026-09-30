@@ -7,7 +7,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::index::set_row::SetRow;
 use crate::index::status::SetStatus;
 
-const COLUMNS: &str =
+pub(crate) const COLUMNS: &str =
     "set_id, kind, tmdb, tvdb, imdb, show, chap, path, title, year, season, episode,
     abs, quality, hdr, container, vcodec, acodec, alang, slang, duration, variant, group_key,
     total, part_count, set_hash, status, created_at, spec_version";
@@ -169,17 +169,6 @@ pub fn find_by_name(conn: &Connection, name: &str) -> Result<Option<SetRow>> {
     .map_err(Into::into)
 }
 
-/// Every set still `pending`, oldest first (so `resume` finishes older sets before newer ones).
-pub fn list_pending(conn: &Connection) -> Result<Vec<SetRow>> {
-    let mut stmt = conn.prepare(&format!(
-        "SELECT {COLUMNS} FROM sets WHERE status = ?1 ORDER BY created_at"
-    ))?;
-    let rows = stmt
-        .query_map([SetStatus::Pending], SetRow::from_row)?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(rows)
-}
-
 /// How many sets the index holds, whatever their status.
 pub fn count(conn: &Connection) -> Result<u64> {
     conn.query_row("SELECT COUNT(*) FROM sets", [], |row| row.get(0))
@@ -196,5 +185,6 @@ pub fn count_complete(conn: &Connection) -> Result<u64> {
     .context("counting complete sets")
 }
 
-// Covered by `tests/index_state.rs`: insert/get/list_pending/complete round
-// trip through a real sqlite file, plus the not-found case.
+// Covered by `tests/index_state.rs`: insert/get/complete round trip through
+// a real sqlite file, plus the not-found case. `list_pending` moved to
+// `sets_pending`, which filters and counts by decodable `kind`.

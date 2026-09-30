@@ -3,7 +3,7 @@
 //!
 //! ```text
 //! #mlib-index v=2
-//! {"pushed_at":1700000000,"schema":2,"sets":42}
+//! {"pushed_at":1700000000,"schema":2,"sets":42,"uploader":"0.83.1"}
 //! ```
 //!
 //! Written by the uploader and read by every client, so both sides take the
@@ -26,6 +26,10 @@ struct Body {
     pushed_at: i64,
     schema: i64,
     sets: i64,
+    /// This crate's own version, workspace-inherited so it always equals the
+    /// uploader binary's — checkable from the *other* machine's own pin
+    /// without either one running a command, just reading a caption.
+    uploader: &'static str,
 }
 
 /// The caption for a snapshot pushed at `pushed_at` holding `sets` sets.
@@ -35,9 +39,26 @@ pub fn render(pushed_at: i64, sets: i64) -> String {
         pushed_at,
         schema: crate::schema::SCHEMA_VERSION,
         sets,
+        uploader: env!("CARGO_PKG_VERSION"),
     };
-    let json = serde_json::to_string(&body).expect("three integers always serialize");
+    let json = serde_json::to_string(&body).expect("three integers and a version always serialize");
     format!("{MARKER}\n{json}")
+}
+
+/// The `library.db` schema a caption records, or `None` when it carries none
+/// this build can parse. Present on every caption alongside `pushed_at`, so
+/// a publisher can be refused a channel it cannot yet read without ever
+/// downloading the snapshot itself.
+#[must_use]
+pub fn schema(caption: &str) -> Option<i64> {
+    #[derive(Deserialize)]
+    struct Stamp {
+        schema: i64,
+    }
+    caption
+        .split_once('\n')
+        .and_then(|(_, json)| serde_json::from_str::<Stamp>(json.trim()).ok())
+        .map(|stamp| stamp.schema)
 }
 
 /// Whether a message's caption marks it as an index snapshot.
