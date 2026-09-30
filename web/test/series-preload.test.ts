@@ -332,6 +332,34 @@ describe("POST /api/preload", () => {
     expect(asked[1]![0]!.locations).toHaveLength(1);
   });
 
+  test("holds the bundle of an accepted episode, fire-and-forget", async () => {
+    const db = catalog();
+    db.run(
+      "INSERT INTO subtitle_files(set_id, chat_id, message_id, bytes, sha256, uploaded_at) VALUES (?, -1001, 77, 10, ?, 1)",
+      ["01EP00000000000000000002", "a".repeat(64)],
+    );
+    const held: number[] = [];
+    const preload = { want: () => {} } as never;
+    const subtitles = { vtt: async () => null, hold: async (ref: { messageId: number } | null) => { if (ref) held.push(ref.messageId); } };
+    const route = createRouter({ db, source: NO_BYTES, preload, subtitles });
+
+    const response = await route(post({ setIds: ["01EP00000000000000000002"] }));
+    expect(response.status).toBe(202);
+    await Promise.resolve(); // let the fire-and-forget `hold` settle
+    expect(held).toEqual([77]);
+  });
+
+  test("a set with no bundle is a no-op for hold", async () => {
+    const held: unknown[] = [];
+    const preload = { want: () => {} } as never;
+    const subtitles = { vtt: async () => null, hold: async (ref: unknown) => { held.push(ref); } };
+    const route = createRouter({ db: catalog(), source: NO_BYTES, preload, subtitles });
+
+    await route(post({ setIds: ["01EP00000000000000000002"] }));
+    await Promise.resolve();
+    expect(held).toEqual([null]);
+  });
+
   test("is not a route when preload is off", async () => {
     const route = createRouter({ db: catalog(), source: NO_BYTES });
     const res = await route(post({ setIds: ["01EP00000000000000000002"] }));

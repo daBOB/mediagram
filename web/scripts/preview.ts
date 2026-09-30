@@ -27,6 +27,7 @@ import { startServer } from "../src/server";
 import { PosterStore } from "../src/package/posters";
 import { WatchState } from "../src/state/store";
 import { EXPECTED_SCHEMA, listPlayable } from "../src/catalog";
+import { wirePreviewSubtitles } from "./preview-subtitles";
 import { createStatusRouter } from "../src/status/routes";
 import { readLiveFacts } from "../src/status/live-facts";
 import { startLoopLag } from "../src/status/loop-lag";
@@ -55,7 +56,11 @@ copyFileSync(index, indexCopy);
 const stateCopy = join(scratch, "state.db");
 if (existsSync(stateDb)) copyFileSync(stateDb, stateCopy);
 
-const db = new Database(indexCopy, { readonly: true });
+// Writable only so `PREVIEW_SUBTITLES` can wire the fixture onto the copy —
+// `{ readonly: false }` itself is refused by Bun's binding, so this is the
+// options object entirely, not a value inside it.
+const db = process.env.PREVIEW_SUBTITLES ? new Database(indexCopy) : new Database(indexCopy, { readonly: true });
+const subtitles = wirePreviewSubtitles(db, join(scratch, ".subtitles"));
 const state = new WatchState(stateCopy);
 
 /**
@@ -79,6 +84,7 @@ const server = await startServer({
   // Media is the one thing a preview cannot serve without Telegram.
   source: { stream: () => new ReadableStream() } as never,
   posters: new PosterStore(posterDir),
+  subtitles,
   state,
   hostname: "127.0.0.1",
   port,

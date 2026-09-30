@@ -95,17 +95,27 @@ function similarShelf(films, openFilm) {
   return movieGrid(films, openFilm, { mode: GRID, strip: true });
 }
 
+/** `set.alang`/`set.slang` are JSON array strings, the way the index stores them. */
+function parsedLangs(value) {
+  try {
+    const parsed = JSON.parse(value ?? "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 /** What the file is: the questions a viewer asks when a title will not play. */
 export function details(set) {
-  const languages = (codes) => (Array.isArray(codes) && codes.length > 0
+  const languages = (codes) => (codes.length > 0
     ? codes.map((code) => languageLabel(code, code)).join(", ")
     : null);
   return factSheet([
     ["Quality", [set.quality, hdrLabel(set)].filter(Boolean).join(" · ")],
     ["Video", set.vcodec],
     ["Audio", set.acodec],
-    ["Audio languages", languages(set.alang)],
-    ["Subtitles", languages(set.slang)],
+    ["Audio languages", languages(parsedLangs(set.alang))],
+    ["Subtitles", languages(parsedLangs(set.slang))],
     ["Container", set.container],
     ["Size", Number(set.total) > 0 ? humanSize(set.total) : null],
     ["Bitrate", bitrateLabel(set)],

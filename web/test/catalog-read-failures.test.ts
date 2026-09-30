@@ -1,12 +1,14 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { summary, subtitle, subtitleLanguages } from "../src/catalog/assets";
+import { summary } from "../src/catalog/assets";
+import { bundleRef, legacyBody, subtitleTracksBySet } from "../src/catalog/subtitle-tracks";
 import { providerFactsByShow, showMeta } from "../src/catalog/shows";
 
 const reads = {
   summary: (db: Database) => summary(db, "title"),
-  subtitle: (db: Database) => subtitle(db, "title", "deu"),
-  languages: (db: Database) => subtitleLanguages(db, "title"),
+  bundleRef: (db: Database) => bundleRef(db, "title"),
+  legacyBody: (db: Database) => legacyBody(db, "title", 0),
+  tracks: (db: Database) => subtitleTracksBySet(db),
   description: (db: Database) => showMeta(db, "tmdb-movie-1"),
   facts: providerFactsByShow,
 };

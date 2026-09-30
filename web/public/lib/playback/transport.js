@@ -65,20 +65,6 @@ export function isSilent({ volume, muted }) {
   return muted === true || Number(volume) === 0;
 }
 
-/**
- * The options a subtitle picker offers for a set of text tracks.
- *
- * "Off" first and always, because it is the one choice the native menu made
- * awkward and the one a viewer most often wants back.
- */
-export function subtitleOptions(tracks) {
-  const found = [...(tracks ?? [])].filter((track) => track.kind === "subtitles");
-  return [
-    { value: "off", label: "Off" },
-    ...found.map((track, index) => ({ value: String(index), label: track.label || "Subtitles" })),
-  ];
-}
-
 function icon(path) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -121,16 +107,17 @@ function skipButton(button, path, seconds) {
  * `recall(name)` and `remember(name, value)` are what this viewer chose for
  * the open show. Both are given rather than reached for, because what "this
  * show" means is the player's question and not the bar's.
+ *
+ * `toggleSubtitles` is `subtitle-picker.js`'s: this bar only asks for it on
+ * 'c' and a click, the same as every other control here asks a callback.
  */
-export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, runtime, recall, remember }) {
+export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, runtime, recall, remember, toggleSubtitles }) {
   const playPause = document.getElementById("play-pause");
   const back = document.getElementById("skip-back");
   const forward = document.getElementById("skip-forward");
   const mute = document.getElementById("mute");
   const volume = document.getElementById("volume");
   const speed = document.getElementById("speed-rate");
-  const subs = document.getElementById("subs");
-  const subPicker = document.getElementById("sub-track");
   const full = document.getElementById("fullscreen");
 
   for (const rate of SPEEDS) {
@@ -295,36 +282,6 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     if (video.playbackRate !== chosenRate) video.playbackRate = chosenRate;
   });
 
-  /** Puts the element's tracks where the picker says they should be. */
-  let lastSubtitle = "0";
-
-  function applySubtitles() {
-    const chosen = subPicker.value;
-    if (chosen !== "off") lastSubtitle = chosen;
-    for (const [index, track] of [...video.textTracks].entries()) {
-      track.mode = String(index) === chosen ? "showing" : "disabled";
-    }
-  }
-  subPicker.addEventListener("change", () => {
-    applySubtitles();
-    // The language, not the ordinal, for the same reason the audio menu does
-    // it: which track is `0` is a fact about this file and not about the show.
-    remember?.("subtitle", subPicker.selectedOptions[0]?.dataset.lang ?? "off");
-  });
-
-  /**
-   * `c`, which turns them off and back on to whatever they were.
-   *
-   * Never a cycle through every language: a viewer reaching for a key wants
-   * the subtitles gone, or back, and stepping them through four tracks to get
-   * where they started is not that.
-   */
-  function toggleSubtitles() {
-    if (subs.hidden) return;
-    subPicker.value = subPicker.value === "off" ? lastSubtitle : "off";
-    applySubtitles();
-  }
-
   /**
    * The page, not the dialog and not the picture.
    *
@@ -370,46 +327,6 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     forward.disabled = length <= 0;
   }
 
-  /** Rebuilt per title: a film's tracks are not the last film's tracks. */
-  function offerSubtitles() {
-    lastSubtitle = "0";
-    const tracks = [...video.textTracks].filter((track) => track.kind === "subtitles");
-    const options = subtitleOptions(video.textTracks);
-    subPicker.replaceChildren();
-    for (const [at, { value, label }] of options.entries()) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      // `at - 1` because "Off" is first and is not a track.
-      const lang = tracks[at - 1]?.language;
-      if (lang) option.dataset.lang = lang;
-      subPicker.append(option);
-    }
-    // One option is "Off" alone, which is not a choice.
-    subs.hidden = options.length < 2;
-
-    /**
-     * What this viewer chose for this show, if the file still offers it.
-     *
-     * `off` is a choice like any other and has to survive: a viewer who turned
-     * subtitles off on episode one meant it for the series, and a fallback
-     * that treated "off" as "nothing remembered" would turn them back on
-     * every episode.
-     */
-    const wanted = recall?.("subtitle") ?? null;
-    if (wanted === "off") subPicker.value = "off";
-    else {
-      const found = tracks.findIndex(
-        (track) => (track.language ?? "").toLowerCase() === String(wanted ?? "").toLowerCase(),
-      );
-      // Nothing remembered, or a language this file no longer carries: the
-      // first track, which is what `default` used to do before this player
-      // took the decision off the browser.
-      subPicker.value = found === -1 ? (options.length > 1 ? "0" : "off") : String(found);
-    }
-    applySubtitles();
-  }
-
   for (const event of ["play", "pause", "volumechange", "ratechange", "loadedmetadata", "durationchange"]) {
     video.addEventListener(event, refresh);
   }
@@ -447,7 +364,7 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
       case "fullscreen":
         return toggleFullscreen();
       case "subtitles":
-        return toggleSubtitles();
+        return toggleSubtitles?.();
       case "pictureInPicture":
         return togglePictureInPicture();
       case "framing":
@@ -467,5 +384,5 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     }
   }
 
-  return { refresh, offerSubtitles, recallSpeed, recallFraming, act };
+  return { refresh, recallSpeed, recallFraming, act };
 }

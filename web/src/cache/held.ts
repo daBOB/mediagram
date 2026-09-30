@@ -122,6 +122,11 @@ export class HeldSets {
     return this.held.size;
   }
 
+  /** Which sets are held, as of the last scan — for the subtitle reconcile. */
+  get ids(): readonly string[] {
+    return [...this.held];
+  }
+
   /** Starts a scan if the reading has gone stale. Does not wait for it. */
   refreshIfStale(): void {
     if (this.now() - this.scannedAt < TTL_MS) return;

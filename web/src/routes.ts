@@ -112,7 +112,7 @@ export function createRouter(options: RouterOptions) {
       await hls.end(session[1]!);
       return bodiless(204);
     }
-    if (request.path === "/api/preload") return preloadResponse(db, options.preload, request);
+    if (request.path === "/api/preload") return preloadResponse(db, options.preload, request, options.subtitles);
     if (request.method !== "GET" && request.method !== "HEAD") return bodiless(405);
     const headOnly = request.method === "HEAD";
 

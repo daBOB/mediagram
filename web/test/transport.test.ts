@@ -1,7 +1,12 @@
-/** Covers `transport`: what the bar's controls say, before any of them move. */
+/**
+ * Covers `transport`: what the bar's controls say, before any of them move.
+ *
+ * The subtitle picker moved to `subtitle-picker.js` (tests: `subtitle-picker.test.ts`);
+ * this file's own subtitle coverage moved with it.
+ */
 
 import { describe, expect, test } from "bun:test";
-import { isSilent, playLabel, speedLabel, subtitleOptions } from "../public/lib/playback/transport.js";
+import { isSilent, playLabel, speedLabel } from "../public/lib/playback/transport.js";
 
 describe("the speed on the menu", () => {
   test("drops the noise after the point", () => {
@@ -35,36 +40,5 @@ describe("silence", () => {
   test("and anything audible is not", () => {
     expect(isSilent({ volume: 1, muted: false })).toBe(false);
     expect(isSilent({ volume: 0.01, muted: false })).toBe(false);
-  });
-});
-
-describe("the subtitle menu", () => {
-  const track = (label: string, kind = "subtitles") => ({ label, kind });
-
-  test("offers Off first, and then what there is", () => {
-    expect(subtitleOptions([track("English"), track("Deutsch")])).toEqual([
-      { value: "off", label: "Off" },
-      { value: "0", label: "English" },
-      { value: "1", label: "Deutsch" },
-    ]);
-  });
-
-  test("counts only subtitles, so an index means the same to both sides", () => {
-    // The element's list holds every kind of text track. Numbering the menu
-    // from the unfiltered list would point "0" at a chapters track.
-    expect(subtitleOptions([track("Chapters", "chapters"), track("English")])).toEqual([
-      { value: "off", label: "Off" },
-      { value: "0", label: "English" },
-    ]);
-  });
-
-  test("a track with no label is still a track", () => {
-    expect(subtitleOptions([track("")])[1]).toEqual({ value: "0", label: "Subtitles" });
-  });
-
-  test("nothing to offer is Off alone, which the bar reads as no menu", () => {
-    for (const tracks of [undefined, null, []]) {
-      expect(subtitleOptions(tracks as never)).toHaveLength(1);
-    }
   });
 });

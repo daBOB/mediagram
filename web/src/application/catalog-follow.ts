@@ -3,6 +3,7 @@ import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { assertSchema, listPlayable } from "../catalog";
 import { expectedChunks, type HeldSets } from "../cache/held";
+import type { SubtitleBundles } from "../catalog/subtitle-bundles";
 import type { CatalogEvents } from "../catalog-events";
 import type { RunningServer } from "../server";
 import type { StartupFacts } from "../status/facts";
@@ -20,7 +21,8 @@ interface FollowOptions {
   find: () => Promise<FoundIndex | NoIndex>;
   server: Pick<RunningServer, "replaceCatalog">;
   facts: Pick<StartupFacts, "catalog">;
-  held?: Pick<HeldSets, "replaceExpected">;
+  held?: Pick<HeldSets, "replaceExpected" | "ids">;
+  subtitles?: Pick<SubtitleBundles, "reconcile">;
   events: Pick<CatalogEvents, "catalogChanged">;
   fetchPosters: (index: string) => Promise<PosterFetch>;
   posterCount: () => number;
@@ -85,7 +87,7 @@ export class CatalogFollower {
   }
 
   private async replace(): Promise<void> {
-    const { root, find, facts, server, held, events } = this.options;
+    const { root, find, facts, server, held, events, subtitles } = this.options;
     const result = await refreshFromChannel(root, find);
     if (result.kind === "none") {
       console.warn(`catalog: ${result.reason}`);
@@ -119,8 +121,13 @@ export class CatalogFollower {
     this.retire(previous);
     facts.catalog = { ...facts.catalog, origin: "channel", publishedAt, refresh: result.refresh === "kept" ? "kept" : "updated", reason: result.reason, sets };
     if (expected) {
-      try { await held!.replaceExpected(expected); }
-      catch (error) { console.warn("catalog: cache expectations could not be refreshed:", error); }
+      try {
+        await held!.replaceExpected(expected);
+        // Held titles keep their subtitles offline: a bundle pushed without
+        // the v13 tables must not cost a held title its file, so this only
+        // ever adds — never triggered by a swap that lost the tables.
+        void subtitles?.reconcile(next, held!).catch((error) => console.warn("subtitles: reconcile failed:", error));
+      } catch (error) { console.warn("catalog: cache expectations could not be refreshed:", error); }
     }
     console.log(`catalog: now serving the channel index pushed at ${result.pushedAt}, ${sets} playable sets`);
     events.catalogChanged(publishedAt);

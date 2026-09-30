@@ -6,6 +6,17 @@
  * caller get the same contract without a second copy of the logic.
  */
 
+/** One subtitle track the catalog offers for a set. See `subtitle-choice.js`. */
+export interface SubtitleTrack {
+  /** This track's position in the catalog's own list — the URL key. */
+  track: number;
+  lang: string;
+  forced: boolean;
+  sdh: boolean;
+  /** "German", "German (Forced)", "English (SDH)" — already display-ready. */
+  label: string;
+}
+
 export interface CatalogSet {
   setId: string;
   kind: string;
@@ -45,7 +56,7 @@ export interface CatalogSet {
   popularity: number | null;
   offline: boolean;
   hasSummary: boolean;
-  subtitles: string[];
+  subtitles: SubtitleTrack[];
   /** Japanese animation, or a hand-set override; `movie`/`ep` only. */
   anime: boolean;
   /** The hand-set category on this set's course, collection or documentary; `null` otherwise. */

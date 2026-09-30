@@ -13,9 +13,10 @@ let html: string;
 let serial = 0;
 let env: Awaited<ReturnType<typeof htmlApplicationEnvironment>>;
 let app: { state: typeof import("../public/lib/watch-state.js"); player: typeof import("../public/lib/playback/player.js") };
-const episode = (id: string, subtitles = ["en", "de"], converted = false) => catalogSet({
+const subtitleTracks = (langs: string[]) => langs.map((lang, track) => ({ track, lang, forced: false, sdh: false, label: lang }));
+const episode = (id: string, langs = ["en", "de"], converted = false) => catalogSet({
   setId: id, title: id, kind: "ep", show: "Series", season: 1, episode: "1", duration: 600,
-  addedAt: 1, total: 1000, container: converted ? "mkv" : "mp4", vcodec: "h264", acodec: "aac", subtitles,
+  addedAt: 1, total: 1000, container: converted ? "mkv" : "mp4", vcodec: "h264", acodec: "aac", subtitles: subtitleTracks(langs),
   chap: null, path: null, year: null, partCount: 1,
 });
 const tracks = () => env.video.querySelectorAll("track").filter((node): node is TrackElement => node instanceof TrackElement);
@@ -113,13 +114,16 @@ test.each(["play-pause", "sub-track", "close"])(
 test("subtitle language and explicit Off survive episode track order changes", async () => {
   await start();
   app.player.openPlayer(episode("one"));
-  expect(selected()).toEqual(["en"]);
-  pick("1");
+  // Off by default: nothing remembered, no profile preference, no forced track.
+  expect(selected()).toEqual([]);
+  pick("de");
   expect(app.state.preferenceOf("show:Series", "subtitle")).toBe("de");
   const previous = tracks();
   app.player.openPlayer(episode("two", ["fr", "en", "de"]));
   expect(selected()).toEqual(["de"]);
-  expect(env.node("sub-track").value).toBe("2");
+  // The picker's value is the language key, not a position, so it survives
+  // an episode whose tracks arrived in a different order.
+  expect(env.node("sub-track").value).toBe("de");
   expect(previous.every((track) => track.parent === null)).toBe(true);
   expect(tracks().every((track) => !track.default)).toBe(true);
   pick("off");
@@ -129,16 +133,16 @@ test("subtitle language and explicit Off survive episode track order changes", a
   expect(app.state.preferenceOf("show:Series", "subtitle")).toBe("off");
 });
 
-test("subtitle shortcut restores the selected track and resets its ordinal for a new title", async () => {
+test("subtitle shortcut restores the selected track and resets it for a new title", async () => {
   await start();
   const toggle = () => env.node("player").dispatchEvent(Object.assign(new Event("keydown"), { key: "c" }));
   app.player.openPlayer(episode("one", ["en", "fr", "de"]));
-  pick("2");
+  pick("de");
   toggle();
   expect(selected()).toEqual([]);
   toggle();
   expect(selected()).toEqual(["de"]);
-  expect(env.node("sub-track").value).toBe("2");
+  expect(env.node("sub-track").value).toBe("de");
   pick("off");
   toggle();
   expect(selected()).toEqual(["de"]);
@@ -165,7 +169,7 @@ test("late cue load and TextTrackList change apply remembered offsets without dr
   const german = tracks()[1]!;
   const second = cue();
   german.track.cues = [second];
-  pick("1"); // Eventful mode change, independently of track load.
+  pick("de"); // Eventful mode change, independently of track load.
   expect(second).toEqual({ startTime: 10.4, endTime: 12.4 });
   env.video.textTracks.fire("change");
   english.fire("load");

@@ -16,6 +16,7 @@ import { startServer, type RunningServer } from "../src/server";
 import type { ByteSource } from "../src/http/stream";
 import type { HlsFile, HlsServer } from "../src/transcode/routes";
 import { rawRequest } from "./raw-http";
+import { languageLabel } from "../public/lib/language-label";
 import { emptyIndex } from "./index-fixture";
 import { ALIGN, type Step } from "../src/range";
 import type { PartLocation } from "../src/catalog";
@@ -248,26 +249,26 @@ describe("assets", () => {
 
   /** A <track> element fetches this URL directly, so the type must be right. */
   test("a subtitle is served as WebVTT", async () => {
-    const response = await request(`/api/sets/${SET}/subtitles/deu.vtt`);
+    const response = await request(`/api/sets/${SET}/subtitles/0.vtt`);
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/vtt");
     expect(new TextDecoder().decode(response.body)).toContain("WEBVTT");
   });
 
-  test("a language that is not there is not found", async () => {
-    expect((await request(`/api/sets/${SET}/subtitles/eng.vtt`)).status).toBe(404);
+  test("a track that is not there is not found", async () => {
+    expect((await request(`/api/sets/${SET}/subtitles/1.vtt`)).status).toBe(404);
   });
 
   test("the catalog says what a set has, so the page need not ask", async () => {
     const listed = JSON.parse(new TextDecoder().decode((await request("/api/sets")).body));
 
     expect(listed[0].hasSummary).toBe(true);
-    expect(listed[0].subtitles).toEqual(["deu"]);
+    expect(listed[0].subtitles).toEqual([{ track: 0, lang: "deu", forced: false, sdh: false, label: languageLabel("deu", "deu") }]);
   });
 
-  /** A language is a label, not a path: it must not reach the filesystem. */
-  test("a language that looks like a path is refused", async () => {
+  /** A track number is a position, not a path: it must not reach the filesystem. */
+  test("a track that looks like a path is refused", async () => {
     for (const lang of ["..%2f..%2fetc", "a/b", "%2e%2e"]) {
       const response = await request(`/api/sets/${SET}/subtitles/${lang}.vtt`);
       expect([400, 404]).toContain(response.status);

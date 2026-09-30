@@ -36,6 +36,9 @@ export class Node extends EventTarget {
     this.text = value;
     this.children = [];
   }
+  get childElementCount() {
+    return this.children.length;
+  }
   get selectedOptions() {
     return this.children.filter((child) => child.value === this.value);
   }

@@ -59,7 +59,8 @@ response.ts        byte-range planning and shared buffered-response framing
 http/              request/response contracts, browser-write checks, static
                    files, and streaming with explicit range headers
 catalog/           catalog/search presentation, metadata readers, asset and
-                   artwork endpoints, and audio-track probing
+                   artwork endpoints, audio-track probing, and subtitle
+                   tracks/bundles (below)
 range.ts           byte ranges to per-part reads, and the 4 KiB alignment
 login.ts           issues this host's session; writes web/.env, mode 600
 catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
@@ -368,6 +369,7 @@ hash at all fall back the same way.
 | `GET` | `/api/status` | Player status (cache, Telegram link, conversions, host) — own-network only |
 | `POST` | `/api/status/playback` | Playback telemetry from open player |
 | `HEAD`/`GET` | `/stream/:id` | Playable file, Range-responding |
+| `GET` | `/api/sets/:id/subtitles/:n.vtt` | One subtitle track's WebVTT, by its position in the catalog's own list |
 | `GET` | `/api/sets/:id/cached-stream` | Cache-only stream (for thumbnail generation) |
 | `GET` | `/api/events` | Server-sent events (catalog refresh, index install) |
 | `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
@@ -375,6 +377,56 @@ hash at all fall back the same way.
 | `GET`/`POST`/`DELETE` | `/api/settings/sessions` | Active sessions list, revoke |
 | `GET` | `/api/editors-choice` | Editor's choice pin (watch-state key) |
 | `GET` | `/artwork/...` | Posters, backdrops, person portraits (keyed, CDN-friendly) |
+
+## Subtitles
+
+A set's subtitle tracks come from `catalog/subtitle-tracks.ts`
+(`subtitleTracksBySet`, built once per router): a v13 `subtitle_tracks` row per
+track when the uploader has published one, else the legacy `assets` rows
+numbered by `ORDER BY lang` — the two are never mixed for one set, and a
+missing table degrades to nothing rather than an error, the same tolerance
+every other catalog reader has. Every track — regular or forced — carries a
+display-ready `label` ("German", "German (Forced)", "English (SDH)"); the
+browser draws it as given.
+
+**Fetching a bundle.** A v13 set's actual text lives in one gzip'd JSON
+document per set (the uploader's `mlib_spec::subtitle_bundle`), fetched
+through `catalog/subtitle-bundles.ts`'s `SubtitleBundles`: a bounded in-memory
+map (32 entries, keyed by `sha256`, so a forced and a regular track sharing
+one bundle share one fetch) backed by a disk store at `<cacheDir>.subtitles/`
+— a sibling of the chunk-cache root, never inside it, so the chunk LRU never
+walks it and evicting a chunk can never take a held title's subtitles with
+it. The disk store is written only by `hold`/`reconcile`, never by an ordinary
+`vtt` read: a title streamed once does not grow it, only one held or
+preloaded keeps its bundle past a restart. Every byte is untrusted until
+proven otherwise — `sha256` shape checked before a fetch, size capped before
+it starts, the fetched bytes hashed before anything is written, and
+decompression run through `node:zlib`'s `maxOutputLength`, not
+`Bun.gunzipSync`, which has none. A legacy set with no bundle is served its
+inline `assets` body instead, by the same route.
+
+**Offline parity with Android.** `cache/preload-route.ts`'s next-episode
+accept calls `hold` on the accepted set's bundle; `application/catalog-follow.ts`
+calls `reconcile` after every catalog swap, which holds every currently held
+set's bundle and deletes nothing — a channel pushed without the v13 tables
+must not cost a held title the subtitles it already has on disk.
+
+**The playback rule** (`public/lib/playback/subtitle-choice.js`, proved
+against `test/fixtures/subtitles/choice-cases.json`, the fixture every
+surface — web, phone, TV — is tested against): subtitles are off by default.
+A forced track shows automatically in the audio's own language whenever no
+regular track is showing, including while regular subtitles are switched
+off — 'c' and the picker's Off row only ever touch the regular track. A
+remembered per-show choice, then this viewer's profile-wide language
+(Settings → Profile → Subtitles), decide what shows passively; 'c' turns a
+regular track on to the last one chosen this session, else the profile
+preference, else the audio language, else the first regular track, and
+remembers exactly that. The picker offers Off plus the regular tracks only —
+never forced ones — and disappears entirely for a forced-only title, though
+its style trigger (size, backing, sync offset) stays, since a forced track
+can still show. `public/lib/playback/subtitle-picker.js` is the DOM around
+that rule; `player.js` attaches one `<track>` per catalog entry, in the
+catalog's own order, and asks the picker to decide the rest.
 
 ## Consumers of the index
 

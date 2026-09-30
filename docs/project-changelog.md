@@ -5,6 +5,54 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.86.0 — Web player: subtitle files, the playback rule, picker, profile setting
+
+**Added**
+
+- The web player reads v13 subtitle tracks and fetches/caches their bundles
+  through the existing Telegram fetch path: a bounded in-memory map keyed by
+  `sha256` (so a title's forced and regular tracks share one fetch), backed
+  by a disk store beside the chunk cache that is written only for a held or
+  preloaded title. Every byte is verified — `sha256` shape and size checked
+  before a fetch, the fetched bytes hashed before anything is written,
+  decompression capped through `node:zlib` rather than `Bun.gunzipSync`,
+  which has no such limit. A held title's next catalog swap reconciles its
+  bundle back onto disk without ever deleting one; nothing is lost if a
+  channel is pushed without the v13 tables.
+- The default + toggle rule from a single shared fixture
+  (`web/test/fixtures/subtitles/choice-cases.json`, the same one phone and TV
+  are proved against): subtitles off by default; a forced track shows
+  automatically in the audio's own language whenever no regular track is
+  showing, including while regular subtitles are switched off — 'c' and the
+  picker's Off row only ever touch the regular track. A per-show remembered
+  choice, then a per-profile preferred language, decide what shows passively;
+  'c' turns a regular track on to the last chosen this session, else the
+  profile preference, else the audio language, else the first regular track.
+- The subtitle picker offers Off plus the regular tracks only, never a
+  forced one, and disappears entirely for a forced-only title — its style
+  trigger (size, backing, sync offset) stays, since a forced track can still
+  show. Settings → Profile gained a Subtitles row (Off/German/English),
+  disabled with a "choose a profile first" hint until one is.
+- New `/api/sets/:id/subtitles/:n.vtt`, keyed by a track's position in the
+  catalog's own list rather than by language — several tracks per language
+  are now possible. An index without the v13 tables still serves its legacy
+  inline `assets` rows through the same route.
+
+**Fixed**
+
+- The film page's "Audio languages" and "Subtitles" facts were silently
+  empty on every title: `languages()` required an actual array and was
+  handed the index's raw JSON-string column. Parsed before use now, the way
+  the show summary already did.
+
+**Changed**
+
+- `transport.js`'s subtitle picker, 'c' toggle and menu-building moved to
+  `playback/subtitle-picker.js`; the rule itself is pure and lives in
+  `playback/subtitle-choice.js`.
+
+## 0.84.0 — Index v13: subtitle bundle tables, merge, publish guard
+
 ## 0.85.0 — Index v13: subtitle bundle tables, merge, publish guard
 
 **Added**

@@ -1,7 +1,9 @@
 /** Catalog presentation and read endpoints, rebuilt together for each catalog. */
 import type { Database } from "bun:sqlite";
-import { subtitle, subtitleLanguages, summary } from "./assets";
+import { summary } from "./assets";
 import type { AudioTrackReader } from "./audio-tracks";
+import type { SubtitleBundles } from "./subtitle-bundles";
+import { bundleRef, legacyBody, subtitleTracksBySet } from "./subtitle-tracks";
 import type { HeldSets } from "../cache/held";
 import { listPlayable, listSearchable, playableSet, type PlayableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
@@ -22,7 +24,9 @@ const HELD_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/held$/;
 const SHOW_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})$/;
 const CREDITS_PATH = /^\/api\/shows\/(tmdb-(?:movie|tv)-\d{1,12})\/credits$/;
 const PERSON_PATH = /^\/api\/people\/(\d{1,12})$/;
-const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/([A-Za-z]{2,8})\.vtt$/;
+// Several tracks per language, so the position in the catalog's own list is
+// the key — not the language, which a picker can no longer assume is unique.
+const SUBTITLE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/subtitles\/(\d{1,3})\.vtt$/;
 
 export interface CatalogRouterOptions {
   db: Database;
@@ -30,6 +34,7 @@ export interface CatalogRouterOptions {
   posters?: PosterStore;
   thumbs?: SheetStore;
   audio?: AudioTrackReader;
+  subtitles?: Pick<SubtitleBundles, "vtt" | "hold">;
 }
 
 /** Called after the dispatcher has accepted GET or HEAD. */
@@ -44,6 +49,10 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
   const provider = providerFactsByShow(db);
   const overrides = animeOverrides(db);
   const categories = categoryNames(db);
+  // Built once per router, the same as every other per-catalog projection
+  // above: a v13 index answers from `subtitle_tracks`, an older one from the
+  // inline `assets` rows every deployed reader already knew.
+  const tracksBySet = subtitleTracksBySet(db);
   const has = (key: string | null) => key !== null && (posters.has(key) || artwork.has(key));
   const people = peopleSearch(db, has);
 
@@ -78,7 +87,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
       category: categoryOf(categories, set.kind, set.show, set.title),
       seasonPoster: has(seasonKey) ? seasonKey : null,
       hasSummary: summary(db, set.setId) !== null,
-      subtitles: subtitleLanguages(db, set.setId),
+      subtitles: tracksBySet.get(set.setId) ?? [],
     };
   }
 
@@ -128,8 +137,14 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
     }
     const subtitles = SUBTITLE_PATH.exec(request.path);
     if (subtitles) {
-      const body = subtitle(db, subtitles[1]!, subtitles[2]!);
-      return body === null ? bodiless(404) : withBody(body, "text/vtt; charset=utf-8", { headOnly });
+      const setId = subtitles[1]!;
+      const track = Number(subtitles[2]);
+      if (playableSet(db, setId) === null) return bodiless(404);
+      const ref = options.subtitles ? bundleRef(db, setId) : null;
+      const body = ref ? await options.subtitles!.vtt(ref, track) : legacyBody(db, setId, track);
+      return body === null
+        ? bodiless(404)
+        : withBody(body, "text/vtt; charset=utf-8", { headOnly, headers: { "cache-control": "private, max-age=3600" } });
     }
     return null;
   };

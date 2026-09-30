@@ -39,9 +39,23 @@ const ASSETS = `CREATE TABLE assets(
     lang TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
     PRIMARY KEY(set_id, kind, lang))`;
 
+// v13: a set's subtitle bundle and the tracks it holds. Mirrors
+// `mlib_spec::schema`'s `V13` exactly; kept here rather than imported since
+// the player only ever reads these two tables.
+const SUBTITLE_FILES = `CREATE TABLE subtitle_files(
+    set_id TEXT PRIMARY KEY REFERENCES sets(set_id) ON DELETE CASCADE,
+    chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL,
+    bytes INTEGER NOT NULL, sha256 TEXT NOT NULL, uploaded_at INTEGER NOT NULL)`;
+
+const SUBTITLE_TRACKS = `CREATE TABLE subtitle_tracks(
+    set_id TEXT NOT NULL REFERENCES subtitle_files(set_id) ON DELETE CASCADE,
+    track INTEGER NOT NULL, lang TEXT NOT NULL,
+    forced INTEGER NOT NULL DEFAULT 0, sdh INTEGER NOT NULL DEFAULT 0,
+    label TEXT NOT NULL, PRIMARY KEY(set_id, track))`;
+
 /** An in-memory index with no rows in it. */
 export function emptyIndex(): Database {
   const db = new Database(":memory:");
-  for (const ddl of [SETS, PARTS, ASSETS]) db.run(ddl);
+  for (const ddl of [SETS, PARTS, ASSETS, SUBTITLE_FILES, SUBTITLE_TRACKS]) db.run(ddl);
   return db;
 }

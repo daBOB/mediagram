@@ -12,6 +12,9 @@
 import { el } from "../dom.js";
 import { tabbed } from "./tabs.js";
 import { href } from "../address.js";
+import { preferenceOf, setPreference } from "../watch-state.js";
+
+const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
 
 const THEMES = [
   ["dark", "Dark", "Cinematic and focused"],
@@ -105,11 +108,37 @@ function profilePanel(profile, switchProfile, systemVisible) {
   change.type = "button";
   change.addEventListener("click", switchProfile);
   set.append(change);
-  box.append(set);
+  box.append(set, subtitlePreference(profile));
   if (systemVisible) {
     const system = el("a", "dept-all", "System and playback status →");
     system.href = href({ page: "system" });
     box.append(system);
   }
   return box;
+}
+
+/**
+ * The profile-wide subtitle language: the fallback `subtitle-choice.js` uses
+ * once a show has no remembered choice of its own. Stored under the fixed
+ * scope `"profile"`, unlike every other preference here, which is per show.
+ */
+function subtitlePreference(profile) {
+  const set = el("div", "setting");
+  set.append(el("h2", "setting-title", "Subtitles"));
+  const select = el("select");
+  select.disabled = profile === null;
+  for (const [value, label] of SUBTITLE_LANGUAGES) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    select.append(option);
+  }
+  select.value = preferenceOf("profile", "subtitle") ?? "off";
+  select.addEventListener("change", () => setPreference("profile", "subtitle", select.value));
+  set.append(select);
+  set.append(el(
+    "p", "setting-value",
+    profile === null ? "Choose a profile first." : "Forced subtitles still appear when a film switches language.",
+  ));
+  return set;
 }

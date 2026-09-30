@@ -13,7 +13,6 @@ import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "../format.js";
-import { languageLabel } from "../language-label.js";
 import { defaultTrack, fillChooser, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
@@ -29,6 +28,7 @@ import { isFinished, resumeAt, trustedRuntime } from "../resume-point.js";
 import { scopeOf } from "./preference-scope.js";
 import { placeCues } from "./subtitle-style.js";
 import { subtitlePanel } from "./subtitle-panel.js";
+import { mountSubtitlePicker } from "./subtitle-picker.js";
 import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 
@@ -166,26 +166,22 @@ function mountPlayer() {
   }
 
   /**
-   * Attaches whatever subtitle tracks the catalog said this set has.
-   *
-   * Deliberately marks none of them `default`. That attribute asks the browser
-   * to pick a track for itself, and it does so during resource selection —
-   * *after* this player has set the modes it wants, so a viewer who turned
-   * subtitles off for a series watched them come back on every episode, with
-   * the picker still saying "Off". The choice is `transport.offerSubtitles`'s
-   * alone now, which is also the only place that knows what was remembered.
+   * Attaches whatever subtitle tracks the catalog said this set has and
+   * hands them to the subtitle picker, the only place that decides which,
+   * if any, shows — deliberately marking none of them `default`.
    */
   function attachSubtitles(set) {
     for (const existing of [...video.querySelectorAll("track")]) existing.remove();
-    for (const lang of set.subtitles ?? []) {
+    for (const item of set.subtitles ?? []) {
       const track = document.createElement("track");
       track.kind = "subtitles";
-      track.srclang = lang;
-      track.label = languageLabel(lang, "Subtitles");
-      track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${lang}.vtt`;
+      track.srclang = item.lang;
+      track.label = item.label;
+      track.src = `/api/sets/${encodeURIComponent(set.setId)}/subtitles/${item.track}.vtt`;
       track.addEventListener("load", placeSubtitles);
       video.append(track);
     }
+    subtitles.offer(set.subtitles ?? [], set.alang);
   }
 
   function stop() {
@@ -364,6 +360,13 @@ function mountPlayer() {
   document.getElementById("subs").after(cuePanel.trigger);
   document.querySelector(".hud-bottom").prepend(cuePanel.panel);
 
+  /** Which subtitle tracks show, and what 'c' and the picker do about it. */
+  const subtitles = mountSubtitlePicker({
+    video, subs: document.getElementById("subs"), picker: document.getElementById("sub-track"), styleTrigger: cuePanel.trigger,
+    recall: (name) => state.preferenceOf(scope, name),
+    remember: (name, value) => state.setPreference(scope, name, value),
+  });
+
   /**
    * Cues arriving, or a track being switched on.
    *
@@ -396,6 +399,7 @@ function mountPlayer() {
     // What "this show" means is the player's question — the bar only asks.
     recall: (name) => state.preferenceOf(scope, name),
     remember: (name, value) => state.setPreference(scope, name, value),
+    toggleSubtitles: () => subtitles.toggle(),
   });
 
   /** A manual refusal stays retryable and belongs to this request and source. */
@@ -630,14 +634,9 @@ function mountPlayer() {
     // First of all, because everything below that asks what this viewer chose
     // asks against it — a scope set later would answer for the previous title.
     scope = scopeOf(set);
-    attachSubtitles(set);
-    // After the tracks are attached, because the picker is built from them, and
-    // before anything plays, so nothing is heard at the wrong speed.
-    // Before the tracks are offered, so a cue that is already in hand is placed
-    // rather than shown at the old show's offset for a moment.
+    // Before a track turns "showing" below, so an early cue lands at this show's offset, not the old show's.
     placement = cuePanel.recallFor();
-    transport.offerSubtitles();
-    cuePanel.trigger.hidden = document.getElementById("subs").hidden;
+    attachSubtitles(set);
     placeSubtitles();
     transport.recallSpeed();
     transport.recallFraming();
@@ -768,6 +767,7 @@ function mountPlayer() {
     const remembered = trackIndexForLanguage(found, state.preferenceOf(scope, "audio"));
     audioTrack = remembered ?? defaultTrack(found);
     audio.hidden = !fillChooser(audioTrackPicker, found, audioTrack);
+    subtitles.setAudio(found.find((track) => track.index === audioTrack)?.lang ?? null);
     applyAudioTrack();
   }
 
@@ -801,7 +801,7 @@ function mountPlayer() {
     // option's own label rather than kept in a second list beside the menu.
     const picked = audioTrackPicker.selectedOptions[0]?.dataset.lang;
     if (picked) state.setPreference(scope, "audio", picked);
-
+    subtitles.setAudio(picked ?? null);
     applyAudioTrack();
   });
 

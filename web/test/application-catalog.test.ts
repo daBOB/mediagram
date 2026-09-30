@@ -73,7 +73,7 @@ test.each([
       server!.replaceCatalog(next);
     } },
     facts: status,
-    held: { replaceExpected: async (expected) => { replacements.push(expected); await held.replaceExpected(expected); } },
+    held: { replaceExpected: async (expected) => { replacements.push(expected); await held.replaceExpected(expected); }, ids: [] },
     events: { catalogChanged(at) { changes.push(at!); events.catalogChanged(at); } },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
     schedule(run, milliseconds) {
@@ -122,7 +122,7 @@ test("a cache refresh failure does not hide a catalog already committed to the l
   follower = new CatalogFollower({
     db: before, catalog: { dir: null, origin: "local", publishedAt: null, refresh: null, reason: null },
     root: join(root, "channel"), find: async () => snapshot("After", 200), server,
-    facts: status, held: { replaceExpected: async () => { throw new Error("cache scan refused"); } },
+    facts: status, held: { replaceExpected: async () => { throw new Error("cache scan refused"); }, ids: [] },
     events: { catalogChanged(at) { changes.push(at!); } },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
   });
@@ -130,6 +130,49 @@ test("a cache refresh failure does not hide a catalog already committed to the l
   expect(await titles()).toEqual(["After"]);
   expect(status.catalog).toMatchObject({ origin: "channel", publishedAt: 200000 });
   expect(changes).toEqual([200000]);
+});
+
+test("a catalog swap reconciles held sets' subtitle bundles", async () => {
+  const before = library("Before");
+  databases.push(before);
+  server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() } });
+  const status = facts();
+  const reconciled: string[][] = [];
+  follower = new CatalogFollower({
+    db: before, catalog: { dir: null, origin: "local", publishedAt: null, refresh: null, reason: null },
+    root: join(root, "channel"), find: async () => snapshot("After", 200), server,
+    facts: status, held: { replaceExpected: async () => {}, ids: ["01HELD"] },
+    subtitles: { reconcile: async (_db, held) => { reconciled.push([...held.ids]); } },
+    events: { catalogChanged: () => {} },
+    fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
+  });
+  await follower.refresh();
+  expect(await titles()).toEqual(["After"]);
+  // `reconcile` runs in the background and is not awaited by `replace`; wait
+  // for the microtask queue to drain rather than the swap itself.
+  await Promise.resolve();
+  expect(reconciled).toEqual([["01HELD"]]);
+});
+
+test("a reconcile failure does not hide a catalog already committed to the listener", async () => {
+  const before = library("Before");
+  databases.push(before);
+  server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() } });
+  const status = facts();
+  const warnings = spyOn(console, "warn").mockImplementation(() => {});
+  restoreDiagnostics.push(() => warnings.mockRestore());
+  follower = new CatalogFollower({
+    db: before, catalog: { dir: null, origin: "local", publishedAt: null, refresh: null, reason: null },
+    root: join(root, "channel"), find: async () => snapshot("After", 200), server,
+    facts: status, held: { replaceExpected: async () => {}, ids: [] },
+    subtitles: { reconcile: async () => { throw new Error("bundle fetch refused"); } },
+    events: { catalogChanged: () => {} },
+    fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
+  });
+  await follower.refresh();
+  expect(await titles()).toEqual(["After"]);
+  await Promise.resolve();
+  expect(warnings).toHaveBeenCalledWith("subtitles: reconcile failed:", expect.any(Error));
 });
 
 test("shutdown drains an artwork process already started and admits no more", async () => {

@@ -33,7 +33,11 @@ const ROOT = join(import.meta.dir, "..");
  * `lib/playback/plays-next.js`. Raised 2026-09-28 for `app.js`, by 11, for the
  * Anime department's routing, nav count and the show route's shelf-by-section
  * lookup, and for `shelf-view.js`, by 2, for the Anime empty state's upload
- * hint and its section unions.
+ * hint and its section unions. Raised 2026-09-30 for `src/cache/held.ts`, by
+ * 5, for the `ids` getter the subtitle bundle reconcile enumerates held sets
+ * through. Lowered the same day for `playback/transport.js`, once its
+ * subtitle picker, 'c' toggle and menu-building moved out to the new
+ * `playback/subtitle-picker.js`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 753,
@@ -46,13 +50,13 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/player.js": 996,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
-  "public/lib/playback/transport.js": 471,
+  "public/lib/playback/transport.js": 388,
   "public/lib/watch-state.js": 502,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 752,
   "public/styles/shell.css": 257,
   "public/styles/theme.css": 209,
-  "src/cache/held.ts": 202,
+  "src/cache/held.ts": 207,
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
