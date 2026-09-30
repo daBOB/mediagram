@@ -12,7 +12,6 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,8 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.LocalPinnableContainer
-import androidx.compose.ui.layout.PinnableContainer
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.HomeRow
@@ -37,7 +34,6 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import model.WatchSnapshot
-import ui.tv.LocalLibraryCovered
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvCourseList
@@ -132,32 +128,7 @@ internal fun TvHome(
     var lastSection by rememberSaveable { mutableStateOf<TvHomeSection?>(null) }
     val target = remember(sections, restoreKey) { homeTargetOf(sections, restoreKey, lastSection) }
 
-    // Pinned, not only tracked, while focus sits in this band: Compose's own
-    // lazy-layout bookkeeping can decide, in a runnable it posts to run
-    // after the current frame, that a slot it did not see used this pass is
-    // free to deactivate — including the very slot arrival focus just
-    // landed in, found on the box straight after a cold-start refresh
-    // released the state this page had been frozen behind, once, though
-    // nothing here ever disposed it (a `DisposableEffect` on the section
-    // never logged one — deactivation, not disposal). A pinned slot is
-    // never a candidate for that at all, the same guarantee `LazyColumn`'s
-    // own internals lean on for a pinned item, asked for here the public
-    // way instead of reached for through them.
-    @Composable
-    fun Modifier.remembersBand(section: TvHomeSection): Modifier {
-        val container = LocalPinnableContainer.current
-        var pinned by remember { mutableStateOf<PinnableContainer.PinnedHandle?>(null) }
-        DisposableEffect(Unit) { onDispose { pinned?.release() } }
-        return onFocusChanged { state ->
-            if (state.hasFocus) {
-                lastSection = section
-                if (pinned == null) pinned = container?.pin()
-            } else {
-                pinned?.release()
-                pinned = null
-            }
-        }
-    }
+    fun Modifier.remembersBand(section: TvHomeSection) = onFocusChanged { if (it.hasFocus) lastSection = section }
     val scope = rememberCoroutineScope()
 
     val coverFocus = remember { FocusRequester() }
@@ -178,16 +149,17 @@ internal fun TvHome(
             )
         }
 
-    // `takesFocus` is `rememberArrivalReady`'s own delayed signal, combined
-    // with whatever a sentinel elsewhere (Search, the bar's own ⋮) is doing
-    // (`TvCatalogScreen`'s own doc on the combination) — a real return to
-    // this page turns it `true` one frame after the pushed frame that
-    // covered it is actually gone, never in the same frame that removal
-    // happens in.
+    // Keyed on `target` alone, not also on `takesFocus`: a sentinel
+    // elsewhere (Search, the bar's own ⋮) sends the remote there instead of
+    // here by making `takesFocus` read `false` for exactly one composition,
+    // then flips it back to `true` the moment that sentinel is consumed —
+    // with `target` itself unchanged (the wall key this page was handed
+    // stayed `null` throughout both reads). Were `takesFocus` also a key,
+    // that flip alone would re-run this effect and pull the remote straight
+    // back from the field or button it had just reached. `takesFocus` is
+    // still read fresh inside, the same "gate the action, not the key" the
+    // rows below repeat for their own delegated effects.
     val takesFocus = LocalTakesArrivalFocus.current
-    // Raw, not `takesFocus` above — see the doc on `arrived`'s own reset
-    // below, which needs this one alongside `restoreKey`.
-    val covered = LocalLibraryCovered.current
     // Grants arrival focus once per time this page is shown, not once per
     // value `target` happens to take: a resumed position keeps reordering
     // Continue for as long as its own write is still landing, and a
@@ -201,32 +173,9 @@ internal fun TvHome(
     // page already keeps for content arriving into a section the viewer
     // has since left, extended to cover the wait for the very first grant
     // too, not only the time after it.
-    //
-    // With this page kept alive under a pushed frame rather than rebuilt
-    // on every Back, "once" can no longer mean "once ever": a real content
-    // stop opening here re-arms it, so the very next uncover grants again.
-    // Keyed on `covered` *and* `restoreKey`, and only firing when both say
-    // "a real stop, freshly opened" (`covered` true, `restoreKey` non-null):
-    // a sentinel's own redirect (Search, ⋮, Latest, Genres, Settings,
-    // System) covers this page too, but leaves `restoreKey` `null` the
-    // whole time, on the way in and after its own consumption alike — this
-    // must never re-arm the fallback stop below, or the moment that
-    // consumption clears `takesFocus` (`TvCatalogNav.kt`'s own restore,
-    // which does not wait a frame the way this page's own grant does) this
-    // effect would fire the fallback and steal the remote right back from
-    // wherever the sentinel just sent it — reproduced in Robolectric
-    // (`TvMenuTest`/`TvSearchAndGenreTest`) before this guard existed.
     var arrived by remember { mutableStateOf(false) }
-    LaunchedEffect(covered, restoreKey) { if (covered && restoreKey != null) arrived = false }
-    // `covered`, read fresh rather than trusted through `takesFocus` alone:
-    // the moment a real stop opens, `target` and the reset above both react
-    // in the same composition `covered` itself turns `true` in, but
-    // `rememberArrivalReady`'s own `false` for that same instant is one
-    // recomposition behind — read here, `takesFocus` can still say `true`
-    // for that one pass. `covered` never lags, so it is what actually keeps
-    // this effect from granting into a page nothing can see yet.
-    LaunchedEffect(target, takesFocus) {
-        if (target == null || covered || !takesFocus || arrived) return@LaunchedEffect
+    LaunchedEffect(target) {
+        if (target == null || !takesFocus || arrived) return@LaunchedEffect
         val itemIndex = included.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
         // Scrolled into place — and its own composition confirmed present,
         // via the same item turning up in `visibleItemsInfo` — before the

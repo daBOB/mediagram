@@ -1,13 +1,53 @@
 ---
 phase: 4
 title: "TV Home kept alive under pushed frames, measured; device walk; docs"
-status: in-review
+status: withdrawn
 priority: P2
 effort: 6h
 dependencies: [3]
 ---
 
 # Phase 04 — Home kept alive, measured; device walk; docs
+
+## Withdrawn (2026-09-30)
+
+Kept alive shipped (`b682b204`), then took five box rounds to chase the same
+"Back lands on the bar's first pill instead of the stop that opened it"
+symptom through five different causes, each a different Compose mechanism
+landing on the same root re-entry fallback: the frame that removes a pushed
+frame reclaiming focus before an arrival's own request runs (`4fa10823`); a
+startup refresh releasing frozen (`heldWhile`) state resetting a just-granted
+arrival a few frames later, worked around with a safety net rather than
+fixed (`13cc3130`); a modifier's own presence toggling on the card an arrival
+had just landed on (`9affd36e` — kept, see below); a lazy layout deactivating
+that card's own slot out of frame (`6d440458`, `PinnableContainer`); and,
+after all four fixes, the cold-start first title-page return still landing
+on the pill, with neither the pinned slot nor a generic bar-recovery rule
+catching it — the Back press closing the title page is itself a key event,
+and content had not held focus immediately before, so neither of the rule's
+own two authorization signals applied.
+
+At that point the user chose to stop pursuing keep-alive rather than chase a
+sixth cause. The benchmark build already returns to Home with 0 Davey frames
+without it (phase 04's own unmeasured item — the fallback direction, not the
+main one, turned out to be enough). Home goes back to unmounting under a
+pushed frame and rebuilding on return, as it was before this phase
+(`11a67b25`) — `TvHomeLayer`/`coveredLayer`/`heldWhile`/`LocalLibraryCovered`,
+`rememberArrivalReady`, the `arrived` re-arm-on-covered latch,
+`PinnableContainer`, and the generic bar-recovery rule
+(`barRequested`/`requestBarFocus`) are all removed.
+
+**Kept**: `9affd36e`'s fix — every card (Home's bands, a department's rows, a
+wall's own grid, cast/similar/search rows, the bar's own pills, a franchise
+row, static choice leaves) carries its own stable, always-attached
+`FocusRequester` rather than one conditionally present only on the currently-
+focused card. That is a real bug independent of keep-alive: a reorder or
+refresh moving which card an arrival names would detach and reset the
+focused card's whole modifier chain either way. Its own tests
+(`TvHomeStateTest.kt`) stay green.
+
+See `docs/system-architecture.md` § Television differs for the numbers and
+the five-mechanism list in the shipped write-up.
 
 ## Context links
 
@@ -122,14 +162,14 @@ Modify
 
 ## Todo
 
-- [x] home layer kept alive, inert and frozen while covered
-- [x] TvHomeKeptAliveTest; all ui-tv tests green; check.sh green
-- [ ] debug + benchmark measurements vs baseline; PSS during playback; tablet R1 recorded
-- [ ] fallback applied only if needed (one-line `PLAYER`-only switch left ready in `TvLibrary.kt`'s `covered` line for the lead to flip)
-- [ ] full device walk + overview sheet
-- [x] DESIGN.md, system-architecture.md, changelog
-- [ ] verification report (lead, on the box)
-- [x] version, commit (implementation half; lead's own on-box findings land in a follow-up commit)
+- [x] ~~home layer kept alive, inert and frozen while covered~~ — withdrawn, removed
+- [x] ~~TvHomeKeptAliveTest~~ — withdrawn, removed with the layer
+- [x] ~~debug + benchmark measurements vs baseline; PSS during playback; tablet R1 recorded~~ — moot, keep-alive withdrawn before this ran; the benchmark build's own 0-Davey return already covers the phase's real goal
+- [x] ~~fallback applied only if needed~~ — moot, the whole mechanism is withdrawn
+- [x] ~~full device walk + overview sheet~~ — moot for this phase; TV-vs-tablet walk belongs to a phase that ships something to walk
+- [x] DESIGN.md, system-architecture.md, changelog — updated for the withdrawal instead
+- [x] ~~verification report (lead, on the box)~~ — superseded by the withdrawal decision
+- [x] version, commit — 0.84.6, withdrawal + `9affd36e`'s stable focus requesters kept
 
 ## Success criteria
 

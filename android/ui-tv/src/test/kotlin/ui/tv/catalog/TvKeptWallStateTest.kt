@@ -1,6 +1,5 @@
 package ui.tv.catalog
 
-import android.view.KeyEvent
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
@@ -90,14 +89,6 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         val lists = listOf(ListOfSets("a", "Sunday", listOf("film-0")), ListOfSets("b", "Later", emptyList()))
         showCatalog(withWatch(films(1), WatchSnapshot.Empty.copy(collections = lists)), onOpenList = { opened = it })
 
-        // The key event has to precede `RequestFocus` below, not just the
-        // click: `RequestFocus` alone already moves focus onto the pill,
-        // which is what `TvLibraryChrome`'s generic recovery rule reacts to
-        // — reading it, with no key event yet seen, as Compose's own
-        // fallback rather than this app's, and sending it straight back.
-        // Right, not the centre button: whatever rail row already holds
-        // focus here would otherwise be pressed for real.
-        key(KeyEvent.KEYCODE_DPAD_RIGHT)
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
 

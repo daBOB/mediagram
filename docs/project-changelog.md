@@ -5,6 +5,34 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.6 — Android TV: keep-alive withdrawn; stable card focus across reorders kept
+
+**Changed**
+
+- Home goes back to unmounting under a pushed frame and rebuilding on
+  return, as it was before 0.84.1 — `TvHomeLayer`, `coveredLayer`,
+  `heldWhile`, `LocalLibraryCovered`, `rememberArrivalReady`, the `arrived`
+  re-arm-on-covered latch, the `PinnableContainer` pin from 0.84.5, and the
+  generic bar-recovery rule (`barRequested`/`requestBarFocus`) are all
+  removed. User decision after five box rounds (0.84.1–0.84.5) each fixing
+  a different Compose mechanism that landed the remote on the bar's first
+  pill instead of the stop a pushed frame was opened from — frame removal,
+  a startup refresh resetting a just-granted arrival, a modifier's own
+  presence toggling, a lazy layout deactivating a focused card's own slot,
+  and, last, the cold-start first title-page return still losing focus with
+  neither of those four fixes catching it. Full account in
+  `docs/system-architecture.md` § Television differs and
+  `plans/260929-0215-tv-web-look-chrome-home-departments/phase-04-tv-home-kept-alive-measure-docs.md`.
+
+**Kept**
+
+- Every card on this surface (Home's bands, a department's rows, a wall's
+  own grid, cast/similar/search rows, the departments bar's own pills, a
+  franchise row, and static choice leaves) still carries its own stable,
+  always-attached `FocusRequester`, from 0.84.4 — a real bug independent of
+  keep-alive: a reorder or refresh moving which card an arrival names would
+  detach and reset the focused card's own modifier chain either way.
+
 ## 0.84.5 — Android TV: a lazy layout deactivating the just-focused card, and a generic recovery rule
 
 **Fixed**

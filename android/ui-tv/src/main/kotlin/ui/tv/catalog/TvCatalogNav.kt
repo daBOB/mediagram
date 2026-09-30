@@ -9,7 +9,6 @@ import androidx.compose.runtime.setValue
 import catalog.MastheadSplit
 import catalog.MenuScreen
 import ui.RailItem
-import ui.tv.LocalLibraryCovered
 import ui.tv.chrome.TvChromeFocus
 import ui.tv.chrome.rememberTvChromeFocus
 import ui.tv.system.menuRestoreKey
@@ -92,11 +91,6 @@ internal fun rememberTvCatalogRestore(
         choose(index)
     }
 
-    // Read raw, not through `LocalTakesArrivalFocus`: that local is this
-    // function's own output (once combined with `covered` by the caller),
-    // and every sentinel below has to sit out its own consumption while
-    // covered on this same signal, not on a value that depends on it.
-    val covered = LocalLibraryCovered.current
     val backFromSearch = restoreKey == TvSearchEntryKey
     val backFromMenu = restoreKey == TvMenuEntryKey
     val backFromLatestRail = restoreKey == TvLatestRailKey
@@ -116,55 +110,42 @@ internal fun rememberTvCatalogRestore(
     val takesArrivalFocus = wallKey != null || (!pillPressed && !redirectsFocus)
 
     // With no wall below to take focus, the bar is the one thing on
-    // screen the remote can rest on. `requestBarFocus` — not a plain
-    // `requestFocus()` — marks this a deliberate arrival on the bar for
-    // `TvLibraryChrome`'s own generic recovery rule, the same way every
-    // sentinel below does: none of these run from a key event, so without
-    // it Compose's own re-entry fallback landing on the bar right before
-    // one of them runs would be indistinguishable from this app's own
-    // choice to be there.
-    LaunchedEffect(!ready) { if (!ready) chromeFocus.requestBarFocus(chromeFocus.menuButtonFocus) }
-    // Every sentinel below is set the moment its own frame opens — Search's
-    // restore key names "search" from the instant `at.openSearch()` runs,
-    // not only once it closes — so each one also waits out `covered` before
-    // consuming it: fired straight away, a request onto this now-inert bar
-    // would be a silent no-op, and `onEntryRestored()` would forget the key
-    // before Back ever reaches the frame it names, leaving nothing to send
-    // the remote back to the search button, ⋮ or a rail row at all.
-    LaunchedEffect(backFromSearch, ready, covered) {
-        if (backFromSearch && ready && !covered) {
-            chromeFocus.requestBarFocus(chromeFocus.searchFocus)
+    // screen the remote can rest on.
+    LaunchedEffect(!ready) { if (!ready) chromeFocus.menuButtonFocus.requestFocus() }
+    LaunchedEffect(backFromSearch, ready) {
+        if (backFromSearch && ready) {
+            chromeFocus.searchFocus.requestFocus()
             onEntryRestored()
         }
     }
     // After the effect above that sends an empty catalogue's remote to the
     // bar, so ⋮ is where it rests rather than the viewer's own avatar.
-    LaunchedEffect(backFromMenu, covered) {
-        if (backFromMenu && !covered) {
-            chromeFocus.requestBarFocus(chromeFocus.menuButtonFocus)
+    LaunchedEffect(backFromMenu) {
+        if (backFromMenu) {
+            chromeFocus.menuButtonFocus.requestFocus()
             onEntryRestored()
         }
     }
-    LaunchedEffect(backFromLatestRail, ready, covered) {
-        if (backFromLatestRail && ready && !covered) {
+    LaunchedEffect(backFromLatestRail, ready) {
+        if (backFromLatestRail && ready) {
             chromeFocus.railRowFocus.getValue(RailItem.LATEST).requestFocus()
             onEntryRestored()
         }
     }
-    LaunchedEffect(backFromGenresRail, ready, covered) {
-        if (backFromGenresRail && ready && !covered) {
+    LaunchedEffect(backFromGenresRail, ready) {
+        if (backFromGenresRail && ready) {
             chromeFocus.railRowFocus.getValue(RailItem.GENRES).requestFocus()
             onEntryRestored()
         }
     }
-    LaunchedEffect(backFromSettings, ready, covered) {
-        if (backFromSettings && ready && !covered) {
+    LaunchedEffect(backFromSettings, ready) {
+        if (backFromSettings && ready) {
             chromeFocus.railRowFocus.getValue(RailItem.SETTINGS).requestFocus()
             onEntryRestored()
         }
     }
-    LaunchedEffect(backFromSystem, ready, covered) {
-        if (backFromSystem && ready && !covered) {
+    LaunchedEffect(backFromSystem, ready) {
+        if (backFromSystem && ready) {
             chromeFocus.railRowFocus.getValue(RailItem.SYSTEM).requestFocus()
             onEntryRestored()
         }

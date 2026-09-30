@@ -1,6 +1,5 @@
 package ui.tv
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,12 +50,6 @@ import ui.tv.system.TvMenuPage
  * catalogue and the menu is dispatched to [TvLibraryCatalogFrames.kt]/
  * [TvLibraryExtraFrames.kt]: this file stays a table of what each frame
  * kind draws rather than growing a page's worth of wiring for each of them.
- *
- * [TvHomeLayer] keeps the catalogue (and the trimmed menu page) composed
- * and laid out under whichever of those frames is pushed, so a Back to the
- * root is a focus restore rather than a full rebuild: a pushed frame draws
- * as a sibling over it inside the one [Box] below, never inside its own
- * `when` branch any more.
  */
 @Composable
 internal fun TvLibrary(
@@ -112,74 +105,51 @@ internal fun TvLibrary(
     // grown-up's own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
     val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
-    // Menu counts as a pushed frame for this purpose too: it stands over
-    // the shelves the same way a title or Search does, not layered beside
-    // them, so the root is just as inert and just as hidden under it.
-    //
-    // Kept alive under the player too, by decision. If the box's own
-    // playback memory bound is ever crossed, change this one line to
-    // `val covered = (top != null && top != FrameKind.PLAYER) || menuOpen`
-    // — the layer falls back to tearing down for the player alone, and the
-    // reason belongs here, not only in a report.
-    val covered = top != null || menuOpen
 
-    Box {
-        // `HomeDepth`, not `here`: the catalogue itself always sits at the
-        // stack's own depth 0, no matter how many frames are pushed over
-        // it now that it stays composed and keeps recomposing under all of
-        // them. Handing it `here` (`at.depth`, the *pushed frame's* own
-        // depth, once anything is pushed) read a *pushed frame's* own
-        // restore key back as if it were the catalogue's, the moment
-        // anything covered it — the root cause of a return landing on the
-        // bar's pill instead of the plate that opened it, found on the box.
-        TvHomeLayer(covered = covered) {
-            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, HomeDepth, at, catalogViewModel, menu) { menuOpen = true }
-        }
+    when (top) {
+        FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
-        when (top) {
-            FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
+        FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
-            FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
+        FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
 
-            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
+        FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
-            FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
+        FrameKind.TITLE ->
+            TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-            FrameKind.TITLE ->
-                TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
+        FrameKind.SEASON -> TvSeasonFrame(at, catalogState, resolved.season, watch, heldIds, restore, here, leave)
 
-            FrameKind.SEASON -> TvSeasonFrame(at, catalogState, resolved.season, watch, heldIds, restore, here, leave)
+        FrameKind.COLLECTION ->
+            TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, leave)
 
-            FrameKind.COLLECTION ->
-                TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, leave)
+        FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
-            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
+        FrameKind.PERSON ->
+            TvPersonFrame(at, catalogState, at.personId?.toLongOrNull(), watch, heldIds, shelves, restore, here, browse, leave)
 
-            FrameKind.PERSON ->
-                TvPersonFrame(at, catalogState, at.personId?.toLongOrNull(), watch, heldIds, shelves, restore, here, browse, leave)
+        FrameKind.FRANCHISE ->
+            TvFranchiseFrame(at, catalogState, at.franchiseId?.toLongOrNull(), watch, heldIds, allFilms, restore, here, browse, leave)
 
-            FrameKind.FRANCHISE ->
-                TvFranchiseFrame(at, catalogState, at.franchiseId?.toLongOrNull(), watch, heldIds, allFilms, restore, here, browse, leave)
+        FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-            FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
+        FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
 
-            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+        FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 
-            FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
+        FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
-            FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
+        // Nothing open, the trimmed menu page chosen from the bar's own ⋮:
+        // Back from it puts the remote back on that button.
+        null if menuOpen ->
+            TvMenuPage(menu = menu, restoreKey = restore.of(here)) {
+                menuOpen = false
+                restore.opened(here, TvMenuEntryKey)
+            }
 
-            // Nothing open, the trimmed menu page chosen from the bar's own ⋮:
-            // Back from it puts the remote back on that button.
-            null if menuOpen ->
-                TvMenuPage(menu = menu, restoreKey = restore.of(here)) {
-                    menuOpen = false
-                    restore.opened(here, TvMenuEntryKey)
-                }
-
-            // Nothing open: the shelves are already drawn above, by TvHomeLayer.
-            null -> Unit
-        }
+        // Nothing open: the shelves.
+        null ->
+            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu) { menuOpen = true }
     }
 
     // Every branch but the player, for the phone's reason: a result held
@@ -192,6 +162,3 @@ internal fun TvLibrary(
         )
     }
 }
-
-/** The catalogue's own, fixed place on [LibraryPositions]'s stack — see the doc where [TvLibraryHomeFrame] is called. */
-private const val HomeDepth = 0

@@ -40,8 +40,10 @@ helpers, scrims and tokens are shared, never re-derived**.
   full-bleed art may crop, text/focus stops never (phase 01).
 - **Pushed frames** (title, player, search, Latest, Genres, Settings…): full screen, no rail/bar;
   Back lands on the stop that opened them.
-- **Home survives a round trip**: kept composed + laid out under every pushed frame — not drawn,
-  not focusable, inputs frozen, rotation paused (phase 04; before it, restore keys as today).
+- **Home survives a round trip**: restore keys land the remote back on the stop that opened a
+  pushed frame, as before phase 04. Keeping Home itself composed under the pushed frame to avoid
+  a rebuild was tried in phase 04 and withdrawn (2026-09-30) after five box rounds chasing the
+  same symptom through five different Compose focus-reset mechanisms — see phase 04's own file.
 
 ## Phases
 
@@ -50,7 +52,7 @@ helpers, scrims and tokens are shared, never re-derived**.
 | 01 | [Chrome: rail, departments bar, focus model](phase-01-tv-chrome-rail-departments-bar-focus.md) | 8h | completed |
 | 02 | [Home body: cover, features, bands, shelves](phase-02-tv-home-cover-features-bands.md) | 10h | completed |
 | 03 | [Department pages: heroes, rows, Anime, Documentaries](phase-03-tv-department-pages-heroes-rows.md) | 8h | completed |
-| 04 | [Home kept alive, measured; device walk; docs](phase-04-tv-home-kept-alive-measure-docs.md) | 6h | pending |
+| 04 | [Home kept alive, measured; device walk; docs](phase-04-tv-home-kept-alive-measure-docs.md) | 6h | withdrawn (kept `9affd36e`'s stable focus requesters) |
 
 ## Dependencies and ownership
 

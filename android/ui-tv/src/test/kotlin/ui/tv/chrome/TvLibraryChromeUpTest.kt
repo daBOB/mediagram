@@ -9,11 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithTag
@@ -75,46 +73,5 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
         compose.onNodeWithTag("card5").performKeyInput { pressKey(Key.DirectionUp) }
 
         compose.onNodeWithText("Series").assertIsFocused()
-    }
-
-    /**
-     * A focus clear with no key event behind it — the shape the generic
-     * recovery rule exists for, whichever of Compose's own three mechanisms
-     * produces it on the box — forced directly here rather than waited for,
-     * since Robolectric cannot run the lazy-layout deactivation one of the
-     * three depends on. Content still finds its way back to its own stop
-     * rather than resting on the bar's first pill.
-     */
-    @Test
-    fun aFocusClearWithNoKeyEventBehindItReturnsToContentNotTheBar() {
-        val last = FocusRequester()
-        lateinit var focusManager: FocusManager
-        show {
-            focusManager = LocalFocusManager.current
-            TvLibraryChrome(
-                pills = listOf(TvDepartmentPill("Home", null), TvDepartmentPill("Movies", 3), TvDepartmentPill("Series", 2)),
-                selectedPill = 2,
-                onSelectPill = {},
-                railActive = null,
-                counts = ChromeCounts(myList = 0, continueWatching = 0, perShelf = emptyMap(), collections = 0),
-                tally = emptyList(),
-                onRailSelect = {},
-                onSearch = {},
-                profile = TvChosenProfile(name = "Ada", onChoose = {}),
-                onMenu = {},
-                focus = rememberTvChromeFocus(),
-            ) {
-                Box(Modifier.size(120.dp).testTag("card").focusRequester(last).focusable())
-                LaunchedEffect(Unit) { last.requestFocus() }
-            }
-        }
-        compose.onNodeWithTag("card").assertIsFocused()
-
-        // No key dispatched here at all — this is Compose's own fallback
-        // landing on the bar, not a remote's Up, being reproduced directly.
-        compose.runOnUiThread { focusManager.clearFocus(force = true) }
-        compose.waitForIdle()
-
-        compose.onNodeWithTag("card").assertIsFocused()
     }
 }

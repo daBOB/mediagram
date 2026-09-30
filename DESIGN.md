@@ -413,13 +413,9 @@ than as one masthead.
 ### Named Rules
 
 **The Wall Rule.** A shelf is a wall: everything it holds, on the page, in one
-direction of travel. No horizontally-scrolling rail, ever, for a shelf standing
-in for its own wall — a rail hides how much is on a shelf and ranks what it
-shows first, which is a storefront's job and not this one's. Home's own curated
-bands (Continue watching, Recently added, Latest series, Latest courses) and a
-department's own Featured/Acclaimed rows are not a shelf doing this: they are
-the web's own `home-view.js`/`department-pages.js` magazine layout, ported as it
-is, and were never a wall candidate to begin with.
+direction of travel. No horizontally-scrolling rail, ever. A rail hides how much
+is on a shelf and ranks what it shows first, which is a storefront's job and not
+this one's.
 
 **The One Shelf Rule.** Exactly one shelf is on the wall at a time, chosen from
 the masthead. Stacked shelves and the wall cannot both be had: the film shelf
@@ -490,9 +486,6 @@ that in Geist 13sp tabular.
 
 ### Navigation — the masthead
 
-Phone and tablet only — a television reads its own chrome (rail, departments
-bar, pills) below instead, remote-first rather than a tab row a finger taps.
-
 - **Style:** a tab row with a transparent container, centred, held to 560dp.
 - **Typography:** shelf names in Fraunces Medium 18sp. Text only.
 - **Selected:** label at full paper weight (`{colors.text}`), with the imprint
@@ -502,44 +495,6 @@ bar, pills) below instead, remote-first rather than a tab row a finger taps.
   "Series" still clears Material's 48dp.
 - **No icons.** There are no icons in the masthead, and a drawn one would be
   inventing a mark for a shelf that already has a name.
-
-### Television chrome
-
-The web-parity rail, departments bar and cover a television reads in place of
-the masthead above (`docs/system-architecture.md` § "The television surface"
-has the full account; § Television differs from the web player lists every
-deliberate gap) — remote-first: a D-pad steers it, not a finger.
-
-- **Rail:** icons only at 96dp — wordmark, counts and the library's own tally
-  hidden — until the remote reaches it, then opens to 288dp *over* the
-  content rather than pushing it, so nothing under it ever remeasures when
-  it opens or closes. Open, it carries My List, Continue watching, Latest,
-  Genres, Settings, System, then the tally.
-- **Departments bar:** the pills (Home, the shelves, Collections), search
-  and the viewer's own avatar/⋮, opaque above every page's own content
-  except Home's own, which it blends translucent-to-opaque over the cover's
-  art the same way a tablet hero does (`ui.chrome.coverBlend`, shared token).
-  A pill press selects and keeps the remote on the pill — Down is what
-  steps into the page, not the press itself.
-- **Cover story remote:** Watch now · + My List · Details, then one dot per
-  film, no pause button — focus resting anywhere on the cover already holds
-  its rotation, so a toggle here would have nothing left to do; a focused
-  dot shows its film before OK is ever pressed. Sized to clear the bar on a
-  540dp screen rather than the phone's taller `clamp()` — a deliberate
-  difference, not a smaller version of the same layout.
-- **Focus:** every card, row and pill takes the one television focus
-  treatment (`ui.tv.TvFocus`) — 1.08× scale plus a 3dp accent border,
-  square corners except a pill or a cover button (fully round) and a rail
-  row (`{rounded.control}`) — legible from a couch, which a phone's subtle
-  tap states were never built to reach.
-- **Department hero, its quote credit, ten-foot text floors, no blur behind
-  the bar:** a department's own hero (kicker, title, line, art) and the
-  Collections hero's own pull-quote credit are not focus stops — nothing
-  there is a control; every ten-foot body size on the page floors at the
-  values `designsystem.TvTypeScale` fixes rather than shrinking with a
-  system font scale a couch-length screen cannot afford to lose legibility
-  to; and the bar draws opaque or blended (above), never blurred, the one
-  tablet-hero treatment television does not carry over.
 
 ### Top app bar
 
@@ -715,9 +670,7 @@ art: a film's title page, a department's cover story, Movies and Shows.
 
 ### Don't:
 
-- **Don't** ship a horizontally-scrolling poster rail for a shelf's own wall —
-  Home's own bands and a department's own curated rows are the reference's own
-  magazine layout, not this (see The Wall Rule).
+- **Don't** ship a horizontally-scrolling poster rail.
 - **Don't** round a plate's corner. Its radius is `{rounded.plate}` (0dp).
 - **Don't** add a shadow or a Material elevation overlay. Depth here is tonal,
   and the hairline already carries the job a shadow would.

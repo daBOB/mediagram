@@ -99,19 +99,12 @@ internal fun TvPlayerBranch(
 }
 
 /**
- * The shelves — [TvLibrary]'s own catalogue frame, kept apart from its
- * dispatcher for the same reason [TvCatalogRoot] already is, and now always
- * composed by [TvHomeLayer] whether or not something is pushed over it.
- * [saved] holds [TvCatalogRoot]'s own state — which tab was chosen, how far
- * its wall had scrolled — apart from the rest of the library's, so Back
- * finds the tab it left rather than Home once whatever covered it is gone.
- *
- * [catalogState] is frozen at whatever it was the moment [TvHomeLayer]
- * covers this frame ([heldWhile]): a position save mid playback, or a
- * catalogue refresh landing while a title is open, would otherwise
- * recompose every wall and row under here for a state nothing can see, and
- * risk racing whatever those effects do once uncovered — released back to
- * the live value the instant the cover lifts.
+ * The shelves, with nothing open over them — [TvLibrary]'s own "nothing
+ * else is showing" frame, kept apart from its dispatcher for the same
+ * reason [TvCatalogRoot] already is. [saved] holds [TvCatalogRoot]'s own
+ * state — which tab was chosen, how far its wall had scrolled — apart from
+ * the rest of the library's, so Back finds the tab it left rather than
+ * Home once whatever covered it is gone.
  */
 @Composable
 internal fun TvLibraryHomeFrame(
@@ -126,11 +119,9 @@ internal fun TvLibraryHomeFrame(
     menu: MenuActions,
     onOpenMenu: () -> Unit,
 ) {
-    val covered = LocalLibraryCovered.current
-    val frozenState = heldWhile(covered, catalogState)
     saved.SaveableStateProvider(CatalogStateKey) {
         TvCatalogRoot(
-            state = frozenState,
+            state = catalogState,
             profile = profile,
             fetching = fetching,
             restoreKey = restore.of(here),

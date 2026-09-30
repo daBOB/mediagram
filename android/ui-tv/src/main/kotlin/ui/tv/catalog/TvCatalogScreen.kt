@@ -35,7 +35,6 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.MenuActions
 import ui.RailItem
-import ui.tv.LocalLibraryCovered
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
 import ui.tv.chrome.TvLibraryChrome
@@ -242,15 +241,7 @@ fun TvCatalogScreen(
                     modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
                 )
             }
-            // Never true while this screen sits under a pushed frame, and
-            // — see `rememberArrivalReady`'s own doc — not for one frame
-            // after it stops being one either: every arrival effect this
-            // local gates asks for focus the moment it turns true, and it
-            // must not ask before Android's own reset from the pushed
-            // frame's removal has already happened and lost.
-            val covered = LocalLibraryCovered.current
-            val arrivalReady = rememberArrivalReady(covered)
-            CompositionLocalProvider(LocalTakesArrivalFocus provides (arrivalReady && nav.takesArrivalFocus)) {
+            CompositionLocalProvider(LocalTakesArrivalFocus provides nav.takesArrivalFocus) {
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                     // One composition per tab, not one reused across them:
                     // every shelf draws through the same wall, which would
