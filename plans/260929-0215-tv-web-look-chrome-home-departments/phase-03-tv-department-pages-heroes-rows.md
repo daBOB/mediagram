@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "TV department pages: heroes, rows, Anime, Documentaries"
-status: in-review
+status: completed
 priority: P2
 effort: 8h
 dependencies: [2]
