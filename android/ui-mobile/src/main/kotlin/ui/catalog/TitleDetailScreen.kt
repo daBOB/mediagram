@@ -202,7 +202,7 @@ private fun filmDetailsRows(set: MediaSet): List<Pair<String, (@Composable () ->
         "Quality" to textFact(listOfNotNull(set.quality, hdrLabel(set.hdr)).joinToString(" · ").takeIf(String::isNotEmpty)),
         "Video" to textFact(set.vcodec?.takeIf(String::isNotEmpty)),
         "Audio" to textFact(set.acodec?.takeIf(String::isNotEmpty)),
-        "Subtitles" to textFact(set.subtitleLanguages.takeIf { it.isNotEmpty() }?.joinToString(", ", transform = ::languageName)),
+        "Subtitles" to textFact(set.slang.takeIf { it.isNotEmpty() }?.joinToString(", ", transform = ::languageName)),
         "Container" to textFact(set.container.takeIf(String::isNotEmpty)),
         "Size" to textFact(set.totalBytes.takeIf { it > 0 }?.let(::humanSize)),
         "Bitrate" to textFact(bitrateLabel(set.totalBytes, set.durationSecs)),

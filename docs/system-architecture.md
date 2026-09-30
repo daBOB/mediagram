@@ -610,6 +610,44 @@ own title and percent when it is immediately next, otherwise how many films
 stand ahead of it. The control's own states and visual pair are
 `DESIGN.md`'s (§ Pill).
 
+### Subtitles (Android)
+
+A set's tracks come from `catalog_subtitles` on the Rust side, one of two
+places a reader never has to tell apart: `subtitle_tracks`, once the
+uploader has extracted a bundle for the set, or, until then, the set's own
+inline `assets` rows, oldest-reader compatible. `SetSummary` carries the
+resolved list (`SubtitleTrack`, mapped to `model.SubtitleTrackInfo`) plus
+`alang`/`slang` — the file's own audio and subtitle languages, kept apart
+from the tracks a viewer can pick, which back a title's "Subtitles" fact
+instead.
+
+A bundled track's text is fetched on demand and cached on disk, one gzip'd
+JSON document per set (`<data_dir>/subtitles/<sha>.json.gz`), sha-checked
+and written through a `.tmp` + fsync + rename so a killed process never
+leaves a half-written file where a real one is expected. The cache is
+size-capped at 64 MiB (LRU, mtime touched on a hit) rather than pruned on
+install: an index a step behind (no `subtitle_files` table yet) must not
+wipe bundles this device already holds. `Core.holdSubtitles(setId)` warms
+one set's bundle — `CacheDataSourceWriter.write()` calls it ahead of every
+preload write, so both `SeriesPreloader` and `FilmPreloader` take a title's
+subtitles along with its video, best-effort. `Core.holdCourseSubtitles(setId)`,
+called when a lesson opens, warms that lesson's own bundle plus up to ten
+that follow it in the course's own order (`group_key`, then chapter, then
+lesson number) — never the whole course, which can run to hundreds of
+lessons.
+
+`SubtitleChoice.kt` (`feature:player`) ports the web's playback rule
+exactly, checked against the shared fixture both surfaces are held to
+(`web/test/fixtures/subtitles/choice-cases.json`): off by default; a
+forced track in the playing audio's language shows regardless, even with
+subtitles off; a per-show remembered choice wins over a per-profile
+default; and a toggle-on picks this session's last regular track, then the
+profile default, then a track in the audio language, then the first one.
+`SubtitleChoiceController` resolves it against `AudioChoiceController`'s
+own notion of the playing language (falling back to the set's `alang`
+until ExoPlayer answers) and `PlayerPreferences`, loaded under the show's
+own scope for "remembered" and a fixed `"profile"` scope for the default.
+
 ### The television surface
 
 `:ui-tv` is a second renderer over the same `feature:*` ViewModels and UiState,

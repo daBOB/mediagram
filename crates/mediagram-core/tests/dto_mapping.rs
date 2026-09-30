@@ -27,6 +27,8 @@ fn playable_with(episode: Option<&str>) -> PlayableSet {
         total: 1_000_000,
         part_count: 1,
         created_at: 1_781_568_000,
+        alang: Vec::new(),
+        slang: Vec::new(),
     }
 }
 
@@ -160,6 +162,8 @@ fn playable_set_fixture() -> PlayableSet {
         total: 0,
         part_count: 1,
         created_at: 1_781_568_000,
+        alang: Vec::new(),
+        slang: Vec::new(),
     }
 }
 

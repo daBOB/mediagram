@@ -1,77 +1,80 @@
 package player
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import model.SubtitleTrackInfo
+import org.junit.Assume.assumeTrue
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Ported from the web's default rule (`transport.js`'s `offerSubtitles`). */
+/**
+ * Runs the shared `choice-cases.json` fixture against [chooseSubtitles],
+ * [toggleOn], [subtitleOptions] and [visibility] — the same cases
+ * `web/public/lib/playback/subtitle-choice.js` is held to. The web is
+ * authoritative: a case that only passes after changing this file's own
+ * rules does not belong here.
+ */
 class SubtitleChoiceTest {
-
-    private val twoLanguages = listOf("de", "en")
-
-    // -- the default rule --
-
     @Test
-    fun aRememberedOffIsRespectedEvenWithLanguagesOnOffer() {
-        assertEquals(SUBTITLES_OFF, chooseSubtitleLanguage(twoLanguages, "off"))
-    }
+    fun matchesTheWebsFixtures() {
+        val file = locateSubtitlesFixture("choice-cases.json")
+        assumeTrue("choice-cases.json not found above this module; is the web checkout present?", file != null)
 
-    @Test
-    fun aRememberedLanguageStillOnOfferIsRestored() {
-        assertEquals("en", chooseSubtitleLanguage(twoLanguages, "en"))
-    }
+        val cases = Json.parseToJsonElement(file!!.readText()).jsonArray
+        for (case in cases) {
+            val obj = case.jsonObject
+            val name = obj.getValue("name").jsonPrimitive.content
+            val tracks = obj.getValue("tracks").jsonArray.map { it.jsonObject.toTrack() }
+            val remembered = obj.text("remembered")
+            val preferred = obj.text("preferred")
+            val audioTag = obj.text("audioTag")
+            val alang = obj.getValue("alang").jsonArray.map { it.jsonPrimitive.content }
 
-    @Test
-    fun matchingIgnoresCase() {
-        assertEquals("en", chooseSubtitleLanguage(twoLanguages, "EN"))
-    }
+            val audio = audioLanguage(audioTag, alang)
+            assertEquals(obj.text("audio"), audio, "case: $name (audio)")
 
-    @Test
-    fun aRememberedLanguageThisFileHasLostFallsBackToTheFirstTrack() {
-        assertEquals("de", chooseSubtitleLanguage(twoLanguages, "fr"))
-    }
+            val selection = chooseSubtitles(remembered, preferred, audio, tracks)
+            assertEquals(obj.text("regular"), selection.regular, "case: $name (regular)")
+            assertEquals(obj.text("forced"), selection.forced, "case: $name (forced)")
 
-    @Test
-    fun nothingRememberedFallsBackToTheFirstTrack() {
-        assertEquals("de", chooseSubtitleLanguage(twoLanguages, null))
-    }
+            val toggled = toggleOn(obj.text("last"), preferred, audio, tracks)
+            assertEquals(obj.text("toggleOn"), toggled, "case: $name (toggleOn)")
 
-    @Test
-    fun aFileWithNoSubtitlesAtAllIsOffRegardlessOfWhatIsRemembered() {
-        assertEquals(SUBTITLES_OFF, chooseSubtitleLanguage(emptyList(), "de"))
-        assertEquals(SUBTITLES_OFF, chooseSubtitleLanguage(emptyList(), null))
-    }
+            val rows = subtitleOptions(tracks, selection.regular).map { it.value }
+            assertEquals(obj.getValue("pickerRows").jsonArray.map { it.jsonPrimitive.content }, rows, "case: $name (pickerRows)")
 
-    // -- the rows the sheet offers --
-
-    @Test
-    fun offPlusOneRowPerLanguageChosenMarkedSelected() {
-        val options = subtitleOptions(twoLanguages, chosen = "en")
-        assertEquals(listOf(SUBTITLES_OFF, "de", "en"), options.map { it.value })
-        assertEquals(listOf(false, false, true), options.map { it.selected })
+            val vis = visibility(tracks)
+            assertEquals(obj.getValue("ccVisible").jsonPrimitive.boolean, vis.ccVisible, "case: $name (ccVisible)")
+            assertEquals(obj.getValue("styleVisible").jsonPrimitive.boolean, vis.styleVisible, "case: $name (styleVisible)")
+        }
     }
+}
 
-    @Test
-    fun offItselfCanBeMarkedSelected() {
-        val options = subtitleOptions(twoLanguages, chosen = SUBTITLES_OFF)
-        assertEquals(true, options.first { it.value == SUBTITLES_OFF }.selected)
-    }
+private fun JsonObject.toTrack() =
+    SubtitleTrackInfo(
+        track = 0,
+        lang = getValue("lang").jsonPrimitive.content,
+        forced = getValue("forced").jsonPrimitive.boolean,
+        sdh = getValue("sdh").jsonPrimitive.boolean,
+        label = getValue("label").jsonPrimitive.content,
+    )
 
-    @Test
-    fun aFileWithNoSubtitlesOffersNoRowsAtAllNotEvenOff() {
-        // "Off" alone is not a choice — the same rule the sheet reads to
-        // hide the section entirely.
-        assertEquals(emptyList(), subtitleOptions(emptyList(), chosen = SUBTITLES_OFF))
-    }
+private fun JsonObject.text(key: String): String? =
+    this[key]?.takeUnless { it is JsonNull }?.jsonPrimitive?.content
 
-    @Test
-    fun anUntaggedTrackIsLabelledSubtitlesNotByANumber() {
-        val options = subtitleOptions(listOf("und"), chosen = "und")
-        assertEquals("Subtitles", options.first { it.value == "und" }.label)
+/** Walks up from the working directory until it finds the web's subtitle fixtures, or gives up at the filesystem root. */
+private fun locateSubtitlesFixture(name: String): File? {
+    var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
+    while (dir != null) {
+        val candidate = File(dir, "web/test/fixtures/subtitles/$name")
+        if (candidate.isFile) return candidate
+        dir = dir.parentFile
     }
-
-    @Test
-    fun aTaggedTrackIsLabelledInEnglish() {
-        val options = subtitleOptions(listOf("de"), chosen = SUBTITLES_OFF)
-        assertEquals("German", options.first { it.value == "de" }.label)
-    }
+    return null
 }

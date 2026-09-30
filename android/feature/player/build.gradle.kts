@@ -40,4 +40,7 @@ dependencies {
     // playback.setUri); the plain unit-test android.jar stub throws for
     // it, so its test runs under Robolectric rather than the bare JVM.
     testImplementation(libs.findLibrary("robolectric").get())
+    // SubtitleChoiceTest reads the shared `choice-cases.json` fixture the
+    // web's own subtitle rule is held to.
+    testImplementation(libs.findLibrary("kotlinx.serialization").get())
 }

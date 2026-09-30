@@ -1,15 +1,12 @@
 //! Installing a channel's index snapshot: download it, prove it is a
 //! library, and only then make it the current catalog.
 
-use std::io::Write;
-
-use super::responses::Responses;
 use grammers_client::Client;
 use grammers_client::media::Document;
 use grammers_mtsender::SenderPoolFatHandle;
 
+use super::download::download_with;
 use super::index::UNREADABLE;
-use crate::api::account::revoked::checked_for;
 use crate::api::{Core, CoreError, store};
 use crate::versions::{Staging, count_playable};
 
@@ -58,35 +55,17 @@ async fn download(
     document: &Document,
     path: &std::path::Path,
 ) -> Result<(), CoreError> {
-    download_with(core, owner, path, client.iter_download(document)).await
+    download_with(
+        core,
+        owner,
+        path,
+        MAX_INDEX_BYTES,
+        "downloading the index",
+        || CoreError::Library(UNREADABLE.into()),
+        client.iter_download(document),
+    )
+    .await
 }
-
-async fn download_with(
-    core: &Core,
-    owner: &SenderPoolFatHandle,
-    path: &std::path::Path,
-    mut chunks: impl Responses<Item = Vec<u8>>,
-) -> Result<(), CoreError> {
-    const WRITING: &str = "writing the downloaded index";
-    let mut file = std::fs::File::create(path).map_err(CoreError::io(WRITING))?;
-    let mut written: u64 = 0;
-    while let Some(chunk) = checked_for(core, owner, chunks.next_response().await, |err| {
-        CoreError::network("the index download was interrupted")(err)
-    })
-    .await?
-    {
-        written += chunk.len() as u64;
-        if written > MAX_INDEX_BYTES {
-            return Err(CoreError::Library(UNREADABLE.into()));
-        }
-        file.write_all(&chunk).map_err(CoreError::io(WRITING))?;
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-#[path = "download_tests.rs"]
-mod download_tests;
 
 #[cfg(test)]
 mod tests {

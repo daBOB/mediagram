@@ -71,8 +71,8 @@ fn enrich(core: &Core, conn: &Connection, sets: Vec<PlayableSet>) -> Result<Vec<
         crate::shows::anime_overrides(conn).map_err(CoreError::io("reading anime overrides"))?;
     let categories =
         crate::catalog_categories::categories(conn).map_err(CoreError::io("reading categories"))?;
-    let subtitles = crate::catalog_assets::subtitle_languages(conn)
-        .map_err(CoreError::io("reading subtitle languages"))?;
+    let subtitles = crate::catalog_subtitles::tracks_by_set(conn)
+        .map_err(CoreError::io("reading subtitle tracks"))?;
     let summarized = crate::catalog_assets::summaries(conn)
         .map_err(CoreError::io("reading which sets have a summary"))?;
 

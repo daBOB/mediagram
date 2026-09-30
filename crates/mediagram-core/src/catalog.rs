@@ -44,6 +44,12 @@ pub struct PlayableSet {
     /// always carried it — `list_playable` orders by it — but nothing read
     /// it until a surface wanted to say what arrived recently.
     pub created_at: i64,
+    /// This set's own audio languages, from the file's tracks. See
+    /// [`languages_in`].
+    pub alang: Vec<String>,
+    /// This set's own subtitle languages, from the file's tracks — distinct
+    /// from a track the uploader extracted; see `catalog_subtitles`.
+    pub slang: Vec<String>,
 }
 
 /// Where one part lives: its place in the virtual file, and the message
@@ -57,7 +63,13 @@ pub struct PartLocation {
 
 const COLUMNS: &str =
     "set_id, kind, title, show, chap, path, season, episode, tmdb, year, container,
-     vcodec, acodec, quality, hdr, duration, total, part_count, created_at";
+     vcodec, acodec, quality, hdr, alang, slang, duration, total, part_count, created_at";
+
+/// A JSON list column (`alang`/`slang`) as plain strings; malformed text
+/// reads as no languages, like the web player's own `languagesIn`.
+fn languages_in(json: String) -> Vec<String> {
+    serde_json::from_str(&json).unwrap_or_default()
+}
 
 fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
     Ok(PlayableSet {
@@ -76,6 +88,8 @@ fn read_set(row: &rusqlite::Row<'_>) -> rusqlite::Result<PlayableSet> {
         acodec: row.get("acodec")?,
         quality: row.get("quality")?,
         hdr: row.get("hdr")?,
+        alang: languages_in(row.get("alang")?),
+        slang: languages_in(row.get("slang")?),
         duration: row.get("duration")?,
         total: row.get("total")?,
         part_count: row.get("part_count")?,

@@ -497,6 +497,12 @@ class FakeCore(
 
     override suspend fun setText(setId: String, kind: String, lang: String): String? = null
 
+    override suspend fun subtitleText(setId: String, track: UInt): String? = null
+
+    override suspend fun holdSubtitles(setId: String): Boolean = false
+
+    override suspend fun holdCourseSubtitles(setId: String) = Unit
+
     override suspend fun stateDeviceId(): String = ""
 
     override suspend fun syncState(handle: String): SyncOutcome = SyncOutcome(0uL, false, null)

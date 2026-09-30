@@ -18,13 +18,13 @@ class SeriesSummaryTest {
         hdr: String? = null,
         vcodec: String? = null,
         acodec: String? = null,
-        subtitleLanguages: List<String> = emptyList(),
+        slang: List<String> = emptyList(),
     ): MediaSet =
         MediaSet(
             setId = "s${season}e$episode", kind = Kind.EPISODE, title = "Ep $season.$episode", show = "Show",
             chapter = null, path = null, season = season, episodeFirst = episode, episodeLast = null,
             year = year, durationSecs = durationSecs, posterPath = null, totalBytes = totalBytes,
-            quality = quality, hdr = hdr, vcodec = vcodec, acodec = acodec, subtitleLanguages = subtitleLanguages,
+            quality = quality, hdr = hdr, vcodec = vcodec, acodec = acodec, slang = slang,
         )
 
     private fun division(
@@ -92,7 +92,7 @@ class SeriesSummaryTest {
 
     @Test
     fun detailRowsOnlyEverHasSubtitlesNotAudioLanguages() {
-        val facts = summarize(listOf(division(1, listOf(ep(1, 1, subtitleLanguages = listOf("en", "de"))))))
+        val facts = summarize(listOf(division(1, listOf(ep(1, 1, slang = listOf("en", "de"))))))
         assertEquals(listOf("Subtitles" to "English, German"), detailRows(facts))
     }
 

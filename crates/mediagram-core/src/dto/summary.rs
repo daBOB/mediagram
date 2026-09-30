@@ -3,6 +3,7 @@
 
 use mlib_spec::caption::Episode;
 
+use super::SubtitleTrack;
 use crate::catalog::PlayableSet;
 
 /// One title, flattened for a player that never sees `Episode`, `set_id`
@@ -49,8 +50,14 @@ pub struct SetSummary {
     /// the way `fsk` does — see `store::list_sets`, which attaches all four
     /// of these by poster key rather than storing them on the row.
     pub genres: Vec<String>,
-    /// Languages this set has a subtitle track for, sorted.
-    pub subtitles: Vec<String>,
+    /// Subtitle tracks this set offers, from its bundle once it has one, or
+    /// its inline rows until then. See `catalog_subtitles::tracks_by_set`.
+    pub subtitles: Vec<SubtitleTrack>,
+    /// This set's own audio languages, from the file's tracks.
+    pub alang: Vec<String>,
+    /// This set's own subtitle languages, from the file's tracks — distinct
+    /// from `subtitles`, which is what the uploader extracted as a track.
+    pub slang: Vec<String>,
     /// Whether the index holds a plot summary for this set.
     pub has_summary: bool,
     /// Where this title's backdrop is on disk, present when the file already
@@ -138,6 +145,8 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         fsk: None,
         genres: Vec::new(),
         subtitles: Vec::new(),
+        alang: set.alang.clone(),
+        slang: set.slang.clone(),
         has_summary: false,
         backdrop_path: None,
         season_poster_path: None,

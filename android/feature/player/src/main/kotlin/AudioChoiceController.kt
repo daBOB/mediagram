@@ -33,6 +33,8 @@ class AudioChoiceController(
     private val handle: PlayerHandle,
     private val preferences: PlayerPreferences,
     private val onOptionsChanged: (List<AudioOption>) -> Unit,
+    /** The language now playing, once ExoPlayer's own tracks (or a manual pick) say — `null` before either has. [SubtitleChoiceController] follows it for `plan.md`'s `audio` fallback. */
+    private val onLanguageChanged: (String?) -> Unit = {},
 ) {
     private val trackListener = object : Player.Listener {
         override fun onTracksChanged(tracks: Tracks) = handleTracksChanged(tracks)
@@ -94,6 +96,7 @@ class AudioChoiceController(
         settled = false
         handle.player.value?.let(::clearAudioOverride)
         onOptionsChanged(emptyList())
+        onLanguageChanged(null)
     }
 
     /**
@@ -122,6 +125,7 @@ class AudioChoiceController(
         userChose = true
         userChosenLanguage = option.language
         onOptionsChanged(audioOptionsSelecting(facts.orEmpty(), option.groupIndex, option.trackIndex))
+        onLanguageChanged(option.language)
         if (isUsableAudioLanguage(option.language)) rememberLanguage(option.language)
     }
 
@@ -166,6 +170,7 @@ class AudioChoiceController(
         if (tracks.size <= 1) {
             settled = true
             onOptionsChanged(emptyList())
+            onLanguageChanged(tracks.firstOrNull()?.language)
             return
         }
         // Only trusted once the load has actually run — a `null` from
@@ -173,10 +178,11 @@ class AudioChoiceController(
         // be told apart the wrong way, or this would settle before the
         // real preference had a chance to load.
         val remembered = rememberedLanguage.takeIf { preferencesLoaded }
-        audioTrackForLanguage(tracks, remembered)?.let { chosen ->
-            pinAudioTrack(handle.player.value, lastTracks, tracks[chosen].groupIndex, tracks[chosen].trackIndex)
-        }
+        val chosen = audioTrackForLanguage(tracks, remembered)
+        chosen?.let { pinAudioTrack(handle.player.value, lastTracks, tracks[it].groupIndex, tracks[it].trackIndex) }
         onOptionsChanged(audioOptions(tracks, remembered))
+        val playing = chosen ?: tracks.indexOfFirst { it.isSelected }
+        onLanguageChanged(playing.takeIf { it >= 0 }?.let { tracks[it].language })
         if (preferencesLoaded) settled = true
     }
 }

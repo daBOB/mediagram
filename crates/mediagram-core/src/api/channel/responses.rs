@@ -5,7 +5,7 @@ use grammers_client::message::Message;
 use grammers_client::peer::Dialog;
 use grammers_mtsender::InvocationError;
 
-pub(super) trait Responses: Send {
+pub(in crate::api) trait Responses: Send {
     type Item;
     fn next_response(
         &mut self,

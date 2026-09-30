@@ -3,8 +3,10 @@
 //! instead.
 
 mod credits;
+mod subtitle;
 mod summary;
 pub use credits::{CreditRecord, FranchiseRecord, PeopleHitRecord, PersonRecord, TitleCreditsRecord};
+pub use subtitle::SubtitleTrack;
 pub use summary::{SetSummary, summary_from};
 
 use mediagram_tmdb::details::TitleDetailsRow;

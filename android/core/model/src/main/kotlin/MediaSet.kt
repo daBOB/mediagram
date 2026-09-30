@@ -55,7 +55,21 @@ data class MediaSet(
     val fsk: String? = null,
     /** The provider's genres for this title. An episode carries its show's. */
     val genres: List<String> = emptyList(),
-    /** Languages this set has a subtitle track for. */
+    /** Subtitle tracks this set offers — from its bundle once it has one, or its inline rows until then. */
+    val subtitles: List<SubtitleTrackInfo> = emptyList(),
+    /** This set's own audio languages, from the file's tracks. */
+    val alang: List<String> = emptyList(),
+    /**
+     * This set's own subtitle languages, from the file's tracks — what
+     * a title's "Subtitles" fact describes. Distinct from [subtitles],
+     * which is what the uploader extracted as a separate, playable track.
+     */
+    val slang: List<String> = emptyList(),
+    /**
+     * [subtitles]' own languages, deduplicated — kept for a surface that
+     * still shows one row per language rather than [subtitles]' full
+     * track shape (forced/SDH/label included).
+     */
     val subtitleLanguages: List<String> = emptyList(),
     /** Whether the index holds a plot summary for this set. */
     val hasSummary: Boolean = false,

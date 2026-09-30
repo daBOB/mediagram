@@ -309,7 +309,7 @@ class AudioChoiceControllerTest {
         installMainDispatcher()
         val handle = FakePlayerHandle()
         val recording = attach(handle)
-        val controller = AudioChoiceController(backgroundScope, handle, FakePlayerPreferences()) {}
+        val controller = AudioChoiceController(backgroundScope, handle, FakePlayerPreferences(), onOptionsChanged = {})
         runCurrent()
         verify(exactly = 1) { recording.player.addListener(any()) }
 

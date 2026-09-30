@@ -9,6 +9,7 @@ import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.SubtitleTrack
 import uniffi.mediagram_core.TitleCreditsRecord
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -262,7 +263,9 @@ private fun summary(
     addedAt: Long = 0,
     fsk: String? = null,
     genres: List<String> = emptyList(),
-    subtitles: List<String> = emptyList(),
+    subtitles: List<SubtitleTrack> = emptyList(),
+    alang: List<String> = emptyList(),
+    slang: List<String> = emptyList(),
     hasSummary: Boolean = false,
     backdropPath: String? = null,
     seasonPosterPath: String? = null,
@@ -300,6 +303,8 @@ private fun summary(
     fsk = fsk,
     genres = genres,
     subtitles = subtitles,
+    alang = alang,
+    slang = slang,
     hasSummary = hasSummary,
     backdropPath = backdropPath,
     seasonPosterPath = seasonPosterPath,

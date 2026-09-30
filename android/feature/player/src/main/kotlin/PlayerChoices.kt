@@ -34,6 +34,8 @@ data class PlayerChoices(
     val audioOptions: List<AudioOption> = emptyList(),
     /** The Subtitles section's rows: "Off" plus a language per subtitle track. Empty for a file with none, which is also what hides the section. */
     val subtitleOptions: List<SubtitleOption> = emptyList(),
+    /** Whether the open title has any subtitle track at all — a forced-only file still gates the style/offset controls open, unlike [subtitleOptions], which is empty for it. */
+    val subtitleStyleVisible: Boolean = false,
     /** A subtitle cue's size, as a percent of the base text size — one of `playback.CUE_SIZES`. */
     val subtitleSizePercent: Int = DEFAULT_CUE_SIZE_PERCENT,
     /** A subtitle cue's backing — one of `playback.CUE_BACKINGS`' stored values. */

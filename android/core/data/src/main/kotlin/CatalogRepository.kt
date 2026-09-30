@@ -11,6 +11,7 @@ import model.Kind
 import model.MediaSet
 import model.Person
 import model.PersonHit
+import model.SubtitleTrackInfo
 import model.TitleCredits
 import settings.LibrarySettings
 import uniffi.mediagram_core.CoreInterface
@@ -19,6 +20,7 @@ import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
+import uniffi.mediagram_core.SubtitleTrack
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -76,6 +78,13 @@ interface CatalogRepository {
 
     /** Downloads a person's portrait and answers its file's path, or `null` — see [uniffi.mediagram_core.CoreInterface.fetchPortrait]. */
     suspend fun fetchPortrait(personId: Long): String? = null
+
+    /**
+     * Fetches and caches this lesson's own subtitle bundle plus a few that
+     * follow it in its course — fire-and-forget; a fake need not implement
+     * it. See [uniffi.mediagram_core.CoreInterface.holdCourseSubtitles].
+     */
+    suspend fun holdCourseSubtitles(setId: String) {}
 }
 
 /**
@@ -201,7 +210,10 @@ class DefaultCatalogRepository(
             addedAt = summary.addedAt,
             fsk = summary.fsk,
             genres = summary.genres,
-            subtitleLanguages = summary.subtitles,
+            subtitles = summary.subtitles.map { it.toSubtitleTrackInfo() },
+            alang = summary.alang,
+            slang = summary.slang,
+            subtitleLanguages = summary.subtitles.map { it.lang }.distinct(),
             hasSummary = summary.hasSummary,
             backdropPath = summary.backdropPath,
             seasonPosterPath = summary.seasonPosterPath,
@@ -237,6 +249,11 @@ class DefaultCatalogRepository(
         coreProvider.awaitCore().searchPeople(query).map { it.toPersonHit() }
 
     override suspend fun fetchPortrait(personId: Long): String? = coreProvider.awaitCore().fetchPortrait(personId.toULong())
+
+    override suspend fun holdCourseSubtitles(setId: String) = coreProvider.awaitCore().holdCourseSubtitles(setId)
+
+    private fun SubtitleTrack.toSubtitleTrackInfo(): SubtitleTrackInfo =
+        SubtitleTrackInfo(track.toInt(), lang, forced, sdh, label)
 
     private fun CreditRecord.toCredit(): Credit = Credit(personId.toLong(), name, role, portraitPath)
 

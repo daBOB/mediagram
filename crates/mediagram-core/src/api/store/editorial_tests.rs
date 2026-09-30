@@ -265,7 +265,7 @@ fn one_set_lookup_finds_the_same_resolved_row_a_listing_would() {
     // Not a vacuous comparison of two all-`None` records: real facts and
     // artwork are present on both sides.
     assert_eq!(found.genres, vec!["Sci-Fi", "Adventure"]);
-    assert_eq!(found.subtitles, vec!["en"]);
+    assert_eq!(found.subtitles.iter().map(|t| t.lang.as_str()).collect::<Vec<_>>(), vec!["en"]);
     assert!(found.poster_path.is_some());
     assert!(found.backdrop_path.is_some());
 }

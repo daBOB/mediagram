@@ -64,7 +64,7 @@ fun summarize(divisions: List<Division>): SeriesFacts {
         hdr = distinct(sets) { it.hdr?.takeIf { h -> h != "SDR" } },
         video = distinct(sets) { it.vcodec },
         audio = distinct(sets) { it.acodec },
-        subtitleLanguages = distinctAll(sets) { it.subtitleLanguages },
+        subtitleLanguages = distinctAll(sets) { it.slang },
     )
 }
 
@@ -113,9 +113,11 @@ fun yearLine(facts: SeriesFacts): String? = facts.years.takeIf { it.isNotEmpty()
 fun provenance(info: TitleInfo?): String? = info?.let { joinedOf(ratingLabel(it.rating), it.network, it.status) }
 
 /**
- * The one row [pictureLine] leaves out: subtitle languages. There is no
- * "Audio languages" row to match `series-summary.js`'s own `detailRows` —
- * [model.MediaSet] carries no audio-language field yet, only [model.MediaSet.subtitleLanguages].
+ * The one row [pictureLine] leaves out: subtitle languages, from the
+ * file's own tracks ([model.MediaSet.slang]) — not the uploader-extracted
+ * tracks a viewer can pick in the player. There is no "Audio languages"
+ * row to match `series-summary.js`'s own `detailRows`; nothing here reads
+ * [model.MediaSet.alang] yet.
  */
 fun detailRows(facts: SeriesFacts): List<Pair<String, String>> =
     listOfNotNull(

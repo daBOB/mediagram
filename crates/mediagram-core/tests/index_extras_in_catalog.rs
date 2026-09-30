@@ -57,7 +57,12 @@ async fn a_sets_subtitle_languages_come_back_sorted() {
 
     let sets = core(dir.path()).list_sets().await.unwrap();
 
-    assert_eq!(set_of(&sets, "01SUBTITLED0000000000000001").subtitles, vec!["de", "en"]);
+    let langs: Vec<_> = set_of(&sets, "01SUBTITLED0000000000000001")
+        .subtitles
+        .iter()
+        .map(|t| t.lang.as_str())
+        .collect();
+    assert_eq!(langs, vec!["de", "en"]);
 }
 
 #[tokio::test]
@@ -129,7 +134,7 @@ async fn a_v6_index_still_fills_genres_subtitles_and_has_summary() {
 
     let set = set_of(&sets, "01OLDINDEX0000000000000001");
     assert_eq!(set.genres, vec!["Drama"]);
-    assert_eq!(set.subtitles, vec!["en"]);
+    assert_eq!(set.subtitles.iter().map(|t| t.lang.as_str()).collect::<Vec<_>>(), vec!["en"]);
     assert!(set.has_summary);
     assert_eq!(set.fsk, None, "v6 has no certification column at all");
 }

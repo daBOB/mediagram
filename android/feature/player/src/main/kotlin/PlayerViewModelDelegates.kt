@@ -37,7 +37,8 @@ fun PlayerViewModel.retry() {
 
 fun PlayerViewModel.setSpeed(rate: Float) = choicesController.setSpeed(rate)
 fun PlayerViewModel.chooseAudioTrack(option: AudioOption) = choicesController.chooseAudioTrack(option)
-fun PlayerViewModel.chooseSubtitleLanguage(languageOrOff: String) = choicesController.chooseSubtitleLanguage(languageOrOff)
+fun PlayerViewModel.chooseSubtitleLanguage(trackKeyOrOff: String) = choicesController.chooseSubtitleLanguage(trackKeyOrOff)
+fun PlayerViewModel.toggleSubtitles() = choicesController.toggleSubtitles()
 fun PlayerViewModel.setSubtitleSize(percent: Int) = choicesController.setSubtitleSize(percent)
 fun PlayerViewModel.setSubtitleBacking(stored: String) = choicesController.setSubtitleBacking(stored)
 fun PlayerViewModel.nudgeSubtitleOffset(steps: Int) = choicesController.nudgeSubtitleOffset(steps)

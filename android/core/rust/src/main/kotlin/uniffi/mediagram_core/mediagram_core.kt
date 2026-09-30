@@ -778,6 +778,12 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sync_state(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_hold_course_subtitles(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_hold_subtitles(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_subtitle_text(
+    ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
     ): Int
     external fun ffi_mediagram_core_uniffi_contract_version(
@@ -901,6 +907,12 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_sync_state(`ptr`: Long,`handle`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_hold_course_subtitles(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_hold_subtitles(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_subtitle_text(`ptr`: Long,`setId`: RustBuffer.ByValue,`track`: Int,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1105,7 +1117,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_sessions() and 0xFFFF) != 48240) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_text() and 0xFFFF) != 64077) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_text() and 0xFFFF) != 45555) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_choose_profile() and 0xFFFF) != 50286) {
@@ -1166,6 +1178,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sync_state() and 0xFFFF) != 972) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_hold_course_subtitles() and 0xFFFF) != 43553) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_hold_subtitles() and 0xFFFF) != 1785) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_subtitle_text() and 0xFFFF) != 55375) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
@@ -1680,10 +1701,8 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 
 /**
  * One player's whole Telegram surface, kept alive by Kotlin for the life of
- * the app.
- *
- * `api_id`/`api_hash` identify the Telegram application, not a signed-in
- * account. Kotlin passes the identity stored by the app's setup flow.
+ * the app. `api_id`/`api_hash` identify the Telegram application, not a
+ * signed-in account — Kotlin passes the identity stored by setup.
  */
 public interface CoreInterface {
 
@@ -1870,9 +1889,9 @@ public interface CoreInterface {
     suspend fun `sessions`(): List<SessionSummary>
 
     /**
-     * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
-     * without touching the database — the same refusal `catalog_assets::text`
-     * applies to a kind it does not know.
+     * `kind` is `"summary"`; anything else — including `"subtitle"`, which
+     * now comes from `Core::subtitle_text`, keyed by track rather than
+     * language — answers `None` without touching the database.
      */
     suspend fun `setText`(`setId`: kotlin.String, `kind`: kotlin.String, `lang`: kotlin.String): kotlin.String?
 
@@ -1986,15 +2005,36 @@ public interface CoreInterface {
      */
     suspend fun `syncState`(`handle`: kotlin.String): SyncOutcome
 
+    /**
+     * Fetches and caches the opened lesson's own bundle plus up to
+     * [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+     * long course never fetches more than the next few lessons at once.
+     */
+    suspend fun `holdCourseSubtitles`(`setId`: kotlin.String)
+
+    /**
+     * Fetches and caches a set's bundle, if it has one — what a preload
+     * write calls so a title's subtitles are already local by the time
+     * someone opens it. `false` for a set with no bundle, or one that could
+     * not be fetched; never fails the preload that asked for it.
+     */
+    suspend fun `holdSubtitles`(`setId`: kotlin.String): kotlin.Boolean
+
+    /**
+     * One subtitle track's WebVTT text, by its position among
+     * `SetSummary.subtitles`. `None` for a set or track this build cannot
+     * read, or a bundle that could not be fetched — every cause is logged,
+     * never surfaced as a failure a player has to handle specially.
+     */
+    suspend fun `subtitleText`(`setId`: kotlin.String, `track`: kotlin.UInt): kotlin.String?
+
     companion object
 }
 
 /**
  * One player's whole Telegram surface, kept alive by Kotlin for the life of
- * the app.
- *
- * `api_id`/`api_hash` identify the Telegram application, not a signed-in
- * account. Kotlin passes the identity stored by the app's setup flow.
+ * the app. `api_id`/`api_hash` identify the Telegram application, not a
+ * signed-in account — Kotlin passes the identity stored by setup.
  */
 open class Core: Disposable, AutoCloseable, CoreInterface
 {
@@ -2831,9 +2871,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
-     * without touching the database — the same refusal `catalog_assets::text`
-     * applies to a kind it does not know.
+     * `kind` is `"summary"`; anything else — including `"subtitle"`, which
+     * now comes from `Core::subtitle_text`, keyed by track rather than
+     * language — answers `None` without touching the database.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `setText`(`setId`: kotlin.String, `kind`: kotlin.String, `lang`: kotlin.String) : kotlin.String? {
@@ -3353,6 +3393,88 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterTypeSyncOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Fetches and caches the opened lesson's own bundle plus up to
+     * [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+     * long course never fetches more than the next few lessons at once.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `holdCourseSubtitles`(`setId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_hold_course_subtitles(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Fetches and caches a set's bundle, if it has one — what a preload
+     * write calls so a title's subtitles are already local by the time
+     * someone opens it. `false` for a set with no bundle, or one that could
+     * not be fetched; never fails the preload that asked for it.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `holdSubtitles`(`setId`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_hold_subtitles(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * One subtitle track's WebVTT text, by its position among
+     * `SetSummary.subtitles`. `None` for a set or track this build cannot
+     * read, or a bundle that could not be fetched — every cause is logged,
+     * never surfaced as a failure a player has to handle specially.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `subtitleText`(`setId`: kotlin.String, `track`: kotlin.UInt) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_subtitle_text(
+                uniffiHandle,
+
+        FfiConverterString.lower(`setId`),
+        FfiConverterUInt.lower(`track`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -4272,9 +4394,21 @@ data class SetSummary (
     var `genres`: List<kotlin.String>
     ,
     /**
-     * Languages this set has a subtitle track for, sorted.
+     * Subtitle tracks this set offers, from its bundle once it has one, or
+     * its inline rows until then. See `catalog_subtitles::tracks_by_set`.
      */
-    var `subtitles`: List<kotlin.String>
+    var `subtitles`: List<SubtitleTrack>
+    ,
+    /**
+     * This set's own audio languages, from the file's tracks.
+     */
+    var `alang`: List<kotlin.String>
+    ,
+    /**
+     * This set's own subtitle languages, from the file's tracks — distinct
+     * from `subtitles`, which is what the uploader extracted as a track.
+     */
+    var `slang`: List<kotlin.String>
     ,
     /**
      * Whether the index holds a plot summary for this set.
@@ -4392,6 +4526,8 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterLong.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceTypeSubtitleTrack.read(buf),
+            FfiConverterSequenceString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterOptionalString.read(buf),
@@ -4432,7 +4568,9 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterLong.allocationSize(value.`addedAt`) +
             FfiConverterOptionalString.allocationSize(value.`fsk`) +
             FfiConverterSequenceString.allocationSize(value.`genres`) +
-            FfiConverterSequenceString.allocationSize(value.`subtitles`) +
+            FfiConverterSequenceTypeSubtitleTrack.allocationSize(value.`subtitles`) +
+            FfiConverterSequenceString.allocationSize(value.`alang`) +
+            FfiConverterSequenceString.allocationSize(value.`slang`) +
             FfiConverterBoolean.allocationSize(value.`hasSummary`) +
             FfiConverterOptionalString.allocationSize(value.`backdropPath`) +
             FfiConverterOptionalString.allocationSize(value.`seasonPosterPath`) +
@@ -4471,7 +4609,9 @@ public object FfiConverterTypeSetSummary: FfiConverterRustBuffer<SetSummary> {
             FfiConverterLong.write(value.`addedAt`, buf)
             FfiConverterOptionalString.write(value.`fsk`, buf)
             FfiConverterSequenceString.write(value.`genres`, buf)
-            FfiConverterSequenceString.write(value.`subtitles`, buf)
+            FfiConverterSequenceTypeSubtitleTrack.write(value.`subtitles`, buf)
+            FfiConverterSequenceString.write(value.`alang`, buf)
+            FfiConverterSequenceString.write(value.`slang`, buf)
             FfiConverterBoolean.write(value.`hasSummary`, buf)
             FfiConverterOptionalString.write(value.`backdropPath`, buf)
             FfiConverterOptionalString.write(value.`seasonPosterPath`, buf)
@@ -4551,6 +4691,68 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.write(value.`kids`, buf)
             FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
             FfiConverterOptionalString.write(value.`editorsChoice`, buf)
+    }
+}
+
+
+
+/**
+ * One subtitle track a set offers — a position in its bundle, once it has
+ * one, or, until then, a position among its inline `assets` rows. See
+ * `catalog_subtitles::tracks_by_set`.
+ */
+data class SubtitleTrack (
+    /**
+     * This track's position — what `Core::subtitle_text` is asked for, not
+     * an index into anything else.
+     */
+    var `track`: kotlin.UInt
+    ,
+    var `lang`: kotlin.String
+    ,
+    var `forced`: kotlin.Boolean
+    ,
+    var `sdh`: kotlin.Boolean
+    ,
+    var `label`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSubtitleTrack: FfiConverterRustBuffer<SubtitleTrack> {
+    override fun read(buf: ByteBuffer): SubtitleTrack {
+        return SubtitleTrack(
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SubtitleTrack) = (
+            FfiConverterUInt.allocationSize(value.`track`) +
+            FfiConverterString.allocationSize(value.`lang`) +
+            FfiConverterBoolean.allocationSize(value.`forced`) +
+            FfiConverterBoolean.allocationSize(value.`sdh`) +
+            FfiConverterString.allocationSize(value.`label`)
+    )
+
+    override fun write(value: SubtitleTrack, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`track`, buf)
+            FfiConverterString.write(value.`lang`, buf)
+            FfiConverterBoolean.write(value.`forced`, buf)
+            FfiConverterBoolean.write(value.`sdh`, buf)
+            FfiConverterString.write(value.`label`, buf)
     }
 }
 
@@ -5681,6 +5883,34 @@ public object FfiConverterSequenceTypeSetSummary: FfiConverterRustBuffer<List<Se
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeSetSummary.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeSubtitleTrack: FfiConverterRustBuffer<List<SubtitleTrack>> {
+    override fun read(buf: ByteBuffer): List<SubtitleTrack> {
+        val len = buf.getInt()
+        return List<SubtitleTrack>(len) {
+            FfiConverterTypeSubtitleTrack.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<SubtitleTrack>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeSubtitleTrack.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<SubtitleTrack>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeSubtitleTrack.write(it, buf)
         }
     }
 }

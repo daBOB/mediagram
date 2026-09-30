@@ -19,6 +19,7 @@ mod sessions;
 mod set_text;
 mod state;
 mod state_sync;
+mod subtitles;
 #[cfg(test)]
 mod test_support;
 mod store;
@@ -44,10 +45,8 @@ struct State {
 }
 
 /// One player's whole Telegram surface, kept alive by Kotlin for the life of
-/// the app.
-///
-/// `api_id`/`api_hash` identify the Telegram application, not a signed-in
-/// account. Kotlin passes the identity stored by the app's setup flow.
+/// the app. `api_id`/`api_hash` identify the Telegram application, not a
+/// signed-in account — Kotlin passes the identity stored by setup.
 #[derive(uniffi::Object)]
 pub struct Core {
     data_dir: PathBuf,

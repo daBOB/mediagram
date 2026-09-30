@@ -99,6 +99,10 @@ class CacheDataSourceWriter internal constructor(
      * playback's, it is the same one.
      */
     override suspend fun write(item: PreloadItem, onProgress: (bytesCached: Long) -> Unit) {
+        // Best-effort and never awaited-through-a-failure: a bundle this
+        // title has no route to, or none at all, must not fail the byte
+        // preload this call otherwise exists for.
+        runCatching { currentCore()?.holdSubtitles(item.setId) }
         val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore).also { factory = it }
         val writer =
             CacheWriter(built.createDataSource(), DataSpec(setUri(item.setId)), null) { _, bytesCached, _ ->

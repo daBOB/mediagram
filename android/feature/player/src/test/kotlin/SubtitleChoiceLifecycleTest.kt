@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import model.MediaSet
 import org.junit.After
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -20,18 +19,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Exercises [SubtitleChoiceController] through [PlayerViewModel], the same
- * way [AudioChoiceControllerTest] does for audio — but this choice races
- * only one async source (the core round trip), never a `Player`, so the
- * `Tracks.EMPTY` case below is a guard against a *future* regression rather
- * than one this controller could hit today; see the class doc for why.
- * Runs under Robolectric for the one test that mocks a real `Player`.
- */
-/**
  * What [SubtitleChoiceController] keeps and drops across opens — a rotation
- * keeps the choice, a different title starts from its own default — and its
- * standing independence from ExoPlayer's own `Tracks` events. Robolectric
- * for the one test that mocks a real `Player`.
+ * keeps the choice, a different title starts from its own default (off,
+ * nothing remembered or preferred there) — and its standing independence
+ * from ExoPlayer's own `Tracks` events. Robolectric for the one test that
+ * mocks a real `Player`.
  */
 @RunWith(RobolectricTestRunner::class)
 class SubtitleChoiceLifecycleTest {
@@ -45,9 +37,9 @@ class SubtitleChoiceLifecycleTest {
     // -- reset on a new title, kept across the same one --
 
     @Test
-    fun reopeningTheSameTitleKeepsTheChosenLanguageWithoutReloading() = runTest {
+    fun reopeningTheSameTitleKeepsTheChosenTrackWithoutReloading() = runTest {
         installMainDispatcher()
-        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to "en") to listOf(cue("hi"))))
+        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to 1) to listOf(cue("hi"))))
         val vm = buildViewModel(
             catalogRepository = FakeCatalogRepository(mapOf(show.setId to withSubtitles(show, "de", "en"))),
             subtitleTrackSource = trackSource,
@@ -68,9 +60,7 @@ class SubtitleChoiceLifecycleTest {
     @Test
     fun openingADifferentTitleResetsToItsOwnDefault() = runTest {
         installMainDispatcher()
-        val trackSource = FakeSubtitleTrackSource(
-            mapOf((show.setId to "en") to listOf(cue("hi")), (film.setId to "fr") to listOf(cue("bonjour"))),
-        )
+        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to 1) to listOf(cue("hi"))))
         val vm = buildViewModel(
             catalogRepository = FakeCatalogRepository(mapOf(show.setId to withSubtitles(show, "de", "en"), film.setId to withSubtitles(film, "fr"))),
             subtitleTrackSource = trackSource,
@@ -80,11 +70,11 @@ class SubtitleChoiceLifecycleTest {
         vm.chooseSubtitleLanguage("en")
         advanceUntilIdle()
 
-        vm.open(film.setId) // a genuinely different title
+        vm.open(film.setId) // a genuinely different title, nothing remembered or preferred for it
         advanceUntilIdle()
 
-        assertEquals("fr", selected(vm))
-        assertEquals(listOf(cue("bonjour")), vm.subtitleCues.value)
+        assertEquals(SUBTITLES_OFF, selected(vm))
+        assertEquals(emptyList(), vm.subtitleCues.value)
     }
 
     // -- a title with none --
@@ -103,12 +93,12 @@ class SubtitleChoiceLifecycleTest {
     // -- independence from ExoPlayer's own track lifecycle --
 
     /**
-     * Nothing here ever listens to a `Player`; this documents that as a
-     * standing guarantee rather than an accident, since the audio menu's
-     * own equivalent state was corrupted by exactly this event
-     * (`AudioChoiceControllerTest`'s C1). A future change that wired
-     * subtitle state to `Player.Listener` would reintroduce that bug class;
-     * this fails first.
+     * Nothing here ever listens to a `Player` for the subtitle choice
+     * itself; this documents that as a standing guarantee rather than an
+     * accident, since the audio menu's own equivalent state was corrupted
+     * by exactly this event (`AudioChoiceControllerTest`'s C1). A future
+     * change that wired subtitle state to `Player.Listener` would
+     * reintroduce that bug class; this fails first.
      */
     @Test
     fun subtitleStateIsUntouchedByExoPlayersOwnTracksEvents() = runTest {
@@ -121,13 +111,15 @@ class SubtitleChoiceLifecycleTest {
         every { mockPlayer.trackSelectionParameters = any() } just Runs
         handle.installPlayer(mockPlayer)
 
-        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to "de") to listOf(cue("hallo"))))
+        val trackSource = FakeSubtitleTrackSource(mapOf((show.setId to 0) to listOf(cue("hallo"))))
         val vm = buildViewModel(
             handle = handle,
             catalogRepository = FakeCatalogRepository(mapOf(show.setId to withSubtitles(show, "de"))),
             subtitleTrackSource = trackSource,
         )
         vm.open(show.setId)
+        advanceUntilIdle()
+        vm.chooseSubtitleLanguage("de")
         advanceUntilIdle()
         val cuesBefore = vm.subtitleCues.value
         assertEquals(listOf(cue("hallo")), cuesBefore)

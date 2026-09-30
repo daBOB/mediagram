@@ -4,131 +4,173 @@ import data.PlayerPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import model.SubtitleTrackInfo
 import playback.SubtitleTrackSource
 import playback.TimedCue
 
 /**
- * Which subtitle language is on for the open title, and its cues once
- * fetched — split out of [PlayerChoicesController] the same way
- * [AudioChoiceController] is, because a language pick starts its own async
- * work the rest of that controller never needs: fetching and parsing a
- * file's VTT. [SubtitleStyleController] is this choice's sibling for
- * size/backing/offset, kept apart because those never touch a load job at
- * all.
+ * Which subtitle track is on for the open title — regular and forced both —
+ * and its cues once fetched. Ports `plan.md`'s playback rule
+ * ([chooseSubtitles], [toggleOn]) rather than the simple per-language
+ * default this replaced; see [SubtitleChoice] for the pure rule itself.
  *
- * Unlike audio, nothing here ever touches [PlayerHandle] or a real
- * `Player` — a title's languages come straight off its [model.MediaSet],
- * and the cues this hands `SubtitleLayer` are drawn in Compose rather than
- * through ExoPlayer's own (disabled) text renderer, so there is no
- * `Tracks` event of any kind for this controller to race or be confused by.
+ * The audio language the rule needs is not this controller's own: it
+ * follows [AudioChoiceController]'s own language callback through
+ * [onAudioLanguageChanged], falling back to the set's own `alang` until a
+ * real playing track answers — see [audioLanguage].
  *
- * The language pick has two sources that can answer in either order —
- * [onLanguagesKnown], from the set resolving, and [onPreferencesLoaded],
- * from the core round trip that follows it — so it carries a [settled]
- * guard, the same shape [AudioChoiceController.applyIfReady] uses for
- * tracks-vs-preference. Nothing is chosen until both have answered: a
- * provisional default would fetch a file the remembered choice may turn off
- * again, and could flash its cues on a show the viewer switched off.
+ * Nothing here ever touches [PlayerHandle] or a real `Player` directly: a
+ * title's tracks come straight off its [model.MediaSet], and the cues this
+ * hands `SubtitleLayer` are drawn in Compose rather than through
+ * ExoPlayer's own (disabled) text renderer.
+ *
+ * The pick has two sources that can answer in either order —
+ * [onTracksKnown], from the set resolving, and [onPreferencesLoaded], from
+ * the core round trip that follows it — so it carries a [settled] guard,
+ * the same shape [AudioChoiceController.applyIfReady] uses. Nothing is
+ * chosen until both have answered.
  */
 class SubtitleChoiceController(
     private val launchScope: CoroutineScope,
     private val trackSource: SubtitleTrackSource,
     private val preferences: PlayerPreferences,
-    private val onChanged: (options: List<SubtitleOption>, cues: List<TimedCue>) -> Unit,
+    private val onChanged: (options: List<SubtitleOption>, styleVisible: Boolean, cues: List<TimedCue>) -> Unit,
 ) {
     private var setId: String? = null
     private var scope: String? = null
     private var profileId: String? = null
 
-    private var languages: List<String> = emptyList()
-    private var languagesKnown = false
+    private var tracks: List<SubtitleTrackInfo> = emptyList()
+    private var alang: List<String> = emptyList()
+    private var tracksKnown = false
 
-    private var language: String = SUBTITLES_OFF
-    private var rememberedLanguage: String? = null
+    private var audioTag: String? = null
+    private var audio: String? = null
+
+    private var remembered: String? = null
+    private var preferred: String? = null
     private var preferencesLoaded = false
+
+    /** The regular track key currently shown, or `null` for "off". */
+    private var regularKey: String? = null
+
+    /** The track [activeTrack] was last loaded for — cues follow whichever of {regular, forced} is showing. */
+    private var activeTrack: SubtitleTrackInfo? = null
+    private var cues: List<TimedCue> = emptyList()
+    private var loadJob: Job? = null
+
+    /** The last regular track key chosen this session, in memory only — [toggleOn]'s own first candidate. */
+    private var last: String? = null
+
     private var userChose = false
     private var settled = false
-
-    private var cues: List<TimedCue> = emptyList()
-
-    /** The fetch this open's chosen language started; cancelled the moment another is chosen, so a stale one can never land after it. */
-    private var loadJob: Job? = null
 
     /** Drops whatever the last title had, for a genuinely new one. */
     fun reset() {
         loadJob?.cancel()
         loadJob = null
         setId = null; scope = null; profileId = null
-        languages = emptyList(); languagesKnown = false
-        language = SUBTITLES_OFF; rememberedLanguage = null; preferencesLoaded = false
+        tracks = emptyList(); alang = emptyList(); tracksKnown = false
+        audioTag = null; audio = null
+        remembered = null; preferred = null; preferencesLoaded = false
+        regularKey = null; activeTrack = null; cues = emptyList(); last = null
         userChose = false; settled = false
-        cues = emptyList()
         publish()
     }
 
-    /** [PlayerChoicesController.resolve] calls this once the set itself resolves — before its own preference round trip, so the section can show its rows while [onPreferencesLoaded] is still deciding which one is on. */
-    fun onLanguagesKnown(setId: String, languages: List<String>) {
+    /** [PlayerChoicesController.resolve] calls this once the set itself resolves — before its own preference round trip. */
+    fun onTracksKnown(setId: String, tracks: List<SubtitleTrackInfo>, alang: List<String>) {
         this.setId = setId
-        this.languages = languages
-        languagesKnown = true
+        this.tracks = tracks
+        this.alang = alang
+        tracksKnown = true
+        audio = audioLanguage(audioTag, alang)
         publish()
         settleIfReady()
     }
 
-    /** Called once the scope and this profile's remembered `"subtitle"` value are known — `null` for nothing remembered. */
-    fun onPreferencesLoaded(scope: String, profileId: String?, remembered: String?) {
+    /** [AudioChoiceController.onLanguageChanged]'s own answer — may arrive before or after [onTracksKnown]. */
+    fun onAudioLanguageChanged(playingTag: String?) {
+        audioTag = playingTag
+        audio = audioLanguage(audioTag, alang)
+        loadActiveTrack() // only forced can change from this alone; regular never depends on audio
+    }
+
+    /** Called once the scope and this profile's remembered/preferred values are known — `null` for nothing stored. */
+    fun onPreferencesLoaded(scope: String, profileId: String?, remembered: String?, preferred: String?) {
         this.scope = scope
         this.profileId = profileId
         if (userChose) {
-            rememberLanguage(language)
+            rememberChoice(regularKey ?: SUBTITLES_OFF)
             return
         }
-        rememberedLanguage = remembered
+        this.remembered = remembered
+        this.preferred = preferred
         preferencesLoaded = true
         settleIfReady()
     }
 
-    /** Applies the default rule once both [languagesKnown] and [preferencesLoaded] have answered, in whichever order — a no-op once [userChose] or [settled]. */
     private fun settleIfReady() {
-        if (userChose || settled || !languagesKnown || !preferencesLoaded) return
+        if (userChose || settled || !tracksKnown || !preferencesLoaded) return
         settled = true
-        applyLanguage(chooseSubtitleLanguage(languages, rememberedLanguage), remember = false)
+        applySelection(chooseSubtitles(remembered, preferred, audio, tracks).regular, remember = false)
     }
 
-    /** The viewer picked a row by hand. Wins over whatever [onPreferencesLoaded] answers later, or already has. */
-    fun choose(languageOrOff: String) {
+    /** The viewer picked a row by hand — a track key, or [SUBTITLES_OFF]. */
+    fun choose(trackKeyOrOff: String) {
         userChose = true
-        applyLanguage(languageOrOff, remember = true)
+        applySelection(trackKeyOrOff.takeIf { it != SUBTITLES_OFF }, remember = true)
     }
 
-    private fun applyLanguage(languageOrOff: String, remember: Boolean) {
-        val picked = languages.firstOrNull { it == languageOrOff } ?: SUBTITLES_OFF
-        if (remember) rememberLanguage(picked)
-        // Re-picking the row already on keeps its cues, or the fetch already bringing them.
-        if (picked == language && (cues.isNotEmpty() || loadJob?.isActive == true)) return
-        language = picked
+    /** The captions key or CC control: on turns [toggleOn] on, on turns off. */
+    fun toggle() {
+        userChose = true
+        val next = if (regularKey != null) null else toggleOn(last, preferred, audio, tracks)
+        applySelection(next, remember = true)
+    }
+
+    private fun applySelection(picked: String?, remember: Boolean) {
+        if (remember) rememberChoice(picked ?: SUBTITLES_OFF)
+        if (picked != null) last = picked
+        regularKey = picked
+        loadActiveTrack()
+    }
+
+    /** Whichever of {the shown regular track, a forced one} should be playing now; loads it if it changed. */
+    private fun loadActiveTrack() {
+        val forcedTrack =
+            if (regularKey == null && audio != null) tracks.firstOrNull { it.forced && it.lang == audio } else null
+        val wanted = regularKey?.let { key -> tracks.filterNot { it.forced }.firstOrNull { trackKey(it) == key } } ?: forcedTrack
+        if (wanted?.track == activeTrack?.track && (cues.isNotEmpty() || loadJob?.isActive == true)) {
+            publish()
+            return
+        }
+        activeTrack = wanted
         loadJob?.cancel()
-        if (language == SUBTITLES_OFF) {
+        if (wanted == null) {
             loadJob = null
             cues = emptyList()
             publish()
             return
         }
-        publish() // the picked row shows selected at once; its cues follow once fetched
+        publish() // the picker/forced state shows at once; its cues follow once fetched
         val openSetId = setId ?: return
-        val forLanguage = language
+        val forTrack = wanted.track
         loadJob = launchScope.launch {
-            val loaded = safely(emptyList()) { trackSource.load(openSetId, forLanguage) }
-            if (language == forLanguage) {
+            val loaded = safely(emptyList()) { trackSource.load(openSetId, forTrack) }
+            if (activeTrack?.track == forTrack) {
                 cues = loaded
                 publish()
             }
         }
     }
 
-    private fun publish() = onChanged(subtitleOptions(languages, language), cues)
+    private fun publish() {
+        val vis = visibility(tracks)
+        onChanged(subtitleOptions(tracks, regularKey), vis.styleVisible, cues)
+    }
 
-    private fun rememberLanguage(value: String) {
+    private fun rememberChoice(value: String) {
         val scope = scope ?: return
         val profileId = profileId ?: return
         launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, "subtitle", value) } }

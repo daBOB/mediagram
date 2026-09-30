@@ -5,6 +5,52 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.87.0 — Android: subtitle tracks, bundle cache, and the shared playback rule
+
+**Added**
+
+- `mediagram-core` reads a set's subtitle tracks (`catalog_subtitles`): a
+  bundle's own `subtitle_tracks` row once uploaded, else its legacy inline
+  `assets` rows in language order until then — a reader never needs to know
+  which. `SetSummary` carries the tracks plus `alang`/`slang`, and
+  `Core::subtitle_text(setId, track)` answers one track's WebVTT, `None` for
+  legacy text and for a bundle it has to fetch first.
+- The on-device bundle cache: one small file per set
+  (`<data_dir>/subtitles/<sha>.json.gz`), sha-checked and written through a
+  `.tmp` + fsync + rename, size-capped at 64 MiB rather than pruned on
+  install so a pre-v13 push never wipes bundles already held. A corrupt or
+  missing cache entry is refetched; two callers wanting the same bundle at
+  once share one fetch through a per-sha lock.
+  `Core::holdSubtitles(setId)` warms one set's bundle — wired into
+  `CacheDataSourceWriter.write()`, so both series and film preloads take a
+  title's subtitles along with its video. `Core::holdCourseSubtitles(setId)`
+  warms a lesson's own bundle plus up to ten that follow it in its course's
+  own order, sequentially — never the whole course, which can run to
+  hundreds of lessons.
+- Android ports the web's playback rule exactly (`SubtitleChoice.kt`,
+  checked against the same shared fixture,
+  `web/test/fixtures/subtitles/choice-cases.json`): subtitles off by
+  default, a forced track in the playing audio's language shown regardless
+  — even with subtitles off — a per-show remembered choice over a
+  per-profile default, and a toggle-on rule that prefers this session's
+  last regular track, then the profile default, then a track in the audio
+  language, then the first one. The audio language follows the playing
+  track when `AudioChoiceController` knows it, falling back to the set's
+  own `alang` until it does.
+- The Subtitles fact on a film's detail page and a show's summary
+  (`slang`) now describes the file's own embedded tracks, distinct from
+  the tracks a viewer can pick in the player (`subtitles`) — the same split
+  the web player already drew.
+
+**Changed**
+
+- `crates/mediagram-core/src/api/channel/install.rs`'s capped download loop
+  moved into `download.rs`, shared now by the index snapshot and a subtitle
+  bundle fetch — one place enforcing a byte cap on anything downloaded
+  through `iter_download`.
+- `Core::set_text` answers only `"summary"` now; a subtitle track's text
+  comes from `Core::subtitle_text`, keyed by position rather than language.
+
 ## 0.86.0 — Web player: subtitle files, the playback rule, picker, profile setting
 
 **Added**

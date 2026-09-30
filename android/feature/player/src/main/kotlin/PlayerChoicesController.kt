@@ -8,11 +8,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import model.Kind
 import model.MediaSet
 import playback.AudioOption
 import playback.Framing
 import playback.SubtitleTrackSource
 import playback.TimedCue
+
+/** Where a profile's default subtitle language sits — not a show's own scope, which only ever remembers "for this show". */
+private const val PROFILE_SCOPE = "profile"
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
@@ -43,14 +47,20 @@ class PlayerChoicesController(
     /** The open title's subtitle cues, once its chosen language's VTT has been fetched and parsed — kept apart from [choices], which a feature film's whole transcript has no business being copied onto with every speed or size change. */
     val subtitleCues: StateFlow<List<TimedCue>> = _subtitleCues.asStateFlow()
 
-    private val audioChoice = AudioChoiceController(launchScope, handle, preferences) { options ->
-        _choices.value = _choices.value.copy(audioOptions = options)
-    }
-
-    private val subtitleChoice = SubtitleChoiceController(launchScope, subtitleTrackSource, preferences) { options, cues ->
-        _choices.value = _choices.value.copy(subtitleOptions = options)
+    // Declared ahead of audioChoice: its onLanguageChanged callback below
+    // reaches into this one, and a controller's own init block may run its
+    // callbacks eagerly (Main.immediate) rather than only after this whole
+    // constructor returns.
+    private val subtitleChoice = SubtitleChoiceController(launchScope, subtitleTrackSource, preferences) { options, styleVisible, cues ->
+        _choices.value = _choices.value.copy(subtitleOptions = options, subtitleStyleVisible = styleVisible)
         _subtitleCues.value = cues
     }
+
+    private val audioChoice = AudioChoiceController(
+        launchScope, handle, preferences,
+        onOptionsChanged = { options -> _choices.value = _choices.value.copy(audioOptions = options) },
+        onLanguageChanged = { language -> subtitleChoice.onAudioLanguageChanged(language) },
+    )
 
     private val subtitleStyle = SubtitleStyleController(launchScope, preferences) { sizePercent, backing, offsetMs ->
         _choices.value = _choices.value.copy(
@@ -116,12 +126,23 @@ class PlayerChoicesController(
         _openSet.value = set
         val scope = scopeOf(set) ?: "set:$setId"
         openScope = scope
-        // Ahead of the preference round trip below: a title's own languages
-        // are a fact about the set, not about this profile's choices for it.
-        subtitleChoice.onLanguagesKnown(setId, set?.subtitleLanguages.orEmpty())
+        // Ahead of the preference round trip below: a title's own tracks
+        // and languages are facts about the set, not about this profile's
+        // choices for it.
+        subtitleChoice.onTracksKnown(setId, set?.subtitles.orEmpty(), set?.alang.orEmpty())
+        if (set?.kind == Kind.TUTORIAL) {
+            // Fire-and-forget: warms this lesson's own bundle plus a few
+            // that follow it in its course, never a reason to hold up the
+            // rest of this resolve.
+            launchScope.launch { safely(Unit) { catalogRepository.holdCourseSubtitles(setId) } }
+        }
 
         val profileId = repository.chosenProfileId.value
         val loaded = if (profileId == null) emptyMap() else safely(emptyMap()) { preferences.load(profileId, scope) }
+        // The profile's own default subtitle language, apart from this
+        // show's own scope: `chooseSubtitles`'s "profile preference" tier.
+        val profileSubtitle =
+            if (profileId == null) null else safely(emptyMap()) { preferences.load(profileId, PROFILE_SCOPE) }["subtitle"]
         if (session.openSetId != setId) return
 
         if (userChoseSpeed) {
@@ -133,7 +154,7 @@ class PlayerChoicesController(
         }
 
         audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
-        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"])
+        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"], profileSubtitle)
         subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
         framingChoice.onPreferencesLoaded(scope, profileId, loaded["framing"])
     }
@@ -151,8 +172,11 @@ class PlayerChoicesController(
     /** The viewer picked an audio track by hand. */
     fun chooseAudioTrack(option: AudioOption) = audioChoice.choose(option)
 
-    /** The viewer picked a subtitle row by hand — "off" or one of the offered languages. */
-    fun chooseSubtitleLanguage(languageOrOff: String) = subtitleChoice.choose(languageOrOff)
+    /** The viewer picked a subtitle row by hand — "off" or one of the offered tracks' keys. */
+    fun chooseSubtitleLanguage(trackKeyOrOff: String) = subtitleChoice.choose(trackKeyOrOff)
+
+    /** The captions key or CC control: on turns the toggle-on rule's own pick on, on turns it off. */
+    fun toggleSubtitles() = subtitleChoice.toggle()
 
     fun setSubtitleSize(percent: Int) = subtitleStyle.setSize(percent)
     fun setSubtitleBacking(stored: String) = subtitleStyle.setBacking(stored)

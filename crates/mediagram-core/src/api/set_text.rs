@@ -1,6 +1,6 @@
-//! `Core::set_text`: a summary or subtitle track already sitting in the
-//! index, the way the uploader wrote it from the file beside each video.
-//! Never a Telegram round trip.
+//! `Core::set_text`: a summary already sitting in the index, the way the
+//! uploader wrote it from the file beside each video. Never a Telegram
+//! round trip.
 
 use std::sync::Arc;
 
@@ -9,9 +9,9 @@ use crate::catalog_assets;
 
 #[uniffi::export(async_runtime = "tokio")]
 impl Core {
-    /// `kind` is `"summary"` or `"subtitle"`; anything else answers `None`
-    /// without touching the database — the same refusal `catalog_assets::text`
-    /// applies to a kind it does not know.
+    /// `kind` is `"summary"`; anything else — including `"subtitle"`, which
+    /// now comes from `Core::subtitle_text`, keyed by track rather than
+    /// language — answers `None` without touching the database.
     pub async fn set_text(self: Arc<Self>, set_id: String, kind: String, lang: String) -> Option<String> {
         self.blocking(move |core| text(core, &set_id, &kind, &lang)).await
     }
