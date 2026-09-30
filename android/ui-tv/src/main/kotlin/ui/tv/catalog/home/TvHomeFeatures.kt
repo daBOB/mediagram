@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -58,26 +60,34 @@ internal fun TvHomeFeatures(
     if (features.isEmpty()) return
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         features.getOrNull(0)?.let { feature ->
-            TvFeatureCard(
-                feature = feature,
-                index = 0,
-                onOpenTitle = onOpenTitle,
-                modifier = Modifier.fillMaxWidth().height(LeadCardHeight).let { if (focusAt == 0 && focus != null) it.focusRequester(focus) else it },
-            )
+            key(feature.set.setId) {
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val ownRequester = remember { FocusRequester() }
+                TvFeatureCard(
+                    feature = feature,
+                    index = 0,
+                    onOpenTitle = onOpenTitle,
+                    modifier = Modifier.fillMaxWidth().height(LeadCardHeight).focusRequester(if (focusAt == 0) focus ?: ownRequester else ownRequester),
+                )
+            }
         }
         if (features.size > 1) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
                 for (index in 1 until features.size) {
-                    TvFeatureCard(
-                        feature = features[index],
-                        index = index,
-                        onOpenTitle = onOpenTitle,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .height(PairCardHeight)
-                                .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it },
-                    )
+                    key(features[index].set.setId) {
+                        // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                        val ownRequester = remember { FocusRequester() }
+                        TvFeatureCard(
+                            feature = features[index],
+                            index = index,
+                            onOpenTitle = onOpenTitle,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .height(PairCardHeight)
+                                    .focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
+                        )
+                    }
                 }
             }
         }

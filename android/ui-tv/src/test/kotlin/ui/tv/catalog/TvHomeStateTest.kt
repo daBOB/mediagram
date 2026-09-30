@@ -191,6 +191,48 @@ class TvHomeStateTest : TvScreenStateTest() {
         assertEquals(node.size.width.toFloat(), node.boundsInRoot.width, 1f)
     }
 
+    /**
+     * The box's own shape: the *second* card played, not the last — its own
+     * row still carries a `focusRequester` conditionally attached by index
+     * at the moment this grants (`TvContinueBand`'s own doc on
+     * `TvResumeCard`'s `ownRequester`), so a card that is not yet the
+     * restored stop must already look, structurally, exactly like one that
+     * is. Passed before the fix in this harness too — not because the
+     * mechanism this guards against does not exist, but because Robolectric
+     * does not model the native `FocusTargetNode.onReset` a real device's
+     * own lazy-layout reuse pool fires when a modifier's own presence
+     * toggles; verified by hand-reverting the fix and re-running this
+     * unchanged, still green. The box is what actually proves this one.
+     */
+    @Test
+    fun aRestoredSecondCardKeepsTheRemoteWhenItMovesToTheFront() {
+        val b = SetCard(set = film("b", "Card B"), caption = "", progress = 0.4f, watched = false)
+        val others = listOf(SetCard(set = film("a", "Card A"), caption = "", progress = 0.3f, watched = false))
+        val more = (2..4).map { SetCard(set = film("o$it", "Card $it"), caption = "", progress = 0.3f, watched = false) }
+        val magazine = mutableStateOf(continueMagazine(others + b + more))
+        show {
+            TvHome(
+                magazine = magazine.value,
+                rows = listOf(seriesRow("A Show")),
+                watch = WatchSnapshot.Empty,
+                listState = rememberLazyListState(),
+                onPlay = {},
+                onOpenTitle = {},
+                onOpenCollection = {},
+                onToggleWatchlist = { _, _ -> },
+                onSeeAll = {},
+                upExit = remember { FocusRequester() },
+                restoreKey = "b",
+            )
+        }
+        compose.onNodeWithText("Card B").assertIsFocused()
+
+        compose.runOnUiThread { magazine.value = continueMagazine(listOf(b) + others + more) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Card B").assertIsFocused()
+    }
+
     private fun film(
         id: String,
         title: String,

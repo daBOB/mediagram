@@ -195,11 +195,19 @@ fun <T> TvWall(
                     is WallCell.Heading -> TvBandHeading(title = cell.label, count = null)
                     is WallCell.Plate -> {
                         val item = items[cell.index]
+                        // Never omitted — see the same doc on `TvResumeCard`'s
+                        // own `ownRequester`: a plate whose own index is not
+                        // `focusIndex` right now still needs exactly one
+                        // `focusRequester` in its own modifier chain, on every
+                        // recomposition, or a restore whose own target moves
+                        // (a reorder, a refresh) resets whichever plate is
+                        // actually focused the moment the requester's presence
+                        // toggles away from it.
+                        val ownRequester = remember { FocusRequester() }
                         val crossingRequester = crossingFocusRequesters[cell.index]
                         val upTarget = crossings.up[cell.index]?.let(crossingFocusRequesters::getValue)
                         val downTarget = crossings.down[cell.index]?.let(crossingFocusRequesters::getValue)
-                        var itemModifier: Modifier = Modifier
-                        if (cell.index == focusIndex) itemModifier = itemModifier.focusRequester(focusRequester)
+                        var itemModifier: Modifier = Modifier.focusRequester(if (cell.index == focusIndex) focusRequester else ownRequester)
                         if (crossingRequester != null) itemModifier = itemModifier.focusRequester(crossingRequester)
                         if (upTarget != null || downTarget != null) {
                             itemModifier =

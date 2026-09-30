@@ -45,13 +45,20 @@ internal fun TvTextRow(
     // opened its page never heard the focus interaction — it held the
     // remote while looking exactly as if it did not.
     var focused by remember { mutableStateOf(false) }
+    // A requester of its own, never omitted: see the same doc on
+    // `TvResumeCard`'s own `ownRequester` — a caller naming no requester
+    // for this row still needs exactly one `focusRequester` in its modifier
+    // chain on every recomposition, or Compose treats the row as
+    // structurally different the moment one appears or disappears and
+    // resets whatever it had focused.
+    val ownRequester = remember { FocusRequester() }
 
     Text(
         text = text,
         style = TvFocus.textStyle(TvTypeScale.body, focused),
         modifier =
             modifier
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
+                .focusRequester(focusRequester ?: ownRequester)
                 .onFocusChanged { focused = it.isFocused }
                 .let { if (enabled) it else it.alpha(DisabledAlpha).semantics { disabled() } }
                 .clickable(indication = null, interactionSource = null, onClick = { if (enabled) onClick() }),

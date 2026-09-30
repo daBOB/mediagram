@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -66,6 +67,15 @@ internal fun TvResumeCard(
     val episode = set.kind != Kind.MOVIE && set.show != null
     val name = if (episode) requireNotNull(set.show) else set.title
     val art = set.backdropPath ?: set.posterPath
+    // A card of its own, never omitted: a caller naming no requester for
+    // this card still needs its modifier chain to carry exactly one
+    // `focusRequester`, on every recomposition, the same as a card that
+    // does — seeing one appear or disappear here as the row's own arrival
+    // target moves between cards is what let Compose treat the card as
+    // structurally different from the frame before, detach its focus
+    // target and clear whatever was focused (`TvHome.kt`'s own doc has the
+    // full account, found on the box).
+    val ownRequester = remember { FocusRequester() }
 
     Card(
         onClick = onOpen,
@@ -73,7 +83,7 @@ internal fun TvResumeCard(
             modifier
                 .width(ResumeCardWidth)
                 .semantics(mergeDescendants = true) {}
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
+                .focusRequester(focusRequester ?: ownRequester),
         shape = TvFocus.cardShape(),
         scale = TvFocus.cardScale(),
         border = TvFocus.cardBorder(),

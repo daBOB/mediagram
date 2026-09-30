@@ -157,11 +157,13 @@ private fun DocumentRow(
     // on arrival never hears a focus interaction and would hold the remote
     // while drawn as if it did not.
     var focused by remember { mutableStateOf(false) }
+    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+    val ownRequester = remember { FocusRequester() }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .let { if (focus != null) it.focusRequester(focus) else it }
+                .focusRequester(focus ?: ownRequester)
                 .onFocusChanged { focused = it.isFocused }
                 .focusable()
                 .semantics(mergeDescendants = true) { disabled() },

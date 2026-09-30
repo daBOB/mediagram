@@ -73,11 +73,13 @@ internal fun DeptRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
+            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+            val ownRequester = remember { FocusRequester() }
             TvPlate(
                 title = set.title,
                 posterPath = set.posterPath?.let(::File),
                 onOpen = { onOpenTitle(set.setId) },
-                modifier = Modifier.width(DeptTileWidth).let { if (index == focusAt && focus != null) it.focusRequester(focus) else it },
+                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
                 caption = factsLine(set.year, set.durationSecs),
                 held = set.setId in heldIds,
             )
@@ -114,12 +116,14 @@ internal fun DeptEntryRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
+            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+            val ownRequester = remember { FocusRequester() }
             TvEntryPlate(
                 entry = entry,
                 positions = positions,
                 watchedIds = watchedIds,
                 onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
-                modifier = Modifier.width(DeptTileWidth).let { if (index == focusAt && focus != null) it.focusRequester(focus) else it },
+                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
                 heldIds = heldIds,
             )
         }
@@ -148,11 +152,13 @@ internal fun GenreTileRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(genres, key = { _, genre -> genre.name }) { index, genre ->
+            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+            val ownRequester = remember { FocusRequester() }
             TvPlate(
                 title = genre.name,
                 posterPath = genre.art?.let(::File),
                 onOpen = { onOpenGenre(genre.name) },
-                modifier = Modifier.width(DeptTileWidth).let { if (index == focusAt && focus != null) it.focusRequester(focus) else it },
+                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
                 caption = titleCountLabel(genre.count),
             )
         }

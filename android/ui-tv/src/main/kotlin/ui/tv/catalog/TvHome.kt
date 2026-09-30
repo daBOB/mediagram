@@ -20,7 +20,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
@@ -190,11 +189,6 @@ internal fun TvHome(
     // wherever the sentinel just sent it — reproduced in Robolectric
     // (`TvMenuTest`/`TvSearchAndGenreTest`) before this guard existed.
     var arrived by remember { mutableStateOf(false) }
-    // Whether focus sits anywhere in this column right now — read only by
-    // the grant effect's own safety net below, a moment after it requests
-    // focus, to notice a request that landed and was then undone rather
-    // than to react to every ordinary focus move on this page.
-    var homeHasFocus by remember { mutableStateOf(false) }
     LaunchedEffect(covered, restoreKey) { if (covered && restoreKey != null) arrived = false }
     // `covered`, read fresh rather than trusted through `takesFocus` alone:
     // the moment a real stop opens, `target` and the reset above both react
@@ -220,21 +214,8 @@ internal fun TvHome(
         // on it.
         listState.scrollToItem(itemIndex)
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.first { info -> info.any { it.index == itemIndex } }
-        val requester = entryFocus.getValue(target.section)
-        requester.requestFocus()
+        entryFocus.getValue(target.section).requestFocus()
         arrived = true
-        // Safety net, not the fix: a reused or reset lazy slot in the
-        // catalogue this page was frozen behind while covered (`heldWhile`)
-        // can still clear the request above a few frames after it lands —
-        // found on the box on the first uncover following a cold-start
-        // refresh, past `TvRecentBand`'s own row, not reproduced here in
-        // Robolectric despite trying the same shape. A few frames is far
-        // sooner than a viewer could press anything to explain a loss
-        // honestly, so re-asking once here never answers for a deliberate
-        // move to the bar instead — only for one this page's own request
-        // already won and then lost on its own.
-        repeat(SafetyNetFrames) { withFrameNanos { } }
-        if (!covered && !homeHasFocus) requester.requestFocus()
     }
 
     val pagePadding = LocalTvPagePadding.current
@@ -263,8 +244,7 @@ internal fun TvHome(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .focusRestorer(fallback = included.firstOrNull()?.let(entryFocus::getValue) ?: coverFocus)
-                    .onFocusChanged { homeHasFocus = it.hasFocus },
+                    .focusRestorer(fallback = included.firstOrNull()?.let(entryFocus::getValue) ?: coverFocus),
             contentPadding = PaddingValues(top = if (hasCover) 0.dp else pagePadding.top, bottom = pagePadding.bottom + Overscan.horizontal),
         ) {
             if (hasCover) {
@@ -375,9 +355,6 @@ internal fun TvHome(
         }
     }
 }
-
-/** How long the arrival grant's own safety net waits before checking whether its request held — long enough to outlast a delayed reset, short enough that no viewer could press anything in the meantime. */
-private const val SafetyNetFrames = 3
 
 /** [row]'s own entries, narrowed to the collections a poster row or a course list actually draws — [HomeRow] can also carry [catalog.SetCard]s (Continue, Next up), which never reach here. */
 private fun collectionsOf(

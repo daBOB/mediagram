@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -52,13 +53,17 @@ internal fun TvSimilarFilms(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         films.forEachIndexed { index, set ->
-            TvPlate(
-                title = set.title,
-                posterPath = set.posterPath?.let(::File),
-                onOpen = { onOpenTitle(set.setId) },
-                modifier = plateModifier(index, focusIndex, focusRequester),
-                caption = factsLine(set.year, set.durationSecs),
-            )
+            key(set.setId) {
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val ownRequester = remember { FocusRequester() }
+                TvPlate(
+                    title = set.title,
+                    posterPath = set.posterPath?.let(::File),
+                    onOpen = { onOpenTitle(set.setId) },
+                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    caption = factsLine(set.year, set.durationSecs),
+                )
+            }
         }
     }
 }
@@ -83,21 +88,17 @@ internal fun TvSimilarShows(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         shows.forEachIndexed { index, entry ->
-            TvPlate(
-                title = entry.name,
-                posterPath = entry.posterPath?.let(::File),
-                onOpen = { onOpenCollection(entry.key) },
-                modifier = plateModifier(index, focusIndex, focusRequester),
-                caption = extentOf(entry),
-            )
+            key(entry.key) {
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val ownRequester = remember { FocusRequester() }
+                TvPlate(
+                    title = entry.name,
+                    posterPath = entry.posterPath?.let(::File),
+                    onOpen = { onOpenCollection(entry.key) },
+                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    caption = extentOf(entry),
+                )
+            }
         }
     }
 }
-
-/** A similar plate's width, plus the arrival/restore [focusRequester] on whichever one [focusIndex] names. */
-private fun plateModifier(
-    index: Int,
-    focusIndex: Int,
-    focusRequester: FocusRequester,
-): Modifier =
-    Modifier.width(SimilarPlateWidth).let { if (index == focusIndex) it.focusRequester(focusRequester) else it }

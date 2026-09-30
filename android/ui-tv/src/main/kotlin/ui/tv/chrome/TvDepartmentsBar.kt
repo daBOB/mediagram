@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -92,8 +94,17 @@ internal fun TvDepartmentsBar(
             horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
         ) {
             pills.forEachIndexed { index, pill ->
-                val pillModifier = if (index == selected) downModifier.focusRequester(selectedPillFocus) else downModifier
-                TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
+                key(pill.title) {
+                    // Never omitted — see the same doc on `TvResumeCard`'s
+                    // own `ownRequester`: a pill that is not the selected
+                    // one right now still needs exactly one `focusRequester`
+                    // in its own modifier chain on every recomposition, or
+                    // the pill the remote is actually on resets the moment
+                    // a different one becomes selected.
+                    val ownRequester = remember { FocusRequester() }
+                    val pillModifier = downModifier.focusRequester(if (index == selected) selectedPillFocus else ownRequester)
+                    TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
+                }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {

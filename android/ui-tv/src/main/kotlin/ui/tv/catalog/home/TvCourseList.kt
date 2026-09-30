@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -54,6 +55,8 @@ internal fun TvCourseList(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         courses.forEachIndexed { index, course ->
             key(course.key) {
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val ownRequester = remember { FocusRequester() }
                 Card(
                     onClick = { onOpen(course.key) },
                     modifier =
@@ -61,7 +64,7 @@ internal fun TvCourseList(
                             .keepsInViewWhenMoved(index)
                             .fillMaxWidth()
                             .semantics(mergeDescendants = true) {}
-                            .let { if (index == focusAt && focus != null) it.focusRequester(focus) else it }
+                            .focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester)
                             .let { if (index == courses.lastIndex) it.then(lastStop) else it },
                     shape = TvFocus.cardShape(),
                     scale = TvFocus.cardScale(),

@@ -81,12 +81,14 @@ internal fun TvCastRow(
         }
         LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
             itemsIndexed(credits.cast, key = { _, credit -> credit.personId }) { index, credit ->
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val ownRequester = remember { FocusRequester() }
                 TvCastPlate(
                     credit = credit,
                     onOpen = { onOpenPerson(credit.personId) },
                     shouldRequestPortrait = shouldRequestPortrait,
                     fetchPortrait = fetchPortrait,
-                    modifier = if (index == focusIndex) Modifier.width(CastPlateWidth).focusRequester(focusRequester) else Modifier.width(CastPlateWidth),
+                    modifier = Modifier.width(CastPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
                 )
             }
         }

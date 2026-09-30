@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.84.4 — Android TV: the root cause of a reordered card losing focus
+
+**Fixed**
+
+- Found on the box: playing the second Continue card, then Back, lost focus
+  to the Home pill every time — the reorder that plays it moves it to the
+  row's own front, and every row on this surface (Home's bands, a
+  department's rows, a wall's own grid, cast/similar/search rows, the
+  departments bar's own pills, a franchise row, a settings choice, a
+  profile tile, an accent swatch) attached its arrival `FocusRequester` to
+  whichever card an index currently named and omitted it from every other
+  one — so the moment that index moved, the modifier that had been on the
+  focused card's own chain vanished from under it. Compose detaches and
+  rebuilds a focus target's whole chain when a modifier structurally
+  appears or disappears ahead of it, clearing whatever it held; the root's
+  own focus search then lands on the first focusable it finds, the bar.
+  Fixed at the source, everywhere this pattern appeared: every card carries
+  its own stable requester now, always attached, so only which requester
+  a caller passes changes, never whether one is there at all — replaces the
+  three-frame safety net 0.84.3 added, which patched the symptom for one
+  path and is no longer needed once every path's own root cause is fixed.
+  Not reproducible in Robolectric — confirmed by hand-reverting the fix and
+  re-running the test written for it, which stayed green either way, the
+  same limitation already found and reported for the two regressions before
+  it.
+
 ## 0.84.3 — Android TV: a safety net for the first return after a cold-start refresh
 
 **Added**

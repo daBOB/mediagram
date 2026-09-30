@@ -188,14 +188,13 @@ internal fun TvCollectionsPage(
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                             ) {
                                 itemsIndexed(franchises, key = { _, franchise -> franchise.id }) { index, franchise ->
+                                    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                                    val ownRequester = remember { FocusRequester() }
                                     TvPlate(
                                         title = franchise.name,
                                         posterPath = franchise.art?.let(::File),
                                         onOpen = { onOpenFranchise(franchise.id) },
-                                        modifier =
-                                            Modifier.width(FranchiseTileWidth).let {
-                                                if (index == franchiseIndex) it.focusRequester(franchiseFocus) else it
-                                            },
+                                        modifier = Modifier.width(FranchiseTileWidth).focusRequester(if (index == franchiseIndex) franchiseFocus else ownRequester),
                                         caption = "${franchise.films.size} films",
                                     )
                                 }

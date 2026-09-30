@@ -78,12 +78,14 @@ internal fun TvSearchRow(
     // Read from the focus state itself, as TvTextRow does: a row focused on
     // arrival never hears a focus interaction.
     var focused by remember { mutableStateOf(false) }
+    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+    val ownRequester = remember { FocusRequester() }
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .let { if (focus != null) it.focusRequester(focus) else it }
+                .focusRequester(focus ?: ownRequester)
                 .onFocusChanged { focused = it.isFocused }
                 .let {
                     if (playable) {
@@ -115,7 +117,8 @@ internal fun TvShowSearchRow(
     TvTextRow(
         text = "${entry.name} · ${extentOf(entry)}",
         onClick = { onOpenCollection(entry.key) },
-        modifier = Modifier.fillMaxWidth().let { if (focus != null) it.focusRequester(focus) else it },
+        modifier = Modifier.fillMaxWidth(),
+        focusRequester = focus,
     )
 }
 
@@ -135,11 +138,13 @@ internal fun TvPersonSearchRow(
 ) {
     val portrait = rememberPortrait(person.personId, person.portraitPath, shouldRequestPortrait, fetchPortrait)
     var focused by remember { mutableStateOf(false) }
+    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+    val ownRequester = remember { FocusRequester() }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .let { if (focus != null) it.focusRequester(focus) else it }
+                .focusRequester(focus ?: ownRequester)
                 .onFocusChanged { focused = it.isFocused }
                 // Merged, the same reason `TvPlate`'s own Card is: the name
                 // and title count are this row's one announcement, and a
@@ -190,6 +195,7 @@ internal fun TvDestinationSearchRow(
     TvTextRow(
         text = "${destination.name} · ${destination.itemCount} ${if (destination.itemCount == 1) "title" else "titles"}",
         onClick = { onOpenDestination(destination) },
-        modifier = Modifier.fillMaxWidth().let { if (focus != null) it.focusRequester(focus) else it },
+        modifier = Modifier.fillMaxWidth(),
+        focusRequester = focus,
     )
 }

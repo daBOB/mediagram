@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -97,13 +98,15 @@ private fun TvAccentSwatch(
     focusRequester: FocusRequester? = null,
 ) {
     val label = accent.name.lowercase().replaceFirstChar(Char::uppercase)
+    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+    val ownRequester = remember { FocusRequester() }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
         Surface(
             onClick = onSelect,
             modifier =
                 Modifier
                     .size(SwatchSize)
-                    .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
+                    .focusRequester(focusRequester ?: ownRequester)
                     .semantics {
                         contentDescription = label
                         role = Role.RadioButton

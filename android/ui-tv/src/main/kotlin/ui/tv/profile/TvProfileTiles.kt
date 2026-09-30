@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,6 +117,8 @@ private fun TileCard(
     width: Dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+    val ownRequester = remember { FocusRequester() }
     Card(
         onClick = onClick,
         modifier =
@@ -123,7 +126,7 @@ private fun TileCard(
                 .width(width)
                 .height(TileHeight)
                 .testTag(tag)
-                .let { if (focusRequester != null) it.focusRequester(focusRequester) else it },
+                .focusRequester(focusRequester ?: ownRequester),
         shape = TvFocus.cardShape(),
         scale = TvFocus.cardScale(),
         border = TvFocus.cardBorder(),
