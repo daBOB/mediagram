@@ -36,3 +36,9 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - Web (live player, API): S3E1 lists `English`; `/subtitles/0.vtt` → 200, WebVTT, 53,845 B, 0.24 s first (Telegram), 3 ms repeat (memory).
 - This machine: uploader reinstalled 0.92.0 → 0.92.1.
 - 08:15 `pull-index` (+101 sets, 8 bundles taken): **pre-move snapshot = message 12287**. `move-inline --dry-run`: 1,266 sets / 1,266 inline rows would move.
+
+## 2026-10-01 — move-inline done; channel backfill spot check
+
+- **move-inline** (this machine, 0.92.1, started 08:17, ~45 min): moved 1,266, mismatched 0 → published message **13597**. Channel copy afterwards: 0 inline subtitle rows, 1,302 bundles (incl. the other machine's new uploads; its later v13 push kept them all). Web: a Geldhochschule lesson serves its VTT from the bundle. TV box ("TV test"): Geldhochschule 8 shows cues from the bundle with the captions key (inline rows no longer exist, so this is the Android bundle path on a real bundle).
+- **backfill --channel --dry-run:** 2,502 MP4 + 1,051 other candidates.
+- **backfill --channel --limit 20** (10:12–11:10): bundled 20, nothing 0, skipped 0, failed 0 → published message **13722**. Star City S1 and Drops of God S1 episodes: German + English (+ SDH), and a real 2-cue "English (Forced)" track (on-screen captions) found by flag/title. **≈ 2.9 min per set** (4 tracks per set here), not the ~1 min the 07a single-track probe measured → MP4 remainder ≈ 5 days unattended; MKV (full reads) longer.
