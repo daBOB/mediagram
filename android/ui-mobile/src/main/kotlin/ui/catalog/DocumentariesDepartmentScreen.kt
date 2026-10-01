@@ -147,6 +147,7 @@ internal fun DocumentariesDepartmentScreen(
 @Composable
 private fun DocumentaryRow(sets: List<MediaSet>, watchedIds: Set<String>, onPlay: (String) -> Unit) {
     LazyRow(
+        state = rememberRowState(sets.map(MediaSet::setId)),
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         contentPadding = PaddingValues(horizontal = Spacing.medium),

@@ -40,6 +40,7 @@ internal fun PosterRow(items: List<PosterRowItem>) {
         return
     }
     LazyRow(
+        state = rememberRowState(items.map(PosterRowItem::key)),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         contentPadding = PaddingValues(vertical = Spacing.small),
     ) {

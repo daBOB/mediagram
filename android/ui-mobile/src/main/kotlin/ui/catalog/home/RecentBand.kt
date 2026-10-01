@@ -35,6 +35,7 @@ import coil3.compose.AsyncImage
 import designsystem.Eyebrow
 import model.MediaSet
 import java.io.File
+import ui.catalog.rememberRowState
 
 /**
  * Recently Added — posters alone, no caption, the poster standing for the
@@ -92,7 +93,7 @@ private fun PosterStrip(
     onOpenTitle: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(bottom = 4.dp)) {
+    LazyRow(state = rememberRowState(films.map(MediaSet::setId)), modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(bottom = 4.dp)) {
         items(items = films, key = MediaSet::setId) { set ->
             Box(
                 modifier =

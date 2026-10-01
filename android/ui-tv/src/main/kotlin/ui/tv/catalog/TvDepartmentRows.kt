@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
 import model.Progress
+import ui.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 
 /** How wide a tile is on a department page's film, entry and genre rows. */
@@ -62,14 +64,18 @@ internal fun DeptRow(
 ) {
     if (films.isEmpty()) return
     Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null, trailing = trailing) }
-    val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) })
+    val inRow = remember { mutableStateOf(false) }
+    val state = rememberRowState(films.map(MediaSet::setId), rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
     LazyRow(
         state = state,
         modifier =
             Modifier
                 .padding(top = Spacing.small)
-                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+                .onFocusChanged { s ->
+                    inRow.value = s.hasFocus
+                    if (s.hasFocus) onSectionFocused?.invoke()
+                },
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
@@ -105,14 +111,18 @@ internal fun DeptEntryRow(
 ) {
     if (entries.isEmpty()) return
     Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
-    val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) })
+    val inRow = remember { mutableStateOf(false) }
+    val state = rememberRowState(entries.map { keyOf(it) }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
     LazyRow(
         state = state,
         modifier =
             Modifier
                 .padding(top = Spacing.small)
-                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+                .onFocusChanged { s ->
+                    inRow.value = s.hasFocus
+                    if (s.hasFocus) onSectionFocused?.invoke()
+                },
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->

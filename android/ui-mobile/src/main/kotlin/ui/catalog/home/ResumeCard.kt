@@ -45,6 +45,7 @@ import model.Kind
 import model.MediaSet
 import model.episodeLabel
 import java.io.File
+import ui.catalog.rememberRowState
 
 /** The web's `--progress` — a fixed accent for a resume card's own bar, distinct from the theme's accent (`theme.css:103`). */
 private val ProgressBlue = Color(0xFF6FB7E8)
@@ -57,6 +58,7 @@ internal fun ResumeRow(
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
+        state = rememberRowState(cards.map { it.set.setId }),
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 8.dp),

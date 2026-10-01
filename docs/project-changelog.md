@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.92.2 — Android rows show what arrives in front of them
+
+**Fixed**
+
+- A row still at its start now shows its new start when a catalog refresh
+  puts something in front: the tablet's Series "New episodes" row kept
+  opening on Bones while Seinfeld and Boston Legal, newer, sat scrolled off
+  to its left. A keyed `LazyRow` holds on to the item it showed first;
+  `rememberRowState` (`ui-common`) moves the row back to its start instead,
+  as the web player's rebuilt row does, and leaves a row the viewer has
+  scrolled into where it is. Applied to the phone's New episodes, Popular,
+  category, Latest/Recently added, film, documentary and Continue rows, and
+  to the television's department and Continue rows.
+
 ## 0.92.0 — lesson subtitles move into bundles; subtitles backfill from folders or the channel
 
 **Added**

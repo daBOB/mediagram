@@ -129,6 +129,7 @@ internal fun ShowsDepartmentScreen(
 @Composable
 private fun CollectionRow(shows: List<Entry.Collection>, onOpenCollection: (String) -> Unit) {
     LazyRow(
+        state = rememberRowState(shows.map { it.key }),
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         contentPadding = PaddingValues(horizontal = Spacing.medium),

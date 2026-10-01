@@ -30,6 +30,7 @@ import catalog.Entry
 import catalog.initialsOf
 import coil3.compose.AsyncImage
 import java.io.File
+import ui.catalog.rememberRowState
 
 /**
  * Latest series: one scrolling row of poster cards, each captioned with its
@@ -48,7 +49,7 @@ internal fun HomeShelfRow(
     if (shows.isEmpty()) return
     // `max(136dp, (column - 98dp) / 8)` (`catalog.css:35`, the strip's own auto-column formula, at the row's own width).
     val cardWidth = ((width - 98.dp) / 8f).coerceAtLeast(136.dp)
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(bottom = 4.dp)) {
+    LazyRow(state = rememberRowState(shows.map(Entry.Collection::key)), horizontalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(bottom = 4.dp)) {
         items(items = shows, key = Entry.Collection::key) { show ->
             Column(modifier = Modifier.width(cardWidth).clickable(role = Role.Button, onClick = { onOpen(show.key) })) {
                 Box(

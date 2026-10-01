@@ -108,6 +108,7 @@ internal fun MoviesDepartmentScreen(
 @Composable
 private fun FilmRow(films: List<MediaSet>, watchedIds: Set<String>, onOpenTitle: (String) -> Unit) {
     LazyRow(
+        state = rememberRowState(films.map(MediaSet::setId)),
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         contentPadding = PaddingValues(horizontal = Spacing.medium),

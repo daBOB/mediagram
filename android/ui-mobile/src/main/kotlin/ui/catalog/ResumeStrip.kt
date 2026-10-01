@@ -50,6 +50,7 @@ internal fun ResumeStrip(
 ) {
     if (cards.isEmpty()) return
     LazyRow(
+        state = rememberRowState(cards.map { it.set.setId }),
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.medium),

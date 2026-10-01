@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -17,6 +18,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import catalog.SetCard
 import designsystem.Spacing
+import ui.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvResumeCard
 
@@ -44,14 +46,18 @@ internal fun DeptResumeRow(
 ) {
     if (cards.isEmpty()) return
     Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
-    val state = rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = ResumeCacheAhead, behind = ResumeCacheAhead) })
+    val inRow = remember { mutableStateOf(false) }
+    val state = rememberRowState(cards.map { it.set.setId }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = ResumeCacheAhead, behind = ResumeCacheAhead) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
     LazyRow(
         state = state,
         modifier =
             Modifier
                 .padding(top = Spacing.small)
-                .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
+                .onFocusChanged { s ->
+                    inRow.value = s.hasFocus
+                    if (s.hasFocus) onSectionFocused?.invoke()
+                },
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(cards, key = { _, card -> card.set.setId }) { index, card ->

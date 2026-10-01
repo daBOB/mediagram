@@ -32,6 +32,7 @@ internal fun DocumentaryUnitRow(
     onPlay: (String) -> Unit,
 ) {
     LazyRow(
+        state = rememberRowState(units.map(::keyOf)),
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         contentPadding = PaddingValues(horizontal = Spacing.medium),
