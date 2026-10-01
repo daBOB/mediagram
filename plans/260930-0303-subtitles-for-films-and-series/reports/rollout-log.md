@@ -43,3 +43,9 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - **backfill --channel --dry-run:** 2,502 MP4 + 1,051 other candidates.
 - **backfill --channel --limit 20** (10:12–11:10): bundled 20, nothing 0, skipped 0, failed 0 → published message **13722**. Star City S1 and Drops of God S1 episodes: German + English (+ SDH), and a real 2-cue "English (Forced)" track (on-screen captions) found by flag/title. **≈ 2.9 min per set** (4 tracks per set here), not the ~1 min the 07a single-track probe measured → MP4 remainder ≈ 5 days unattended; MKV (full reads) longer.
 - 11:20 unattended **backfill --channel** (MP4, no limit) started on this machine: 2,482 candidates; log `~/.local/share/mediagram/backfill-channel-261001.log` (outside the repo). Publishes every 100 sets. `--mkv` (1,051 sets) not started — waits for the user.
+
+## 2026-10-01 22:05 — channel backfill interrupted by a reboot, restarted
+
+- The 11:20 run stopped at ~20:10 when this machine rebooted (up again 20:32): **267** sets bundled, 212 of them published (last push message **14232**, 17:05); the other 55 sat in the local index only.
+- `backfill --channel --dry-run`: **2,215** MP4 sets left (= 2,482 − 267) — the run resumes from the index, nothing redone.
+- 22:05 restarted detached (`setsid nohup`), log `~/.local/share/mediagram/backfill-channel-261001-2205.log` (outside the repo). The 55 unpublished bundles ride along with its first publish.
