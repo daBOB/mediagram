@@ -35,3 +35,4 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - Other machine now 0.92.1 (`main` 202ca23a, a prepare fix on top of 0.92.0). Its 04:28 push is **v13**, 7,202 sets, **8 bundles** (The Deuce S3E1–8, one English track each) — gate "other uploader at schema ≥ 13 by its own push" met, and phase 06 works on a real upload.
 - Web (live player, API): S3E1 lists `English`; `/subtitles/0.vtt` → 200, WebVTT, 53,845 B, 0.24 s first (Telegram), 3 ms repeat (memory).
 - This machine: uploader reinstalled 0.92.0 → 0.92.1.
+- 08:15 `pull-index` (+101 sets, 8 bundles taken): **pre-move snapshot = message 12287**. `move-inline --dry-run`: 1,266 sets / 1,266 inline rows would move.
