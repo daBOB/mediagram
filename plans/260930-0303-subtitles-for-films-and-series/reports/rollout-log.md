@@ -28,3 +28,10 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - Web player: `bun --watch` dev player reloaded onto each merge; runs 0.92.0 code, healthy (0 failed reads).
 - TV box `192.168.0.35:5555`: native core rebuilt, `installBenchmark` 0.84.6 → 0.92.0, `compile -m speed`. On its "TV test" profile: launches on the v13 index; Settings index has five sections (Profile = "TV test", System "0.92.0 · all current"); Profile pane shows Subtitles Off/German/English (Off), focus walk in and out without selecting. Geldhochschule 7 (`und` inline track): `keyevent 175` → cues on, controls shown, CC ●, focus on Pause; again → CC ○; CC button by D-pad → ● and back ○, focus stays on CC. Played for the test: Geldhochschule lesson 7 (resumed from its Continue position to its end) and a few seconds of the next lesson ("Trading · Tools"), both on "TV test". Storage read "70 MB of 8.0 GB" before the walk — not touched.
 - Not done yet: tablet `caad49da` (not connected); forced-only title check (needs a bundle); one real end-to-end upload; move-inline + backfill runbook (phase 07); cross-device preference check (phase 08).
+
+## 2026-10-01 08:10 — both uploaders on v13; first bundles live
+
+- 02:24: a v12 index replaced this machine's v13 push (12130): an upload on the other machine finished on a pre-guard build and published. No data lost (no bundles existed yet); 58 sets came with it.
+- Other machine now 0.92.1 (`main` 202ca23a, a prepare fix on top of 0.92.0). Its 04:28 push is **v13**, 7,202 sets, **8 bundles** (The Deuce S3E1–8, one English track each) — gate "other uploader at schema ≥ 13 by its own push" met, and phase 06 works on a real upload.
+- Web (live player, API): S3E1 lists `English`; `/subtitles/0.vtt` → 200, WebVTT, 53,845 B, 0.24 s first (Telegram), 3 ms repeat (memory).
+- This machine: uploader reinstalled 0.92.0 → 0.92.1.
