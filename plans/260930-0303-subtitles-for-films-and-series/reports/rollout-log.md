@@ -49,3 +49,7 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - The 11:20 run stopped at ~20:10 when this machine rebooted (up again 20:32): **267** sets bundled, 212 of them published (last push message **14232**, 17:05); the other 55 sat in the local index only.
 - `backfill --channel --dry-run`: **2,215** MP4 sets left (= 2,482 − 267) — the run resumes from the index, nothing redone.
 - 22:05 restarted detached (`setsid nohup`), log `~/.local/share/mediagram/backfill-channel-261001-2205.log` (outside the repo). The 55 unpublished bundles ride along with its first publish.
+
+## 2026-10-02 00:21 — tablet on 0.92.2
+
+- Tablet `caad49da`: native core rebuilt, `installDebug` 0.81.0 → 0.92.2 (pinned serial), launches on the v13 index (no crash, library loads). Installed for an Android row fix (0.92.2); the phase 04/05 tablet checks (CC button, captions, Profile setting) are still to do.
