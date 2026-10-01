@@ -8,6 +8,14 @@ Newest first.
 
 ---
 
+## 2026-09-29 — Decouple media preparation from the upload queue to prevent idle upload bandwidth
+
+**What happened.** When ingesting bulk TV series with `mediagram`, preparation (`mediagram prepare --mp4`) was coupled in lockstep with uploading per show (`prepare show A -> upload show A -> prepare show B -> upload show B`). Preparing 4K or multi-season shows with ffmpeg on network mounts took hours during which upload network bandwidth sat completely idle and nothing moved to Telegram. Furthermore, `--delete-source` was missing from `add-show`, leaving prepared files on disk after upload.
+
+**Rule.** Decouple heavy local media preprocessing (remuxing, transcoding, container conversion) from upload queues. Run bulk preparation across the catalog upfront (with `prepare --delete-source` to prune original containers), and always pass `--delete-source` to `add-show` so uploaded files are purged incrementally as each part reaches the channel.
+
+---
+
 ## 2026-09-23 — A schema bump checked the web reader and missed the CLI one
 
 **What happened.** Moving the index to v7, the web player was kept reading v6

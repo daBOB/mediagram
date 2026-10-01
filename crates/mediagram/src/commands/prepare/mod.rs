@@ -89,7 +89,10 @@ pub async fn run(cfg: &Config, args: PrepareArgs) -> Result<()> {
                 plan.verdict,
                 Verdict::Prepare | Verdict::PrepareStillOversized
             );
-            let unplayable = args.mp4 && !direct_play::plays_directly(file, &plan.keep);
+            let unplayable = args.mp4
+                && direct_play::blockers(file, &plan.keep)
+                    .iter()
+                    .any(|b| b.fixable_by_prepare());
             oversized || unplayable
         })
         .collect();
