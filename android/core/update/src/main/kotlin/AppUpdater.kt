@@ -96,6 +96,8 @@ class AppUpdater
                 }
                 removeStale(wantedCode = release.versionCode)
                 val apk = File(config.updatesDir, "${release.versionCode}.apk")
+                // A newer release deleted the file the pointer named.
+                if (ready?.file != apk) ready = null
                 // The core renames a download into place only once it matched its caption.
                 if (!apk.exists()) {
                     _status.value = UpdateStatus.Downloading(release.versionName)

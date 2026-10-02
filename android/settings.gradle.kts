@@ -53,11 +53,11 @@ include(":feature:catalog")
 include(":feature:player")
 include(":feature:setup")
 include(":feature:system")
-include(":feature:update")
 
 // Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
 include(":core:designsystem")
 include(":core:data")
+include(":core:update")
 include(":core:rust")
 include(":core:model")
 include(":core:playback")

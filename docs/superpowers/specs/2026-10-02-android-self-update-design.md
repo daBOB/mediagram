@@ -152,7 +152,7 @@ PackageInstaller session, USER_ACTION_NOT_REQUIRED
   returns an error.
 - `FakeCore`/`FakeCoreHandle` and the generated bindings grow accordingly.
 
-### Android updater (new `android/feature/update`)
+### Android updater (new `android/core/update`)
 
 - `AppUpdater` (Hilt singleton):
   - `onForeground()` (from `MainActivity.onStart`, beside

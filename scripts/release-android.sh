@@ -25,7 +25,6 @@ if [ "$CERT" != "$EXPECTED_CERT" ]; then
   echo "refusing to publish: $APK is signed by '${CERT:-nothing}', not the release key" >&2
   exit 1
 fi
-aapt2 dump badging "$APK" | head -1
 
 # From source, so the command always matches this checkout (the installed
 # uploader can lag main).

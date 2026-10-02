@@ -313,6 +313,9 @@ class FakeCore(
     var downloadFailure: Throwable? = null
     val downloadedPaths = mutableListOf<String>()
 
+    /** When set, [downloadAppRelease] suspends on it before writing, so a test can cancel a download in flight. */
+    var downloadGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     override suspend fun latestAppRelease(handle: String): AppRelease? {
         releaseChecks++
         releaseFailure?.let { throw it }
@@ -322,6 +325,7 @@ class FakeCore(
     override suspend fun downloadAppRelease(release: AppRelease, path: String) {
         downloadedPaths += path
         downloadFailure?.let { throw it }
+        downloadGate?.await()
         java.io.File(path).writeBytes(releaseApk)
     }
 

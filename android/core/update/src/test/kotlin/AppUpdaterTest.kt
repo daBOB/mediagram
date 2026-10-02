@@ -2,7 +2,11 @@ package update
 
 import android.content.pm.PackageInstaller
 import data.CoreProvider
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
 import testing.FakeCore
@@ -147,6 +151,44 @@ class AppUpdaterTest {
             updater.onInstallResult(PackageInstaller.STATUS_FAILURE, "storage", null)
             assertEquals(UpdateStatus.Failed("storage"), updater.status.value)
             assertTrue(!File(dir, "93000.apk").exists())
+            updater.installIfReady()
+            assertTrue(installer.installed.isEmpty())
+        }
+
+    @Test
+    fun aDownloadInFlightIsCancelledWhenPlaybackStartsAndRetriedLater() =
+        runTest {
+            core.downloadGate = CompletableDeferred()
+            val updater = updater()
+            val check = launch { updater.checkAndDownload() }
+            advanceTimeBy(1_000)
+            playing = true
+            advanceTimeBy(2_001)
+            runCurrent()
+            assertTrue(check.isCompleted)
+            assertEquals(UpdateStatus.NotChecked, updater.status.value)
+            assertTrue(!File(dir, "93000.apk").exists())
+            playing = false
+            updater.installIfReady()
+            assertTrue(installer.installed.isEmpty())
+
+            core.downloadGate = null
+            updater.checkAndDownload()
+            assertEquals(2, core.downloadedPaths.size)
+            assertEquals(UpdateStatus.Ready("0.93.0"), updater.status.value)
+        }
+
+    @Test
+    fun aNewerReleaseThatFailsToDownloadDoesNotInstallTheDeletedOne() =
+        runTest {
+            val updater = updater()
+            updater.checkAndDownload()
+            assertEquals(UpdateStatus.Ready("0.93.0"), updater.status.value)
+            core.latestRelease = release.copy(versionName = "0.94.0", versionCode = 94_000L)
+            core.downloadFailure = IllegalStateException("no network")
+            updater.now = { 5_000_000L }
+            updater.checkAndDownload()
+            assertEquals(UpdateStatus.Failed("no network"), updater.status.value)
             updater.installIfReady()
             assertTrue(installer.installed.isEmpty())
         }

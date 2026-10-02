@@ -2,6 +2,7 @@ package com.mediagram.android.di
 
 import android.content.Context
 import android.os.Build
+import androidx.media3.common.Player
 import com.mediagram.android.R
 import com.mediagram.android.isTelevision
 import dagger.Lazy
@@ -49,5 +50,12 @@ object UpdateModule {
      */
     @Provides
     fun playback(handle: Lazy<PlayerHandle>): PlaybackActivity =
-        PlaybackActivity { withContext(Dispatchers.Main.immediate) { handle.get().player.value?.isPlaying == true } }
+        PlaybackActivity {
+            withContext(Dispatchers.Main.immediate) {
+                // Buffering a title that is about to play counts: isPlaying is false then.
+                handle.get().player.value?.let {
+                    it.isPlaying || (it.playWhenReady && it.playbackState == Player.STATE_BUFFERING)
+                } == true
+            }
+        }
 }
