@@ -4,28 +4,63 @@ plugins {
     alias(libs.plugins.app.hilt)
 }
 
+/**
+ * The versionCode Android compares before installing an update, derived from
+ * versionName so a release can never forget to raise it and two machines
+ * can never hand out the same one: 0.93.0 → 93000.
+ */
+fun versionCodeOf(name: String): Int {
+    val parts = name.split(".").map { it.toIntOrNull() ?: error("versionName $name is not major.minor.patch") }
+    require(parts.size == 3) { "versionName $name is not major.minor.patch" }
+    val (major, minor, patch) = parts
+    require(minor < 1000 && patch < 1000) { "versionName $name: minor and patch must stay below 1000" }
+    return major * 1_000_000 + minor * 1_000 + patch
+}
+
+/** This machine's release key, from ~/.gradle/gradle.properties; absent elsewhere, so a release built there is unsigned. */
+val releaseStoreFile: String? = providers.gradleProperty("mediagram.signing.storeFile").orNull
+
 android {
     namespace = "com.mediagram.android"
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionCode = 18
-        versionName = "0.92.2"
+        versionName = "0.92.3"
+        versionCode = versionCodeOf(versionName!!)
+        // Only a release build updates itself; debug and benchmark builds are installed by adb.
+        resValue("bool", "self_update", "false")
+    }
+
+    buildFeatures { resValues = true }
+
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = providers.gradleProperty("mediagram.signing.storePassword").get()
+                keyAlias = providers.gradleProperty("mediagram.signing.keyAlias").get()
+                keyPassword = providers.gradleProperty("mediagram.signing.keyPassword").get()
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // The two ABIs real devices have: the tablet (arm64) and the TV box (armv7 only).
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+            resValue("bool", "self_update", "true")
+            if (releaseStoreFile != null) signingConfig = signingConfigs.getByName("release")
         }
         // A build as fast as a release is meant to be — not debuggable, so
         // ART compiles it ahead of time instead of interpreting it, and
-        // minified by R8. `release` above is not minified yet, so what this
-        // measures is the ceiling a minified release would reach, not what
-        // today's release delivers. Signed with the debug
+        // minified by R8. `release` above is minified the same way, so this
+        // measures what a release delivers. Signed with the debug
         // key, so it installs over a debug install on a device that is
         // already signed in, keeping that session instead of asking for a
         // new SMS code. Only for measuring on a real device: a debug build
@@ -34,6 +69,9 @@ android {
         // gfxinfo and Perfetto can still read it.
         create("benchmark") {
             initWith(getByName("release"))
+            // Measuring builds are installed by adb and never replace themselves; any ABI, for emulators too.
+            resValue("bool", "self_update", "false")
+            ndk { abiFilters.clear() }
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
