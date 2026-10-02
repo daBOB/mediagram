@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import uniffi.mediagram_core.AccountSummary
+import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.CoreException
@@ -300,6 +301,28 @@ class FakeCore(
         refreshFails?.let { error(it) }
         installFailure?.let { throw it }
         return refreshLibraryAnswer(handle).toULong()
+    }
+
+    /** What [latestAppRelease] answers, or throws when [releaseFailure] is set. */
+    var latestRelease: AppRelease? = null
+    var releaseFailure: Throwable? = null
+    var releaseChecks = 0
+
+    /** Bytes [downloadAppRelease] writes to the path it is given, or the failure it throws instead. */
+    var releaseApk: ByteArray = ByteArray(0)
+    var downloadFailure: Throwable? = null
+    val downloadedPaths = mutableListOf<String>()
+
+    override suspend fun latestAppRelease(handle: String): AppRelease? {
+        releaseChecks++
+        releaseFailure?.let { throw it }
+        return latestRelease
+    }
+
+    override suspend fun downloadAppRelease(release: AppRelease, path: String) {
+        downloadedPaths += path
+        downloadFailure?.let { throw it }
+        java.io.File(path).writeBytes(releaseApk)
     }
 
     override suspend fun refreshCatalog(pointerUrl: String, keyB64: String): ULong = refreshResult.toULong()
