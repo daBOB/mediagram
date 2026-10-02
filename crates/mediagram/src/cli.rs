@@ -54,6 +54,11 @@ pub enum Cmd {
     },
     /// Upload library.db to the channel and pin it
     PushIndex(PushIndexArgs),
+    /// Send a signed Android APK to the channel as the newest app release, pinned
+    PublishApp {
+        /// The release APK; `scripts/release-android.sh` builds and checks it first
+        apk: std::path::PathBuf,
+    },
     /// Merge the channel's index into this one, so either machine can publish everything
     PullIndex(PullIndexArgs),
     /// Pull the channel's index, describe titles, fetch artwork, and push: the

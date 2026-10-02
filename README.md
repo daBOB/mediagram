@@ -445,6 +445,17 @@ cd android && ./gradlew installDebug   # set ANDROID_SERIAL when several devices
 Rebuild the core after any Rust change. A stale native library still builds,
 but the app crashes at launch.
 
+### Releasing to every device
+
+    scripts/release-android.sh
+
+builds the release APK (minified, arm64 + armv7), checks it is signed with
+this machine's release key (`~/.config/mediagram/release.keystore`, set up
+once — see `plans/261002-0213-android-self-update/phase-01-…`), and sends it
+to the library channel pinned as `#mlib-app`. Every device running a release
+build downloads it on its own and installs it the next time the app goes to
+the background. Debug and benchmark builds never update themselves.
+
 ## Configuration
 
 `mediagram login` writes `$XDG_CONFIG_HOME/mediagram/config.toml` on first run.
