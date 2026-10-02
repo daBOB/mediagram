@@ -77,16 +77,16 @@ class AppUpdater
                     this.confirm = confirm
                     ready?.let { _status.value = UpdateStatus.ConfirmWaiting(it.versionName) }
                 }
-                else -> _status.value = UpdateStatus.Failed(message ?: "Android refused the update ($status)")
+                else -> dropReady(message ?: "Android refused the update ($status)")
             }
         }
 
         internal suspend fun checkAndDownload() {
             if (!shouldCheck(config.enabled, playback.isPlaying(), lastCheckAtMs, now())) return
-            val handle = settings.read() ?: return
-            val core = coreProvider.coreOrNull() ?: return
-            lastCheckAtMs = now()
             try {
+                val handle = settings.read() ?: return
+                val core = coreProvider.coreOrNull() ?: return
+                lastCheckAtMs = now()
                 val release = core.latestAppRelease(handle)
                 if (release == null || !isNewer(release.versionCode, config.installedVersionCode)) {
                     ready = null
@@ -128,8 +128,15 @@ class AppUpdater
             try {
                 installer.install(apk.file)
             } catch (e: Exception) {
-                _status.value = UpdateStatus.Failed(e.message ?: e.javaClass.simpleName)
+                dropReady(e.message ?: e.javaClass.simpleName)
             }
+        }
+
+        /** An APK that will not install is deleted, so the next check downloads afresh instead of retrying it. */
+        private fun dropReady(reason: String) {
+            ready?.file?.delete()
+            ready = null
+            _status.value = UpdateStatus.Failed(reason)
         }
 
         /** `false` when playback started first: the download is dropped and the next check starts it again. */

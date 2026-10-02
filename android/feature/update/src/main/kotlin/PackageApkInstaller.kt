@@ -40,17 +40,22 @@ class PackageApkInstaller
                     if (Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
                 }
             val sessionId = installer.createSession(params)
-            installer.openSession(sessionId).use { session ->
-                apk.inputStream().use { input ->
-                    session.openWrite("base.apk", 0, apk.length()).use { out ->
-                        input.copyTo(out)
-                        session.fsync(out)
+            try {
+                installer.openSession(sessionId).use { session ->
+                    apk.inputStream().use { input ->
+                        session.openWrite("base.apk", 0, apk.length()).use { out ->
+                            input.copyTo(out)
+                            session.fsync(out)
+                        }
                     }
+                    // Mutable on 31+: the system fills in the status extras.
+                    val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+                    val result = PendingIntent.getBroadcast(context, 0, Intent(context, InstallResultReceiver::class.java), flags)
+                    session.commit(result.intentSender)
                 }
-                // Mutable on 31+: the system fills in the status extras.
-                val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
-                val result = PendingIntent.getBroadcast(context, 0, Intent(context, InstallResultReceiver::class.java), flags)
-                session.commit(result.intentSender)
+            } catch (e: Exception) {
+                installer.abandonSession(sessionId)
+                throw e
             }
         }
 

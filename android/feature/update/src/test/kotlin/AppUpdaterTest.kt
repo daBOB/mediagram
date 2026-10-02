@@ -1,11 +1,14 @@
 package update
 
+import android.content.pm.PackageInstaller
+import data.CoreProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
 import testing.FakeCore
 import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.AppRelease
+import uniffi.mediagram_core.CoreInterface
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -22,11 +25,12 @@ class AppUpdaterTest {
     private suspend fun updater(
         handle: String? = "library",
         enabled: Boolean = true,
+        provider: CoreProvider = ResolvedCoreProvider(core),
     ): AppUpdater {
         val settings = InMemoryLibrarySettings().apply { handle?.let { write(it) } }
         return AppUpdater(
             UpdateConfig(enabled = enabled, installedVersionCode = 92_002, updatesDir = dir),
-            ResolvedCoreProvider(core),
+            provider,
             settings,
             { playing },
             installer,
@@ -110,13 +114,54 @@ class AppUpdaterTest {
             assertEquals(0, core.releaseChecks)
         }
 
+    @Test
+    fun aCoreThatCannotBeBuiltFailsTheCheckInsteadOfCrashing() =
+        runTest {
+            val broken =
+                object : CoreProvider by ResolvedCoreProvider(core) {
+                    override suspend fun coreOrNull(): CoreInterface? = throw IllegalStateException("no core")
+                }
+            val updater = updater(provider = broken)
+            updater.checkAndDownload()
+            assertEquals(UpdateStatus.Failed("no core"), updater.status.value)
+        }
+
+    @Test
+    fun anInstallThatThrowsDropsTheApkAndIsNotRetried() =
+        runTest {
+            installer.installFailure = IllegalStateException("session failed")
+            val updater = updater()
+            updater.checkAndDownload()
+            updater.installIfReady()
+            assertEquals(UpdateStatus.Failed("session failed"), updater.status.value)
+            assertTrue(!File(dir, "93000.apk").exists())
+            updater.installIfReady()
+            assertEquals(1, installer.attempts)
+        }
+
+    @Test
+    fun anInstallAndroidRefusesDropsTheApk() =
+        runTest {
+            val updater = updater()
+            updater.checkAndDownload()
+            updater.onInstallResult(PackageInstaller.STATUS_FAILURE, "storage", null)
+            assertEquals(UpdateStatus.Failed("storage"), updater.status.value)
+            assertTrue(!File(dir, "93000.apk").exists())
+            updater.installIfReady()
+            assertTrue(installer.installed.isEmpty())
+        }
+
     private class RecordingInstaller : ApkInstaller {
         var refusal: String? = null
         val installed = mutableListOf<File>()
+        var installFailure: Exception? = null
+        var attempts = 0
 
         override fun refusal(apk: File): String? = refusal
 
         override fun install(apk: File) {
+            attempts++
+            installFailure?.let { throw it }
             installed += apk
         }
     }
