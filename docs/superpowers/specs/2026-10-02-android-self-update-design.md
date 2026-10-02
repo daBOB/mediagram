@@ -28,6 +28,13 @@ never see an APK, a prompt they have to understand, or a Settings screen.
    the install happens when the app goes to the background; the one-time
    install permission is granted by `adb` at device setup, and a Settings row
    offers it where it is missing.
+7. **Television devices only (after the spike, 2026-10-02):** the updater runs
+   only on Android TV devices. Phones and tablets keep getting new versions by
+   `adb`: on a Play-certified tablet Google Play Protect blocked every
+   app-driven update from our never-seen signing key, from the background and
+   even after "Install anyway" (`plans/261002-0213-android-self-update/reports/spike-silent-self-update-results.md`).
+   Whether registering the key with Google would change that is researched in
+   parallel.
 
 ## Out of scope
 
@@ -53,9 +60,13 @@ From `plans/reports/researcher-261002-0100-android-self-update-packageinstaller-
   foreground activity to show.
 - A debuggable → non-debuggable update with the same key and a higher
   versionCode keeps the app's data.
-- Unverified (forum sources): Xiaomi HyperOS may scan or block sideloaded
-  session installs; whether `REQUEST_INSTALL_PACKAGES` is needed on top.
-  The spike (Rollout §1) settles both on real hardware.
+- Measured by the spike: `REQUEST_INSTALL_PACKAGES` must be granted (app-op)
+  on top — without it Android answers `STATUS_PENDING_USER_ACTION` with an
+  "unknown apps from this source" screen, which cannot open from the
+  background. With it, the Google TV box (Android 14) updates silently from
+  the foreground and from `onStop`. On the Play-certified tablet (Android 16),
+  Google Play Protect verifies every app-driven install and blocks an app
+  from a developer it has never seen; adb installs are not verified.
 
 ## Architecture
 
@@ -101,7 +112,8 @@ PackageInstaller session, USER_ACTION_NOT_REQUIRED
   on a `versionName` that does not parse or on a minor or patch ≥ 1000.
 - A build-type flag (`resValue` bool `self_update`) is `true` only in
   `release`, so the updater is switched off in debug and benchmark builds at
-  build time.
+  build time. At run time it is also off on anything that is not a
+  television (decision 7).
 
 ### Caption (`crates/mlib-spec`, documented in `docs/mlib-spec.md` beside §7)
 
@@ -174,7 +186,7 @@ One "Updates" row, from `AppUpdater`'s state:
   where the permission is needed and missing)
 - `last update failed: <reason>`
 
-Hidden in debug and benchmark builds (they never update).
+Hidden in debug and benchmark builds and on phones and tablets (they never update).
 
 ## Error handling
 
@@ -211,9 +223,10 @@ PackageInstaller swaps the whole package or nothing.
 3. Device acceptance: publish a release; the tablet and the TV box each move
    to it on their own after going to the background, still signed in; a check
    during playback downloads nothing; a corrupted download is refused.
-4. First switch per device, by `adb`, same key, data kept: tablet debug →
-   release, TV box benchmark → release; family devices get the release build
-   at their next setup. Install permission granted by `adb` at the same time.
+4. First switch per device, by `adb`, same key, data kept: TV box benchmark →
+   release; family TV devices get the release build at their next setup.
+   Install permission granted by `adb` at the same time. Phones and tablets
+   (the user's tablet included) stay on `adb` updates (decision 7).
 
 ## Risks
 

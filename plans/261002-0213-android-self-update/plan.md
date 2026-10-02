@@ -24,7 +24,8 @@ created: 2026-10-02
 - Release key = this machine's key, cert SHA-256 `58:40:18:1D:3D:A5:F4:4C:9F:01:85:BF:4A:C3:34:5E:5F:E0:87:86:34:73:50:DB:04:AA:A6:E6:9D:F4:F5:76`; never in the repo or the channel.
 - `versionCode = major × 1_000_000 + minor × 1_000 + patch`, derived from `versionName`; minor and patch < 1000.
 - Caption: `#mlib-app v=1` + one JSON line `{"version","code","bytes","sha256","published_at"}`; the release message is pinned, the previous release unpinned; index pins never touched.
-- Updater runs only in the `release` build type; debug and benchmark builds never update themselves.
+- Updater runs only in the `release` build type **and on a television** (`isTelevision(context)`, `app/.../SurfaceSelection.kt`); debug and benchmark builds, phones and tablets never update themselves (spec decision 7 — Play Protect blocks phones/tablets, spike report).
+- `REQUEST_INSTALL_PACKAGES` is declared and granted by adb at device setup (`appops set … allow`); without it the install needs the user.
 - Release APK packages only `arm64-v8a` and `armeabi-v7a`.
 - Never install while something plays; never download while something plays.
 - Every commit bumps all three manifests by pattern (CLAUDE.md § Versioning; memory "bump versions by pattern").
@@ -43,7 +44,7 @@ created: 2026-10-02
 
 | # | Phase | Bump | Status |
 |---|---|---|---|
-| 00 | [Spike: can the app replace itself silently?](phase-00-spike-silent-self-update-probe.md) | none (throwaway) | pending |
+| 00 | [Spike: can the app replace itself silently?](phase-00-spike-silent-self-update-probe.md) | none (throwaway) | completed — TV silent; tablet blocked by Play Protect ([report](reports/spike-silent-self-update-results.md)) |
 | 01 | [Release key, release build, derived versionCode](phase-01-release-signing-build-and-derived-versioncode.md) | patch | pending |
 | 02 | [`#mlib-app` caption, `publish-app`, release script](phase-02-app-release-caption-publish-app-and-release-script.md) | minor | pending |
 | 03 | [Core: find and download the newest release](phase-03-core-latest-app-release-and-verified-download.md) | minor | pending |
