@@ -1,6 +1,7 @@
 //! mediagram library surface: everything the CLI binary and the integration
 //! tests share. The binary in `main.rs` only parses arguments and dispatches.
 
+pub mod app_release;
 pub mod channel_index;
 pub mod clock;
 pub mod commands;
