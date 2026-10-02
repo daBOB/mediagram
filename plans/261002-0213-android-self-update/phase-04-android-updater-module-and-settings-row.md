@@ -47,8 +47,8 @@ dependencies {
     <!-- Lets a release build replace itself without a prompt on Android 12+
          (PackageInstaller, USER_ACTION_NOT_REQUIRED, self-update). -->
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
-    <!-- Keep or drop per the self-update spike's result: needed only if a
-         device refused the session without it. -->
+    <!-- Needed on top: without the install-from-this-app permission Android
+         asks the user instead of installing (granted by adb at device setup). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application>
         <receiver android:name="update.InstallResultReceiver" android:exported="false" />
@@ -168,7 +168,7 @@ sealed interface UpdateStatus {
 
     data class Ready(val versionName: String) : UpdateStatus
 
-    /** Android 10–11: the system's own confirm screen is waiting for the next time the app opens. */
+    /** Android asked for a confirm screen (installs from this app not allowed yet, or Android 10–11); it opens the next time the app does. */
     data class ConfirmWaiting(val versionName: String) : UpdateStatus
 
     data class Failed(val reason: String) : UpdateStatus
@@ -672,7 +672,7 @@ class AppUpdater
             if (config.enabled) scope.launch { installIfReady() }
         }
 
-        /** Android 10–11's confirm screen, once, for the activity to show now that it is in front. */
+        /** A confirm screen Android asked for while the app was in the background, once, for the activity to show now that it is in front. */
         fun takeConfirmIntent(): Intent? = confirm.also { confirm = null }
 
         fun onInstallResult(
@@ -809,6 +809,7 @@ package com.mediagram.android.di
 import android.content.Context
 import android.os.Build
 import com.mediagram.android.R
+import com.mediagram.android.isTelevision
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -825,7 +826,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object UpdateModule {
-    /** `self_update` is true only in the release build type (`app/build.gradle.kts`). */
+    /**
+     * A release build on a television: `self_update` is true only in the
+     * release build type (`app/build.gradle.kts`), and phones and tablets
+     * never update themselves — Google Play Protect blocks an app-driven
+     * update from a signing key it has never seen.
+     */
     @Provides
     @Singleton
     fun config(
@@ -836,7 +842,7 @@ object UpdateModule {
         @Suppress("DEPRECATION")
         val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
         return UpdateConfig(
-            enabled = context.resources.getBoolean(R.bool.self_update),
+            enabled = context.resources.getBoolean(R.bool.self_update) && isTelevision(context),
             installedVersionCode = code,
             updatesDir = File(context.cacheDir, "updates"),
         )
@@ -862,7 +868,7 @@ object UpdateModule {
         super.onStart()
         watchSync.onForeground()
         appUpdater.onForeground()
-        // Android 10–11 only: the system's confirm screen for an update the app committed while in the background.
+        // A confirm screen Android asked for while the app was in the background (installs from this app not allowed yet, or Android 10–11).
         appUpdater.takeConfirmIntent()?.let { runCatching { startActivity(it) } }
     }
 
@@ -939,7 +945,11 @@ git add android/feature/system
 git commit -m "feat(android): Settings › System shows whether this release build is current"
 ```
 
-## Task 4.6 (only if the spike found `REQUEST_INSTALL_PACKAGES` necessary): offer the permission
+## Task 4.6 — dropped (spike, 2026-10-02)
+
+A missing install permission does not throw: Android answers `STATUS_PENDING_USER_ACTION`, which Task 4.3's confirm-intent path already handles (the "unknown apps from this source" screen opens the next time the app comes to the front). The permission is granted by adb at device setup. Nothing to build.
+
+## Task 4.6 (original text, not executed): offer the permission
 
 **Files:** `UpdateStatus.kt`, `AppUpdater.kt`, `UpdateRulesTest.kt`, `AppUpdaterTest.kt`, and the two renderers (`ui-mobile/.../ui/system/SystemScreen.kt`, `ui-tv/.../system/TvSystemSection.kt`).
 
