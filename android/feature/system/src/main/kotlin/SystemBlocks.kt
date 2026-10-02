@@ -36,10 +36,11 @@ fun catalogueRows(
         "Schema" to "v${state.schema}, expected by this build",
     )
 
-/** This app itself: its version, its Telegram session, and how long it has been running. */
+/** This app itself: its version, whether it is current, its Telegram session, and how long it has been running. */
 fun thisAppRows(state: SystemUiState): List<Pair<String, String?>> =
-    listOf(
-        "Version" to state.versionName,
-        "Telegram" to telegramLine(state.connected),
-        "Uptime" to uptimeLine(state.uptimeSeconds),
-    )
+    buildList {
+        add("Version" to state.versionName)
+        state.updateLine?.let { add("Updates" to it) }
+        add("Telegram" to telegramLine(state.connected))
+        add("Uptime" to uptimeLine(state.uptimeSeconds))
+    }

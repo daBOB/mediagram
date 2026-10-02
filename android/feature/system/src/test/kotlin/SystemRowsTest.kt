@@ -105,6 +105,14 @@ class SystemRowsTest {
         assertNull(uptimeLine(seconds = null))
     }
 
+    @Test
+    fun theUpdatesRowFollowsVersionOnlyInABuildThatUpdatesItself() {
+        assertEquals(listOf("Version", "Telegram", "Uptime"), thisAppRows(facts()).map { it.first })
+        val updating = facts().copy(updateLine = "up to date · checked just now")
+        assertEquals(listOf("Version", "Updates", "Telegram", "Uptime"), thisAppRows(updating).map { it.first })
+        assertEquals("up to date · checked just now", thisAppRows(updating)[1].second)
+    }
+
     /** Only the counters under test vary; the rest are whatever a working install would report. */
     private fun facts(
         heldBytes: Long = 0,

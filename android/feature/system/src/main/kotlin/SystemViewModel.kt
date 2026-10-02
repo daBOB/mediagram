@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.update
 import playback.CacheProvider
 import playback.PlaybackCounters
 import playback.ReadSource
+import update.AppUpdater
+import update.updateLine
 import javax.inject.Inject
 
 /**
@@ -46,6 +48,7 @@ class SystemViewModel
         private val coreProvider: CoreProvider,
         private val counters: PlaybackCounters,
         private val refreshes: RefreshLog,
+        private val updater: AppUpdater,
     ) : ViewModel() {
         // Read once, not per subscription: the installed package's own version
         // name cannot change while this process is running.
@@ -121,6 +124,7 @@ class SystemViewModel
                 lastReadWasLan = lastRead?.let { it.source == ReadSource.LAN },
                 lanHost = lastRead?.host,
                 lanHits = totals.lanHits,
+                updateLine = updateLine(updater.status.value, System.currentTimeMillis()),
             )
         }
     }
