@@ -104,4 +104,9 @@ dependencies {
     // Provides the CoreProvider DI wiring in di/CoreModule.kt and the
     // PackageSettings field MainActivity injects to route between screens.
     implementation(project(":core:data"))
+    // The self-updater, and the player whose state it waits on.
+    implementation(project(":feature:update"))
+    implementation(project(":feature:player"))
+    // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.
+    implementation(libs.findLibrary("androidx.media3.exoplayer").get())
 }

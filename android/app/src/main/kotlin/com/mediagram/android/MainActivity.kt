@@ -19,6 +19,7 @@ import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
 import ui.player.PipEntryPoint
 import ui.tv.TvApp
+import update.AppUpdater
 import javax.inject.Inject
 
 /**
@@ -36,6 +37,9 @@ class MainActivity : ComponentActivity() {
     // equivalent for that also fires on a phone simply being locked.
     @Inject
     lateinit var watchSync: WatchSync
+
+    @Inject
+    lateinit var appUpdater: AppUpdater
 
     // Mirrors `onPictureInPictureModeChanged` for `LocalIsInPictureInPicture`
     // — `PlayerScreen` reads this to hide its own chrome the moment the
@@ -77,10 +81,14 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         watchSync.onForeground()
+        appUpdater.onForeground()
+        // A confirm screen Android asked for while the app was in the background (installs from this app not allowed yet, or Android 10–11).
+        appUpdater.takeConfirmIntent()?.let { runCatching { startActivity(it) } }
     }
 
     override fun onStop() {
         watchSync.onBackground()
+        appUpdater.onBackground()
         super.onStop()
     }
 
