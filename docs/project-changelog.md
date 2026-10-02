@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.95.2 — second channel release, for the playback check
+
+No code changes: published so the TV box has an update waiting while a
+title plays, to confirm it neither downloads nor installs until playback
+stops.
+
 ## 0.95.1 — first Android release published to the library channel
 
 No code changes: the first build sent with `scripts/release-android.sh`, so
