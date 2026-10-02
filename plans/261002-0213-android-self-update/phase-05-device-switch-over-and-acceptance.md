@@ -7,7 +7,7 @@ Needs the user present: the TV box on and reachable, the tablet connected. Memor
 
 ## Task 5.1: Smoke-test the release build before anything is published
 
-- [ ] **Step 1: Build** `scripts/build-android-core.sh` then `cd android && ./gradlew -q :app:assembleRelease`.
+- [x] **Step 1: Build** `scripts/build-android-core.sh` then `cd android && ./gradlew -q :app:assembleRelease`.
 - [ ] **Step 2 (skipped — phones and tablets do not self-update, spec decision 7): ~~Switch the tablet~~** (debug → release, same key, higher or equal versionCode → install keeps data):
 
 ```bash
@@ -17,18 +17,18 @@ adb -s caad49da shell monkey -p com.mediagram.android -c android.intent.category
 ```
 Expected: launches signed in, the catalog loads, a title plays (test profile), Settings › System shows `Updates · up to date · checked just now` (or `not checked yet` until the first check finishes). If the install fails with `INSTALL_FAILED_VERSION_DOWNGRADE`, the debug build on the device is newer: ask the user before `install -r -d`.
 
-- [ ] **Step 3: Switch the TV box** — the Step 2 commands, including the permission grant, with `-s 192.168.0.35:5555`, then `adb -s 192.168.0.35:5555 shell cmd package compile -m speed -f com.mediagram.android` (as the benchmark build had). Expected: launches on "TV test", plays, the Updates row is on the System section.
+- [x] **Step 3: Switch the TV box** — the Step 2 commands, including the permission grant, with `-s 192.168.0.35:5555`, then `adb -s 192.168.0.35:5555 shell cmd package compile -m speed -f com.mediagram.android` (as the benchmark build had). Expected: launches on "TV test", plays, the Updates row is on the System section.
 
 ## Task 5.2: A real release reaches both devices on its own
 
-- [ ] **Step 1: Make a release to publish.** Bump patch by pattern (Phase 01 Task 1.2 Step 5 block), commit `chore: release $V`, then:
+- [x] **Step 1: Make a release to publish.** Bump patch by pattern (Phase 01 Task 1.2 Step 5 block), commit `chore: release $V`, then:
 
 ```bash
 scripts/release-android.sh
 ```
 Expected: the certificate check passes, `published 0.x.y (versionCode …) as message …, pinned`.
 
-- [ ] **Step 2: The TV box picks it up.** For `S=192.168.0.35:5555`: bring the app to the front (it checks on foreground; the hourly throttle resets on a fresh process — `adb shell am force-stop` then launch if the last check was under an hour ago), wait for `ready · installs when you leave the app` on Settings › System, then press Home:
+- [x] **Step 2: The TV box picks it up.** For `S=192.168.0.35:5555`: bring the app to the front (it checks on foreground; the hourly throttle resets on a fresh process — `adb shell am force-stop` then launch if the last check was under an hour ago), wait for `ready · installs when you leave the app` on Settings › System, then press Home:
 
 ```bash
 adb -s $S shell input keyevent KEYCODE_HOME
@@ -37,13 +37,13 @@ adb -s $S shell dumpsys package com.mediagram.android | grep -m2 -E 'versionName
 ```
 Expected: the new versionName/versionCode, no prompt on screen (screenshot), and on relaunch the app is still signed in with its catalog.
 
-- [ ] **Step 3: Nothing happens during playback.** Publish one more patch release; on the TV box start a title ("TV test" profile) *before* the app's next check, force a check by relaunch while it plays, and confirm via the Updates row that it does not say `downloading`; stop playback, background the app, confirm it then downloads on the next foreground and installs on the next background.
+- [x] **Step 3: Nothing happens during playback.** Publish one more patch release; on the TV box start a title ("TV test" profile) *before* the app's next check, force a check by relaunch while it plays, and confirm via the Updates row that it does not say `downloading`; stop playback, background the app, confirm it then downloads on the next foreground and installs on the next background.
 
 ## Task 5.3: Record and close
 
-- [ ] **Step 1:** Write `plans/261002-0213-android-self-update/reports/device-acceptance-results.md`: per device — Android version, switch-over result, each publish observed (version, minutes from publish to installed), playback check, any prompt or HyperOS dialog seen.
-- [ ] **Step 2:** Update `plan.md` phase statuses; `docs/development-roadmap.md` "Android: shipping" (`:159`) — self-update done; memory note: devices now self-update, release via `scripts/release-android.sh`, family devices need the release build installed once by adb.
-- [ ] **Step 3:** Commit `docs(plan): Android self-update verified on the TV box`.
+- [x] **Step 1:** Write `plans/261002-0213-android-self-update/reports/device-acceptance-results.md`: per device — Android version, switch-over result, each publish observed (version, minutes from publish to installed), playback check, any prompt or HyperOS dialog seen.
+- [x] **Step 2:** Update `plan.md` phase statuses; `docs/development-roadmap.md` "Android: shipping" (`:159`) — self-update done; memory note: devices now self-update, release via `scripts/release-android.sh`, family devices need the release build installed once by adb.
+- [x] **Step 3:** Commit `docs(plan): Android self-update verified on the TV box`.
 
 ## Success criteria
 The TV box moved from one published release to the next with no cable, no prompt and no new login; nothing downloaded or installed during playback; the tablet (debug build) shows no Updates row and never checks.

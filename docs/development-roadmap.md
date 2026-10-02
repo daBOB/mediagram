@@ -329,6 +329,18 @@ rather than a live fault injection — appropriate given the normal path
 never needs it in practice. See the phase-04 root-cause report for the
 full reproduction.
 
+## Android: self-update on televisions
+
+Complete. `plans/261002-0213-android-self-update/`, released 0.92.3–0.95.0,
+verified on the TV box 2026-10-02 with two real publishes (0.95.1, 0.95.2):
+each reached the box with no cable and no prompt, kept its sign-in, and
+0.95.2 waited out a title playing in the background before installing.
+Release with `scripts/release-android.sh` from the machine holding the key.
+Each television needs the release build installed once by adb plus the
+`REQUEST_INSTALL_PACKAGES` grant. Phones and tablets stay on adb installs
+(Play Protect blocks app-driven updates from our key). Results:
+`plans/261002-0213-android-self-update/reports/device-acceptance-results.md`.
+
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 
 Recorded here so they are not silently forgotten, not because they are
