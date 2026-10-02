@@ -1,6 +1,6 @@
 ---
 title: "Android app updates itself from the library channel"
-status: pending
+status: in-progress
 priority: P2
 branch: main
 tags: [android, release, signing, uploader, core, update]
@@ -45,12 +45,15 @@ created: 2026-10-02
 | # | Phase | Bump | Status |
 |---|---|---|---|
 | 00 | [Spike: can the app replace itself silently?](phase-00-spike-silent-self-update-probe.md) | none (throwaway) | completed — TV silent; tablet blocked by Play Protect ([report](reports/spike-silent-self-update-results.md)) |
-| 01 | [Release key, release build, derived versionCode](phase-01-release-signing-build-and-derived-versioncode.md) | patch | pending |
-| 02 | [`#mlib-app` caption, `publish-app`, release script](phase-02-app-release-caption-publish-app-and-release-script.md) | minor | pending |
-| 03 | [Core: find and download the newest release](phase-03-core-latest-app-release-and-verified-download.md) | minor | pending |
-| 04 | [Android updater and the Updates row](phase-04-android-updater-module-and-settings-row.md) | minor | pending |
-| 05 | [Device switch-over and acceptance](phase-05-device-switch-over-and-acceptance.md) | none | pending |
+| 01 | [Release key, release build, derived versionCode](phase-01-release-signing-build-and-derived-versioncode.md) | patch | completed (0.92.3 on the branch) |
+| 02 | [`#mlib-app` caption, `publish-app`, release script](phase-02-app-release-caption-publish-app-and-release-script.md) | minor | completed (0.93.0) |
+| 03 | [Core: find and download the newest release](phase-03-core-latest-app-release-and-verified-download.md) | minor | completed (0.94.0) |
+| 04 | [Android updater and the Updates row](phase-04-android-updater-module-and-settings-row.md) | minor | completed (0.95.0; module is `:core:update`) |
+| 05 | [Device switch-over and acceptance](phase-05-device-switch-over-and-acceptance.md) | none | pending — needs the user (TV box, first real publish) |
 
 **Order and gates:** 00 first; its report goes to the user before 01 starts (a device that cannot update silently is the user's decision). 01 → 02 → 03 → 04 in order (each consumes the previous phase's interface). 05 needs the user present (TV box on, tablet connected).
 
 **Spec deviation (flagged for the user):** the spec's device check "a corrupted download is refused" cannot be forced on a non-debuggable release build (no `run-as`); it is covered by the core test in Task 3.2 instead.
+
+## State 2026-10-02 (merged to main as e3c7e8c7)
+Phases 00–04 done via subagent-driven development (every task reviewed; final whole-branch review clean after one fix wave). The updater module landed as `android/core/update` (`:core:update`), not `feature/update` — a feature module may not import another. Phase 05 waits for the user: switch the TV box to the release build by adb, grant `REQUEST_INSTALL_PACKAGES`, publish a first release with `scripts/release-android.sh`.
