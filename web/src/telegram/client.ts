@@ -74,11 +74,13 @@ export class Telegram {
   static async open(config: Config): Promise<Telegram | null> {
     if (config.session === null) return null;
 
+    // Unbounded: teleproto spends this budget on every reconnect too, so a cap of
+    // 3 let a brief network blip kill the main sender until the process restarted.
     const client = new MeasuredClient(
       new sessions.StringSession(config.session),
       config.apiId,
       config.apiHash,
-      { connectionRetries: 3, ...sessionName() },
+      { connectionRetries: Infinity, ...sessionName() },
     );
     await client.connect();
     client.watchReconnects();
