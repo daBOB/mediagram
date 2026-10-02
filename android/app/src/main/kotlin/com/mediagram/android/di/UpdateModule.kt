@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import com.mediagram.android.R
 import com.mediagram.android.isTelevision
+import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -42,8 +43,11 @@ object UpdateModule {
         )
     }
 
-    /** ExoPlayer is read on the main thread only. */
+    /**
+     * ExoPlayer is read on the main thread only. The handle is [Lazy] so a
+     * disabled updater, which never asks, does not build the player at launch.
+     */
     @Provides
-    fun playback(handle: PlayerHandle): PlaybackActivity =
-        PlaybackActivity { withContext(Dispatchers.Main.immediate) { handle.player.value?.isPlaying == true } }
+    fun playback(handle: Lazy<PlayerHandle>): PlaybackActivity =
+        PlaybackActivity { withContext(Dispatchers.Main.immediate) { handle.get().player.value?.isPlaying == true } }
 }
