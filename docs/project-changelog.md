@@ -5,6 +5,11 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.95.1 — first Android release published to the library channel
+
+No code changes: the first build sent with `scripts/release-android.sh`, so
+the TV box's 0.95.0 release build has something newer to update itself to.
+
 ## 0.95.0 — television release builds keep themselves current from the library channel
 
 **Added**
