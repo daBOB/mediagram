@@ -20,6 +20,8 @@ Probe `com.mediagram.updateprobe`, release build (not debuggable), signed with t
 | Tablet | D | allow | onStop | -1 pending | 1 → 1 | nothing (`BAL_BLOCK`) |
 | Tablet | C2 (after dismissing C's dialog with OK) | allow | foreground | 3 `INSTALL_FAILED_VERIFICATION_FAILURE: Install not allowed` | 1 → 1 | nothing |
 | Tablet | D2 | allow | onStop | -1 pending | 1 → 1 | nothing |
+| Tablet | C3–C5 (retries, ~2 min apart) | allow | foreground | 3 `INSTALL_FAILED_ABORTED: Permission denied` | 1 → 1 | the same Play Protect block when it appeared at all (pre-expanded, closes by itself within seconds); refused without a dialog in between |
+| Tablet | C6 | allow | foreground | 3 `Permission denied` | 1 → 1 | dialog caught and **"Install anyway" tapped** (user-approved) — dialog closed, install still refused |
 
 ## Answers
 1. **Silent self-update of an adb-installed app:** yes on the TV box, once the install app-op is allowed. Not on the tablet: Play Protect verifies every app-driven session install and blocks an app from a developer (signing key) it has never seen.
@@ -32,8 +34,8 @@ Probe `com.mediagram.updateprobe`, release build (not debuggable), signed with t
 `settings get global verifier_verify_adb_installs` = `0` on the tablet: adb installs are not verified, app-driven session installs are. Every Mediagram install so far came by adb, so Play Protect has never seen the release key.
 
 ## Recommendation
-Pending the user's decision on Play Protect (phones/tablets). TV boxes: the plan works as written, with the app-op granted by adb at setup. Task 4.6 as written (SecurityException → NeedsPermission) does not match what devices do: a missing app-op returns `STATUS_PENDING_USER_ACTION`, which the plan's confirm-intent path already handles.
+On phones/tablets with Google Play Protect, a silent self-update is not reachable for an app whose signing key Google has never seen: every session install is verified, the block cannot be shown from the background, and in the foreground even "Install anyway" did not let it through here. Pending the user's decision on phones/tablets. TV boxes: the plan works as written, with the app-op granted by adb at setup. Task 4.6 as written (SecurityException → NeedsPermission) does not match what devices do: a missing app-op returns `STATUS_PENDING_USER_ACTION`, which the plan's confirm-intent path already handles.
 
 ## Unresolved
-- Does Play Protect let later updates through after one "Install anyway" on a device? (needs a tap the user must allow)
+- Why "Install anyway" did not take (tap missed a span, or Play Protect refuses it for app-driven session installs) — not pursued further; repeated attempts made Play Protect refuse without a dialog.
 - Does registering the key with Google (developer verification / Play Protect submission) make it trusted?
