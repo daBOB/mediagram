@@ -332,6 +332,7 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
 | `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
+| `feature:update` | self-update from the channel's pinned `#mlib-app` release (release builds on televisions only) |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
 | `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
