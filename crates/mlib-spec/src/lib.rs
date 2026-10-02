@@ -14,6 +14,7 @@
 //! - [`subtitle_bundle`]: a set's subtitle tracks, as the one gzip'd document
 //!   the channel carries them in
 
+pub mod app_caption;
 pub mod caption;
 pub mod caption_codec;
 pub mod category_key;

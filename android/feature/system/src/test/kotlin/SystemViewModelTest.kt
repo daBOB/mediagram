@@ -158,6 +158,6 @@ class SystemViewModelTest {
 
     private fun model(): SystemViewModel {
         val provider = FakeCoreProvider(core)
-        return SystemViewModel(ApplicationProvider.getApplicationContext<Context>(), provider, PlaybackCounters(), RefreshLog())
+        return SystemViewModel(ApplicationProvider.getApplicationContext<Context>(), provider, PlaybackCounters(), RefreshLog(), offUpdater())
     }
 }

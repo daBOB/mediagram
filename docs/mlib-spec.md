@@ -559,6 +559,23 @@ all choose with it.
 | `source:<set_id>` | Absolute path of the source file for a still-`pending` set, so `resume` can find it again. Deleted once the set completes. |
 | `tmp:<set_id>` | Path of a faststart-remux temp file `add` produced for a set, so it can be cleaned up once the set completes. Only set when a remux actually happened. |
 
+## 7a. App release
+
+The Android app's own releases travel in the library channel. Each is one
+message: the signed APK as a document, captioned
+
+    #mlib-app v=1
+    {"version":"0.93.0","code":93000,"bytes":47185920,"sha256":"<64 lowercase hex>","published_at":1790900000}
+
+`code` is the APK's versionCode, `bytes` and `sha256` its exact size and
+digest. `mediagram publish-app` pins the newest release and unpins the one it
+replaces; it never touches an index pin, and index readers skip this caption
+because it does not start with `#mlib-index`. A reader takes the pinned,
+channel-posted release with the highest `code` (a tie goes to the later
+message), installs it only over a lower versionCode, and only after the
+downloaded file matches `bytes` and `sha256`. A caption whose marker is not
+exactly `#mlib-app v=1`, or whose JSON lacks a field, is not a release.
+
 ## 8. Versioning
 
 - `v=4` is written on every new caption; `v=2` and `v=3` remain readable. A

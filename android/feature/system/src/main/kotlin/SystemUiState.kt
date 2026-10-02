@@ -43,4 +43,6 @@ data class SystemUiState(
     val lanHost: String? = null,
     /** Chunks a home cache server has served since this process started. */
     val lanHits: Int = 0,
+    /** The Updates row, or `null` in a build that never updates itself. */
+    val updateLine: String? = null,
 )

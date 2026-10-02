@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Lets a release build replace itself without a prompt on Android 12+
+         (PackageInstaller, USER_ACTION_NOT_REQUIRED, self-update). -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <!-- Needed on top: without the install-from-this-app permission Android
+         asks the user instead of installing (granted by adb at device setup). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <application>
+        <receiver android:name="update.InstallResultReceiver" android:exported="false" />
+    </application>
+</manifest>

@@ -57,6 +57,7 @@ include(":feature:system")
 // Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
 include(":core:designsystem")
 include(":core:data")
+include(":core:update")
 include(":core:rust")
 include(":core:model")
 include(":core:playback")

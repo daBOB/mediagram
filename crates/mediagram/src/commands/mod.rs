@@ -18,6 +18,7 @@ pub mod login;
 pub mod login_code;
 pub mod metadata;
 pub mod posters;
+pub mod publish_app;
 pub mod prepare;
 pub mod pull_index;
 pub mod push_index;

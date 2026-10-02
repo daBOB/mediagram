@@ -100,10 +100,12 @@ All three carry the same number: they are three programs of one project, and a
 reader who finds them disagreeing has no way to tell which is the project's
 version.
 
-`versionCode` beside it is not part of this. It counts builds for Android's
-own upgrade check and only ever goes up by one; tying it to semver would mean
-inventing an integer from a dotted string, and the two answer different
-questions.
+`versionCode` beside it is never edited by hand: `android/app/build.gradle.kts`
+derives it from `versionName` as `major·1,000,000 + minor·1,000 + patch`
+(0.93.0 → 93000). The app updates itself from the channel, and Android
+installs an update only over a lower versionCode; deriving it means a release
+can never forget to raise it and two machines can never hand out the same
+one. Minor and patch stay below 1000.
 
 Following semver:
 
@@ -148,3 +150,4 @@ Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created
   also re-ordered oldest-first, which the merge had scrambled.
 - 2026-09-27: Added § Agent skills (GitHub issues, default triage labels, single-context domain docs) so the engineering skills know where tickets and domain docs live.
 - 2026-09-27: § Versioning: while at `0.x`, a breaking change bumps minor, not major. Removing `push-index --merge`/`--check` would otherwise have made the project 1.0.0 as a side effect; the user chose 0.67.0 and asked for the rule to say so.
+- 2026-10-02: § Versioning: versionCode is derived from versionName instead of counted by hand. The Android app now updates itself from the channel, which Android allows only to a higher versionCode; the hand-kept counter had sat at 18 since 0.81. The user chose derivation over a counter bumped at publish time.

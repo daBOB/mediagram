@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:model"))
     // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
     implementation(project(":core:playback"))
+    implementation(project(":core:update"))
 
     testImplementation(libs.findLibrary("mockk").get())
     testImplementation(project(":core:testing"))

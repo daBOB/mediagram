@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.95.0 — television release builds keep themselves current from the library channel
+
+**Added**
+
+- Release builds of the Android app on televisions (Android TV, Google TV)
+  check the channel's pinned `#mlib-app` release when the app comes to the
+  front (at most hourly, never while something plays), download it verified
+  by size and sha256 into `cacheDir/updates`, and install it over themselves
+  through PackageInstaller when the app goes to the background; Android 12+
+  shows no prompt. The permission is granted once by adb at TV setup
+  (`adb shell appops set com.mediagram.android REQUEST_INSTALL_PACKAGES allow`).
+  Phones and tablets never update themselves (Google Play Protect blocks
+  app-driven updates from our signing key) and keep getting new versions by
+  adb; debug and benchmark builds never update themselves either.
+- Settings › System shows an "Updates" row wherever the updater runs.
+- `mediagram publish-app` sends the APK pinned with a `#mlib-app v=1` caption
+  (version, code, bytes, sha256, published_at) and unpins the previous
+  release; index pins are untouched.
+- `scripts/release-android.sh` builds the minified arm64 and armv7 release
+  APK, checks it carries the release-key certificate, and runs `publish-app`.
+
+**Changed**
+
+- Android `versionCode` is derived from `versionName`
+  (major x 1,000,000 + minor x 1,000 + patch), so the two cannot disagree.
+
 ## 0.92.2 — Android rows show what arrives in front of them
 
 **Fixed**

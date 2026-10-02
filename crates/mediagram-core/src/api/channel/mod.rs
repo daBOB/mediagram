@@ -7,6 +7,7 @@
 //! the channels, downloads that snapshot, and installs it through the same
 //! staging and atomic swap the published-package path uses.
 
+pub(super) mod app_release;
 pub(in crate::api) mod download;
 pub(super) mod index;
 mod install;

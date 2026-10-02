@@ -714,6 +714,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sign_out(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_download_app_release(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_latest_app_release(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_fetch_portrait(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_franchises(
@@ -843,6 +847,10 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_dc_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_sign_out(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_download_app_release(`ptr`: Long,`release`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_latest_app_release(`ptr`: Long,`handle`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_fetch_portrait(`ptr`: Long,`personId`: Long,
     ): Long
@@ -1082,6 +1090,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_out() and 0xFFFF) != 40268) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_download_app_release() and 0xFFFF) != 31482) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_latest_app_release() and 0xFFFF) != 55573) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_portrait() and 0xFFFF) != 36612) {
@@ -1808,6 +1822,18 @@ public interface CoreInterface {
      * reached. Safe to call when already signed out.
      */
     suspend fun `signOut`()
+
+    /**
+     * Downloads `release`'s APK to `path`, verified against its caption;
+     * nothing is left at `path` unless it matched.
+     */
+    suspend fun `downloadAppRelease`(`release`: AppRelease, `path`: kotlin.String)
+
+    /**
+     * The newest Android app release pinned in the chosen library's
+     * channel, or `None` when it holds none.
+     */
+    suspend fun `latestAppRelease`(`handle`: kotlin.String): AppRelease?
 
     /**
      * Downloads this person's portrait (w185) from the profile path the
@@ -2570,6 +2596,60 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         // lift function
         { Unit },
 
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Downloads `release`'s APK to `path`, verified against its caption;
+     * nothing is left at `path` unless it matched.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `downloadAppRelease`(`release`: AppRelease, `path`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_download_app_release(
+                uniffiHandle,
+
+        FfiConverterTypeAppRelease.lower(`release`),
+        FfiConverterString.lower(`path`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * The newest Android app release pinned in the chosen library's
+     * channel, or `None` when it holds none.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `latestAppRelease`(`handle`: kotlin.String) : AppRelease? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_latest_app_release(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeAppRelease.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -3557,6 +3637,67 @@ public object FfiConverterTypeAccountSummary: FfiConverterRustBuffer<AccountSumm
     override fun write(value: AccountSummary, buf: ByteBuffer) {
             FfiConverterString.write(value.`name`, buf)
             FfiConverterOptionalString.write(value.`username`, buf)
+    }
+}
+
+
+
+/**
+ * One release, as the channel declares it, and where its APK is.
+ */
+data class AppRelease (
+    var `versionName`: kotlin.String
+    ,
+    var `versionCode`: kotlin.Long
+    ,
+    var `bytes`: kotlin.ULong
+    ,
+    var `sha256`: kotlin.String
+    ,
+    var `chatId`: kotlin.Long
+    ,
+    var `messageId`: kotlin.Long
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAppRelease: FfiConverterRustBuffer<AppRelease> {
+    override fun read(buf: ByteBuffer): AppRelease {
+        return AppRelease(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: AppRelease) = (
+            FfiConverterString.allocationSize(value.`versionName`) +
+            FfiConverterLong.allocationSize(value.`versionCode`) +
+            FfiConverterULong.allocationSize(value.`bytes`) +
+            FfiConverterString.allocationSize(value.`sha256`) +
+            FfiConverterLong.allocationSize(value.`chatId`) +
+            FfiConverterLong.allocationSize(value.`messageId`)
+    )
+
+    override fun write(value: AppRelease, buf: ByteBuffer) {
+            FfiConverterString.write(value.`versionName`, buf)
+            FfiConverterLong.write(value.`versionCode`, buf)
+            FfiConverterULong.write(value.`bytes`, buf)
+            FfiConverterString.write(value.`sha256`, buf)
+            FfiConverterLong.write(value.`chatId`, buf)
+            FfiConverterLong.write(value.`messageId`, buf)
     }
 }
 
@@ -5387,6 +5528,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeAppRelease: FfiConverterRustBuffer<AppRelease?> {
+    override fun read(buf: ByteBuffer): AppRelease? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeAppRelease.read(buf)
+    }
+
+    override fun allocationSize(value: AppRelease?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeAppRelease.allocationSize(value)
+        }
+    }
+
+    override fun write(value: AppRelease?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeAppRelease.write(value, buf)
         }
     }
 }
