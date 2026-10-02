@@ -24,7 +24,7 @@ pub struct AppRelease {
     pub message_id: i64,
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 impl Core {
     /// The newest Android app release pinned in the chosen library's
     /// channel, or `None` when it holds none.
