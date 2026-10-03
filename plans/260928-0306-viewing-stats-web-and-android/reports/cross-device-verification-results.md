@@ -16,8 +16,23 @@ Build: `main` 8e76b9e3, release 0.99.2. Started 2026-10-03 11:49.
 Screenshots: session scratchpad `tab-stats-test-1.png` (before), `tab-stats-test-2.png` (after the play).
 Left behind: one test play of "All Inclusive" on the "test" profile's Continue watching; the tablet is back on profile "andre".
 
+## TV box `192.168.0.35:5555` (Google TV, Android 14) — release build by adb
+
+Built from `main` 96d883d0 (0.99.3 — the merged code plus another session's web-only fix; Android only got the version bump). Release key verified (`5840181d…f576`), arm64 + armv7 only. Installed by `adb install -r` over 0.95.2 — **nothing published to the channel**; `REQUEST_INSTALL_PACKAGES` re-granted, `compile -m speed`. The self-updater sees the channel's pinned 0.95.2 below the installed 0.99.3, so it stays put.
+
+| Check | Result |
+|---|---|
+| Launch | ✅ no crash / UnsatisfiedLinkError, profile "TV test", catalog loads |
+| Collapsed rail | ✅ Stats (bars) between Genres and Settings; no dot on "TV test" — correct, that profile has nothing earned |
+| Stats page, "TV test" | ✅ totals "under a minute"; 30 weekday initials; Achievements: nothing earned, Next "A whole series 7 of 162", "5 episodes in a day 0 of 5 episodes", "10 documentaries 0 of 10 documentaries" (ties at 0 ordered by id, per contract); the "7 of 162" bar now visible at full height (the TV progress-rule fix) |
+| D-pad through the page | ✅ six presses down reach the history: "Finished · Geldhochschule 6 · 25 Sep" |
+| Back from a **Ready** Stats page (focus deep in the history) | ✅ focus lands on the Stats rail row |
+| Dot on the collapsed rail, profile "andre" (Stats page not opened, so it stays unseen) | ✅ green dot on the Stats icon; accessibility nodes "Stats" + "New achievement" |
+
+Left behind: box back on profile "TV test", on its launcher home. No playback on the box.
+
 ## Still to do
 
-- TV box `192.168.0.35:5555`: install the release APK (adb, or a channel release — the user's call), Stats walk, Back from a **Ready** Stats page lands on the Stats rail row, dot on the collapsed rail, TalkBack reads "Stats, New achievement".
+- TV: TalkBack announcement with the screen reader actually on (uiautomator shows the two nodes; the merged spoken text was not heard).
 - Web: the live player on 0.99.2 (needs a restart of the real player), then cross-device: minutes recorded on the tablet appear on the web for "test" after a sync round and stay the same after two more rounds; a finish on one surface shows "Finished", a restart "Watched again".
 - Web vs Android achievements for the same profile (should match exactly).
