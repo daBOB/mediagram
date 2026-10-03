@@ -32,6 +32,7 @@ mod list_record;
 mod parse;
 mod preference_record;
 mod stats_record;
+pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use parse::parse_record;

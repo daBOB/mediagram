@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 
 use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::record::{SyncRecord, parse_record};
+use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -180,5 +181,51 @@ fn stats_merge_fixtures_match_the_web_in_both_orders() {
             "case: {} (reversed)",
             case.name
         );
+    }
+}
+
+/// The web compares only the keys a case names — one about the week need
+/// not spell out thirty bars — and so does this.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SummaryExpect {
+    week_seconds: Option<f64>,
+    month_seconds: Option<f64>,
+    all_seconds: Option<f64>,
+    last30: Option<Vec<DayBar>>,
+    history: Option<Vec<HistoryEntry>>,
+}
+
+#[derive(Deserialize)]
+struct SummaryCase {
+    name: String,
+    input: SummaryInput,
+    expect: SummaryExpect,
+}
+
+#[test]
+fn stats_summary_fixtures_match_the_web() {
+    let Some(cases) = load::<SummaryCase>("stats-summary.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "stats-summary.json holds no cases");
+    for case in cases {
+        let got = summarize(&case.input);
+        let (want, name) = (case.expect, case.name);
+        if let Some(seconds) = want.week_seconds {
+            assert_eq!(got.week_seconds, seconds, "case: {name} (weekSeconds)");
+        }
+        if let Some(seconds) = want.month_seconds {
+            assert_eq!(got.month_seconds, seconds, "case: {name} (monthSeconds)");
+        }
+        if let Some(seconds) = want.all_seconds {
+            assert_eq!(got.all_seconds, seconds, "case: {name} (allSeconds)");
+        }
+        if let Some(last30) = want.last30 {
+            assert_eq!(got.last30, last30, "case: {name} (last30)");
+        }
+        if let Some(history) = want.history {
+            assert_eq!(got.history, history, "case: {name} (history)");
+        }
     }
 }
