@@ -28,7 +28,7 @@ export function localDay(ms: number): string {
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 }
 
-const UPSERT_PROGRESS = `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+export const UPSERT_PROGRESS = `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
   VALUES (?1, ?2, ?3, ?4, ?5)
   ON CONFLICT(profile_id, set_id) DO UPDATE SET
     at_seconds = excluded.at_seconds,

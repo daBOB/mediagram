@@ -271,7 +271,8 @@ describe("a channel that cannot be reached", () => {
     const first = await sync.once();
 
     expect(here.state.snapshot(here.me).progress[0]).toMatchObject({ setId: "01FILM", at: 900 });
-    expect(first).toEqual({ pulled: 1, pushed: false, failed: message });
+    // The position, and the title row its write started.
+    expect(first).toEqual({ pulled: 2, pushed: false, failed: message });
     expect(puts).toHaveLength(0);
 
     refuse = false;
@@ -303,7 +304,7 @@ describe("a local import that fails", () => {
     expect(state.profiles()).toEqual([]);
   });
 
-  test.each(["profiles", "progress", "watched", "collection_items"])(
+  test.each(["profiles", "progress", "watched", "collection_items", "stats_titles"])(
     "rolls back every change and sends nothing when writing %s fails",
     async (table) => {
       const other = machine("Sam");
@@ -334,7 +335,8 @@ describe("a local import that fails", () => {
         expect(here.state.kids()).toEqual([]);
 
         db.exec("DROP TRIGGER refuse_import");
-        expect(await sync.once()).toEqual({ pulled: 6, pushed: true });
+        // Six rows as before, and the title row Sam's position write started.
+        expect(await sync.once()).toEqual({ pulled: 7, pushed: true });
         expect(puts).toHaveLength(1);
         const sam = here.state.profiles().find((profile) => profile.name === "Sam")!;
         expect(here.state.snapshot(sam.id)).toMatchObject({

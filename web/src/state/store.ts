@@ -26,7 +26,8 @@ import type { MergedState } from "./merge";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
 import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
-import { tickKey, writeProgress, type Ticks } from "./stats-recorder";
+import { localDay, tickKey, UPSERT_PROGRESS, writeProgress, type Ticks } from "./stats-recorder";
+import { exportStats, importStats, readSummary } from "./stats-exchange";
 
 export interface Progress {
   setId: string;
@@ -219,6 +220,11 @@ export class WatchState {
     if (db) tolerate(() => writeProgress(db, this.ticks, this.deviceId(), profileId, setId, at, duration));
   }
 
+  /** This profile's viewing stats, as of today on this machine's calendar. */
+  stats(profileId: string) {
+    return readSummary(this.db, profileId, localDay(Date.now()));
+  }
+
   /** Forgets a position: started again, or watched to the end. */
   clearProgress(profileId: string, setId: string): void {
     this.db?.query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2").run(profileId, setId);
@@ -388,6 +394,7 @@ export class WatchState {
         watchlist: exportWatchlist(this.db, profile.id),
         collections: exportCollections(this.db, profile.id),
         preferences: exportPreferences(this.db, profile.id),
+        ...exportStats(this.db, profile.id),
       };
     });
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
@@ -441,16 +448,7 @@ export class WatchState {
           // newer local news, but apply a changed winner with the same clock.
           if (standing !== null && (standing.updatedAt > row.updatedAt ||
             (standing.updatedAt === row.updatedAt && standing.at === row.at && standing.duration === row.duration))) continue;
-          this.db
-            .query(
-              `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5)
-                 ON CONFLICT(profile_id, set_id) DO UPDATE SET
-                   at_seconds = excluded.at_seconds,
-                   duration = excluded.duration,
-                   updated_at = excluded.updated_at`,
-            )
-            .run(profileId, row.setId, row.at, row.duration, row.updatedAt);
+          this.db.query(UPSERT_PROGRESS).run(profileId, row.setId, row.at, row.duration, row.updatedAt);
           changed += 1;
         }
 
@@ -459,6 +457,7 @@ export class WatchState {
         changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
         changed += importCollections(this.db, profileId, profile.collections ?? []);
         changed += importPreferences(this.db, profileId, profile.preferences ?? []);
+        changed += importStats(this.db, profileId, profile);
       }
       this.db.exec("COMMIT");
       return changed;
