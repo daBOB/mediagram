@@ -225,7 +225,8 @@
         {"setId": "c1", "finishedAt": 1785952800000}, {"setId": "c2", "finishedAt": 1786039200000},
         {"setId": "c3", "finishedAt": 1786125600000}, {"setId": "c4", "finishedAt": 1786212000000},
         {"setId": "c5", "finishedAt": 1786298400000}, {"setId": "c6", "finishedAt": 1786384800000},
-        {"setId": "c7", "finishedAt": 1786471200000}, {"setId": "dark1", "finishedAt": 1786557600000},
+        {"setId": "c7", "finishedAt": 1786471200000}, {"setId": "c8", "finishedAt": 1787076000000},
+        {"setId": "c9", "finishedAt": 1787162400000}, {"setId": "dark1", "finishedAt": 1786557600000},
         {"setId": "dark2", "finishedAt": 1786644000000}, {"setId": "dark3", "finishedAt": 1786730400000},
         {"setId": "dark4", "finishedAt": 1786816800000}, {"setId": "dark5", "finishedAt": 1786903200000},
         {"setId": "dark6", "finishedAt": 1786989600000}
@@ -247,6 +248,8 @@
         {"setId": "c8", "kind": "tut", "genres": [], "collection": "tut:Rust"},
         {"setId": "c9", "kind": "tut", "genres": [], "collection": "tut:Rust"},
         {"setId": "c10", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c11", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c12", "kind": "tut", "genres": [], "collection": "tut:Rust"},
         {"setId": "dark1", "kind": "ep", "genres": [], "collection": "ep:Dark"},
         {"setId": "dark2", "kind": "ep", "genres": [], "collection": "ep:Dark"},
         {"setId": "dark3", "kind": "ep", "genres": [], "collection": "ep:Dark"},
@@ -259,14 +262,14 @@
       "collections": [
         {"id": "ep:Andor", "setIds": ["andor1", "andor2", "andor3", "andor4"]},
         {"id": "ep:Bluey", "setIds": ["bluey1", "bluey2"]},
-        {"id": "tut:Rust", "setIds": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"]},
+        {"id": "tut:Rust", "setIds": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"]},
         {"id": "ep:Dark", "setIds": ["dark1", "dark2", "dark3", "dark4", "dark5", "dark6", "dark7", "dark8"]}
       ]
     },
     "expect": {
       "earned": [],
       "next": [
-        {"id": "whole-show", "have": 6, "need": 8}, {"id": "binge-5", "have": 1, "need": 5},
+        {"id": "whole-show", "have": 9, "need": 12}, {"id": "binge-5", "have": 1, "need": 5},
         {"id": "docs-10", "have": 0, "need": 10}
       ]
     }
@@ -632,6 +635,46 @@
       "next": [
         {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-10", "have": 1, "need": 10},
         {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "a binge day and a streak run are dated by the first to qualify, however many follow",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 0, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-02", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-04", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-05", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-06", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-07", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-10", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-11", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-12", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-13", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-14", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-15", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-16", "device": "tv-1", "seconds": 600, "updatedAt": 1}
+      ],
+      "watched": [
+        {"setId": "a1", "finishedAt": 1789030800000}, {"setId": "a2", "finishedAt": 1789034400000},
+        {"setId": "a3", "finishedAt": 1789038000000}, {"setId": "a4", "finishedAt": 1789041600000},
+        {"setId": "a5", "finishedAt": 1789045200000}, {"setId": "b1", "finishedAt": 1789894800000},
+        {"setId": "b2", "finishedAt": 1789898400000}, {"setId": "b3", "finishedAt": 1789902000000},
+        {"setId": "b4", "finishedAt": 1789905600000}, {"setId": "b5", "finishedAt": 1789909200000}
+      ],
+      "library": [
+        {"setId": "a1", "kind": "ep", "genres": [], "collection": null}, {"setId": "a2", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "a3", "kind": "ep", "genres": [], "collection": null}, {"setId": "a4", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "a5", "kind": "ep", "genres": [], "collection": null}, {"setId": "b1", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "b2", "kind": "ep", "genres": [], "collection": null}, {"setId": "b3", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "b4", "kind": "ep", "genres": [], "collection": null}, {"setId": "b5", "kind": "ep", "genres": [], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "binge-5", "earnedAt": 1788998400000}, {"id": "streak-7", "earnedAt": 1788739200000}
+      ],
+      "next": [
+        {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 2, "need": 10},
+        {"id": "docs-10", "have": 0, "need": 10}
       ]
     }
   }
