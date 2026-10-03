@@ -61,7 +61,7 @@ internal fun HomeFeatures(
 ) {
     if (features.isEmpty()) return
     // A minimum, not an exact height, on every card below — the web's own
-    // `min-height` (`home.css:142`, `345`): a card is `max(min, its own
+    // `min-height` (`home.css:142`, `344`): a card is `max(min, its own
     // text)` tall, never cropped to the min when a deck runs to three
     // lines. `FeatureCard`'s own backdrop and scrim read `matchParentSize()`
     // rather than `fillMaxSize()` so they never *drive* that size themselves

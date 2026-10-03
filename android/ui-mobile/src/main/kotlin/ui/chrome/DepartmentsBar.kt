@@ -31,7 +31,7 @@ import ui.AndroidOnlyMenu
 import ui.MenuActions
 import ui.ProfileBarState
 
-/** The bar's own height, before the status-bar inset — the web's `--masthead-height` (`theme.css:112`, `76px` on the wide layout). */
+/** The bar's own height, before the status-bar inset — the web's `--masthead-height` (`theme.css:114`, `76px` on the wide layout). */
 internal val DepartmentsBarHeight = 76.dp
 
 /** The bar's own colour over the cover, translucent black with light type — the web's `[data-cover]` opening state (`shell.css:227`). No blur: Compose cannot blur what is behind a node without a new dependency, so a flatter starting alpha stands in for it instead. */
@@ -126,5 +126,5 @@ internal fun DepartmentsBar(
     }
 }
 
-/** The bar's own side margin — the web's `clamp(16px, 3.2vw, 56px)` gutter (`theme.css:114`). */
+/** The bar's own side margin — the web's `clamp(16px, 3.2vw, 56px)` gutter (`theme.css:112`). */
 private fun gutterFor(windowWidth: Dp): Dp = (windowWidth * 0.032f).coerceIn(16.dp, 56.dp)

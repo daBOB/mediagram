@@ -14,9 +14,9 @@ import androidx.compose.ui.unit.TextUnit
 
 /**
  * A page's own head: the huge uppercase [title] in Fraunces, then a small
- * tracked-caps [eyebrow] in Geist beneath it — the web's own order,
- * `.dept-title` then `.eyebrow` in one `<header>` (`departments.css:30-35`,
- * `theme.css:197-204`, and the approved mockups' own `.head`), reused
+ * tracked-caps [eyebrow] in Geist beneath it — the approved mockups' own
+ * `.head`, set in the web's `.dept-title` and `.eyebrow` styles
+ * (`departments.css:30-35`, `theme.css:197-204`), reused
  * everywhere a screen on this catalogue opens the way a magazine
  * department does.
  *

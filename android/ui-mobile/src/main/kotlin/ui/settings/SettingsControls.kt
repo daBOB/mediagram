@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -133,11 +132,11 @@ internal fun SettingsChip(
 }
 
 /**
- * A picture of a theme or an artwork mode: 16:9, 12dp corner — Shapes'
- * one deliberate exception to [Radius.control] — ringed in the accent, with
- * the page's own ground as the gap between the ring and the picture, when
- * selected. Purely presentational: the caller owns `selectable` and the
- * merge boundary, the same way an accent dot's own wrapping column does —
+ * A picture of a theme or an artwork mode: 16:9, at [Radius.card], ringed
+ * in the accent, with the page's own ground as the gap between the ring and
+ * the picture, when selected. Purely presentational: the caller owns
+ * `selectable` and the merge boundary, the same way an accent dot's own
+ * wrapping column does —
  * putting `selectable` on this nested box instead left it out of the
  * caller's merged semantics node entirely.
  */
@@ -145,9 +144,9 @@ internal fun SettingsChip(
 internal fun SwatchCard(
     selected: Boolean,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(Radius.card),
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    val shape = RoundedCornerShape(Radius.card)
     val colors = MaterialTheme.colorScheme
     val ring =
         if (selected) {

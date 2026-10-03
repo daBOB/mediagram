@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.7 — the player's own controls hover on the shared token
+
+**Changed**
+
+- The player stage's ghost buttons, transport buttons and featured actions
+  hover on `--hover` too; they had kept their own `120ms ease`, the last
+  hover literal on the web.
+- `SwatchCard` drops a `shape` parameter no caller passed and draws at
+  `Radius.card`; its comment no longer calls 12dp an exception.
+- Five stylesheet citations that 0.99.6 missed or had swapped point at
+  their rules again, and `PageHead` no longer claims a web header the
+  settings page stopped drawing.
+
 ## 0.99.6 — the hover and card-corner rules become tokens
 
 **Changed**
