@@ -10,20 +10,11 @@
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { bodiless, withBody } from "../response";
 import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import type { WatchState } from "./store";
+import { json, P, parse, status } from "./route-shared";
+import { statsRoute } from "./stats-routes";
 
-/**
- * The profile is a path segment, not a parameter.
- *
- * `navigator.sendBeacon` is how a position survives the tab closing, and it
- * cannot set a header — so whoever is watching has to travel in the URL. In
- * the path rather than the query because a missing segment is then a route
- * that does not match, and the alternative to a 404 is a write that quietly
- * lands in somebody else's rows.
- */
-const P = "([A-Za-z0-9-]{1,64})";
 const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
@@ -127,6 +118,9 @@ export function createStateRouter(options: StateRouterOptions) {
         method === "HEAD",
       );
     }
+
+    const stats = statsRoute(state, request);
+    if (stats) return stats;
 
     // Past here everything writes, so everything is checked.
     if (reading) return status(405);
@@ -251,17 +245,3 @@ export function createStateRouter(options: StateRouterOptions) {
     return status(404);
   };
 }
-
-function parse(body: string | null | undefined): unknown {
-  if (typeof body !== "string" || body === "") return null;
-  try {
-    return JSON.parse(body);
-  } catch {
-    return null;
-  }
-}
-
-const json = (body: string, headOnly: boolean, code = 200): PlayerResponse =>
-  withBody(body, "application/json", { headOnly, status: code });
-
-const status = bodiless;
