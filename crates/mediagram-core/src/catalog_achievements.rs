@@ -18,7 +18,9 @@ use rusqlite::Connection;
 use crate::state::stats::achievements::{LibraryCollection, LibraryTitle};
 
 /// Every playable set as the rules read it, and the collections they form.
-pub fn library_facts(conn: &Connection) -> anyhow::Result<(Vec<LibraryTitle>, Vec<LibraryCollection>)> {
+pub fn library_facts(
+    conn: &Connection,
+) -> anyhow::Result<(Vec<LibraryTitle>, Vec<LibraryCollection>)> {
     let genres = crate::shows::genres(conn)?;
     let mut members: HashMap<String, Vec<String>> = HashMap::new();
     let mut library = Vec::new();
@@ -26,19 +28,29 @@ pub fn library_facts(conn: &Connection) -> anyhow::Result<(Vec<LibraryTitle>, Ve
         // The key the catalog files a title's provider facts under, so a
         // title counts the genres its own page shows. Only a provider id
         // has any: a course or an untagged film has none to count.
-        let key = set.tmdb.map(|id| poster_key(set.kind.parse().unwrap_or(Kind::Ep), id));
+        let key = set
+            .tmdb
+            .map(|id| poster_key(set.kind.parse().unwrap_or(Kind::Ep), id));
         let collection = collection_of(&set.kind, set.show.as_deref());
         if let Some(id) = &collection {
-            members.entry(id.clone()).or_default().push(set.set_id.clone());
+            members
+                .entry(id.clone())
+                .or_default()
+                .push(set.set_id.clone());
         }
         library.push(LibraryTitle {
-            genres: key.and_then(|key| genres.get(&key).cloned()).unwrap_or_default(),
+            genres: key
+                .and_then(|key| genres.get(&key).cloned())
+                .unwrap_or_default(),
             set_id: set.set_id,
             kind: set.kind,
             collection,
         });
     }
-    let collections = members.into_iter().map(|(id, set_ids)| LibraryCollection { id, set_ids }).collect();
+    let collections = members
+        .into_iter()
+        .map(|(id, set_ids)| LibraryCollection { id, set_ids })
+        .collect();
     Ok((library, collections))
 }
 

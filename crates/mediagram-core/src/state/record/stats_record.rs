@@ -92,7 +92,10 @@ pub(super) fn title_stat_row(raw: &Value) -> Option<TitleStatRow> {
 pub(super) fn day_stat_row(raw: &Value) -> Option<DayStatRow> {
     let row = raw.as_object()?;
     // Shape only, and untrimmed: `2026-13-45` is kept, ` 2026-10-03` is not.
-    let day = row.get("day").and_then(Value::as_str).filter(|day| is_day(day))?;
+    let day = row
+        .get("day")
+        .and_then(Value::as_str)
+        .filter(|day| is_day(day))?;
     Some(DayStatRow {
         day: day.to_string(),
         device: text_(row.get("device"))?,

@@ -72,10 +72,12 @@ async fn watching_finishing_and_starting_over_read_back_as_history() {
             HistoryKind::Started
         ]
     );
-    assert!(after
-        .history
-        .iter()
-        .all(|line| line.set_id == "01FILM" && line.seconds == watched.all_seconds));
+    assert!(
+        after
+            .history
+            .iter()
+            .all(|line| line.set_id == "01FILM" && line.seconds == watched.all_seconds)
+    );
     assert_eq!(
         (after.last30.len(), after.last30[29].day.as_str()),
         (30, TODAY)

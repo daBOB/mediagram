@@ -45,13 +45,24 @@ fn sound_rows_read_back_as_written() {
             updated_at: 20.0,
         }
     );
-    assert_eq!(profile.title_stats[1].again_at, None, "a null againAt is no restart");
+    assert_eq!(
+        profile.title_stats[1].again_at, None,
+        "a null againAt is no restart"
+    );
     assert_eq!(
         profile.day_stats,
-        [DayStatRow { day: "2026-10-03".into(), device: "phone".into(), seconds: 600.0, updated_at: 20.0 }]
+        [DayStatRow {
+            day: "2026-10-03".into(),
+            device: "phone".into(),
+            seconds: 600.0,
+            updated_at: 20.0
+        }]
     );
     let body = serde_json::to_string(&profile.title_stats[1]).unwrap();
-    assert!(!body.contains("againAt"), "never started over writes no key: {body}");
+    assert!(
+        !body.contains("againAt"),
+        "never started over writes no key: {body}"
+    );
 }
 
 /// Each bad row goes on its own; the document, its sound rows and its
@@ -83,25 +94,45 @@ fn hostile_stats_rows_are_dropped_one_by_one() {
         json!({ "device": "" }),
         json!({ "updatedAt": -1 }),
     ];
-    let titles: Vec<Value> = bad_titles.into_iter().map(title).chain([title(json!({}))]).collect();
-    let days: Vec<Value> =
-        bad_days.into_iter().map(day).chain([day(json!({ "seconds": 86_400 }))]).collect();
+    let titles: Vec<Value> = bad_titles
+        .into_iter()
+        .map(title)
+        .chain([title(json!({}))])
+        .collect();
+    let days: Vec<Value> = bad_days
+        .into_iter()
+        .map(day)
+        .chain([day(json!({ "seconds": 86_400 }))])
+        .collect();
     let record = parsed(json!({ "name": "André",
         "progress": [{ "setId": "01B", "at": 5, "updatedAt": 20 }],
         "titleStats": titles, "dayStats": days }));
     let profile = &record.profiles[0];
-    assert_eq!(profile.title_stats.len(), 1, "only the sound title row is left");
     assert_eq!(
-        profile.day_stats.iter().map(|row| row.seconds).collect::<Vec<_>>(),
+        profile.title_stats.len(),
+        1,
+        "only the sound title row is left"
+    );
+    assert_eq!(
+        profile
+            .day_stats
+            .iter()
+            .map(|row| row.seconds)
+            .collect::<Vec<_>>(),
         [86_400.0],
         "a whole day is the most one device can watch"
     );
-    assert_eq!(profile.progress.len(), 1, "the rest of the document is untouched");
+    assert_eq!(
+        profile.progress.len(),
+        1,
+        "the rest of the document is untouched"
+    );
 }
 
 #[test]
 fn keys_that_are_not_lists_read_as_absent() {
-    let record = parsed(json!({ "name": "André", "titleStats": { "setId": "01A" }, "dayStats": "lots" }));
+    let record =
+        parsed(json!({ "name": "André", "titleStats": { "setId": "01A" }, "dayStats": "lots" }));
     assert!(record.profiles[0].title_stats.is_empty());
     assert!(record.profiles[0].day_stats.is_empty());
 }
@@ -112,13 +143,23 @@ fn keys_that_are_not_lists_read_as_absent() {
 fn a_profile_without_stats_writes_no_stats_keys() {
     let record = parsed(json!({ "name": "André", "progress": [] }));
     let body = serde_json::to_string(&record).unwrap();
-    assert!(!body.contains("titleStats") && !body.contains("dayStats"), "{body}");
+    assert!(
+        !body.contains("titleStats") && !body.contains("dayStats"),
+        "{body}"
+    );
 }
 
 #[test]
 fn a_day_is_four_two_two_ascii_digits() {
     assert!(is_day("2026-10-03"));
-    for bad in ["", "2026-10-3", "2026/10/03", "2026-10-03 ", "２０２６-10-03", "abcd-ef-gh"] {
+    for bad in [
+        "",
+        "2026-10-3",
+        "2026/10/03",
+        "2026-10-03 ",
+        "２０２６-10-03",
+        "abcd-ef-gh",
+    ] {
         assert!(!is_day(bad), "{bad:?}");
     }
 }
