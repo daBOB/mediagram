@@ -1,7 +1,7 @@
 ---
 title: "Viewing stats: minutes watched, what was watched, started, finished — web and Android"
 description: "Per-profile viewing stats recorded by both state engines, synced as bounded rows through the existing #mlib-state documents, shown on a stats page on both surfaces."
-status: planned
+status: completed
 priority: P2
 effort: 24h
 branch: feat/viewing-stats (off main once home, preload and decoder branches have merged)
@@ -77,7 +77,7 @@ tick) so a seek, a pause or a sleep never counts. Days are the watching device's
 | 02 | [Web: record, sync, stats route, Stats page](phase-02-web-record-sync-route-and-stats-page.md) | `web/src/state/**`, `web/public/**` | minor | completed (0.96.0) |
 | 03 | [Core: record, sync, summary, uniffi](phase-03-core-record-sync-summary-uniffi.md) | `crates/mediagram-core/**` | patch | completed (0.96.1) |
 | 04 | [Android: Stats rail item and page, phone and TV](phase-04-android-stats-rail-and-page.md) | `android/**` | minor | completed (0.97.0) |
-| 05 | [Cross-device verification, docs](phase-05-cross-device-verification-and-docs.md) | `docs/**` | none | docs done; device round pending (needs tablet + TV release go-ahead) |
+| 05 | [Cross-device verification, docs](phase-05-cross-device-verification-and-docs.md) | `docs/**` | none | completed 2026-10-03 — tablet, TV box and web verified ([results](reports/cross-device-verification-results.md)); 0.99.6 published to the channel |
 | 06 | [Achievements: fixtures, web derivation, section, dot](phase-06-achievements-web.md) | web | minor | completed (0.98.0) |
 | 07 | [Achievements: core and Android](phase-07-achievements-core-and-android.md) | core, android | minor | completed (0.99.0, 0.99.1 fixes) |
 

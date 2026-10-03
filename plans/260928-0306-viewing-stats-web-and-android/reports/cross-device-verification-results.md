@@ -1,4 +1,4 @@
-# Cross-device verification — viewing stats and achievements (in progress)
+# Cross-device verification — viewing stats and achievements
 
 Build: `main` 8e76b9e3, release 0.99.2. Started 2026-10-03 11:49.
 
@@ -35,8 +35,21 @@ Left behind: box back on profile "TV test", on its launcher home. No playback on
 
 `scripts/release-android.sh` from `main` 1b283ff6: published 0.99.6 (versionCode 99006, 32,728,871 bytes) as channel message 17956, pinned, 17:52. The TV box picked it up after an app restart (21:37:29), downloaded within ~100 s, and installed 4 s after Home (21:39:19) — no prompt, launcher in front, relaunch loads the catalog on "TV test". 0.99.4–0.99.6 (web tokens, TV feature-card corners) were not walked on a device separately.
 
+## Web (live player, 2026-10-03 22:49–22:55)
+
+The live player (`bun dev` → `bun --watch run src/index.ts`, port 8770) had already reloaded onto the merged code — watch mode restarts it when its source changes, so no restart was needed and nobody was interrupted.
+
+| Check | Result |
+|---|---|
+| Tablet → web | ✅ `GET /api/profiles/{test}/stats`: 80.6 s week/month/all, today's bar 2026-10-03 80.6 s, history "started" All Inclusive 11:53 — the tablet's play (shown there as "1 min") |
+| Not doubled | ✅ still exactly 80.6 s after ~11 h of sync rounds between tablet, TV box and web |
+| Web achievements = Android | ✅ earned films-1 (25 Sep); next genres-5 3/5, streak-7 1/7, films-10 1/10 — the tablet's list, same numbers |
+| Finish + restart on the web (the browser's own API: `PUT …/watched/{set}`, then `PUT …/progress` at 5 s and, 10 s later, 15 s with `?final=1`) | ✅ web: all time 90.6 s (tablet 80.6 + web 10, summed across devices); history "again" 22:50:33, "finished" 22:50:33 above "started" 11:53:50 |
+| Web → tablet (after a foreground sync) | ✅ "Watched again · All Inclusive · today 22:50 · 1 min"; totals 1 min; earned "5 genres · today" + "First film · 25 Sep"; next "10 genres 5 of 10", "10 films 2 of 10", "7-day streak 1 of 7" |
+| Achievements after the change, web vs tablet | ✅ identical: earned genres-5 (3 Oct), films-1 (25 Sep); next genres-10 5/10, films-10 2/10, streak-7 1/7 |
+
+Left behind on the "test" profile: "All Inclusive" marked finished and restarted at 15 s (Continue watching); its Stats page was opened on the tablet, so its achievements are seen there. The tablet is back on "andre".
+
 ## Still to do
 
 - TV: TalkBack announcement with the screen reader actually on (uiautomator shows the two nodes; the merged spoken text was not heard).
-- Web: the live player on 0.99.2 (needs a restart of the real player), then cross-device: minutes recorded on the tablet appear on the web for "test" after a sync round and stay the same after two more rounds; a finish on one surface shows "Finished", a restart "Watched again".
-- Web vs Android achievements for the same profile (should match exactly).
