@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":feature:catalog"))
     implementation(project(":feature:player"))
     implementation(project(":feature:setup"))
+    implementation(project(":feature:stats"))
     // rememberTitleInfo's TitleInfo return type is core:rust's, re-exposed
     // by core:data as `api`. feature:catalog only takes core:data as
     // `implementation`, which does not flow through to this module's own
