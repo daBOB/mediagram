@@ -33,3 +33,11 @@
 .stats-achievements progress::-webkit-progress-bar { background: var(--rule-soft); }
 .stats-achievements progress::-webkit-progress-value { background: var(--accent); }
 .stats-achievements progress::-moz-progress-bar { background: var(--accent); }
+
+/* The new-achievement dot, on the Stats icon's top-right corner so the rail's
+   icons-only form still shows it; the held dot's sage, as on Android. Offsets
+   follow the link's padding (12 px, then 10 px and 8 px) and the 21 px icon. */
+.rail-nav a[data-section="stats"] { position: relative; }
+.new-dot { position: absolute; top: 8px; left: 28px; width: 7px; height: 7px; border-radius: 50%; background: var(--held); }
+@media (max-width: 900px) { .new-dot { left: 26px; } }
+@media (max-width: 480px) { .new-dot { left: 24px; } }

@@ -46,10 +46,12 @@ import { drawAt } from "./lib/redraw.js";
 import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
 import { renderStats } from "./lib/catalog/stats-page.js";
+import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { playsNext, requestPreload } from "./lib/playback/plays-next.js";
+import { loadPlayer } from "./lib/playback/player-loader.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -57,27 +59,6 @@ const searchBox = document.getElementById("search");
 // A fragment link would be consumed as an application route. Move focus
 // directly so keyboard users can skip navigation without leaving their shelf.
 document.getElementById("skip-library")?.addEventListener("click", () => main.focus());
-
-/**
- * The player's own module graph — some 200 KB across three dozen files that
- * only playing something ever needs. Started once, kicked off in the
- * background right after the first shelf is drawn; a Play pressed before it
- * lands simply waits its turn on the promise already under way.
- */
-let playerReady = null;
-function loadPlayer() {
-  return (playerReady ??= import("./lib/playback/player.js")
-    .then((mod) => {
-      mod.initializePlayer();
-      return mod;
-    })
-    .catch((error) => {
-      // A later Play may as well try again — nothing about this profile or
-      // catalog caused it, so nothing about them will fix it either.
-      playerReady = null;
-      throw error;
-    }));
-}
 
 /**
  * The catalog this profile currently sees, and every set by id within it.
@@ -349,6 +330,7 @@ function onShelfAffectingChange() {
   librarySession.invalidate();
 }
 state.subscribeChanges(onShelfAffectingChange);
+watchStatsDot(state);
 // The pin lives outside watch state (it belongs to no profile), but a change
 // to it is redrawn the same way, deferred while a title plays.
 onEditorsChoice(onShelfAffectingChange);

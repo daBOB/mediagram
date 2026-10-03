@@ -53,3 +53,15 @@ test("nothing earned and nothing to come draws no section", async () => {
   await renderStats(main, { byId: new Map() }, () => true);
   expect(main.children.map((node) => node.className)).not.toContain("stats-achievements");
 });
+
+test("drawing the page records what it showed as seen on this browser", async () => {
+  env.respondWith(async () => Response.json(SUMMARY));
+  await renderStats(env.node("main"), { byId: new Map() }, () => true);
+  expect(JSON.parse(stored.get("mediagram.stats-seen.viewer")!)).toEqual(["films-1"]);
+});
+
+test("an answer that lands after the viewer left records nothing", async () => {
+  env.respondWith(async () => Response.json(SUMMARY));
+  await renderStats(env.node("main"), { byId: new Map() }, () => false);
+  expect(stored.has("mediagram.stats-seen.viewer")).toBe(false);
+});

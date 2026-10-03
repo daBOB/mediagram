@@ -12,6 +12,7 @@ import { profileId } from "../watch-state.js";
 import { heading } from "./shelf-view.js";
 import { historyLine, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
 import { achievementsSection } from "./stats-achievements.js";
+import { markSeen } from "./stats-dot.js";
 
 /**
  * @param {HTMLElement} main
@@ -39,6 +40,8 @@ export async function renderStats(main, { byId }, stillHere) {
   const { earned, next } = summary.achievements;
   if (earned.length + next.length > 0) main.append(achievementsSection(summary.achievements, (at) => whenLabel(at, now)));
   main.append(history(summary.history, byId, now));
+  // Drawn, so shown: what this page holds is no longer news on this browser.
+  markSeen(id, earned);
 }
 
 function totals(summary) {

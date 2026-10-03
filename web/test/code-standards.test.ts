@@ -45,10 +45,11 @@ const ROOT = join(import.meta.dir, "..");
  * room for viewing stats.
  * Lowered again for `src/state/routes.ts`, once the stats route moved to
  * `src/routes.ts`, the one router that holds the catalog its achievements
- * are counted against.
+ * are counted against, and for `app.js`, once the player's lazy loader moved
+ * out to `lib/playback/player-loader.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 717,
+  "public/app.js": 699,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
