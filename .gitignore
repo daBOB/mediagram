@@ -2,6 +2,7 @@
 /config.toml
 *.sqlite
 *.db
+__pycache__/
 /.claude/
 web/.claude/
 # Local agent-skill lockfile, not part of the project.
