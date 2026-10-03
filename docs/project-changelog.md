@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.5 — Android feature cards match the web's card corner
+
+**Fixed**
+
+- The home feature cards on the phone and the television round at 12dp, the
+  web's `--radius-card` since 0.99.3; they had stayed at the old 14.
+
 ## 0.99.4 — the player's remaining design choices pinned for the slop scan
 
 **Changed**

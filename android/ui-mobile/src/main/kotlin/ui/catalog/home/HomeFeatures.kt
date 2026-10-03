@@ -143,7 +143,7 @@ private fun FeatureCard(
     Box(
         modifier =
             modifier
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFF141416))
                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) }),
     ) {
