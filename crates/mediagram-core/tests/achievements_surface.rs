@@ -139,3 +139,48 @@ async fn with_no_catalog_installed_the_hours_still_count() {
         "{answer:?}"
     );
 }
+
+/// A finish stamp a sync round saturated to the largest i64 must not panic the
+/// date arithmetic — an episode's finish is read as a local day — and the rest
+/// of the answer must still come back.
+#[tokio::test]
+async fn a_corrupt_synced_finish_stamp_cannot_overflow_the_achievement_dates() {
+    let dir = tempfile::tempdir().unwrap();
+    seed_catalog(dir.path());
+    let core = core(dir.path());
+    let grown = core
+        .clone()
+        .create_profile("Grown".into(), false)
+        .await
+        .unwrap();
+    Connection::open(dir.path().join("catalog").join("current").join("library.db"))
+        .unwrap()
+        .execute(
+            "INSERT INTO sets(set_id, kind, title, show, container, total, part_count, status, created_at, spec_version)
+             VALUES ('01EPISODE', 'ep', 'Pilot', 'Wire', 'mkv', 0, 0, 'complete', 0, 1)",
+            [],
+        )
+        .unwrap();
+    for set in [FILM, "01EPISODE"] {
+        core.clone()
+            .set_watched(grown.id.clone(), set.into(), true)
+            .await;
+    }
+    seed_days(dir.path(), &grown.id);
+    Connection::open(dir.path().join("state.db"))
+        .unwrap()
+        .execute("UPDATE watched SET finished_at = ?1", params![i64::MAX])
+        .unwrap();
+    let answer = core
+        .clone()
+        .achievements(grown.id.clone(), TODAY.into(), 120)
+        .await;
+    assert!(
+        answer.earned.iter().any(|a| a.id == "films-1"),
+        "{answer:?}"
+    );
+    assert!(
+        answer.earned.iter().any(|a| a.id == "hours-10"),
+        "{answer:?}"
+    );
+}

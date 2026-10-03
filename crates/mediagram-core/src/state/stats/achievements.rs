@@ -7,6 +7,7 @@
 //! `web/test/fixtures/watch-state/achievements.json` (see
 //! `tests/shared_watch_state_fixtures.rs`).
 
+mod day_totals;
 mod rungs;
 
 use std::collections::HashMap;
@@ -91,7 +92,7 @@ pub fn achievements(input: &AchievementInput) -> Achievements {
     let offset_ms = i64::from(input.utc_offset_minutes) * 60_000;
     // A day's local midnight at the offset the reader is at now — applied to
     // every day alike, so a day from before a clock change reads an hour out.
-    let midnight = move |day: i64| day * DAY_MS - offset_ms;
+    let midnight = move |day: i64| day.saturating_mul(DAY_MS).saturating_sub(offset_ms);
     let by_set: HashMap<&str, &LibraryTitle> = input
         .library
         .iter()
@@ -128,7 +129,7 @@ pub fn achievements(input: &AchievementInput) -> Achievements {
         rungs::whole_show(&input.collections, &finished_at),
     ];
     if !input.kids {
-        let days = rungs::day_totals(&input.days);
+        let days = day_totals::day_totals(&input.days);
         ladders.push(rungs::hours(&HOURS, &days, midnight));
         ladders.push(rungs::streak(&STREAKS, &days, midnight));
         ladders.push(vec![rungs::binge(BINGE, &finishes, offset_ms, midnight)]);
