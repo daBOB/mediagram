@@ -18,4 +18,9 @@ dependencies {
     // AchievementLabelsFixtureTest reads the web's own achievement-labels.json
     // as plain JSON, the way core:data's ResumePointFixtureTest reads its own.
     testImplementation(libs.findLibrary("kotlinx.serialization").get())
+    // SharedPreferencesAchievementsSeenTest opens a real SharedPreferences
+    // file; the plain unit-test android.jar stub has none, so it runs under
+    // Robolectric. androidx-junit brings ApplicationProvider.
+    testImplementation(libs.findLibrary("robolectric").get())
+    testImplementation(libs.findLibrary("androidx.junit").get())
 }

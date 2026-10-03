@@ -13,7 +13,10 @@ import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.ResolvedCoreProvider
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.EarnedAchievement
+import uniffi.mediagram_core.NextAchievement
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.StatsSummary
 import kotlin.test.Test
@@ -54,7 +57,9 @@ class StatsViewModelTest {
         }
     private val watch = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
 
-    private fun model() = StatsViewModel(ResolvedCoreProvider(core), watch).apply { now = { Now } }
+    private val seen = InMemoryAchievementsSeen()
+
+    private fun model() = StatsViewModel(ResolvedCoreProvider(core), watch, seen).apply { now = { Now } }
 
     private fun allSeconds(read: StatsRead) = assertIs<StatsRead.Done>(read).summary.allSeconds
 
@@ -127,8 +132,48 @@ class StatsViewModelTest {
             watch.reload()
             // The core itself never throws from stats() (a storage failure answers an
             // empty summary); what can fail is reaching a core at all.
-            val model = StatsViewModel(FakeCoreProvider(null), watch).apply { now = { Now } }
+            val model = StatsViewModel(FakeCoreProvider(null), watch, seen).apply { now = { Now } }
 
             assertEquals(StatsRead.Failed("no core built for this fixture"), model.state.first { it != StatsRead.Loading })
         }
+
+    @Test
+    fun theChosenProfilesAchievementsArriveWithItsStats() =
+        runTest {
+            raw.achievementsByProfile =
+                mapOf(
+                    "a" to
+                        Achievements(
+                            earned = listOf(EarnedAchievement(id = "films-1", earnedAt = ms(2026, 9, 26, 21, 0))),
+                            next = listOf(NextAchievement(id = "films-10", have = 1u, need = 10u)),
+                        ),
+                )
+            watch.reload()
+
+            val done = assertIs<StatsRead.Done>(model().state.first { it != StatsRead.Loading })
+
+            assertEquals(listOf("films-1"), done.achievements.earned.map { it.id })
+            assertEquals(listOf("films-10"), done.achievements.next.map { it.id })
+            assertEquals(Triple("a", "2026-09-26", 120), raw.achievementsAsked.last())
+        }
+
+    @Test
+    fun markingSeenRecordsWhatThePageWasShownForItsProfile() =
+        runTest {
+            raw.achievementsByProfile =
+                mapOf("a" to Achievements(earned = listOf(EarnedAchievement("films-1", 1L), EarnedAchievement("genres-5", 2L)), next = emptyList()))
+            watch.reload()
+            val model = model()
+            model.state.first { it is StatsRead.Done }
+
+            model.markAchievementsSeen()
+
+            assertEquals(mapOf("a" to setOf("films-1", "genres-5")), seen.seen.value)
+        }
+
+    @Test
+    fun markingSeenBeforeAnythingWasReadRecordsNothing() {
+        model().markAchievementsSeen()
+        assertEquals(emptyMap(), seen.seen.value)
+    }
 }

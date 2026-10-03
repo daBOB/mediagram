@@ -37,9 +37,23 @@ class StatsViewModel
     constructor(
         private val coreProvider: CoreProvider,
         private val watchState: WatchStateRepository,
+        private val seen: AchievementsSeen,
     ) : ViewModel() {
         /** This device's clock and zone: today's date for the read, and the clock every line's time is told on. */
         internal var now: () -> ZonedDateTime = { ZonedDateTime.now() }
+
+        /** The profile the page last read, and the ids it was shown — what [markAchievementsSeen] records. */
+        private var shown: Pair<String, Set<String>>? = null
+
+        /**
+         * What the page shows now becomes what this device has shown: the
+         * rail's dot goes out. Called by the page while it is on screen —
+         * not by the read, whose shared flow outlives the page by a few
+         * seconds.
+         */
+        fun markAchievementsSeen() {
+            shown?.let { (profileId, ids) -> seen.markSeen(profileId, ids) }
+        }
 
         val state: StateFlow<StatsRead> =
             watchState.chosenProfileId
@@ -52,7 +66,12 @@ class StatsViewModel
                 val read =
                     try {
                         val at = now()
-                        StatsRead.Done(coreProvider.awaitCore().stats(profileId, at.toLocalDate().toString()), at)
+                        val today = at.toLocalDate().toString()
+                        val core = coreProvider.awaitCore()
+                        val summary = core.stats(profileId, today)
+                        val achievements = core.achievements(profileId, today, utcOffsetMinutes(at))
+                        shown = profileId to achievements.earned.mapTo(HashSet()) { it.id }
+                        StatsRead.Done(summary, at, achievements)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (
