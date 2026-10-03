@@ -176,4 +176,23 @@ class StatsViewModelTest {
         model().markAchievementsSeen()
         assertEquals(emptyMap(), seen.seen.value)
     }
+
+    @Test
+    fun aSwitchToAProfileStillBeingReadMarksNothingForTheOneLeft() =
+        runTest {
+            raw.chosen = "b"
+            raw.achievementsByProfile = mapOf("b" to Achievements(earned = listOf(EarnedAchievement("films-1", 1L)), next = emptyList()))
+            watch.reload()
+            val model = model()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
+            advanceUntilIdle()
+            assertIs<StatsRead.Done>(model.state.value)
+
+            core.holdA = CompletableDeferred()
+            watch.chooseProfile("a")
+            advanceUntilIdle()
+            model.markAchievementsSeen()
+
+            assertEquals(emptyMap(), seen.seen.value, "Ben's achievements are not marked again once Ada's page is being read")
+        }
 }

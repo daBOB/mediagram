@@ -62,6 +62,8 @@ class StatsViewModel
 
         private fun readOf(profileId: String): Flow<StatsRead> =
             flow {
+                // Until this read lands the page shows nothing to mark — least of all the last profile's.
+                shown = null
                 emit(StatsRead.Loading)
                 val read =
                     try {

@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -53,6 +54,9 @@ class AchievementDotViewModel
         /** This device's clock and zone: the day and offset the core places a day-based achievement by. */
         internal var now: () -> ZonedDateTime = { ZonedDateTime.now() }
 
+        /** The last answer: the profile it was for and what it had earned. Outlives the reads, which stop while the rail is away. */
+        private var answered: Pair<String, Set<String>>? = null
+
         /** The chosen profile and what it has earned; `null` while there is no answer for it yet. */
         private val earned: Flow<Pair<String, Set<String>>?> =
             watchState.chosenProfileId.flatMapLatest { id ->
@@ -60,10 +64,12 @@ class AchievementDotViewModel
                     flowOf(null)
                 } else {
                     flow {
-                        emit(null)
-                        emit(id to earnedIds(id))
+                        // The rail back for the same profile keeps its dot until the new read lands;
+                        // a different profile's goes out at once.
+                        emit(answered?.takeIf { it.first == id })
+                        emitRead(id)
                         // The snapshot as it stands was just read; only what changes after it counts.
-                        watchState.snapshot.drop(1).debounce(DOT_SETTLE_MS).collect { emit(id to earnedIds(id)) }
+                        watchState.snapshot.drop(1).debounce(DOT_SETTLE_MS).collect { emitRead(id) }
                     }
                 }
             }
@@ -73,7 +79,14 @@ class AchievementDotViewModel
                 found != null && !shown[found.first].orEmpty().containsAll(found.second)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-        private suspend fun earnedIds(profileId: String): Set<String> {
+        /** A read that failed says nothing new, so the dot stays as it was — as the web's does. */
+        private suspend fun FlowCollector<Pair<String, Set<String>>?>.emitRead(profileId: String) {
+            val ids = earnedIds(profileId) ?: return
+            answered = profileId to ids
+            emit(answered)
+        }
+
+        private suspend fun earnedIds(profileId: String): Set<String>? {
             val at = now()
             return try {
                 coreProvider
@@ -87,7 +100,7 @@ class AchievementDotViewModel
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
                 Log.w(TAG, "achievements: ${e.message}")
-                emptySet()
+                null
             }
         }
 

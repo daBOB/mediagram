@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -41,6 +42,22 @@ class AchievementDotViewModelTest {
         backgroundScope.launch { model.newAchievement.collect {} }
         advanceUntilIdle()
         return model.newAchievement
+    }
+
+    /** A core whose achievements read can be held open ([held]) or made to fail ([failing]). */
+    private inner class Flaky : CoreInterface by core {
+        var held: CompletableDeferred<Unit>? = null
+        var failing = false
+
+        override suspend fun achievements(
+            profileId: String,
+            today: String,
+            utcOffsetMinutes: Int,
+        ): Achievements {
+            held?.await()
+            check(!failing) { "storage gone" }
+            return core.achievements(profileId, today, utcOffsetMinutes)
+        }
     }
 
     @Test
@@ -159,5 +176,63 @@ class AchievementDotViewModelTest {
             watch.reload()
             dot()
             assertEquals(Triple("a", "2026-09-26", 120), core.achievementsAsked.last())
+        }
+
+    @Test
+    fun aReadThatFailsLeavesTheDotAsItWas() =
+        runTest {
+            core.achievementsByProfile = mapOf("a" to earned("films-1"))
+            val flaky = Flaky()
+            watch.reload()
+            val dot = dot(ResolvedCoreProvider(flaky))
+            assertTrue(dot.value)
+
+            flaky.failing = true
+            core.setWatched("a", "f1", true)
+            watch.reload()
+            advanceTimeBy(DOT_SETTLE_MS + 1)
+
+            assertTrue(dot.value, "a read that failed says nothing about what was earned")
+        }
+
+    @Test
+    fun theRailBackAfterAWhileAwayKeepsItsDotUntilTheNewReadLands() =
+        runTest {
+            core.achievementsByProfile = mapOf("a" to earned("films-1"))
+            val flaky = Flaky()
+            watch.reload()
+            val model = AchievementDotViewModel(ResolvedCoreProvider(flaky), watch, seen).apply { now = { Now } }
+            val rail = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
+            advanceUntilIdle()
+            assertTrue(model.newAchievement.value)
+
+            rail.cancel()
+            advanceTimeBy(5_001)
+            flaky.held = CompletableDeferred()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
+            advanceUntilIdle()
+
+            assertTrue(model.newAchievement.value, "the same profile's dot does not blink out while it is read again")
+        }
+
+    @Test
+    fun aProfileChosenWhileTheRailWasAwayPutsTheOldDotOutAtOnce() =
+        runTest {
+            core.achievementsByProfile = mapOf("a" to earned("films-1"), "b" to earned("streak-7"))
+            val flaky = Flaky()
+            watch.reload()
+            val model = AchievementDotViewModel(ResolvedCoreProvider(flaky), watch, seen).apply { now = { Now } }
+            val rail = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
+            advanceUntilIdle()
+            assertTrue(model.newAchievement.value)
+
+            rail.cancel()
+            advanceTimeBy(5_001)
+            watch.chooseProfile("b")
+            flaky.held = CompletableDeferred()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
+            advanceUntilIdle()
+
+            assertFalse(model.newAchievement.value, "Ada's last answer is not Ben's, even while Ben's read is out")
         }
 }
