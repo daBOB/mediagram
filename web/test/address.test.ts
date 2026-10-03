@@ -190,6 +190,7 @@ describe("docs/web-player.md's address table", () => {
     "#/person/<id>": "person",
     "#/search/<query>": "search",
     "#/settings": "settings",
+    "#/stats": "stats",
     "#/system": "system",
     "#/continue": "continue",
     "#/watchlist": "watchlist",

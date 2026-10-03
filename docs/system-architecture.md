@@ -600,6 +600,43 @@ needs `MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the
 web's numbered prompt; the Films and Series shelves open as posters, where the
 web opens on its list.
 
+**Viewing stats travel as two more optional keys on each profile,
+`titleStats` and `dayStats`.** A title row is `{setId, device, startedAt,
+lastWatchedAt, seconds, againAt?, updatedAt}`, a day row `{day, device,
+seconds, updatedAt}`. Each device records only its own rows, inside its own
+position write: the seconds between two writes of the same title, counted only
+when the position advanced and capped at 15 s per step, so a seek, a pause or a
+sleep never counts; a title started over after it was finished stamps
+`againAt`. Positions merged in from other devices are never recorded. A
+document carries every device's rows, not only the sender's, so minutes
+survive a device that goes away. The merge keeps the newest `updatedAt` per
+(profile, set or day, device), tie-broken like every other row, so it is
+order-independent; totals are sums across devices of rows each device owns, so
+a merge can never double-count. An import writes only a row newer than the
+local one, and never deletes. `SYNC_FORMAT` stays 1: an older reader drops the
+keys and keeps syncing everything else. A parse drops a bad row, never the
+document: stamps above 2^53 - 1, a day over 86400 s, an unparseable day. An
+own row's stamp is `MAX(now, stored + 1)`, so a clock stepping back cannot let
+an older copy overwrite newer seconds. Both engines hold to the web's fixtures
+(`web/test/fixtures/watch-state/stats-*.json`).
+
+Known ceiling: rows are kept forever and every device's document carries every
+device's rows, so a document grows with each device copy (a title row is about
+190 B, a day row about 110 B). The upgrade path is to send only this device's
+rows plus those of devices whose own document is gone, or to compress.
+
+The Stats page (a rail item between Genres and Settings, on the web, the phone
+and the television) is a summary computed from those rows plus the finished
+titles: week, month and all-time minutes, 30 daily bars and a history list.
+Achievements (films finished, a whole series, genres, hours, streaks,
+episodes in a day) are derived from the same rows and the library on every
+read, never stored or synced, held to the web by `achievements.json`; a kids
+profile earns only finishing and exploring ones. Which achievements this
+device has shown is a per-device `seen` set (the dot on the rail item), also
+unsynced. The core serves `stats` and `achievements` over uniffi and
+`set_progress` takes the local day from Kotlin. Plan:
+`plans/260928-0306-viewing-stats-web-and-android/`.
+
 ### Parity with the web player
 
 Reached by

@@ -341,6 +341,16 @@ Each television needs the release build installed once by adb plus the
 (Play Protect blocks app-driven updates from our key). Results:
 `plans/261002-0213-android-self-update/reports/device-acceptance-results.md`.
 
+## Viewing stats and achievements
+
+Built on `feat/viewing-stats` (0.96.0 to 0.99.1), reviewed; the cross-device
+verification round is pending (it needs the tablet and a TV channel release the
+owner approves). Per-profile minutes watched, what was started, finished and
+watched again, and derived achievements, on the web, the phone and the
+television. Both state engines record on their own position writes and sync
+per-device rows under two new optional keys; the Stats page is a rail item.
+Plan: `plans/260928-0306-viewing-stats-web-and-android/`.
+
 ## Explicitly deferred (from the v1 implementation logs, not tracked as bugs)
 
 Recorded here so they are not silently forgotten, not because they are
