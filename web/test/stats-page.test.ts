@@ -79,3 +79,10 @@ test("a failed read says so", async () => {
   await renderStats(main, { byId: new Map() }, () => true);
   expect(textOf(main)).toContain("Could not read your stats: the server answered 500");
 });
+
+test("an answer without a history or achievements says it could not be read, and draws nothing else", async () => {
+  answer({});
+  const main = env.node("main");
+  await renderStats(main, { byId: new Map() }, () => true);
+  expect(textOf(main)).toMatch(/^StatsCould not read your stats: \S/);
+});

@@ -23,21 +23,23 @@ export async function renderStats(main, { byId }, stillHere) {
   heading(main, "Stats");
   const id = profileId();
   if (id === null) return main.append(el("p", "empty", "Nothing watched yet."));
-  let summary;
+  let summary, watchedNothing, earned, next;
   try {
     const response = await fetch(`/api/profiles/${encodeURIComponent(id)}/stats`);
     if (!response.ok) throw new Error(`the server answered ${response.status}`);
     summary = await response.json();
+    // Read here, so an answer without them is the failure line, not a page half drawn.
+    watchedNothing = summary.history.length === 0;
+    ({ earned, next } = summary.achievements);
   } catch (error) {
     if (stillHere()) main.append(el("p", "error", `Could not read your stats: ${error.message}`));
     return;
   }
   if (!stillHere()) return;
-  if (summary.history.length === 0) return main.append(el("p", "empty", "Nothing watched yet."));
+  if (watchedNothing) return main.append(el("p", "empty", "Nothing watched yet."));
   const now = Date.now();
   main.append(totals(summary), lastThirty(summary.last30));
   // Before the history, which has no end; nothing at all while there is nothing in it.
-  const { earned, next } = summary.achievements;
   if (earned.length + next.length > 0) main.append(achievementsSection(summary.achievements, (at) => whenLabel(at, now)));
   main.append(history(summary.history, byId, now));
   // Drawn, so shown: what this page holds is no longer news on this browser.
