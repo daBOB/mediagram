@@ -289,6 +289,8 @@ longer holds count for nothing.
 - Page section between "Last 30 days" and "History", headed "Achievements",
   then "Next".
 - Web: the stats route moves to `createRouter` once it needs the catalog.
+- A day row with an impossible date (month 13, day 0) counts toward no
+  day-based achievement, though it still counts in `allSeconds`.
 - Every historic finish is read at today's UTC offset; a finish within an hour
   of midnight from the other DST season can land on the neighbouring day.
 - Android reads genres from the channel index only (the web's source), not the
