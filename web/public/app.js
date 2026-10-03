@@ -21,7 +21,7 @@ import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
 import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
-import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
+import { shelfMode, shelfToggle } from "./lib/catalog/shelf-mode.js";
 import { pageOf, pager } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
 import { openFeatured } from "./lib/catalog/featured-reel.js";
@@ -45,6 +45,7 @@ import { similarTo } from "./lib/catalog/similar.js";
 import { drawAt } from "./lib/redraw.js";
 import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
+import { renderStats } from "./lib/catalog/stats-page.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
@@ -144,44 +145,6 @@ const KEPT = {
 const setsFor = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
 
 /**
- * List or plates, for the two shelves that have artwork worth showing.
- *
- * Two buttons rather than a select: there are two states, and a menu that
- * opens to offer a choice of two is a menu that should have been the choice.
- * Re-renders through `route()` so the shelf is rebuilt the same way it is
- * built on arrival — the mode is read at render time, not passed around.
- */
-function shelfToggle() {
-  const current = shelfMode();
-  const control = el("div", "shelf-modes");
-  control.setAttribute("role", "group");
-  control.setAttribute("aria-label", "How to show this shelf");
-
-  for (const [mode, label] of [
-    [LIST, "List"],
-    [GRID, "Grid"],
-  ]) {
-    const button = el("button", "mode", label);
-    button.type = "button";
-    if (mode === current) {
-      button.classList.add("on");
-      // The pressed state rather than `disabled`: a viewer reading with a
-      // screen reader is told which they are on, and the control does not
-      // lose focus when the shelf rebuilds under it.
-      button.setAttribute("aria-pressed", "true");
-    } else {
-      button.setAttribute("aria-pressed", "false");
-      button.addEventListener("click", () => {
-        setShelfMode(mode);
-        route();
-      });
-    }
-    control.append(button);
-  }
-  return control;
-}
-
-/**
  * Where the player opens: what is underway, and what arrived.
  *
  * The rules are all in `home-shelves.js` and the drawing is all in
@@ -260,7 +223,7 @@ function movieControls() {
   const controls = el("div", "shelf-modes");
   const featured = reelButton();
   if (featured) controls.append(featured);
-  controls.append(shelfToggle());
+  controls.append(shelfToggle(route));
   return controls;
 }
 
@@ -627,6 +590,7 @@ function drawRoute() {
     });
     return;
   }
+  if (address.page === "stats") return renderStats(main, { byId }, () => generation === routeGeneration);
   if (address.page === "system") return viewSystem();
   if (address.page === "continue") return viewContinue();
   if (address.page === "watchlist") return viewWatchlist();

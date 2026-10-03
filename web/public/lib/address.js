@@ -27,6 +27,7 @@ const KNOWN_SECTIONS = new Set([
   "movies", "series", "tutorials", "documentaries", "anime",
   "continue", "watchlist", "collections",
   "home", "search", "system", "film", "genre", "genres", "latest", "settings", "person",
+  "stats",
 ]);
 
 /**
@@ -61,6 +62,7 @@ export function parse(hash) {
   // nothing here for `decodeURIComponent` to undo.
   if (known === "person") return { page: "person", id: name ?? "" };
   if (known === "settings") return { page: "settings" };
+  if (known === "stats") return { page: "stats" };
   if (known === "system") return { page: "system" };
   if (known === "continue") return { page: "continue" };
   if (known === "watchlist") return { page: "watchlist" };
@@ -95,6 +97,7 @@ export function href(address) {
     case "person": return `#/person/${address.id}`;
     case "search": return `#/search/${encodeURIComponent(address.query)}`;
     case "settings": return "#/settings";
+    case "stats": return "#/stats";
     case "system": return "#/system";
     case "continue": return "#/continue";
     case "watchlist": return "#/watchlist";

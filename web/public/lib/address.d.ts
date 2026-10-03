@@ -24,6 +24,7 @@ export type Address =
   | { page: "person"; id: string }
   | { page: "search"; query: string }
   | { page: "settings" }
+  | { page: "stats" }
   | { page: "system" }
   | { page: "continue" }
   | { page: "watchlist" }
