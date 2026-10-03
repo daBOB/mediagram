@@ -45,7 +45,8 @@ pub fn progress_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec
 }
 
 /// Sets where a profile is in `set_id`. Clamped to non-negative, like the
-/// web: a negative position has no title to seek to.
+/// web: a negative position has no title to seek to. Records no watch time —
+/// this device's own writes go through `StateDb::set_progress_counted`.
 pub fn set_progress(
     conn: &Connection,
     profile_id: &str,

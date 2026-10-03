@@ -84,7 +84,12 @@ impl Core {
     /// named: see `profiles::chosen`, which checks a profile still exists on
     /// every read rather than trusting what was last written.
     pub async fn delete_profile(self: Arc<Self>, id: String) -> bool {
-        self.blocking(move |core| core.state_db.with(|conn| profiles::delete(conn, &id)).unwrap_or(false)).await
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| profiles::delete(conn, &id))
+                .unwrap_or(false)
+        })
+        .await
     }
 
     /// This profile's positions, watched marks, watchlist, Kids and
@@ -107,16 +112,21 @@ impl Core {
         .await
     }
 
+    /// This device's own position write, and the watch time it adds to the
+    /// viewer's stats. `local_day` is today where the viewer is, `YYYY-MM-DD`
+    /// (Kotlin's `LocalDate.now()`) — the day that watch time counts on.
     pub async fn set_progress(
         self: Arc<Self>,
         profile_id: String,
         set_id: String,
         at: f64,
         duration: Option<f64>,
+        local_day: String,
     ) {
         self.blocking(move |core| {
+            let now = profiles::now_ms();
             core.state_db
-                .with(|conn| rows::set_progress(conn, &profile_id, &set_id, at, duration))
+                .set_progress_counted(&profile_id, &set_id, at, duration, &local_day, now)
         })
         .await;
     }
@@ -132,6 +142,10 @@ impl Core {
 
     pub async fn set_watched(self: Arc<Self>, profile_id: String, set_id: String, finished: bool) {
         self.blocking(move |core| {
+            if finished {
+                // A finished title's next play is a new viewing, measured from nothing.
+                core.state_db.forget_tick(&profile_id, &set_id);
+            }
             core.state_db
                 .with(|conn| rows::set_watched(conn, &profile_id, &set_id, finished))
         })

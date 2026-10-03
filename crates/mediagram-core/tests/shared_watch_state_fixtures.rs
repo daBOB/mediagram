@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::record::{SyncRecord, parse_record};
 use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
+use mediagram_core::state::stats::{Tick, again_now, step_seconds};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -226,6 +227,39 @@ fn stats_summary_fixtures_match_the_web() {
         }
         if let Some(history) = want.history {
             assert_eq!(got.history, history, "case: {name} (history)");
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct StepCase {
+    name: String,
+    #[serde(rename = "fn")]
+    function: String,
+    args: Vec<serde_json::Value>,
+    expect: serde_json::Value,
+}
+
+#[test]
+fn stats_step_fixtures_match_the_web() {
+    let Some(cases) = load::<StepCase>("stats-step.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "stats-step.json holds no cases");
+    for case in cases {
+        let (args, name) = (&case.args, &case.name);
+        match case.function.as_str() {
+            "stepSeconds" => {
+                let prev: Option<Tick> = serde_json::from_value(args[0].clone()).unwrap();
+                let (at, now_ms) = (args[1].as_f64().unwrap(), args[2].as_i64().unwrap());
+                let counted = step_seconds(prev.as_ref(), at, now_ms);
+                assert_eq!(Some(counted), case.expect.as_f64(), "stepSeconds: {name}");
+            }
+            "againNow" => {
+                let again = again_now(args[0].as_bool().unwrap(), args[1].as_bool().unwrap());
+                assert_eq!(Some(again), case.expect.as_bool(), "againNow: {name}");
+            }
+            other => panic!("stats-step.json names an unknown fn {other:?} in {name}"),
         }
     }
 }
