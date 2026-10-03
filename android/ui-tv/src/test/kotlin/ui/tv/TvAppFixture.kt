@@ -44,6 +44,9 @@ import setup.SettingsUiState
 import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import stats.AchievementDotViewModel
+import stats.InMemoryAchievementsSeen
+import stats.NO_ACHIEVEMENTS
 import stats.StatsRead
 import stats.StatsViewModel
 import system.CacheBudgetViewModel
@@ -54,7 +57,9 @@ import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
 import testing.FakeCore
+import testing.FakeCoreProvider
 import ui.tv.player.TvPlayerFixture
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.StatsSummary
@@ -98,6 +103,7 @@ internal class TvAppFixture(
     sets: List<MediaSet> = emptyList(),
     watch: WatchSnapshot = WatchSnapshot.Empty,
     heldIds: Set<String> = emptySet(),
+    achievements: Achievements = NO_ACHIEVEMENTS,
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
@@ -109,6 +115,13 @@ internal class TvAppFixture(
     private val playback: TvPlayerFixture
     private val player: PlayerViewModel
     val settings = mockk<SettingsViewModel>(relaxed = true)
+
+    /** What this device has shown the chosen profile; a test marks it to put the dot out. */
+    val achievementsSeen = InMemoryAchievementsSeen()
+
+    /** The Stats page's ViewModel — relaxed, so a test can verify what the page asked of it. */
+    val stats = mockk<StatsViewModel>(relaxed = true)
+
     val system = mockk<SystemViewModel>(relaxed = true)
     /** Exposed so a test can restub a single call — `searchPeople`, for a grouped-search test naming a person the query matches. */
     val repository = mockk<CatalogRepository>()
@@ -257,11 +270,12 @@ internal class TvAppFixture(
         every { lanCache.state } returns lanCacheState
         // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the
         // same reason as every entry below.
-        val stats = mockk<StatsViewModel>(relaxed = true)
         every { stats.state } returns
             MutableStateFlow<StatsRead>(
                 StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
             )
+        // The rail's dot reads the chosen profile's achievements from a core of its own.
+        val achievementsCore = FakeCore().apply { achievementsByProfile = chosenProfileId?.let { mapOf(it to achievements) }.orEmpty() }
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
@@ -289,6 +303,9 @@ internal class TvAppFixture(
                 // through hiltViewModel() too, films only — same reason.
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
+                // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(), the
+                // same reason every entry here exists — and every library test reaches it.
+                AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer, achievementsSeen),
             )
         val held =
             ViewModelProvider(

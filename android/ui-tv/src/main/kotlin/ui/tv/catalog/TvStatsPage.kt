@@ -85,6 +85,7 @@ internal fun TvStatsPage(state: StatsUiState) {
                         }
                     }
                 }
+                tvAchievementItems(state.achievements)
                 item(key = "history") { Text(text = "History", style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
                 items(items = state.history, key = { it.key }) { line ->
                     TvStatsStop { focused -> Text(text = line.text, style = TvFocus.textStyle(TvTypeScale.body, focused)) }
@@ -96,7 +97,7 @@ internal fun TvStatsPage(state: StatsUiState) {
 
 /** One stop for the remote on a page with nothing to press: focusable, read as one, and told whether it holds focus so it can wear the focus treatment. */
 @Composable
-private fun TvStatsStop(
+internal fun TvStatsStop(
     modifier: Modifier = Modifier,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
