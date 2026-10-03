@@ -22,6 +22,7 @@ import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
 import uniffi.mediagram_core.StateSnapshot
+import uniffi.mediagram_core.StatsSummary
 import uniffi.mediagram_core.SyncOutcome
 import uniffi.mediagram_core.TitleCreditsRecord
 import uniffi.mediagram_core.TitleInfo
@@ -491,8 +492,12 @@ class FakeCore(
 
     override suspend fun snapshot(profileId: String): StateSnapshot = watchState.snapshot(profileId)
 
-    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) =
+    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?, localDay: String) =
         watchState.setProgress(profileId, setId, at, duration)
+
+    /** Records no watch time, so every profile reads as nothing watched yet. */
+    override suspend fun stats(profileId: String, today: String): StatsSummary =
+        StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList())
 
     override suspend fun clearProgress(profileId: String, setId: String) = watchState.clearProgress(profileId, setId)
 

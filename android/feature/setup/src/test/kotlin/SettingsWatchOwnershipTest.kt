@@ -42,6 +42,7 @@ private class WatchCore : FakeCoreHandle by FakeCore(authorized = true) {
         setId: String,
         at: Double,
         duration: Double?,
+        localDay: String,
     ) {
         writes += "progress:$profileId:$setId"
     }

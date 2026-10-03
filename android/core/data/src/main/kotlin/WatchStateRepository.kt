@@ -18,6 +18,7 @@ import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.ProgressRow
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.WatchedRow
+import java.time.LocalDate
 
 /**
  * The chosen profile's watch state, over [CoreInterface]. Everything reads
@@ -281,7 +282,7 @@ class DefaultWatchStateRepository(
         at: Double,
         duration: Double?,
     ) = writing { core, id ->
-        core.setProgress(id, setId, at, duration)
+        core.setProgress(id, setId, at, duration, LocalDate.now().toString())
     }
 
     override suspend fun clearProgress(setId: String) = writing { core, id -> core.clearProgress(id, setId) }
