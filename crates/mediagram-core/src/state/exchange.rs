@@ -10,6 +10,7 @@ use super::preferences_exchange;
 use super::profiles;
 use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
+use super::stats;
 use super::watched_exchange;
 
 /// What this device has to say about where things were left off.
@@ -34,6 +35,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
         let collections = lists_exchange::export_collections(conn, &profile.id)?;
         let preferences = preferences_exchange::export_preferences(conn, &profile.id)?;
+        let (title_stats, day_stats) = stats::exchange::export(conn, &profile.id)?;
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
@@ -44,8 +46,8 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             watchlist,
             collections,
             preferences,
-            title_stats: Vec::new(),
-            day_stats: Vec::new(),
+            title_stats,
+            day_stats,
         });
     }
     let kids = lists_exchange::export_kids(conn)?;
@@ -103,6 +105,8 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
         changed +=
             preferences_exchange::import_preferences(conn, &profile_id, &profile.preferences)?;
+        changed +=
+            stats::exchange::import(conn, &profile_id, &profile.title_stats, &profile.day_stats)?;
     }
     transaction.commit()?;
     Ok(changed)

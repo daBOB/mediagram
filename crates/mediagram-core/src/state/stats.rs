@@ -4,4 +4,5 @@
 //! fixtures under `web/test/fixtures/watch-state/`.
 
 mod calendar;
+pub(crate) mod exchange;
 pub mod summary;
