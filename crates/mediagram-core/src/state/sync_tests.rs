@@ -901,3 +901,43 @@ mod typed_failures {
         assert_eq!(std::fs::read(occupied).unwrap(), b"held file");
     }
 }
+
+/// Watch time from two machines adds up once on both, however many rounds
+/// pass: each device's rows are its own, and a merge keeps only the newest
+/// copy of each.
+mod viewing_stats_on_two_machines {
+    use super::*;
+    use crate::state::stats::exchange::export;
+
+    fn day_total(db: &StateDb, id: &str) -> f64 {
+        db.with(|conn| export(conn, id)).unwrap().1.iter().map(|row| row.seconds).sum()
+    }
+
+    #[tokio::test]
+    async fn minutes_from_both_machines_sum_once_on_both() {
+        let (_ldir, laptop) = db();
+        let laptop_id = profile(&laptop);
+        let (_pdir, phone) = db();
+        let phone_id = profile(&phone);
+        let channel = FakeChannel::new(Vec::new());
+        let t0 = profiles::now_ms();
+        for (at, secs) in [(0.0, 0), (10.0, 10), (20.0, 20)] {
+            laptop
+                .set_progress_counted(&laptop_id, "01A", at, None, "2026-10-03", t0 + secs * 1000)
+                .unwrap();
+        }
+        for (at, secs) in [(20.0, 30), (25.0, 35)] {
+            phone
+                .set_progress_counted(&phone_id, "01A", at, None, "2026-10-03", t0 + secs * 1000)
+                .unwrap();
+        }
+
+        for _ in 0..3 {
+            once(&laptop, &channel, "laptop", SyncMemo::default().entry("h")).await;
+            once(&phone, &channel, "phone", SyncMemo::default().entry("h")).await;
+        }
+
+        assert_eq!(day_total(&laptop, &laptop_id), 25.0);
+        assert_eq!(day_total(&phone, &phone_id), 25.0);
+    }
+}

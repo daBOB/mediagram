@@ -16,6 +16,7 @@ use crate::state::{editors_choice, lists, profiles, rows};
 use super::Core;
 
 mod collections;
+mod stats;
 
 /// One profile's everything, in one read. The page asks once and holds it.
 #[derive(Debug, Clone, Default, PartialEq, uniffi::Record)]
@@ -142,12 +143,14 @@ impl Core {
 
     pub async fn set_watched(self: Arc<Self>, profile_id: String, set_id: String, finished: bool) {
         self.blocking(move |core| {
-            if finished {
-                // A finished title's next play is a new viewing, measured from nothing.
-                core.state_db.forget_tick(&profile_id, &set_id);
-            }
-            core.state_db
-                .with(|conn| rows::set_watched(conn, &profile_id, &set_id, finished))
+            core.state_db.with(|conn| {
+                rows::set_watched(conn, &profile_id, &set_id, finished)?;
+                if finished {
+                    // A finished title's next play is a new viewing, measured from nothing.
+                    core.state_db.forget_tick(&profile_id, &set_id);
+                }
+                Ok(())
+            })
         })
         .await;
     }
