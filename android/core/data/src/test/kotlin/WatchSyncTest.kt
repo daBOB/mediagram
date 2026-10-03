@@ -427,7 +427,28 @@ class WatchSyncTest {
     @Test
     fun aRoundThatPulledRowsReloadsTheRepository() =
         runTest {
-            val core = SyncCore(listOf(SyncOutcome(3uL, false, null)))
+            val core = SyncCore(listOf(SyncOutcome(3uL, true, null)))
+            val repository = RecordingRepository()
+            val sync =
+                DefaultWatchSync(
+                    ResolvedCoreProvider(core),
+                    settingsWithAChosenLibrary(),
+                    repository,
+                    LibraryEvents.None,
+                    backgroundScope,
+                )
+
+            sync.onForeground()
+            runCurrent()
+
+            assertEquals(1, repository.reloadCalls)
+        }
+
+    /** The core keeps and counts imports even when the send after them fails, "so the caller can reload" (`api::state_sync`). */
+    @Test
+    fun aRoundThatPulledRowsButFailedToSendStillReloads() =
+        runTest {
+            val core = SyncCore(listOf(SyncOutcome(3uL, false, "the send was refused")))
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(

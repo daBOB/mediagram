@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.95.4 — the Android core fake fails a sync for a library it never stored
+
+**Fixed**
+
+- `FakeCore.syncState` answered every library with a clean, empty round,
+  where the real core answers a library this device never stored with a
+  failed one — read from the local list of stored libraries, before any
+  connection, and as an outcome rather than a throw. The fake now answers
+  the same, and `CoreContract` pins it against both cores. No test relied
+  on the old answer: every one that syncs supplies its own `syncState`.
+- `WatchSyncTest` now covers a round that pulled rows but failed to send:
+  the core keeps and counts those imports "so the caller can reload", and
+  the test fails if `WatchSync` ever skips the reload on a failed round.
+  The existing pulled-rows case now also reports the send a real round
+  makes after importing. Test code only; no app change.
+
 ## 0.95.3 — the Android core fake keeps preferences the way the real core does
 
 **Fixed**

@@ -533,7 +533,14 @@ class FakeCore(
 
     override suspend fun stateDeviceId(): String = ""
 
-    override suspend fun syncState(handle: String): SyncOutcome = SyncOutcome(0uL, false, null)
+    /**
+     * This fake stores no library, so every handle is one this device never
+     * stored, and the real core answers that with a failed round rather than a
+     * throw (`api::state_sync::sync_state`). A test that needs a round to
+     * succeed, pull rows or hang overrides this.
+     */
+    override suspend fun syncState(handle: String): SyncOutcome =
+        SyncOutcome(0uL, false, "this device no longer has that library stored")
 
     /** How many times [retireLocalState] actually ran, successfully or not. */
     var retireCalls: Int = 0

@@ -28,6 +28,9 @@ import kotlin.test.assertTrue
  *   catalog is loaded".
  * - [revokingTheCurrentSessionIsRefused] is rejected before the core ever
  *   resolves a Telegram connection (`api::sessions::revoke_session`).
+ * - [syncingALibraryThisDeviceNeverStoredFails] is answered from the local
+ *   list of stored libraries before `api::state_sync::sync_state` opens a
+ *   connection — as a failed outcome, not a throw, since a round never throws.
  * - the profile cases are `state_db` reads/writes only
  *   (`api::state::{profiles,create_profile,choose_profile,delete_profile}`);
  *   [aBlankProfileNameIsRefused] pins `clean_name`'s own rule
@@ -78,6 +81,16 @@ abstract class CoreContract {
     @Test
     fun revokingTheCurrentSessionIsRefused() {
         runBlocking { assertFailsWith<CoreException.NotAuthorized> { core().revokeSession("0") } }
+    }
+
+    @Test
+    fun syncingALibraryThisDeviceNeverStoredFails() {
+        runBlocking {
+            val outcome = core().syncState("no-such-library")
+            assertEquals(0uL, outcome.pulled)
+            assertFalse(outcome.pushed)
+            assertTrue(outcome.failed != null)
+        }
     }
 
     @Test
