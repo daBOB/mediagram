@@ -14,7 +14,7 @@
 
 use std::path::{Path, PathBuf};
 
-use mediagram_core::state::merge::{MergedState, merge_states};
+use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::record::{SyncRecord, parse_record};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
@@ -97,6 +97,12 @@ fn canonical(mut state: MergedState) -> MergedState {
         profile
             .preferences
             .sort_by(|a, b| (&a.scope, &a.name).cmp(&(&b.scope, &b.name)));
+        profile
+            .title_stats
+            .sort_by(|a, b| (&a.set_id, &a.device).cmp(&(&b.set_id, &b.device)));
+        profile
+            .day_stats
+            .sort_by(|a, b| (&a.day, &a.device).cmp(&(&b.day, &b.device)));
     }
     state.profiles.sort_by(|a, b| a.name.cmp(&b.name));
     state
@@ -132,4 +138,47 @@ fn merge_fixtures_match_the_web_in_both_orders() {
 #[test]
 fn lists_merge_fixtures_match_the_web_in_both_orders() {
     run_merge_fixture("lists-merge.json");
+}
+
+/// The stats keys only, per viewer, as the web's own runner compares them:
+/// a case about stats rows need not spell out the positions beside them.
+fn stats_only(state: MergedState) -> Vec<MergedProfile> {
+    canonical(state)
+        .profiles
+        .into_iter()
+        .map(|profile| MergedProfile {
+            name: profile.name,
+            display_name: profile.display_name,
+            title_stats: profile.title_stats,
+            day_stats: profile.day_stats,
+            ..Default::default()
+        })
+        .collect()
+}
+
+/// Viewing stats rows: the newest copy per (title, device) and per (day,
+/// device), in either order.
+#[test]
+fn stats_merge_fixtures_match_the_web_in_both_orders() {
+    let Some(cases) = load::<MergeCase>("stats-merge.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "stats-merge.json holds no cases");
+    for case in cases {
+        let expect = stats_only(case.expect);
+        let mut records = case.records;
+        assert_eq!(
+            stats_only(merge_states(&records)),
+            expect,
+            "case: {} (forward)",
+            case.name
+        );
+        records.reverse();
+        assert_eq!(
+            stats_only(merge_states(&records)),
+            expect,
+            "case: {} (reversed)",
+            case.name
+        );
+    }
 }
