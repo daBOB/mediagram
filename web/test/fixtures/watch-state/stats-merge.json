@@ -1,0 +1,372 @@
+[
+  {
+    "name": "one device's rows pass through unchanged",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "the newer row for one title and device wins over an older copy passed on",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 1000, "seconds": 300, "updatedAt": 1000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 300, "updatedAt": 1000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "the same row in two documents is kept once",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "two devices' rows for one title and one day are both kept, never added together",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [
+              { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+            ],
+            "dayStats": [{ "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 },
+            { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+          ],
+          "dayStats": [
+            { "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 },
+            { "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a device passing on every row it holds counts nothing twice",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [
+              { "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 },
+              { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+            ],
+            "dayStats": [
+              { "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 },
+              { "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }
+            ]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [
+              { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 },
+              { "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 1000, "seconds": 300, "updatedAt": 1000 }
+            ],
+            "dayStats": [
+              { "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 },
+              { "day": "2026-09-10", "device": "laptop", "seconds": 300, "updatedAt": 1000 }
+            ]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 },
+            { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+          ],
+          "dayStats": [
+            { "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 },
+            { "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an exact tie with different contents is decided by the document's device",
+    "records": [
+      {
+        "format": 1,
+        "device": "desktop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 900, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 900, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "one viewer typed two ways is one viewer",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": " andré ",
+            "titleStats": [
+              { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+            ],
+            "dayStats": [{ "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "andré",
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 },
+            { "setId": "01A", "device": "phone", "startedAt": 100, "lastWatchedAt": 3000, "seconds": 300, "updatedAt": 3000, "againAt": 2000 }
+          ],
+          "dayStats": [
+            { "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 },
+            { "day": "2026-09-10", "device": "phone", "seconds": 300, "updatedAt": 3000 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "two viewers keep their own rows for the same title",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }]
+          },
+          {
+            "name": "Ben",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 1200, "seconds": 120, "updatedAt": 1200 }]
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }]
+        },
+        {
+          "name": "ben",
+          "displayName": "Ben",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 1200, "seconds": 120, "updatedAt": 1200 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a viewer with no stats rows has no stats keys",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [{ "name": "André", "progress": [{ "setId": "01A", "at": 742, "duration": 1204, "updatedAt": 500 }] }]
+      },
+      { "format": 1, "device": "phone", "writtenAt": 0, "profiles": [{ "name": "André", "titleStats": [], "dayStats": [] }] }
+    ],
+    "expect": { "profiles": [{ "name": "andré", "displayName": "André" }] }
+  },
+  {
+    "name": "a document from before stats existed changes nothing",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+            "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+          }
+        ]
+      },
+      { "format": 1, "device": "old-tablet", "writtenAt": 0, "profiles": [{ "name": "André" }] }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 100, "lastWatchedAt": 2000, "seconds": 600, "updatedAt": 2000 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 2000 }]
+        }
+      ]
+    }
+  }
+]

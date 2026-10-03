@@ -233,3 +233,43 @@ describe("stats-record-parse fixtures", () => {
     });
   }
 });
+
+describe("stats-merge fixtures", () => {
+  interface Case {
+    name: string;
+    records: SyncRecord[];
+    expect: ReturnType<typeof canonicalStats>;
+  }
+
+  /** Code-unit order, as the engines sort; rows by their merge key. */
+  const order = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+  /**
+   * The stats keys only, passed through as `mergeStates` left them: a key
+   * present but empty would show here as `[]` and fail a case that omits it,
+   * which is the omitted-when-empty rule being checked.
+   */
+  function canonicalStats(state: MergedState) {
+    return {
+      profiles: state.profiles
+        .map((profile) => ({
+          name: profile.name,
+          displayName: profile.displayName,
+          ...(profile.titleStats
+            ? { titleStats: [...profile.titleStats].sort((a, b) => order(a.setId, b.setId) || order(a.device, b.device)) }
+            : {}),
+          ...(profile.dayStats
+            ? { dayStats: [...profile.dayStats].sort((a, b) => order(a.day, b.day) || order(a.device, b.device)) }
+            : {}),
+        }))
+        .sort((a, b) => order(a.name, b.name)),
+    };
+  }
+
+  for (const one of load<Case[]>("stats-merge.json")) {
+    test(one.name, () => {
+      expect(canonicalStats(mergeStates(one.records))).toEqual(one.expect);
+      expect(canonicalStats(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
