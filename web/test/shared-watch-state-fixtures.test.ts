@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import { againNow, stepSeconds } from "../src/state/stats-step";
+import { summarize, type StatsSummary, type SummaryInput } from "../src/state/stats-summary";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupDepartments } from "../public/lib/departments.js";
 import { homeShelves } from "../public/lib/catalog/home-shelves.js";
@@ -270,6 +271,26 @@ describe("stats-merge fixtures", () => {
     test(one.name, () => {
       expect(canonicalStats(mergeStates(one.records))).toEqual(one.expect);
       expect(canonicalStats(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
+
+describe("stats-summary fixtures", () => {
+  interface Case {
+    name: string;
+    input: SummaryInput;
+    expect: Partial<StatsSummary>;
+  }
+
+  for (const one of load<Case[]>("stats-summary.json")) {
+    test(one.name, () => {
+      const summary = summarize(one.input);
+      // Only the keys a case names: one about the week need not spell out
+      // thirty bars.
+      const named = Object.fromEntries(
+        Object.keys(one.expect).map((key) => [key, summary[key as keyof StatsSummary]]),
+      );
+      expect(named).toEqual(one.expect);
     });
   }
 });
