@@ -219,3 +219,17 @@ describe("stats-step fixtures", () => {
     });
   }
 });
+
+describe("stats-record-parse fixtures", () => {
+  interface Case {
+    name: string;
+    input: string;
+    expect: SyncRecord | null;
+  }
+
+  for (const one of load<Case[]>("stats-record-parse.json")) {
+    test(one.name, () => {
+      expect(parseRecord(one.input)).toEqual(one.expect);
+    });
+  }
+});

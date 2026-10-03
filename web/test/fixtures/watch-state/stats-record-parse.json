@@ -1,0 +1,285 @@
+[
+  {
+    "name": "title and day rows read back as written",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"againAt\":1789000300000}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000, "againAt": 1789000300000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a title row without againAt reads without one",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a stats key that is not an array is read as absent",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":{\"setId\":\"01A\"},\"dayStats\":\"lots\"}]}",
+    "expect": { "format": 1, "device": "laptop", "writtenAt": 1789000000000, "profiles": [{ "name": "André", "progress": [], "watched": [] }] }
+  },
+  {
+    "name": "an empty stats key reads as empty, not absent",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[],\"dayStats\":[]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [{ "name": "André", "progress": [], "watched": [], "titleStats": [], "dayStats": [] }]
+    }
+  },
+  {
+    "name": "a negative number drops the row, not the document",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"duration\":1204,\"updatedAt\":1789000000000}],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01B\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":-5,\"updatedAt\":1789000600000}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"2026-09-11\",\"device\":\"laptop\",\"seconds\":-1,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [{ "setId": "01A", "at": 742, "duration": 1204, "updatedAt": 1789000000000 }],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a value that is not a finite JSON number drops the row",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01B\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":\"NaN\",\"updatedAt\":1789000600000},{\"setId\":\"01C\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":null,\"updatedAt\":1789000600000},{\"setId\":\"01D\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":true,\"updatedAt\":1789000600000},{\"setId\":\"01E\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":{},\"updatedAt\":1789000600000},{\"setId\":\"01F\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":\"600\",\"updatedAt\":1789000600000},{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}],\"dayStats\":[{\"day\":\"2026-09-11\",\"device\":\"laptop\",\"seconds\":\"600\",\"updatedAt\":1789000600000},{\"day\":\"2026-09-12\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":null},{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a missing field drops the row",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01B\",\"device\":\"laptop\",\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01C\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01D\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"updatedAt\":1789000600000},{\"setId\":\"01E\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600},{\"setId\":\"01F\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}],\"dayStats\":[{\"day\":\"2026-09-11\",\"device\":\"laptop\",\"seconds\":600},{\"day\":\"2026-09-12\",\"seconds\":600,\"updatedAt\":1789000600000},{\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an empty, blank or non-string id drops the row",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01B\",\"device\":\"  \",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":7,\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}],\"dayStats\":[{\"day\":\"2026-09-11\",\"device\":\"\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an againAt of null is no restart; a negative or string one drops the row",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01B\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"againAt\":null},{\"setId\":\"01C\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"againAt\":-1},{\"setId\":\"01D\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"againAt\":\"1789000300000\"},{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01B", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 },
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a day not written as YYYY-MM-DD drops the row",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"dayStats\":[{\"day\":\"2026-9-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"yesterday\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":20260910,\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"2026-09-10T00:00\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\" 2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000},{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a day row over a whole day is dropped; exactly a day is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":86400.5,\"updatedAt\":1789000600000},{\"day\":\"2026-09-11\",\"device\":\"laptop\",\"seconds\":86400,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "dayStats": [{ "day": "2026-09-11", "device": "laptop", "seconds": 86400, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "zero is a value, not a missing one",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":0,\"lastWatchedAt\":0,\"seconds\":0,\"updatedAt\":0,\"againAt\":0}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":0,\"updatedAt\":0}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [{ "setId": "01A", "device": "laptop", "startedAt": 0, "lastWatchedAt": 0, "seconds": 0, "updatedAt": 0, "againAt": 0 }],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 0, "updatedAt": 0 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "an entry that is not an object is dropped",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[null,7,\"01A\",[],{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}],\"dayStats\":[null,[\"2026-09-10\"],{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "unknown fields on a row are not carried",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"note\":\"hi\"}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000,\"extra\":1}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "ids are trimmed, as every other id is",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\" 01A \",\"device\":\" laptop \",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop \",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 1789000000000, "lastWatchedAt": 1789000600000, "seconds": 600, "updatedAt": 1789000600000 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a day shaped right is kept even where no calendar has it",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"dayStats\":[{\"day\":\"2026-13-45\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1789000600000}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "dayStats": [{ "day": "2026-13-45", "device": "laptop", "seconds": 600, "updatedAt": 1789000600000 }]
+        }
+      ]
+    }
+  }
+]

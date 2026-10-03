@@ -54,6 +54,7 @@
  */
 
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
+import { parseDayStatRows, parseTitleStatRows, type StatsRows } from "./stats-record";
 
 /** Bumped when a reader could no longer make sense of an older document. */
 export const SYNC_FORMAT = 1;
@@ -109,7 +110,8 @@ export interface CollectionRow {
   removed?: true;
 }
 
-export interface ProfileState {
+/** `titleStats`/`dayStats` come from `StatsRows`: see `stats-record.ts`. */
+export interface ProfileState extends StatsRows {
   /** The viewer. See the plan's Identity section: the name, not the id. */
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
@@ -201,6 +203,8 @@ export function parseRecord(text: string): SyncRecord | null {
       watchlist: row.watchlist === undefined ? undefined : parseRows(row.watchlist, listRow),
       collections: row.collections === undefined ? undefined : parseRows(row.collections, collectionRow),
       preferences: row.preferences === undefined ? undefined : parsePreferenceRows(row.preferences),
+      titleStats: parseTitleStatRows(row.titleStats),
+      dayStats: parseDayStatRows(row.dayStats),
     });
   }
 
@@ -283,7 +287,7 @@ function collectionRow(value: unknown): CollectionRow | null {
 }
 
 /** Each entry through its own check: a bad row is dropped, not the list. */
-function parseRows<T>(value: unknown, one: (entry: unknown) => T | null): T[] {
+export function parseRows<T>(value: unknown, one: (entry: unknown) => T | null): T[] {
   return asArray(value).flatMap((entry) => {
     const row = one(entry);
     return row === null ? [] : [row];
@@ -294,7 +298,7 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function objectRow(value: unknown): Record<string, unknown> | null {
+export function objectRow(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
@@ -307,7 +311,7 @@ function numberFromScalar(value: unknown): number {
 }
 
 /** A non-empty string, trimmed — the only kind of text worth keeping here. */
-function text_(value: unknown): string | null {
+export function text_(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const clean = value.trim();
   return clean === "" ? null : clean;
