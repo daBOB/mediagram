@@ -32,8 +32,8 @@ import ui.tv.setup.TvConfirmDialog
  * — Update library, TMDB key…, Start over, and a conditional row for
  * whatever else the menu carries (currently, "Preloads · n") — the same
  * three the tablet's own `AndroidOnlyMenu` keeps once its rail already
- * carries My List, Continue watching, Latest, Genres, Settings and System.
- * This television's own rail carries the same six, so this page never
+ * carries My List, Continue watching, Latest, Genres, Stats, Settings and System.
+ * This television's own rail carries the same seven, so this page never
  * offers them either. Update library says under itself what the phone's
  * item says — why it is waiting, or what it will leave out — and is drawn
  * faint while it waits.

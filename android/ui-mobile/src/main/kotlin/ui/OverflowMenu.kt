@@ -86,7 +86,7 @@ internal fun OverflowMenu(
  * on EXPANDED — the three actions that have no web counterpart at all,
  * because the web server does them itself: Update library, TMDB key…,
  * Start over. Every other item [OverflowMenu] carries — System, Settings,
- * My List, Continue watching, Latest, Genres — has its own dedicated
+ * My List, Continue watching, Latest, Genres, Stats — has its own dedicated
  * control right beside this one there: [ui.chrome.LibraryRail] on EXPANDED,
  * [ui.chrome.CompactLibraryHeader]'s icon row on the root's own compact
  * width. Shares [AndroidOnlyItems] with [OverflowMenu] rather than keeping
