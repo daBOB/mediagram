@@ -46,12 +46,11 @@ struct RecordParseCase {
     expect: Option<SyncRecord>,
 }
 
-#[test]
-fn record_parse_fixtures_match_the_web() {
-    let Some(cases) = load::<RecordParseCase>("record-parse.json") else {
+fn run_record_parse_fixture(file: &str) {
+    let Some(cases) = load::<RecordParseCase>(file) else {
         return;
     };
-    assert!(!cases.is_empty(), "record-parse.json holds no cases");
+    assert!(!cases.is_empty(), "{file} holds no cases");
     for case in cases {
         assert_eq!(
             parse_record(&case.input),
@@ -60,6 +59,17 @@ fn record_parse_fixtures_match_the_web() {
             case.name
         );
     }
+}
+
+#[test]
+fn record_parse_fixtures_match_the_web() {
+    run_record_parse_fixture("record-parse.json");
+}
+
+/// Title and day rows: each bad one dropped on its own, never the document.
+#[test]
+fn stats_record_parse_fixtures_match_the_web() {
+    run_record_parse_fixture("stats-record-parse.json");
 }
 
 #[derive(Deserialize)]

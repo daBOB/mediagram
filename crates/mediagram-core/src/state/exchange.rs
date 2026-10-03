@@ -44,6 +44,8 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             watchlist,
             collections,
             preferences,
+            title_stats: Vec::new(),
+            day_stats: Vec::new(),
         });
     }
     let kids = lists_exchange::export_kids(conn)?;
