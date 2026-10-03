@@ -59,6 +59,9 @@ sealed interface Destination {
     /** What is preloading, queued, or already fully on this device — Android only, the web has no film preload. */
     data object Preloads : Destination
 
+    /** The chosen profile's own watch time and history — the rail's Stats row. */
+    data object Stats : Destination
+
     data object System : Destination
 
     data object TmdbKey : Destination
@@ -86,6 +89,7 @@ fun barTitleFor(destination: Destination): String =
         Destination.Genres -> "Genres"
         Destination.Latest -> "Latest"
         Destination.Preloads -> "Preloads"
+        Destination.Stats -> "Stats"
         Destination.System -> "System"
         Destination.TmdbKey -> "TMDB key"
         Destination.Settings -> "Settings"
@@ -111,6 +115,7 @@ fun backLabelFor(destination: Destination): String? =
         Destination.Genres -> "Back"
         Destination.Latest -> "Back"
         Destination.Preloads -> "Back"
+        Destination.Stats -> "Back"
         Destination.System -> "Back"
         Destination.TmdbKey -> "Back"
         Destination.Settings -> "Back"

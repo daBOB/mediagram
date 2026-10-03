@@ -25,14 +25,17 @@ internal const val TvLatestRailKey = "rail:latest"
 /** The catalogue's restore key for "the Genres index was opened from the rail". */
 internal const val TvGenresRailKey = "rail:genres"
 
+/** The catalogue's restore key for "Stats was opened from the rail". */
+internal const val TvStatsRailKey = "rail:stats"
+
 /**
  * Where the departments bar's own pills and the restore-key sentinels
  * ([TvSearchEntryKey], [TvMenuEntryKey], [TvLatestRailKey], [TvGenresRailKey],
- * and Settings'/System's own `menu:*` keys once either is left) leave the
- * remote once [TvCatalogScreen] knows what is selected — split out of it so
- * that composable reads as "what shows below the bar", not also "which of
- * eight index slots that is and where Back from six different sentinels
- * sends the remote".
+ * [TvStatsRailKey], and Settings'/System's own `menu:*` keys once either is
+ * left) leave the remote once [TvCatalogScreen] knows what is selected —
+ * split out of it so that composable reads as "what shows below the bar",
+ * not also "which of eight index slots that is and where Back from seven
+ * different sentinels sends the remote".
  */
 internal class TvCatalogRestore(
     val selectedPill: Int,
@@ -95,9 +98,10 @@ internal fun rememberTvCatalogRestore(
     val backFromMenu = restoreKey == TvMenuEntryKey
     val backFromLatestRail = restoreKey == TvLatestRailKey
     val backFromGenresRail = restoreKey == TvGenresRailKey
+    val backFromStatsRail = restoreKey == TvStatsRailKey
     val backFromSettings = restoreKey == menuRestoreKey(MenuScreen.Settings)
     val backFromSystem = restoreKey == menuRestoreKey(MenuScreen.System)
-    val redirectsFocus = backFromSearch || backFromMenu || backFromLatestRail || backFromGenresRail || backFromSettings || backFromSystem
+    val redirectsFocus = backFromSearch || backFromMenu || backFromLatestRail || backFromGenresRail || backFromStatsRail || backFromSettings || backFromSystem
     val wallKey = restoreKey.takeUnless { redirectsFocus }
     // Content never takes arrival focus while a sentinel is sending the
     // remote to one specific bar or rail control instead (`wallKey` is
@@ -135,6 +139,12 @@ internal fun rememberTvCatalogRestore(
     LaunchedEffect(backFromGenresRail, ready) {
         if (backFromGenresRail && ready) {
             chromeFocus.railRowFocus.getValue(RailItem.GENRES).requestFocus()
+            onEntryRestored()
+        }
+    }
+    LaunchedEffect(backFromStatsRail, ready) {
+        if (backFromStatsRail && ready) {
+            chromeFocus.railRowFocus.getValue(RailItem.STATS).requestFocus()
             onEntryRestored()
         }
     }

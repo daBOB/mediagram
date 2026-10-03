@@ -12,6 +12,7 @@ import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
 import ui.tv.catalog.TvSearchEntryKey
+import ui.tv.catalog.TvStatsRailKey
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
@@ -41,6 +42,7 @@ internal fun TvCatalogRoot(
     onOpenMenu: () -> Unit = {},
     onOpenLatest: () -> Unit = {},
     onOpenGenresIndex: () -> Unit = {},
+    onOpenStats: () -> Unit = {},
     onEntryRestored: () -> Unit = {},
     onOpenGenre: (name: String) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
@@ -63,6 +65,7 @@ internal fun TvCatalogRoot(
         onOpenMenu = onOpenMenu,
         onOpenLatest = onOpenLatest,
         onOpenGenresIndex = onOpenGenresIndex,
+        onOpenStats = onOpenStats,
         onEntryRestored = onEntryRestored,
         onFinish = onFinish,
         onOpenGenre = onOpenGenre,
@@ -155,6 +158,10 @@ internal fun TvLibraryHomeFrame(
             onOpenGenresIndex = {
                 restore.opened(here, TvGenresRailKey)
                 at.openGenresIndex()
+            },
+            onOpenStats = {
+                restore.opened(here, TvStatsRailKey)
+                at.openStats()
             },
             onEntryRestored = { restore.forget(here) },
             onFinish = catalogViewModel::markFinished,

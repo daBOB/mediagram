@@ -113,7 +113,7 @@ internal fun LibraryRail(
                     .clickable(onClick = onHome)
                     .semantics { contentDescription = "mediagram — home" },
         )
-        for (item in listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.SETTINGS)) {
+        for (item in listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)) {
             RailRow(item = item, count = countFor(item, rail.counts), active = item == active, onSelect = onSelect)
         }
         RailRow(item = RailItem.SYSTEM, count = null, active = RailItem.SYSTEM == active, onSelect = onSelect, apart = true)

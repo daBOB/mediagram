@@ -44,6 +44,8 @@ import setup.SettingsUiState
 import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import stats.StatsRead
+import stats.StatsViewModel
 import system.CacheBudgetViewModel
 import system.FetchViewModel
 import system.LanCacheConnection
@@ -55,7 +57,9 @@ import testing.FakeCore
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.SearchHit
+import uniffi.mediagram_core.StatsSummary
 import java.io.File
+import java.time.ZonedDateTime
 
 /** Which of [SetupViewModel]'s outstanding steps a [TvAppFixture] should land on. */
 internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
@@ -251,6 +255,13 @@ internal class TvAppFixture(
             )
         every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
         every { lanCache.state } returns lanCacheState
+        // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the
+        // same reason as every entry below.
+        val stats = mockk<StatsViewModel>(relaxed = true)
+        every { stats.state } returns
+            MutableStateFlow<StatsRead>(
+                StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
+            )
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 SetupViewModel::class.java to setup,
@@ -277,6 +288,7 @@ internal class TvAppFixture(
                 // A film's own TvTitlePage resolves TitlePreloadViewModel
                 // through hiltViewModel() too, films only — same reason.
                 TitlePreloadViewModel::class.java to titlePreload,
+                StatsViewModel::class.java to stats,
             )
         val held =
             ViewModelProvider(

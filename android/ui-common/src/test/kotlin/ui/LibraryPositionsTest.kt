@@ -150,6 +150,16 @@ class LibraryPositionsTest {
         assertNull(at.top)
     }
 
+    @Test
+    fun statsIsOneFrameOverWhateverOpenedIt() {
+        val at = positions()
+        at.openTitle("t1")
+        at.openStats()
+        assertEquals(FrameKind.STATS, at.top)
+        at.pop()
+        assertEquals(FrameKind.TITLE, at.top)
+    }
+
     /**
      * A show's own page remembers which season it was showing across a
      * title opened from it (Similar, Cast, an episode) and back — the

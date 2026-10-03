@@ -31,6 +31,8 @@ import playback.LanServer
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
 import settings.InMemoryTmdbSettings
+import stats.StatsRead
+import stats.StatsViewModel
 import setup.SettingsCompletion
 import setup.SettingsUiState
 import setup.SettingsViewModel
@@ -40,6 +42,8 @@ import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
 import ui.player.PlayerLifecycleFixture
+import uniffi.mediagram_core.StatsSummary
+import java.time.ZonedDateTime
 import catalog.ShelfViewModel
 import catalog.SearchViewModel
 import settings.InMemoryShelfViewSettings
@@ -121,6 +125,14 @@ internal class LibraryFlowFixture(
         // discovery pass returns.
         val lanCache = mockk<LanCacheViewModel>(relaxed = true)
         every { lanCache.state } returns MutableStateFlow(null)
+        // The Stats page resolves StatsViewModel through hiltViewModel(),
+        // the same reason every entry below exists; an empty history is the
+        // page a fresh profile shows.
+        val stats = mockk<StatsViewModel>(relaxed = true)
+        every { stats.state } returns
+            MutableStateFlow<StatsRead>(
+                StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
+            )
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
@@ -134,6 +146,7 @@ internal class LibraryFlowFixture(
                 SearchViewModel::class.java to SearchViewModel(repository),
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
                 LanCacheViewModel::class.java to lanCache,
+                StatsViewModel::class.java to stats,
                 // A film's own TitleDetailScreen resolves TitlePreloadViewModel
                 // through hiltViewModel() too — the same reason every entry
                 // here exists. Real, over fakes this fixture exposes so a

@@ -93,7 +93,7 @@ internal fun CompactLibraryHeader(
                     Modifier
                         .weight(1f)
                         .horizontalScroll(rememberScrollState())
-                        // A narrow phone can run out of width before all six
+                        // A narrow phone can run out of width before all seven
                         // rows fit; this hints there is more to reach for
                         // rather than cutting Settings/System off with
                         // nothing to say a sideways swipe finds them.

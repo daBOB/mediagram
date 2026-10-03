@@ -42,7 +42,7 @@ private val RailCollapsedWidth = 96.dp
 internal val RailOpenWidth = 288.dp
 
 /** The rows drawn before System's own gap — [RailItem.SYSTEM] is added apart, after this list. */
-private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.SETTINGS)
+private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
 
 /** The wordmark's own size on a 288dp rail — narrower than [designsystem.TvTypeScale.title], the same lesson the tablet's own narrow rail already drew for the same reason: it wraps at that size in this little room. */
 private val TvWordmarkSize = 24.sp
@@ -139,7 +139,7 @@ internal fun TvLibraryRail(
     }
 }
 
-/** How tall the wordmark's own slot is while collapsed — kept as blank space so the six rows land at the same height either way. */
+/** How tall the wordmark's own slot is while collapsed — kept as blank space so the seven rows land at the same height either way. */
 private val WordmarkRowHeight = 44.dp
 
 @Composable

@@ -93,6 +93,7 @@ internal fun LibraryBranches(
         onContinueWatching = { at.toCatalog(); chooseTab(fullTabs.firstKept) },
         onLatest = at::openLatest,
         onGenres = at::openGenresIndex,
+        onStats = at::openStats,
     )
     // The rail's own counts and tally, and its wordmark's "go home" — read
     // fresh from the shelves wherever the rail renders (root or pushed
@@ -214,6 +215,7 @@ internal fun LibraryBranches(
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
+        FrameKind.STATS -> StatsFrame(at, catalogState, menuActions, profileBar, browse)
 
         // Nothing open: the shelves, under the rail/departments-bar chrome
         // rather than LibraryScaffold — see [ui.chrome.LibraryHome].

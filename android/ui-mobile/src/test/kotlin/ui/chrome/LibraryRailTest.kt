@@ -23,6 +23,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.LibraryFlowFixture
 import ui.LibraryFlowTestActivity
+import kotlin.test.assertEquals
 
 /**
  * The rail at a tablet's own EXPANDED width: every row the web's rail-nav
@@ -60,9 +61,12 @@ class LibraryRailTest {
     }
 
     @Test fun everyRowItsCountsAndTheTallyAreOnScreenAtOnce() {
-        for (label in listOf("My List", "Continue watching", "Latest", "Genres", "Settings", "System")) {
+        val labels = listOf("My List", "Continue watching", "Latest", "Genres", "Stats", "Settings", "System")
+        for (label in labels) {
             compose.onNodeWithText(label).assertIsDisplayed()
         }
+        val tops = labels.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals(tops.sorted(), tops, "the rail lists its rows in the web's order")
         // My List and Continue watching are both empty in this fixture, and
         // so is Documentaries — the one department pill that still prints
         // its count at zero rather than dropping out — so all three read "0".
@@ -76,6 +80,12 @@ class LibraryRailTest {
         compose.onNodeWithText("Latest").performClick()
         compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
         // Still beside it, the same as before the tap — a pushed frame keeps the rail on EXPANDED.
+        compose.onNodeWithText("Genres").assertIsDisplayed()
+    }
+
+    @Test fun statsLandsOnTheStatsPageWithTheRailStillBesideIt() {
+        compose.onNodeWithText("Stats").performClick()
+        compose.onNodeWithText("Nothing watched yet.").assertIsDisplayed()
         compose.onNodeWithText("Genres").assertIsDisplayed()
     }
 

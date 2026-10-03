@@ -139,6 +139,8 @@ internal fun TvLibrary(
 
         FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
+        FrameKind.STATS -> TvStatsFrame(catalogState, leave)
+
         // Nothing open, the trimmed menu page chosen from the bar's own ⋮:
         // Back from it puts the remote back on that button.
         null if menuOpen ->
