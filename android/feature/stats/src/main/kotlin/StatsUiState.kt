@@ -3,6 +3,7 @@ package stats
 import model.Kind
 import model.MediaSet
 import model.episodeLabel
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.HistoryEntry
 import uniffi.mediagram_core.HistoryKind
 import uniffi.mediagram_core.StatsSummary
@@ -28,6 +29,8 @@ sealed interface StatsRead {
     data class Done(
         val summary: StatsSummary,
         val now: ZonedDateTime,
+        /** What the profile has earned and the closest to come, read at the same moment. */
+        val achievements: Achievements = NO_ACHIEVEMENTS,
     ) : StatsRead
 }
 
@@ -49,6 +52,8 @@ sealed interface StatsUiState {
         val bars: List<StatsBar>,
         /** Newest first, in the core's order. */
         val history: List<StatsLine>,
+        /** What was earned and what is next; [AchievementsUi.None] draws no section. */
+        val achievements: AchievementsUi = AchievementsUi.None,
     ) : StatsUiState
 }
 
@@ -82,7 +87,7 @@ fun statsUiStateOf(
             when {
                 read.summary.history.isEmpty() -> StatsUiState.Empty
                 sets == null -> StatsUiState.Loading
-                else -> pageOf(read.summary, sets, read.now)
+                else -> pageOf(read.summary, sets, read.now).copy(achievements = achievementsUiOf(read.achievements, read.now))
             }
     }
 

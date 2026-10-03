@@ -15,4 +15,7 @@ dependencies {
     implementation(project(":core:model"))
 
     testImplementation(project(":core:testing"))
+    // AchievementLabelsFixtureTest reads the web's own achievement-labels.json
+    // as plain JSON, the way core:data's ResumePointFixtureTest reads its own.
+    testImplementation(libs.findLibrary("kotlinx.serialization").get())
 }
