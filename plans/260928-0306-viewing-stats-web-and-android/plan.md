@@ -1,7 +1,7 @@
 ---
 title: "Viewing stats: minutes watched, what was watched, started, finished — web and Android"
 description: "Per-profile viewing stats recorded by both state engines, synced as bounded rows through the existing #mlib-state documents, shown on a stats page on both surfaces."
-status: pending
+status: planned
 priority: P2
 effort: 24h
 branch: feat/viewing-stats (off main once home, preload and decoder branches have merged)
@@ -39,6 +39,16 @@ created: 2026-09-28
    `fix/android-decoder-stall-recovery` merge — it changes the state schema and sync format
    the profile-roles work also changes; start from a settled main and coordinate with it.
 
+9. **The stats page is a rail item "Stats"** between Genres and Settings — web rail,
+   phone rail, TV rail alike (user, 2026-10-03). The new-achievement dot sits on it.
+10. **"Watched again" is a history entry** (user, 2026-10-03): restarting a finished title
+    shows as its own line ("Watched again · Der Pate · Sat 21:14"), its minutes counted on
+    top.
+11. **Goes before profile roles** (user asked for stats, 2026-10-03; roles still pending).
+    Kids are already known — `profiles.kids` (schema v7, core `kids_profile_tests.rs`) — so
+    the kids achievement subset needs nothing from roles. "Parents see their kids' stats"
+    stays with the roles work.
+
 ## Data (bounded — why it is safe to sync)
 
 - **Per (profile, set, device):** `startedAt` (first play), `lastWatchedAt`, `seconds`
@@ -59,18 +69,29 @@ tick) so a seek, a pause or a sleep never counts. Days are the watching device's
 
 ## Phases
 
-| # | Phase | Owns |
-|---|-------|------|
-| 01 | Shared fixtures + sync record format + merge rules | web/test/fixtures/watch-state/stats-*.json, docs |
-| 02 | Web: record, store, export/merge, stats API, stats page | web/src/state, routes, web/public stats page |
-| 03 | Rust core: schema migration, record in `set_progress`, export/merge, UniFFI `stats(profile)`; Android stats page (phone/tablet + TV) | crates/mediagram-core, android |
-| 04 | Cross-device verification (web + tablet + TV box), docs, versions | — |
-| 05 | Achievements: shared fixtures for each rule, derivation on web and in Kotlin/Rust, stats-page section, new-badge dot, kids subset | both surfaces |
+**Contract (names, wire keys, rules — read first):** [shared-contract.md](shared-contract.md)
 
-Phase files are written when the branch is cut (their inputs depend on what merges first).
+| # | Phase | Owns | Bump | Status |
+|---|-------|------|------|--------|
+| 01 | [Web: pure stats rules and shared fixtures](phase-01-web-stats-rules-and-shared-fixtures.md) | `web/src/state/stats-*.ts` (pure), `web/test/fixtures/watch-state/stats-*.json` | patch | pending |
+| 02 | [Web: record, sync, stats route, Stats page](phase-02-web-record-sync-route-and-stats-page.md) | `web/src/state/**`, `web/public/**` | minor | pending |
+| 03 | [Core: record, sync, summary, uniffi](phase-03-core-record-sync-summary-uniffi.md) | `crates/mediagram-core/**` | patch | pending |
+| 04 | [Android: Stats rail item and page, phone and TV](phase-04-android-stats-rail-and-page.md) | `android/**` | minor | pending |
+| 05 | [Cross-device verification, docs](phase-05-cross-device-verification-and-docs.md) | `docs/**` | none | pending |
+| 06 | [Achievements: fixtures, web derivation, section, dot](phase-06-achievements-web.md) | web | minor | pending |
+| 07 | [Achievements: core and Android](phase-07-achievements-core-and-android.md) | core, android | minor | pending |
 
-## Open for the phase-01 author
+**Order:** 01 → 02 (web, the reference) → 03 → 04 → 05; 06 after 02; 07 after 04 and 06.
+Branch `feat/viewing-stats`, worktree off `main`. Profile roles (pending) rebases on this.
 
-- Where the stats page lives on each surface (web rail item vs Settings; Android rail /
-  menu / profile menu) — follow the web once it exists.
-- Whether the history list also shows "Watched again" when a finished title is restarted.
+## Open questions (resolved 2026-10-03)
+
+- Stats page: rail item (decision 9). "Watched again": yes (decision 10).
+
+## Planning state 2026-10-03
+Phase files written against `shared-contract.md` (amended with every cross-phase decision).
+Web phases 01–02 and the core phase 03 were applied task by task in scratch copies and pass
+(web suite, typecheck, lint; core 478 lib tests, clippy, line limits, the web's fixtures). The
+achievement rules (06/07) pass all 19 fixture cases on web and Rust. Not yet compiled: the
+Kotlin of phases 04 and 07 (they build on phase 03's generated bindings).
+One question for the user: a rewatch moves a `films-N` date later (contract §9).
