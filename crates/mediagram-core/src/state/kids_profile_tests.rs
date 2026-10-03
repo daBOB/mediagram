@@ -21,6 +21,8 @@ fn merged(name: &str, kids: bool) -> MergedState {
             watchlist: vec![],
             collections: vec![],
             preferences: vec![],
+            title_stats: vec![],
+            day_stats: vec![],
         }],
         kids: vec![],
         editors_choice: vec![],

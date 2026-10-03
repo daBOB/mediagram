@@ -348,6 +348,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
 | `#/settings` | Settings (Appearance/Profile/admin Library & Telegram) |
+| `#/stats` | Stats: minutes watched, the last 30 days, achievements, history |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue Watching |
 | `#/watchlist` | My List |
@@ -376,8 +377,23 @@ hash at all fall back the same way.
 | `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
 | `GET` | `/api/settings/*` | Settings endpoints (admin-gated: Telegram/cache/library) |
 | `GET`/`POST`/`DELETE` | `/api/settings/sessions` | Active sessions list, revoke |
+| `GET` | `/api/profiles/{p}/stats` | The profile's viewing stats: summary (week, month, all time, last 30 days, history) plus achievements; `404` for an unknown profile |
 | `GET` | `/api/editors-choice` | Editor's choice pin (watch-state key) |
 | `GET` | `/artwork/...` | Posters, backdrops, person portraits (keyed, CDN-friendly) |
+
+### Stats
+
+"Stats" is a rail item between Genres and Settings, carrying a dot when an
+achievement has been earned that this browser has not shown yet (opening the
+page marks them seen; the set lives in `localStorage`, never synced). The page
+shows minutes this week, this month and all time, a bar per day for the last
+30 days, the achievements (earned with their dates, then the next few with
+progress), and the history, newest first: Started, Finished, Watched again.
+Each profile sees only its own. `GET /api/profiles/{p}/stats` answers the
+summary and the achievements together, computed from the rows `WatchState`
+records on every position write (`web/src/state/stats-*.ts`); the day is the
+server's local date. Android shows the same page on phone, tablet and
+television. Counting and sync: system-architecture.md, Watch state.
 
 ## Subtitles
 

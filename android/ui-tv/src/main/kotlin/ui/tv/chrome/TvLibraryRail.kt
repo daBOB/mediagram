@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import designsystem.LocalCatalogueTones
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import stats.NEW_ACHIEVEMENT
 import ui.RailItem
 import ui.tv.TvIndexRow
 
@@ -42,10 +44,18 @@ private val RailCollapsedWidth = 96.dp
 internal val RailOpenWidth = 288.dp
 
 /** The rows drawn before System's own gap — [RailItem.SYSTEM] is added apart, after this list. */
-private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.SETTINGS)
+private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
 
 /** The wordmark's own size on a 288dp rail — narrower than [designsystem.TvTypeScale.title], the same lesson the tablet's own narrow rail already drew for the same reason: it wraps at that size in this little room. */
 private val TvWordmarkSize = 24.sp
+
+/**
+ * Whether the chosen profile has earned something this device has not shown
+ * it yet — the dot on the Stats row. Provided by the library frame that
+ * draws the catalogue, and read here rather than threaded through the
+ * catalogue screen and its chrome, which have nothing else to do with it.
+ */
+internal val LocalNewAchievement = compositionLocalOf { false }
 
 /**
  * The library rail: icons alone at [RailCollapsedWidth] while the remote is
@@ -139,7 +149,7 @@ internal fun TvLibraryRail(
     }
 }
 
-/** How tall the wordmark's own slot is while collapsed — kept as blank space so the six rows land at the same height either way. */
+/** How tall the wordmark's own slot is while collapsed — kept as blank space so the seven rows land at the same height either way. */
 private val WordmarkRowHeight = 44.dp
 
 @Composable
@@ -166,6 +176,7 @@ private fun RailRow(
         // nothing a reader would notice.
         trailing = if (expanded) countFor(item, counts)?.toString() else null,
         contentDescription = item.label,
+        dot = if (item == RailItem.STATS && LocalNewAchievement.current) NEW_ACHIEVEMENT else null,
     )
 }
 

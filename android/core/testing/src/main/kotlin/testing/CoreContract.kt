@@ -3,6 +3,7 @@ package testing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.PreferenceRow
@@ -103,6 +104,13 @@ abstract class CoreContract {
     }
 
     @Test
+    fun aProfileThisCoreDoesNotHoldHasEarnedNothing() {
+        runBlocking {
+            assertEquals(Achievements(earned = emptyList(), next = emptyList()), core().achievements("no-such-profile", "2026-10-03", 120))
+        }
+    }
+
+    @Test
     fun choosingACreatedProfileIsRememberedLocally() {
         runBlocking {
             val core = core()
@@ -135,8 +143,8 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Dana")
-            core.setProgress(profile.id, "01A", 100.0, 900.0)
-            core.setProgress(profile.id, "01A", 742.0, 900.0)
+            core.setProgress(profile.id, "01A", 100.0, 900.0, "2026-10-03")
+            core.setProgress(profile.id, "01A", 742.0, 900.0, "2026-10-03")
             val progress = core.snapshot(profile.id).progress
             assertEquals(1, progress.size)
             assertEquals(742.0, progress.single().at)
@@ -148,7 +156,7 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Eli")
-            core.setProgress(profile.id, "01A", -50.0, null)
+            core.setProgress(profile.id, "01A", -50.0, null, "2026-10-03")
             assertEquals(0.0, core.snapshot(profile.id).progress.single().at)
         }
     }
@@ -158,9 +166,9 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Faye")
-            core.setProgress(profile.id, "01A", 10.0, null)
+            core.setProgress(profile.id, "01A", 10.0, null, "2026-10-03")
             delay(5)
-            core.setProgress(profile.id, "01B", 20.0, null)
+            core.setProgress(profile.id, "01B", 20.0, null, "2026-10-03")
             assertEquals(listOf("01B", "01A"), core.snapshot(profile.id).progress.map { it.setId })
         }
     }
@@ -170,7 +178,7 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Gus")
-            core.setProgress(profile.id, "01A", 300.0, null)
+            core.setProgress(profile.id, "01A", 300.0, null, "2026-10-03")
             core.clearProgress(profile.id, "01A")
             val snapshot = core.snapshot(profile.id)
             assertEquals(emptyList(), snapshot.progress)
@@ -183,7 +191,7 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Hana")
-            core.setProgress(profile.id, "01A", 700.0, 1000.0)
+            core.setProgress(profile.id, "01A", 700.0, 1000.0, "2026-10-03")
 
             core.setWatched(profile.id, "01A", true)
             val first = core.snapshot(profile.id)
@@ -204,7 +212,7 @@ abstract class CoreContract {
             val core = core()
             val profile = core.freshProfile("Ivo")
             core.setWatched(profile.id, "01A", true)
-            core.setProgress(profile.id, "01A", 300.0, null)
+            core.setProgress(profile.id, "01A", 300.0, null, "2026-10-03")
 
             core.setWatched(profile.id, "01A", false)
 
@@ -377,7 +385,7 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Wren")
-            core.setProgress(profile.id, "01A", 300.0, null)
+            core.setProgress(profile.id, "01A", 300.0, null, "2026-10-03")
             core.setWatchlisted(profile.id, "01B", true)
             assertTrue(core.setPreference(profile.id, "show:Dark", "audio", "de"))
 
@@ -395,7 +403,7 @@ abstract class CoreContract {
     fun aWriteForAProfileNobodyCreatedIsDropped() {
         runBlocking {
             val core = core()
-            core.setProgress("no-such-profile", "01A", 300.0, null)
+            core.setProgress("no-such-profile", "01A", 300.0, null, "2026-10-03")
             assertEquals(emptyList(), core.snapshot("no-such-profile").progress)
             assertEquals(null, core.createCollection("no-such-profile", "Weekend"))
             assertFalse(core.setPreference("no-such-profile", "show:Dark", "audio", "de"))

@@ -73,13 +73,13 @@ tick) so a seek, a pause or a sleep never counts. Days are the watching device's
 
 | # | Phase | Owns | Bump | Status |
 |---|-------|------|------|--------|
-| 01 | [Web: pure stats rules and shared fixtures](phase-01-web-stats-rules-and-shared-fixtures.md) | `web/src/state/stats-*.ts` (pure), `web/test/fixtures/watch-state/stats-*.json` | patch | pending |
-| 02 | [Web: record, sync, stats route, Stats page](phase-02-web-record-sync-route-and-stats-page.md) | `web/src/state/**`, `web/public/**` | minor | pending |
-| 03 | [Core: record, sync, summary, uniffi](phase-03-core-record-sync-summary-uniffi.md) | `crates/mediagram-core/**` | patch | pending |
-| 04 | [Android: Stats rail item and page, phone and TV](phase-04-android-stats-rail-and-page.md) | `android/**` | minor | pending |
-| 05 | [Cross-device verification, docs](phase-05-cross-device-verification-and-docs.md) | `docs/**` | none | pending |
-| 06 | [Achievements: fixtures, web derivation, section, dot](phase-06-achievements-web.md) | web | minor | pending |
-| 07 | [Achievements: core and Android](phase-07-achievements-core-and-android.md) | core, android | minor | pending |
+| 01 | [Web: pure stats rules and shared fixtures](phase-01-web-stats-rules-and-shared-fixtures.md) | `web/src/state/stats-*.ts` (pure), `web/test/fixtures/watch-state/stats-*.json` | patch | completed (0.95.3 on this branch) |
+| 02 | [Web: record, sync, stats route, Stats page](phase-02-web-record-sync-route-and-stats-page.md) | `web/src/state/**`, `web/public/**` | minor | completed (0.96.0) |
+| 03 | [Core: record, sync, summary, uniffi](phase-03-core-record-sync-summary-uniffi.md) | `crates/mediagram-core/**` | patch | completed (0.96.1) |
+| 04 | [Android: Stats rail item and page, phone and TV](phase-04-android-stats-rail-and-page.md) | `android/**` | minor | completed (0.97.0) |
+| 05 | [Cross-device verification, docs](phase-05-cross-device-verification-and-docs.md) | `docs/**` | none | docs done; device round pending (needs tablet + TV release go-ahead) |
+| 06 | [Achievements: fixtures, web derivation, section, dot](phase-06-achievements-web.md) | web | minor | completed (0.98.0) |
+| 07 | [Achievements: core and Android](phase-07-achievements-core-and-android.md) | core, android | minor | completed (0.99.0, 0.99.1 fixes) |
 
 **Order:** 01 → 02 (web, the reference) → 03 → 04 → 05; 06 after 02; 07 after 04 and 06.
 Branch `feat/viewing-stats`, worktree off `main`. Profile roles (pending) rebases on this.

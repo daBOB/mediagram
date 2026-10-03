@@ -104,4 +104,9 @@ class OverflowUtilitiesTest {
         // this one line is unique to the page having actually rendered.
         compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
     }
+
+    @Test fun statsOpensFromItsOwnHeaderIcon() {
+        tapIcon("Stats")
+        compose.onNodeWithText("Nothing watched yet.").assertIsDisplayed()
+    }
 }

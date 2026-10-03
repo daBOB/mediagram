@@ -48,7 +48,7 @@ data class ProfileBarState(val name: String, val onChoose: () -> Unit)
  * one, who is watching, and an overflow menu — trimmed to the three
  * Android-only actions (Update library, TMDB key…, Start over) on EXPANDED,
  * where [LibraryRail] beside it already carries My List, Continue watching,
- * Latest, Genres, Settings and System; the full menu everywhere narrower,
+ * Latest, Genres, Stats, Settings and System; the full menu everywhere narrower,
  * where there is no rail to carry them. Every pushed frame renders through
  * this except Settings and System, which have their own index pane instead
  * of a bar at all; the root catalog renders through [ui.chrome.LibraryHome],
@@ -158,15 +158,16 @@ fun LibraryScaffold(
     )
 }
 
-/** Which rail row, if any, is where [destination] already is — Latest and Genres are the only pushed frames the rail also names; My List/Continue/Settings/System resolve to their own root tab or their own frame, never this one. */
+/** Which rail row, if any, is where [destination] already is — Latest, Genres and Stats are the only pushed frames the rail also names; My List/Continue/Settings/System resolve to their own root tab or their own frame, never this one. */
 private fun railItemFor(destination: Destination): RailItem? =
     when (destination) {
         Destination.Latest -> RailItem.LATEST
         Destination.Genres -> RailItem.GENRES
+        Destination.Stats -> RailItem.STATS
         else -> null
     }
 
-/** A rail tap's own effect, the same wherever the rail renders — [ui.chrome.LibraryHome] reuses this rather than repeating the same six-way branch. */
+/** A rail tap's own effect, the same wherever the rail renders — [ui.chrome.LibraryHome] reuses this rather than repeating the same seven-way branch. */
 internal fun railSelect(
     item: RailItem,
     browse: BrowseActions,
@@ -177,6 +178,7 @@ internal fun railSelect(
         RailItem.CONTINUE_WATCHING -> browse.onContinueWatching()
         RailItem.LATEST -> browse.onLatest()
         RailItem.GENRES -> browse.onGenres()
+        RailItem.STATS -> browse.onStats()
         RailItem.SETTINGS -> menu.onSettings()
         RailItem.SYSTEM -> menu.onSystem()
     }

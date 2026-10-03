@@ -17,7 +17,7 @@ Kotlin ── achievements(profileId, today = LocalDate, utcOffsetMinutes = zone
          uniffi Record Achievements { earned: Vec<EarnedAchievement{id, earned_at}>, next: Vec<NextAchievement{id, have, need}> }
 
 :feature:stats
-  AchievementDotViewModel: combine(chosenProfileId, snapshot) ─mapLatest─▶ core.achievements ─▶ earned ids
+  AchievementDotViewModel: chosenProfileId ─flatMapLatest─▶ [null at once, read now, then snapshot ─debounce 15 s─▶ read] ─▶ earned ids
                            combine(earned ids, AchievementsSeen.seen) ─▶ newAchievement: StateFlow<Boolean>
   StatsViewModel.readOf:   core.stats + core.achievements ─▶ StatsRead.Done(summary, now, achievements)
   statsUiStateOf(read, sets) ─▶ StatsUiState.Ready(…, achievements = achievementsUiOf(…))   (pure)
@@ -98,6 +98,10 @@ also what lets it reuse `calendar::day_number`.
 7. **Where the dot is computed.** Phone: `LibraryFlow`'s `Library`, beside the catalog's own
    ViewModel, because its rail renders in every frame (root and pushed). TV: `TvLibraryHomeFrame`,
    the only frame that draws the rail, so nothing reads while the player is up.
+8. **The dot keeps the web's rhythm** (contract §9): a profile switch puts the old dot out at
+   once and reads the new profile now; otherwise it reads 15 s after the last watch-state
+   change — longer than the 10 s save tick, so a title playing under the phone's still-composed
+   rail is not read on every position it saves.
 
 ## Deliberate differences from the web (Surface Parity: written down)
 
@@ -118,12 +122,13 @@ also what lets it reuse `calendar::day_number`.
 | R5 | `utcOffset` at a DST boundary | fixture "every finish is read at the offset passed in…" (7.1); `AchievementsUiTest.theOffsetIsTheOneInForceAtThatMomentAcrossAClockChange`, `AchievementDotViewModelTest.theReadAsksForThisDevicesDayAndOffset` (7.5, 7.6) |
 | R6 | The dot misses an achievement a sync brought from another device | `AchievementDotViewModelTest.anAchievementASyncBroughtFromAnotherDeviceLightsItOnTheNextRead` (7.6) |
 | R7 | The dot stays lit after the page showed it / is marked seen while the page is not on screen | `AchievementDotViewModelTest.theStatsPageShowingTheAchievementPutsItOut`, `StatsViewModelTest.markingSeenRecordsWhatThePageWasShownForItsProfile` (7.6); `StatsDotTest.openingStatsMarksWhatItShowsAsSeen`, `TvStatsDotTest.openingStatsMarksWhatItShowsAsSeen` (7.7, 7.8) |
-| R8 | One profile's dot shown to another | `AchievementDotViewModelTest.aProfileSwitchReadsTheNewProfilesOwn` (7.6) |
+| R8 | One profile's dot shown to another | `AchievementDotViewModelTest.aProfileSwitchReadsTheNewProfilesOwn`, `…aSwitchPutsTheLastProfilesDotOutBeforeTheNewReadLands` (7.6) |
 | R9 | The collapsed TV rail hides the dot, or a screen reader never hears it | `TvIndexRowDotTest.aCollapsedRowStillShowsItsDotAndSaysItWithItsName` (7.8); `TvStatsDotTest.theCollapsedRailsStatsRowWearsADotForAnAchievementNotYetShown` (7.8) |
 | R10 | A new library-level ViewModel not registered in a fixture crashes every library test | every existing `LibraryFlowFixture`/`TvAppFixture` suite stays green (7.7, 7.8) |
 | R11 | Labels or progress lines drift from the web | `AchievementLabelsFixtureTest` on `achievement-labels.json` (7.5) |
 | R12 | Seen lost on restart, or shared between profiles | `SharedPreferencesAchievementsSeenTest` (7.6) |
 | R13 | Genres differ between surfaces | `a_film_carries_its_own_genres_and_an_episode_its_shows` reads index rows only (7.2) |
+| R14 | A playing title re-reads achievements on every 10 s save | `AchievementDotViewModelTest.positionsSavedWhileATitlePlaysAreNotReadOneByOne` (7.6) |
 
 ---
 
@@ -184,85 +189,148 @@ Expected: FAIL — unresolved import `mediagram_core::state::stats::achievements
 - [ ] **Step 3: Implement** — `crates/mediagram-core/src/state/stats/achievements.rs`
 
 ```rust
-//! One profile's achievements for Kotlin: this device's state rows and the
-//! installed catalog, read on every call and handed to the pure rules in
-//! `crate::state::stats::achievements`. Like the rest of the watch-state
-//! surface nothing here throws — a profile this device does not hold, or a
-//! store that cannot be read, answers as nothing earned; a catalog that
-//! cannot be read, as an empty library.
+//! Achievements, worked out on every read from rows this store already keeps
+//! — every device's day rows and the live watched marks — and the installed
+//! library; never stored or synced: an achievement is a fact about those
+//! rows, so two devices holding the same rows cannot disagree about one.
+//!
+//! A port of `web/src/state/achievements.ts`, held to it by
+//! `web/test/fixtures/watch-state/achievements.json` (see
+//! `tests/shared_watch_state_fixtures.rs`).
 
-use std::sync::Arc;
+mod rungs;
 
-use rusqlite::Connection;
+use std::collections::HashMap;
 
-use crate::state::stats::achievements::{
-    self, AchievementInput, Achievements, LibraryCollection, LibraryTitle,
-};
-use crate::state::stats::exchange;
-use crate::state::{profiles, record::DayStatRow, rows};
-use crate::versions::{library_db, open_ro};
+use serde::Deserialize;
 
-use super::super::Core;
-use super::super::store::current_dir;
+use crate::state::record::DayStatRow;
+use crate::state::rows::WatchedRow;
+use rungs::{DAY_MS, Finish};
 
-/// A profile's kids flag, every device's day rows and its live watched marks.
-type ProfileRows = (bool, Vec<DayStatRow>, Vec<rows::WatchedRow>);
-
-#[uniffi::export(async_runtime = "tokio")]
-impl Core {
-    /// What `profile_id` has earned and the few closest to come. `today` is
-    /// this device's local date (`YYYY-MM-DD`) and `utc_offset_minutes` its
-    /// offset from UTC now: the day boundaries the day-based ones fall on.
-    pub async fn achievements(
-        self: Arc<Self>,
-        profile_id: String,
-        today: String,
-        utc_offset_minutes: i32,
-    ) -> Achievements {
-        self.blocking(move |core| {
-            let Some((kids, days, watched)) = core.state_db.with(|conn| profile_rows(conn, &profile_id)).flatten()
-            else {
-                return Achievements::default();
-            };
-            let (library, collections) = installed_library(core);
-            achievements::achievements(&AchievementInput {
-                today,
-                utc_offset_minutes,
-                kids,
-                days,
-                watched,
-                library,
-                collections,
-            })
-        })
-        .await
-    }
+/// One set the library holds, as the rules read it.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryTitle {
+    pub set_id: String,
+    /// `movie`, `ep`, `tut`, `doc` or `docu` — the index's own spelling.
+    pub kind: String,
+    /// The provider's genres; an episode carries its show's.
+    pub genres: Vec<String>,
+    /// The show or course it belongs to, if any.
+    pub collection: Option<String>,
 }
 
-/// `None` for a profile this device does not hold.
-fn profile_rows(conn: &Connection, profile_id: &str) -> rusqlite::Result<Option<ProfileRows>> {
-    let Some(kids) = profiles::list(conn)?.into_iter().find(|profile| profile.id == profile_id).map(|p| p.kids)
-    else {
-        return Ok(None);
-    };
-    let (_, days) = exchange::export(conn, profile_id)?;
-    Ok(Some((kids, days, rows::watched_for(conn, profile_id)?)))
+/// A show's episodes or a course's lessons, as the library holds them now.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCollection {
+    pub id: String,
+    pub set_ids: Vec<String>,
 }
 
-/// The installed catalog as the rules read it: empty before one is installed
-/// or when it cannot be read — which still counts hours and streaks.
-fn installed_library(core: &Core) -> (Vec<LibraryTitle>, Vec<LibraryCollection>) {
-    let path = library_db(&current_dir(core));
-    if !path.exists() {
-        return Default::default();
-    }
-    let Ok(conn) = open_ro(&path) else {
-        return Default::default();
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementInput {
+    /// The reading engine's local date, `YYYY-MM-DD`.
+    pub today: String,
+    /// The reading engine's offset from UTC now, in minutes: `120` in CEST.
+    pub utc_offset_minutes: i32,
+    /// A kids profile is offered finishing and exploring achievements only.
+    pub kids: bool,
+    /// Every device's day rows.
+    pub days: Vec<DayStatRow>,
+    /// Live watched marks only.
+    pub watched: Vec<WatchedRow>,
+    pub library: Vec<LibraryTitle>,
+    pub collections: Vec<LibraryCollection>,
+}
+
+/// An achievement earned, and when, in epoch milliseconds.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct EarnedAchievement {
+    pub id: String,
+    pub earned_at: i64,
+}
+
+/// One still to come, and how far along it is.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, uniffi::Record)]
+pub struct NextAchievement {
+    pub id: String,
+    pub have: u32,
+    pub need: u32,
+}
+
+/// What one profile has earned, newest first, and the few closest to come.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, uniffi::Record)]
+pub struct Achievements {
+    pub earned: Vec<EarnedAchievement>,
+    pub next: Vec<NextAchievement>,
+}
+
+const FILMS: [u32; 4] = [1, 10, 50, 100];
+const GENRES: [u32; 2] = [5, 10];
+const DOCS: [u32; 1] = [10];
+const HOURS: [u32; 3] = [10, 100, 500];
+const STREAKS: [u32; 2] = [7, 30];
+const BINGE: u32 = 5;
+/// How many of the closest unearned achievements a page shows.
+const NEXT_SHOWN: usize = 3;
+
+pub fn achievements(input: &AchievementInput) -> Achievements {
+    let offset_ms = i64::from(input.utc_offset_minutes) * 60_000;
+    // A day's local midnight at the offset the reader is at now — applied to
+    // every day alike, so a day from before a clock change reads an hour out.
+    let midnight = move |day: i64| day * DAY_MS - offset_ms;
+    let by_set: HashMap<&str, &LibraryTitle> =
+        input.library.iter().map(|title| (title.set_id.as_str(), title)).collect();
+    // A finish of a set the library no longer holds counts for nothing.
+    let mut finishes: Vec<Finish<'_>> = input
+        .watched
+        .iter()
+        .filter_map(|row| by_set.get(row.set_id.as_str()).map(|title| Finish { title, at: row.finished_at }))
+        .collect();
+    finishes.sort_by_key(|finish| finish.at);
+    let times_of = |kind: &str| -> Vec<i64> {
+        finishes.iter().filter(|finish| finish.title.kind == kind).map(|finish| finish.at).collect()
     };
-    crate::catalog_achievements::library_facts(&conn).unwrap_or_else(|err| {
-        tracing::warn!(error = %err, "achievements: the catalog could not be read");
-        Default::default()
-    })
+    let finished_at: HashMap<&str, i64> =
+        finishes.iter().map(|finish| (finish.title.set_id.as_str(), finish.at)).collect();
+
+    let mut ladders = vec![
+        rungs::counted("films", &FILMS, &times_of("movie")),
+        rungs::counted("genres", &GENRES, &rungs::genre_arrivals(&finishes)),
+        rungs::counted("docs", &DOCS, &times_of("docu")),
+        rungs::whole_show(&input.collections, &finished_at),
+    ];
+    if !input.kids {
+        let days = rungs::day_totals(&input.days);
+        ladders.push(rungs::hours(&HOURS, &days, midnight));
+        ladders.push(rungs::streak(&STREAKS, &days, midnight));
+        ladders.push(vec![rungs::binge(BINGE, &finishes, offset_ms, midnight)]);
+    }
+
+    let mut earned = Vec::new();
+    let mut next = Vec::new();
+    for ladder in ladders {
+        if let Some(open) = ladder.iter().find(|rung| rung.earned_at.is_none()) {
+            next.push(NextAchievement { id: open.id.clone(), have: open.have, need: open.need });
+        }
+        earned.extend(
+            ladder
+                .into_iter()
+                .filter_map(|rung| rung.earned_at.map(|earned_at| EarnedAchievement { id: rung.id, earned_at })),
+        );
+    }
+    earned.sort_by(|a, b| b.earned_at.cmp(&a.earned_at).then_with(|| a.id.cmp(&b.id)));
+    // Closest first: have/need compared without dividing.
+    next.sort_by(|a, b| {
+        let (theirs, mine) = (u64::from(b.have) * u64::from(a.need), u64::from(a.have) * u64::from(b.need));
+        theirs.cmp(&mine).then_with(|| a.id.cmp(&b.id))
+    });
+    next.truncate(NEXT_SHOWN);
+    Achievements { earned, next }
 }
 ```
 
@@ -1262,7 +1330,7 @@ git commit -m "feat(android): achievement names and the Stats page's achievement
 
 **Interfaces:**
 - Produces: `interface AchievementsSeen { val seen: StateFlow<Map<String, Set<String>>>; fun markSeen(profileId: String, ids: Set<String>) }`, `InMemoryAchievementsSeen`, `SharedPreferencesAchievementsSeen(context)` (file `achievements_seen`, a string set per profile id, replaced whole); Hilt `AchievementsSeenModule` (`@Singleton` — the dot's and the page's ViewModels must share one); `@HiltViewModel class AchievementDotViewModel(coreProvider, watchState, seen) { val newAchievement: StateFlow<Boolean>; internal var now }`; `StatsViewModel(coreProvider, watchState, seen)` + `fun markAchievementsSeen()` (called from `rememberStatsPage` in Task 7.7, while the page is composed).
-- Freshness: the dot re-reads on every `chosenProfileId`/`snapshot` emission. A sync round reloads the snapshot (`WatchSync` → `reload()`), which is how another device's achievement arrives. Known ceiling, as on the web: a round that brings only day rows and moves no position, mark or list leaves the snapshot equal, so the dot catches up at the next change.
+- Freshness, as on the web (contract §9, `stats-dot.js`): a profile switch puts the dot out at once and reads the new profile now; any later `snapshot` change is read once it has been quiet for `DOT_SETTLE_MS` (15 s, longer than the 10 s save tick). A sync round reloads the snapshot (`WatchSync` → `reload()`), which is how another device's achievement arrives. Known ceiling, as on the web: a round that brings only day rows and moves no position, mark or list leaves the snapshot equal, so the dot catches up at the next change.
 
 - [ ] **Step 1: Failing tests**
 
@@ -1271,17 +1339,21 @@ git commit -m "feat(android): achievement names and the Stats page's achievement
 ```kotlin
 package stats
 
+import data.CoreProvider
 import data.DefaultWatchStateRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
 import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.Achievements
+import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.EarnedAchievement
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
@@ -1303,8 +1375,8 @@ class AchievementDotViewModelTest {
     private fun earned(vararg ids: String) = Achievements(earned = ids.map { EarnedAchievement(id = it, earnedAt = 1L) }, next = emptyList())
 
     /** The dot as the rail holds it: subscribed, so the reads run. */
-    private fun TestScope.dot(): StateFlow<Boolean> {
-        val model = AchievementDotViewModel(ResolvedCoreProvider(core), watch, seen).apply { now = { Now } }
+    private fun TestScope.dot(provider: CoreProvider = ResolvedCoreProvider(core)): StateFlow<Boolean> {
+        val model = AchievementDotViewModel(provider, watch, seen).apply { now = { Now } }
         backgroundScope.launch { model.newAchievement.collect {} }
         advanceUntilIdle()
         return model.newAchievement
@@ -1338,9 +1410,28 @@ class AchievementDotViewModelTest {
             core.achievementsByProfile = mapOf("a" to earned("films-1"))
             core.setWatched("a", "f1", true)
             watch.reload()
-            advanceUntilIdle()
+            advanceTimeBy(DOT_SETTLE_MS - 1)
+            assertFalse(dot.value, "not yet: changes settle first")
 
+            advanceTimeBy(2)
             assertTrue(dot.value)
+        }
+
+    @Test
+    fun positionsSavedWhileATitlePlaysAreNotReadOneByOne() =
+        runTest {
+            watch.reload()
+            dot()
+            val before = core.achievementsAsked.size
+
+            repeat(6) { tick ->
+                watch.setProgress("f1", tick * 10.0, 3_600.0)
+                advanceTimeBy(10_000)
+            }
+            assertEquals(before, core.achievementsAsked.size, "a save every ten seconds never lets it settle")
+
+            advanceTimeBy(DOT_SETTLE_MS)
+            assertEquals(before + 1, core.achievementsAsked.size, "one read once the title stops")
         }
 
     @Test
@@ -1370,6 +1461,35 @@ class AchievementDotViewModelTest {
             advanceUntilIdle()
 
             assertFalse(dot.value)
+        }
+
+    @Test
+    fun aSwitchPutsTheLastProfilesDotOutBeforeTheNewReadLands() =
+        runTest {
+            core.achievementsByProfile = mapOf("a" to earned("films-1"), "b" to earned("streak-7"))
+            val bHeld = CompletableDeferred<Unit>()
+            val slow =
+                object : CoreInterface by core {
+                    override suspend fun achievements(
+                        profileId: String,
+                        today: String,
+                        utcOffsetMinutes: Int,
+                    ): Achievements {
+                        if (profileId == "b") bHeld.await()
+                        return core.achievements(profileId, today, utcOffsetMinutes)
+                    }
+                }
+            watch.reload()
+            val dot = dot(ResolvedCoreProvider(slow))
+            assertTrue(dot.value)
+
+            watch.chooseProfile("b")
+            advanceUntilIdle()
+            assertFalse(dot.value, "Ada's dot is not Ben's, even while Ben's read is out")
+
+            bHeld.complete(Unit)
+            advanceUntilIdle()
+            assertTrue(dot.value, "Ben's own unseen achievement")
         }
 
     @Test
@@ -1609,25 +1729,40 @@ import data.CoreProvider
 import data.WatchStateRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import java.time.ZonedDateTime
 import javax.inject.Inject
 
 /**
+ * How long the dot waits after a watch-state change before reading again —
+ * longer than the player's ten-second save tick, so a title playing under
+ * the phone's still-composed rail is not read on every position it saves.
+ * The web's dot keeps the same rhythm (`stats-dot.js`).
+ */
+internal const val DOT_SETTLE_MS = 15_000L
+
+/**
  * Whether the rail's Stats row wears the new-achievement dot: something the
  * chosen profile has earned that this device has not shown it yet.
  *
- * Read again whenever the profile's watch state changes — a write here, or
- * another device's rows pulled in by a sync round — which is how an
- * achievement earned on the television lights the tablet's dot. Never a
- * pop-up: the dot is all of it.
+ * Read at once when a profile is chosen — the last profile's dot goes out
+ * before the answer arrives — and again once the profile's watch state has
+ * been quiet for [DOT_SETTLE_MS] after a change: a write here, or another
+ * device's rows pulled in by a sync round, which is how an achievement
+ * earned on the television lights the tablet's dot. Never a pop-up: the dot
+ * is all of it.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class AchievementDotViewModel
     @Inject
@@ -1639,12 +1774,20 @@ class AchievementDotViewModel
         /** This device's clock and zone: the day and offset the core places a day-based achievement by. */
         internal var now: () -> ZonedDateTime = { ZonedDateTime.now() }
 
-        // ponytail: one core read per watch-state change — on the phone that includes the position
-        // saved every ten seconds while a title plays under the still-composed rail. One local query
-        // and a pass over the catalog; throttle here if it ever shows up in a trace.
+        /** The chosen profile and what it has earned; `null` while there is no answer for it yet. */
         private val earned: Flow<Pair<String, Set<String>>?> =
-            combine(watchState.chosenProfileId, watchState.snapshot) { id, _ -> id }
-                .mapLatest { id -> id?.let { it to earnedIds(it) } }
+            watchState.chosenProfileId.flatMapLatest { id ->
+                if (id == null) {
+                    flowOf(null)
+                } else {
+                    flow {
+                        emit(null)
+                        emit(id to earnedIds(id))
+                        // The snapshot as it stands was just read; only what changes after it counts.
+                        watchState.snapshot.drop(1).debounce(DOT_SETTLE_MS).collect { emit(id to earnedIds(id)) }
+                    }
+                }
+            }
 
         val newAchievement: StateFlow<Boolean> =
             combine(earned, seen.seen) { found, shown ->
@@ -1719,7 +1862,7 @@ class AchievementDotViewModel
 - [ ] **Step 4: Run, expect PASS**
 
 Run: `cd android && ./gradlew -q :feature:stats:testDebugUnitTest`
-Expected: green — `AchievementDotViewModelTest` 6, `SharedPreferencesAchievementsSeenTest` 2, `StatsViewModelTest` phase 04's 5 + 3.
+Expected: green — `AchievementDotViewModelTest` 8, `SharedPreferencesAchievementsSeenTest` 2, `StatsViewModelTest` phase 04's 5 + 3.
 
 - [ ] **Step 5: Commit**
 
@@ -2710,7 +2853,7 @@ git commit -m "chore: release $next — achievements on Android"
 | Shared fixture (Kotlin ↔ web) | labels, progress lines | `AchievementLabelsFixtureTest` (7.5) |
 | Catalog adapter (SQLite) | genres from index rows, collections, unplayable out | `catalog_achievements_tests.rs` (7.2) |
 | Through the real `Core` | kids from `profiles.kids`, unknown profile, no catalog | `tests/achievements_surface.rs` (7.3); `CoreContract` (7.4) |
-| ViewModels (JVM) | dot: unseen, seen, sync, page marks, switch, day/offset; page: achievements read and marked | `AchievementDotViewModelTest`, `StatsViewModelTest` (7.6) |
+| ViewModels (JVM) | dot: unseen, seen, sync after the 15 s settle, no read per save tick, page marks, switch (out before the new read lands), day/offset; page: achievements read and marked | `AchievementDotViewModelTest`, `StatsViewModelTest` (7.6) |
 | Persistence (Robolectric) | seen per profile, across a restart, replaced whole | `SharedPreferencesAchievementsSeenTest` (7.6) |
 | Compose (Robolectric) | phone rail + compact header dot; section; page marks; TV row collapsed/open; TV rail; TV section | `StatsDotTest`, `AchievementItemsTest` (7.7); `TvIndexRowDotTest`, `TvStatsDotTest`, `TvAchievementItemsTest` (7.8) |
 | Manual | tablet walk, web comparison | Task 7.9 Step 2 |
@@ -2728,7 +2871,7 @@ native core before installing.
 |---|---|---|
 | Phase 03/04 code differs from their plans (names, anchors) | M × M | Every edit is anchored on quoted text; the Rust here was compiled against phase 03's layout in a scratch tree; Step 1 of 7.9 runs every gate |
 | A library-level ViewModel unregistered in a fixture | M × H | Registered in both fixtures (7.7, 7.8); every existing library suite must stay green |
-| The phone re-reads achievements on every 10 s position save while playing | M × L | One local query plus a pass over the catalog; `ponytail` note marks where to throttle |
+| The phone re-reads achievements on every 10 s position save while playing | L × L | Reads wait for 15 s of quiet (`DOT_SETTLE_MS`), as the web's dot does; `positionsSavedWhileATitlePlaysAreNotReadOneByOne` |
 | Dot offsets look off at some density | L × L | Checked on the tablet in 7.9; it is decoration over a labelled row |
 | Genres differ from the Android Genres shelf (sidecar) | L × L | Deliberate (decision 2), so web and Android achievements agree |
 
@@ -2736,7 +2879,7 @@ native core before installing.
 
 1. Genres from the channel index only (not the device-fetched sidecar the Android shelves also use), so both surfaces agree — confirm.
 2. The compact-phone ⋮ "Stats" item (pushed frames) wears no dot; the root's compact header does.
-3. Freshness ceiling: a sync round that brings only day rows (no position/mark/list change) lights the dot at the next change, on both surfaces.
+3. Freshness ceiling: a sync round that brings only day rows (no position/mark/list change) lights the dot at the next change, on both surfaces (contract §9).
 
 ## Success criteria
 

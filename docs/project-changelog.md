@@ -5,6 +5,75 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.2 — viewing stats merged with the fake core's sync and preferences fixes
+
+Merge of `feat/viewing-stats` (0.95.3 on that branch through 0.99.1, below) with
+`main`'s 0.95.3 and 0.95.4 (test-only fake-core fixes, further below). No
+behaviour of its own; one number for the combined tree.
+
+## 0.99.1 — final-review fixes for viewing stats
+
+**Fixed**
+
+- The television's progress rule keeps the track's full height at any fraction.
+- A day-based achievement is dated at the day's local noon, so a clock change
+  cannot move it to the neighbouring day.
+- A stats stamp above 2^53 - 1 is dropped on parse, and a stamp a write pushed
+  past that range is not exported.
+- The month total starts at the month's first day, so a day numbered 00 is not
+  counted.
+- A day row stops at a whole day on write, as every reader keeps it.
+- A stats answer without its history or achievements shows the failure line.
+
+## 0.99.0 — achievements on Android
+
+**Added**
+
+- Achievements on the phone's and the television's Stats page, derived in the
+  core from the same rows and held to the web by the shared fixtures; the dot
+  on the Stats rail item lights for one this device has not shown (the seen set
+  is per device, never synced).
+
+## 0.98.0 — achievements on the web
+
+**Added**
+
+- An Achievements section on the Stats page (earned with dates, then the next
+  few with progress), `GET /api/profiles/{p}/stats` answers them with the
+  stats, and a dot on the Stats rail link for one not yet seen. Kids profiles
+  earn only finishing and exploring achievements.
+
+## 0.97.0 — the Stats page on Android, phone and television
+
+**Added**
+
+- A Stats rail item between Genres and Settings and its page: this week, this
+  month and all-time minutes, the last 30 days as bars, and the history.
+
+## 0.96.1 — the core records, syncs and summarizes viewing stats
+
+**Added**
+
+- The core records watch time on its own position writes, syncs every device's
+  rows and summarizes them over uniffi (`stats`).
+
+**Changed**
+
+- `set_progress` takes the local day as a new last argument.
+
+## 0.96.0 — the web's Stats page
+
+**Added**
+
+- Viewing stats: both state engines count watch time between a title's
+  position writes (state schema v11 on the web, v7 on the core) and sync it as
+  two optional per-profile keys, `titleStats` and `dayStats`, of the
+  `#mlib-state` documents. `SYNC_FORMAT` is unchanged; older readers drop the
+  keys. Totals are sums of per-device rows, so a merge cannot double-count.
+- A Stats rail item and page on the web: week, month and all-time minutes, the
+  last 30 days, history (Started, Finished, Watched again). The pure rules and
+  shared fixtures arrived first, on this branch's own 0.95.3, which is not
+  the 0.95.3 released from main.
 ## 0.95.4 — the Android core fake fails a sync for a library it never stored
 
 **Fixed**

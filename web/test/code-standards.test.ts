@@ -39,10 +39,17 @@ const ROOT = join(import.meta.dir, "..");
  * subtitle picker, 'c' toggle and menu-building moved out to the new
  * `playback/subtitle-picker.js`. Raised 2026-09-30 for `src/index.ts`, by 10,
  * wiring the subtitle bundle store into the router, the catalog follower and
- * the startup reconcile of held titles.
+ * the startup reconcile of held titles. Lowered 2026-10-03 for `app.js`,
+ * `src/state/routes.ts` and `src/state/schema.ts`, once the shelf toggle, the
+ * shared route helpers and the test-only `migrationsUpTo` moved out to make
+ * room for viewing stats.
+ * Lowered again for `src/state/routes.ts`, once the stats route moved to
+ * `src/routes.ts`, the one router that holds the catalog its achievements
+ * are counted against, and for `app.js`, once the player's lazy loader moved
+ * out to `lib/playback/player-loader.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 753,
+  "public/app.js": 699,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
@@ -65,8 +72,8 @@ const CEILINGS: Record<string, number> = {
   "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
-  "src/state/routes.ts": 267,
-  "src/state/schema.ts": 245,
+  "src/state/routes.ts": 243,
+  "src/state/schema.ts": 243,
   "src/state/store.ts": 800,
   "src/state/sync-record.ts": 328,
   "src/transcode/registry.ts": 338,

@@ -21,7 +21,7 @@ import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
 import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { SECTIONS, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
-import { GRID, LIST, setShelfMode, shelfMode } from "./lib/catalog/shelf-mode.js";
+import { shelfMode, shelfToggle } from "./lib/catalog/shelf-mode.js";
 import { pageOf, pager } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
 import { openFeatured } from "./lib/catalog/featured-reel.js";
@@ -45,10 +45,13 @@ import { similarTo } from "./lib/catalog/similar.js";
 import { drawAt } from "./lib/redraw.js";
 import { turnPage } from "./lib/page-turn.js";
 import { renderGenre, renderGenres, renderLatest } from "./lib/catalog/utility-pages.js";
+import { renderStats } from "./lib/catalog/stats-page.js";
+import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { playsNext, requestPreload } from "./lib/playback/plays-next.js";
+import { loadPlayer } from "./lib/playback/player-loader.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -56,27 +59,6 @@ const searchBox = document.getElementById("search");
 // A fragment link would be consumed as an application route. Move focus
 // directly so keyboard users can skip navigation without leaving their shelf.
 document.getElementById("skip-library")?.addEventListener("click", () => main.focus());
-
-/**
- * The player's own module graph — some 200 KB across three dozen files that
- * only playing something ever needs. Started once, kicked off in the
- * background right after the first shelf is drawn; a Play pressed before it
- * lands simply waits its turn on the promise already under way.
- */
-let playerReady = null;
-function loadPlayer() {
-  return (playerReady ??= import("./lib/playback/player.js")
-    .then((mod) => {
-      mod.initializePlayer();
-      return mod;
-    })
-    .catch((error) => {
-      // A later Play may as well try again — nothing about this profile or
-      // catalog caused it, so nothing about them will fix it either.
-      playerReady = null;
-      throw error;
-    }));
-}
 
 /**
  * The catalog this profile currently sees, and every set by id within it.
@@ -142,44 +124,6 @@ const KEPT = {
 
 /** Ids to sets, quietly dropping any the catalog no longer holds. */
 const setsFor = (ids) => ids.map((id) => byId.get(id)).filter(Boolean);
-
-/**
- * List or plates, for the two shelves that have artwork worth showing.
- *
- * Two buttons rather than a select: there are two states, and a menu that
- * opens to offer a choice of two is a menu that should have been the choice.
- * Re-renders through `route()` so the shelf is rebuilt the same way it is
- * built on arrival — the mode is read at render time, not passed around.
- */
-function shelfToggle() {
-  const current = shelfMode();
-  const control = el("div", "shelf-modes");
-  control.setAttribute("role", "group");
-  control.setAttribute("aria-label", "How to show this shelf");
-
-  for (const [mode, label] of [
-    [LIST, "List"],
-    [GRID, "Grid"],
-  ]) {
-    const button = el("button", "mode", label);
-    button.type = "button";
-    if (mode === current) {
-      button.classList.add("on");
-      // The pressed state rather than `disabled`: a viewer reading with a
-      // screen reader is told which they are on, and the control does not
-      // lose focus when the shelf rebuilds under it.
-      button.setAttribute("aria-pressed", "true");
-    } else {
-      button.setAttribute("aria-pressed", "false");
-      button.addEventListener("click", () => {
-        setShelfMode(mode);
-        route();
-      });
-    }
-    control.append(button);
-  }
-  return control;
-}
 
 /**
  * Where the player opens: what is underway, and what arrived.
@@ -260,7 +204,7 @@ function movieControls() {
   const controls = el("div", "shelf-modes");
   const featured = reelButton();
   if (featured) controls.append(featured);
-  controls.append(shelfToggle());
+  controls.append(shelfToggle(route));
   return controls;
 }
 
@@ -386,6 +330,7 @@ function onShelfAffectingChange() {
   librarySession.invalidate();
 }
 state.subscribeChanges(onShelfAffectingChange);
+watchStatsDot(state);
 // The pin lives outside watch state (it belongs to no profile), but a change
 // to it is redrawn the same way, deferred while a title plays.
 onEditorsChoice(onShelfAffectingChange);
@@ -627,6 +572,7 @@ function drawRoute() {
     });
     return;
   }
+  if (address.page === "stats") return renderStats(main, { byId }, () => generation === routeGeneration);
   if (address.page === "system") return viewSystem();
   if (address.page === "continue") return viewContinue();
   if (address.page === "watchlist") return viewWatchlist();

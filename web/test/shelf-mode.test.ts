@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { GRID, LIST, modeFrom, setShelfMode, shelfMode } from "../public/lib/catalog/shelf-mode.js";
+import { GRID, LIST, modeFrom, setShelfMode, shelfMode, shelfToggle } from "../public/lib/catalog/shelf-mode.js";
+import { browserEnvironment } from "./support/player-environment";
 
 /** A `localStorage` that can be told to behave like a blocked one. */
 function fakeStorage(options: { throws?: boolean } = {}) {
@@ -102,5 +103,27 @@ describe("a browser with storage blocked", () => {
     useStorage({ ...storage, setItem() { throw new Error("quota exceeded"); } });
     setShelfMode(GRID);
     expect(shelfMode()).toBe(GRID);
+  });
+});
+
+describe("the list-or-grid control", () => {
+  test("presses the current mode; the other one stores itself and redraws once", () => {
+    const env = browserEnvironment();
+    try {
+      useStorage(fakeStorage());
+      setShelfMode(LIST);
+      let redraws = 0;
+      const control = shelfToggle(() => { redraws += 1; });
+      const [list, grid] = control.children;
+      expect(list.getAttribute("aria-pressed")).toBe("true");
+      expect(grid.getAttribute("aria-pressed")).toBe("false");
+      list.fire("click");
+      expect(redraws).toBe(0);
+      grid.fire("click");
+      expect(shelfMode()).toBe(GRID);
+      expect(redraws).toBe(1);
+    } finally {
+      env.restore();
+    }
   });
 });

@@ -1,0 +1,13 @@
+[
+  { "id": "films-1", "have": 0, "need": 1, "label": "First film", "progress": "0 of 1 film" },
+  { "id": "films-10", "have": 7, "need": 10, "label": "10 films", "progress": "7 of 10 films" },
+  { "id": "films-100", "have": 64, "need": 100, "label": "100 films", "progress": "64 of 100 films" },
+  { "id": "whole-show", "have": 8, "need": 10, "label": "A whole series", "progress": "8 of 10" },
+  { "id": "genres-5", "have": 3, "need": 5, "label": "5 genres", "progress": "3 of 5 genres" },
+  { "id": "genres-10", "have": 7, "need": 10, "label": "10 genres", "progress": "7 of 10 genres" },
+  { "id": "docs-10", "have": 4, "need": 10, "label": "10 documentaries", "progress": "4 of 10 documentaries" },
+  { "id": "hours-500", "have": 123, "need": 500, "label": "500 hours", "progress": "123 of 500 hours" },
+  { "id": "streak-30", "have": 12, "need": 30, "label": "30-day streak", "progress": "12 of 30 days" },
+  { "id": "binge-5", "have": 3, "need": 5, "label": "5 episodes in a day", "progress": "3 of 5 episodes" },
+  { "id": "marathon-3", "have": 1, "need": 3, "label": "marathon-3", "progress": "1 of 3" }
+]

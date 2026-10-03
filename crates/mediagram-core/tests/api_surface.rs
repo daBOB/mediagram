@@ -154,19 +154,43 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
 
     player
         .clone()
-        .set_progress(andre.id.clone(), "shared".into(), 120.0, Some(1000.0))
+        .set_progress(
+            andre.id.clone(),
+            "shared".into(),
+            120.0,
+            Some(1000.0),
+            "2026-10-03".into(),
+        )
         .await;
     player
         .clone()
-        .set_progress(bea.id.clone(), "shared".into(), 300.0, None)
+        .set_progress(
+            bea.id.clone(),
+            "shared".into(),
+            300.0,
+            None,
+            "2026-10-03".into(),
+        )
         .await;
     player
         .clone()
-        .set_progress(andre.id.clone(), "finished".into(), 90.0, Some(100.0))
+        .set_progress(
+            andre.id.clone(),
+            "finished".into(),
+            90.0,
+            Some(100.0),
+            "2026-10-03".into(),
+        )
         .await;
     player
         .clone()
-        .set_progress(bea.id.clone(), "finished".into(), 7.0, Some(100.0))
+        .set_progress(
+            bea.id.clone(),
+            "finished".into(),
+            7.0,
+            Some(100.0),
+            "2026-10-03".into(),
+        )
         .await;
     player
         .clone()
@@ -400,7 +424,13 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     );
     player
         .clone()
-        .set_progress("viewer".into(), "set".into(), 10.0, None)
+        .set_progress(
+            "viewer".into(),
+            "set".into(),
+            10.0,
+            None,
+            "2026-10-03".into(),
+        )
         .await;
     player
         .clone()

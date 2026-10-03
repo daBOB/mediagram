@@ -31,9 +31,12 @@ mod hostile_json;
 mod list_record;
 mod parse;
 mod preference_record;
+mod stats_record;
+pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use parse::parse_record;
+pub use stats_record::{DayStatRow, TitleStatRow};
 
 /// Bumped when a reader could no longer make sense of an older document.
 pub const SYNC_FORMAT: i64 = 1;
@@ -92,6 +95,13 @@ pub struct ProfileState {
     /// bump — a build that predates it drops it and keeps merging.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub preferences: Vec<SyncPreference>,
+    /// Viewing stats, every device's rows (`stats_record.rs`). New keys like
+    /// `preferences`, written only when there are rows, so a document
+    /// without stats reads exactly as it did before them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub title_stats: Vec<TitleStatRow>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub day_stats: Vec<DayStatRow>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

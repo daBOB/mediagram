@@ -61,8 +61,8 @@ import ui.tv.profile.TvChosenProfile
  * otherwise pull the remote to its plate on Movies.
  *
  * [onOpenSearch]/[onOpenMenu] are the bar's Search and its own ⋮; coming
- * back from either, or from Settings/System/Latest/Genres now that the rail
- * reaches all four directly, is [rememberTvCatalogRestore]'s own
+ * back from either, or from Settings/System/Latest/Genres/Stats now that the
+ * rail reaches all five directly, is [rememberTvCatalogRestore]'s own
  * sentinel-key handling. [menu] is what the rail's own Settings and System
  * rows call directly — the same [MenuActions] the trimmed ⋮ page still
  * calls for its own three rows. [onFinish] is Continue's "Mark finished".
@@ -87,6 +87,7 @@ fun TvCatalogScreen(
     onOpenMenu: () -> Unit = {},
     onOpenLatest: () -> Unit = {},
     onOpenGenresIndex: () -> Unit = {},
+    onOpenStats: () -> Unit = {},
     onEntryRestored: () -> Unit = {},
     onFinish: (setId: String) -> Unit = {},
     onOpenGenre: (name: String) -> Unit = {},
@@ -153,6 +154,7 @@ fun TvCatalogScreen(
             RailItem.CONTINUE_WATCHING -> choose(continueIndex)
             RailItem.LATEST -> onOpenLatest()
             RailItem.GENRES -> onOpenGenresIndex()
+            RailItem.STATS -> onOpenStats()
             RailItem.SETTINGS -> menu.onSettings()
             RailItem.SYSTEM -> menu.onSystem()
         }

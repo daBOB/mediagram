@@ -235,9 +235,11 @@ interface Next { id: string; have: number; need: number }
 ```
 
 A finish's local day = `floor((finishedAt + utcOffsetMinutes·60000) / 86400000)`
-as a date. A day-based achievement's `earnedAt` = that day's local midnight in
-ms (`dayStart − utcOffsetMinutes·60000`). Finishes of sets the library no
-longer holds count for nothing.
+as a date. A day-based achievement's `earnedAt` = that day's local noon in ms
+(`dayStart + 12 h − utcOffsetMinutes·60000`), so an hour of daylight-saving
+difference never crosses a date (amended 2026-10-03; it was local midnight,
+which a winter day read at a summer offset showed as the day before).
+Finishes of sets the library no longer holds count for nothing.
 
 | id | kids | earned when | earnedAt |
 |---|---|---|---|
@@ -285,12 +287,16 @@ longer holds count for nothing.
 - Progress units: "0 of 1 film", "4 of 7 days", "3 of 5 episodes", "8 of 10"
   (whole series); an unknown id shows as itself — pinned in
   `achievement-labels.json`.
-- Earned dates show the date only (day-based ones are dated at local midnight).
+- Earned dates show the date only (day-based ones are dated at local noon).
 - Page section between "Last 30 days" and "History", headed "Achievements",
   then "Next".
 - Web: the stats route moves to `createRouter` once it needs the catalog.
+- A day row with an impossible date (month 13, day 0) counts toward no
+  day-based achievement, though it still counts in `allSeconds`.
 - Every historic finish is read at today's UTC offset; a finish within an hour
-  of midnight from the other DST season can land on the neighbouring day.
+  of midnight from the other DST season can land on the neighbouring day. A
+  day-based `earnedAt` cannot: it is that day's noon at today's offset, and an
+  hour either way of noon is still the same date.
 - Android reads genres from the channel index only (the web's source), not the
   device-fetched sidecar.
 - The dot re-reads on a profile switch and 15 s after the last state change;

@@ -27,6 +27,7 @@ pub mod record;
 mod repair;
 pub mod rows;
 mod schema;
+pub mod stats;
 pub(crate) mod sync;
 mod watched_exchange;
 
@@ -46,6 +47,8 @@ const STATE_FILE: &str = "state.db";
 pub struct StateDb {
     data_dir: PathBuf,
     conn: Mutex<LocalState>,
+    /// The last own position write per title, for watch time; see `stats`.
+    ticks: Mutex<stats::Ticks>,
 }
 
 enum LocalState {
@@ -59,6 +62,7 @@ impl StateDb {
         StateDb {
             data_dir,
             conn: Mutex::new(LocalState::Unopened),
+            ticks: Mutex::default(),
         }
     }
 

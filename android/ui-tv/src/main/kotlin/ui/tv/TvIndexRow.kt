@@ -3,10 +3,12 @@ package ui.tv
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -37,6 +39,7 @@ import designsystem.LocalCatalogueTones
 import designsystem.Palette
 import designsystem.Radius
 import designsystem.Spacing
+import designsystem.StatusDot
 import designsystem.TvTypeScale
 
 /**
@@ -50,6 +53,11 @@ import designsystem.TvTypeScale
  * the row, the rail's own icons-only form. [contentDescription] is what a
  * collapsed row still says to a screen reader with no visible label to read
  * instead; expanded, the visible [label] already carries that.
+ *
+ * [dot], when given, is a small mark drawn on the icon's top-right corner —
+ * not after the label, where [trailing] goes — so the collapsed rail, which
+ * keeps only the icon, still shows it; its words are what a screen reader
+ * hears for it, merged into the collapsed row's own description.
  *
  * [onFocusChanged] is Settings' own reason to exist on this row rather than
  * only on [onSelect]: a row gaining focus alone swaps the pane shown beside
@@ -70,6 +78,7 @@ internal fun TvIndexRow(
     status: (@Composable () -> Unit)? = null,
     onFocusChanged: (FocusState) -> Unit = {},
     contentDescription: String? = null,
+    dot: String? = null,
 ) {
     val tones = LocalCatalogueTones.current
     var focused by remember { mutableStateOf(false) }
@@ -102,12 +111,17 @@ internal fun TvIndexRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
         verticalAlignment = if (expanded) Alignment.Top else Alignment.CenterVertically,
     ) {
-        Image(
-            painter = icon,
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(if (focused) Palette.Imprint else baseColor),
-            modifier = Modifier.size(22.dp),
-        )
+        Box {
+            Image(
+                painter = icon,
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(if (focused) Palette.Imprint else baseColor),
+                modifier = Modifier.size(22.dp),
+            )
+            dot?.let {
+                StatusDot(MaterialTheme.colorScheme.tertiary, Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp), description = it)
+            }
+        }
         if (expanded) {
             // Weighted, not left to its own intrinsic width: an unweighted
             // `Column` in a `Row` measures against the *row's* own max width

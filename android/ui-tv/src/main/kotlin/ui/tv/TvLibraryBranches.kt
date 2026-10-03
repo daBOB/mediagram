@@ -1,17 +1,24 @@
 package ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
+import stats.AchievementDotViewModel
 import ui.LibraryPositions
 import ui.MenuActions
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
 import ui.tv.catalog.TvSearchEntryKey
+import ui.tv.catalog.TvStatsRailKey
+import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
@@ -41,6 +48,7 @@ internal fun TvCatalogRoot(
     onOpenMenu: () -> Unit = {},
     onOpenLatest: () -> Unit = {},
     onOpenGenresIndex: () -> Unit = {},
+    onOpenStats: () -> Unit = {},
     onEntryRestored: () -> Unit = {},
     onOpenGenre: (name: String) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
@@ -63,6 +71,7 @@ internal fun TvCatalogRoot(
         onOpenMenu = onOpenMenu,
         onOpenLatest = onOpenLatest,
         onOpenGenresIndex = onOpenGenresIndex,
+        onOpenStats = onOpenStats,
         onEntryRestored = onEntryRestored,
         onFinish = onFinish,
         onOpenGenre = onOpenGenre,
@@ -119,66 +128,76 @@ internal fun TvLibraryHomeFrame(
     menu: MenuActions,
     onOpenMenu: () -> Unit,
 ) {
-    saved.SaveableStateProvider(CatalogStateKey) {
-        TvCatalogRoot(
-            state = catalogState,
-            profile = profile,
-            fetching = fetching,
-            restoreKey = restore.of(here),
-            menu = menu,
-            onOpenTitle = { setId ->
-                restore.opened(here, setId)
-                at.openTitle(setId)
-            },
-            onOpenCollection = { key ->
-                restore.opened(here, key)
-                at.openCollection(key)
-            },
-            onOpenList = { id ->
-                restore.opened(here, id)
-                at.openList(id)
-            },
-            onCreateList = catalogViewModel::createList,
-            onTabChanged = { restore.forget(here) },
-            onOpenSearch = {
-                restore.opened(here, TvSearchEntryKey)
-                at.openSearch()
-            },
-            onOpenMenu = {
-                restore.forget(here)
-                onOpenMenu()
-            },
-            onOpenLatest = {
-                restore.opened(here, TvLatestRailKey)
-                at.openLatest()
-            },
-            onOpenGenresIndex = {
-                restore.opened(here, TvGenresRailKey)
-                at.openGenresIndex()
-            },
-            onEntryRestored = { restore.forget(here) },
-            onFinish = catalogViewModel::markFinished,
-            onOpenGenre = { name ->
-                restore.opened(here, name)
-                at.openGenre(name)
-            },
-            onOpenFranchise = { id ->
-                restore.opened(here, id.toString())
-                at.openFranchise(id.toString())
-            },
-            onOpenMoviesPage = {
-                restore.opened(here, TvMoviesPageEntryKey)
-                at.openMoviesPage()
-            },
-            // The cover story's own "Watch now" — straight to the player,
-            // the same as `web/home-cover.js:137`, rather than the title
-            // page every other plate on this screen opens.
-            onPlay = { setId ->
-                restore.opened(here, setId)
-                at.openPlayer(setId)
-            },
-            onToggleWatchlist = catalogViewModel::setWatchlisted,
-        )
+    // Only this frame draws the rail, so only here is the dot worked out: nothing reads while a
+    // title plays.
+    val achievementDot: AchievementDotViewModel = hiltViewModel()
+    val newAchievement by achievementDot.newAchievement.collectAsStateWithLifecycle()
+    CompositionLocalProvider(LocalNewAchievement provides newAchievement) {
+        saved.SaveableStateProvider(CatalogStateKey) {
+            TvCatalogRoot(
+                state = catalogState,
+                profile = profile,
+                fetching = fetching,
+                restoreKey = restore.of(here),
+                menu = menu,
+                onOpenTitle = { setId ->
+                    restore.opened(here, setId)
+                    at.openTitle(setId)
+                },
+                onOpenCollection = { key ->
+                    restore.opened(here, key)
+                    at.openCollection(key)
+                },
+                onOpenList = { id ->
+                    restore.opened(here, id)
+                    at.openList(id)
+                },
+                onCreateList = catalogViewModel::createList,
+                onTabChanged = { restore.forget(here) },
+                onOpenSearch = {
+                    restore.opened(here, TvSearchEntryKey)
+                    at.openSearch()
+                },
+                onOpenMenu = {
+                    restore.forget(here)
+                    onOpenMenu()
+                },
+                onOpenLatest = {
+                    restore.opened(here, TvLatestRailKey)
+                    at.openLatest()
+                },
+                onOpenGenresIndex = {
+                    restore.opened(here, TvGenresRailKey)
+                    at.openGenresIndex()
+                },
+                onOpenStats = {
+                    restore.opened(here, TvStatsRailKey)
+                    at.openStats()
+                },
+                onEntryRestored = { restore.forget(here) },
+                onFinish = catalogViewModel::markFinished,
+                onOpenGenre = { name ->
+                    restore.opened(here, name)
+                    at.openGenre(name)
+                },
+                onOpenFranchise = { id ->
+                    restore.opened(here, id.toString())
+                    at.openFranchise(id.toString())
+                },
+                onOpenMoviesPage = {
+                    restore.opened(here, TvMoviesPageEntryKey)
+                    at.openMoviesPage()
+                },
+                // The cover story's own "Watch now" — straight to the player,
+                // the same as `web/home-cover.js:137`, rather than the title
+                // page every other plate on this screen opens.
+                onPlay = { setId ->
+                    restore.opened(here, setId)
+                    at.openPlayer(setId)
+                },
+                onToggleWatchlist = catalogViewModel::setWatchlisted,
+            )
+        }
     }
 }
 

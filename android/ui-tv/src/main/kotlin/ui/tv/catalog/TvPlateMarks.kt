@@ -2,7 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +22,9 @@ import designsystem.TvTypeScale
 
 /** The progress rule's own tag, so a test can tell it apart from the tick. */
 internal const val TvPlateProgressTag = "tv-plate-progress"
+
+/** The rule's filled part, so a test can measure it against the track. */
+internal const val TvPlateProgressFillTag = "tv-plate-progress-fill"
 
 /** The watched tick's own tag, for the same reason [TvPlateProgressTag] carries one. */
 internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
@@ -49,7 +52,9 @@ internal fun TvProgressRule(
         Box(
             modifier =
                 Modifier
-                    .fillMaxSize(fraction = fraction.coerceIn(0f, 1f))
+                    .testTag(TvPlateProgressFillTag)
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction = fraction.coerceIn(0f, 1f))
                     .background(Palette.Imprint),
         )
     }

@@ -63,6 +63,7 @@ internal fun CompactLibraryHeader(
     onAskStartOver: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val rail = LocalRailData.current
     val ink = MaterialTheme.colorScheme.onBackground
     val wordmarkSize = if (LocalConfiguration.current.screenWidthDp.dp <= CompactWordmarkBreakpoint) 21.sp else 23.sp
 
@@ -93,7 +94,7 @@ internal fun CompactLibraryHeader(
                     Modifier
                         .weight(1f)
                         .horizontalScroll(rememberScrollState())
-                        // A narrow phone can run out of width before all six
+                        // A narrow phone can run out of width before all seven
                         // rows fit; this hints there is more to reach for
                         // rather than cutting Settings/System off with
                         // nothing to say a sideways swipe finds them.
@@ -103,7 +104,7 @@ internal fun CompactLibraryHeader(
                 for (item in RailItem.entries) {
                     val selected = item == activeRailItem
                     val itemInk = if (selected) ink else MaterialTheme.colorScheme.onSurfaceVariant
-                    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = { onRailSelect(item) })
+                    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = { onRailSelect(item) }, dot = rail.dotFor(item))
                 }
             }
         }

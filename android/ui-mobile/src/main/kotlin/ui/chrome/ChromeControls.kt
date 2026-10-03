@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import catalog.profileInitial
+import designsystem.StatusDot
 import ui.ProfileBarState
 
 /**
@@ -52,6 +54,7 @@ internal fun CircleIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean? = null,
+    dot: String? = null,
 ) {
     val target =
         if (selected != null) {
@@ -69,6 +72,8 @@ internal fun CircleIconButton(
         contentAlignment = Alignment.Center,
     ) {
         Icon(painter = painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(21.dp))
+        // The icon's top-right corner: centred, then out by the 21 dp icon's half.
+        dot?.let { StatusDot(MaterialTheme.colorScheme.tertiary, Modifier.offset(x = 9.dp, y = (-9).dp), description = it) }
     }
 }
 

@@ -10,6 +10,8 @@
  * a viewer who wants posters says so once.
  */
 
+import { el } from "../dom.js";
+
 const KEY = "mediagram.shelfView";
 
 export const LIST = "list";
@@ -62,4 +64,43 @@ export function setShelfMode(mode) {
     localOnly = true;
   }
   return chosen;
+}
+
+/**
+ * List or plates, for the two shelves that have artwork worth showing.
+ *
+ * Two buttons rather than a select: there are two states, and a menu that
+ * opens to offer a choice of two is a menu that should have been the choice.
+ * `redraw` rebuilds the shelf the same way it is built on arrival — the mode
+ * is read at render time, not passed around.
+ * @param {() => void} redraw
+ */
+export function shelfToggle(redraw) {
+  const current = shelfMode();
+  const control = el("div", "shelf-modes");
+  control.setAttribute("role", "group");
+  control.setAttribute("aria-label", "How to show this shelf");
+
+  for (const [mode, label] of [
+    [LIST, "List"],
+    [GRID, "Grid"],
+  ]) {
+    const button = el("button", "mode", label);
+    button.type = "button";
+    if (mode === current) {
+      button.classList.add("on");
+      // The pressed state rather than `disabled`: a viewer reading with a
+      // screen reader is told which they are on, and the control does not
+      // lose focus when the shelf rebuilds under it.
+      button.setAttribute("aria-pressed", "true");
+    } else {
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => {
+        setShelfMode(mode);
+        redraw();
+      });
+    }
+    control.append(button);
+  }
+  return control;
 }

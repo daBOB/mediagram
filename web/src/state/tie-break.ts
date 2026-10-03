@@ -1,7 +1,7 @@
 /**
  * The tie-break every kept row goes through. Split out of `merge.ts` to
- * keep it under the line limit; `mergeStates` is the only caller. The same
- * split `crates/mediagram-core/src/state/merge/tie_break.rs` makes.
+ * keep it under the line limit; `mergeStates` and `mergeStats` are the
+ * callers. The same split `crates/mediagram-core/src/state/merge/tie_break.rs` makes.
  */
 
 export interface Held<T> {

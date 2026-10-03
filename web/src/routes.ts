@@ -15,6 +15,9 @@ import { refuseUnsafeBrowserWrite } from "./http/browser-write";
 import { streamSet, type ByteSource } from "./http/stream";
 import { bodiless, withBody } from "./response";
 import { createStateRouter } from "./state/routes";
+import { achievementLibrary } from "./state/achievement-library";
+import type { AchievementLibrary } from "./state/achievements";
+import { statsRoute } from "./state/stats-routes";
 import type { WatchState } from "./state/store";
 import { beginTranscode, hlsResponse, type HlsServer } from "./transcode/routes";
 
@@ -88,11 +91,20 @@ export function createRouter(options: RouterOptions) {
   const stateRoute = options.state
     ? createStateRouter({ state: options.state, isPlayable: (id) => playableSet(db, id) !== null })
     : null;
+  // Read on the first stats request and kept for this router's catalog: a
+  // swap builds a new router, and with it a new library.
+  let libraryFacts: AchievementLibrary | null = null;
+  const library = () => (libraryFacts ??= achievementLibrary(db));
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
     const settings = await options.settings?.(request);
     if (settings) return settings;
+
+    // The stats answer reads the state and this catalog both, so it is
+    // answered here, where both are — ahead of the state router's write gate.
+    const stats = options.state ? statsRoute(options.state, request, library) : null;
+    if (stats) return stats;
 
     const state = stateRoute?.(request);
     if (state) {

@@ -26,7 +26,7 @@ class WatchStateRepositoryTest {
             // Seeded directly on the core, ahead of reload — a reload that
             // never actually read the snapshot would still pass against an
             // empty one.
-            core.setProgress("p1", "set-1", 12.0, 100.0)
+            core.setProgress("p1", "set-1", 12.0, 100.0, "2026-10-03")
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
@@ -113,7 +113,7 @@ class WatchStateRepositoryTest {
             val seeded = FakeCore().apply { profiles = listOf(CoreProfile("p1", "Alice")) }
             val core =
                 object : CoreInterface by seeded {
-                    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?) {
+                    override suspend fun setProgress(profileId: String, setId: String, at: Double, duration: Double?, localDay: String) {
                         wrote = true
                     }
                 }

@@ -58,6 +58,7 @@ describe("round trip: parse(href(a)) is a again", () => {
     ["continue", { page: "continue" }],
     ["watchlist", { page: "watchlist" }],
     ["settings", { page: "settings" }],
+    ["stats", { page: "stats" }],
     ["system", { page: "system" }],
   ];
 
@@ -129,6 +130,8 @@ describe("parse accepts what drawRoute used to parse by hand", () => {
     ["#/person/9", { page: "person", id: "9" }],
     ["#/search/space", { page: "search", query: "space" }],
     ["#/settings", { page: "settings" }],
+    ["#/stats", { page: "stats" }],
+    ["#/statsxyz", { page: "department", section: "movies" }],
     ["#/system", { page: "system" }],
     ["#/continue", { page: "continue" }],
     ["#/watchlist", { page: "watchlist" }],
@@ -149,6 +152,7 @@ describe("sectionOf: the nav item and body[data-page] an address lights up", () 
     ["#/anime", "anime"],
     ["#/anime/Foo", "anime"],
     ["#/film/abc", "film"],
+    ["#/stats", "stats"],
   ])("%s -> %s", (hash, section) => {
     expect(sectionOf(parse(hash))).toBe(section);
   });
@@ -186,6 +190,7 @@ describe("docs/web-player.md's address table", () => {
     "#/person/<id>": "person",
     "#/search/<query>": "search",
     "#/settings": "settings",
+    "#/stats": "stats",
     "#/system": "system",
     "#/continue": "continue",
     "#/watchlist": "watchlist",

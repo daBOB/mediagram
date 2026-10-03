@@ -6,6 +6,7 @@ uniffi::setup_scaffolding!();
 pub mod api;
 pub mod artwork;
 pub mod catalog;
+pub mod catalog_achievements;
 pub mod catalog_assets;
 pub mod catalog_categories;
 pub mod catalog_subtitles;

@@ -2,7 +2,6 @@ package ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -42,6 +40,7 @@ import designsystem.Eyebrow
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
+import designsystem.StatusDot
 import ui.chrome.Wordmark
 
 /**
@@ -161,7 +160,7 @@ private fun SettingsIndexRow(
             status?.let {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (it.held) {
-                        Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary))
+                        StatusDot(MaterialTheme.colorScheme.tertiary)
                     }
                     Text(
                         text = it.text,

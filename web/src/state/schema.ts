@@ -11,6 +11,8 @@
  * different database and the two must never be confused.
  */
 
+import { STATS_GROUP } from "./stats-schema";
+
 /**
  * Statements grouped by the version they produce, the same shape the index's
  * migrations use: `GROUPS[0]` takes an empty file to version 1, so the current
@@ -236,9 +238,6 @@ export const GROUPS: readonly (readonly string[])[] = [
        updated_at INTEGER NOT NULL
      )`,
   ],
-];
 
-/** Every statement needed to reach `version` from nothing. */
-export function migrationsUpTo(version: number): string[] {
-  return GROUPS.slice(0, Math.max(0, version)).flatMap((group) => [...group]);
-}
+  STATS_GROUP,
+];

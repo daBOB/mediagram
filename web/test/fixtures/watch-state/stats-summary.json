@@ -1,0 +1,352 @@
+[
+  {
+    "name": "the week starts on Monday and reaches back into last month; the month does not",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-27", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-09-28", "device": "laptop", "seconds": 200, "updatedAt": 1000 },
+        { "day": "2026-09-30", "device": "laptop", "seconds": 300, "updatedAt": 1000 },
+        { "day": "2026-10-01", "device": "laptop", "seconds": 400, "updatedAt": 1000 },
+        { "day": "2026-10-03", "device": "laptop", "seconds": 500, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "weekSeconds": 1400, "monthSeconds": 900, "allSeconds": 1500 }
+  },
+  {
+    "name": "on a Monday the week is that day alone",
+    "input": {
+      "today": "2026-09-28",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-27", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-09-28", "device": "laptop", "seconds": 50, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "weekSeconds": 50, "monthSeconds": 150, "allSeconds": 150 }
+  },
+  {
+    "name": "on a Sunday the week still began on Monday",
+    "input": {
+      "today": "2026-10-04",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-27", "device": "laptop", "seconds": 40, "updatedAt": 1000 },
+        { "day": "2026-09-28", "device": "laptop", "seconds": 10, "updatedAt": 1000 },
+        { "day": "2026-10-04", "device": "laptop", "seconds": 20, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "weekSeconds": 30, "monthSeconds": 20, "allSeconds": 70 }
+  },
+  {
+    "name": "across a new year: the week spans both years, the month only January",
+    "input": {
+      "today": "2027-01-02",
+      "titles": [],
+      "days": [
+        { "day": "2026-12-27", "device": "laptop", "seconds": 7, "updatedAt": 1000 },
+        { "day": "2026-12-28", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-12-31", "device": "laptop", "seconds": 200, "updatedAt": 1000 },
+        { "day": "2027-01-01", "device": "laptop", "seconds": 300, "updatedAt": 1000 },
+        { "day": "2027-01-02", "device": "laptop", "seconds": 400, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "weekSeconds": 1000, "monthSeconds": 700, "allSeconds": 1007 }
+  },
+  {
+    "name": "every device's row for a day is added",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-10-03", "device": "laptop", "seconds": 600, "updatedAt": 1000 },
+        { "day": "2026-10-03", "device": "phone", "seconds": 300, "updatedAt": 1000 },
+        { "day": "2026-10-02", "device": "tv", "seconds": 30, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "weekSeconds": 930, "monthSeconds": 930, "allSeconds": 930 }
+  },
+  {
+    "name": "thirty days, oldest first, ending today, a day nobody watched as 0",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-03", "device": "laptop", "seconds": 120, "updatedAt": 1000 },
+        { "day": "2026-09-04", "device": "laptop", "seconds": 60, "updatedAt": 1000 },
+        { "day": "2026-09-20", "device": "laptop", "seconds": 15, "updatedAt": 1000 },
+        { "day": "2026-09-20", "device": "phone", "seconds": 5, "updatedAt": 1000 },
+        { "day": "2026-10-03", "device": "laptop", "seconds": 30, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": {
+      "allSeconds": 230,
+      "last30": [
+        { "day": "2026-09-04", "seconds": 60 },
+        { "day": "2026-09-05", "seconds": 0 },
+        { "day": "2026-09-06", "seconds": 0 },
+        { "day": "2026-09-07", "seconds": 0 },
+        { "day": "2026-09-08", "seconds": 0 },
+        { "day": "2026-09-09", "seconds": 0 },
+        { "day": "2026-09-10", "seconds": 0 },
+        { "day": "2026-09-11", "seconds": 0 },
+        { "day": "2026-09-12", "seconds": 0 },
+        { "day": "2026-09-13", "seconds": 0 },
+        { "day": "2026-09-14", "seconds": 0 },
+        { "day": "2026-09-15", "seconds": 0 },
+        { "day": "2026-09-16", "seconds": 0 },
+        { "day": "2026-09-17", "seconds": 0 },
+        { "day": "2026-09-18", "seconds": 0 },
+        { "day": "2026-09-19", "seconds": 0 },
+        { "day": "2026-09-20", "seconds": 20 },
+        { "day": "2026-09-21", "seconds": 0 },
+        { "day": "2026-09-22", "seconds": 0 },
+        { "day": "2026-09-23", "seconds": 0 },
+        { "day": "2026-09-24", "seconds": 0 },
+        { "day": "2026-09-25", "seconds": 0 },
+        { "day": "2026-09-26", "seconds": 0 },
+        { "day": "2026-09-27", "seconds": 0 },
+        { "day": "2026-09-28", "seconds": 0 },
+        { "day": "2026-09-29", "seconds": 0 },
+        { "day": "2026-09-30", "seconds": 0 },
+        { "day": "2026-10-01", "seconds": 0 },
+        { "day": "2026-10-02", "seconds": 0 },
+        { "day": "2026-10-03", "seconds": 30 }
+      ]
+    }
+  },
+  {
+    "name": "thirty days across a new year",
+    "input": {
+      "today": "2027-01-02",
+      "titles": [],
+      "days": [
+        { "day": "2026-12-04", "device": "laptop", "seconds": 10, "updatedAt": 1000 },
+        { "day": "2027-01-02", "device": "laptop", "seconds": 20, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": {
+      "last30": [
+        { "day": "2026-12-04", "seconds": 10 },
+        { "day": "2026-12-05", "seconds": 0 },
+        { "day": "2026-12-06", "seconds": 0 },
+        { "day": "2026-12-07", "seconds": 0 },
+        { "day": "2026-12-08", "seconds": 0 },
+        { "day": "2026-12-09", "seconds": 0 },
+        { "day": "2026-12-10", "seconds": 0 },
+        { "day": "2026-12-11", "seconds": 0 },
+        { "day": "2026-12-12", "seconds": 0 },
+        { "day": "2026-12-13", "seconds": 0 },
+        { "day": "2026-12-14", "seconds": 0 },
+        { "day": "2026-12-15", "seconds": 0 },
+        { "day": "2026-12-16", "seconds": 0 },
+        { "day": "2026-12-17", "seconds": 0 },
+        { "day": "2026-12-18", "seconds": 0 },
+        { "day": "2026-12-19", "seconds": 0 },
+        { "day": "2026-12-20", "seconds": 0 },
+        { "day": "2026-12-21", "seconds": 0 },
+        { "day": "2026-12-22", "seconds": 0 },
+        { "day": "2026-12-23", "seconds": 0 },
+        { "day": "2026-12-24", "seconds": 0 },
+        { "day": "2026-12-25", "seconds": 0 },
+        { "day": "2026-12-26", "seconds": 0 },
+        { "day": "2026-12-27", "seconds": 0 },
+        { "day": "2026-12-28", "seconds": 0 },
+        { "day": "2026-12-29", "seconds": 0 },
+        { "day": "2026-12-30", "seconds": 0 },
+        { "day": "2026-12-31", "seconds": 0 },
+        { "day": "2027-01-01", "seconds": 0 },
+        { "day": "2027-01-02", "seconds": 20 }
+      ]
+    }
+  },
+  {
+    "name": "a day after today counts in all time only",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-10-03", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-10-04", "device": "laptop", "seconds": 700, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": {
+      "weekSeconds": 100,
+      "monthSeconds": 100,
+      "allSeconds": 800,
+      "last30": [
+        { "day": "2026-09-04", "seconds": 0 },
+        { "day": "2026-09-05", "seconds": 0 },
+        { "day": "2026-09-06", "seconds": 0 },
+        { "day": "2026-09-07", "seconds": 0 },
+        { "day": "2026-09-08", "seconds": 0 },
+        { "day": "2026-09-09", "seconds": 0 },
+        { "day": "2026-09-10", "seconds": 0 },
+        { "day": "2026-09-11", "seconds": 0 },
+        { "day": "2026-09-12", "seconds": 0 },
+        { "day": "2026-09-13", "seconds": 0 },
+        { "day": "2026-09-14", "seconds": 0 },
+        { "day": "2026-09-15", "seconds": 0 },
+        { "day": "2026-09-16", "seconds": 0 },
+        { "day": "2026-09-17", "seconds": 0 },
+        { "day": "2026-09-18", "seconds": 0 },
+        { "day": "2026-09-19", "seconds": 0 },
+        { "day": "2026-09-20", "seconds": 0 },
+        { "day": "2026-09-21", "seconds": 0 },
+        { "day": "2026-09-22", "seconds": 0 },
+        { "day": "2026-09-23", "seconds": 0 },
+        { "day": "2026-09-24", "seconds": 0 },
+        { "day": "2026-09-25", "seconds": 0 },
+        { "day": "2026-09-26", "seconds": 0 },
+        { "day": "2026-09-27", "seconds": 0 },
+        { "day": "2026-09-28", "seconds": 0 },
+        { "day": "2026-09-29", "seconds": 0 },
+        { "day": "2026-09-30", "seconds": 0 },
+        { "day": "2026-10-01", "seconds": 0 },
+        { "day": "2026-10-02", "seconds": 0 },
+        { "day": "2026-10-03", "seconds": 100 }
+      ]
+    }
+  },
+  {
+    "name": "nothing watched is nothing, everywhere",
+    "input": { "today": "2026-10-03", "titles": [], "days": [], "watched": [] },
+    "expect": {
+      "weekSeconds": 0,
+      "monthSeconds": 0,
+      "allSeconds": 0,
+      "last30": [
+        { "day": "2026-09-04", "seconds": 0 },
+        { "day": "2026-09-05", "seconds": 0 },
+        { "day": "2026-09-06", "seconds": 0 },
+        { "day": "2026-09-07", "seconds": 0 },
+        { "day": "2026-09-08", "seconds": 0 },
+        { "day": "2026-09-09", "seconds": 0 },
+        { "day": "2026-09-10", "seconds": 0 },
+        { "day": "2026-09-11", "seconds": 0 },
+        { "day": "2026-09-12", "seconds": 0 },
+        { "day": "2026-09-13", "seconds": 0 },
+        { "day": "2026-09-14", "seconds": 0 },
+        { "day": "2026-09-15", "seconds": 0 },
+        { "day": "2026-09-16", "seconds": 0 },
+        { "day": "2026-09-17", "seconds": 0 },
+        { "day": "2026-09-18", "seconds": 0 },
+        { "day": "2026-09-19", "seconds": 0 },
+        { "day": "2026-09-20", "seconds": 0 },
+        { "day": "2026-09-21", "seconds": 0 },
+        { "day": "2026-09-22", "seconds": 0 },
+        { "day": "2026-09-23", "seconds": 0 },
+        { "day": "2026-09-24", "seconds": 0 },
+        { "day": "2026-09-25", "seconds": 0 },
+        { "day": "2026-09-26", "seconds": 0 },
+        { "day": "2026-09-27", "seconds": 0 },
+        { "day": "2026-09-28", "seconds": 0 },
+        { "day": "2026-09-29", "seconds": 0 },
+        { "day": "2026-09-30", "seconds": 0 },
+        { "day": "2026-10-01", "seconds": 0 },
+        { "day": "2026-10-02", "seconds": 0 },
+        { "day": "2026-10-03", "seconds": 0 }
+      ],
+      "history": []
+    }
+  },
+  {
+    "name": "history: started at the earliest device's start, again at the latest restart, each with the title's total",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [
+        { "setId": "01A", "device": "laptop", "startedAt": 1791000001000, "lastWatchedAt": 1791000001000, "seconds": 600, "updatedAt": 1791000001000, "againAt": 1791000005000 },
+        { "setId": "01A", "device": "phone", "startedAt": 1791000002000, "lastWatchedAt": 1791000002000, "seconds": 300, "updatedAt": 1791000002000, "againAt": 1791000004000 },
+        { "setId": "01B", "device": "laptop", "startedAt": 1791000003000, "lastWatchedAt": 1791000003000, "seconds": 120, "updatedAt": 1791000003000 }
+      ],
+      "days": [],
+      "watched": [{ "setId": "01A", "finishedAt": 1791000006000 }]
+    },
+    "expect": {
+      "history": [
+        { "kind": "finished", "setId": "01A", "at": 1791000006000, "seconds": 900 },
+        { "kind": "again", "setId": "01A", "at": 1791000005000, "seconds": 900 },
+        { "kind": "started", "setId": "01B", "at": 1791000003000, "seconds": 120 },
+        { "kind": "started", "setId": "01A", "at": 1791000001000, "seconds": 900 }
+      ]
+    }
+  },
+  {
+    "name": "a title finished before stats existed is still history, with no minutes",
+    "input": { "today": "2026-10-03", "titles": [], "days": [], "watched": [{ "setId": "01C", "finishedAt": 1791000000000 }] },
+    "expect": { "history": [{ "kind": "finished", "setId": "01C", "at": 1791000000000, "seconds": 0 }] }
+  },
+  {
+    "name": "a title never restarted has no again entry",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [
+        { "setId": "01B", "device": "laptop", "startedAt": 1791000000000, "lastWatchedAt": 1791000000000, "seconds": 120, "updatedAt": 1791000000000 }
+      ],
+      "days": [],
+      "watched": []
+    },
+    "expect": { "history": [{ "kind": "started", "setId": "01B", "at": 1791000000000, "seconds": 120 }] }
+  },
+  {
+    "name": "equal times sort by set id, then finished before again before started",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [
+        { "setId": "01B", "device": "laptop", "startedAt": 1791000000000, "lastWatchedAt": 1791000000000, "seconds": 10, "updatedAt": 1791000000000 },
+        { "setId": "01A", "device": "laptop", "startedAt": 1791000000000, "lastWatchedAt": 1791000000000, "seconds": 20, "updatedAt": 1791000000000, "againAt": 1791000000000 }
+      ],
+      "days": [],
+      "watched": [{ "setId": "01A", "finishedAt": 1791000000000 }]
+    },
+    "expect": {
+      "history": [
+        { "kind": "finished", "setId": "01A", "at": 1791000000000, "seconds": 20 },
+        { "kind": "again", "setId": "01A", "at": 1791000000000, "seconds": 20 },
+        { "kind": "started", "setId": "01A", "at": 1791000000000, "seconds": 20 },
+        { "kind": "started", "setId": "01B", "at": 1791000000000, "seconds": 10 }
+      ]
+    }
+  },
+  {
+    "name": "set ids sort by character code, not by locale",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [
+        { "setId": "01a", "device": "laptop", "startedAt": 1791000000000, "lastWatchedAt": 1791000000000, "seconds": 10, "updatedAt": 1791000000000 },
+        { "setId": "01B", "device": "laptop", "startedAt": 1791000000000, "lastWatchedAt": 1791000000000, "seconds": 10, "updatedAt": 1791000000000 }
+      ],
+      "days": [],
+      "watched": []
+    },
+    "expect": {
+      "history": [
+        { "kind": "started", "setId": "01B", "at": 1791000000000, "seconds": 10 },
+        { "kind": "started", "setId": "01a", "at": 1791000000000, "seconds": 10 }
+      ]
+    }
+  },
+  {
+    "name": "a day numbered 00 is no day of the month",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-30", "device": "laptop", "seconds": 400, "updatedAt": 1000 },
+        { "day": "2026-10-00", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-10-01", "device": "laptop", "seconds": 200, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "monthSeconds": 200, "allSeconds": 700 }
+  }
+]

@@ -41,9 +41,11 @@ import {
 import type { PreferenceRow } from "./preferences-record";
 import { reconcileWatched } from "./watched-reconcile";
 import { keep, type Held } from "./tie-break";
+import { mergeStats } from "./stats-merge";
+import type { StatsRows } from "./stats-record";
 
 /** Everything the devices agree on, once they have been reconciled. */
-export interface MergedProfile {
+export interface MergedProfile extends StatsRows {
   /** The normalised name, which is what identifies a viewer across machines. */
   name: string;
   /**
@@ -159,6 +161,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
     }
   }
 
+  const stats = mergeStats(records);
   const profiles: MergedProfile[] = [];
   for (const [name, held] of byViewer) {
     const { watched, unwatched, finishedAt } = reconcileWatched(
@@ -184,6 +187,7 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       watchlist: [...held.watchlist.values()].map((one) => one.row),
       collections: [...held.collections.values()].map((one) => one.row),
       preferences: [...held.preferences.values()].map((one) => one.row),
+      ...stats.get(name),
     });
   }
   return {

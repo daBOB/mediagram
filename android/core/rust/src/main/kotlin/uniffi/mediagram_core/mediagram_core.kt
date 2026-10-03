@@ -770,6 +770,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_snapshot(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_achievements(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
@@ -777,6 +779,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_stats(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_state_device_id(
     ): Int
@@ -896,13 +900,15 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,
+    external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,`localDay`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_watched(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`finished`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_watchlisted(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`listed`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_achievements(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,`utcOffsetMinutes`: Int,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
@@ -911,6 +917,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_stats(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,
     ): Long
@@ -1164,7 +1172,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_progress() and 0xFFFF) != 26278) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_progress() and 0xFFFF) != 63989) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_watched() and 0xFFFF) != 5429) {
@@ -1174,6 +1182,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_achievements() and 0xFFFF) != 10005) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 745) {
@@ -1186,6 +1197,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 28898) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_stats() and 0xFFFF) != 57714) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 19133) {
@@ -1979,7 +1993,12 @@ public interface CoreInterface {
      */
     suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
 
-    suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?)
+    /**
+     * This device's own position write, and the watch time it adds to the
+     * viewer's stats. `local_day` is today where the viewer is, `YYYY-MM-DD`
+     * (Kotlin's `LocalDate.now()`) — the day that watch time counts on.
+     */
+    suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?, `localDay`: kotlin.String)
 
     suspend fun `setWatched`(`profileId`: kotlin.String, `setId`: kotlin.String, `finished`: kotlin.Boolean)
 
@@ -1990,6 +2009,13 @@ public interface CoreInterface {
      * collections, in one round trip. Empty throughout on any failure.
      */
     suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
+
+    /**
+     * What `profile_id` has earned and the few closest to come. `today` is
+     * this device's local date (`YYYY-MM-DD`) and `utc_offset_minutes` its
+     * offset from UTC now: the day boundaries the day-based ones fall on.
+     */
+    suspend fun `achievements`(`profileId`: kotlin.String, `today`: kotlin.String, `utcOffsetMinutes`: kotlin.Int): Achievements
 
     suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
 
@@ -2008,6 +2034,14 @@ public interface CoreInterface {
      * not this profile's.
      */
     suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
+
+    /**
+     * `profile_id`'s watch time and history, summed over every device, as
+     * of `today` (`YYYY-MM-DD` where the viewer is). Nothing watched reads
+     * as 30 empty days and no history; a storage failure as an empty
+     * summary — never an error.
+     */
+    suspend fun `stats`(`profileId`: kotlin.String, `today`: kotlin.String): StatsSummary
 
     /**
      * This install's own id in the sync channel — a random string made
@@ -3221,8 +3255,13 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
+    /**
+     * This device's own position write, and the watch time it adds to the
+     * viewer's stats. `local_day` is today where the viewer is, `YYYY-MM-DD`
+     * (Kotlin's `LocalDate.now()`) — the day that watch time counts on.
+     */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?) {
+    override suspend fun `setProgress`(`profileId`: kotlin.String, `setId`: kotlin.String, `at`: kotlin.Double, `duration`: kotlin.Double?, `localDay`: kotlin.String) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_set_progress(
@@ -3232,6 +3271,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`setId`),
         FfiConverterDouble.lower(`at`),
         FfiConverterOptionalDouble.lower(`duration`),
+        FfiConverterString.lower(`localDay`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
@@ -3313,6 +3353,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterTypeStateSnapshot.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * What `profile_id` has earned and the few closest to come. `today` is
+     * this device's local date (`YYYY-MM-DD`) and `utc_offset_minutes` its
+     * offset from UTC now: the day boundaries the day-based ones fall on.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `achievements`(`profileId`: kotlin.String, `today`: kotlin.String, `utcOffsetMinutes`: kotlin.Int) : Achievements {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_achievements(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`today`),
+        FfiConverterInt.lower(`utcOffsetMinutes`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeAchievements.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -3414,6 +3482,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
         // lift function
         { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * `profile_id`'s watch time and history, summed over every device, as
+     * of `today` (`YYYY-MM-DD` where the viewer is). Nothing watched reads
+     * as 30 empty days and no history; a storage failure as an empty
+     * summary — never an error.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `stats`(`profileId`: kotlin.String, `today`: kotlin.String) : StatsSummary {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_stats(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`today`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeStatsSummary.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -3643,6 +3739,47 @@ public object FfiConverterTypeAccountSummary: FfiConverterRustBuffer<AccountSumm
 
 
 /**
+ * What one profile has earned, newest first, and the few closest to come.
+ */
+data class Achievements (
+    var `earned`: List<EarnedAchievement>
+    ,
+    var `next`: List<NextAchievement>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAchievements: FfiConverterRustBuffer<Achievements> {
+    override fun read(buf: ByteBuffer): Achievements {
+        return Achievements(
+            FfiConverterSequenceTypeEarnedAchievement.read(buf),
+            FfiConverterSequenceTypeNextAchievement.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Achievements) = (
+            FfiConverterSequenceTypeEarnedAchievement.allocationSize(value.`earned`) +
+            FfiConverterSequenceTypeNextAchievement.allocationSize(value.`next`)
+    )
+
+    override fun write(value: Achievements, buf: ByteBuffer) {
+            FfiConverterSequenceTypeEarnedAchievement.write(value.`earned`, buf)
+            FfiConverterSequenceTypeNextAchievement.write(value.`next`, buf)
+    }
+}
+
+
+
+/**
  * One release, as the channel declares it, and where its APK is.
  */
 data class AppRelease (
@@ -3830,6 +3967,88 @@ public object FfiConverterTypeCreditRecord: FfiConverterRustBuffer<CreditRecord>
 
 
 /**
+ * One bar of the last 30 days: every device's seconds on `day`.
+ */
+data class DayBar (
+    var `day`: kotlin.String
+    ,
+    var `seconds`: kotlin.Double
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDayBar: FfiConverterRustBuffer<DayBar> {
+    override fun read(buf: ByteBuffer): DayBar {
+        return DayBar(
+            FfiConverterString.read(buf),
+            FfiConverterDouble.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: DayBar) = (
+            FfiConverterString.allocationSize(value.`day`) +
+            FfiConverterDouble.allocationSize(value.`seconds`)
+    )
+
+    override fun write(value: DayBar, buf: ByteBuffer) {
+            FfiConverterString.write(value.`day`, buf)
+            FfiConverterDouble.write(value.`seconds`, buf)
+    }
+}
+
+
+
+/**
+ * An achievement earned, and when, in epoch milliseconds.
+ */
+data class EarnedAchievement (
+    var `id`: kotlin.String
+    ,
+    var `earnedAt`: kotlin.Long
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeEarnedAchievement: FfiConverterRustBuffer<EarnedAchievement> {
+    override fun read(buf: ByteBuffer): EarnedAchievement {
+        return EarnedAchievement(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: EarnedAchievement) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterLong.allocationSize(value.`earnedAt`)
+    )
+
+    override fun write(value: EarnedAchievement, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterLong.write(value.`earnedAt`, buf)
+    }
+}
+
+
+
+/**
  * What one fetch did, for the screen that reports it.
  *
  * Every count is a number of titles — what a shelf shows as one card, so a
@@ -3971,6 +4190,61 @@ public object FfiConverterTypeFranchiseRecord: FfiConverterRustBuffer<FranchiseR
 
 
 /**
+ * One history line. `seconds` is the title's total across devices — the
+ * same on each of its lines, and 0 for a title finished before stats.
+ */
+data class HistoryEntry (
+    var `kind`: HistoryKind
+    ,
+    var `setId`: kotlin.String
+    ,
+    /**
+     * Epoch milliseconds.
+     */
+    var `at`: kotlin.Long
+    ,
+    var `seconds`: kotlin.Double
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryEntry: FfiConverterRustBuffer<HistoryEntry> {
+    override fun read(buf: ByteBuffer): HistoryEntry {
+        return HistoryEntry(
+            FfiConverterTypeHistoryKind.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterDouble.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HistoryEntry) = (
+            FfiConverterTypeHistoryKind.allocationSize(value.`kind`) +
+            FfiConverterString.allocationSize(value.`setId`) +
+            FfiConverterLong.allocationSize(value.`at`) +
+            FfiConverterDouble.allocationSize(value.`seconds`)
+    )
+
+    override fun write(value: HistoryEntry, buf: ByteBuffer) {
+            FfiConverterTypeHistoryKind.write(value.`kind`, buf)
+            FfiConverterString.write(value.`setId`, buf)
+            FfiConverterLong.write(value.`at`, buf)
+            FfiConverterDouble.write(value.`seconds`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -4054,6 +4328,52 @@ public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterSequenceString.write(value.`items`, buf)
+    }
+}
+
+
+
+/**
+ * One still to come, and how far along it is.
+ */
+data class NextAchievement (
+    var `id`: kotlin.String
+    ,
+    var `have`: kotlin.UInt
+    ,
+    var `need`: kotlin.UInt
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNextAchievement: FfiConverterRustBuffer<NextAchievement> {
+    override fun read(buf: ByteBuffer): NextAchievement {
+        return NextAchievement(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NextAchievement) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterUInt.allocationSize(value.`have`) +
+            FfiConverterUInt.allocationSize(value.`need`)
+    )
+
+    override fun write(value: NextAchievement, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterUInt.write(value.`have`, buf)
+            FfiConverterUInt.write(value.`need`, buf)
     }
 }
 
@@ -4837,6 +5157,74 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
 
 
 
+data class StatsSummary (
+    /**
+     * Monday of today's ISO week through today.
+     */
+    var `weekSeconds`: kotlin.Double
+    ,
+    /**
+     * The first of today's month through today.
+     */
+    var `monthSeconds`: kotlin.Double
+    ,
+    /**
+     * Every day row, one dated after today included.
+     */
+    var `allSeconds`: kotlin.Double
+    ,
+    /**
+     * 30 days, oldest first, ending today; a day nothing was watched is 0.
+     */
+    var `last30`: List<DayBar>
+    ,
+    /**
+     * Newest first.
+     */
+    var `history`: List<HistoryEntry>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeStatsSummary: FfiConverterRustBuffer<StatsSummary> {
+    override fun read(buf: ByteBuffer): StatsSummary {
+        return StatsSummary(
+            FfiConverterDouble.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterDouble.read(buf),
+            FfiConverterSequenceTypeDayBar.read(buf),
+            FfiConverterSequenceTypeHistoryEntry.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: StatsSummary) = (
+            FfiConverterDouble.allocationSize(value.`weekSeconds`) +
+            FfiConverterDouble.allocationSize(value.`monthSeconds`) +
+            FfiConverterDouble.allocationSize(value.`allSeconds`) +
+            FfiConverterSequenceTypeDayBar.allocationSize(value.`last30`) +
+            FfiConverterSequenceTypeHistoryEntry.allocationSize(value.`history`)
+    )
+
+    override fun write(value: StatsSummary, buf: ByteBuffer) {
+            FfiConverterDouble.write(value.`weekSeconds`, buf)
+            FfiConverterDouble.write(value.`monthSeconds`, buf)
+            FfiConverterDouble.write(value.`allSeconds`, buf)
+            FfiConverterSequenceTypeDayBar.write(value.`last30`, buf)
+            FfiConverterSequenceTypeHistoryEntry.write(value.`history`, buf)
+    }
+}
+
+
+
 /**
  * One subtitle track a set offers — a position in its bundle, once it has
  * one, or, until then, a position among its inline `assets` rows. See
@@ -5305,6 +5693,44 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
     }
 
 }
+
+
+
+/**
+ * First played, watched to the end, or started over after that.
+ */
+
+enum class HistoryKind {
+
+    STARTED,
+    FINISHED,
+    AGAIN;
+
+
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHistoryKind: FfiConverterRustBuffer<HistoryKind> {
+    override fun read(buf: ByteBuffer) = try {
+        HistoryKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: HistoryKind) = 4UL
+
+    override fun write(value: HistoryKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
 
 
 
@@ -5786,6 +6212,62 @@ public object FfiConverterSequenceTypeCreditRecord: FfiConverterRustBuffer<List<
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeDayBar: FfiConverterRustBuffer<List<DayBar>> {
+    override fun read(buf: ByteBuffer): List<DayBar> {
+        val len = buf.getInt()
+        return List<DayBar>(len) {
+            FfiConverterTypeDayBar.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<DayBar>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeDayBar.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<DayBar>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeDayBar.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeEarnedAchievement: FfiConverterRustBuffer<List<EarnedAchievement>> {
+    override fun read(buf: ByteBuffer): List<EarnedAchievement> {
+        val len = buf.getInt()
+        return List<EarnedAchievement>(len) {
+            FfiConverterTypeEarnedAchievement.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<EarnedAchievement>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeEarnedAchievement.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<EarnedAchievement>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeEarnedAchievement.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeFranchiseRecord: FfiConverterRustBuffer<List<FranchiseRecord>> {
     override fun read(buf: ByteBuffer): List<FranchiseRecord> {
         val len = buf.getInt()
@@ -5804,6 +6286,34 @@ public object FfiConverterSequenceTypeFranchiseRecord: FfiConverterRustBuffer<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFranchiseRecord.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeHistoryEntry: FfiConverterRustBuffer<List<HistoryEntry>> {
+    override fun read(buf: ByteBuffer): List<HistoryEntry> {
+        val len = buf.getInt()
+        return List<HistoryEntry>(len) {
+            FfiConverterTypeHistoryEntry.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<HistoryEntry>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeHistoryEntry.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<HistoryEntry>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeHistoryEntry.write(it, buf)
         }
     }
 }
@@ -5860,6 +6370,34 @@ public object FfiConverterSequenceTypeListRow: FfiConverterRustBuffer<List<ListR
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeListRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeNextAchievement: FfiConverterRustBuffer<List<NextAchievement>> {
+    override fun read(buf: ByteBuffer): List<NextAchievement> {
+        val len = buf.getInt()
+        return List<NextAchievement>(len) {
+            FfiConverterTypeNextAchievement.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NextAchievement>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNextAchievement.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NextAchievement>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNextAchievement.write(it, buf)
         }
     }
 }

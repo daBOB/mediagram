@@ -2,12 +2,19 @@ package ui.tv.catalog
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -89,6 +96,19 @@ class TvPlateStateTest {
 
         compose.onNodeWithTag(TvPlateWatchedTickTag, useUnmergedTree = true).assertExists()
         compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).assertExists()
+    }
+
+    // The fraction is the rule's length only: a title one tenth in must still
+    // draw a fill as tall as the track, not a sliver a tenth of its height.
+    @Test
+    fun aSmallFractionKeepsTheTracksFullHeight() {
+        showContent { Box(Modifier.width(200.dp)) { TvProgressRule(fraction = 0.1f) } }
+
+        val track = compose.onNodeWithTag(TvPlateProgressTag, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        compose
+            .onNodeWithTag(TvPlateProgressFillTag, useUnmergedTree = true)
+            .assertHeightIsEqualTo(track.bottom - track.top)
+            .assertWidthIsEqualTo((track.right - track.left) * 0.1f)
     }
 
     @Test

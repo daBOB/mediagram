@@ -18,6 +18,7 @@ import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.ProgressRow
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.WatchedRow
+import java.time.LocalDate
 
 /**
  * The chosen profile's watch state, over [CoreInterface]. Everything reads
@@ -55,7 +56,11 @@ interface WatchStateRepository {
         kids: Boolean = false,
     ): Profile?
 
-    /** Saves progress for the chosen profile; does nothing without one. */
+    /**
+     * Saves progress for the chosen profile, the watch time since this
+     * device's last write counted on this device's own date; does nothing
+     * without one.
+     */
     suspend fun setProgress(
         setId: String,
         at: Double,
@@ -154,6 +159,13 @@ interface WatchStateRepository {
 class DefaultWatchStateRepository(
     private val coreProvider: CoreProvider,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    /**
+     * This device's date now, `YYYY-MM-DD`: the day a progress write's watch
+     * time counts on. Read at each write rather than once, so a title
+     * playing across midnight, or a device moved to another time zone,
+     * counts on the day the write actually lands.
+     */
+    private val today: () -> String = { LocalDate.now().toString() },
 ) : WatchStateRepository {
     private val _profiles = MutableStateFlow<List<Profile>>(emptyList())
     override val profiles: StateFlow<List<Profile>> = _profiles.asStateFlow()
@@ -281,7 +293,7 @@ class DefaultWatchStateRepository(
         at: Double,
         duration: Double?,
     ) = writing { core, id ->
-        core.setProgress(id, setId, at, duration)
+        core.setProgress(id, setId, at, duration, today())
     }
 
     override suspend fun clearProgress(setId: String) = writing { core, id -> core.clearProgress(id, setId) }

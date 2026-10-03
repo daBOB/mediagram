@@ -1,0 +1,705 @@
+[
+  {
+    "name": "nothing watched offers the first rung of every ladder, nearest first",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": ["Drama"], "collection": null},
+        {"setId": "e1", "kind": "ep", "genres": ["Drama"], "collection": "ep:Severance"},
+        {"setId": "e2", "kind": "ep", "genres": ["Drama"], "collection": "ep:Severance"}
+      ],
+      "collections": [
+        {"id": "ep:Severance", "setIds": ["e1", "e2"]}
+      ]
+    },
+    "expect": {
+      "earned": [],
+      "next": [
+        {"id": "binge-5", "have": 0, "need": 5}, {"id": "docs-10", "have": 0, "need": 10},
+        {"id": "films-1", "have": 0, "need": 1}
+      ]
+    }
+  },
+  {
+    "name": "a kids profile is offered no hours, streak or binge, earned or next",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": true,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-02", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-04", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-05", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-06", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-07", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-08", "device": "tv-1", "seconds": 7200, "updatedAt": 1}
+      ],
+      "watched": [
+        {"setId": "m1", "finishedAt": 1788379200000}, {"setId": "e1", "finishedAt": 1788595200000},
+        {"setId": "e2", "finishedAt": 1788598800000}, {"setId": "e3", "finishedAt": 1788602400000},
+        {"setId": "e4", "finishedAt": 1788606000000}, {"setId": "e5", "finishedAt": 1788609600000}
+      ],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": ["Drama", "Crime"], "collection": null},
+        {"setId": "e1", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e3", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e4", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e5", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2", "e3", "e4", "e5"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "whole-show", "earnedAt": 1788609600000}, {"id": "films-1", "earnedAt": 1788379200000}
+      ],
+      "next": [
+        {"id": "genres-5", "have": 3, "need": 5}, {"id": "films-10", "have": 1, "need": 10},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "the same rows on a grown-up profile earn hours, the streak and the binge too",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-02", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-04", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-05", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-06", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-07", "device": "tv-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-08", "device": "tv-1", "seconds": 7200, "updatedAt": 1}
+      ],
+      "watched": [
+        {"setId": "m1", "finishedAt": 1788379200000}, {"setId": "e1", "finishedAt": 1788595200000},
+        {"setId": "e2", "finishedAt": 1788598800000}, {"setId": "e3", "finishedAt": 1788602400000},
+        {"setId": "e4", "finishedAt": 1788606000000}, {"setId": "e5", "finishedAt": 1788609600000}
+      ],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": ["Drama", "Crime"], "collection": null},
+        {"setId": "e1", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e3", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e4", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"},
+        {"setId": "e5", "kind": "ep", "genres": ["Comedy"], "collection": "ep:Bluey"}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2", "e3", "e4", "e5"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "streak-7", "earnedAt": 1788775200000}, {"id": "whole-show", "earnedAt": 1788609600000},
+        {"id": "binge-5", "earnedAt": 1788602400000}, {"id": "hours-10", "earnedAt": 1788602400000},
+        {"id": "films-1", "earnedAt": 1788379200000}
+      ],
+      "next": [
+        {"id": "genres-5", "have": 3, "need": 5}, {"id": "streak-30", "have": 8, "need": 30},
+        {"id": "hours-100", "have": 16, "need": 100}
+      ]
+    }
+  },
+  {
+    "name": "films are dated by the Nth finish, and a film the library no longer holds counts for nothing",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "f1", "finishedAt": 1788285600000}, {"setId": "f2", "finishedAt": 1788372000000},
+        {"setId": "f3", "finishedAt": 1788458400000}, {"setId": "f4", "finishedAt": 1788544800000},
+        {"setId": "f5", "finishedAt": 1788631200000}, {"setId": "f6", "finishedAt": 1788717600000},
+        {"setId": "f7", "finishedAt": 1788804000000}, {"setId": "f8", "finishedAt": 1788890400000},
+        {"setId": "f9", "finishedAt": 1788976800000}, {"setId": "f10", "finishedAt": 1789063200000},
+        {"setId": "f11", "finishedAt": 1789149600000}
+      ],
+      "library": [
+        {"setId": "f1", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f2", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f3", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f5", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f6", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f7", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f8", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f9", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f10", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f11", "kind": "movie", "genres": [], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "films-10", "earnedAt": 1789149600000}, {"id": "films-1", "earnedAt": 1788285600000}
+      ],
+      "next": [
+        {"id": "films-50", "have": 10, "need": 50}, {"id": "binge-5", "have": 0, "need": 5},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "a rewatch moves a film's finish later, and with it the dates of the rungs it counted for",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "f1", "finishedAt": 1789149600000}, {"setId": "f2", "finishedAt": 1788372000000},
+        {"setId": "f3", "finishedAt": 1788458400000}, {"setId": "f4", "finishedAt": 1788544800000},
+        {"setId": "f5", "finishedAt": 1788631200000}, {"setId": "f6", "finishedAt": 1788717600000},
+        {"setId": "f7", "finishedAt": 1788804000000}, {"setId": "f8", "finishedAt": 1788890400000},
+        {"setId": "f9", "finishedAt": 1788976800000}, {"setId": "f10", "finishedAt": 1789063200000}
+      ],
+      "library": [
+        {"setId": "f1", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f2", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f3", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f4", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f5", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f6", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f7", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f8", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f9", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "f10", "kind": "movie", "genres": [], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "films-10", "earnedAt": 1789149600000}, {"id": "films-1", "earnedAt": 1788372000000}
+      ],
+      "next": [
+        {"id": "films-50", "have": 10, "need": 50}, {"id": "binge-5", "have": 0, "need": 5},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "a whole series is dated by the first collection completed",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "a1", "finishedAt": 1788285600000}, {"setId": "a2", "finishedAt": 1788372000000},
+        {"setId": "b1", "finishedAt": 1788458400000}, {"setId": "b2", "finishedAt": 1788544800000},
+        {"setId": "a3", "finishedAt": 1788631200000}, {"setId": "c1", "finishedAt": 1788717600000}
+      ],
+      "library": [
+        {"setId": "a1", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "a2", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "a3", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "b1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "b2", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "c1", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c2", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c3", "kind": "tut", "genres": [], "collection": "tut:Rust"}
+      ],
+      "collections": [
+        {"id": "ep:Andor", "setIds": ["a1", "a2", "a3"]}, {"id": "ep:Bluey", "setIds": ["b1", "b2"]},
+        {"id": "tut:Rust", "setIds": ["c1", "c2", "c3"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "whole-show", "earnedAt": 1788544800000}
+      ],
+      "next": [
+        {"id": "binge-5", "have": 1, "need": 5}, {"id": "docs-10", "have": 0, "need": 10},
+        {"id": "films-1", "have": 0, "need": 1}
+      ]
+    }
+  },
+  {
+    "name": "the next whole series is the closest collection, a course as much as a show; equal shares go to the one further in",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "andor1", "finishedAt": 1785607200000}, {"setId": "andor2", "finishedAt": 1785693600000},
+        {"setId": "andor3", "finishedAt": 1785780000000}, {"setId": "bluey1", "finishedAt": 1785866400000},
+        {"setId": "c1", "finishedAt": 1785952800000}, {"setId": "c2", "finishedAt": 1786039200000},
+        {"setId": "c3", "finishedAt": 1786125600000}, {"setId": "c4", "finishedAt": 1786212000000},
+        {"setId": "c5", "finishedAt": 1786298400000}, {"setId": "c6", "finishedAt": 1786384800000},
+        {"setId": "c7", "finishedAt": 1786471200000}, {"setId": "c8", "finishedAt": 1787076000000},
+        {"setId": "c9", "finishedAt": 1787162400000}, {"setId": "dark1", "finishedAt": 1786557600000},
+        {"setId": "dark2", "finishedAt": 1786644000000}, {"setId": "dark3", "finishedAt": 1786730400000},
+        {"setId": "dark4", "finishedAt": 1786816800000}, {"setId": "dark5", "finishedAt": 1786903200000},
+        {"setId": "dark6", "finishedAt": 1786989600000}
+      ],
+      "library": [
+        {"setId": "andor1", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "andor2", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "andor3", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "andor4", "kind": "ep", "genres": [], "collection": "ep:Andor"},
+        {"setId": "bluey1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "bluey2", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "c1", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c2", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c3", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c4", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c5", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c6", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c7", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c8", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c9", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c10", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c11", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "c12", "kind": "tut", "genres": [], "collection": "tut:Rust"},
+        {"setId": "dark1", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark2", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark3", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark4", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark5", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark6", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark7", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "dark8", "kind": "ep", "genres": [], "collection": "ep:Dark"}
+      ],
+      "collections": [
+        {"id": "ep:Andor", "setIds": ["andor1", "andor2", "andor3", "andor4"]},
+        {"id": "ep:Bluey", "setIds": ["bluey1", "bluey2"]},
+        {"id": "tut:Rust", "setIds": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12"]},
+        {"id": "ep:Dark", "setIds": ["dark1", "dark2", "dark3", "dark4", "dark5", "dark6", "dark7", "dark8"]}
+      ]
+    },
+    "expect": {
+      "earned": [],
+      "next": [
+        {"id": "whole-show", "have": 9, "need": 12}, {"id": "binge-5", "have": 1, "need": 5},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "a collection the library shrank is complete with the episodes it still holds",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "s1", "finishedAt": 1788285600000}, {"setId": "s3", "finishedAt": 1788372000000},
+        {"setId": "s2", "finishedAt": 1788458400000}
+      ],
+      "library": [
+        {"setId": "s1", "kind": "ep", "genres": [], "collection": "ep:Dark"},
+        {"setId": "s2", "kind": "ep", "genres": [], "collection": "ep:Dark"}
+      ],
+      "collections": [
+        {"id": "ep:Dark", "setIds": ["s1", "s2"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "whole-show", "earnedAt": 1788458400000}
+      ],
+      "next": [
+        {"id": "binge-5", "have": 1, "need": 5}, {"id": "docs-10", "have": 0, "need": 10},
+        {"id": "films-1", "have": 0, "need": 1}
+      ]
+    }
+  },
+  {
+    "name": "genres count as finishes bring new ones, an episode bringing its show's",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "m1", "finishedAt": 1788285600000}, {"setId": "m2", "finishedAt": 1788372000000},
+        {"setId": "e1", "finishedAt": 1788458400000}, {"setId": "d1", "finishedAt": 1788544800000},
+        {"setId": "m3", "finishedAt": 1788631200000}
+      ],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": ["Drama", "Crime"], "collection": null},
+        {"setId": "m2", "kind": "movie", "genres": ["Drama"], "collection": null},
+        {"setId": "e1", "kind": "ep", "genres": ["Comedy", "Romance"], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": ["Comedy", "Romance"], "collection": "ep:Bluey"},
+        {"setId": "d1", "kind": "docu", "genres": ["Documentary", "History"], "collection": null},
+        {"setId": "m3", "kind": "movie", "genres": ["Action"], "collection": null}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "genres-5", "earnedAt": 1788544800000}, {"id": "films-1", "earnedAt": 1788285600000}
+      ],
+      "next": [
+        {"id": "genres-10", "have": 7, "need": 10}, {"id": "whole-show", "have": 1, "need": 2},
+        {"id": "films-10", "have": 3, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "ten finished documentaries",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "d1", "finishedAt": 1788285600000}, {"setId": "d2", "finishedAt": 1788372000000},
+        {"setId": "d3", "finishedAt": 1788458400000}, {"setId": "d4", "finishedAt": 1788544800000},
+        {"setId": "d5", "finishedAt": 1788631200000}, {"setId": "d6", "finishedAt": 1788717600000},
+        {"setId": "d7", "finishedAt": 1788804000000}, {"setId": "d8", "finishedAt": 1788890400000},
+        {"setId": "d9", "finishedAt": 1788976800000}, {"setId": "d10", "finishedAt": 1789063200000}
+      ],
+      "library": [
+        {"setId": "d1", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d2", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d3", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d4", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d5", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d6", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d7", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d8", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d9", "kind": "docu", "genres": [], "collection": null},
+        {"setId": "d10", "kind": "docu", "genres": [], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "docs-10", "earnedAt": 1789063200000}
+      ],
+      "next": [
+        {"id": "binge-5", "have": 0, "need": 5}, {"id": "films-1", "have": 0, "need": 1},
+        {"id": "genres-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "hours sum every device's rows per day and are dated at that day's local noon",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 18000, "updatedAt": 1},
+        {"day": "2026-09-01", "device": "phone-1", "seconds": 7200, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 10800, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "hours-10", "earnedAt": 1788429600000}
+      ],
+      "next": [
+        {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-100", "have": 10, "need": 100},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "a gap restarts a streak, a day with no seconds is a gap, and the longest run is the progress",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-02", "device": "tv-1", "seconds": 300, "updatedAt": 1},
+        {"day": "2026-09-02", "device": "phone-1", "seconds": 300, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-04", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-06", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-07", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-08", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-09", "device": "tv-1", "seconds": 0, "updatedAt": 1},
+        {"day": "2026-09-10", "device": "tv-1", "seconds": 600, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [],
+      "next": [
+        {"id": "streak-7", "have": 4, "need": 7}, {"id": "hours-10", "have": 1, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "a seven-day streak is dated by the day completing it, across a month's end",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-28", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-09-29", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-09-30", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-10-01", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-10-02", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-10-03", "device": "tv-1", "seconds": 1200, "updatedAt": 1},
+        {"day": "2026-10-04", "device": "tv-1", "seconds": 1200, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "streak-7", "earnedAt": 1791108000000}
+      ],
+      "next": [
+        {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 2, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "five episodes on one local day at the reader's offset are a binge",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "e1", "finishedAt": 1788559800000}, {"setId": "e2", "finishedAt": 1788588000000},
+        {"setId": "e3", "finishedAt": 1788609600000}, {"setId": "e4", "finishedAt": 1788631200000},
+        {"setId": "e5", "finishedAt": 1788645000000}
+      ],
+      "library": [
+        {"setId": "e1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e3", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e4", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e5", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e6", "kind": "ep", "genres": [], "collection": "ep:Bluey"}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2", "e3", "e4", "e5", "e6"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "binge-5", "earnedAt": 1788602400000}
+      ],
+      "next": [
+        {"id": "whole-show", "have": 5, "need": 6}, {"id": "docs-10", "have": 0, "need": 10},
+        {"id": "films-1", "have": 0, "need": 1}
+      ]
+    }
+  },
+  {
+    "name": "the same five finishes split over two days at offset zero are not",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 0, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "e1", "finishedAt": 1788559800000}, {"setId": "e2", "finishedAt": 1788588000000},
+        {"setId": "e3", "finishedAt": 1788609600000}, {"setId": "e4", "finishedAt": 1788631200000},
+        {"setId": "e5", "finishedAt": 1788645000000}
+      ],
+      "library": [
+        {"setId": "e1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e3", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e4", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e5", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e6", "kind": "ep", "genres": [], "collection": "ep:Bluey"}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2", "e3", "e4", "e5", "e6"]}
+      ]
+    },
+    "expect": {
+      "earned": [],
+      "next": [
+        {"id": "whole-show", "have": 5, "need": 6}, {"id": "binge-5", "have": 4, "need": 5},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "every finish is read at the offset passed in, even one from before a clock change",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "e1", "finishedAt": 1768084200000}, {"setId": "e2", "finishedAt": 1768118400000},
+        {"setId": "e3", "finishedAt": 1768125600000}, {"setId": "e4", "finishedAt": 1768132800000},
+        {"setId": "e5", "finishedAt": 1768140000000}
+      ],
+      "library": [
+        {"setId": "e1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e3", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e4", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e5", "kind": "ep", "genres": [], "collection": "ep:Bluey"}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "binge-5", "earnedAt": 1768125600000}
+      ],
+      "next": [
+        {"id": "docs-10", "have": 0, "need": 10}, {"id": "films-1", "have": 0, "need": 1},
+        {"id": "genres-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "earned is newest first, and achievements earned at the same moment sort by id",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [],
+      "watched": [
+        {"setId": "m1", "finishedAt": 1788285600000}
+      ],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": ["Action", "Comedy", "Drama", "Horror", "Western"], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "films-1", "earnedAt": 1788285600000}, {"id": "genres-5", "earnedAt": 1788285600000}
+      ],
+      "next": [
+        {"id": "genres-10", "have": 5, "need": 10}, {"id": "films-10", "have": 1, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "next keeps the three closest, equal shares by id",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 18000, "updatedAt": 1}
+      ],
+      "watched": [
+        {"setId": "m1", "finishedAt": 1788285600000}, {"setId": "m2", "finishedAt": 1788372000000},
+        {"setId": "m3", "finishedAt": 1788458400000}, {"setId": "m4", "finishedAt": 1788544800000},
+        {"setId": "m5", "finishedAt": 1788631200000}, {"setId": "e1", "finishedAt": 1788717600000}
+      ],
+      "library": [
+        {"setId": "m1", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "m2", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "m3", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "m4", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "m5", "kind": "movie", "genres": [], "collection": null},
+        {"setId": "e1", "kind": "ep", "genres": [], "collection": "ep:Bluey"},
+        {"setId": "e2", "kind": "ep", "genres": [], "collection": "ep:Bluey"}
+      ],
+      "collections": [
+        {"id": "ep:Bluey", "setIds": ["e1", "e2"]}
+      ]
+    },
+    "expect": {
+      "earned": [
+        {"id": "films-1", "earnedAt": 1788285600000}
+      ],
+      "next": [
+        {"id": "films-10", "have": 5, "need": 10}, {"id": "hours-10", "have": 5, "need": 10},
+        {"id": "whole-show", "have": 1, "need": 2}
+      ]
+    }
+  },
+  {
+    "name": "a day row dated after today counts like any other",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-10-04", "device": "phone-1", "seconds": 36000, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "hours-10", "earnedAt": 1791108000000}
+      ],
+      "next": [
+        {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-100", "have": 10, "need": 100},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "a day row naming no date counts toward no hours or streak",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 3600, "updatedAt": 1},
+        {"day": "2026-13-01", "device": "tv-1", "seconds": 36000, "updatedAt": 1},
+        {"day": "2026-09-00", "device": "tv-1", "seconds": 36000, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [],
+      "next": [
+        {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-10", "have": 1, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  },
+  {
+    "name": "a binge day and a streak run are dated by the first to qualify, however many follow",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 0, "kids": false,
+      "days": [
+        {"day": "2026-09-01", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-02", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-03", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-04", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-05", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-06", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-07", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-10", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-11", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-12", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-13", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-14", "device": "tv-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-09-15", "device": "tv-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-09-16", "device": "tv-1", "seconds": 600, "updatedAt": 1}
+      ],
+      "watched": [
+        {"setId": "a1", "finishedAt": 1789030800000}, {"setId": "a2", "finishedAt": 1789034400000},
+        {"setId": "a3", "finishedAt": 1789038000000}, {"setId": "a4", "finishedAt": 1789041600000},
+        {"setId": "a5", "finishedAt": 1789045200000}, {"setId": "b1", "finishedAt": 1789894800000},
+        {"setId": "b2", "finishedAt": 1789898400000}, {"setId": "b3", "finishedAt": 1789902000000},
+        {"setId": "b4", "finishedAt": 1789905600000}, {"setId": "b5", "finishedAt": 1789909200000}
+      ],
+      "library": [
+        {"setId": "a1", "kind": "ep", "genres": [], "collection": null}, {"setId": "a2", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "a3", "kind": "ep", "genres": [], "collection": null}, {"setId": "a4", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "a5", "kind": "ep", "genres": [], "collection": null}, {"setId": "b1", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "b2", "kind": "ep", "genres": [], "collection": null}, {"setId": "b3", "kind": "ep", "genres": [], "collection": null},
+        {"setId": "b4", "kind": "ep", "genres": [], "collection": null}, {"setId": "b5", "kind": "ep", "genres": [], "collection": null}
+      ],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "binge-5", "earnedAt": 1789041600000}, {"id": "streak-7", "earnedAt": 1788782400000}
+      ],
+      "next": [
+        {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 2, "need": 10},
+        {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "a winter streak read in summer is dated at noon of the day completing it, so the hour between the two offsets cannot move it to the day before",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-01-10", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-11", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-12", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-13", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-14", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-15", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-16", "device": "phone-1", "seconds": 600, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "streak-7", "earnedAt": 1768557600000}
+      ],
+      "next": [
+        {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 1, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
+      ]
+    }
+  }
+]

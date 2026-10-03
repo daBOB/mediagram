@@ -19,62 +19,23 @@
 //! mark from, and a position is compared against that: one no newer stays
 //! suppressed, a genuine rewatch made since survives. `watched::reconcile`
 //! weighs a live row against its removal (`record.rs` explains the key).
-//! Watchlist, Kids, collections and preferences need no such trick — each
-//! row carries its own timestamp (and `removed` flag), reconciled by `keep`.
+//! Watchlist, Kids, collections, preferences and viewing stats need no such
+//! trick — each row carries its own timestamp (and `removed` flag),
+//! reconciled by `keep`.
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
-
 use super::record::{
-    CollectionRow, ListRow, ProgressRow, SyncPreference, SyncRecord, UnwatchedRow, WatchedRow,
-    normal_name,
+    CollectionRow, ListRow, ProgressRow, SyncRecord, UnwatchedRow, WatchedRow, normal_name,
 };
 
+mod merged;
 mod preferences;
+mod stats;
 mod tie_break;
 mod watched;
+pub use merged::{MergedProfile, MergedState};
 use tie_break::{Held, keep};
-
-/// Everything the devices agree on, once they have been reconciled.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MergedProfile {
-    /// The normalised name, which is what identifies a viewer across
-    /// machines.
-    pub name: String,
-    /// The name as typed; the identity is normalised, a name is not.
-    pub display_name: String,
-    /// A kids profile if any device's document says so.
-    #[serde(default, skip_serializing_if = "crate::state::record::is_false")]
-    pub kids: bool,
-    // `#[serde(default)]`: a fixture's `expect` names only what it tests.
-    #[serde(default)]
-    pub progress: Vec<ProgressRow>,
-    #[serde(default)]
-    pub watched: Vec<WatchedRow>,
-    #[serde(default)]
-    pub unwatched: Vec<UnwatchedRow>,
-    #[serde(default)]
-    pub watchlist: Vec<ListRow>,
-    #[serde(default)]
-    pub collections: Vec<CollectionRow>,
-    #[serde(default)]
-    pub preferences: Vec<SyncPreference>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct MergedState {
-    pub profiles: Vec<MergedProfile>,
-    /// Not scoped to a profile — see `schema.rs` on why `kids` alone has
-    /// none.
-    #[serde(default)]
-    pub kids: Vec<ListRow>,
-    /// Household-wide too, and kept per title the same way; see
-    /// `schema.rs`'s v5.
-    #[serde(default, rename = "editorsChoice")]
-    pub editors_choice: Vec<ListRow>,
-}
 
 struct ViewerState {
     display_name: String,
@@ -87,6 +48,7 @@ struct ViewerState {
     watchlist: HashMap<String, Held<ListRow>>,
     collections: HashMap<String, Held<CollectionRow>>,
     preferences: preferences::Kept,
+    stats: stats::Kept,
 }
 
 /// Merges every device's document into one answer. Order-independent by
@@ -123,6 +85,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
                 watchlist: HashMap::new(),
                 collections: HashMap::new(),
                 preferences: HashMap::new(),
+                stats: stats::Kept::default(),
             });
             // Device id decides spelling as it does row ties.
             if device > held.name_from.as_str() {
@@ -151,6 +114,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
                 keep(&mut held.collections, row.id.clone(), row.clone(), device);
             }
             preferences::absorb(&mut held.preferences, &profile.preferences, device);
+            stats::absorb(&mut held.stats, profile, device);
         }
     }
 
@@ -158,8 +122,11 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     for (name, held) in by_viewer {
         let watched_map: HashMap<String, WatchedRow> =
             held.watched.into_iter().map(|(k, h)| (k, h.row)).collect();
-        let unwatched_map: HashMap<String, UnwatchedRow> =
-            held.unwatched.into_iter().map(|(k, h)| (k, h.row)).collect();
+        let unwatched_map: HashMap<String, UnwatchedRow> = held
+            .unwatched
+            .into_iter()
+            .map(|(k, h)| (k, h.row))
+            .collect();
         let watched::Reconciled {
             watched,
             unwatched,
@@ -180,6 +147,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             })
             .collect();
 
+        let (title_stats, day_stats) = stats::rows(held.stats);
         profiles.push(MergedProfile {
             name,
             display_name: held.display_name,
@@ -190,6 +158,8 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             watchlist: held.watchlist.into_values().map(|h| h.row).collect(),
             collections: held.collections.into_values().map(|h| h.row).collect(),
             preferences: preferences::rows(held.preferences),
+            title_stats,
+            day_stats,
         });
     }
     MergedState {

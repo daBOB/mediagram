@@ -75,6 +75,12 @@ class DestinationTest {
     }
 
     @Test
+    fun theStatsPageIsNamedAndCanBeLeft() {
+        assertEquals("Stats", barTitleFor(Destination.Stats))
+        assertEquals("Back", backLabelFor(Destination.Stats))
+    }
+
+    @Test
     fun theSystemScreenSaysWhatItIs() {
         assertEquals("System", barTitleFor(Destination.System))
     }

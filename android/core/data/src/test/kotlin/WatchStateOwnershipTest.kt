@@ -76,6 +76,7 @@ private class DelayedStateCore(
         setId: String,
         at: Double,
         duration: Double?,
+        localDay: String,
     ) = write()
 
     override suspend fun renameCollection(

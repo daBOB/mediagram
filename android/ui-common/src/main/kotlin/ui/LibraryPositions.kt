@@ -11,12 +11,12 @@ import catalog.MenuScreen
 /**
  * Which kind of screen a [Frame] stands for.
  *
- * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE] and [PRELOADS]
+ * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS] and [STATS]
  * are additive: every existing branch keeps its own value, so a stack
  * encoded by an older build still decodes the same frames it always did —
  * see [encode]/[decode].
  */
-enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS }
+enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS }
 
 /**
  * One screen on [LibraryPositions]'s stack: which kind it is, and the one
@@ -216,6 +216,8 @@ class LibraryPositions(frames: MutableState<String>) {
     fun openMoviesPage() = push(FrameKind.MOVIES_PAGE, "")
     /** What is preloading, queued, or already fully on this device — reached from the menu's own "Preloads · n" entry, Android only. */
     fun openPreloads() = push(FrameKind.PRELOADS, "")
+    /** The chosen profile's Stats page — the rail's Stats row. */
+    fun openStats() = push(FrameKind.STATS, "")
 
     /**
      * Moves between menu screens rather than stacking them — asking for the

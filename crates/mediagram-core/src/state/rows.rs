@@ -21,7 +21,8 @@ pub struct ProgressRow {
 }
 
 /// One title a profile watched to the end, and when.
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct WatchedRow {
     pub set_id: String,
     pub finished_at: i64,
@@ -44,7 +45,8 @@ pub fn progress_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec
 }
 
 /// Sets where a profile is in `set_id`. Clamped to non-negative, like the
-/// web: a negative position has no title to seek to.
+/// web: a negative position has no title to seek to. Records no watch time —
+/// this device's own writes go through `StateDb::set_progress_counted`.
 pub fn set_progress(
     conn: &Connection,
     profile_id: &str,

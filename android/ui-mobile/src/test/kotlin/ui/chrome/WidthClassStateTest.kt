@@ -63,7 +63,7 @@ class WidthClassStateTest {
     private var list: LazyListState? = null
 
     private val menu = MenuActions({}, {}, {}, {}, {})
-    private val browse = BrowseActions({}, {}, {}, {})
+    private val browse = BrowseActions({}, {}, {}, {}, {})
     private val profile = ProfileBarState("test") {}
 
     private fun host(body: @Composable () -> Unit) {

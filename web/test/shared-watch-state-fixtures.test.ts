@@ -1,11 +1,13 @@
 /**
  * Runs the JSON fixtures under `fixtures/watch-state/` against the web's own
- * record parsing, merge, resume and Next up logic.
+ * record parsing, merge, resume, Next up, viewing-stats and achievements logic.
  *
- * These fixtures are read by other languages too, so this file writes no new
- * behaviour: every case here has to pass against the web as it already
- * stands, or the fixture is wrong. A case that only passes after a change to
- * `src/state` or `public/lib` does not belong in this file.
+ * These fixtures are read by other languages too, so a case here is a rule
+ * both engines must agree on. The sync, resume and Next up cases describe
+ * behaviour the web already has, and a case that only passes after a change
+ * to `src/state` or `public/lib` does not belong with them. The stats
+ * fixtures are different: they pin the new counting rules first, and the
+ * web's modules under `src/state/stats-*` are written to satisfy them.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -15,6 +17,10 @@ import { join } from "node:path";
 
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
+import { achievements, type AchievementInput, type Achievements } from "../src/state/achievements";
+import { achievementLabel, progressLine } from "../public/lib/catalog/stats-achievements.js";
+import { againNow, stepSeconds } from "../src/state/stats-step";
+import { summarize, type StatsSummary, type SummaryInput } from "../src/state/stats-summary";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupDepartments } from "../public/lib/departments.js";
 import { homeShelves } from "../public/lib/catalog/home-shelves.js";
@@ -195,6 +201,129 @@ describe("next-up fixtures", () => {
       expect(shelves.continues.map((set) => set.setId)).toEqual(one.expect.continues);
       expect(shelves.totals.continues).toBe(one.expect.totals.continues);
       expect(shelves.totals.nextUp).toBe(one.expect.totals.nextUp);
+    });
+  }
+});
+
+describe("stats-step fixtures", () => {
+  const fns = { stepSeconds, againNow } as const;
+
+  interface Case {
+    name: string;
+    fn: keyof typeof fns;
+    args: unknown[];
+    expect: unknown;
+  }
+
+  for (const one of load<Case[]>("stats-step.json")) {
+    test(`${one.fn}: ${one.name}`, () => {
+      const run = fns[one.fn] as (...args: unknown[]) => unknown;
+      expect(run(...one.args)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("stats-record-parse fixtures", () => {
+  interface Case {
+    name: string;
+    input: string;
+    expect: SyncRecord | null;
+  }
+
+  for (const one of load<Case[]>("stats-record-parse.json")) {
+    test(one.name, () => {
+      expect(parseRecord(one.input)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("stats-merge fixtures", () => {
+  interface Case {
+    name: string;
+    records: SyncRecord[];
+    expect: ReturnType<typeof canonicalStats>;
+  }
+
+  /** Code-unit order, as the engines sort; rows by their merge key. */
+  const order = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+  /**
+   * The stats keys only, passed through as `mergeStates` left them: a key
+   * present but empty would show here as `[]` and fail a case that omits it,
+   * which is the omitted-when-empty rule being checked.
+   */
+  function canonicalStats(state: MergedState) {
+    return {
+      profiles: state.profiles
+        .map((profile) => ({
+          name: profile.name,
+          displayName: profile.displayName,
+          ...(profile.titleStats
+            ? { titleStats: [...profile.titleStats].sort((a, b) => order(a.setId, b.setId) || order(a.device, b.device)) }
+            : {}),
+          ...(profile.dayStats
+            ? { dayStats: [...profile.dayStats].sort((a, b) => order(a.day, b.day) || order(a.device, b.device)) }
+            : {}),
+        }))
+        .sort((a, b) => order(a.name, b.name)),
+    };
+  }
+
+  for (const one of load<Case[]>("stats-merge.json")) {
+    test(one.name, () => {
+      expect(canonicalStats(mergeStates(one.records))).toEqual(one.expect);
+      expect(canonicalStats(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
+
+describe("stats-summary fixtures", () => {
+  interface Case {
+    name: string;
+    input: SummaryInput;
+    expect: Partial<StatsSummary>;
+  }
+
+  for (const one of load<Case[]>("stats-summary.json")) {
+    test(one.name, () => {
+      const summary = summarize(one.input);
+      // Only the keys a case names: one about the week need not spell out
+      // thirty bars.
+      const named = Object.fromEntries(
+        Object.keys(one.expect).map((key) => [key, summary[key as keyof StatsSummary]]),
+      );
+      expect(named).toEqual(one.expect);
+    });
+  }
+});
+
+describe("achievements fixtures", () => {
+  interface Case {
+    name: string;
+    input: AchievementInput;
+    expect: Achievements;
+  }
+
+  for (const one of load<Case[]>("achievements.json")) {
+    test(one.name, () => {
+      expect(achievements(one.input)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("achievement-labels fixtures", () => {
+  interface Case {
+    id: string;
+    have: number;
+    need: number;
+    label: string;
+    progress: string;
+  }
+
+  for (const one of load<Case[]>("achievement-labels.json")) {
+    test(one.id, () => {
+      expect(achievementLabel(one.id)).toBe(one.label);
+      expect(progressLine(one)).toBe(one.progress);
     });
   }
 });
