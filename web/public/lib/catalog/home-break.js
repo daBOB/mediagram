@@ -31,7 +31,7 @@ export function pullQuote(set) {
 export function thisMonth(films) {
   const column = el("aside", "this-month");
   column.setAttribute("aria-labelledby", "home-this-month");
-  const title = el("h2", "eyebrow this-month-title", "This month");
+  const title = el("h2", "eyebrow this-month-title", "This month"); // deslop-ignore 10: the heading itself
   title.id = "home-this-month";
   column.append(title);
   const list = el("ol");

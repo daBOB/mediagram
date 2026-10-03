@@ -12,10 +12,10 @@ import { el } from "../dom.js";
 import { backdropFigure } from "./plate.js";
 
 /**
- * @param {{ back: {href: string, label: string}, title: string, eyebrow?: string|null,
+ * @param {{ back: {href: string, label: string}, title: string,
  *   facts: string, art: string|null, actions: Node[] }} spread
  */
-export function titleSpread({ back, title, eyebrow = null, facts, art, actions }) {
+export function titleSpread({ back, title, facts, art, actions }) {
   const hero = el("header", art ? "spread" : "spread no-art");
 
   if (art) hero.append(backdropFigure("spread-art", art));
@@ -24,7 +24,6 @@ export function titleSpread({ back, title, eyebrow = null, facts, art, actions }
   const backLink = el("a", "spread-back", `← ${back.label}`);
   backLink.href = back.href;
   copy.append(backLink);
-  if (eyebrow) copy.append(el("p", "eyebrow spread-kicker", eyebrow));
   const heading = el("h1", title.length > 22 ? "spread-title long" : "spread-title", title);
   heading.tabIndex = -1;
   copy.append(heading);

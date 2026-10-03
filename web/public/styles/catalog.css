@@ -18,7 +18,7 @@
 .shelf-aside .featured-open { border-color: var(--accent); color: var(--accent); margin-right: 8px; }
 .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; color: var(--ink-3); font-size: 0.8125rem; }
 .crumbs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink-2); text-decoration: none; }
-.crumbs a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.crumbs a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; } /* deslop-ignore 09: link underline */
 .crumbs .sep { color: var(--ink-3); }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule-soft); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
 .pager a, .pager .here, .pager .off { display: inline-flex; justify-content: center; align-items: center; min-width: 44px; min-height: 44px; padding: 8px; border-radius: var(--radius); color: var(--ink-2); text-decoration: none; }
@@ -89,7 +89,7 @@
 .badge.held { color: var(--held); }
 .tick { color: var(--held); margin-right: 8px; }
 .empty { padding: 48px 0; color: var(--ink-2); max-width: 65ch; overflow-wrap: anywhere; }
-.empty code { font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 4px 8px; border-radius: 4px; background: var(--paper-sunk); }
+.empty code { font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 4px 8px; border-radius: 4px; background: var(--paper-sunk); } /* deslop-ignore 34: code only */
 .error { padding: 24px; border-radius: var(--radius); background: var(--accent-tint); color: var(--accent); max-width: 65ch; overflow-wrap: anywhere; }
 
 .genre-links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.8125rem; }

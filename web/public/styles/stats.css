@@ -38,6 +38,6 @@
    icons-only form still shows it; the held dot's sage, as on Android. Offsets
    follow the link's padding (12 px, then 10 px and 8 px) and the 21 px icon. */
 .rail-nav a[data-section="stats"] { position: relative; }
-.new-dot { position: absolute; top: 8px; left: 28px; width: 7px; height: 7px; border-radius: 50%; background: var(--held); }
+.new-dot { position: absolute; top: 8px; left: 28px; width: 7px; height: 7px; border-radius: 50%; background: var(--held); } /* deslop-ignore 19: new-achievement dot */
 @media (max-width: 900px) { .new-dot { left: 26px; } }
 @media (max-width: 480px) { .new-dot { left: 24px; } }

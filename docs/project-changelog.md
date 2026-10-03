@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.4 — the player's remaining design choices pinned for the slop scan
+
+**Changed**
+
+- Every hit the kill-ai-slop scanner still reported in `web/` was a recorded
+  choice; each now carries a `deslop-ignore <id>: reason` comment (scrims over
+  artwork, link underlines, round dots and portraits, the masthead blur, the
+  type system), so a fresh scan reports nothing and a new tic stands out.
+- `titleSpread` loses its `eyebrow` option and `.spread-kicker`, which no page
+  ever passed or drew.
+
 ## 0.99.3 — template tics removed from the player
 
 **Changed**

@@ -53,7 +53,7 @@ function featureCard({ kind, set }) {
   card.append(el("span", "feature-scrim"));
 
   const copy = el("span", "feature-copy");
-  copy.append(el("span", "eyebrow feature-eyebrow", FEATURE_LABELS[kind]));
+  copy.append(el("span", "eyebrow feature-eyebrow", FEATURE_LABELS[kind])); // deslop-ignore 10: names the fact that chose the title
   copy.append(el("span", "feature-title", title));
   copy.append(el("span", "feature-rule"));
   const deck = set.tagline ?? genresOf(set).slice(0, 3).join(", ");

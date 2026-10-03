@@ -1,5 +1,5 @@
 /* Self-hosted faces keep the library usable without access to a font CDN.
-   Geist sets the interface: navigation, captions, spaced-caps eyebrows. */
+   Geist sets the interface: navigation, captions, spaced-caps eyebrows. */ /* deslop-ignore-file 33 35: recorded in web/DESIGN.md */
 @font-face {
   font-family: "Geist";
   font-style: normal;
@@ -194,7 +194,7 @@ body::after {
 }
 
 /* Spaced capitals over a heading, the way a magazine labels a department. */
-.eyebrow {
+.eyebrow { /* deslop-ignore 10: label style; every use adds information */
   display: block;
   margin: 0 0 14px;
   font: 500 0.6875rem/1.4 var(--text);

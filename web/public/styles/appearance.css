@@ -51,11 +51,11 @@
 .theme-light { background: linear-gradient(135deg, #fbf8f2, #e5dfd3); }
 .theme-auto { background: linear-gradient(135deg, #fbf8f2 0 50%, #0b0b0c 50%); }
 .backdrop-default { background: linear-gradient(90deg, var(--paper) 30%, transparent), linear-gradient(120deg, #6b4b2a, #1c2a3a); }
-.backdrop-blurred { background: radial-gradient(circle at 70% 40%, #c07a4a, #2b3550 70%); filter: saturate(0.8); }
+.backdrop-blurred { background: radial-gradient(circle at 70% 40%, #c07a4a, #2b3550 70%); filter: saturate(0.8); } /* deslop-ignore 06 19: previews the blurred artwork mode */
 .backdrop-artwork { background: linear-gradient(120deg, #6b4b2a, #1c2a3a); }
 .backdrop-solid { background: var(--paper-sunk); }
 .accents .option { grid-template-columns: auto; justify-items: center; }
-.dot { display: block; width: 34px; height: 34px; border-radius: 50%; transition: box-shadow 160ms var(--ease); }
+.dot { display: block; width: 34px; height: 34px; border-radius: 50%; transition: box-shadow 160ms var(--ease); } /* deslop-ignore 19: accent swatch */
 .option input:checked + .dot { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
 .accent-coral { background: #e57a61; }
 .accent-blue { background: #7cb4f0; }

@@ -82,8 +82,8 @@
   /* Blur is allowed here and nowhere else: this is the one element that
      stays put while the page scrolls under it. */
   background: color-mix(in srgb, var(--paper) 72%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15); /* deslop-ignore 19: masthead only, see the note above */
+  backdrop-filter: blur(18px) saturate(1.15); /* deslop-ignore 19: masthead only, see the note above */
   border-bottom: 1px solid var(--rule-soft);
 }
 .departments { display: flex; gap: 4px; min-width: 0; }
@@ -116,7 +116,7 @@
   color: inherit;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: width 520ms var(--ease), border-color 160ms var(--ease), background-color 160ms var(--ease);
+  transition: width 520ms var(--ease), border-color 160ms var(--ease), background-color 160ms var(--ease); /* deslop-ignore 26: search field widens on focus */
 }
 .search::placeholder { color: transparent; }
 .search:hover { background: var(--rule-soft); }
@@ -139,7 +139,7 @@
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: 50%; /* deslop-ignore 19: profile avatar */
   background: var(--ink);
   color: var(--paper);
   font-size: 0;

@@ -25,8 +25,8 @@ import { clockTime } from "../format.js";
  *
  * A transport button is the one place in this player where a glyph beats a
  * word, and the glyphs for these are exactly the ones a typeface cannot be
- * relied on to have: `⏸` and `⛶` arrive as emoji, as tofu, or not at all
- * depending on what is installed. These always look the same.
+ * relied on to have: the pause and full-screen glyphs arrive as emoji, as tofu,
+ * or not at all depending on what is installed. These always look the same.
  */
 const ICONS = {
   play: "M8 5v14l11-7z",

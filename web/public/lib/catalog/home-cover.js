@@ -124,6 +124,7 @@ function slide(set, at, count, play) {
 
   const copy = el("div", "cover-copy");
   const genres = genresOf(set);
+  // deslop-ignore-next-line 10: names the day and the genre
   copy.append(el("p", "eyebrow cover-eyebrow", // "Today" because it is: the cover's films are chosen by the day.
     ["Featured today", genres[0]].filter(Boolean).join(" · ")));
   const title = set.title ?? set.setId;

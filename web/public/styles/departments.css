@@ -22,9 +22,9 @@
   background:
     linear-gradient(90deg, var(--paper) 0%, color-mix(in srgb, var(--paper) 70%, transparent) 26%, transparent 64%),
     linear-gradient(0deg, var(--paper) 0%, transparent 38%),
-    linear-gradient(180deg, color-mix(in srgb, var(--paper) 55%, transparent) 0%, transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--paper) 55%, transparent) 0%, transparent 24%), /* deslop-ignore 06: scrim under text on artwork */
     /* Under the pull-quote, whatever the picture is doing there. */
-    radial-gradient(ellipse 34% 46% at 88% 30%, rgba(8, 8, 9, 0.62), transparent 100%);
+    radial-gradient(ellipse 34% 46% at 88% 30%, rgba(8, 8, 9, 0.62), transparent 100%); /* deslop-ignore 06: scrim under text on artwork */
 }
 .dept-copy { position: relative; max-width: 40rem; }
 .dept-title {
