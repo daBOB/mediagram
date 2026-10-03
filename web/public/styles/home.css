@@ -80,7 +80,7 @@
   text-decoration: underline; /* deslop-ignore 09: link underline */
   text-decoration-color: rgba(246, 242, 234, 0.35);
   text-underline-offset: 6px;
-  transition: color 160ms var(--ease), text-decoration-color 160ms var(--ease);
+  transition: color var(--hover), text-decoration-color var(--hover);
 }
 .cover-details:hover { color: var(--on-image); text-decoration-color: currentColor; }
 .cover-side {
@@ -120,7 +120,7 @@
   inset: 12px 4px;
   border-radius: 2px;
   background: rgba(246, 242, 234, 0.32);
-  transition: background-color 160ms var(--ease);
+  transition: background-color var(--hover);
 }
 .cover-dot.on::before { background: var(--on-image); }
 .cover-dot:hover::before { background: rgba(246, 242, 234, 0.7); }
@@ -203,7 +203,7 @@
   font-size: 0.8125rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: color 160ms var(--ease);
+  transition: color var(--hover);
 }
 .see-all::after { content: "\2192"; transition: transform 480ms var(--ease); }
 .see-all:hover { color: var(--ink); }
@@ -300,7 +300,7 @@
   text-transform: uppercase;
 }
 .pull-quote figcaption::before { content: ""; width: 32px; height: 1px; margin: 4px 0 18px; background: currentColor; }
-.pull-quote figcaption a { color: var(--ink-2); text-decoration: none; transition: color 160ms var(--ease); }
+.pull-quote figcaption a { color: var(--ink-2); text-decoration: none; transition: color var(--hover); }
 .pull-quote figcaption a:hover { color: var(--accent); }
 
 /* This month: the contents page, numbered, in a ruled column. */
@@ -317,9 +317,9 @@
   color: inherit;
   text-decoration: none;
 }
-.this-month-num { font: 400 1.3rem/1 var(--display); color: var(--ink-3); font-variant-numeric: lining-nums; transition: color 160ms var(--ease); }
+.this-month-num { font: 400 1.3rem/1 var(--display); color: var(--ink-3); font-variant-numeric: lining-nums; transition: color var(--hover); }
 .this-month-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.this-month-name { font: 500 0.9375rem/1.3 var(--display); overflow-wrap: anywhere; transition: color 160ms var(--ease); }
+.this-month-name { font: 500 0.9375rem/1.3 var(--display); overflow-wrap: anywhere; transition: color var(--hover); }
 .this-month-meta { color: var(--ink-3); font-size: 0.75rem; letter-spacing: 0.04em; }
 .this-month a:hover .this-month-num, .this-month a:hover .this-month-name { color: var(--accent); }
 
@@ -335,7 +335,7 @@
   color: var(--on-image);
   font-size: 0.6875rem;
   line-height: 1;
-  transition: border-color 160ms var(--ease);
+  transition: border-color var(--hover);
 }
 .cover-pause:hover { border-color: var(--on-image); }
 

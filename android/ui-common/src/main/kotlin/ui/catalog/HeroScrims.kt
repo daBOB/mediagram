@@ -23,7 +23,7 @@ fun CoverScrim(
     modifier: Modifier = Modifier,
 ) {
     if (compact) {
-        // `linear-gradient(0deg, paper 0%, rgba(8,8,9,.82) 30%, rgba(8,8,9,.35) 70%, rgba(8,8,9,.2) 100%)` — 0deg starts at the bottom (`home.css:352-355`).
+        // `linear-gradient(0deg, paper 0%, rgba(8,8,9,.82) 30%, rgba(8,8,9,.35) 70%, rgba(8,8,9,.2) 100%)` — 0deg starts at the bottom (`home.css:351-354`).
         Box(
             modifier.background(
                 Brush.verticalGradient(

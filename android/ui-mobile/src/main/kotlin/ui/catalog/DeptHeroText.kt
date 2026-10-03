@@ -51,7 +51,7 @@ internal const val DEPT_HERO_QUOTE_TAGLINE_TEST_TAG = "department-hero-quote-tag
  * `--on-image` at all, only `.dept-quote` does).
  *
  * [franchiseTitle] draws the title as `.franchise-hero .dept-title` does
- * (`departments.css:109`) rather than the plain department rule: up to
+ * (`departments.css:108`) rather than the plain department rule: up to
  * three lines at a smaller ceiling, instead of one line shrunk to fit —
  * a franchise's own name is never chosen the way "Movies" or "Series" are.
  */
@@ -104,7 +104,7 @@ internal fun DeptHeroWords(
 
 /**
  * The lead title's own tagline, credited to it — `.dept-quote`
- * (`departments.css:38-52`). [onOpen] is the credit's own link, the one tap
+ * (`departments.css:37-51`). [onOpen] is the credit's own link, the one tap
  * target anywhere in a [DepartmentHero]; `null` draws the same words with
  * nothing to tap, matching a caller with nothing to open ([lead] absent, or
  * Documentaries' own `leadHref: null`).
@@ -118,7 +118,7 @@ internal fun DeptQuote(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    // `text-shadow: 0 2px 28px rgba(0,0,0,.65)` (`departments.css:45`) — a
+    // `text-shadow: 0 2px 28px rgba(0,0,0,.65)` (`departments.css:44`) — a
     // blurred drop rather than the radial patch below, which only ever
     // covers the quote's own centre; the ends of a wrapped line or the
     // attribution beneath it still need this to read over bright art.

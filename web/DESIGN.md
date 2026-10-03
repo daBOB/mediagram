@@ -227,7 +227,7 @@ Full height. Top: Utilities (My List, Continue Watching, Latest, Genres, Setting
 - **Ease** (`cubic-bezier(0.32, 0.72, 0, 1)`): standard motion, settling spring
 - **Ease-out** (`cubic-bezier(0.22, 1, 0.36, 1)`): exit, responsive motion
 - Reduced motion: all transitions collapse to 1ms
-- Hover: a 160ms change of colour, border or background. Controls never lift or grow on hover; artwork (plates, portraits) lifts, and arrows nudge toward where they lead
+- Hover (`--hover`, 160ms): a change of colour, border or background. Controls never lift or grow on hover; artwork (plates, portraits) lifts, and arrows nudge toward where they lead
 - Image cards (home features, genre tiles, collection cards) share `--radius-card` (12px)
 
 ## Components

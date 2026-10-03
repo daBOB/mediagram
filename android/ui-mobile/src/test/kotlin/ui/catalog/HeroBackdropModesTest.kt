@@ -71,7 +71,7 @@ class HeroBackdropModesTest {
         compose.onNodeWithText(QUOTED_TAGLINE).assertDoesNotExist()
     }
 
-    /** The quote is wide-only, like the web's `.spread-quote{display:none}` below 900px (`title-page.css:161`). */
+    /** The quote is wide-only, like the web's `.spread-quote{display:none}` below 900px (`title-page.css:160`). */
     @Test
     fun defaultKeepsTheTitleSpreadsArtButNotItsQuoteOnACompactWidth() {
         show(Backdrop.DEFAULT) { titleSpread() }
@@ -99,7 +99,7 @@ class HeroBackdropModesTest {
         // No quote assertion here: this class runs at a compact width
         // (w400dp), where the hero never draws the quote at all regardless
         // of backdrop mode — the web's own `.dept-quote{display:none}`
-        // below 900px (`departments.css:92`), checked directly at every
+        // below 900px (`departments.css:91`), checked directly at every
         // width in `DepartmentHeroTest`.
         show(Backdrop.DEFAULT) { moviesDepartmentScreen() }
         compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).assertIsDisplayed()

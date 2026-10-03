@@ -78,8 +78,8 @@ object TvFocus {
     /** A rail row — [designsystem.Radius.control], the same corner Settings' own index row already draws. */
     val ControlShape: Shape = RoundedCornerShape(Radius.control)
 
-    /** Home's own feature card — the phone's 12dp corner (the web's `--radius-card`), the one card on this catalogue that is not square. */
-    val FeatureCardShape: Shape = RoundedCornerShape(12.dp)
+    /** Home's own feature card, at [Radius.card] like the phone's. */
+    val FeatureCardShape: Shape = RoundedCornerShape(Radius.card)
 
     @Composable
     fun cardShape(shape: Shape = Shape): CardShape = CardDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape)

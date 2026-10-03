@@ -124,7 +124,7 @@ private fun PosterStrip(
 
 /**
  * The contents page, numbered, in a ruled column — `.this-month`
- * (`home.css:307-325`): one rule down the column's own left edge, and one
+ * (`home.css:306-324`): one rule down the column's own left edge, and one
  * under each row, rather than a border around every row (which drew a box
  * on all four sides of each, including doubled-up rules between rows).
  */

@@ -47,7 +47,7 @@
 .dept-quote blockquote { margin: 0; font: italic 400 clamp(1.3rem, 1.9vw, 1.8rem)/1.2 var(--serif); }
 .dept-quote figcaption { margin-top: 14px; font: 500 0.625rem/1.6 var(--text); letter-spacing: 0.28em; text-transform: uppercase; }
 .dept-quote figcaption::before { content: "— "; }
-.dept-quote a { color: var(--on-image-2); text-decoration: none; transition: color 160ms var(--ease); }
+.dept-quote a { color: var(--on-image-2); text-decoration: none; transition: color var(--hover); }
 .dept-quote a:hover { color: var(--on-image); }
 
 .dept-row { margin-top: 44px; min-width: 0; }
@@ -61,7 +61,7 @@
   background: none;
   color: var(--ink-2);
   font-size: 0.8125rem;
-  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+  transition: color var(--hover), border-color var(--hover);
 }
 .dept-row .featured-open:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
 .dept-row .genre-tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(12rem, 1fr); overflow-x: auto; scrollbar-width: none; }
@@ -78,7 +78,7 @@
   font-size: 0.9375rem;
   font-weight: 500;
   text-decoration: none;
-  transition: border-color 160ms var(--ease), transform 520ms var(--ease);
+  transition: border-color var(--hover), transform 520ms var(--ease);
 }
 .dept-all:hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); transform: translateX(3px); }
 

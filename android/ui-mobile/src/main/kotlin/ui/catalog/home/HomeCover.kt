@@ -45,7 +45,7 @@ private const val HOLD_MS = 9_000L
 /** How long one slide takes to cross-fade into the next — the web's own `cover-fade` (`home.css:18`, `1400ms`). */
 internal const val CROSSFADE_MS = 1_400
 
-/** Type set over artwork keeps the same two colours in both themes — the web's `--on-image`/`--on-image-2` (`theme.css:100-101`); shared with the pills and pager in `CoverControls.kt`. */
+/** Type set over artwork keeps the same two colours in both themes — the web's `--on-image`/`--on-image-2` (`theme.css:99-100`); shared with the pills and pager in `CoverControls.kt`. */
 internal val OnImage = Color(0xFFF6F2EA)
 internal val OnImage2 = Color(0xD1F6F2EA)
 

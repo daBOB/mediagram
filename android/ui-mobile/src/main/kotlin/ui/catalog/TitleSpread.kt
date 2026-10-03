@@ -67,7 +67,7 @@ internal fun TitleSpread(
 ) {
     val background = MaterialTheme.colorScheme.background
     val heroHeight = minOf(HERO_HEIGHT, (LocalConfiguration.current.screenHeightDp * HERO_HEIGHT_FRACTION).dp)
-    // The web hides `.spread-quote` below 900px (`title-page.css:161`), read
+    // The web hides `.spread-quote` below 900px (`title-page.css:160`), read
     // from the same width signal `DepartmentHero` hides its own quote by.
     val wide = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     Column(modifier = modifier.fillMaxWidth()) {

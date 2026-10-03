@@ -22,7 +22,7 @@ import ui.catalog.home.gutterFor
 import ui.pageGround
 
 /**
- * The wide layout (`departments.css:1-52`): art fading into the page from
+ * The wide layout (`departments.css:1-51`): art fading into the page from
  * the left, copy bottom-left over it (or top-left with nothing to bleed
  * over), quote top-right.
  */
@@ -90,7 +90,7 @@ internal fun BoxScope.WideDeptHero(
                         } else {
                             // `padding-top: 64px` with nothing to lead the
                             // hero with, `40px` when Solid hides art that
-                            // does exist (`departments.css:87`) — two
+                            // does exist (`departments.css:86`) — two
                             // different reasons the words sit alone, two
                             // different offsets from the masthead.
                             topChrome + (if (hasBackdropData) 40.dp else 64.dp)
@@ -110,7 +110,7 @@ internal fun BoxScope.WideDeptHero(
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    // `top: calc(masthead-height + 12%)` (`departments.css:41`) — the
+                    // `top: calc(masthead-height + 12%)` (`departments.css:40`) — the
                     // 12% is of the hero's own height, which under a `LazyColumn`
                     // item's unbounded height cannot be read live the way it can on
                     // the web; the same floor this hero reserves for itself
@@ -128,7 +128,7 @@ internal fun BoxScope.WideDeptHero(
     }
 }
 
-/** The compact layout (`departments.css:87-94`): art strip on top, title/line overlapping its own lower edge, in flow — no quote, no bar term, matching the web's own static masthead at this width. */
+/** The compact layout (`departments.css:86-93`): art strip on top, title/line overlapping its own lower edge, in flow — no quote, no bar term, matching the web's own static masthead at this width. */
 @Composable
 internal fun CompactDeptHero(
     title: String,
@@ -155,7 +155,7 @@ internal fun CompactDeptHero(
             modifier =
                 Modifier.padding(
                     // `padding-top: 48vw` over a `64vw` art strip
-                    // (`departments.css:87`) — the copy overlaps the art's
+                    // (`departments.css:86`) — the copy overlaps the art's
                     // own fade by design, not a gap beneath it; `40px` with
                     // nothing to overlap. Never `LocalTopChrome` here: the
                     // web's compact masthead never bleeds under the hero at
@@ -168,7 +168,7 @@ internal fun CompactDeptHero(
                 ),
         ) {
             // The web hides `.dept-quote` entirely at this width
-            // (`departments.css:92`); [DeptHeroWords] never receives a
+            // (`departments.css:91`); [DeptHeroWords] never receives a
             // quote to draw on this layout as a result.
             DeptHeroWords(title, line, compact = true, width = width, franchiseTitle = franchiseTitle)
         }

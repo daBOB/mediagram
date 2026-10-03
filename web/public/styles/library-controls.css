@@ -4,7 +4,7 @@
 .who-card h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 600; letter-spacing: -0.035em; margin: 0 0 40px; }
 .who-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin-bottom: 32px; }
 .who-tile { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: none; background: none; color: var(--ink-2); }
-.who-initial { display: grid; place-items: center; width: 96px; height: 96px; border-radius: var(--radius); background: var(--paper-sunk); color: var(--ink); font-size: 2rem; font-weight: 500; transition: background-color 160ms ease, color 160ms ease; }
+.who-initial { display: grid; place-items: center; width: 96px; height: 96px; border-radius: var(--radius); background: var(--paper-sunk); color: var(--ink); font-size: 2rem; font-weight: 500; transition: background-color var(--hover), color var(--hover); }
 .who-name { font-size: 0.875rem; }
 .who-tile:hover .who-initial { background: var(--accent-tint); color: var(--accent); }
 .who-add .who-initial { border: 1px dashed var(--rule); background: none; }

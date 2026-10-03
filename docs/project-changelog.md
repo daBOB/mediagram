@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.6 — the hover and card-corner rules become tokens
+
+**Changed**
+
+- Web hover transitions take `--hover` (160ms on `--ease`) instead of a
+  literal repeated in eight stylesheets; the unused `--dim` is gone.
+- Android gains `Radius.card` (12dp, the web's `--radius-card`), used by the
+  phone's and the television's feature cards and Appearance's swatch cards,
+  so the three cannot drift apart again; `DESIGN.md` lists it.
+- Comments citing a stylesheet line (`home.css:180` and the like) point at
+  the rules they named before 0.99.3 moved them; the nav icons in
+  `index.html` share one scan pin; the redundant `.settings-head` rule is
+  gone.
+
 ## 0.99.5 — Android feature cards match the web's card corner
 
 **Fixed**

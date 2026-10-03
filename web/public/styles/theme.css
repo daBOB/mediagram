@@ -82,7 +82,6 @@
   --ink: #f3efe7;
   --ink-2: #cbc5ba;
   --ink-3: #9c968b;
-  --dim: var(--ink-3);
   --rule: rgba(243, 239, 231, 0.18);
   --rule-soft: rgba(243, 239, 231, 0.08);
   --accent: #e57a61;
@@ -120,6 +119,7 @@
   /* Heavy and settling, never linear: a spring that has lost its bounce. */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --hover: 160ms var(--ease);
   /* Page chrome < skip link < profile chooser. Native dialogs use the top layer.
      Playback's local layers: HUD 1, notes/previews 2, next-title offer 3. */
   --layer-chrome: 1;

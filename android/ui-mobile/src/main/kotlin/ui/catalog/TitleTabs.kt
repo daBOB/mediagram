@@ -48,7 +48,7 @@ internal fun TitleTabRow(
     // (`surface`) — invisible while the page beneath it was `surface` too,
     // a full-width band once the page moved to `background` (`ui.pageGround`).
     // `Transparent` lets the page's own ground show through instead, the
-    // way `.tab-list` draws no fill of its own (`title-page.css:121`).
+    // way `.tab-list` draws no fill of its own (`title-page.css:120`).
     ScrollableTabRow(
         selectedTabIndex = labels.indexOf(shown),
         modifier = modifier,

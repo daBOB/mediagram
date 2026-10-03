@@ -48,19 +48,19 @@
       <!-- The wordmark goes where a masthead's does: back to the front page. -->
       <a class="brand" href="#/home">mediagram</a>
       <!-- The reader's own shelves and the utilities. The library's
-           departments are the bar along the top, and only there. -->
+           departments are the bar along the top, and only there. --> <!-- deslop-ignore-file 24: plain nav glyphs -->
       <nav class="rail-nav" aria-label="Your shelves">
         <a href="#/watchlist" data-section="watchlist" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-3.8-5.5 3.8z"></path></svg><span class="label">My List</span><span class="n" id="n-watchlist"></span></a>
-        <a href="#/continue" data-section="continue" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M10.2 8.6v6.8l5.6-3.4z"></path></svg><span class="label">Continue watching</span><span class="n" id="n-continue"></span></a> <!-- deslop-ignore 24: plain nav glyph -->
-        <a href="#/latest" data-section="latest" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg><span class="label">Latest</span></a> <!-- deslop-ignore 24: plain nav glyph -->
-        <a href="#/genres" data-section="genres" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3-8.7 8.7z"></path><circle cx="8" cy="8" r="1.4"></circle></svg><span class="label">Genres</span></a> <!-- deslop-ignore 24: plain nav glyph -->
+        <a href="#/continue" data-section="continue" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M10.2 8.6v6.8l5.6-3.4z"></path></svg><span class="label">Continue watching</span><span class="n" id="n-continue"></span></a>
+        <a href="#/latest" data-section="latest" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg><span class="label">Latest</span></a>
+        <a href="#/genres" data-section="genres" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3-8.7 8.7z"></path><circle cx="8" cy="8" r="1.4"></circle></svg><span class="label">Genres</span></a>
         <a href="#/stats" data-section="stats" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 20.5h15M7 17v-4.5M12 17V7M17 17v-7.5"></path></svg><span class="new-dot" id="stats-dot" hidden><span class="sr-only">New achievement</span></span><span class="label">Stats</span></a>
-        <a href="#/settings" data-section="settings" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"></path></svg><span class="label">Settings</span></a> <!-- deslop-ignore 24: plain nav glyph -->
+        <a href="#/settings" data-section="settings" class="kept"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"></path></svg><span class="label">Settings</span></a>
         <!-- Not a shelf: what the player itself is doing. Hidden until
              `/api/status` answers, which it does for this household's own
              devices. A viewer from outside is never shown a way in to a page
              they would get a 404 from. -->
-        <a href="#/system" data-section="system" class="apart" id="nav-system" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg><span class="label">System</span></a> <!-- deslop-ignore 24: plain nav glyph -->
+        <a href="#/system" data-section="system" class="apart" id="nav-system" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg><span class="label">System</span></a>
       </nav>
       <!-- The masthead line a magazine prints under its name, set from what
            the library actually holds rather than a slogan. -->

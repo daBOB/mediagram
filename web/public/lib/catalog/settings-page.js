@@ -49,7 +49,7 @@ function write(name, value) {
  */
 export function renderSettings(main, { profile, switchProfile, systemVisible, admin }) {
   let stopAdmin = null;
-  const head = el("header", "dept-hero no-art settings-head");
+  const head = el("header", "dept-hero no-art");
   const copy = el("div", "dept-copy");
   copy.append(el("h1", "dept-title", "Settings"));
   head.append(copy);

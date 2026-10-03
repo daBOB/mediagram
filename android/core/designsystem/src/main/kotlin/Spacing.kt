@@ -13,13 +13,16 @@ object Spacing {
 }
 
 /**
- * The corner radius a control is drawn at — the web's `--radius`
- * (`theme.css:111`). Applies to inputs, buttons, panels and dialogs; a
- * plate stays square (see `DESIGN.md`'s Shapes section), so this is not
- * every corner on the catalogue, only the ones a settings screen draws.
+ * The catalogue's corner radii, each the web's own token in `theme.css`. A
+ * plate stays square (see `DESIGN.md`'s Shapes section), so these are not
+ * every corner on the catalogue.
  */
 object Radius {
+    /** Inputs, buttons, panels and dialogs — the web's `--radius`. */
     val control: Dp = 6.dp
+
+    /** A picture card: home's feature cards and Appearance's swatches — the web's `--radius-card`. */
+    val card: Dp = 12.dp
 }
 
 /**

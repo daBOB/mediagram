@@ -22,7 +22,7 @@ internal const val ART_WIDTH_FRACTION = 0.7f
 /** `.dept-copy{max-width:40rem}` (`departments.css:29`). */
 internal val DEPT_COPY_MAX_WIDTH = 640.dp
 
-/** `.dept-quote{max-width:17rem}` (`departments.css:42`), measured after the quote's own inner padding rather than before it — see [DeptQuote]. */
+/** `.dept-quote{max-width:17rem}` (`departments.css:41`), measured after the quote's own inner padding rather than before it — see [DeptQuote]. */
 internal val DEPT_QUOTE_MAX_WIDTH = 272.dp
 
 /** The hero's own outer bounds, for a test to check its real measured height against [fluid]'s own floor. */
@@ -34,8 +34,9 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
  * `departmentHero`: the department's name set very large, one line of
  * real figures, over art that fades into the page from the left the way
  * the home cover's own art does — with the lead title's own tagline as a
- * pull-quote inside the hero itself, top-right on a wide window. Shared by Movies, Series, Tutorials, Documentaries, Collections
- * and one franchise's own page.
+ * pull-quote inside the hero itself, top-right on a wide window. Shared by
+ * Movies, Series, Tutorials, Documentaries, Collections and one franchise's
+ * own page.
  *
  * The hero itself is never a tap target — the web only ever links the
  * quote's own credit (`department-hero.js`), never the picture or the words
@@ -49,7 +50,7 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
  * lead (the web's own `lead?.show`, `department-pages.js`).
  *
  * [franchiseTitle] draws the title the way `.franchise-hero .dept-title`
- * does (`departments.css:109`): up to three lines rather than shrinking a
+ * does (`departments.css:108`): up to three lines rather than shrinking a
  * long collection's name onto one, since a franchise name — unlike a fixed
  * department name — is never chosen to fit.
  */
@@ -70,7 +71,7 @@ internal fun DepartmentHero(
     val art = lead?.backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
     // Whether [lead] carries a backdrop at all, regardless of Solid — the
     // no-art and Solid cases sit at different top offsets on the web
-    // (`departments.css:87`) even though both leave [art] null.
+    // (`departments.css:86`) even though both leave [art] null.
     val hasBackdropData = lead?.backdropPath != null
     val artFraction = if (LocalBackdrop.current == Backdrop.ARTWORK) 1f else ART_WIDTH_FRACTION
     // The same width signal `ui.chrome.LibraryHome` decides its own bar
@@ -93,7 +94,7 @@ internal fun DepartmentHero(
         if (compact) {
             CompactDeptHero(title, line, art, width, franchiseTitle)
         } else {
-            // The web hides `.dept-quote` below 900px (`departments.css:92`)
+            // The web hides `.dept-quote` below 900px (`departments.css:91`)
             // — the quote is a wide-only concern, so only this branch ever
             // needs to know [lead]'s own tagline at all.
             val quote = art?.let { lead.tagline?.takeIf { it.isNotBlank() }?.let { tagline -> leadName?.let { name -> tagline to name } } }

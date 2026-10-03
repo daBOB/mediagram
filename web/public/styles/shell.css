@@ -48,7 +48,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   text-decoration: none;
-  transition: color 160ms var(--ease), background-color 160ms var(--ease);
+  transition: color var(--hover), background-color var(--hover);
 }
 .rail-nav a { gap: 12px; padding: 10px 12px; white-space: nowrap; }
 .rail-nav .n { margin-left: auto; }
@@ -116,7 +116,7 @@
   color: inherit;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: width 520ms var(--ease), border-color 160ms var(--ease), background-color 160ms var(--ease); /* deslop-ignore 26: search field widens on focus */
+  transition: width 520ms var(--ease), border-color var(--hover), background-color var(--hover); /* deslop-ignore 26: search field widens on focus */
 }
 .search::placeholder { color: transparent; }
 .search:hover { background: var(--rule-soft); }
@@ -147,7 +147,7 @@
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
-  transition: box-shadow 160ms var(--ease);
+  transition: box-shadow var(--hover);
 }
 .who-button::before { content: attr(data-initial); font-size: 1.0625rem; font-weight: 600; }
 .who-button:hover { box-shadow: 0 0 0 3px var(--rule); }

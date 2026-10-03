@@ -36,6 +36,7 @@ import catalog.Feature
 import catalog.label
 import coil3.compose.AsyncImage
 import designsystem.Eyebrow
+import designsystem.Radius
 import model.Kind
 import java.io.File
 
@@ -48,7 +49,7 @@ internal const val HOME_FEATURES_TEST_TAG = "home-features"
  * `home-features.js`. Replaces `FeatureStrip`.
  *
  * Three equal columns above [WideBreakpoint]; two below it with the first
- * spanning both (the tablet's own shape, `home.css:343-345`); one column
+ * spanning both (the tablet's own shape, `home.css:342-344`); one column
  * compact. [width] is the window's own width, for the same breakpoints and
  * fluid sizes [HomeCover] reads.
  */
@@ -137,13 +138,13 @@ private fun FeatureCard(
     val title = if (series) requireNotNull(set.show) else set.title
     val art = set.backdropPath ?: set.posterPath
     val posterOnly = set.backdropPath == null
-    // The second card keeps its own case and runs a size larger — `home.css:180-181`.
+    // The second card keeps its own case and runs a size larger — `home.css:179-180`.
     val secondCard = index == 1
 
     Box(
         modifier =
             modifier
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(Radius.card))
                 .background(Color(0xFF141416))
                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) }),
     ) {

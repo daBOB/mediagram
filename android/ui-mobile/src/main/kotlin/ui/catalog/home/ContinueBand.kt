@@ -73,7 +73,7 @@ internal fun ContinueBand(
     }
 }
 
-/** A row's own header: the name, and the way to the whole wall — `.row-head` (`home.css:195-211`), shared by every section on this page. */
+/** A row's own header: the name, and the way to the whole wall — `.row-head` (`home.css:194-210`), shared by every section on this page. */
 @Composable
 internal fun BandHeading(
     title: String,

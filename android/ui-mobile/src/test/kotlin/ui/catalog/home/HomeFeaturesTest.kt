@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config
 /**
  * Every feature title draws uppercase except the second card, which keeps
  * its own case for rhythm across the three — `.feature:nth-child(2)`
- * (`home.css:181`).
+ * (`home.css:180`).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w1164dp-h777dp")

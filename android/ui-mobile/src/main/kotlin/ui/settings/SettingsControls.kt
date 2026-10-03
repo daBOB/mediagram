@@ -145,7 +145,7 @@ internal fun SettingsChip(
 internal fun SwatchCard(
     selected: Boolean,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(12.dp),
+    shape: Shape = RoundedCornerShape(Radius.card),
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme

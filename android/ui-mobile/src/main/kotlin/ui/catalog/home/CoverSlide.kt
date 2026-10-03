@@ -91,7 +91,7 @@ internal fun CoverSlide(
                         // The web's own compact copy sits higher off the
                         // bottom than the pager does under it —
                         // `padding-bottom: 104px`, against the pager's own
-                        // `bottom: 40px` (`home.css:351,356`) — so the pager
+                        // `bottom: 40px` (`home.css:350,356`) — so the pager
                         // never sits over the button row. Above compact
                         // there is no pager collision to guard, so both
                         // keep their older, tighter numbers.

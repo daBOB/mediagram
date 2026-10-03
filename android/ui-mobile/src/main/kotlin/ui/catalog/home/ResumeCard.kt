@@ -47,10 +47,10 @@ import model.episodeLabel
 import java.io.File
 import ui.catalog.rememberRowState
 
-/** The web's `--progress` — a fixed accent for a resume card's own bar, distinct from the theme's accent (`theme.css:103`). */
+/** The web's `--progress` — a fixed accent for a resume card's own bar, distinct from the theme's accent (`theme.css:102`). */
 private val ProgressBlue = Color(0xFF6FB7E8)
 
-/** The Continue band's own scrolling row of cards — `.resume-strip` (`home.css:215-224`). */
+/** The Continue band's own scrolling row of cards — `.resume-strip` (`home.css:214-223`). */
 @Composable
 internal fun ResumeRow(
     cards: List<SetCard>,
@@ -153,7 +153,7 @@ private fun ResumeCard(
     }
 }
 
-/** The typographic break — a real tagline, set large, the mark hung in the margin — `.pull-quote` (`home.css:277-305`). */
+/** The typographic break — a real tagline, set large, the mark hung in the margin — `.pull-quote` (`home.css:276-304`). */
 @Composable
 internal fun Quote(
     set: MediaSet,
@@ -164,7 +164,7 @@ internal fun Quote(
     Column(modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpenTitle(set.setId) }) {
         // The mark hangs in the margin beside the first line, not above it
         // — `blockquote::before`, absolutely positioned at the paragraph's
-        // own top-left (`home.css:278-286`).
+        // own top-left (`home.css:277-285`).
         Box {
             Text(text = "“", style = CoverTitle.copy(fontSize = 64.sp, lineHeight = 1.em), modifier = Modifier.align(Alignment.TopStart))
             Text(

@@ -81,6 +81,7 @@ typography:
     fontFeature: "tnum"
 rounded:
   control: "6dp"
+  card: "12dp"
   plate: "0dp"
 spacing:
   extraSmall: "4dp"
@@ -454,10 +455,9 @@ dialogs) is left at M3's own default — nothing on this catalogue draws one
 yet.
 
 The 2:3 plate remains the one recurring square silhouette, on every surface
-that shows artwork. A swatch card (Appearance's theme/artwork picker) is the
-one deliberate exception to 6dp on the *other* side: it takes a 12dp corner,
-the web's own `.swatch` radius, because it is a picture of a theme rather
-than a control that acts on one.
+that shows artwork. A picture card takes `{rounded.card}` (12dp), the web's own
+`--radius-card`: home's feature cards, and Appearance's swatch cards, which are
+pictures of a theme rather than controls that act on one.
 
 ## Components
 

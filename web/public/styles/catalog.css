@@ -12,7 +12,7 @@
 .shelf-aside { display: flex; align-items: center; gap: 24px; }
 .shelf-head .sub { margin: 0; color: var(--ink-3); font-size: 0.6875rem; letter-spacing: 0.24em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 .shelf-modes { display: flex; gap: 4px; }
-.shelf-aside .mode { border: 1px solid transparent; min-height: 40px; padding: 8px 16px; border-radius: 999px; background: transparent; color: var(--ink-2); font-size: 0.8125rem; transition: background-color 160ms var(--ease), color 160ms var(--ease); }
+.shelf-aside .mode { border: 1px solid transparent; min-height: 40px; padding: 8px 16px; border-radius: 999px; background: transparent; color: var(--ink-2); font-size: 0.8125rem; transition: background-color var(--hover), color var(--hover); }
 .shelf-aside .mode:hover { background: var(--rule-soft); color: var(--ink); }
 .shelf-aside .mode.on { border-color: var(--rule); color: var(--ink); font-weight: 600; }
 .shelf-aside .featured-open { border-color: var(--accent); color: var(--accent); margin-right: 8px; }
@@ -41,7 +41,7 @@
 .strip .name { font-size: 0.9375rem; }
 .card { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 20px; width: 100%; min-width: 0; padding: 16px 0; border: 0; border-bottom: 1px solid var(--rule-soft); border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; }
 .card .body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 24px; min-width: 0; }
-.card .name { font-size: 1rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; transition: color 160ms var(--ease); }
+.card .name { font-size: 1rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; transition: color var(--hover); }
 .card .meta { color: var(--ink-3); font-size: 0.8125rem; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
 .card .resume { grid-column: 1; color: var(--accent); font-size: 0.8125rem; font-variant-numeric: tabular-nums; margin-top: 4px; }
 .card .badge, .card .has-summary { grid-column: 1; justify-self: start; align-self: flex-start; margin-top: 8px; }
@@ -73,7 +73,7 @@
 .season.depth-0 > h2 { font-size: 1.125rem; color: var(--ink); margin-top: 32px; }
 .season.depth-1, .season.depth-2, .season.depth-3 { margin: 24px 0 0 8px; padding-left: 16px; border-left: 1px solid var(--rule-soft); }
 .season.depth-3 .season { margin-left: 0; }
-.row { position: relative; display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; padding: 16px 8px; background: none; border: none; border-bottom: 1px solid var(--rule-soft); color: inherit; font: inherit; text-align: left; text-decoration: none; transition: background-color 160ms ease; }
+.row { position: relative; display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; padding: 16px 8px; background: none; border: none; border-bottom: 1px solid var(--rule-soft); color: inherit; font: inherit; text-align: left; text-decoration: none; transition: background-color var(--hover); }
 .row:hover { background: var(--surface); }
 .row:hover .title b { color: var(--accent); }
 .row .num { flex: none; min-width: 40px; color: var(--ink-3); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
@@ -93,7 +93,7 @@
 .error { padding: 24px; border-radius: var(--radius); background: var(--accent-tint); color: var(--accent); max-width: 65ch; overflow-wrap: anywhere; }
 
 .genre-links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.8125rem; }
-.genre { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: border-color 160ms var(--ease), color 160ms var(--ease); }
+.genre { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: border-color var(--hover), color var(--hover); }
 .genre:hover { border-color: var(--accent); color: var(--accent); }
 .shelf-sub { font: 600 1.5rem/1.2 var(--display); margin: 40px 0 20px; }
 
@@ -125,7 +125,7 @@
   color: var(--ink-2);
   font-size: 0.8125rem;
   letter-spacing: 0.04em;
-  transition: color 160ms var(--ease), border-color 160ms var(--ease);
+  transition: color var(--hover), border-color var(--hover);
 }
 .pin-control:hover { color: var(--ink); border-color: var(--ink); }
 .pin-control.on { color: var(--accent); border-color: var(--accent); }
@@ -148,7 +148,7 @@
 
 /* Search: filter pills over the grouped results. */
 .search-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: -12px 0 8px; }
-.search-filter { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: none; color: var(--ink-2); font-size: 0.875rem; transition: color 160ms var(--ease), background-color 160ms var(--ease), border-color 160ms var(--ease); }
+.search-filter { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: none; color: var(--ink-2); font-size: 0.875rem; transition: color var(--hover), background-color var(--hover), border-color var(--hover); }
 .search-filter:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
 .search-filter[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .search-filter[aria-pressed="true"] .n { color: inherit; opacity: 0.7; }

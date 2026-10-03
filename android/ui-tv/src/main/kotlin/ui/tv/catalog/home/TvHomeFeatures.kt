@@ -37,7 +37,7 @@ import java.io.File
 import model.Kind
 import ui.tv.TvFocus
 
-/** The first card's own height, full width — the phone's own two-tier shape (`home.css:343-345`) at TV's one width. */
+/** The first card's own height, full width — the phone's own two-tier shape (`home.css:342-344`) at TV's one width. */
 private val LeadCardHeight = 300.dp
 
 /** The second and third cards, side by side under the lead — the phone's own pair. */
@@ -106,7 +106,7 @@ private fun TvFeatureCard(
     val title = if (series) requireNotNull(set.show) else set.title
     val art = set.backdropPath ?: set.posterPath
     // The second card keeps its own case and runs a size larger — the
-    // phone's own rule (`home.css:180-181`).
+    // phone's own rule (`home.css:179-180`).
     val secondCard = index == 1
 
     Card(

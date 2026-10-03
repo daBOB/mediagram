@@ -159,7 +159,7 @@ internal val CatalogueTypography =
 
 /**
  * The huge uppercase title atop a page — Fraunces at the web's own weight
- * and optical size for a wide viewport (`.dept-title`, `departments.css:31-36`).
+ * and optical size for a wide viewport (`.dept-title`, `departments.css:30-35`).
  * Font size is deliberately unset: [PageHead] sizes it per screen with
  * `TextAutoSize.StepBased`, so only the shape of the title — weight,
  * tracking, how tight the lines sit — belongs to the style. `Center` +
@@ -189,7 +189,7 @@ val PageTitle =
     )
 
 /**
- * [PageTitle] at the web's narrow-viewport optical size (`departments.css:91`)
+ * [PageTitle] at the web's narrow-viewport optical size (`departments.css:90`)
  * — a compact phone screen, or a television read from the couch rather than
  * a tablet held in the hand. Its own static instance for the same reason.
  */
@@ -213,7 +213,7 @@ val CoverTitle =
         lineHeight = 0.86.em,
     )
 
-/** Spaced capitals over a page title, the way a magazine labels a department (`.eyebrow`, `theme.css:196-203`). */
+/** Spaced capitals over a page title, the way a magazine labels a department (`.eyebrow`, `theme.css:197-204`). */
 val Eyebrow =
     TextStyle(
         fontFamily = Interface,

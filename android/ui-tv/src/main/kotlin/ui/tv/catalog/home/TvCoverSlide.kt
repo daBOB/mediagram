@@ -123,7 +123,7 @@ internal fun TvCoverSlide(
 
 /**
  * Type set over artwork keeps the same two colours in both themes — the
- * web's `--on-image`/`--on-image-2` (`theme.css:100-101`), the phone
+ * web's `--on-image`/`--on-image-2` (`theme.css:99-100`), the phone
  * cover's own `OnImage`/`OnImage2`. Redeclared here rather than shared:
  * both are `internal` to ui-mobile's own module, and lifting two colour
  * constants across a module boundary for this alone was not worth the

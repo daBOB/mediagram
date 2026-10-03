@@ -108,7 +108,7 @@ class DepartmentHeroTest {
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
     fun onACompactWindowTheQuoteIsHidden() {
-        // The web hides `.dept-quote` below 900px (`departments.css:92`).
+        // The web hides `.dept-quote` below 900px (`departments.css:91`).
         show()
         compose.onNodeWithText("“a quotable line”", useUnmergedTree = true).assertDoesNotExist()
     }
@@ -216,7 +216,7 @@ class DepartmentHeroTest {
         show(lead = lead.copy(tagline = longTagline))
         val bounds = compose.onNodeWithTag(DEPT_HERO_QUOTE_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
         val widthDp = (bounds.right - bounds.left).value
-        // 272dp (`departments.css:42`) plus the quote's own inner padding on
+        // 272dp (`departments.css:41`) plus the quote's own inner padding on
         // each side — a modifier order that capped the width *before* that
         // padding measured a quarter narrower than this (203dp), wrapping
         // the same string across an extra line the web never needed.

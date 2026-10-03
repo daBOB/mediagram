@@ -178,7 +178,7 @@ private val HeroTitleSize = 81.6f.sp
  */
 internal val HeroCopyMaxWidth = 480.dp
 
-/** [DEPT_QUOTE_MAX_WIDTH]'s own cap (`departments.css:42`) — within the 480/320 split [HeroCopyMaxWidth]'s own doc guarantees never overlaps it. */
+/** [DEPT_QUOTE_MAX_WIDTH]'s own cap (`departments.css:41`) — within the 480/320 split [HeroCopyMaxWidth]'s own doc guarantees never overlaps it. */
 internal val HeroQuoteMaxWidth = 320.dp
 
 /** For a test to find the hero without matching on its own words. */

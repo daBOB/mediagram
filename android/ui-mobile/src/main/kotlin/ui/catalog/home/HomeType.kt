@@ -22,10 +22,10 @@ internal fun fluid(
 /** The page's own side margin, both edges — the web's `--gutter` (`theme.css:112`, `clamp(16px, 3.2vw, 56px)`). */
 internal fun gutterFor(width: Dp): Dp = fluid(16f, 0.032f, 56f, width.value).dp
 
-/** Below this, the web drops to its phone layout: the cover grows with its own content, features stack in one column (`home.css:349`). */
+/** Below this, the web drops to its phone layout: the cover grows with its own content, features stack in one column (`home.css:348`). */
 internal val CompactBreakpoint = 900.dp
 
-/** Below this (and above [CompactBreakpoint]), features hold two columns and the cover's own side column is hidden — the tablet's own width (`home.css:343`). */
+/** Below this (and above [CompactBreakpoint]), features hold two columns and the cover's own side column is hidden — the tablet's own width (`home.css:342`). */
 internal val WideBreakpoint = 1180.dp
 
 /**
