@@ -153,6 +153,8 @@ fn add_to_title(
     Ok(())
 }
 
+/// A day row stops at 86 400 s: every reader drops a longer one as no
+/// device's, so a row that grew past it here would never reach another.
 fn add_to_day(
     conn: &Connection,
     profile_id: &str,
@@ -164,7 +166,7 @@ fn add_to_day(
     conn.execute(
         "INSERT INTO stats_days(profile_id, day, device, seconds, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
            ON CONFLICT(profile_id, day, device) DO UPDATE SET
-             seconds = seconds + excluded.seconds,
+             seconds = MIN(seconds + excluded.seconds, 86400),
              updated_at = MAX(excluded.updated_at, updated_at + 1)",
         params![profile_id, day, device, step, now_ms],
     )?;

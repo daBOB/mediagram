@@ -329,3 +329,33 @@ fn this_devices_stamps_never_move_backwards() {
         .unwrap();
     assert_eq!(stamps, (110.0, 110.0, t0 + 1_000_002, t0 + 1_000_001));
 }
+
+/// Every reader drops a day row of more than a whole day, so this device's
+/// own row stops at one rather than grow into a row no other device keeps.
+#[test]
+fn a_day_row_stops_at_a_whole_day() {
+    let (_dir, db) = db();
+    let id = profile(&db);
+    let t0 = now_ms();
+    let own = db.with(sync::device_id).unwrap();
+    let merged = MergedState {
+        profiles: vec![MergedProfile {
+            name: "andré".into(),
+            display_name: "André".into(),
+            day_stats: vec![DayStatRow {
+                day: DAY.into(),
+                device: own,
+                seconds: 86_395.0,
+                updated_at: 1.0,
+            }],
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+    db.with(|conn| import_merged(conn, &merged)).unwrap();
+
+    play(&db, &id, 0.0, t0, 0, DAY);
+    play(&db, &id, 10.0, t0, 10, DAY);
+
+    assert_eq!(days(&db, &id), vec![(DAY.to_string(), 86_400.0)]);
+}

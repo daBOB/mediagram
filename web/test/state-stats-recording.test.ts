@@ -128,6 +128,19 @@ describe("a position write", () => {
     expect(days).toMatchObject([{ seconds: 20, updatedAt: T0 + 110_001 }]);
   });
 
+  test("a day row stops at a whole day, the most any reader keeps of one", () => {
+    const { state, me, path } = stateAt();
+    const device = state.deviceId();
+    // This device's own day already near full, as other browsers of the
+    // profile on this one server, playing at once, can leave it.
+    state.importMerged({
+      profiles: [{ name: "andré", displayName: "André", progress: [], watched: [], dayStats: [{ day: "2026-10-03", device, seconds: 86_395, updatedAt: 1 }] }],
+    });
+    at(0); state.setProgress(me, "01FILM", 100, 7200);
+    at(10); state.setProgress(me, "01FILM", 110, 7200);
+    expect(counted(path).days).toEqual([{ day: "2026-10-03", device, seconds: 86_400, updatedAt: T0 + 10_000 }]);
+  });
+
   test("finishing forgets the last write, so playing on counts from a fresh first write", () => {
     const { state, me, path } = stateAt();
     at(0); state.setProgress(me, "01FILM", 100, 7200);
