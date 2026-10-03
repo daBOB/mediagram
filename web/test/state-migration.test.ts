@@ -14,7 +14,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { GROUPS, migrationsUpTo } from "../src/state/schema";
+import { GROUPS } from "../src/state/schema";
 import { WatchState } from "../src/state/store";
 
 const dirs: string[] = [];
@@ -27,6 +27,11 @@ const tempPath = () => {
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
+
+/** Every statement needed to reach `version` from nothing. */
+function migrationsUpTo(version: number): string[] {
+  return GROUPS.slice(0, Math.max(0, version)).flatMap((group) => [...group]);
+}
 
 /** A database at version 1, as a player that ran before profiles left one. */
 function v1With(path: string, rows: () => string[]): void {
@@ -320,6 +325,35 @@ describe("v9 to v10", () => {
 
     state.settings().setCacheMaxBytes(1024 ** 3);
     expect(state.settings().cacheMaxBytes()).toBe(1024 ** 3);
+    state.close();
+  });
+});
+
+describe("v10 to v11", () => {
+  test("a database from before viewing stats gains its two tables, kept across opens and gone with the profile", () => {
+    const path = tempPath();
+    const db = new Database(path, { create: true });
+    for (const statement of migrationsUpTo(10)) db.exec(statement);
+    db.query("INSERT INTO state_meta(key, value) VALUES ('schema_version', '10')").run();
+    db.query("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)").run();
+    db.close();
+
+    new WatchState(path).close();
+    const raw = new Database(path);
+    raw.query("INSERT INTO stats_days(profile_id, day, device, seconds, updated_at) VALUES ('p1', '2026-10-03', 'laptop', 600, 1)").run();
+    raw.query(`INSERT INTO stats_titles(profile_id, set_id, device, started_at, last_watched_at, seconds, again_at, updated_at)
+      VALUES ('p1', '01SET', 'laptop', 1, 1, 600, NULL, 1)`).run();
+    expect(raw.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "11" });
+    raw.close();
+
+    // A second open replays nothing over them.
+    const state = new WatchState(path);
+    const check = new Database(path);
+    expect(check.query("SELECT seconds FROM stats_days").all()).toEqual([{ seconds: 600 }]);
+    state.deleteProfile("p1");
+    expect(check.query("SELECT COUNT(*) AS n FROM stats_days").get()).toEqual({ n: 0 });
+    expect(check.query("SELECT COUNT(*) AS n FROM stats_titles").get()).toEqual({ n: 0 });
+    check.close();
     state.close();
   });
 });
