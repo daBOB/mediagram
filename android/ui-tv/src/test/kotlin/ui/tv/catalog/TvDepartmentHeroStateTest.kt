@@ -43,10 +43,9 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
         )
 
     @Test
-    fun drawsTheKickerUppercaseTitleAndLine() {
-        show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead()) }
+    fun drawsTheUppercaseTitleAndLine() {
+        show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead()) }
 
-        compose.onNodeWithText("ONLY IN YOUR LIBRARY").assertIsDisplayed()
         compose.onNodeWithText("MOVIES").assertIsDisplayed()
         compose.onNodeWithText("four films").assertIsDisplayed()
     }
@@ -55,7 +54,7 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
     fun solidHidesTheArtAndItsQuoteEvenWithATaggedLead() {
         show {
             CompositionLocalProvider(LocalBackdrop provides Backdrop.SOLID) {
-                TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead())
+                TvDepartmentHero(title = "Movies", line = "four films", lead = lead())
             }
         }
 
@@ -65,19 +64,19 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
 
     @Test
     fun noTaglineDrawsNoQuoteEvenWithArt() {
-        show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead(tagline = null)) }
+        show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead(tagline = null)) }
         compose.onAllNodesWithText("“A tagline”").assertCountEquals(0)
     }
 
     @Test
     fun noArtDrawsNoQuoteEvenWithATagline() {
-        show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead(backdropPath = null)) }
+        show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead(backdropPath = null)) }
         compose.onAllNodesWithText("“A tagline”").assertCountEquals(0)
     }
 
     @Test
     fun artAndATaglineTogetherDrawTheQuote() {
-        show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead()) }
+        show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead()) }
         compose.onNodeWithText("“A tagline”").assertIsDisplayed()
     }
 
@@ -106,7 +105,7 @@ class TvDepartmentHeroStateTest : TvScreenStateTest() {
     /** Never a focus stop, quote included — see [TvDepartmentHero]'s own doc on why. */
     @Test
     fun noNodeInsideTheHeroIsClickableOrFocusable() {
-        show { TvDepartmentHero(kicker = "Only in your library", title = "Movies", line = "four films", lead = lead()) }
+        show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead()) }
 
         compose.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag(TvDepartmentHeroTestTag))).assertCountEquals(0)
     }

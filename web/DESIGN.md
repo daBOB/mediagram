@@ -87,17 +87,18 @@ spacing:
   gutter: "clamp(1rem, 3.2vw, 3.5rem)"
   measure: "96rem"
   radius: "6px"
+  radius-card: "12px"
 components:
   pill-solid:
     padding: "0.42rem 0.8rem"
-    borderRadius: "6px"
+    borderRadius: "999px"
     backgroundColor: "{accent}"
     textColor: "#fff"
     fontSize: "0.875rem"
     fontWeight: 500
   pill-line:
     padding: "0.42rem 0.8rem"
-    borderRadius: "6px"
+    borderRadius: "999px"
     border: "1px solid"
     borderColor: "{accent}"
     textColor: "{accent}"
@@ -195,7 +196,7 @@ Five departments in the top bar: Home, Movies, Series, Tutorials, Collections (p
 
 ### Home page (magazine)
 
-Fixed-height cover story on a full-bleed TMDB backdrop, followed by three single-title feature cards (Editor's choice, Trending, Staff pick), a Continue row beside a pull-quote, and Recently added beside a "This month" count.
+Fixed-height cover story on a full-bleed TMDB backdrop, followed by three single-title feature cards (Editor's choice, Trending on TMDB, Best-rated in the library), a Continue row beside a pull-quote, and Recently added beside a "This month" count.
 
 ### Title pages (film, series)
 
@@ -226,6 +227,8 @@ Full height. Top: Utilities (My List, Continue Watching, Latest, Genres, Setting
 - **Ease** (`cubic-bezier(0.32, 0.72, 0, 1)`): standard motion, settling spring
 - **Ease-out** (`cubic-bezier(0.22, 1, 0.36, 1)`): exit, responsive motion
 - Reduced motion: all transitions collapse to 1ms
+- Hover: a 160ms change of colour, border or background. Controls never lift or grow on hover; artwork (plates, portraits) lifts, and arrows nudge toward where they lead
+- Image cards (home features, genre tiles, collection cards) share `--radius-card` (12px)
 
 ## Components
 
@@ -233,7 +236,7 @@ Full height. Top: Utilities (My List, Continue Watching, Latest, Genres, Setting
 
 Filter buttons for search and settings.
 
-- **Solid pill** (`pill-solid`): filled with accent, white text, 0.42rem v-padding, 0.8rem h-padding, 6px radius
+- **Solid pill** (`pill-solid`): filled with accent, white text, 0.42rem v-padding, 0.8rem h-padding, full (999px) radius
 - **Outline pill** (`pill-line`): 1px border in accent, accent text, same padding
 
 ### Tabs (new in 0.62.0)
@@ -246,7 +249,7 @@ Collections detail, person detail, and search results. Large feature cards or ro
 
 ### Department hero (new in 0.62.0)
 
-Full-bleed backdrop at the top of Movies, Series, Tutorials, Collections pages. Shows dept title, tagline, genre pills. Artwork mode selectable in Appearance:
+Full-bleed backdrop at the top of Movies, Series, Tutorials, Collections pages. Shows dept title (no kicker above it), tagline, genre pills. Artwork mode selectable in Appearance:
 - **Default**: artwork fades into paper
 - **Blurred**: artwork blurred and saturated, darkened
 - **Artwork**: artwork full-opacity behind text

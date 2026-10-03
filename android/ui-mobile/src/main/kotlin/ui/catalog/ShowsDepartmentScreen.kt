@@ -71,7 +71,6 @@ internal fun ShowsDepartmentScreen(
     ) {
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
-                kicker = "Only in your library",
                 title = label,
                 line = showsLineOf(department, label, unit),
                 lead = leadTitle,

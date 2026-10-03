@@ -109,6 +109,7 @@
   --text: "Geist", "Segoe UI", sans-serif;
   --brand: var(--display);
   --radius: 6px;
+  --radius-card: 12px;
   --gutter: clamp(1rem, 3.2vw, 3.5rem);
   --rail-width: 14rem;
   --masthead-height: 76px;

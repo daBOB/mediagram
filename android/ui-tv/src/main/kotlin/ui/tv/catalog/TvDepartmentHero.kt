@@ -33,9 +33,9 @@ import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * A department's opening page on television — the couch twin of the
- * tablet's `DepartmentHero` (`department-hero.js`'s own port): a spaced-caps
- * kicker, the department's name huge, one line of real figures, art fading
- * in from the right, the lead's own tagline as a pull-quote top-right.
+ * tablet's `DepartmentHero` (`department-hero.js`'s own port): the department's
+ * name huge, one line of real figures, art fading in from the right, the
+ * lead's own tagline as a pull-quote top-right.
  *
  * Fixed at [TvDepartmentHeroHeight] rather than the tablet's own fluid
  * `clamp(420px,58vh,600px)`: that clamp would stand 78% of a 540dp
@@ -59,10 +59,6 @@ internal fun TvDepartmentHero(
     line: String,
     lead: MediaSet?,
     leadName: String? = lead?.title,
-    // Every department's own kicker, on both Android surfaces and the web
-    // (`department-hero.js`) — moved in here from `TvMoviesDepartmentPage`'s
-    // own `DeptKicker`, which every one of this hero's callers used to repeat.
-    kicker: String = "Only in your library",
     modifier: Modifier = Modifier,
 ) {
     // Solid hides a department's own art, the same as the tablet's hero —
@@ -96,13 +92,12 @@ internal fun TvDepartmentHero(
                 Column(
                     modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.large).widthIn(max = HeroCopyMaxWidth),
                 ) {
-                    Text(text = kicker.uppercase(), style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow), color = tones.quiet)
                     BasicText(
                         text = title.uppercase(),
                         style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
                         autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
                         maxLines = 1,
-                        modifier = Modifier.padding(top = Spacing.small).testTag(TvDepartmentHeroTitleTestTag),
+                        modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
                     )
                     Text(text = line, style = TvTypeScale.body, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
                 }

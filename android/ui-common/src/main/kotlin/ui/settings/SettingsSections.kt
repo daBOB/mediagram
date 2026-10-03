@@ -13,7 +13,7 @@ package ui.settings
 enum class SettingsSection(val title: String, val pageEyebrow: String) {
     TELEGRAM("Telegram", "Your account and where it's signed in"),
     STORAGE("Storage", "What this device keeps and where it comes from"),
-    APPEARANCE("Appearance", "Make it yours"),
+    APPEARANCE("Appearance", "How the player looks on this device"),
     PROFILE("Profile", "Who is watching and how"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
 }

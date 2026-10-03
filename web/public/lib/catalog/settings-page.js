@@ -51,7 +51,7 @@ export function renderSettings(main, { profile, switchProfile, systemVisible, ad
   let stopAdmin = null;
   const head = el("header", "dept-hero no-art settings-head");
   const copy = el("div", "dept-copy");
-  copy.append(el("h1", "dept-title", "Settings"), el("p", "eyebrow", "Make it yours"));
+  copy.append(el("h1", "dept-title", "Settings"));
   head.append(copy);
   main.append(head);
   main.append(tabbed([

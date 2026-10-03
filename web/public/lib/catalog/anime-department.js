@@ -31,7 +31,6 @@ export function renderAnimeDept(main, cx) {
   const leadIsFilm = lead?.kind === "movie";
 
   main.append(departmentHero({
-    kicker: "Only in your library",
     title: SECTIONS.anime.label,
     line: [
       shows.length > 0 ? countOf(shows.length, "show") : null,

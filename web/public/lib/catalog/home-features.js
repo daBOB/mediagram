@@ -15,7 +15,7 @@ import { href } from "../address.js";
 
 const FEATURE_LABELS = {
   editor: "Editor’s choice",
-  staff: "Staff pick",
+  staff: "Best-rated in the library",
   trending: "Trending on TMDB",
   new: "New in the library",
 };

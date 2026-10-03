@@ -16,10 +16,10 @@
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 520ms var(--ease), background-color 320ms var(--ease), border-color 320ms var(--ease), color 320ms var(--ease);
+  transition: background-color 160ms var(--ease), border-color 160ms var(--ease), color 160ms var(--ease);
 }
 .pill-solid { background: var(--ink); color: var(--paper); }
-.pill-solid:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--ink) 88%, var(--accent)); }
+.pill-solid:hover { background: color-mix(in srgb, var(--ink) 88%, var(--accent)); }
 .pill-line { border-color: var(--rule); background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
 .pill-line:hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); background: color-mix(in srgb, var(--ink) 10%, transparent); }
 .pill-line[aria-pressed="true"] { border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
@@ -81,7 +81,7 @@
   color: var(--ink-2);
   font-size: 0.8125rem;
   text-decoration: none;
-  transition: color 320ms var(--ease), transform 520ms var(--ease);
+  transition: color 160ms var(--ease), transform 520ms var(--ease);
 }
 .spread-back:hover { color: var(--ink); transform: translateX(-3px); }
 .spread-kicker { margin-bottom: 10px; }
@@ -127,7 +127,7 @@
   color: var(--ink-3);
   font: 500 0.9375rem/1 var(--text);
   box-shadow: inset 0 -2px 0 transparent;
-  transition: color 320ms var(--ease), box-shadow 420ms var(--ease);
+  transition: color 160ms var(--ease), box-shadow 160ms var(--ease);
 }
 .tab:hover { color: var(--ink); }
 .tab.on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }

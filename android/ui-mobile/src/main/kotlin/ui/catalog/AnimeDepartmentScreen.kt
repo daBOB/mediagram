@@ -99,7 +99,6 @@ internal fun AnimeDepartmentScreen(
     ) {
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
-                kicker = "Only in your library",
                 title = "Anime",
                 line = animeLineOf(department),
                 lead = department.lead,

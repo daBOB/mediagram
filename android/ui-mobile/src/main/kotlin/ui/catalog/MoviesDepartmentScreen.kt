@@ -62,7 +62,6 @@ internal fun MoviesDepartmentScreen(
     LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
             DepartmentHero(
-                kicker = "Only in your library",
                 title = "Movies",
                 line = moviesLineOf(department),
                 lead = department.lead,

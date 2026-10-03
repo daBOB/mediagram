@@ -66,7 +66,7 @@ class DepartmentHeroTest {
                 MaterialTheme {
                     CompositionLocalProvider(LocalBackdrop provides backdrop) {
                         DepartmentHero(
-                            kicker = "only in your library", title = title, line = "48 shows", lead = lead,
+                            title = title, line = "48 shows", lead = lead,
                             onOpenTitle = onOpenTitle, franchiseTitle = franchiseTitle,
                         )
                     }
@@ -87,7 +87,6 @@ class DepartmentHeroTest {
     @Config(sdk = [35], qualifiers = "w1164dp-h777dp")
     fun wordsAreUppercaseRegardlessOfTheirOwnCase() {
         show()
-        compose.onNodeWithText("ONLY IN YOUR LIBRARY").assertIsDisplayed()
         compose.onNodeWithText("SERIES").assertIsDisplayed()
         compose.onNodeWithText("48 shows").assertIsDisplayed()
     }
@@ -97,7 +96,7 @@ class DepartmentHeroTest {
     fun onAWideWindowTheQuoteSitsAboveTheTitleNotBelowIt() {
         show()
         // Unmerged: with a link inside it, the quote's own credit carries
-        // its own semantics node distinct from the hero's kicker/title — a
+        // its own semantics node distinct from the hero's title — a
         // merged-tree lookup would still find each word at its own real
         // position here, but every other bounds check in this file relies
         // on the unmerged tree too, so this stays consistent with them.

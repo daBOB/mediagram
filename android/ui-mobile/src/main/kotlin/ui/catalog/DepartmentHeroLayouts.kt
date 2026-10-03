@@ -28,7 +28,6 @@ import ui.pageGround
  */
 @Composable
 internal fun BoxScope.WideDeptHero(
-    kicker: String,
     title: String,
     line: String,
     art: String?,
@@ -100,7 +99,7 @@ internal fun BoxScope.WideDeptHero(
                 )
                 .widthIn(max = DEPT_COPY_MAX_WIDTH),
     ) {
-        DeptHeroWords(kicker, title, line, compact = false, width = width, franchiseTitle = franchiseTitle)
+        DeptHeroWords(title, line, compact = false, width = width, franchiseTitle = franchiseTitle)
     }
     if (quote != null) {
         DeptQuote(
@@ -129,10 +128,9 @@ internal fun BoxScope.WideDeptHero(
     }
 }
 
-/** The compact layout (`departments.css:87-94`): art strip on top, kicker/title/line overlapping its own lower edge, in flow — no quote, no bar term, matching the web's own static masthead at this width. */
+/** The compact layout (`departments.css:87-94`): art strip on top, title/line overlapping its own lower edge, in flow — no quote, no bar term, matching the web's own static masthead at this width. */
 @Composable
 internal fun CompactDeptHero(
-    kicker: String,
     title: String,
     line: String,
     art: String?,
@@ -172,7 +170,7 @@ internal fun CompactDeptHero(
             // The web hides `.dept-quote` entirely at this width
             // (`departments.css:92`); [DeptHeroWords] never receives a
             // quote to draw on this layout as a result.
-            DeptHeroWords(kicker, title, line, compact = true, width = width, franchiseTitle = franchiseTitle)
+            DeptHeroWords(title, line, compact = true, width = width, franchiseTitle = franchiseTitle)
         }
     }
 }

@@ -66,7 +66,6 @@ export function renderCollectionsPage(main, { library, lists, setsFor }) {
   const franchises = franchisesIn(everyFilm(library));
   const lead = franchises[0]?.films.find((film) => film.backdrop) ?? null;
   main.append(departmentHero({
-    kicker: "Only in your library",
     title: "Collections",
     line: [franchises.length > 0 ? countOf(franchises.length, "franchise") : null, countOf(lists.length, "list")]
       .filter(Boolean).join(" · "),
@@ -105,7 +104,6 @@ export function renderFranchise(main, id, { library, openFilm }, stillHere) {
   const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` : null;
   const lead = franchise.films.find((film) => film.backdrop) ?? null;
   const hero = departmentHero({
-    kicker: "The collection",
     title: franchise.name,
     line: [countOf(franchise.films.length, "film"), span].filter(Boolean).join(" · "),
     lead,

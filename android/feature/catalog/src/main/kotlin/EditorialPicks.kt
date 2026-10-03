@@ -34,7 +34,7 @@ val FeatureKind.label: String
     get() =
         when (this) {
             FeatureKind.EDITOR -> "Editor's choice"
-            FeatureKind.STAFF -> "Staff pick"
+            FeatureKind.STAFF -> "Best-rated in the library"
             FeatureKind.TRENDING -> "Trending on TMDB"
             FeatureKind.NEW -> "New in the library"
         }

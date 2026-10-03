@@ -748,5 +748,4 @@ dialog.paused .featured-slide.on .featured-poster img { animation-play-state: pa
 }
 @media (prefers-reduced-motion: reduce) {
   .featured-slide.on .featured-copy > * { opacity: 1; transform: none; }
-  .who-tile:hover .who-initial { transform: none; }
 }

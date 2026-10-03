@@ -103,7 +103,6 @@ internal fun DocumentariesDepartmentScreen(
     ) {
         item {
             DepartmentHero(
-                kicker = "Only in your library",
                 title = "Documentaries",
                 line = documentariesLineOf(department),
                 lead = department.lead,

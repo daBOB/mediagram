@@ -46,7 +46,6 @@ internal fun FranchiseScreen(
     ) {
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
-                kicker = "The collection",
                 title = franchise.name,
                 line = listOfNotNull(countOf(franchise.films.size, "film"), span).joinToString(" · "),
                 lead = lead,

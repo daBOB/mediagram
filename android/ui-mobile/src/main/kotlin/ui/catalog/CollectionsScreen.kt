@@ -59,7 +59,6 @@ internal fun CollectionsScreen(
     LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
             DepartmentHero(
-                kicker = "Only in your library",
                 title = "Collections",
                 line = collectionsLineOf(franchises.size, lists.size),
                 lead = lead,

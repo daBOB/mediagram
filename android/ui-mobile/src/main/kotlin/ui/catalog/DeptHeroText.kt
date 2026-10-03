@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import designsystem.Eyebrow
-import designsystem.LocalCatalogueTones
 import designsystem.PageTitle
 import designsystem.PageTitleCompact
 import designsystem.Spacing
@@ -44,12 +43,12 @@ internal const val DEPT_HERO_QUOTE_TEST_TAG = "department-hero-quote"
 internal const val DEPT_HERO_QUOTE_TAGLINE_TEST_TAG = "department-hero-quote-tagline"
 
 /**
- * The kicker, huge title and facts line every [DepartmentHero] layout
- * draws, wide or compact — always in the page's own ink, never on-image:
- * unlike the quote (top-right, over the picture itself), this copy sits
- * where the art's own left fade has already blended it back to the page
- * (`departments.css:31-37` — neither `.dept-title` nor `.dept-kicker`/
- * `.dept-line` names `--on-image` at all, only `.dept-quote` does).
+ * The huge title and facts line every [DepartmentHero] layout draws, wide
+ * or compact — always in the page's own ink, never on-image: unlike the
+ * quote (top-right, over the picture itself), this copy sits where the
+ * art's own left fade has already blended it back to the page
+ * (`departments.css` — neither `.dept-title` nor `.dept-line` names
+ * `--on-image` at all, only `.dept-quote` does).
  *
  * [franchiseTitle] draws the title as `.franchise-hero .dept-title` does
  * (`departments.css:109`) rather than the plain department rule: up to
@@ -58,19 +57,12 @@ internal const val DEPT_HERO_QUOTE_TAGLINE_TEST_TAG = "department-hero-quote-tag
  */
 @Composable
 internal fun DeptHeroWords(
-    kicker: String,
     title: String,
     line: String,
     compact: Boolean,
     width: Dp,
     franchiseTitle: Boolean = false,
 ) {
-    val tones = LocalCatalogueTones.current
-    Text(
-        text = kicker.uppercase(),
-        style = Eyebrow,
-        color = tones.quiet,
-    )
     if (franchiseTitle) {
         Text(
             text = title.uppercase(),
@@ -82,7 +74,7 @@ internal fun DeptHeroWords(
                 ),
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 14.dp).semantics { heading() }.testTag(DEPT_HERO_TITLE_TEST_TAG),
+            modifier = Modifier.semantics { heading() }.testTag(DEPT_HERO_TITLE_TEST_TAG),
         )
     } else {
         val titleSize = if (compact) fluid(48f, 0.16f, 72f, width.value) else fluid(56f, 0.085f, 120f, width.value)
@@ -99,7 +91,7 @@ internal fun DeptHeroWords(
             style = (if (compact) PageTitleCompact else PageTitle).copy(color = MaterialTheme.colorScheme.onSurface),
             autoSize = TextAutoSize.StepBased(maxFontSize = titleSize.sp),
             maxLines = 1,
-            modifier = Modifier.padding(top = 14.dp).semantics { heading() }.testTag(DEPT_HERO_TITLE_TEST_TAG),
+            modifier = Modifier.semantics { heading() }.testTag(DEPT_HERO_TITLE_TEST_TAG),
         )
     }
     Text(

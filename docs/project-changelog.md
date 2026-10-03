@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.3 — template tics removed from the player
+
+**Changed**
+
+- The third home feature reads "Best-rated in the library" instead of "Staff
+  pick": there is no staff, and the pick is a daily turn through the ten
+  best-rated films. Web, phone and television.
+- Department and franchise heroes drop the "Only in your library" / "The
+  collection" kicker; the department's name is the heading. Web settings drop
+  "Make it yours"; the Android Appearance page says "How the player looks on
+  this device" instead, in the voice of the other settings pages.
+- Web hover feedback is a 160ms colour, border or background change. Theme
+  swatches, accent dots, the solid pill and the profile tiles no longer lift or
+  grow; artwork still lifts and arrows still nudge toward where they lead.
+- Web image cards (home features, genre tiles, collection cards) share one
+  `--radius-card` of 12px instead of 12, 14 and 16px.
+
 ## 0.99.2 — viewing stats merged with the fake core's sync and preferences fixes
 
 Merge of `feat/viewing-stats` (0.95.3 on that branch through 0.99.1, below) with

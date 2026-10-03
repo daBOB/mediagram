@@ -31,11 +31,10 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
 /**
  * A department's opening page, the way a magazine opens its cinema or its
  * television section — a Compose port of `department-hero.js`'s own
- * `departmentHero`: a spaced-caps kicker, the department's name set very
- * large, one line of real figures, over art that fades into the page from
- * the left the way the home cover's own art does — with the lead title's
- * own tagline as a pull-quote inside the hero itself, top-right on a wide
- * window. Shared by Movies, Series, Tutorials, Documentaries, Collections
+ * `departmentHero`: the department's name set very large, one line of
+ * real figures, over art that fades into the page from the left the way
+ * the home cover's own art does — with the lead title's own tagline as a
+ * pull-quote inside the hero itself, top-right on a wide window. Shared by Movies, Series, Tutorials, Documentaries, Collections
  * and one franchise's own page.
  *
  * The hero itself is never a tap target — the web only ever links the
@@ -56,7 +55,6 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
  */
 @Composable
 internal fun DepartmentHero(
-    kicker: String,
     title: String,
     line: String,
     lead: MediaSet?,
@@ -67,7 +65,7 @@ internal fun DepartmentHero(
 ) {
     // Solid hides a department's own art (`appearance.css:24`, unlike the
     // cover — see `ui.catalog.home.CoverSlide`'s own note on that split):
-    // a lead with no backdrop already draws kicker/title/line over the plain
+    // a lead with no backdrop already draws title and line over the plain
     // page, which is exactly what "plain pages, no artwork" asks for here.
     val art = lead?.backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
     // Whether [lead] carries a backdrop at all, regardless of Solid — the
@@ -93,14 +91,14 @@ internal fun DepartmentHero(
                 .let { if (!compact && art != null) it.heightIn(min = heroMinHeight) else it },
     ) {
         if (compact) {
-            CompactDeptHero(kicker, title, line, art, width, franchiseTitle)
+            CompactDeptHero(title, line, art, width, franchiseTitle)
         } else {
             // The web hides `.dept-quote` below 900px (`departments.css:92`)
             // — the quote is a wide-only concern, so only this branch ever
             // needs to know [lead]'s own tagline at all.
             val quote = art?.let { lead.tagline?.takeIf { it.isNotBlank() }?.let { tagline -> leadName?.let { name -> tagline to name } } }
             val onOpenLead = if (quote != null) onOpenTitle?.let { open -> { open(lead.setId) } } else null
-            WideDeptHero(kicker, title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction, franchiseTitle)
+            WideDeptHero(title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction, franchiseTitle)
         }
     }
 }

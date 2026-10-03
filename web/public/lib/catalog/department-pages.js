@@ -48,7 +48,6 @@ export function renderMoviesDept(main, cx) {
   const hours = Math.round(films.reduce((sum, set) => sum + (Number(set.duration) || 0), 0) / 3600);
 
   main.append(departmentHero({
-    kicker: "Only in your library",
     title: SECTIONS.movies.label,
     line: [countOf(films.length, "film"), hours > 0 ? `${hours.toLocaleString()} hours` : null].filter(Boolean).join(" · "),
     lead,
@@ -92,7 +91,6 @@ export function renderDocumentariesDept(main, cx) {
   const lead = byRecent.find((set) => set.backdrop) ?? null;
 
   main.append(departmentHero({
-    kicker: "Only in your library",
     title: SECTIONS.documentaries.label,
     line: countOf(items.length, SECTIONS.documentaries.extent),
     lead,
@@ -141,7 +139,6 @@ export function renderShowsDept(main, section, cx) {
   const items = shows.reduce((sum, show) => sum + show.count, 0);
 
   main.append(departmentHero({
-    kicker: "Only in your library",
     title: SECTIONS[section].label,
     line: [countOf(shows.length, SECTIONS[section].extent), countOf(items, series ? "episode" : "lesson")].join(" · "),
     lead,

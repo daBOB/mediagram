@@ -1,8 +1,8 @@
 /**
  * A department's opening page, the way a magazine opens its cinema or its
- * television section: a spaced-caps kicker, the department's name set very
- * large, one line of real figures, and a backdrop from inside the department
- * with that title's tagline as the pull-quote.
+ * television section: the department's name set very large, one line of real
+ * figures, and a backdrop from inside the department with that title's
+ * tagline as the pull-quote.
  *
  * Every word is the library's own — counts, and a real film's tagline
  * credited to the film. Nothing here is a slogan.
@@ -12,15 +12,15 @@ import { el } from "../dom.js";
 import { backdropFigure } from "./plate.js";
 
 /**
- * @param {{ kicker: string, title: string, line: string,
+ * @param {{ title: string, line: string,
  *   lead?: import("../library.js").CatalogSet|null, leadName?: string|null, leadHref?: string|null }} spec
  */
-export function departmentHero({ kicker, title, line, lead = null, leadName = null, leadHref = null }) {
+export function departmentHero({ title, line, lead = null, leadName = null, leadHref = null }) {
   const art = lead?.backdrop ?? null;
   const hero = el("header", art ? "dept-hero" : "dept-hero no-art");
   if (art) hero.append(backdropFigure("dept-art", art));
   const copy = el("div", "dept-copy");
-  copy.append(el("p", "eyebrow dept-kicker", kicker), el("h1", "dept-title", title), el("p", "dept-line", line));
+  copy.append(el("h1", "dept-title", title), el("p", "dept-line", line));
   hero.append(copy);
 
   if (art && lead?.tagline && leadName) {
