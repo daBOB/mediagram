@@ -131,6 +131,33 @@ const GROUPS: &[&[&str]] = &[
     // carry. `finished_at` keeps its meaning: when the title was last
     // marked finished.
     &["ALTER TABLE watched ADD COLUMN removed_at INTEGER"],
+    // v6 -> v7: viewing stats — how long, and when, each profile watched.
+    // One row per (title, device) and per (local day, device). A device
+    // writes only rows that name it; the others' arrive by sync import and
+    // sit beside them, so a total is a sum over devices and no merge can
+    // count a minute twice. Kept forever: bounded by the titles watched and
+    // by the days, about 365 day rows a year per profile.
+    &[
+        "CREATE TABLE IF NOT EXISTS stats_titles(
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       set_id TEXT NOT NULL,
+       device TEXT NOT NULL,
+       started_at INTEGER NOT NULL,
+       last_watched_at INTEGER NOT NULL,
+       seconds REAL NOT NULL,
+       again_at INTEGER,
+       updated_at INTEGER NOT NULL,
+       PRIMARY KEY(profile_id, set_id, device)
+     )",
+        "CREATE TABLE IF NOT EXISTS stats_days(
+       profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+       day TEXT NOT NULL,
+       device TEXT NOT NULL,
+       seconds REAL NOT NULL,
+       updated_at INTEGER NOT NULL,
+       PRIMARY KEY(profile_id, day, device)
+     )",
+    ],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

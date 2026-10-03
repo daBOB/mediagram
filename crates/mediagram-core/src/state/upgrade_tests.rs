@@ -61,3 +61,43 @@ fn a_version_three_file_without_kids_gains_the_column_on_open() {
     let names: Vec<String> = profiles::list(&conn).unwrap().into_iter().map(|p| p.name).collect();
     assert_eq!(names, vec!["André".to_string()]);
 }
+
+/// A store from before viewing stats gains both stats tables, empty, keeps
+/// every row it held, and drops a profile's stats with the profile.
+#[test]
+fn a_store_from_before_stats_gains_empty_stats_tables() {
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
+        for statement in schema::migrations_up_to(6) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 6i64).unwrap();
+        conn.execute("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 0)", []).unwrap();
+        conn.execute(
+            "INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+               VALUES ('p1', 'set1', 12.5, 90.0, 0)",
+            [],
+        )
+        .unwrap();
+    }
+
+    let db = StateDb::new(dir.path().to_path_buf());
+
+    assert_eq!(db.with(|conn| rows::progress_for(conn, "p1")).unwrap().len(), 1);
+    let count = |table: &str| -> i64 {
+        db.with(|conn| conn.query_row(&format!("SELECT COUNT(*) FROM {table}"), [], |row| row.get(0)))
+            .unwrap()
+    };
+    assert_eq!((count("stats_titles"), count("stats_days")), (0, 0));
+    db.with(|conn| {
+        conn.execute(
+            "INSERT INTO stats_days(profile_id, day, device, seconds, updated_at)
+               VALUES ('p1', '2026-10-03', 'phone', 60.0, 1)",
+            [],
+        )?;
+        profiles::delete(conn, "p1")
+    })
+    .unwrap();
+    assert_eq!(count("stats_days"), 0, "a profile's stats go with it");
+}
