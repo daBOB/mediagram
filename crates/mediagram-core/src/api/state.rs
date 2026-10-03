@@ -15,6 +15,7 @@ use crate::state::{editors_choice, lists, profiles, rows};
 
 use super::Core;
 
+mod achievements;
 mod collections;
 mod stats;
 
