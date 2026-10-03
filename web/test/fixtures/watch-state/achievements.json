@@ -96,8 +96,8 @@
     },
     "expect": {
       "earned": [
-        {"id": "streak-7", "earnedAt": 1788732000000}, {"id": "whole-show", "earnedAt": 1788609600000},
-        {"id": "binge-5", "earnedAt": 1788559200000}, {"id": "hours-10", "earnedAt": 1788559200000},
+        {"id": "streak-7", "earnedAt": 1788775200000}, {"id": "whole-show", "earnedAt": 1788609600000},
+        {"id": "binge-5", "earnedAt": 1788602400000}, {"id": "hours-10", "earnedAt": 1788602400000},
         {"id": "films-1", "earnedAt": 1788379200000}
       ],
       "next": [
@@ -370,7 +370,7 @@
     }
   },
   {
-    "name": "hours sum every device's rows per day and are dated at that day's local midnight",
+    "name": "hours sum every device's rows per day and are dated at that day's local noon",
     "input": {
       "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
       "days": [
@@ -384,7 +384,7 @@
     },
     "expect": {
       "earned": [
-        {"id": "hours-10", "earnedAt": 1788386400000}
+        {"id": "hours-10", "earnedAt": 1788429600000}
       ],
       "next": [
         {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-100", "have": 10, "need": 100},
@@ -439,7 +439,7 @@
     },
     "expect": {
       "earned": [
-        {"id": "streak-7", "earnedAt": 1791064800000}
+        {"id": "streak-7", "earnedAt": 1791108000000}
       ],
       "next": [
         {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 2, "need": 10},
@@ -471,7 +471,7 @@
     },
     "expect": {
       "earned": [
-        {"id": "binge-5", "earnedAt": 1788559200000}
+        {"id": "binge-5", "earnedAt": 1788602400000}
       ],
       "next": [
         {"id": "whole-show", "have": 5, "need": 6}, {"id": "docs-10", "have": 0, "need": 10},
@@ -530,7 +530,7 @@
     },
     "expect": {
       "earned": [
-        {"id": "binge-5", "earnedAt": 1768082400000}
+        {"id": "binge-5", "earnedAt": 1768125600000}
       ],
       "next": [
         {"id": "docs-10", "have": 0, "need": 10}, {"id": "films-1", "have": 0, "need": 1},
@@ -609,7 +609,7 @@
     },
     "expect": {
       "earned": [
-        {"id": "hours-10", "earnedAt": 1791064800000}
+        {"id": "hours-10", "earnedAt": 1791108000000}
       ],
       "next": [
         {"id": "streak-7", "have": 1, "need": 7}, {"id": "hours-100", "have": 10, "need": 100},
@@ -670,11 +670,35 @@
     },
     "expect": {
       "earned": [
-        {"id": "binge-5", "earnedAt": 1788998400000}, {"id": "streak-7", "earnedAt": 1788739200000}
+        {"id": "binge-5", "earnedAt": 1789041600000}, {"id": "streak-7", "earnedAt": 1788782400000}
       ],
       "next": [
         {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 2, "need": 10},
         {"id": "docs-10", "have": 0, "need": 10}
+      ]
+    }
+  },
+  {
+    "name": "a winter streak read in summer is dated at noon of the day completing it, so the hour between the two offsets cannot move it to the day before",
+    "input": {
+      "today": "2026-10-03", "utcOffsetMinutes": 120, "kids": false,
+      "days": [
+        {"day": "2026-01-10", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-11", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-12", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-13", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-14", "device": "phone-1", "seconds": 600, "updatedAt": 1}, {"day": "2026-01-15", "device": "phone-1", "seconds": 600, "updatedAt": 1},
+        {"day": "2026-01-16", "device": "phone-1", "seconds": 600, "updatedAt": 1}
+      ],
+      "watched": [],
+      "library": [],
+      "collections": []
+    },
+    "expect": {
+      "earned": [
+        {"id": "streak-7", "earnedAt": 1768557600000}
+      ],
+      "next": [
+        {"id": "streak-30", "have": 7, "need": 30}, {"id": "hours-10", "have": 1, "need": 10},
+        {"id": "binge-5", "have": 0, "need": 5}
       ]
     }
   }

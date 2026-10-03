@@ -2,6 +2,9 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { achievementLabel, achievementsSection, progressLine } from "../public/lib/catalog/stats-achievements.js";
+import { whenLabel } from "../public/lib/catalog/stats-format.js";
+import { achievements } from "../src/state/achievements";
+import { utcOffsetMinutes } from "../src/state/stats-recorder";
 import { browserEnvironment, type Node } from "./support/player-environment";
 import { descendants, textOf } from "./support/browser-application";
 
@@ -43,5 +46,22 @@ describe("the Achievements section", () => {
   test("names and progress for one id only this build would not know", () => {
     expect(achievementLabel("marathon-3")).toBe("marathon-3");
     expect(progressLine({ id: "marathon-3", have: 1, need: 3 })).toBe("1 of 3");
+  });
+
+  test("a winter streak read on a summer evening in Berlin shows the day that completed it", () => {
+    const before = process.env.TZ;
+    try {
+      process.env.TZ = "Europe/Berlin";
+      const now = Date.parse("2026-10-03T19:30:00Z");
+      const days = Array.from({ length: 7 }, (_, i) => ({ day: `2026-01-1${i}`, device: "phone-1", seconds: 600, updatedAt: 1 }));
+      const answer = achievements({ today: "2026-10-03", utcOffsetMinutes: utcOffsetMinutes(now), kids: false, days, watched: [], library: [], collections: [] });
+      expect(answer.earned.map((achievement) => achievement.id)).toEqual(["streak-7"]);
+      const section = achievementsSection(answer, (at) => whenLabel(at, now));
+      expect(byClass(section, "achievement-when")).toEqual(["16 Jan"]);
+    } finally {
+      // Bun reads TZ on every date call; leaving it set would move every later test's clock.
+      if (before === undefined) delete process.env.TZ;
+      else process.env.TZ = before;
+    }
   });
 });

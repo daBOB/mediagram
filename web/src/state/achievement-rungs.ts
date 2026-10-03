@@ -77,19 +77,19 @@ export function genreArrivals(finishes: Finish[]): number[] {
 }
 
 /** Cumulative watching across days; a rung is earned on the day the total reaches it. */
-export function hours(rungs: number[], days: DayTotal[], midnight: (day: number) => number): Rung[] {
+export function hours(rungs: number[], days: DayTotal[], noon: (day: number) => number): Rung[] {
   let total = 0;
   const reached = new Map<number, number>();
   for (const { day, seconds } of days) {
     total += seconds;
-    for (const need of rungs) if (!reached.has(need) && total >= need * 3600) reached.set(need, midnight(day));
+    for (const need of rungs) if (!reached.has(need) && total >= need * 3600) reached.set(need, noon(day));
   }
   const have = Math.floor(total / 3600);
   return rungs.map((need) => ({ id: `hours-${need}`, earnedAt: reached.get(need) ?? null, have, need }));
 }
 
 /** Consecutive days with any watching; a rung is earned on the day completing the first such run. */
-export function streak(rungs: number[], days: DayTotal[], midnight: (day: number) => number): Rung[] {
+export function streak(rungs: number[], days: DayTotal[], noon: (day: number) => number): Rung[] {
   let run = 0;
   let longest = 0;
   let previous = Number.NaN;
@@ -99,13 +99,13 @@ export function streak(rungs: number[], days: DayTotal[], midnight: (day: number
     run = day === previous + 1 ? run + 1 : 1;
     previous = day;
     longest = Math.max(longest, run);
-    for (const need of rungs) if (run === need && !reached.has(need)) reached.set(need, midnight(day));
+    for (const need of rungs) if (run === need && !reached.has(need)) reached.set(need, noon(day));
   }
   return rungs.map((need) => ({ id: `streak-${need}`, earnedAt: reached.get(need) ?? null, have: longest, need }));
 }
 
 /** Episodes finished on one local day; earned on the first day reaching `need`. */
-export function binge(need: number, finishes: Finish[], offsetMs: number, midnight: (day: number) => number): Rung {
+export function binge(need: number, finishes: Finish[], offsetMs: number, noon: (day: number) => number): Rung {
   const perDay = new Map<number, number>();
   let most = 0;
   let first: number | null = null;
@@ -117,7 +117,7 @@ export function binge(need: number, finishes: Finish[], offsetMs: number, midnig
     most = Math.max(most, count);
     if (count === need && first === null) first = day;
   }
-  return { id: `binge-${need}`, earnedAt: first === null ? null : midnight(first), have: most, need };
+  return { id: `binge-${need}`, earnedAt: first === null ? null : noon(first), have: most, need };
 }
 
 /**

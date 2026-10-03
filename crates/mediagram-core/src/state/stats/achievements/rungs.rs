@@ -53,14 +53,14 @@ pub(super) fn genre_arrivals(finishes: &[Finish<'_>]) -> Vec<i64> {
 }
 
 /// Cumulative watching across days; a rung is earned on the day the total reaches it.
-pub(super) fn hours(rungs: &[u32], days: &[DayTotal], midnight: impl Fn(i64) -> i64) -> Vec<Rung> {
+pub(super) fn hours(rungs: &[u32], days: &[DayTotal], noon: impl Fn(i64) -> i64) -> Vec<Rung> {
     let mut total = 0.0;
     let mut reached: HashMap<u32, i64> = HashMap::new();
     for day in days {
         total += day.seconds;
         for &need in rungs {
             if total >= f64::from(need) * 3600.0 {
-                reached.entry(need).or_insert_with(|| midnight(day.day));
+                reached.entry(need).or_insert_with(|| noon(day.day));
             }
         }
     }
@@ -77,7 +77,7 @@ pub(super) fn hours(rungs: &[u32], days: &[DayTotal], midnight: impl Fn(i64) -> 
 }
 
 /// Consecutive days with any watching; a rung is earned on the day completing the first such run.
-pub(super) fn streak(rungs: &[u32], days: &[DayTotal], midnight: impl Fn(i64) -> i64) -> Vec<Rung> {
+pub(super) fn streak(rungs: &[u32], days: &[DayTotal], noon: impl Fn(i64) -> i64) -> Vec<Rung> {
     let (mut run, mut longest, mut previous) = (0_u32, 0_u32, None::<i64>);
     let mut reached: HashMap<u32, i64> = HashMap::new();
     for day in days.iter().filter(|day| day.seconds > 0.0) {
@@ -90,7 +90,7 @@ pub(super) fn streak(rungs: &[u32], days: &[DayTotal], midnight: impl Fn(i64) ->
         longest = longest.max(run);
         for &need in rungs {
             if run == need {
-                reached.entry(need).or_insert_with(|| midnight(day.day));
+                reached.entry(need).or_insert_with(|| noon(day.day));
             }
         }
     }
@@ -110,7 +110,7 @@ pub(super) fn binge(
     need: u32,
     finishes: &[Finish<'_>],
     offset_ms: i64,
-    midnight: impl Fn(i64) -> i64,
+    noon: impl Fn(i64) -> i64,
 ) -> Rung {
     let mut per_day: HashMap<i64, u32> = HashMap::new();
     let (mut most, mut first) = (0, None);
@@ -125,7 +125,7 @@ pub(super) fn binge(
     }
     Rung {
         id: format!("binge-{need}"),
-        earned_at: first.map(midnight),
+        earned_at: first.map(noon),
         have: most,
         need,
     }

@@ -50,8 +50,8 @@ export function progressLine({ id, have, need }) {
 
 /**
  * The day an achievement was earned, in the history's own words without
- * their clock time: a day-based achievement is dated at that day's midnight,
- * and "Sat 00:00" would read as a moment rather than a day.
+ * their clock time: a day-based achievement is dated at that day's noon,
+ * and "Sat 12:00" would read as a moment rather than a day.
  */
 const earnedOn = (when, at) => when(at).replace(/ \d{1,2}:\d{2}$/, "");
 

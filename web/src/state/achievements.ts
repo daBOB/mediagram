@@ -78,9 +78,10 @@ const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id 
 
 export function achievements(input: AchievementInput): Achievements {
   const offsetMs = input.utcOffsetMinutes * 60_000;
-  // A day's local midnight, at the offset the reader is at now — applied to
-  // every day alike, so a day from before a clock change reads an hour out.
-  const midnight = (day: number) => day * DAY_MS - offsetMs;
+  // A day is dated at its local noon, at the offset the reader is at now —
+  // applied to every day alike, so a day from before a clock change reads an
+  // hour out, and noon leaves that hour no way to reach another date.
+  const noon = (day: number) => day * DAY_MS + DAY_MS / 2 - offsetMs;
   const bySet = new Map(input.library.map((title) => [title.setId, title]));
   // A finish of a set the library no longer holds counts for nothing.
   const finishes: Finish[] = input.watched
@@ -100,7 +101,7 @@ export function achievements(input: AchievementInput): Achievements {
   ];
   if (!input.kids) {
     const days = dayTotals(input.days);
-    ladders.push(hours(HOURS, days, midnight), streak(STREAKS, days, midnight), [binge(BINGE, finishes, offsetMs, midnight)]);
+    ladders.push(hours(HOURS, days, noon), streak(STREAKS, days, noon), [binge(BINGE, finishes, offsetMs, noon)]);
   }
 
   const earned: Earned[] = [];

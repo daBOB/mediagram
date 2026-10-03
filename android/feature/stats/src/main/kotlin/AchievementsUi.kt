@@ -81,8 +81,8 @@ fun progressLine(
 
 /**
  * The day an achievement was earned: [whenText] without its clock time. A
- * day-based achievement is dated at that day's local midnight, and "Sat
- * 00:00" would read as a moment rather than a day.
+ * day-based achievement is dated at that day's local noon, and "Sat
+ * 12:00" would read as a moment rather than a day.
  */
 fun earnedOn(
     atMs: Long,
@@ -92,7 +92,7 @@ fun earnedOn(
 /**
  * This device's offset from UTC at [at], in minutes — the one in force at
  * that moment, so a clock change is taken as it happens. What the core
- * places a day-based achievement's midnight by.
+ * places a day-based achievement's noon by.
  */
 fun utcOffsetMinutes(at: ZonedDateTime): Int = at.offset.totalSeconds / 60
 
