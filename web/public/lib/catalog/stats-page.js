@@ -10,7 +10,8 @@
 import { el } from "../dom.js";
 import { profileId } from "../watch-state.js";
 import { heading } from "./shelf-view.js";
-import { historyLine, shortDate, watchTime, weekdayInitial } from "./stats-format.js";
+import { historyLine, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
+import { achievementsSection } from "./stats-achievements.js";
 
 /**
  * @param {HTMLElement} main
@@ -32,7 +33,12 @@ export async function renderStats(main, { byId }, stillHere) {
   }
   if (!stillHere()) return;
   if (summary.history.length === 0) return main.append(el("p", "empty", "Nothing watched yet."));
-  main.append(totals(summary), lastThirty(summary.last30), history(summary.history, byId, Date.now()));
+  const now = Date.now();
+  main.append(totals(summary), lastThirty(summary.last30));
+  // Before the history, which has no end; nothing at all while there is nothing in it.
+  const { earned, next } = summary.achievements;
+  if (earned.length + next.length > 0) main.append(achievementsSection(summary.achievements, (at) => whenLabel(at, now)));
+  main.append(history(summary.history, byId, now));
 }
 
 function totals(summary) {

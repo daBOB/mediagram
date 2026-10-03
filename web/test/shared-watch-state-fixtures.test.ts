@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import { achievements, type AchievementInput, type Achievements } from "../src/state/achievements";
+import { achievementLabel, progressLine } from "../public/lib/catalog/stats-achievements.js";
 import { againNow, stepSeconds } from "../src/state/stats-step";
 import { summarize, type StatsSummary, type SummaryInput } from "../src/state/stats-summary";
 import type { CatalogSet } from "../public/lib/library.js";
@@ -306,6 +307,23 @@ describe("achievements fixtures", () => {
   for (const one of load<Case[]>("achievements.json")) {
     test(one.name, () => {
       expect(achievements(one.input)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("achievement-labels fixtures", () => {
+  interface Case {
+    id: string;
+    have: number;
+    need: number;
+    label: string;
+    progress: string;
+  }
+
+  for (const one of load<Case[]>("achievement-labels.json")) {
+    test(one.id, () => {
+      expect(achievementLabel(one.id)).toBe(one.label);
+      expect(progressLine(one)).toBe(one.progress);
     });
   }
 });

@@ -28,6 +28,7 @@ const SUMMARY = {
     { kind: "finished", setId: "01A", at: 0, seconds: 7200 },
     { kind: "started", setId: "01GONE", at: 0, seconds: 120 },
   ],
+  achievements: { earned: [], next: [] },
 };
 
 function answer(body: unknown, status = 200) {
