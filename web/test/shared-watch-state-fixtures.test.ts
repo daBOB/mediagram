@@ -1,11 +1,13 @@
 /**
  * Runs the JSON fixtures under `fixtures/watch-state/` against the web's own
- * record parsing, merge, resume and Next up logic.
+ * record parsing, merge, resume, Next up and viewing-stats logic.
  *
- * These fixtures are read by other languages too, so this file writes no new
- * behaviour: every case here has to pass against the web as it already
- * stands, or the fixture is wrong. A case that only passes after a change to
- * `src/state` or `public/lib` does not belong in this file.
+ * These fixtures are read by other languages too, so a case here is a rule
+ * both engines must agree on. The sync, resume and Next up cases describe
+ * behaviour the web already has, and a case that only passes after a change
+ * to `src/state` or `public/lib` does not belong with them. The stats
+ * fixtures are different: they pin the new counting rules first, and the
+ * web's modules under `src/state/stats-*` are written to satisfy them.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -15,6 +17,7 @@ import { join } from "node:path";
 
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
+import { againNow, stepSeconds } from "../src/state/stats-step";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupDepartments } from "../public/lib/departments.js";
 import { homeShelves } from "../public/lib/catalog/home-shelves.js";
@@ -195,6 +198,24 @@ describe("next-up fixtures", () => {
       expect(shelves.continues.map((set) => set.setId)).toEqual(one.expect.continues);
       expect(shelves.totals.continues).toBe(one.expect.totals.continues);
       expect(shelves.totals.nextUp).toBe(one.expect.totals.nextUp);
+    });
+  }
+});
+
+describe("stats-step fixtures", () => {
+  const fns = { stepSeconds, againNow } as const;
+
+  interface Case {
+    name: string;
+    fn: keyof typeof fns;
+    args: unknown[];
+    expect: unknown;
+  }
+
+  for (const one of load<Case[]>("stats-step.json")) {
+    test(`${one.fn}: ${one.name}`, () => {
+      const run = fns[one.fn] as (...args: unknown[]) => unknown;
+      expect(run(...one.args)).toEqual(one.expect);
     });
   }
 });
