@@ -75,7 +75,9 @@ pub fn summarize(input: &SummaryInput) -> StatsSummary {
     };
     let today_name = input.today.as_str();
     let monday = day_name(monday_of(today));
-    let month = &today_name[..8];
+    // The month's first day, compared like the week's Monday: `YYYY-MM-00`
+    // sorts before it, so a day no calendar has is no day of the month.
+    let month_start = format!("{}01", &today_name[..8]);
     let so_far = || {
         input
             .days
@@ -83,7 +85,7 @@ pub fn summarize(input: &SummaryInput) -> StatsSummary {
             .filter(|row| row.day.as_str() <= today_name)
     };
     let week_seconds = total(so_far().filter(|row| row.day >= monday));
-    let month_seconds = total(so_far().filter(|row| row.day.starts_with(month)));
+    let month_seconds = total(so_far().filter(|row| row.day >= month_start));
     let mut by_day: HashMap<&str, f64> = HashMap::new();
     for row in &input.days {
         *by_day.entry(row.day.as_str()).or_insert(0.0) += row.seconds;

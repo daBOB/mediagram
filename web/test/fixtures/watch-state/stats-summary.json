@@ -334,5 +334,19 @@
         { "kind": "started", "setId": "01a", "at": 1791000000000, "seconds": 10 }
       ]
     }
+  },
+  {
+    "name": "a day numbered 00 is no day of the month",
+    "input": {
+      "today": "2026-10-03",
+      "titles": [],
+      "days": [
+        { "day": "2026-09-30", "device": "laptop", "seconds": 400, "updatedAt": 1000 },
+        { "day": "2026-10-00", "device": "laptop", "seconds": 100, "updatedAt": 1000 },
+        { "day": "2026-10-01", "device": "laptop", "seconds": 200, "updatedAt": 1000 }
+      ],
+      "watched": []
+    },
+    "expect": { "monthSeconds": 200, "allSeconds": 700 }
   }
 ]
