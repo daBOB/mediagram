@@ -3,6 +3,7 @@ package testing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import kotlin.test.assertEquals
@@ -84,6 +85,13 @@ abstract class CoreContract {
             val core = core()
             val created = core.createProfile("Alice", false)
             assertTrue(created != null && core.profiles().any { it.id == created.id && it.name == "Alice" })
+        }
+    }
+
+    @Test
+    fun aProfileThisCoreDoesNotHoldHasEarnedNothing() {
+        runBlocking {
+            assertEquals(Achievements(earned = emptyList(), next = emptyList()), core().achievements("no-such-profile", "2026-10-03", 120))
         }
     }
 

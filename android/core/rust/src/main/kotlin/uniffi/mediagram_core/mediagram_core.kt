@@ -770,6 +770,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_snapshot(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_achievements(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_delete_collection(
@@ -905,6 +907,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_set_watchlisted(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`listed`: Byte,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_snapshot(`ptr`: Long,`profileId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_achievements(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,`utcOffsetMinutes`: Int,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
@@ -1178,6 +1182,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_snapshot() and 0xFFFF) != 28194) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_achievements() and 0xFFFF) != 10005) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_collection() and 0xFFFF) != 745) {
@@ -2002,6 +2009,13 @@ public interface CoreInterface {
      * collections, in one round trip. Empty throughout on any failure.
      */
     suspend fun `snapshot`(`profileId`: kotlin.String): StateSnapshot
+
+    /**
+     * What `profile_id` has earned and the few closest to come. `today` is
+     * this device's local date (`YYYY-MM-DD`) and `utc_offset_minutes` its
+     * offset from UTC now: the day boundaries the day-based ones fall on.
+     */
+    suspend fun `achievements`(`profileId`: kotlin.String, `today`: kotlin.String, `utcOffsetMinutes`: kotlin.Int): Achievements
 
     suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String): ListRow?
 
@@ -3345,6 +3359,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
+    /**
+     * What `profile_id` has earned and the few closest to come. `today` is
+     * this device's local date (`YYYY-MM-DD`) and `utc_offset_minutes` its
+     * offset from UTC now: the day boundaries the day-based ones fall on.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `achievements`(`profileId`: kotlin.String, `today`: kotlin.String, `utcOffsetMinutes`: kotlin.Int) : Achievements {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_achievements(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`today`),
+        FfiConverterInt.lower(`utcOffsetMinutes`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeAchievements.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `createCollection`(`profileId`: kotlin.String, `name`: kotlin.String) : ListRow? {
         return uniffiRustCallAsync(
@@ -3697,6 +3739,47 @@ public object FfiConverterTypeAccountSummary: FfiConverterRustBuffer<AccountSumm
 
 
 /**
+ * What one profile has earned, newest first, and the few closest to come.
+ */
+data class Achievements (
+    var `earned`: List<EarnedAchievement>
+    ,
+    var `next`: List<NextAchievement>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAchievements: FfiConverterRustBuffer<Achievements> {
+    override fun read(buf: ByteBuffer): Achievements {
+        return Achievements(
+            FfiConverterSequenceTypeEarnedAchievement.read(buf),
+            FfiConverterSequenceTypeNextAchievement.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Achievements) = (
+            FfiConverterSequenceTypeEarnedAchievement.allocationSize(value.`earned`) +
+            FfiConverterSequenceTypeNextAchievement.allocationSize(value.`next`)
+    )
+
+    override fun write(value: Achievements, buf: ByteBuffer) {
+            FfiConverterSequenceTypeEarnedAchievement.write(value.`earned`, buf)
+            FfiConverterSequenceTypeNextAchievement.write(value.`next`, buf)
+    }
+}
+
+
+
+/**
  * One release, as the channel declares it, and where its APK is.
  */
 data class AppRelease (
@@ -3919,6 +4002,47 @@ public object FfiConverterTypeDayBar: FfiConverterRustBuffer<DayBar> {
     override fun write(value: DayBar, buf: ByteBuffer) {
             FfiConverterString.write(value.`day`, buf)
             FfiConverterDouble.write(value.`seconds`, buf)
+    }
+}
+
+
+
+/**
+ * An achievement earned, and when, in epoch milliseconds.
+ */
+data class EarnedAchievement (
+    var `id`: kotlin.String
+    ,
+    var `earnedAt`: kotlin.Long
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeEarnedAchievement: FfiConverterRustBuffer<EarnedAchievement> {
+    override fun read(buf: ByteBuffer): EarnedAchievement {
+        return EarnedAchievement(
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: EarnedAchievement) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterLong.allocationSize(value.`earnedAt`)
+    )
+
+    override fun write(value: EarnedAchievement, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterLong.write(value.`earnedAt`, buf)
     }
 }
 
@@ -4204,6 +4328,52 @@ public object FfiConverterTypeListRow: FfiConverterRustBuffer<ListRow> {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterSequenceString.write(value.`items`, buf)
+    }
+}
+
+
+
+/**
+ * One still to come, and how far along it is.
+ */
+data class NextAchievement (
+    var `id`: kotlin.String
+    ,
+    var `have`: kotlin.UInt
+    ,
+    var `need`: kotlin.UInt
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNextAchievement: FfiConverterRustBuffer<NextAchievement> {
+    override fun read(buf: ByteBuffer): NextAchievement {
+        return NextAchievement(
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: NextAchievement) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterUInt.allocationSize(value.`have`) +
+            FfiConverterUInt.allocationSize(value.`need`)
+    )
+
+    override fun write(value: NextAchievement, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterUInt.write(value.`have`, buf)
+            FfiConverterUInt.write(value.`need`, buf)
     }
 }
 
@@ -6070,6 +6240,34 @@ public object FfiConverterSequenceTypeDayBar: FfiConverterRustBuffer<List<DayBar
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeEarnedAchievement: FfiConverterRustBuffer<List<EarnedAchievement>> {
+    override fun read(buf: ByteBuffer): List<EarnedAchievement> {
+        val len = buf.getInt()
+        return List<EarnedAchievement>(len) {
+            FfiConverterTypeEarnedAchievement.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<EarnedAchievement>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeEarnedAchievement.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<EarnedAchievement>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeEarnedAchievement.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeFranchiseRecord: FfiConverterRustBuffer<List<FranchiseRecord>> {
     override fun read(buf: ByteBuffer): List<FranchiseRecord> {
         val len = buf.getInt()
@@ -6172,6 +6370,34 @@ public object FfiConverterSequenceTypeListRow: FfiConverterRustBuffer<List<ListR
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeListRow.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeNextAchievement: FfiConverterRustBuffer<List<NextAchievement>> {
+    override fun read(buf: ByteBuffer): List<NextAchievement> {
+        val len = buf.getInt()
+        return List<NextAchievement>(len) {
+            FfiConverterTypeNextAchievement.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<NextAchievement>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeNextAchievement.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<NextAchievement>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeNextAchievement.write(it, buf)
         }
     }
 }

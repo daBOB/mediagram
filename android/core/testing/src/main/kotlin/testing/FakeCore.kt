@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import uniffi.mediagram_core.AccountSummary
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
@@ -498,6 +499,21 @@ class FakeCore(
     /** Records no watch time, so every profile reads as nothing watched yet. */
     override suspend fun stats(profileId: String, today: String): StatsSummary =
         StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList())
+
+    /** What [achievements] answers, per profile id; nothing earned and nothing to come for any other. */
+    var achievementsByProfile: Map<String, Achievements> = emptyMap()
+
+    /** Every [achievements] read, as (profile, today, offset from UTC in minutes). */
+    val achievementsAsked = mutableListOf<Triple<String, String, Int>>()
+
+    override suspend fun achievements(
+        profileId: String,
+        today: String,
+        utcOffsetMinutes: Int,
+    ): Achievements {
+        achievementsAsked += Triple(profileId, today, utcOffsetMinutes)
+        return achievementsByProfile[profileId] ?: Achievements(earned = emptyList(), next = emptyList())
+    }
 
     override suspend fun clearProgress(profileId: String, setId: String) = watchState.clearProgress(profileId, setId)
 
