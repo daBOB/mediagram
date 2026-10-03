@@ -60,22 +60,32 @@ fn amount(value: Option<&Value>) -> Option<f64> {
     value?.as_f64().filter(|n| n.is_finite() && *n >= 0.0)
 }
 
+/// The largest integer every engine holds exactly (2^53 − 1, the web's
+/// `Number.MAX_SAFE_INTEGER`). A stamp past it is no clock's, and one near
+/// the top of the integer range would overflow the next own write's `+ 1`.
+const MAX_STAMP: f64 = 9_007_199_254_740_991.0;
+
+/// A time a row carries: an [`amount`] no later than [`MAX_STAMP`].
+fn stamp(value: Option<&Value>) -> Option<f64> {
+    amount(value).filter(|at| *at <= MAX_STAMP)
+}
+
 pub(super) fn title_stat_row(raw: &Value) -> Option<TitleStatRow> {
     let row = raw.as_object()?;
     // Absent or `null` means never started over; anything else has to be a
     // time like the rest, or the row goes.
     let again_at = match row.get("againAt") {
         None | Some(Value::Null) => None,
-        given => Some(amount(given)?),
+        given => Some(stamp(given)?),
     };
     Some(TitleStatRow {
         set_id: text_(row.get("setId"))?,
         device: text_(row.get("device"))?,
-        started_at: amount(row.get("startedAt"))?,
-        last_watched_at: amount(row.get("lastWatchedAt"))?,
+        started_at: stamp(row.get("startedAt"))?,
+        last_watched_at: stamp(row.get("lastWatchedAt"))?,
         seconds: amount(row.get("seconds"))?,
         again_at,
-        updated_at: amount(row.get("updatedAt"))?,
+        updated_at: stamp(row.get("updatedAt"))?,
     })
 }
 
@@ -87,7 +97,7 @@ pub(super) fn day_stat_row(raw: &Value) -> Option<DayStatRow> {
         day: day.to_string(),
         device: text_(row.get("device"))?,
         seconds: amount(row.get("seconds")).filter(|seconds| *seconds <= DAY_SECONDS)?,
-        updated_at: amount(row.get("updatedAt"))?,
+        updated_at: stamp(row.get("updatedAt"))?,
     })
 }
 

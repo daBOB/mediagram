@@ -12,6 +12,10 @@ use crate::state::record::{DayStatRow, TitleStatRow};
 
 /// Both tables' rows for `profile_id`, every device's, in a fixed order so
 /// an unchanged store exports an unchanged document.
+///
+/// The stamps are read as `f64`, which takes an integer and a real alike: a
+/// stamp at the top of the integer range that a write's `+ 1` pushed past it
+/// is a real in SQLite, and reading it as an integer would fail every export.
 pub(crate) fn export(
     conn: &Connection,
     profile_id: &str,
@@ -25,11 +29,11 @@ pub(crate) fn export(
             Ok(TitleStatRow {
                 set_id: row.get(0)?,
                 device: row.get(1)?,
-                started_at: row.get::<_, i64>(2)? as f64,
-                last_watched_at: row.get::<_, i64>(3)? as f64,
+                started_at: row.get(2)?,
+                last_watched_at: row.get(3)?,
                 seconds: row.get(4)?,
-                again_at: row.get::<_, Option<i64>>(5)?.map(|at| at as f64),
-                updated_at: row.get::<_, i64>(6)? as f64,
+                again_at: row.get(5)?,
+                updated_at: row.get(6)?,
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -43,7 +47,7 @@ pub(crate) fn export(
                 day: row.get(0)?,
                 device: row.get(1)?,
                 seconds: row.get(2)?,
-                updated_at: row.get::<_, i64>(3)? as f64,
+                updated_at: row.get(3)?,
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;

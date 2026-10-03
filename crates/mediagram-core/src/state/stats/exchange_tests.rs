@@ -2,7 +2,8 @@ use super::*;
 use crate::state::StateDb;
 use crate::state::exchange::{export_record, import_merged};
 use crate::state::merge::{MergedProfile, MergedState};
-use crate::state::{profiles, sync};
+use crate::state::stats::summary;
+use crate::state::{profiles, rows, sync};
 
 fn db() -> (tempfile::TempDir, StateDb) {
     let dir = tempfile::tempdir().unwrap();
@@ -141,4 +142,37 @@ fn a_store_without_stats_exports_a_document_without_the_keys() {
         !body.contains("titleStats") && !body.contains("dayStats"),
         "{body}"
     );
+}
+
+/// A stamp past the integer range — one a store took in before such stamps
+/// were refused on parse — must not stop this device's documents: the next
+/// own write pushes it further, past what an integer column read can hold.
+#[test]
+fn an_own_row_stamped_past_the_integer_range_still_exports_after_a_write() {
+    let (_dir, db) = db();
+    let id = profile(&db);
+    let own = db.with(sync::device_id).unwrap();
+    import(
+        &db,
+        vec![title("01A", &own, 900.0, 1e19)],
+        vec![day(&own, 300.0, 1e19)],
+    );
+    db.set_progress_counted(&id, "01A", 10.0, None, "2026-10-03", 1_000)
+        .unwrap();
+    db.set_progress_counted(&id, "01A", 20.0, None, "2026-10-03", 11_000)
+        .unwrap();
+
+    let record = db.with(|conn| export_record(conn, "laptop"));
+    assert!(record.is_some(), "the document is still written");
+    let (titles, days) = db.with(|conn| export(conn, &id)).unwrap();
+    assert_eq!(titles[0].seconds, 910.0);
+    assert_eq!(days[0].seconds, 310.0);
+    let watched = db.with(|conn| rows::watched_for(conn, &id)).unwrap();
+    let stats = summary::summarize(&summary::SummaryInput {
+        today: "2026-10-03".into(),
+        titles,
+        days,
+        watched,
+    });
+    assert_ne!(stats.history, vec![], "the stats page still has its history");
 }

@@ -55,22 +55,33 @@ function amountOf(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
+/**
+ * A time a row carries: an amount no later than `Number.MAX_SAFE_INTEGER`,
+ * or `null`. A stamp past it is no clock's, and the core, which stores
+ * stamps as 64-bit integers, would overflow its next own write's `+ 1` on one
+ * near the top of that range.
+ */
+function stampOf(value: unknown): number | null {
+  const at = amountOf(value);
+  return at !== null && at <= Number.MAX_SAFE_INTEGER ? at : null;
+}
+
 function titleRow(value: unknown): TitleStatRow | null {
   const raw = objectRow(value);
   if (raw === null) return null;
   const setId = text_(raw.setId);
   const device = text_(raw.device);
-  const startedAt = amountOf(raw.startedAt);
-  const lastWatchedAt = amountOf(raw.lastWatchedAt);
+  const startedAt = stampOf(raw.startedAt);
+  const lastWatchedAt = stampOf(raw.lastWatchedAt);
   const seconds = amountOf(raw.seconds);
-  const updatedAt = amountOf(raw.updatedAt);
+  const updatedAt = stampOf(raw.updatedAt);
   if (setId === null || device === null || startedAt === null || lastWatchedAt === null) return null;
   if (seconds === null || updatedAt === null) return null;
   const row = { setId, device, startedAt, lastWatchedAt, seconds, updatedAt };
   // `null` is no restart, the same as absent: a writer that serialises an
   // empty optional as `null` has said nothing, not something malformed.
   if (raw.againAt === undefined || raw.againAt === null) return row;
-  const againAt = amountOf(raw.againAt);
+  const againAt = stampOf(raw.againAt);
   return againAt === null ? null : { ...row, againAt };
 }
 
@@ -80,7 +91,7 @@ function dayRow(value: unknown): DayStatRow | null {
   const day = typeof raw.day === "string" && DAY.test(raw.day) ? raw.day : null;
   const device = text_(raw.device);
   const seconds = amountOf(raw.seconds);
-  const updatedAt = amountOf(raw.updatedAt);
+  const updatedAt = stampOf(raw.updatedAt);
   if (day === null || device === null || seconds === null || updatedAt === null) return null;
   return seconds > MAX_DAY_SECONDS ? null : { day, device, seconds, updatedAt };
 }

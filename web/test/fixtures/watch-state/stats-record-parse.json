@@ -281,5 +281,25 @@
         }
       ]
     }
+  },
+  {
+    "name": "a stamp beyond 2^53 - 1 drops the row; 2^53 - 1 itself is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"titleStats\":[{\"setId\":\"01A\",\"device\":\"laptop\",\"startedAt\":9007199254740991,\"lastWatchedAt\":9007199254740991,\"seconds\":600,\"updatedAt\":9007199254740991,\"againAt\":9007199254740991},{\"setId\":\"01B\",\"device\":\"laptop\",\"startedAt\":9007199254740992,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01C\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1e19,\"seconds\":600,\"updatedAt\":1789000600000},{\"setId\":\"01D\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1789000600000,\"againAt\":9007199254740992},{\"setId\":\"01E\",\"device\":\"laptop\",\"startedAt\":1789000000000,\"lastWatchedAt\":1789000600000,\"seconds\":600,\"updatedAt\":1e19}],\"dayStats\":[{\"day\":\"2026-09-10\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":9007199254740991},{\"day\":\"2026-09-11\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":9007199254740992},{\"day\":\"2026-09-12\",\"device\":\"laptop\",\"seconds\":600,\"updatedAt\":1e19}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "titleStats": [
+            { "setId": "01A", "device": "laptop", "startedAt": 9007199254740991, "lastWatchedAt": 9007199254740991, "seconds": 600, "updatedAt": 9007199254740991, "againAt": 9007199254740991 }
+          ],
+          "dayStats": [{ "day": "2026-09-10", "device": "laptop", "seconds": 600, "updatedAt": 9007199254740991 }]
+        }
+      ]
+    }
   }
 ]
