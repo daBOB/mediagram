@@ -8,6 +8,8 @@
 //! web is authoritative, and this file exists to agree with it, not to
 //! redefine it.
 //!
+//! The achievement rules run here too, against `achievements.json`.
+//!
 //! Next up and resume-point are Kotlin-only ports (05/06); this crate has no
 //! play-order or shelf logic to hold `next-up.json`/`resume-point.json`
 //! against.
@@ -16,6 +18,7 @@ use std::path::{Path, PathBuf};
 
 use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::record::{SyncRecord, parse_record};
+use mediagram_core::state::stats::achievements::{AchievementInput, Achievements, achievements};
 use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
 use mediagram_core::state::stats::{Tick, again_now, step_seconds};
 use serde::Deserialize;
@@ -261,5 +264,30 @@ fn stats_step_fixtures_match_the_web() {
             }
             other => panic!("stats-step.json names an unknown fn {other:?} in {name}"),
         }
+    }
+}
+
+#[derive(Deserialize)]
+struct AchievementCase {
+    name: String,
+    input: AchievementInput,
+    expect: Achievements,
+}
+
+/// Every rule, the kids subset, the day boundaries and the order of both
+/// lists, against the web's own answers.
+#[test]
+fn achievement_fixtures_match_the_web() {
+    let Some(cases) = load::<AchievementCase>("achievements.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "achievements.json holds no cases");
+    for case in cases {
+        assert_eq!(
+            achievements(&case.input),
+            case.expect,
+            "case: {}",
+            case.name
+        );
     }
 }

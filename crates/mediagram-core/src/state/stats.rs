@@ -14,6 +14,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::{StateDb, rows, sync};
 
+pub mod achievements;
 mod calendar;
 pub(crate) mod exchange;
 pub mod summary;
