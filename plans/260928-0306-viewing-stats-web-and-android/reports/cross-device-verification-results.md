@@ -31,6 +31,10 @@ Built from `main` 96d883d0 (0.99.3 — the merged code plus another session's we
 
 Left behind: box back on profile "TV test", on its launcher home. No playback on the box.
 
+## Channel release 0.99.6 (user's go-ahead, 2026-10-03)
+
+`scripts/release-android.sh` from `main` 1b283ff6: published 0.99.6 (versionCode 99006, 32,728,871 bytes) as channel message 17956, pinned, 17:52. The TV box picked it up after an app restart (21:37:29), downloaded within ~100 s, and installed 4 s after Home (21:39:19) — no prompt, launcher in front, relaunch loads the catalog on "TV test". 0.99.4–0.99.6 (web tokens, TV feature-card corners) were not walked on a device separately.
+
 ## Still to do
 
 - TV: TalkBack announcement with the screen reader actually on (uiautomator shows the two nodes; the merged spoken text was not heard).
