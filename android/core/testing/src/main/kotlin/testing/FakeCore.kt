@@ -518,9 +518,10 @@ class FakeCore(
     override suspend fun setInCollection(profileId: String, id: String, setId: String, included: Boolean): Boolean =
         watchState.setInCollection(profileId, id, setId, included)
 
-    override suspend fun preferences(profileId: String): List<PreferenceRow> = emptyList()
+    override suspend fun preferences(profileId: String): List<PreferenceRow> = watchState.preferences(profileId)
 
-    override suspend fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean = false
+    override suspend fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean =
+        watchState.setPreference(profileId, scope, name, value)
 
     override suspend fun setText(setId: String, kind: String, lang: String): String? = null
 

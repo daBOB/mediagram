@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.95.3 — the Android core fake keeps preferences the way the real core does
+
+**Fixed**
+
+- `FakeCore` answered `preferences()` with nothing and `setPreference()`
+  with `false`, so `PlayerPreferencesTest` carried its own in-memory core
+  instead — one no contract checked, which accepted a choice for a profile
+  nobody created where the real core's foreign key refuses it. The fake now
+  keeps preferences by the real rules (trimmed and capped scope, name and
+  value; a blank scope or name refused; a blank value forgets; a value for
+  an unknown profile refused; a profile's removal takes its preferences),
+  `CoreContract` pins them against both the fake and the real core on the
+  tablet, and the test's own core is gone. Test code only; no app change.
+
 ## 0.95.2 — second channel release, for the playback check
 
 No code changes: published so the TV box has an update waiting while a

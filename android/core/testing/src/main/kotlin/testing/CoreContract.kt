@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.PreferenceRow
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -32,10 +33,11 @@ import kotlin.test.assertTrue
  *   [aBlankProfileNameIsRefused] pins `clean_name`'s own rule
  *   (`state/profiles.rs`), also checked before any row is written.
  * - the watch-state cases below are `state_db` reads/writes too
- *   (`state::rows`, `state::editors_choice`, `state::lists`) — progress,
- *   watched marks, the watchlist, Kids, the editor's choice and
- *   collections, each against a profile [createProfile] made moments
- *   earlier, since every one of those tables but Kids and the editor's
+ *   (`state::rows`, `state::editors_choice`, `state::lists`,
+ *   `state::preferences`) — progress, watched marks, the watchlist, Kids,
+ *   the editor's choice, collections and preferences, each against a
+ *   profile [createProfile] made moments earlier,
+ *   since every one of those tables but Kids and the editor's
  *   choice has a foreign key to `profiles(id)` — [aWriteForAProfileNobodyCreatedIsDropped]
  *   and [removingAProfileTakesItsWatchStateWithIt] pin that foreign key and
  *   its cascade directly. Three cases ([progressListsNewestFirst],
@@ -364,12 +366,14 @@ abstract class CoreContract {
             val profile = core.freshProfile("Wren")
             core.setProgress(profile.id, "01A", 300.0, null)
             core.setWatchlisted(profile.id, "01B", true)
+            assertTrue(core.setPreference(profile.id, "show:Dark", "audio", "de"))
 
             assertTrue(core.deleteProfile(profile.id))
 
             val snapshot = core.snapshot(profile.id)
             assertEquals(emptyList(), snapshot.progress)
             assertEquals(emptyList(), snapshot.watchlist)
+            assertEquals(emptyList(), core.preferences(profile.id))
         }
     }
 
@@ -381,6 +385,45 @@ abstract class CoreContract {
             core.setProgress("no-such-profile", "01A", 300.0, null)
             assertEquals(emptyList(), core.snapshot("no-such-profile").progress)
             assertEquals(null, core.createCollection("no-such-profile", "Weekend"))
+            assertFalse(core.setPreference("no-such-profile", "show:Dark", "audio", "de"))
+            assertEquals(emptyList(), core.preferences("no-such-profile"))
+        }
+    }
+
+    @Test
+    fun aPreferenceIsRememberedReplacedAndForgottenForItsProfileOnly() {
+        runBlocking {
+            val core = core()
+            val owner = core.freshProfile("Uma")
+            val other = core.freshProfile("Vic")
+
+            assertTrue(core.setPreference(owner.id, "show:Dark", "speed", "1.5"))
+            assertTrue(core.setPreference(owner.id, "show:Dark", "speed", "2"))
+            assertEquals(listOf(PreferenceRow("show:Dark", "speed", "2")), core.preferences(owner.id))
+            assertEquals(emptyList(), core.preferences(other.id))
+
+            assertTrue(core.setPreference(owner.id, "show:Dark", "speed", null))
+            assertEquals(emptyList(), core.preferences(owner.id))
+        }
+    }
+
+    /** `preferences::set` trims rather than collapses, caps at 200 characters, refuses a blank scope or name, and forgets on a blank value. */
+    @Test
+    fun aPreferenceIsTrimmedAndCappedAndABlankScopeOrNameIsRefused() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Yara")
+
+            assertTrue(core.setPreference(profile.id, "  show:Dark  Matter ", " audio ", " de  forced "))
+            assertEquals(listOf(PreferenceRow("show:Dark  Matter", "audio", "de  forced")), core.preferences(profile.id))
+            assertFalse(core.setPreference(profile.id, "  ", "audio", "en"))
+            assertFalse(core.setPreference(profile.id, "show:Dark  Matter", "", "en"))
+
+            assertTrue(core.setPreference(profile.id, "show:Dark  Matter", "audio", "  "))
+            assertEquals(emptyList(), core.preferences(profile.id))
+
+            assertTrue(core.setPreference(profile.id, "show:Dark", "note", "x".repeat(201)))
+            assertEquals("x".repeat(200), core.preferences(profile.id).single().value)
         }
     }
 }

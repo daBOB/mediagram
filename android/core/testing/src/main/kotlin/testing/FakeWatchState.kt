@@ -1,9 +1,13 @@
 package testing
 
 import uniffi.mediagram_core.ListRow
+import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.ProgressRow
 import uniffi.mediagram_core.StateSnapshot
 import uniffi.mediagram_core.WatchedRow
+
+/** `preferences.rs`'s `MAX_PREFERENCE`: the cap on each of a preference's three strings. */
+private const val MAX_PREFERENCE = 200
 
 /**
  * A counter that only ever goes up, one tick per call. [FakeCore]'s default
@@ -18,11 +22,11 @@ fun monotonicClock(): () -> Long {
 
 /**
  * [FakeCore]'s watch-state half — progress, watched marks, the watchlist,
- * Kids, the editor's choice and collections — split into its own file only
- * to keep `FakeCore.kt` under the line limit. Mirrors the rules
- * `crates/mediagram-core/src/state/rows.rs`, `editors_choice.rs` and
- * `lists.rs` apply to the real core's SQLite tables, against [now] standing
- * in for their `now_ms()`.
+ * Kids, the editor's choice, collections and per-show preferences — split
+ * into its own file only to keep `FakeCore.kt` under the line limit. Mirrors
+ * the rules `crates/mediagram-core/src/state/rows.rs`, `editors_choice.rs`,
+ * `lists.rs` and `preferences.rs` apply to the real core's SQLite tables,
+ * against [now] standing in for their `now_ms()`.
  *
  * [exists] stands in for the foreign key every per-profile table (all but
  * Kids and the editor's choice) carries to `profiles(id)`: a write for a
@@ -53,6 +57,9 @@ class FakeWatchState(
     private val watchlistByProfile = mutableMapOf<String, LinkedHashMap<String, Mark>>()
     private val collectionsByProfile = mutableMapOf<String, LinkedHashMap<String, Collection>>()
 
+    /** Keyed by `scope` then `name`, the real table's primary key after `profile_id`. */
+    private val preferencesByProfile = mutableMapOf<String, LinkedHashMap<Pair<String, String>, String>>()
+
     // Not scoped to any profile, like the tables they mirror.
     private val kidsMarks = linkedMapOf<String, Mark>()
     private var editorsChoiceSetId: String? = null
@@ -77,6 +84,7 @@ class FakeWatchState(
         watchedByProfile.remove(profileId)
         watchlistByProfile.remove(profileId)
         collectionsByProfile.remove(profileId)
+        preferencesByProfile.remove(profileId)
     }
 
     private fun progressFor(profileId: String): List<ProgressRow> =
@@ -221,6 +229,40 @@ class FakeWatchState(
 
     private fun ownedCollection(profileId: String, id: String): Collection? =
         collectionsByProfile[profileId]?.get(id)?.takeUnless { it.deleted }
+
+    /**
+     * Sorted by scope, then name: `list_for` names no order, but SQLite answers
+     * it through the table's primary-key index, which is that order — so a
+     * test comparing several rows sees the same list from either core.
+     */
+    @Synchronized
+    fun preferences(profileId: String): List<PreferenceRow> =
+        (preferencesByProfile[profileId] ?: emptyMap())
+            .map { (key, value) -> PreferenceRow(key.first, key.second, value) }
+            .sortedWith(compareBy({ it.scope }, { it.name }))
+
+    /**
+     * As `preferences::set`: `false` only when [scope] or [name] trims to
+     * nothing, or when a value is written for a profile nobody created (the
+     * real insert breaks the foreign key, which the API answers as `false`).
+     * Forgetting — a `null` or blank [value] — is a plain delete, which no
+     * foreign key refuses, so it answers `true` for any profile.
+     */
+    @Synchronized
+    fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean {
+        val key = (shortPreference(scope) ?: return false) to (shortPreference(name) ?: return false)
+        val clean = value?.let(::shortPreference)
+        if (clean == null) {
+            preferencesByProfile[profileId]?.remove(key)
+            return true
+        }
+        if (!exists(profileId)) return false
+        preferencesByProfile.getOrPut(profileId) { linkedMapOf() }[key] = clean
+        return true
+    }
+
+    /** As `preferences::short`: trimmed and capped, never whitespace-collapsed — the player parses these back. */
+    private fun shortPreference(value: String): String? = value.trim().take(MAX_PREFERENCE).takeIf { it.isNotEmpty() }
 
     /** As `clean_name` (`crates/mediagram-core/src/state/profiles.rs`), reused there for both profile and list names. */
     private fun cleanListName(name: String): String? =
