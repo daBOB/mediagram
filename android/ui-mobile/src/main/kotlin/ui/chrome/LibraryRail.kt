@@ -3,6 +3,7 @@ package ui.chrome
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -42,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
+import designsystem.StatusDot
+import stats.NEW_ACHIEVEMENT
 import ui.RailItem
 
 /**
@@ -50,11 +54,20 @@ import ui.RailItem
  * root or pushed frame alike, through [LocalRailData] rather than threaded
  * across every branch in between.
  */
-data class RailData(val counts: ChromeCounts, val tally: List<String>, val onHome: () -> Unit) {
+data class RailData(
+    val counts: ChromeCounts,
+    val tally: List<String>,
+    val onHome: () -> Unit,
+    /** Whether something the chosen profile earned has not been shown on this device: the Stats row's dot. */
+    val newAchievement: Boolean = false,
+) {
     companion object {
         val Empty = RailData(ChromeCounts.Empty, emptyList(), onHome = {})
     }
 }
+
+/** What the dot on [item] says to a screen reader, or `null` when it wears none — only Stats ever does. */
+internal fun RailData.dotFor(item: RailItem): String? = if (item == RailItem.STATS && newAchievement) NEW_ACHIEVEMENT else null
 
 // compositionLocalOf, not static: this changes on every watch-state write
 // (a position saved, a watchlist toggle), and a player frame sits under the
@@ -114,7 +127,7 @@ internal fun LibraryRail(
                     .semantics { contentDescription = "mediagram — home" },
         )
         for (item in listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)) {
-            RailRow(item = item, count = countFor(item, rail.counts), active = item == active, onSelect = onSelect)
+            RailRow(item = item, count = countFor(item, rail.counts), active = item == active, onSelect = onSelect, dot = rail.dotFor(item))
         }
         RailRow(item = RailItem.SYSTEM, count = null, active = RailItem.SYSTEM == active, onSelect = onSelect, apart = true)
 
@@ -156,6 +169,7 @@ private fun RailRow(
     active: Boolean,
     onSelect: (RailItem) -> Unit,
     apart: Boolean = false,
+    dot: String? = null,
 ) {
     val tones = LocalCatalogueTones.current
     val ink = if (active) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
@@ -176,7 +190,13 @@ private fun RailRow(
                 .semantics(mergeDescendants = true) {}
                 .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Icon(painter = painterResource(item.icon), contentDescription = null, tint = ink, modifier = Modifier.size(21.dp))
+        // On the icon's corner, as on the web and the television: the dot is there in every width.
+        Box {
+            Icon(painter = painterResource(item.icon), contentDescription = null, tint = ink, modifier = Modifier.size(21.dp))
+            dot?.let {
+                StatusDot(MaterialTheme.colorScheme.tertiary, Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp), description = it)
+            }
+        }
         Text(
             item.label,
             style = MaterialTheme.typography.labelLarge,

@@ -2,19 +2,15 @@ package ui.tv.system
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
@@ -26,6 +22,7 @@ import com.mediagram.android.core.designsystem.R
 import designsystem.Eyebrow
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
+import designsystem.StatusDot
 import designsystem.TvTypeScale
 import ui.settings.IndexStatus
 import ui.settings.SettingsSection
@@ -129,7 +126,7 @@ private fun TvSettingsIndexStatus(status: IndexStatus) {
         modifier = Modifier.padding(top = 2.dp),
     ) {
         if (status.held) {
-            Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary))
+            StatusDot(MaterialTheme.colorScheme.tertiary)
         }
         Text(
             text = status.text,

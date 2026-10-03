@@ -63,6 +63,7 @@ internal fun CompactLibraryHeader(
     onAskStartOver: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val rail = LocalRailData.current
     val ink = MaterialTheme.colorScheme.onBackground
     val wordmarkSize = if (LocalConfiguration.current.screenWidthDp.dp <= CompactWordmarkBreakpoint) 21.sp else 23.sp
 
@@ -103,7 +104,7 @@ internal fun CompactLibraryHeader(
                 for (item in RailItem.entries) {
                     val selected = item == activeRailItem
                     val itemInk = if (selected) ink else MaterialTheme.colorScheme.onSurfaceVariant
-                    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = { onRailSelect(item) })
+                    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = { onRailSelect(item) }, dot = rail.dotFor(item))
                 }
             }
         }

@@ -55,6 +55,7 @@ internal fun LibraryBranches(
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
     profileBar: ProfileBarState,
+    newAchievement: Boolean,
 ) {
     val resolved = at.resolve(catalogState)
     // The shelves' own remembered state — which tab, which page of films, how
@@ -100,8 +101,8 @@ internal fun LibraryBranches(
     // frame alike) through [LocalRailData], rather than threaded through
     // every branch below that never otherwise needs them.
     val railData =
-        remember(shelves, watch) {
-            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chooseTab(0) })
+        remember(shelves, watch, newAchievement) {
+            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chooseTab(0) }, newAchievement = newAchievement)
         }
 
     // Home's own list state, hoisted here rather than kept inside

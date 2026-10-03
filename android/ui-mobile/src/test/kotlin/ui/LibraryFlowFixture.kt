@@ -31,6 +31,9 @@ import playback.LanServer
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
 import settings.InMemoryTmdbSettings
+import stats.AchievementDotViewModel
+import stats.InMemoryAchievementsSeen
+import stats.NO_ACHIEVEMENTS
 import stats.StatsRead
 import stats.StatsViewModel
 import setup.SettingsCompletion
@@ -41,7 +44,10 @@ import system.FetchViewModel
 import system.LanCacheViewModel
 import system.SystemUiState
 import system.SystemViewModel
+import testing.FakeCore
+import testing.FakeCoreProvider
 import ui.player.PlayerLifecycleFixture
+import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.StatsSummary
 import java.time.ZonedDateTime
 import catalog.ShelfViewModel
@@ -54,6 +60,7 @@ import setup.ProfileSettingsViewModel
 internal class LibraryFlowFixture(
     loading: Boolean = false,
     settingsModel: SettingsViewModel? = null,
+    achievements: Achievements = NO_ACHIEVEMENTS,
 ) : ViewModelStoreOwner,
     AutoCloseable {
     override val viewModelStore = ViewModelStore()
@@ -63,6 +70,13 @@ internal class LibraryFlowFixture(
     var startOvers = 0
     var signedOut = 0
     val settings = settingsModel ?: mockk<SettingsViewModel>(relaxed = true)
+
+    /** What this device has shown the fixture's viewer; a test marks it to put the dot out. */
+    val achievementsSeen = InMemoryAchievementsSeen()
+
+    /** The Stats page's ViewModel — relaxed, so a test can verify what the page asked of it. */
+    val stats = mockk<StatsViewModel>(relaxed = true)
+
     val repository = mockk<CatalogRepository>()
     val watch = MutableStateFlow(WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("list", "Favourites", listOf("episode-1")))))
     val catalog: CatalogViewModel
@@ -128,11 +142,13 @@ internal class LibraryFlowFixture(
         // The Stats page resolves StatsViewModel through hiltViewModel(),
         // the same reason every entry below exists; an empty history is the
         // page a fresh profile shows.
-        val stats = mockk<StatsViewModel>(relaxed = true)
         every { stats.state } returns
             MutableStateFlow<StatsRead>(
                 StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
             )
+        // The rail's dot reads the chosen profile's achievements from a core of its own; the
+        // fixture's viewer is "viewer".
+        val achievementsCore = FakeCore().apply { achievementsByProfile = mapOf("viewer" to achievements) }
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
@@ -147,6 +163,9 @@ internal class LibraryFlowFixture(
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
                 LanCacheViewModel::class.java to lanCache,
                 StatsViewModel::class.java to stats,
+                // LibraryFlow resolves the dot's ViewModel through hiltViewModel(), the same
+                // reason every entry here exists — and every library test reaches it.
+                AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), stored, achievementsSeen),
                 // A film's own TitleDetailScreen resolves TitlePreloadViewModel
                 // through hiltViewModel() too — the same reason every entry
                 // here exists. Real, over fakes this fixture exposes so a

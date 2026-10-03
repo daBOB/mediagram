@@ -61,6 +61,7 @@ internal fun StatsScreen(state: StatsUiState) {
                         )
                     }
                 }
+                achievementItems(state.achievements)
                 item(key = "history") { Text(text = "History", style = MaterialTheme.typography.titleMedium) }
                 items(items = state.history, key = { it.key }) { line ->
                     Text(text = line.text, style = MaterialTheme.typography.bodyMedium)

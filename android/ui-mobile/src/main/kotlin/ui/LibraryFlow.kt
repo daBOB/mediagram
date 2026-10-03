@@ -11,6 +11,7 @@ import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import catalog.updateDisabledReason
 import player.TitlePreloadViewModel
+import stats.AchievementDotViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
 import ui.profile.ProfileGate
@@ -39,6 +40,9 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     val fetchState by fetchViewModel.state.collectAsStateWithLifecycle()
     val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
     val rawQueueRows by titlePreloadViewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
+    // The rail renders in every frame, root and pushed, so its dot is worked out here, once.
+    val achievementDot: AchievementDotViewModel = hiltViewModel()
+    val newAchievement by achievementDot.newAchievement.collectAsStateWithLifecycle()
     // Never the raw engine count: a kids profile must not see a grown-up's
     // own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
@@ -69,7 +73,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         preloadCount = queueCount,
     )
 
-    LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar)
+    LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
 
     // Every branch but the player, which is the one that fills the window
     // with a picture. A fetch started before a film began would otherwise
