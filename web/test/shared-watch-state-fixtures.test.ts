@@ -1,6 +1,6 @@
 /**
  * Runs the JSON fixtures under `fixtures/watch-state/` against the web's own
- * record parsing, merge, resume, Next up and viewing-stats logic.
+ * record parsing, merge, resume, Next up, viewing-stats and achievements logic.
  *
  * These fixtures are read by other languages too, so a case here is a rule
  * both engines must agree on. The sync, resume and Next up cases describe
@@ -17,6 +17,7 @@ import { join } from "node:path";
 
 import { mergeStates, type MergedState } from "../src/state/merge";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
+import { achievements, type AchievementInput, type Achievements } from "../src/state/achievements";
 import { againNow, stepSeconds } from "../src/state/stats-step";
 import { summarize, type StatsSummary, type SummaryInput } from "../src/state/stats-summary";
 import type { CatalogSet } from "../public/lib/library.js";
@@ -291,6 +292,20 @@ describe("stats-summary fixtures", () => {
         Object.keys(one.expect).map((key) => [key, summary[key as keyof StatsSummary]]),
       );
       expect(named).toEqual(one.expect);
+    });
+  }
+});
+
+describe("achievements fixtures", () => {
+  interface Case {
+    name: string;
+    input: AchievementInput;
+    expect: Achievements;
+  }
+
+  for (const one of load<Case[]>("achievements.json")) {
+    test(one.name, () => {
+      expect(achievements(one.input)).toEqual(one.expect);
     });
   }
 });
