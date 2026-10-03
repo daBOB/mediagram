@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import designsystem.Spacing
+import stats.ACHIEVEMENTS_HEADING
 import stats.AchievementsUi
+import stats.NEXT_HEADING
 
 /**
  * The Stats page's Achievements, between the last thirty days and the
@@ -23,11 +25,11 @@ import stats.AchievementsUi
  */
 internal fun LazyListScope.achievementItems(achievements: AchievementsUi) {
     if (achievements.earned.isEmpty() && achievements.next.isEmpty()) return
-    item(key = "achievements") { Text(text = "Achievements", style = MaterialTheme.typography.titleMedium) }
+    item(key = "achievements") { Text(text = ACHIEVEMENTS_HEADING, style = MaterialTheme.typography.titleMedium) }
     items(items = achievements.earned, key = { "achievement:${it.id}" }) { line -> AchievementRow(line.label, line.on) }
     if (achievements.next.isEmpty()) return
     item(key = "achievements-next") {
-        Text(text = "Next", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = NEXT_HEADING, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     items(items = achievements.next, key = { "next:${it.id}" }) { line ->
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {

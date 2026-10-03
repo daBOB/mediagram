@@ -13,7 +13,9 @@ import androidx.tv.material3.Text
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import stats.ACHIEVEMENTS_HEADING
 import stats.AchievementsUi
+import stats.NEXT_HEADING
 import ui.tv.TvFocus
 
 /**
@@ -26,14 +28,14 @@ import ui.tv.TvFocus
 internal fun LazyListScope.tvAchievementItems(achievements: AchievementsUi) {
     if (achievements.earned.isEmpty() && achievements.next.isEmpty()) return
     item(key = "achievements") {
-        Text(text = "Achievements", style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
+        Text(text = ACHIEVEMENTS_HEADING, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
     }
     items(items = achievements.earned, key = { "achievement:${it.id}" }) { line ->
         TvStatsStop { focused -> TvAchievementLine(line.label, line.on, focused) }
     }
     if (achievements.next.isEmpty()) return
     item(key = "achievements-next") {
-        Text(text = "Next", style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, color = LocalCatalogueTones.current.quiet))
+        Text(text = NEXT_HEADING, style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, color = LocalCatalogueTones.current.quiet))
     }
     items(items = achievements.next, key = { "next:${it.id}" }) { line ->
         TvStatsStop { focused ->

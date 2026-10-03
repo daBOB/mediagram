@@ -27,7 +27,10 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
+import stats.HISTORY_HEADING
+import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
+import stats.STATS_HEADING
 import stats.StatsUiState
 import ui.StatsBars
 import ui.tv.TvFocus
@@ -54,7 +57,7 @@ internal fun TvStatsPage(state: StatsUiState) {
         contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        item(key = "heading") { Text(text = "Stats", style = TvTypeScale.title) }
+        item(key = "heading") { Text(text = STATS_HEADING, style = TvTypeScale.title) }
         when (state) {
             StatsUiState.Loading -> Unit
             is StatsUiState.Failed -> item(key = "failed") { TvQuietLine(state.text) }
@@ -75,7 +78,7 @@ internal fun TvStatsPage(state: StatsUiState) {
                 item(key = "chart") {
                     TvStatsStop { focused ->
                         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                            Text(text = "Last 30 days", style = TvFocus.textStyle(TvTypeScale.body, focused))
+                            Text(text = LAST_30_DAYS_HEADING, style = TvFocus.textStyle(TvTypeScale.body, focused))
                             StatsBars(
                                 bars = state.bars,
                                 color = MaterialTheme.colorScheme.primary,
@@ -86,7 +89,7 @@ internal fun TvStatsPage(state: StatsUiState) {
                     }
                 }
                 tvAchievementItems(state.achievements)
-                item(key = "history") { Text(text = "History", style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
+                item(key = "history") { Text(text = HISTORY_HEADING, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
                 items(items = state.history, key = { it.key }) { line ->
                     TvStatsStop { focused -> Text(text = line.text, style = TvFocus.textStyle(TvTypeScale.body, focused)) }
                 }

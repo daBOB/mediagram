@@ -15,7 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Spacing
+import stats.HISTORY_HEADING
+import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
+import stats.STATS_HEADING
 import stats.StatsUiState
 import ui.StatsBars
 
@@ -35,7 +38,7 @@ internal fun StatsScreen(state: StatsUiState) {
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        item(key = "heading") { Text(text = "Stats", style = MaterialTheme.typography.headlineSmall) }
+        item(key = "heading") { Text(text = STATS_HEADING, style = MaterialTheme.typography.headlineSmall) }
         when (state) {
             StatsUiState.Loading -> Unit
             is StatsUiState.Failed -> item(key = "failed") { Text(text = state.text, color = quiet) }
@@ -53,7 +56,7 @@ internal fun StatsScreen(state: StatsUiState) {
                 }
                 item(key = "chart") {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                        Text(text = "Last 30 days", style = MaterialTheme.typography.titleMedium)
+                        Text(text = LAST_30_DAYS_HEADING, style = MaterialTheme.typography.titleMedium)
                         StatsBars(
                             bars = state.bars,
                             color = MaterialTheme.colorScheme.primary,
@@ -62,7 +65,7 @@ internal fun StatsScreen(state: StatsUiState) {
                     }
                 }
                 achievementItems(state.achievements)
-                item(key = "history") { Text(text = "History", style = MaterialTheme.typography.titleMedium) }
+                item(key = "history") { Text(text = HISTORY_HEADING, style = MaterialTheme.typography.titleMedium) }
                 items(items = state.history, key = { it.key }) { line ->
                     Text(text = line.text, style = MaterialTheme.typography.bodyMedium)
                 }

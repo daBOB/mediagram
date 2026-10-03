@@ -13,6 +13,13 @@ import java.time.ZonedDateTime
 /** Under the heading when the profile's history is empty. */
 const val NOTHING_WATCHED = "Nothing watched yet."
 
+/** The page's headings, the web's words — one copy for the phone's page and the television's. */
+const val STATS_HEADING = "Stats"
+const val LAST_30_DAYS_HEADING = "Last 30 days"
+const val ACHIEVEMENTS_HEADING = "Achievements"
+const val NEXT_HEADING = "Next"
+const val HISTORY_HEADING = "History"
+
 /** A history line's title for a set this profile's catalogue does not hold. */
 const val NO_LONGER_IN_LIBRARY = "No longer in the library"
 
