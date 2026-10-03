@@ -26,8 +26,8 @@ import type { MergedState } from "./merge";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
 import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
-import { localDay, tickKey, UPSERT_PROGRESS, writeProgress, type Ticks } from "./stats-recorder";
-import { exportStats, importStats, readSummary } from "./stats-exchange";
+import { tickKey, UPSERT_PROGRESS, writeProgress, type Ticks } from "./stats-recorder";
+import { exportStats, importStats, NO_LIBRARY, readStats } from "./stats-exchange";
 
 export interface Progress {
   setId: string;
@@ -220,9 +220,9 @@ export class WatchState {
     if (db) tolerate(() => writeProgress(db, this.ticks, this.deviceId(), profileId, setId, at, duration));
   }
 
-  /** This profile's viewing stats, as of today on this machine's calendar. */
-  stats(profileId: string) {
-    return readSummary(this.db, profileId, localDay(Date.now()));
+  /** This profile's viewing stats and achievements, as of now on this machine's calendar. */
+  stats(profileId: string, library = NO_LIBRARY) {
+    return readStats(this.db, profileId, Date.now(), library);
   }
 
   /** Forgets a position: started again, or watched to the end. */

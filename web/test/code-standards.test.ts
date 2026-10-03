@@ -43,6 +43,9 @@ const ROOT = join(import.meta.dir, "..");
  * `src/state/routes.ts` and `src/state/schema.ts`, once the shelf toggle, the
  * shared route helpers and the test-only `migrationsUpTo` moved out to make
  * room for viewing stats.
+ * Lowered again for `src/state/routes.ts`, once the stats route moved to
+ * `src/routes.ts`, the one router that holds the catalog its achievements
+ * are counted against.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 717,
@@ -68,7 +71,7 @@ const CEILINGS: Record<string, number> = {
   "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
-  "src/state/routes.ts": 247,
+  "src/state/routes.ts": 243,
   "src/state/schema.ts": 243,
   "src/state/store.ts": 800,
   "src/state/sync-record.ts": 328,

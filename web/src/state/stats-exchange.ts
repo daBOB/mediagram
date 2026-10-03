@@ -1,6 +1,6 @@
 /**
- * Viewing stats between the tables and the wire, and the summary the page
- * reads.
+ * Viewing stats between the tables and the wire, and what the stats page
+ * reads: the summary and the achievements.
  *
  * Kept out of `store.ts` for the reason `watched-exchange.ts` is: turning
  * rows into wire rows and back is one job. Every device's rows go out, not
@@ -11,6 +11,8 @@
 import type { Database } from "bun:sqlite";
 import type { DayStatRow, StatsRows, TitleStatRow } from "./stats-record";
 import { summarize, type StatsSummary } from "./stats-summary";
+import { achievements, type AchievementLibrary, type Achievements } from "./achievements";
+import { localDay, utcOffsetMinutes } from "./stats-recorder";
 
 /** Every row this profile holds, every device's, in a stable order. */
 function statsRows(db: Database | null, profileId: string): { titles: TitleStatRow[]; days: DayStatRow[] } {
@@ -68,11 +70,35 @@ export function importStats(db: Database, profileId: string, rows: StatsRows): n
   return changed;
 }
 
-/** What the stats page shows for `profileId`, as of `today`. */
-export function readSummary(db: Database | null, profileId: string, today: string): StatsSummary {
+/** No catalog to count against: the achievements that need one count nothing. */
+export const NO_LIBRARY: AchievementLibrary = { library: [], collections: [] };
+
+/**
+ * What the stats page shows for `profileId` at `nowMs`: the summary, as of
+ * that day on this machine's calendar, and the achievements, counted against
+ * `library` at this machine's offset from UTC at that moment.
+ */
+export function readStats(
+  db: Database | null,
+  profileId: string,
+  nowMs: number,
+  library: AchievementLibrary,
+): StatsSummary & { achievements: Achievements } {
+  const today = localDay(nowMs);
   const { titles, days } = statsRows(db, profileId);
   const watched = (db
     ?.query("SELECT set_id AS setId, finished_at AS finishedAt FROM watched WHERE profile_id = ?1 AND removed_at IS NULL")
     .all(profileId) ?? []) as { setId: string; finishedAt: number }[];
-  return summarize({ today, titles, days, watched });
+  const profile = db?.query("SELECT kids FROM profiles WHERE id = ?1").get(profileId) as { kids: number } | null | undefined;
+  return {
+    ...summarize({ today, titles, days, watched }),
+    achievements: achievements({
+      today,
+      utcOffsetMinutes: utcOffsetMinutes(nowMs),
+      kids: (profile?.kids ?? 0) !== 0,
+      days,
+      watched,
+      ...library,
+    }),
+  };
 }

@@ -28,6 +28,13 @@ export function localDay(ms: number): string {
   return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 }
 
+/**
+ * This machine's offset from UTC at `ms`, in minutes — `120` in CEST. The
+ * one in force at that moment, so a clock change is taken as it happens.
+ * `0 -` rather than a bare minus keeps UTC a plain `0`, not `-0`.
+ */
+export const utcOffsetMinutes = (ms: number) => 0 - new Date(ms).getTimezoneOffset();
+
 export const UPSERT_PROGRESS = `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
   VALUES (?1, ?2, ?3, ?4, ?5)
   ON CONFLICT(profile_id, set_id) DO UPDATE SET

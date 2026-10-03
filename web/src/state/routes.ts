@@ -13,7 +13,6 @@ import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import type { WatchState } from "./store";
 import { json, P, parse, status } from "./route-shared";
-import { statsRoute } from "./stats-routes";
 
 const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
@@ -118,9 +117,6 @@ export function createStateRouter(options: StateRouterOptions) {
         method === "HEAD",
       );
     }
-
-    const stats = statsRoute(state, request);
-    if (stats) return stats;
 
     // Past here everything writes, so everything is checked.
     if (reading) return status(405);
