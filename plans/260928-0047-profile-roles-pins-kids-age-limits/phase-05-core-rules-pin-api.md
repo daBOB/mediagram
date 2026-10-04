@@ -14,7 +14,7 @@
 
 ## Overview
 
-Priority P1 (06 needs its bindings). Status: pending. Effort ~6h.
+Priority P1 (06 needs its bindings). Status: done (pending merge) — built 2026-10-04 in two commits (05a rules, 05b uniffi surface); see `plans/261004-1508-open-tasks-sweep/reports/b3-phase-05-core-rules-pin-api-report.md` for what was built where it departs from the steps below (the web on main is the spec). Effort ~6h.
 The rule half of the core: the pure `allowed()`, the PIN format and hash, the wrong-PIN wait, the eight
 management operations checked in the contract's order (amended 2026-09-28: structural refusals before
 the wait, the wait only before a PIN comparison, and `create_first_admin` for a device that knows no
