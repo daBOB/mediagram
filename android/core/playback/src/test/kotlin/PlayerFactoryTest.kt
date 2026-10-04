@@ -3,18 +3,21 @@ package playback
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import androidx.media3.common.Metadata
-import androidx.media3.common.text.CueGroup
-import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
-import androidx.media3.exoplayer.audio.AudioRendererEventListener
-import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
-import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.media3.common.C
+import androidx.media3.common.Format
+import androidx.media3.common.Metadata
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.text.CueGroup
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.ForwardingAudioSink
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.video.VideoRendererEventListener
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -24,6 +27,8 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 /**
  * Uses Robolectric's real application [Context], not a mock: the
@@ -172,5 +177,37 @@ class PlayerFactoryTest {
         assertTrue(platform >= 0, "the platform audio renderer is missing")
         assertTrue(ffmpeg > platform, "FFmpeg must come after the platform audio renderer, not before or never")
         renderers.forEach { it.release() }
+    }
+
+    /**
+     * A box that claims HDMI passthrough for every format — as the Realtek
+     * Google TV box does — still gets DTS and TrueHD decoded by FFmpeg: the
+     * sink refuses them, so the platform renderer, with no decoder of its own
+     * for either, declines the track. AC-3, E-AC-3 and PCM go straight on.
+     */
+    @Test
+    fun theAudioSinkRefusesDtsAndTrueHdPassthroughButNotDolbyDigitalOrPcm() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val claimsEverything =
+            object : ForwardingAudioSink(DefaultAudioSink.Builder(context).build()) {
+                override fun getFormatSupport(format: Format): Int = AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY
+            }
+        val sink = NoLosslessPassthroughSink(claimsEverything)
+        fun support(mime: String) = sink.getFormatSupport(Format.Builder().setSampleMimeType(mime).setChannelCount(6).setSampleRate(48_000).build())
+
+        for (refused in listOf(MimeTypes.AUDIO_DTS, MimeTypes.AUDIO_DTS_HD, MimeTypes.AUDIO_DTS_EXPRESS, MimeTypes.AUDIO_DTS_X, MimeTypes.AUDIO_TRUEHD)) {
+            assertEquals(AudioSink.SINK_FORMAT_UNSUPPORTED, support(refused), "$refused must not go out as passthrough")
+        }
+        for (kept in listOf(MimeTypes.AUDIO_AC3, MimeTypes.AUDIO_E_AC3, MimeTypes.AUDIO_RAW)) {
+            assertEquals(AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY, support(kept), "$kept must still pass through")
+        }
+    }
+
+    @Test
+    fun theFactoryBuildsItsAudioSinkBehindTheGuard() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val factory = renderersFactory(context) as PlaybackRenderersFactory
+
+        assertTrue(factory.audioSinkFor(context) is NoLosslessPassthroughSink)
     }
 }

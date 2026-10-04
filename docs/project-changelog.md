@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.106.2 — DTS and TrueHD films play on the television
+
+**Fixed** (Android)
+
+- A film with DTS or TrueHD audio sat at 0:00 with no sound on the Realtek Google TV box
+  (444 DTS and 18 TrueHD titles in the library). The box advertises both as HDMI
+  passthrough, then stalls its compressed output on every buffer (AudioFlinger "pause
+  because of UNDERRUN" with frames ready). The player's audio sink now refuses DTS and
+  TrueHD passthrough, so FFmpeg decodes them to PCM; AC-3 and E-AC-3 passthrough are
+  unchanged. Verified on the box: Magnolia (DTS) and Rocketman (TrueHD) play in real time
+  with the HDMI output opened as PCM. A receiver behind HDMI now gets those two as PCM
+  rather than bitstream.
+
 ## 0.106.1 — courses read as an index on the phone; TV cast as person cards
 
 **Changed** (Android)

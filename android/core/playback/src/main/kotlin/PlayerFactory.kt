@@ -12,6 +12,7 @@ import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import uniffi.mediagram_core.CoreInterface
 
@@ -141,8 +142,22 @@ suspend fun buildPlayer(
  * `internal` so a test can see which renderers it builds.
  */
 internal fun renderersFactory(context: Context): DefaultRenderersFactory =
-    DefaultRenderersFactory(context)
+    PlaybackRenderersFactory(context)
         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+
+/** [DefaultRenderersFactory] whose audio sink refuses DTS and TrueHD passthrough — see [NoLosslessPassthroughSink]. */
+internal class PlaybackRenderersFactory(
+    context: Context,
+) : DefaultRenderersFactory(context) {
+    override fun buildAudioSink(
+        context: Context,
+        enableFloatOutput: Boolean,
+        enableAudioTrackPlaybackParams: Boolean,
+    ): AudioSink? = super.buildAudioSink(context, enableFloatOutput, enableAudioTrackPlaybackParams)?.let(::NoLosslessPassthroughSink)
+
+    /** The sink the renderers get, for a test to check what it is. */
+    internal fun audioSinkFor(context: Context): AudioSink? = buildAudioSink(context, false, false)
+}
 
 /**
  * How far one skip moves. Ten seconds is long enough to clear a line of
