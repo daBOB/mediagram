@@ -39,7 +39,7 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 | A5 | Tutorials "Continue your courses": tablet showed a Next-up card the web did not | lead, data | done 0.99.11 — both narrowed after limiting |
 | A6 | 4K playback measurement on the box (HDR10 + DV, cold, "TV test" profile) | lead, device | pending |
 | A7 | Reconcile stale plan status tables | subagent | done `18b57905` (+ 260925-2046) — 4 left unverified, see reports/a7 |
-| A8 | The same far-future stamp hole in every other synced row type (progress, watchlist, kids, collections, editor's choice), core + web | subagent, worktree | in progress |
+| A8 | The same far-future stamp hole in every other synced row type, core + web | subagent, worktree | done 0.100.1 |
 
 Version: subagents commit without bumping; the lead bumps by pattern when merging each
 into `main` (memory: bump versions by pattern; another session commits to main).

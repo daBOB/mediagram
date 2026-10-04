@@ -47,6 +47,15 @@ pub const SYNC_FORMAT: i64 = 1;
 /// overflow the next own write's `+ 1`.
 pub(crate) const MAX_STAMP: f64 = 9_007_199_254_740_991.0;
 
+/// A time a synced row may carry: positive and no later than [`MAX_STAMP`].
+/// Rows are last-writer-wins, so one stamped past it would outrank every
+/// later edit of that row, on every device it reached, and the stamp would
+/// not survive the trip through `i64` and back. Such a row is dropped, not
+/// clamped: clamped, it would outrank those edits all the same.
+fn is_stamp(at: f64) -> bool {
+    at > 0.0 && at <= MAX_STAMP
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressRow {

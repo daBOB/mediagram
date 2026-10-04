@@ -227,7 +227,7 @@ function progressRow(value: unknown): ProgressRow | null {
   // `at` may legitimately be 0 — the start of a film — so it is checked for
   // finiteness rather than truthiness.
   if (setId === null || !Number.isFinite(at) || at < 0) return null;
-  if (!Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  if (!isStamp(updatedAt)) return null;
   const runtime = numberFromScalar(raw.duration);
   return {
     setId,
@@ -238,12 +238,12 @@ function progressRow(value: unknown): ProgressRow | null {
 }
 
 /**
- * A `watched` time: positive and no later than `Number.MAX_SAFE_INTEGER`.
- * Past it a live mark would outrank every real removal, a removal's finish
- * would tombstone every later position, and the core's next own `+ 1` on
- * one at the top of its integer range would leave that range.
+ * A time a synced row may carry: positive, no later than `Number.MAX_SAFE_INTEGER`.
+ * Rows are last-writer-wins, so one stamped past it would outrank every later
+ * edit of that row on every device it reached (dropped, not clamped: clamped,
+ * it would too), and the core's own `+ 1` on it could leave its integer range.
  */
-function isWatchedStamp(at: number): boolean {
+function isStamp(at: number): boolean {
   return at > 0 && at <= Number.MAX_SAFE_INTEGER;
 }
 
@@ -252,7 +252,7 @@ function watchedRow(value: unknown): WatchedRow | null {
   if (raw === null) return null;
   const setId = text_(raw.setId);
   const updatedAt = numberFromScalar(raw.updatedAt);
-  if (setId === null || !isWatchedStamp(updatedAt)) return null;
+  if (setId === null || !isStamp(updatedAt)) return null;
   return { setId, updatedAt };
 }
 
@@ -262,7 +262,8 @@ function unwatchedRow(value: unknown): UnwatchedRow | null {
   const setId = text_(raw.setId);
   const updatedAt = numberFromScalar(raw.updatedAt);
   const lastFinishedAt = numberFromScalar(raw.lastFinishedAt);
-  if (setId === null || !isWatchedStamp(updatedAt) || !isWatchedStamp(lastFinishedAt)) return null;
+  // A finish past the bound would also tombstone every later position of the title.
+  if (setId === null || !isStamp(updatedAt) || !isStamp(lastFinishedAt)) return null;
   return { setId, updatedAt, lastFinishedAt };
 }
 
@@ -271,7 +272,7 @@ function listRow(value: unknown): ListRow | null {
   if (raw === null) return null;
   const setId = text_(raw.setId);
   const updatedAt = numberFromScalar(raw.updatedAt);
-  if (setId === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  if (setId === null || !isStamp(updatedAt)) return null;
   return raw.removed === true ? { setId, updatedAt, removed: true } : { setId, updatedAt };
 }
 
@@ -285,7 +286,7 @@ function collectionRow(value: unknown): CollectionRow | null {
   if (raw === null) return null;
   const id = text_(raw.id);
   const updatedAt = numberFromScalar(raw.updatedAt);
-  if (id === null || !Number.isFinite(updatedAt) || updatedAt <= 0) return null;
+  if (id === null || !isStamp(updatedAt)) return null;
   const name = text_(raw.name)?.slice(0, MAX_LIST_NAME);
   if (name === undefined || name === "") return null;
   const items = asArray(raw.items).flatMap((entry) => {

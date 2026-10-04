@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::hostile_json::{as_array, js_number, text_};
+use super::is_stamp;
 
 /// A watchlist entry or a Kids mark: a title, when it last changed, and
 /// whether that change was taking it off rather than putting it on.
@@ -37,7 +38,7 @@ pub(super) fn list_row(raw: &Value) -> Option<ListRow> {
     let row = raw.as_object()?;
     let set_id = text_(row.get("setId"))?;
     let updated_at = js_number(row.get("updatedAt"));
-    if !updated_at.is_finite() || updated_at <= 0.0 {
+    if !is_stamp(updated_at) {
         return None;
     }
     let removed = row.get("removed").and_then(Value::as_bool).unwrap_or(false);
@@ -61,7 +62,7 @@ pub(super) fn collection_row(raw: &Value) -> Option<CollectionRow> {
         .take(MAX_LIST_NAME)
         .collect();
     let updated_at = js_number(row.get("updatedAt"));
-    if !updated_at.is_finite() || updated_at <= 0.0 {
+    if !is_stamp(updated_at) {
         return None;
     }
     let items = as_array(row.get("items"))

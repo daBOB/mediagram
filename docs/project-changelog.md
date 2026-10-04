@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.100.1 — no synced row can be stamped into the far future
+
+**Fixed**
+
+- Core and web: a synced position, My List entry, collection, Kids mark or editor's
+  choice whose time is above 2^53 − 1 is now dropped when parsed, as watched, stats and
+  preference rows already were. Before, a peer's far-future stamp beat every later real
+  edit of that row on every device it reached: the position, a removal, a rename, the
+  editor's choice pick. One helper per engine now checks every row's time. Android takes
+  the fix with its next native core build.
+
 ## 0.100.0 — "0 min", "Continue", "My List": the wording the user chose, everywhere
 
 **Changed** (the user's decisions, 2026-10-04 — web, phone/tablet and TV alike)

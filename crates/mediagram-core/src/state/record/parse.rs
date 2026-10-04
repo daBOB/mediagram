@@ -10,7 +10,7 @@ use super::list_record::{collection_row, list_row};
 use super::preference_record::preference_row;
 use super::stats_record::{day_stat_row, title_stat_row};
 use super::{
-    MAX_STAMP, ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow,
+    ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow, is_stamp,
 };
 
 /// Reads a document from the channel, or `None` if it cannot be trusted.
@@ -117,7 +117,7 @@ fn progress_row(raw: &Value) -> Option<ProgressRow> {
         return None;
     }
     let updated_at = js_number(row.get("updatedAt"));
-    if !updated_at.is_finite() || updated_at <= 0.0 {
+    if !is_stamp(updated_at) {
         return None;
     }
     let runtime = js_number(row.get("duration"));
@@ -134,19 +134,11 @@ fn progress_row(raw: &Value) -> Option<ProgressRow> {
     })
 }
 
-/// A `watched` time: positive and no later than [`MAX_STAMP`]. Past it a
-/// live mark would outrank every real removal, a removal's finish would
-/// tombstone every later position, and the stamp would not survive the trip
-/// through `i64` and back.
-fn is_watched_stamp(at: f64) -> bool {
-    at > 0.0 && at <= MAX_STAMP
-}
-
 fn watched_row(raw: &Value) -> Option<WatchedRow> {
     let row = raw.as_object()?;
     let set_id = text_(row.get("setId"))?;
     let updated_at = js_number(row.get("updatedAt"));
-    if !is_watched_stamp(updated_at) {
+    if !is_stamp(updated_at) {
         return None;
     }
     Some(WatchedRow { set_id, updated_at })
@@ -157,7 +149,9 @@ fn unwatched_row(raw: &Value) -> Option<UnwatchedRow> {
     let set_id = text_(row.get("setId"))?;
     let updated_at = js_number(row.get("updatedAt"));
     let last_finished_at = js_number(row.get("lastFinishedAt"));
-    if !is_watched_stamp(updated_at) || !is_watched_stamp(last_finished_at) {
+    // A removal's finish past the bound would also tombstone every later
+    // position of that title, not just outrank the next mark.
+    if !is_stamp(updated_at) || !is_stamp(last_finished_at) {
         return None;
     }
     Some(UnwatchedRow {

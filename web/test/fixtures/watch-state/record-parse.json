@@ -563,5 +563,35 @@
         }
       ]
     }
+  },
+  {
+    "name": "a position, watchlist or collection time beyond 2^53 - 1 drops the row; 2^53 - 1 itself is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[{\"setId\":\"01A\",\"at\":742,\"updatedAt\":9007199254740991},{\"setId\":\"01B\",\"at\":742,\"updatedAt\":9007199254740992},{\"setId\":\"01C\",\"at\":742,\"updatedAt\":9007199254740993},{\"setId\":\"01D\",\"at\":742,\"updatedAt\":9223372036854775807},{\"setId\":\"01E\",\"at\":742,\"updatedAt\":1e300},{\"setId\":\"01F\",\"at\":742,\"updatedAt\":\"9007199254740992\"}],\"watched\":[],\"watchlist\":[{\"setId\":\"02A\",\"updatedAt\":9007199254740991},{\"setId\":\"02B\",\"updatedAt\":9007199254740992},{\"setId\":\"02C\",\"updatedAt\":9007199254740993},{\"setId\":\"02D\",\"updatedAt\":9223372036854775807},{\"setId\":\"02E\",\"updatedAt\":1e300},{\"setId\":\"02F\",\"updatedAt\":\"9007199254740992\"}],\"collections\":[{\"id\":\"cA\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":9007199254740991,\"removed\":true},{\"id\":\"cB\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":9007199254740992},{\"id\":\"cC\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":9007199254740993},{\"id\":\"cD\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":9223372036854775807},{\"id\":\"cE\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":1e300},{\"id\":\"cF\",\"name\":\"Films\",\"items\":[\"03A\"],\"updatedAt\":\"9007199254740992\"}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [{ "setId": "01A", "at": 742, "duration": null, "updatedAt": 9007199254740991 }],
+          "watched": [],
+          "watchlist": [{ "setId": "02A", "updatedAt": 9007199254740991 }],
+          "collections": [{ "id": "cA", "name": "Films", "items": ["03A"], "updatedAt": 9007199254740991, "removed": true }]
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids or editor's choice time beyond 2^53 - 1 drops the row; 2^53 - 1 itself is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[],\"kids\":[{\"setId\":\"04A\",\"updatedAt\":9007199254740991},{\"setId\":\"04B\",\"updatedAt\":9007199254740992},{\"setId\":\"04C\",\"updatedAt\":9007199254740993},{\"setId\":\"04D\",\"updatedAt\":9223372036854775807},{\"setId\":\"04E\",\"updatedAt\":1e300},{\"setId\":\"04F\",\"updatedAt\":\"9007199254740992\"}],\"editorsChoice\":[{\"setId\":\"05A\",\"updatedAt\":9007199254740991,\"removed\":true},{\"setId\":\"05B\",\"updatedAt\":9007199254740992},{\"setId\":\"05C\",\"updatedAt\":9007199254740993},{\"setId\":\"05D\",\"updatedAt\":9223372036854775807},{\"setId\":\"05E\",\"updatedAt\":1e300},{\"setId\":\"05F\",\"updatedAt\":\"9007199254740992\"}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [],
+      "kids": [{ "setId": "04A", "updatedAt": 9007199254740991 }],
+      "editorsChoice": [{ "setId": "05A", "updatedAt": 9007199254740991, "removed": true }]
+    }
   }
 ]
