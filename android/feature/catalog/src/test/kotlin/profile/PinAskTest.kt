@@ -91,7 +91,7 @@ class PinAskTest {
                 PinPrompt("A PIN for Bo", newPin = true),
                 send = { ProfileOutcome.NameTaken },
                 done = { error("not done") },
-                refused = { told = it },
+                refused = { told = it?.sentence() },
             )
             ask.enter("2468")
             ask.enter("2468")

@@ -23,8 +23,9 @@ private val FOUR_DIGITS = Regex("[0-9]{$PIN_LENGTH}")
  *
  * A refused PIN keeps the prompt open with the reason. A refused new PIN —
  * typed twice and the right shape, so no other would fare better — ends the
- * prompt and hands the reason to `refused`: what was turned down is
- * something else, a name or a current PIN sent beside it.
+ * prompt and hands the outcome to `refused` (null when the core could not be
+ * asked): what was turned down is something else, a name or a current PIN
+ * sent beside it.
  *
  * Only the latest [ask] may answer: a request still out when the prompt was
  * cancelled or replaced finishes without touching the screen.
@@ -39,13 +40,13 @@ internal class PinAsk(
     private var asking = 0L
     private var send: suspend (String) -> ProfileOutcome = { ProfileOutcome.Invalid }
     private var done: (String) -> Unit = {}
-    private var refused: (String) -> Unit = {}
+    private var refused: (ProfileOutcome?) -> Unit = {}
 
     fun ask(
         prompt: PinPrompt,
         send: suspend (pin: String) -> ProfileOutcome,
         done: (pin: String) -> Unit,
-        refused: (sentence: String) -> Unit = {},
+        refused: (outcome: ProfileOutcome?) -> Unit = {},
     ) {
         asking++
         first = null
@@ -91,7 +92,6 @@ internal class PinAsk(
         scope.launch {
             val outcome = attempt { sending(pin) }
             if (started != asking) return@launch
-            val reason = outcome?.sentence() ?: DID_NOT_GO_THROUGH
             when {
                 outcome == ProfileOutcome.Done -> {
                     cancel()
@@ -99,13 +99,16 @@ internal class PinAsk(
                 }
                 current.newPin -> {
                     cancel()
-                    tell(reason)
+                    tell(outcome)
                 }
-                else -> shown.value = current.copy(busy = false, error = reason)
+                else -> shown.value = current.copy(busy = false, error = outcome.reason())
             }
         }
     }
 }
+
+/** Why an answer from [attempt] did not take: its sentence, or that the core could not be asked at all. */
+internal fun ProfileOutcome?.reason(): String = this?.sentence() ?: DID_NOT_GO_THROUGH
 
 /** [block]'s answer, or null when the core could not be asked at all — which says nothing about the PIN. */
 internal suspend fun attempt(block: suspend () -> ProfileOutcome): ProfileOutcome? =
@@ -118,6 +121,23 @@ internal suspend fun attempt(block: suspend () -> ProfileOutcome): ProfileOutcom
     ) {
         null
     }
+
+/**
+ * Who is here, read again after a refusal — usually news from another
+ * device. A read that fails leaves the list as it was: the refusal is
+ * already said, and saying a second failure over it would only bury it.
+ */
+internal suspend fun WatchStateRepository.rereadQuietly() {
+    try {
+        reload()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (
+        @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
+    ) {
+        Unit
+    }
+}
 
 /**
  * A grown-up saying who they are — the web's `prove`: their PIN, or, for one

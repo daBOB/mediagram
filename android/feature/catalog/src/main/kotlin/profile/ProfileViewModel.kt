@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import model.ProfileOutcome
 import model.ProfileRequest
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
@@ -207,19 +208,9 @@ class ProfileViewModel
         }
 
         /** A refused new PIN ended its prompt: said above the tiles, over who is here now — a refusal is usually news from another device. */
-        private fun refused(sentence: String) {
-            noticed(sentence)
-            viewModelScope.launch {
-                try {
-                    repository.reload()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (
-                    @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
-                ) {
-                    // The tiles stay as they were; the notice already says what went wrong.
-                }
-            }
+        private fun refused(outcome: ProfileOutcome?) {
+            noticed(outcome.reason())
+            viewModelScope.launch { repository.rereadQuietly() }
         }
 
         private fun noticed(sentence: String?) {
