@@ -38,7 +38,7 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 | A4 | TV box mDNS finds no cache server within the 10 s window | lead, device | pending |
 | A5 | Tutorials "Continue your courses": tablet showed a Next-up card the web did not | lead, data | done 0.99.11 — both narrowed after limiting |
 | A6 | 4K playback measurement on the box (HDR10 + DV, cold, "TV test" profile) | lead, device | pending |
-| A7 | Reconcile stale plan status tables (`260916`, `260919`, `260920-*`, `260921`, `260923-*`, `260924-*`, `260925-1923`, `260929-0215`, `260928-0306`, `261002-0213`) | lead, docs | pending |
+| A7 | Reconcile stale plan status tables | subagent | done `18b57905` (+ 260925-2046) — 4 left unverified, see reports/a7 |
 
 Version: subagents commit without bumping; the lead bumps by pattern when merging each
 into `main` (memory: bump versions by pattern; another session commits to main).

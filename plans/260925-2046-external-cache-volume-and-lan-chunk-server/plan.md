@@ -1,6 +1,6 @@
 ---
 title: "External cache — a chosen volume, and a LAN chunk server"
-status: done — awaiting merge
+status: completed
 mode: hard + tdd
 created: 2026-09-25
 supersedes: [260921-1751-android-external-cache]
@@ -118,3 +118,5 @@ All five phases implemented TDD, each reviewed by an independent code-review pas
   - First-frame time with the LAN warm vs cold.
   - The TV permission and token UI (TV plan).
 - Version: not bumped on any branch. Minor bump at merge.
+
+Status reconciled 2026-10-04: completed — merged to main as `714c6a6a`.
