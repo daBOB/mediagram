@@ -71,7 +71,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 |---|------|--------|
 | B1 | `260926-1330` — complete: A–H merged, check.sh green, final review fixed, TV box walk fixed and re-walked on 0.109.1 (Left from Search, franchise hero, Back to franchise card, Back to Editor's choice card) | done |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01–07 all merged (web live 0.108.0; Android + core 0.110.0, check.sh green); left: review findings, tablet contract run + device walks (tablet, box), 08 docs, publish (user's word) | in progress |
+| B3 | `260928-0047` — 01–07 merged (Android + core 0.110.0, check.sh green); security review: HIGH Manage keeps parent PIN across app leave (blocks install/publish), MEDIUM wait resets on app kill, MEDIUM pre-sync first profile can take a PIN → fixes building; then tablet contract run + device walks, 08, publish (user's word) | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.
