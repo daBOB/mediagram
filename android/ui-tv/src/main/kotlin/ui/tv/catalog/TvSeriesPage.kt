@@ -99,7 +99,7 @@ internal fun TvSeriesPage(
             when {
                 restoreKey == null -> 0
                 restoreKey in genres -> tabs.indexOf("About")
-                credits.cast.any { it.personId.toString() == restoreKey } -> tabs.indexOf("Cast")
+                credits.onCastTab(restoreKey) -> tabs.indexOf("Cast")
                 similar.any { it.key == restoreKey } -> tabs.indexOf("Similar")
                 else -> 0
             }

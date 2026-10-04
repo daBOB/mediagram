@@ -14,11 +14,11 @@ import ui.catalog.DESTINATION_ASPECT
 /**
  * One search result, drawn the way `search-view.js` draws its kind: a film
  * as its poster, opening the film's own page (the web's `openFilm`, the
- * phone's poster); a matched show as the show's poster; a franchise or a
- * list as the destination card Collections draws, a franchise counting its
- * films and a list its titles; and an episode, a documentary, a lesson or a
- * person as a row — an episode or lesson plays at once, as on the phone and
- * the web.
+ * phone's poster); a matched show as the show's poster; a person as the
+ * web's round `personCard`; a franchise or a list as the destination card
+ * Collections draws, a franchise counting its films and a list its titles;
+ * and an episode, a documentary or a lesson as a row — which plays at once,
+ * as on the phone and the web.
  *
  * [requester] is always given and always attached, whichever entry the
  * results want the remote on right now, so a card's modifier chain never
@@ -72,7 +72,7 @@ internal fun TvSearchCell(
             )
 
         is SearchEntry.Person ->
-            TvPersonSearchRow(entry.person, onOpenPerson, shouldRequestPortrait, fetchPortrait, requester)
+            TvPersonCard(entry.person, onOpenPerson, shouldRequestPortrait, fetchPortrait, modifier.focusRequester(requester))
 
         is SearchEntry.Destination -> {
             val destination = entry.destination

@@ -129,14 +129,16 @@ class DepartmentHeroTest {
         assertTrue(title.top < art.bottom, "the title should start on the strip's own foot, not under it")
     }
 
-    /** A portrait tablet (Medium) keeps the hero it had: its words under the strip. */
+    /** A portrait tablet (Medium, 777dp) is still under the web's 900px, so its words overlap the strip too. */
     @Test
-    @Config(sdk = [35], qualifiers = "w700dp-h1200dp")
-    fun onAPortraitTabletTheWordsStayUnderTheArtStrip() {
+    @Config(sdk = [35], qualifiers = "w777dp-h1200dp")
+    fun onAPortraitTabletTheWordsOverlapTheArtStripsFadedFootToo() {
         show()
         val art = compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
         val title = compose.onNodeWithTag(DEPT_HERO_TITLE_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertTrue(title.top >= art.bottom, "a portrait tablet's title should sit under the strip, at ${title.top} against ${art.bottom}")
+        assertEquals(777f * 0.64f, art.bottom.value, 1f)
+        assertEquals(777f * 0.48f, title.top.value, 1f)
+        assertTrue(title.top < art.bottom, "a portrait tablet's title should start on the strip's own foot, not under it")
     }
 
     @Test

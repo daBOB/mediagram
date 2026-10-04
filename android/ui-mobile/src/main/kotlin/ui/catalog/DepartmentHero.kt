@@ -97,7 +97,7 @@ internal fun DepartmentHero(
                 .let { if (!compact && art != null) it.heightIn(min = heroMinHeight) else it },
     ) {
         if (compact) {
-            CompactDeptHero(title, line, art, width, franchiseTitle, overview, overlap = widthClass == WindowWidthSizeClass.COMPACT)
+            CompactDeptHero(title, line, art, width, franchiseTitle, overview)
         } else {
             // The web hides `.dept-quote` below 900px (`departments.css:91`)
             // — the quote is a wide-only concern, so only this branch ever

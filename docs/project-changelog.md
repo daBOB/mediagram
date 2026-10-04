@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.106.0 — the last editorial gaps on Android close
+
+**Changed** (Android)
+
+- TV Cast: each "Directed by" / "Created by" name is a stop on the remote that opens the
+  person's page, as the web and phone link them.
+- A TV course page is the web's index: the page heading ("two lessons · one document")
+  over its lessons, without the film-style tabs a course has nothing for. Written under
+  "Television differs": a "▶ Continue …" line under the heading, because a remote walks a
+  long course one row at a time.
+- TV search shows people as round portrait cards with name and count.
+- A tablet in portrait overlaps a department hero's words onto its art, as the web does
+  below 900 px; a list's own phone page opens with the web's page heading.
+
 ## 0.105.2 — Android's tests run the real watch-state repository
 
 **Changed** (internal, Android tests)

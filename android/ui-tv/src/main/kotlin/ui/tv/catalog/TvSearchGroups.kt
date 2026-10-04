@@ -29,13 +29,14 @@ internal fun keyOf(entry: SearchEntry): String =
 
 /**
  * How a section lays its entries out, as `search-view.js` draws each part:
- * films and shows as posters, [Columns] across as on every wall; franchises
- * and lists as the 4:3 destination cards Collections draws, three across;
- * and episodes, documentaries, lessons and people one row each — a lesson's
- * title alone rarely tells one from the next, so its row says where it sits
- * and why it matched.
+ * films and shows as posters, [Columns] across as on every wall; people as
+ * the web's `personCard`s — a round portrait over the name — the same
+ * [Columns] across; franchises and lists as the 4:3 destination cards
+ * Collections draws, three across; and episodes, documentaries and lessons
+ * one row each — a lesson's title alone rarely tells one from the next, so
+ * its row says where it sits and why it matched.
  */
-internal enum class SearchLayout(val columns: Int) { ROWS(1), POSTERS(Columns), CARDS(DestinationColumns) }
+internal enum class SearchLayout(val columns: Int) { ROWS(1), POSTERS(Columns), PEOPLE(Columns), CARDS(DestinationColumns) }
 
 /** One named group of [SearchEntry] on the results page — empty ones are never returned, so a caller never has to check. */
 internal data class SearchSection(val title: String, val entries: List<SearchEntry>, val layout: SearchLayout = SearchLayout.ROWS)
@@ -128,7 +129,7 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
             add(SearchSection("Lessons", groups.lessons.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.PEOPLE) && groups.people.isNotEmpty()) {
-            add(SearchSection("People", groups.people.map(SearchEntry::Person)))
+            add(SearchSection("People", groups.people.map(SearchEntry::Person), SearchLayout.PEOPLE))
         }
         if (wants(SearchFilter.COLLECTIONS) && groups.collections.isNotEmpty()) {
             add(SearchSection("Collections", groups.collections.map(SearchEntry::Destination), SearchLayout.CARDS))

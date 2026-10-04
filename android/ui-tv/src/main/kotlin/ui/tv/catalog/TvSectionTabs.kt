@@ -1,13 +1,9 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -25,7 +21,6 @@ import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
-import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -119,21 +114,3 @@ internal fun TvSectionTabs(
  * this is the one that is actually the page.
  */
 internal const val TvTitlePageBodyTag = "tv-title-page-body"
-
-/**
- * One tab's own scrollable body — a course's About/Cast/Similar — padded
- * and scrolled the same way whichever tab is showing, so each tab's file
- * only supplies what actually differs between them.
- */
-@Composable
-internal fun TvTabBody(content: @Composable () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Overscan.horizontal, vertical = Spacing.medium),
-    ) {
-        content()
-    }
-}

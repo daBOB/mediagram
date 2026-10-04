@@ -1,16 +1,16 @@
 package ui.tv.catalog
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,11 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.SearchRow
@@ -36,6 +39,7 @@ import catalog.initialsOf
 import catalog.searchWhy
 import catalog.spelledCountOf
 import coil3.compose.AsyncImage
+import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
@@ -44,9 +48,6 @@ import ui.catalog.locationOf
 import ui.catalog.rememberPortrait
 import ui.catalog.searchMetaLineOf
 import ui.tv.TvFocus
-
-/** How wide a person's own portrait sits on their search row. */
-private val SearchPortraitWidth = 56.dp
 
 /**
  * One episode, documentary or lesson hit, as the phone's `SearchResultRow` draws it: the title, where it
@@ -106,41 +107,60 @@ internal fun TvSearchRow(
 
 /**
  * A person the query matched, already narrowed to titles *this profile* can
- * see ([catalog.visiblePeople]'s own rule — never shown otherwise). A round
- * portrait, fetched lazily and at most once per session, the same rule
- * every cast row on this surface follows.
+ * see ([catalog.visiblePeople]'s own rule — never shown otherwise), as the
+ * web's `personCard` draws one: a round portrait, the name under it, and how
+ * many titles they are in. The portrait is fetched lazily and at most once
+ * per session, the rule every cast row on this surface follows.
+ *
+ * Focus wears the one treatment every card here does — the accent ring and
+ * [TvFocus.Scale] — drawn on the round face by hand, since a tv-material
+ * `Card` clips its content to its shape and the name has to sit under the
+ * circle rather than inside it. Both modifiers are always present and only
+ * their values follow focus, so the chain never changes shape under the
+ * remote. [modifier] carries the caller's width and requester.
  */
 @Composable
-internal fun TvPersonSearchRow(
+internal fun TvPersonCard(
     person: VisiblePerson,
     onOpenPerson: (personId: Long) -> Unit,
     shouldRequestPortrait: (Long) -> Boolean,
     fetchPortrait: suspend (Long) -> String?,
-    focus: FocusRequester?,
+    modifier: Modifier = Modifier,
 ) {
     val portrait = rememberPortrait(person.personId, person.portraitPath, shouldRequestPortrait, fetchPortrait)
     var focused by remember { mutableStateOf(false) }
-    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-    val ownRequester = remember { FocusRequester() }
-    Row(
+    val scale by animateFloatAsState(if (focused) TvFocus.Scale else 1f, label = "person-card-scale")
+    Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .focusRequester(focus ?: ownRequester)
+            modifier
                 .onFocusChanged { focused = it.isFocused }
                 // Merged, the same reason `TvPlate`'s own Card is: the name
-                // and title count are this row's one announcement, and a
+                // and title count are this card's one announcement, and a
                 // press anywhere on it is the same one press.
                 .semantics(mergeDescendants = true) {}
                 .clickable(indication = null, interactionSource = null) { onOpenPerson(person.personId) },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        TvPortraitCircle(portrait?.let(::File), person.name, modifier = Modifier.width(SearchPortraitWidth))
-        Column {
-            Text(text = person.name, style = TvFocus.textStyle(TvTypeScale.body, focused))
-            TvQuietLine(spelledCountOf(person.titles, "title"))
-        }
+        TvPortraitCircle(
+            portrait?.let(::File),
+            person.name,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }.border(TvFocus.BorderWidth, if (focused) Palette.Imprint else Color.Transparent, CircleShape),
+        )
+        Text(
+            text = person.name,
+            style = TvTypeScale.body,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = Spacing.small),
+        )
+        TvQuietLine(spelledCountOf(person.titles, "title"), textAlign = TextAlign.Center)
     }
 }
 

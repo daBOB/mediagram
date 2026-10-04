@@ -131,13 +131,10 @@ internal fun BoxScope.WideDeptHero(
 
 /**
  * The compact layout (`departments.css:86-93`): art strip on top, title and
- * line in flow beneath — no quote, no bar term, matching the web's own
- * static masthead at this width.
- *
- * [overlap] sets the words onto the strip's own faded foot, as the web does
- * below 900px: `padding-top: 48vw` over a `64vw` strip placed behind it.
- * A phone takes it; a portrait tablet (Medium) keeps its words under the
- * strip, the hero it already had.
+ * line set onto the strip's own faded foot — `padding-top: 48vw` over a
+ * `64vw` strip placed behind them — with no quote and no bar term, matching
+ * the web's own static masthead at every width up to 900px: a phone and a
+ * portrait tablet (Medium) alike.
  */
 @Composable
 internal fun CompactDeptHero(
@@ -147,7 +144,6 @@ internal fun CompactDeptHero(
     width: Dp,
     franchiseTitle: Boolean,
     overview: String?,
-    overlap: Boolean,
 ) {
     val artHeight = width * 0.64f
     Box(Modifier.fillMaxWidth()) {
@@ -171,12 +167,7 @@ internal fun CompactDeptHero(
                     // here: the web's compact masthead never bleeds under the
                     // hero at this width, so there is nothing above the strip
                     // to clear.
-                    top =
-                        when {
-                            art == null -> 40.dp
-                            overlap -> width * 0.48f
-                            else -> artHeight + width * 0.48f
-                        },
+                    top = if (art == null) 40.dp else width * 0.48f,
                     start = gutterFor(width),
                     end = gutterFor(width),
                     bottom = 28.dp,

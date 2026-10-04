@@ -281,7 +281,7 @@ class TvSearchAndGenreTest {
     /**
      * People (only those the profile can see — `visiblePeople`'s own rule)
      * and filter chips: pressing "People" narrows to just that section, and
-     * pressing a person's row opens their own page.
+     * pressing a person's card opens their own page.
      */
     @Test
     fun peopleGroupWithFilterChipsNarrowsToJustThatSection() {
@@ -295,7 +295,7 @@ class TvSearchAndGenreTest {
         compose.onNodeWithText("○  Movies · 2").assertExists()
         // Down from the field reaches the chips, Down from a chip enters the
         // results at their first poster, and Down from the posters reaches
-        // the person's row below them.
+        // the person's card below them.
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         row("Film 0").assertIsFocused()
@@ -311,12 +311,12 @@ class TvSearchAndGenreTest {
     }
 
     /**
-     * Back from a person opened in search lands on that person's own row,
-     * below the films — the row is recorded under the results' own key for
-     * it, not the bare id, which no row carries and so fell to the first.
+     * Back from a person opened in search lands on that person's own card,
+     * below the films — the card is recorded under the results' own key for
+     * it, not the bare id, which no card carries and so fell to the first.
      */
     @Test
-    fun backFromAPersonLandsOnTheirRowNotTheFirstResult() {
+    fun backFromAPersonLandsOnTheirCardNotTheFirstResult() {
         val hit = PersonHit(personId = 9L, name = "Ada Actor", portraitPath = null, titleKeys = listOf("poster-film-0"))
         coEvery { fixture.repository.searchPeople(any()) } returns listOf(hit)
 

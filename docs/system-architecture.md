@@ -883,6 +883,11 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
 - **"No lists yet." under Your lists.** With no lists, the web leaves an empty grid above
   "＋ New list"; television, like the phone, says so in one quiet line, because an empty
   band under a heading reads as something that failed to load.
+- **A course's page keeps a resume line under its head.** The web's course page is its
+  shelf head and its lessons, and so is television's — but under the head the television
+  also offers "▶ Continue" and the lesson's name, the series pill's own words, one press
+  up from the first lesson. A pointer reaches lesson 87 of a 162-lesson course in one fling, where its
+  progress rule shows; a remote walks there a row at a time.
 - **Home unmounts under a pushed frame and rebuilds on return, not kept alive.** Tried
   (2026-09-30): keep the root library composed and laid out under every pushed frame —
   hidden, inert, its catalogue state frozen — so Back would be a focus restore rather than

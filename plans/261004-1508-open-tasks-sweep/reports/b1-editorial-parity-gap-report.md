@@ -68,4 +68,6 @@ Each ruling is reversible by the user; none reverses a user decision.
 - Tablet in portrait (MEDIUM, ~777 dp): the department hero still puts its words under the art; the web overlaps them up to 900 px — parity says overlap (group E report).
 - Phone: a list's own page has no page heading; the web (and now TV) have one (group E report).
 - TV search shows people as rows; the web shows person cards (group E report).
+- Phone course page still opens with a large name + art/overview header; the web and (since 0.106.0) TV show the index — group F report.
+- TV Cast shows 2:3 poster plates where the web and phone use round person cards — group F report.
 

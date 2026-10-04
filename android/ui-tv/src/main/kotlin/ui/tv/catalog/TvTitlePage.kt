@@ -106,7 +106,7 @@ internal fun TvTitlePage(
         remember(tabs, credits, similar, restoreKey) {
             when {
                 restoreKey == null -> 0
-                credits.cast.any { it.personId.toString() == restoreKey } -> tabs.indexOf("Cast")
+                credits.onCastTab(restoreKey) -> tabs.indexOf("Cast")
                 similar.any { it.setId == restoreKey } -> tabs.indexOf("Similar")
                 else -> 0
             }

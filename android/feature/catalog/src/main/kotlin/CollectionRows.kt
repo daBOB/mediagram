@@ -1,5 +1,6 @@
 package catalog
 
+import model.Kind
 import model.MediaSet
 
 /**
@@ -44,3 +45,18 @@ fun rowsOf(
             addAll(rowsOf(division.children, depth + 1))
         }
     }
+
+/**
+ * How much a course holds, as its page head says it — `extentOf` in the
+ * web's `course-view.js`: "n lessons · m documents", or just the lessons
+ * where there are none, spelled as `countOf` spells. A documentary
+ * collection is shelved and opened as a course and counts documentaries
+ * instead, `countsUnder`'s own rule.
+ */
+fun courseExtentOf(divisions: List<Division>): String {
+    val sets = divisions.flatMap { top -> top.walk().flatMap { it.items }.toList() }
+    val documents = sets.count { it.kind == Kind.DOCUMENT }
+    val noun = if (sets.any { it.kind == Kind.DOCUMENTARY }) "documentary" else "lesson"
+    return listOfNotNull(spelledCountOf(sets.size - documents, noun), documents.takeIf { it > 0 }?.let { spelledCountOf(it, "document") })
+        .joinToString(" · ")
+}

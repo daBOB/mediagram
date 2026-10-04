@@ -23,13 +23,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import catalog.spelledCountOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
 
 /**
- * One list's titles, in the order they were filed — `listView` in
- * collections-view.js. Titles are added from the player's "Add to list"
+ * One list's titles, in the order they were filed — `renderList` and
+ * `listView` in collections-view.js, opened by the same shelf head the web
+ * gives the list (its name, how many titles it names). Titles are added from the player's "Add to list"
  * dialog: `collection-add.js`'s in-list search picker is out of scope for
  * this phase, per the Requirements — only rename, delete and taking a title
  * back off the list are asked for here.
@@ -49,28 +51,36 @@ internal fun ListScreen(
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
-            horizontalArrangement = if (onPlayAll != null) Arrangement.SpaceBetween else Arrangement.End,
-        ) {
-            onPlayAll?.let { PlayAllButton(onClick = it) }
-            Row {
-                TextButton(onClick = { renaming = true }) { Text("Rename") }
-                TextButton(onClick = { deleting = true }) { Text("Delete list") }
+    // The head and the controls scroll away with the titles, as the web's
+    // do, rather than holding a phone's short screen while a long list runs.
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = Spacing.medium),
+    ) {
+        item(key = "head") {
+            // The web's `heading()` over a list (`renderList`), counting what
+            // the list names — the number its Collections card shows too —
+            // rather than only the titles this library could still resolve.
+            ShelfHead(title = list.name, sub = spelledCountOf(list.items.size, "title"))
+        }
+        item(key = "controls") {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.medium),
+                horizontalArrangement = if (onPlayAll != null) Arrangement.SpaceBetween else Arrangement.End,
+            ) {
+                onPlayAll?.let { PlayAllButton(onClick = it) }
+                Row {
+                    TextButton(onClick = { renaming = true }) { Text("Rename") }
+                    TextButton(onClick = { deleting = true }) { Text("Delete list") }
+                }
             }
         }
         if (sets.isEmpty()) {
-            CenteredMessage("Nothing on this list yet. Add titles from the player.")
+            item(key = "empty") { CenteredMessage("Nothing on this list yet. Add titles from the player.") }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().weight(1f),
-                contentPadding = PaddingValues(horizontal = Spacing.medium),
-            ) {
-                items(items = sets, key = MediaSet::setId) { set ->
-                    ListedRow(set = set, held = set.setId in heldIds, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
-                    HorizontalDivider()
-                }
+            items(items = sets, key = MediaSet::setId) { set ->
+                ListedRow(set = set, held = set.setId in heldIds, onPlay = { onPlay(set.setId) }, onRemove = { onRemove(set.setId) })
+                HorizontalDivider()
             }
         }
     }

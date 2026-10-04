@@ -41,7 +41,8 @@ import ui.tv.TvTextRow
  * [sections] is [groups][catalog.SearchGroups] already narrowed to whichever
  * [SearchFilter] is chosen, each its own heading over its own entries, laid
  * out the way the web lays that kind out ([SearchLayout]): films and shows
- * as poster lines, collections as card lines, everything else one row each.
+ * as poster lines, people as lines of round portraits, collections as card
+ * lines, everything else one row each.
  * [filters] is the chip row above them, offered only once there is more than
  * one kind to choose between (`SearchGroups.filters`'s own gate). [ask] is
  * the flat entry (across every section, in the same order they render) the

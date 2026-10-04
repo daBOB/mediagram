@@ -561,16 +561,19 @@ the way a magazine department does.
   a plate merges artwork and caption.
 
 **Shelf head** (`ShelfHead`) is the plainer opener the web gives a reference
-page — Latest, Genres, one genre, a person (`heading()`, `.shelf-head`): the
+page — Latest, Genres, one genre, a person, and a list's own page (the web's
+`renderList` heads it the same way) (`heading()`, `.shelf-head`): the
 title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
 3.6rem)`), not uppercased; the extent flush right in Geist 11sp caps at
 0.24em tracking in quiet, dropping under the title when it needs the width;
 a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
 Fraunces SemiBold 24sp (`.shelf-sub`). Television's `TvShelfHead` opens the
-same four pages, and a list's own page (the web's `renderList` heads it the
-same way), at the web's 4.4vw for its fixed 960dp (42sp), the extent at
-the 16sp ten-foot floor; a person's round portrait (120dp) stands before the
-title, as the web prepends it.
+same five pages, and a course's own page ("two lessons · one document", the
+web's `course-view.js` heading), at the web's 4.4vw for its fixed 960dp
+(42sp), the extent at the 16sp ten-foot floor; a person's round portrait
+(120dp) stands before the title, as the web prepends it. Search's people
+are the same round portrait as a card, the name and count under it, six
+to a line on television (the web's `personCard`).
 
 ### Art tile
 
