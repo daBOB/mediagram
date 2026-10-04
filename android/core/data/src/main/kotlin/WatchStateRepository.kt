@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,8 +74,9 @@ interface WatchStateRepository {
      * exists or what they are, [profiles], the choice and [chosenProfile] are
      * re-read (the core forgets a removed profile's choice itself); an unlock
      * changes nothing stored and re-reads nothing, and neither does a request
-     * that answered after an account reset. The default refuses, for a
-     * repository with no core behind it.
+     * that answered after an account reset. A change that took answers
+     * [ProfileOutcome.Done] even when that re-read fails. The default
+     * refuses, for a repository with no core behind it.
      *
      * Local, as on the web: a profile another device's sync document still
      * names is created again by the next round that pulls it.
@@ -314,7 +316,17 @@ class DefaultWatchStateRepository(
         // A reset or a replaced core while the request was out: what it changed
         // belongs to an account this repository has already let go of.
         val stale = synchronized(publicationLock) { resetRevision != account || coreProvider.core.value !== core }
-        if (!stale) reload()
+        if (stale) return outcome
+        try {
+            reload()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
+        ) {
+            // The change took; saying otherwise would send a viewer to redo
+            // what is already done. The list catches up at the next read.
+        }
         return outcome
     }
 

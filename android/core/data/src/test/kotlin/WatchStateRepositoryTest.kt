@@ -96,6 +96,28 @@ class WatchStateRepositoryTest {
             assertEquals(Profile("a", "andre", admin = true, hasPin = true), repository.profiles.value.single { it.id == "a" })
         }
 
+    /**
+     * The change took, so it is Done even when reading the list back fails —
+     * answering otherwise would send a viewer to set a PIN that is already
+     * set. The list catches up at the next read.
+     */
+    @Test
+    fun aChangeThatTookIsDoneEvenWhenReadingItBackFails() =
+        runTest {
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
+            core.roles.pins["a"] = "1234"
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+            core.profilesFailure = IllegalStateException("disk")
+
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.CreateKid("a", "1234", "Mia", 6)))
+
+            assertEquals(listOf("a"), repository.profiles.value.map { it.id })
+            core.profilesFailure = null
+            repository.reload()
+            assertEquals(listOf("a", "Mia"), repository.profiles.value.map { if (it.kids) it.name else it.id })
+        }
+
     @Test
     fun anUnlockOrARefusalRereadsNothing() =
         runTest {
