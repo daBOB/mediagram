@@ -29,13 +29,15 @@ until close"). So two notifications, not one:
 - `onRedraw(fn)` — once per change, never while held; the last `release()` delivers one waiting redraw
 - `hold()` → `release` — the player (open→close) and list editing each take one
 
+Status reconciled 2026-10-04: completed — shipped 0.68.5 (`c7cdeeff`); `web/public/lib/library-session.js` exists on main.
+
 ## Phases
 
 | Phase | Status |
 |-------|--------|
-| 01 Port + fake + failing `library-session.test.ts` | todo |
-| 02 Module; `app.js` delegates; moved browser tests deleted; ceiling lowered | todo |
-| 03 Full web suite, tsc, eslint; stub-preview check; docs + changelog; 0.68.5 | todo |
+| 01 Port + fake + failing `library-session.test.ts` | done |
+| 02 Module; `app.js` delegates; moved browser tests deleted; ceiling lowered | done |
+| 03 Full web suite, tsc, eslint; stub-preview check; docs + changelog; 0.68.5 | done (0.68.5, `c7cdeeff`) |
 
 ## Risks
 - Ordering bugs are what this module exists to contain: every moved test must

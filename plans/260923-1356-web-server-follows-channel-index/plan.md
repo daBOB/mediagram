@@ -1,6 +1,6 @@
 # The web server follows the channel's index
 
-Status: **in progress** — approved 2026-09-23
+Status: **completed** — approved 2026-09-23
 
 ## Why
 
@@ -30,6 +30,8 @@ Telegram ──pin / #mlib-index post──▶ server listener (always on)
                      GET /api/events (SSE) ──"catalog"──▶ page reloads /api/sets
 ```
 
+Status reconciled 2026-10-04: completed — shipped 0.38.0 (`29678015`); changelog 2026-09-19-to-23 records installs at startup and on pins, SSE to pages, and covers fetched after a snapshot (20 in about a second).
+
 ## Phases
 
 | # | Phase | Status |
@@ -38,7 +40,7 @@ Telegram ──pin / #mlib-index post──▶ server listener (always on)
 | 02 | [A catalog the server can swap while running](phase-02-swappable-live-catalog.md) | done |
 | 03 | [Listen always; install on every index event and at startup](phase-03-listen-and-install-on-index-events.md) | done |
 | 04 | [Server-sent events to the page](phase-04-server-sent-catalog-events.md) | done |
-| 05 | [Validate live, docs, version](phase-05-validate-docs-version.md) | in progress — live pin pending |
+| 05 | [Validate live, docs, version](phase-05-validate-docs-version.md) | done — shipped 0.38.0 (`29678015`) |
 
 ## Key dependencies / rules
 

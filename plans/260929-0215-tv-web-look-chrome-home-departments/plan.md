@@ -1,7 +1,7 @@
 ---
 title: "TV on the web player's look: rail, departments bar, magazine home, department pages"
 description: "Port the tablet's web-parity chrome, Home and department pages to android/ui-tv, remote-first, and stop Home rebuilding on every return."
-status: pending
+status: completed
 priority: P2
 effort: 32h
 branch: feat/tv-web-look
@@ -44,6 +44,8 @@ helpers, scrims and tokens are shared, never re-derived**.
   pushed frame, as before phase 04. Keeping Home itself composed under the pushed frame to avoid
   a rebuild was tried in phase 04 and withdrawn (2026-09-30) after five box rounds chasing the
   same symptom through five different Compose focus-reset mechanisms — see phase 04's own file.
+
+Status reconciled 2026-10-04: completed — phases 01-03 shipped (chrome 0.82.0 `6d2dc721`, home 0.83.0 `4fcf8f91`, department pages `4eff62cd` 0.84.0); phase 04 withdrawn by decision, as its row says.
 
 ## Phases
 

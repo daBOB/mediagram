@@ -1,6 +1,6 @@
 # Web player — editorial departments
 
-Status: phases 1–8 done and merged to main as 0.62.0 (cdd3471c, 2026-09-26). Phase 9 (Documentaries) is a follow-up in `../mediagram-docu`. Builds on the shipped magazine shell
+Status: completed — phases 1–8 merged to main as 0.62.0 (cdd3471c, 2026-09-26); phase 9 (Documentaries) merged as 0.63.0 (`93485f0e`, branch feat/documentaries-and-artwork). Builds on the shipped magazine shell
 (`260925-2014-web-player-magazine-redesign`, v0.55.0+). It restructures pages. It
 does not change the aesthetic.
 
@@ -39,7 +39,7 @@ different labels.**
 | 5 | [Departments: Movies, Series, Tutorials](phase-05-department-pages.md) | done (Popular/New/Completed/Limited rows only above 12 shows) |
 | 6 | [Collections and Search](phase-06-collections-and-search.md) | done |
 | 7 | [Settings: Appearance, Playback, Profile](phase-07-settings-page.md) | done (Appearance + Profile; no Playback tab: playback prefs are per-show, none global) |
-| 9 | [Documentaries department and custom artwork](phase-09-documentaries-and-custom-artwork.md) | approved; follow-up after 1–8 ship (0.62.0), in its own worktree — v9 artwork table only if v9 still unpublished, else v10 |
+| 9 | [Documentaries department and custom artwork](phase-09-documentaries-and-custom-artwork.md) | done (0.63.0, `93485f0e`); was: approved; follow-up after 1–8 ship (0.62.0), in its own worktree — v9 artwork table only if v9 still unpublished, else v10 |
 | 8 | [Verify and ship](phase-08-verify-and-ship.md) | done 2026-09-26 (0.62.0 merged, cdd3471c) |
 
 Phase 1 runs in parallel with 3 and 4. The web reads every v9 field as optional,

@@ -33,15 +33,17 @@
 4. **A catalog refresh while a kids profile is active** — the new catalog is filtered too, not shown raw (Task 6 pins it on web; Task 9 on Android via the same combine path).
 5. **An old record without `kids` merged with a new one that has it** — result is kids; export of an ordinary profile carries no `kids` key at all (Task 1 fixtures pin both, shared by web and Rust).
 
+Status reconciled 2026-10-04: completed — shipped 0.43.0 (`d06d22a8`; commits `22cb9b98`..`72eed933`). Stub-harness validation recorded in `reports/validation-kids-profiles.md`; the real-device and cross-device legs were not run.
+
 ## Phases
 
 | Phase | File | Tasks | Status |
 |---|---|---|---|
-| 1 | [phase-01-sync-record-and-merge.md](phase-01-sync-record-and-merge.md) | 1 web record+merge, 2 Rust record+merge | pending |
-| 2 | [phase-02-web-state-and-api.md](phase-02-web-state-and-api.md) | 3 web schema, store, HTTP | pending |
-| 3 | [phase-03-core-state-and-bindings.md](phase-03-core-state-and-bindings.md) | 4 Rust schema, profiles, exchange, API, bindings | pending |
-| 4 | [phase-04-web-filter-and-ui.md](phase-04-web-filter-and-ui.md) | 5 filter rule, 6 app wiring + profile switch, 7 create form + label | pending |
-| 5 | [phase-05-android-filter-and-ui.md](phase-05-android-filter-and-ui.md) | 8 model + repository + rule, 9 catalog filter + dialog + label, 9b player hides Kids mark | pending |
-| 6 | [phase-06-docs-version-validation.md](phase-06-docs-version-validation.md) | 10 docs + version, 11 stub + device validation | pending |
+| 1 | [phase-01-sync-record-and-merge.md](phase-01-sync-record-and-merge.md) | 1 web record+merge, 2 Rust record+merge | done (0.43.0) |
+| 2 | [phase-02-web-state-and-api.md](phase-02-web-state-and-api.md) | 3 web schema, store, HTTP | done (0.43.0) |
+| 3 | [phase-03-core-state-and-bindings.md](phase-03-core-state-and-bindings.md) | 4 Rust schema, profiles, exchange, API, bindings | done (0.43.0) |
+| 4 | [phase-04-web-filter-and-ui.md](phase-04-web-filter-and-ui.md) | 5 filter rule, 6 app wiring + profile switch, 7 create form + label | done (0.43.0) |
+| 5 | [phase-05-android-filter-and-ui.md](phase-05-android-filter-and-ui.md) | 8 model + repository + rule, 9 catalog filter + dialog + label, 9b player hides Kids mark | done (0.43.0) |
+| 6 | [phase-06-docs-version-validation.md](phase-06-docs-version-validation.md) | 10 docs + version, 11 stub + device validation | done (0.43.0); stub harness only, device legs not run |
 
 Order matters: 1 → 2 and 1 → 3 (records before stores); 2 → 4; 3 → 5; 6 last.

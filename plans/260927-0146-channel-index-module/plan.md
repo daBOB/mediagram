@@ -28,6 +28,8 @@ another session is committing to `main`.
 
 Version: 0.67.0 (0.x breaking changes bump minor; CLAUDE.md § Versioning updated).
 
+Status reconciled 2026-10-04: completed — shipped 0.67.0 (`e3a8db50`).
+
 ## Phases
 
 | Phase | Status |

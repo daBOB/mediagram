@@ -17,6 +17,8 @@ the start of the episode, or handle the picture at all.
 | **215** the browser plays natively | and picking a language throws that away |
 | **0** have chapter data | `chap` is a breadcrumb, not chapters |
 
+Status reconciled 2026-10-04: in-progress — phases 01-04 and 06 shipped (e.g. thumbnails `d4118e4a`, subtitles `85453033`); phase 05 (chapters and skip intro) remains: no skip-intro or chapter code exists in web, crates or android.
+
 ## Phases
 
 | | Phase | Where the work is | Status |

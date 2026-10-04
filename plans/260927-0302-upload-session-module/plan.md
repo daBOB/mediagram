@@ -30,6 +30,8 @@ End(&Outcome)})`; `Outcome::{Uploaded, AlreadyHeld, Pending, Blocked(e),
 Failed(e)}`. Identity derived from the planning data. Port `Link` bundles
 `Transport` + `ChannelRemote` behind one lazy connection (Telegram, fake).
 
+Status reconciled 2026-10-04: completed — shipped 0.68.0 (`3f2d906b`).
+
 ## Phases
 
 | Phase | Status |
@@ -37,7 +39,7 @@ Failed(e)}`. Identity derived from the planning data. Port `Link` bundles
 | 01 Port: `Link`, `TelegramLink` (TelegramRemote owns clones), `publish_owed` bookkeeping | done |
 | 02 Session interface + failing tests (fake link, Document and Planned items) | done |
 | 03 Session implementation (identity, per-item run, stop rule, end/publish) | done |
-| 04 Switch six commands; delete `Uploader`, `finish_with`, `upload::resume::pending`; port their tests; docs; 0.68.0 | done, in review |
+| 04 Switch six commands; delete `Uploader`, `finish_with`, `upload::resume::pending`; port their tests; docs; 0.68.0 | done (0.68.0, `3f2d906b`) |
 
 ## Tests (at the session interface)
 held re-run never connects · uploads then exactly one publish · `--no-push`

@@ -1,8 +1,8 @@
 # Channel index merge (tech-debt #12)
 
-Status: phases 1-4 implemented 2026-09-25 (merge, pull-index, push-index --merge; all
+Status: completed — phases 1-4 implemented 2026-09-25 (merge, pull-index, push-index --merge; all
 tests and clippy clean; one dry run verified read-only). Phase 5 (the real pull, second
-machine, and push) not run. Source:
+machine, and push) superseded by merge-first publishing (0.65.0) and the channel_index module (0.67.0). Source:
 `plans/reports/tech-debt-260925-2230-mediagram-web-and-pipeline-report.md` #12, research
 brief of 2026-09-25 (this session).
 
@@ -46,6 +46,8 @@ Commands:
   `library.before-channel-merge-<date>.db`, merge, then print what was added and any
   conflicts.
 - `mediagram push-index --merge`: pull then push. With the merge done, the guard passes.
+
+Status reconciled 2026-10-04: completed — phases 1-4 shipped 0.56.0 (changelog); the live run (phase 5) is superseded by merge-first publishing 0.65.0 and the `channel_index` module 0.67.0 (`e3a8db50`, plan `260927-0146`), which pulls before every publish and keeps `pull-index [--dry-run]`.
 
 ## Phases
 

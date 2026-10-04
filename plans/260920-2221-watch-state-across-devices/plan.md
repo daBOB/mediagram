@@ -35,12 +35,14 @@ deterministic rather than a race.
 for one title with the highest `updatedAt` is the one that counts. Watching
 S1E4 on the phone and S1E9 on the laptop leaves both correct.
 
+Status reconciled 2026-10-04: completed — phases 01-02 shipped (`6f0b0fec`, `f67f9da1`), phase 03 superseded by Android watch-state sync (changelog 2026-09-19-to-23). Web sync stays opt-in via `MEDIAGRAM_SYNC_STATE` (`docs/system-architecture.md:599`).
+
 ## Phases
 
 | | Phase | Status |
 |---|---|---|
 | 01 | [The record, and the merge](phase-01-the-record-and-the-merge.md) | done |
-| 02 | [The player syncs](phase-02-the-player-syncs.md) | built, off by default — first real push not yet run |
+| 02 | [The player syncs](phase-02-the-player-syncs.md) | done — opt-in via `MEDIAGRAM_SYNC_STATE`; real sync has run (Android's first round took in the web's 8 positions and 31 finished titles) |
 | 03 | [Android joins](phase-03-android-joins.md) | Superseded — done by [android watch-state sync](../260922-2135-android-watch-state-sync/plan.md) |
 
 ## What needs your say-so

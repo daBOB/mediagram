@@ -18,6 +18,8 @@ Branch `refactor/core-seam` (worktree `../mediagram-channel-index`), from main 6
 - `CoreInterface` has no `close()`/`uniffiIsDestroyed`: the provider tracks closing itself.
 - Fakes: core/data 271, core/playback 80, feature/setup 136, setup/login 123, feature/system 115, catalog `CatalogCoreFixture` 83 lines; ~25 `by FakeCore()` overrides; 5 `mockk<CoreClient>`.
 
+Status reconciled 2026-10-04: completed — shipped 0.68.13 (`f98dec21`).
+
 ## Phases
 | Phase | Status |
 |-------|--------|

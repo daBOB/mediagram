@@ -16,6 +16,8 @@ User decisions (2026-09-28, locked): automatic classification = TMDB genres incl
 that lives in the channel index; anime leaves Movies/Series entirely (Documentaries-style
 exclusivity); one department mixing anime series (seasons kept) and anime films.
 
+Status reconciled 2026-10-04: releases: phase 1 0.76.0 (`fd487963`), phase 2 0.77.0 (`e3b096f4`), phase 3 0.77.1 (`406eefb6`), phase 4 0.78.0 (`0c1c1fbe`). Status was already completed.
+
 ## Phases
 
 | # | Phase | Effort | Status | Release |

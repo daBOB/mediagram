@@ -55,13 +55,15 @@ see **Divergences from the spec** below.
 - Conventional commits. No AI references. Code comments, test names and commit
   messages carry no plan references — they name the invariant, not its origin.
 
+Status reconciled 2026-10-04: superseded by `260925-2046-external-cache-volume-and-lan-chunk-server` (shipped 0.57.0, merge `714c6a6a`); phase 1 Task 1 is reused there and the budget shipped as a live slider (`b91e9e8`), per this plan's own banner.
+
 ## Phases
 
 | # | Phase | Status |
 |---|---|---|
-| 1 | [What the choices are](phase-01-volumes-and-budget.md) | Not started |
-| 2 | [A cache that reads the choice](phase-02-a-cache-that-reads-the-choice.md) | Not started |
-| 3 | [Somewhere to make it](phase-03-the-storage-screen.md) | Not started |
+| 1 | [What the choices are](phase-01-volumes-and-budget.md) | Superseded |
+| 2 | [A cache that reads the choice](phase-02-a-cache-that-reads-the-choice.md) | Superseded |
+| 3 | [Somewhere to make it](phase-03-the-storage-screen.md) | Superseded |
 
 ## Key dependencies
 

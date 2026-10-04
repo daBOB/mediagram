@@ -23,6 +23,8 @@ One module owns the web player's page address format in both directions,
 - Unknown sections fall back to `movies`; `movies/page/N`; `collections/tmdb-<id>`
   vs list UUID; kept pages (`continue`, `watchlist`, `system`).
 
+Status reconciled 2026-10-04: completed — shipped 0.68.10 (`658def54`).
+
 ## Phases
 | Phase | Status |
 |-------|--------|

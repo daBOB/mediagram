@@ -22,6 +22,8 @@
 - Code comments, test names and file names must **not** reference plan artifacts — no phase numbers, no finding codes. Explain the invariant, not its origin.
 - Live gates run by hand against the real channel; there is no channel in CI.
 
+Status reconciled 2026-10-04: in-progress — phase 4 is superseded by `260924-2239-android-tv-surface` (television surface shipped 0.64.0, `24264ecf`); phase 6 (byte-truth gate) remains: no `ByteTruthTest` or `export-part-digests.sh` exists on main. Phases 0-3, 5, 7, 8 shipped.
+
 ## Phases
 
 | # | Phase | Status |
@@ -30,9 +32,9 @@
 | 1 | [`mediagram-core` and the UniFFI surface](phase-01-mediagram-core-and-uniffi.md) | Complete |
 | 2 | [Gradle skeleton, module graph, CI](phase-02-gradle-skeleton-and-ci.md) | Complete |
 | 3 | [Login and catalog; the mobile surface](phase-03-login-and-catalog-mobile.md) | Complete |
-| 4 | [The TV surface](phase-04-tv-surface.md) | Blocked — needs a television to develop against |
+| 4 | [The TV surface](phase-04-tv-surface.md) | Superseded — television surface built by `260924-2239-android-tv-surface` (0.64.0, `24264ecf`) |
 | 5 | [Playback on all three](phase-05-playback-media3.md) | Complete — tasks 1–3 and the mobile half of task 4, including its seek gate |
-| 6 | [Byte-truth gate and documentation](phase-06-byte-truth-gate-and-docs.md) | Not started |
+| 6 | [Byte-truth gate and documentation](phase-06-byte-truth-gate-and-docs.md) | Not started — no byte-truth test or digest script on main |
 | 7 | [First-run setup on the device](phase-07-first-run-setup.md) | Complete |
 | 8 | [The catalog from the channel](phase-08-catalog-from-the-channel.md) | Complete |
 

@@ -1,6 +1,6 @@
 # Android magazine parity (tech-debt #13)
 
-Status: implemented 2026-09-26 on branch `worktree-agent-a6b17fc3ba5be3a38`, verified on the real
+Status: completed — merged to main (`95f379ce`, merge `714c6a6a`, 0.57.0); phase 7 (TV) shipped later as TV home 0.83.0 (`4fcf8f91`, plan `260929-0215`). Was: implemented 2026-09-26 on branch `worktree-agent-a6b17fc3ba5be3a38`, verified on the real
 signed-in tablet. Owed under CLAUDE.md § Surface Parity: the web home
 (`plans/260925-2014-web-player-magazine-redesign`) is the reference.
 Research brief of 2026-09-25 (this session).
@@ -28,7 +28,7 @@ Research brief of 2026-09-25 (this session).
    (Crime 101); toggling it would have been a real, visible change to the user's account made
    without clear authorization. The write path itself is covered by `editors_choice.rs`'s and
    `MagazineHomeTest`'s own tests instead.
-7. **TV.** Deferred, as planned — no TV hardware in this session; `ui-tv` untouched.
+7. **TV.** Deferred, as planned — no TV hardware in this session; `ui-tv` untouched. Shipped later: 0.83.0 (`4fcf8f91`).
 
 ## Where the phone is today (verified)
 

@@ -18,6 +18,8 @@ after its required Clippy, Rust, web lint/tests and Android tests/lint hook pass
 The earlier in-progress Android fake adaptation failure is repaired. Verified scanner corrections
 were published upstream as PRs #777, #778, #781, #782, and #783.
 
+Status reconciled 2026-10-04: left in-progress — the branch was merged to main 2026-09-24 (`e3379446`, 0.43.0), but its last three milestones were never ticked and no desloppify commits follow; whether the goal was dropped or finished elsewhere is not recorded.
+
 ## Outcome and constraints
 
 Raise the strict score through verified improvements to the Rust, web, and

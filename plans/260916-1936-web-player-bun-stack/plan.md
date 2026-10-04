@@ -1,6 +1,6 @@
 ---
 title: "Web player on a Bun stack"
-status: in-progress
+status: completed
 created: 2026-09-16
 source: plans/reports/brainstorm-to-planner-260916-1936-web-player-bun-stack-report.md
 blockedBy: []
@@ -36,6 +36,8 @@ the backend holds credentials.
 The uploader stays in Rust and keeps `add`, `verify`, `export-package` and the
 rest. `mediagram serve` (phase 1) remains as the reference implementation the
 TypeScript port is checked against, byte for byte.
+
+Status reconciled 2026-10-04: completed — all eight phases shipped 2026-09-17 (transcode `2f942339`, LAN/remote `1e9208e4`, package reader `add25bd4`, docs `3f260e89`).
 
 ## Phases
 

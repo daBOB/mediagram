@@ -1,7 +1,7 @@
 ---
 title: "Android film preload: a Preload button beside Play, with progress"
 description: "Preload a whole film into the device cache (filling the home cache server as a side effect), show progress on the film page, add a per-film status route to the cache server."
-status: pending
+status: completed
 priority: P2
 effort: 14h
 branch: feat/android-film-preload (worktree /home/andre/Workspace/mediagram-preload)
@@ -41,6 +41,8 @@ progress (`ProgressListener` is `null`), dies with the process.
 6. **Phone/tablet and TV film pages, films only** (series already preload two episodes).
 7. **Parallel** with the home-parity work, in its own worktree.
 
+Status reconciled 2026-10-04: completed — shipped 0.73.0 (`9f0321a3`) through 0.75.2: engine 0.73.1, Preload button 0.74.0 (`5704552b`), queue view 0.75.0 (`b9aa04a9`).
+
 ## Phases
 
 | # | Phase | Owns | Status |
@@ -49,7 +51,7 @@ progress (`ProgressListener` is `null`), dies with the process.
 | 02 | [Preload engine: queue, progress, pause, service](phase-02-preload-engine-queue-progress-service.md) | core/playback, feature/player, app manifest | done |
 | 03 | [Film pages: button, bar, server line](phase-03-film-page-preload-button-progress.md) | ui-mobile `TitlePills`/`TitleDetailScreen`, ui-tv `TvTitlePage`, a small ViewModel | done |
 | 03b | [Show the preload queue](phase-03b-preload-queue-view.md) | engine queue flow, film pages' Queued label, a Preloads page, menu entries | done, device-checked |
-| 04 | [Verify on tablet + TV box, docs, version](phase-04-verify-docs-version.md) | tests, docs, manifests | Both devices done |
+| 04 | [Verify on tablet + TV box, docs, version](phase-04-verify-docs-version.md) | tests, docs, manifests | done — both devices |
 
 01 and 02 are independent; 03 needs both. One agent at a time in the worktree.
 

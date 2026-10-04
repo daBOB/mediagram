@@ -1,6 +1,6 @@
 # Web player redesign
 
-Status: reopened. The user rejected the visual design as generic. The technical
+Status: superseded — the dark-first magazine redesign with TMDB backdrops shipped on the web as 0.55.0 (`9edda2f0`, 2026-09-25: "theme is dark-first with a light paper variant", backdrop bands), extended by `260926-1142-web-player-editorial-departments` (0.62.0). Was: reopened. The user rejected the visual design as generic. The technical
 checks in [validation.md](validation.md) describe the rejected version, not
 visual acceptance.
 

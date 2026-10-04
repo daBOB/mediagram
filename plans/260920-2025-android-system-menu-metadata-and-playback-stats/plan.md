@@ -26,17 +26,19 @@
 - Code comments, test names and file names must **not** reference plan artifacts — no phase numbers, no finding codes. Explain the invariant, not its origin. Files under `plans/` are exempt.
 - Live TMDB is never called from a test. CI has no API key and no channel.
 
+Status reconciled 2026-10-04: completed — all seven phases merged as `b5775ea4` (0.15.0, 2026-09-21: system menu, metadata, playback stats, library refresh).
+
 ## Phases
 
 | # | Phase | Status |
 |---|---|---|
-| 1 | [One TMDB client, in a crate both sides share](phase-01-shared-tmdb-crate.md) | Not started |
-| 2 | [What the core can already answer](phase-02-core-answers-more-questions.md) | Not started |
-| 3 | [Chrome, and the system screen](phase-03-chrome-and-system-screen.md) | Not started |
-| 4 | [The TMDB key, and fetching posters](phase-04-tmdb-key-and-posters.md) | Not started |
-| 5 | [The title detail screen](phase-05-title-detail-screen.md) | Not started |
-| 6 | [Playback stats](phase-06-playback-stats-overlay.md) | Not started |
-| 7 | [Refreshing the library, safely, from the menu](phase-07-refreshing-the-library.md) | Not started |
+| 1 | [One TMDB client, in a crate both sides share](phase-01-shared-tmdb-crate.md) | Complete |
+| 2 | [What the core can already answer](phase-02-core-answers-more-questions.md) | Complete |
+| 3 | [Chrome, and the system screen](phase-03-chrome-and-system-screen.md) | Complete |
+| 4 | [The TMDB key, and fetching posters](phase-04-tmdb-key-and-posters.md) | Complete |
+| 5 | [The title detail screen](phase-05-title-detail-screen.md) | Complete |
+| 6 | [Playback stats](phase-06-playback-stats-overlay.md) | Complete |
+| 7 | [Refreshing the library, safely, from the menu](phase-07-refreshing-the-library.md) | Complete |
 
 ## Key dependencies
 

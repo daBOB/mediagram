@@ -23,6 +23,8 @@ Branch `refactor/catalog-reads` (worktree `../mediagram-channel-index`), from ma
 - `mediaSet` callers: PlayerChoicesController:114, UpNextAsync:49 (+updateRun), PlayerViewModelPreload:34/:56.
 - Web reference: web/src/catalog/routes.ts:48-89 (`has`, artwork keys read once, artwork-routes.ts:43-50).
 
+Status reconciled 2026-10-04: completed — shipped 0.68.14 (`0a9bd249`).
+
 ## Phases
 | Phase | Status |
 |-------|--------|

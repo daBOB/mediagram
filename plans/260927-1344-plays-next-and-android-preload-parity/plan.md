@@ -15,6 +15,8 @@ route change, as the review claimed). A module around them would be shallow.
 | Q3 | Android matches the web (the reference, and the recorded decision): no preload from a list; the next two positions, only those that are episodes. Own commit after G, verified on tablet `caad49da` |
 | Q4 | The early next-title byte warm stays as is (not measured to cost anything) |
 
+Status reconciled 2026-10-04: completed — shipped web 0.68.11 (`183619e1`) and Android 0.68.12 (`67b73b22`).
+
 ## Phases
 | Phase | Status |
 |-------|--------|
