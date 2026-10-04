@@ -48,11 +48,12 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 | A1 | Decisions 2–4 on web + Android, plus the web's stale department pill | subagent, worktree | done 0.100.0 — pill was stale focus |
 | A2 | `watched` finish-stamp overflow, core + web | subagent, worktree | done 0.99.12 — other row types share the hole (follow-up) |
 | A3 | Episode label parity, Android `core/model/EpisodeLabel.kt` vs web `lib/format.js` (episode 0, ranges) | subagent, worktree | done 0.99.10 — web printed ranges as JSON |
-| A4 | TV box mDNS finds no cache server within the 10 s window | lead, device | pending |
+| A4 | TV box mDNS finds no cache server within the 10 s window | lead, device | open — box is on Wi-Fi; with the manual address set discovery ends at once, so testing needs the address cleared for a minute (ask the user) |
 | A5 | Tutorials "Continue your courses": tablet showed a Next-up card the web did not | lead, data | done 0.99.11 — both narrowed after limiting |
-| A6 | 4K playback measurement on the box (HDR10 + DV, cold, "TV test" profile) | lead, device | pending |
+| A6 | 4K playback measurement on the box (HDR10 + DV, cold, "TV test" profile) | lead, device | done 2026-10-04 — HDR10/AAC plays; DV decodes natively (dvhe.st) but cold Telegram ~15–17 Mbit/s < 27 Mbit/s → rebuffers; DTS/TrueHD never started → A9 |
 | A7 | Reconcile stale plan status tables | subagent | done `18b57905` (+ 260925-2046) — 4 left unverified, see reports/a7 |
 | A8 | The same far-future stamp hole in every other synced row type, core + web | subagent, worktree | done 0.100.1 |
+| A9 | DTS and TrueHD sat at 0:00 on the box (passthrough stalls) | lead | done 0.106.2 — FFmpeg decodes them to PCM; verified Magnolia + Rocketman on the box |
 
 Version: subagents commit without bumping; the lead bumps by pattern when merging each
 into `main` (memory: bump versions by pattern; another session commits to main).
@@ -61,9 +62,9 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 
 | # | Plan | Status |
 |---|------|--------|
-| B1 | `260926-1330` — all groups merged: A 0.102.0, B 0.101.0, D 0.103.0, C 0.104.0, E 0.105.1, F 0.106.0, G 0.106.1; left: phase 7 close (check.sh, docs; TV box walk needs adb — box not reachable, user asked for its wireless-debugging address) | in progress |
+| B1 | `260926-1330` — all groups merged (A–G), check.sh green, final review + TV box walk done 2026-10-04; H (their findings) building; box build 0.106.1+audio fix installed by adb (not published) | in progress |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01 merged 0.105.0 (live web migrated to v12, backup `~/.local/share/mediagram-player/state.before-roles-v12-261004.db`); 02 (+03 next, same worktree) and 04 (core) building; 05 after 02+04; Android 06/07 after watch-state 03/04 | in progress |
+| B3 | `260928-0047` — 01 0.105.0, 04 0.107.0, 02+03 0.108.0 merged (live; admin unclaimed — user asked to claim); 05 (core rules, matching name-taken + per-profile wait) building; 06/07 Android after 05 | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.
