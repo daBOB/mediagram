@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
+import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
@@ -155,6 +156,8 @@ internal class LibraryFlowFixture(
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
                 ProfileViewModel::class.java to ProfileViewModel(stored, mockk<WatchSync>(relaxed = true)),
+                // The gate resolves Manage profiles beside the picker every time it draws.
+                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, mockk<WatchSync>(relaxed = true)),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 SettingsViewModel::class.java to settings,
