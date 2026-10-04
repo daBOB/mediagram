@@ -30,12 +30,7 @@ export function humanDuration(seconds) {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
-/** `S1E4` for an episode, `4` for a lesson, empty when unnumbered. */
-export function episodeLabel(set) {
-  if (!set.episode) return "";
-  if (set.kind === "ep" && set.season != null) return `S${set.season}E${set.episode}`;
-  return String(set.episode);
-}
+export { episodeLabel, episodeNumber } from "./episode-label.js";
 
 /** The technical line under a title: what it is, not where it came from. */
 export function codecLine(set) {

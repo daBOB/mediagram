@@ -42,6 +42,8 @@ describe("where a show carries on", () => {
 
   test("the short label", () => {
     expect(episodeShort(ep(3, 15))).toBe("S3 E15");
+    expect(episodeShort({ ...ep(3, 15), episode: "[15,16]" })).toBe("S3 E15");
+    expect(episodeShort({ ...ep(3, 0), episode: "0" })).toBe("S3 E0");
     expect(episodeShort({ title: "Pilot" } as never)).toBe("Pilot");
   });
 });

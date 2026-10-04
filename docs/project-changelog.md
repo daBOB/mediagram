@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.10 — an episode range reads 3-4 on the web, as on Android
+
+**Fixed**
+
+- Web: a file that holds two episodes is labelled `S2E3-4`, not `S2E[3,4]`.
+  The index stores the uploader's JSON (`7` or `[3,4]`), which the web printed
+  as stored while Android parsed it. The series page's play button had the same
+  problem (`S3 E[15,16]`) and now names the first episode, as Android does.
+  Both surfaces now read a stored value that is neither a number nor a pair as
+  unnumbered.
+
 ## 0.99.9 — the Android home checked against the web; Back on the profile chooser stays
 
 **Fixed**

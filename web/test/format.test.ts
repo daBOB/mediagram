@@ -56,6 +56,18 @@ describe("labels", () => {
     expect(episodeLabel({ kind: "movie", season: null, episode: null })).toBe("");
   });
 
+  test("every episode shape in the index reads the same as on Android", () => {
+    const ep = (episode: string | null, kind = "ep") => episodeLabel({ kind, season: 2, episode });
+    expect(ep("0")).toBe("S2E0");
+    expect(ep("7")).toBe("S2E7");
+    expect(ep("[3,4]")).toBe("S2E3-4");
+    expect(ep("[5,5]")).toBe("S2E5");
+    expect(ep("[3,4]", "tut")).toBe("3-4");
+    expect(ep("0", "tut")).toBe("0");
+    // Not the uploader's JSON: Android's core reads these as unnumbered, so the web does too.
+    for (const raw of ["04", "4-5", "abc", "[1]", "[1,2,3]", "-1", "1.5", "", null]) expect(ep(raw)).toBe("");
+  });
+
   test("the codec line omits what the index does not know", () => {
     expect(codecLine({ container: "mkv", vcodec: "hevc", acodec: "ac3" })).toBe("mkv · hevc · ac3");
     expect(codecLine({ container: "mp4", vcodec: null, acodec: "aac" })).toBe("mp4 · aac");

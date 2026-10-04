@@ -2,6 +2,7 @@
 
 export function humanSize(bytes: number): string;
 export function humanDuration(seconds: number | null): string;
+export function episodeNumber(set: { episode?: string | null }): string;
 export function episodeLabel(set: {
   kind?: string;
   season?: number | null;

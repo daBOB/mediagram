@@ -9,6 +9,7 @@
  * A show watched to its end offers its first episode again.
  */
 
+import { episodeNumber } from "../episode-label.js";
 import { flattenCollection } from "../library.js";
 
 /**
@@ -36,8 +37,9 @@ export function seriesResume(collection, { resumeOf, recent, watched }) {
   return { set: episodes[0], at: null, verb: "Play" };
 }
 
-/** `S3 E15` for an episode with both numbers, else its title. */
+/** `S3 E15` for an episode with both numbers, else its title. A range shows its first episode. */
 export function episodeShort(set) {
-  if (set.season != null && set.episode) return `S${set.season} E${set.episode}`;
+  const first = episodeNumber(set).split("-")[0];
+  if (set.season != null && first) return `S${set.season} E${first}`;
   return set.title ?? "";
 }
