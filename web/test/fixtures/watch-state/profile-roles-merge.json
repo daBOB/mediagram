@@ -1,0 +1,922 @@
+[
+  {
+    "name": "a limit changed on two devices: the newer change wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 6,
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 6,
+            "updatedAt": 2000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a limit changed at the same moment on two devices: the larger device id wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 6,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "an older build's document says kids and nothing more: FSK 12 at time 0",
+    "records": [
+      {
+        "format": 1,
+        "device": "old-tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "an older build's document loses to a limit a parent set",
+    "records": [
+      {
+        "format": 1,
+        "device": "old-tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 6,
+              "updatedAt": 5
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 6,
+            "updatedAt": 5
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a grown-up is never given a limit",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "kidsAge": {
+              "age": 6,
+              "updatedAt": 5
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André"
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "admin claimed on two devices before they met: the earliest claim is the only admin",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Maja",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André"
+        },
+        {
+          "name": "maja",
+          "displayName": "Maja",
+          "admin": {
+            "claimedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "admin claimed at the same moment: the smaller name wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Maja",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "admin": {
+            "claimedAt": 1000
+          }
+        },
+        {
+          "name": "maja",
+          "displayName": "Maja"
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "one viewer claimed on two devices keeps its earliest claim",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 3000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "admin": {
+            "claimedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a claim on a kid is ignored, however early: the earliest grown-up claim wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "admin": {
+              "claimedAt": 500
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "admin": {
+            "claimedAt": 1000
+          }
+        },
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a viewer one device calls a kid is never admin, even holding the only claim",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "admin": {
+              "claimedAt": 500
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a PIN reset on another device wins, and a kid never carries one",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          },
+          {
+            "name": "Mia",
+            "kids": true,
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+            "salt": "ffeeddccbbaa99887766554433221100",
+            "updatedAt": 2000
+          }
+        },
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a PIN changed at the same moment on two devices: the larger device id wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a kid's parent is its parent's normalised name, settled by device id when two disagree",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "parent": "André",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "parent": " Maja ",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          },
+          "parent": "maja"
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a document that names no parent does not unsay one another names",
+    "records": [
+      {
+        "format": 1,
+        "device": "zz-old-tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "parent": "André",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          },
+          "parent": "andré"
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a grown-up is never given a parent",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "parent": "Maja",
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André"
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a Kids mark moved from 12 to 6 rides on the newer row",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 2000,
+            "age": 6
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 2000,
+          "age": 6
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids mark tie goes to the mark from 6 before the device id: an older build's echo carries no age",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000,
+            "age": 6
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 1000,
+          "age": 6
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids mark from 6 beats a removal stamped the same moment outright, whatever the device ids",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000,
+            "age": 6
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000,
+            "removed": true
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 1000,
+          "age": 6
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids mark tie with no age on either side is settled by device id, a removal included",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000,
+            "removed": true
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 1000,
+          "removed": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids mark from 6, then taken off, is a plain tombstone",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 1000,
+            "age": 6
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [],
+        "kids": [
+          {
+            "setId": "K1",
+            "updatedAt": 2000,
+            "removed": true
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 2000,
+          "removed": true
+        }
+      ]
+    }
+  }
+]

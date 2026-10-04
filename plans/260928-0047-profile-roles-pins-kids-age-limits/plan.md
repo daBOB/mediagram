@@ -55,7 +55,7 @@ uniffi 0.32 (core); Kotlin, Compose, Hilt (Android).
 
 | # | Phase | Owns | Status |
 |---|---|---|---|
-| 01 | [Web: schema, sync keys, merge, export/import](phase-01-web-schema-sync-merge.md) | `web/src/state/{schema,sync-record,merge,store,lists-exchange}.ts`, new `profiles.ts`, `roles-{record,merge,exchange}.ts`, fixture, `code-standards.test.ts` | pending |
+| 01 | [Web: schema, sync keys, merge, export/import](phase-01-web-schema-sync-merge.md) | `web/src/state/{schema,sync-record,merge,store,lists-exchange}.ts`, new `profiles.ts`, `roles-{record,merge,exchange}.ts`, fixture, `code-standards.test.ts` | done (pending merge) |
 | 02 | [Web: rules, PIN, wait, routes](phase-02-web-rules-pin-routes.md) | new `profiles-manage.ts`, `profiles-routes.ts`, `route-json.ts`; `profiles.ts`, `routes.ts`, `store.ts`, `server.ts`, `http/browser-write.ts`, `src/routes.ts`, fixtures | pending |
 | 03 | [Web: picker, PIN prompt, manage panel, filter, marks](phase-03-web-browser-picker-manage-filter.md) | `web/public/**` | pending |
 | 04 | [Core: schema, record, merge, exchange](phase-04-core-schema-sync-merge.md) | `crates/mediagram-core/src/state/**` (data half) | pending |

@@ -139,7 +139,14 @@ pin?: { hash: string; salt: string; updatedAt: number }; // 64 hex / 32 hex / > 
 ```
 
 On `ListRow` (Kids marks only): `age?: 6`. Only the literal `6` parses;
-anything else is absent (= from 12). Watchlist rows never carry it.
+anything else is absent (= from 12). Watchlist rows never carry it. A
+tombstone carrying `age` is parsed without it — the age is stripped at
+parse, not later (pinned by `profile-roles-record-parse.json`).
+
+Role stamps use the shipped bound (2026-10-04): `admin.claimedAt` and
+`pin.updatedAt` must pass `isStamp` (`> 0`, `<= 2^53 − 1`); `kidsAge.updatedAt`
+is `0` or passes `isStamp`. Past the bound the key is dropped, as any synced
+row is.
 
 Parsing drops a malformed sub-key on its own, never the profile.
 
@@ -155,7 +162,17 @@ Parsing drops a malformed sub-key on its own, never the profile.
 - `admin`: across **all grown-up** viewers (a claim on a kid viewer is
   ignored), the smallest `claimedAt` wins, ties by smaller normalised name. Only that viewer's merged profile carries
   `admin`; every other carries none.
-- Kids marks: `age` rides on the row `keep` chose.
+- Kids marks: `age` rides on the row `keep` chose. **Exact tie (amended
+  2026-10-04):** at an equal `updatedAt` a live mark with an age beats one
+  without *before* the device id is asked — rank `(updatedAt, live && age == 6 ? 1 : 0, device)`.
+  So a from-6 mark also beats a removal stamped the same moment, outright.
+  Why: a build from before ages drops `age` on import and writes the mark
+  back at the same time; under a plain device-id tie that echo stripped the
+  age everywhere whenever the older device's id sorted higher (verified
+  against 0.103.0). Web: `kidsMarkRank` (`roles-merge.ts`) through `keep`'s
+  `rank`. **Port note:** the rule is sound only because an age change is
+  never an equal-time pair — the core's own `set_kids` must move the clock on
+  every age change, 6 → 12 included, not only on a re-mark after a removal.
 
 **Import** (corrective, like every other row):
 
@@ -171,7 +188,9 @@ Parsing drops a malformed sub-key on its own, never the profile.
 **Local writes stamp `max(now, stored updatedAt + 1)`** for `kids_age`,
 `pin` and a Kids mark's age/removal — the same guard `setWatched`'s un-mark
 already uses (`MAX(?3, finished_at + 1)`), so a device whose clock runs
-behind cannot write a change that loses to the value it replaced.
+behind cannot write a change that loses to the value it replaced. Clamped as
+shipped (2026-10-04): `MAX(now, MIN(stored, 2^53 − 2) + 1)`, never an
+unclamped `stored + 1`.
 
 **Export**: `admin` when `admin_claimed_at` set; `kids` + `kidsAge`
 (`kids_age ?? 12`, `kids_age_updated_at`) on kids; `parent` = the stored
@@ -182,6 +201,16 @@ name of `parent_id` when it resolves; `pin` when `pin_hash` set.
 Profile JSON (every route that returns one):
 `{ id, name, createdAt, kids: boolean, kidsAge: 6 | 12 | null, parentId: string | null, admin: boolean, hasPin: boolean }`
 — never `pin_hash`/`pin_salt`.
+
+**A kid is never `admin` and never `hasPin` (amended 2026-10-04)**, whatever
+its columns hold: a grown-up with a claim or a PIN that another device later
+calls a kid keeps both columns after the sticky `kids` upgrade, and a kid
+opens without a PIN — read as admin, it could manage everyone. Enforced in
+`toProfile` (`admin: !kids && admin_claimed_at IS NOT NULL`,
+`hasPin: !kids && pin_hash IS NOT NULL`) and, in the merge, by `earliest()`
+skipping kids (§7 `admin`). The core's `Profile` (§9) applies the same rule.
+Export still writes `admin`/`pin` whenever the columns are set (§7); the
+merge drops them on a kid.
 
 | Method + path | Body |
 |---|---|
@@ -238,7 +267,20 @@ the file's "nothing here throws" rule.
 |---|---|---|
 | `pin-hash.json` | §5 | web phase 02, core phase 05 |
 | `profile-rules.json` | `[{ name, profiles: RoleView[], actorId, action, targetId, expect: boolean }]` | web phase 02, core phase 05 |
-| `profile-roles-merge.json` | `[{ name, records: SyncRecord[], expect: { profiles: [{ name, admin?, kids?, kidsAge?, parent?, pin? }], kids: ListRow[] } }]`, compared on those fields only | web phase 01, core phase 04 |
+| `profile-roles-merge.json` | `[{ name, records: SyncRecord[], expect: { profiles: [{ name, displayName, admin?, kids?, kidsAge?, parent?, pin? }], kids: ListRow[] } }]`, compared on those fields only | web phase 01, core phase 04 |
+| `profile-roles-record-parse.json` | `[{ name, input: string, expect: SyncRecord \| null }]`, the shape of `record-parse.json`; run through the real `parseRecord`, compared whole | web phase 01, core phase 04 |
+
+Amended 2026-10-04:
+- `profile-roles-merge.json`'s expected profiles carry `displayName`, as
+  `stats-merge.json`'s do, so the core can deserialize `expect` as its
+  `MergedState` (whose `display_name` has no serde default) and compare
+  through a `roles_only` projection like `stats_only`. It pins rule 1 (§7
+  Kids-mark tie, a same-stamp removal included) and the merge half of rule 2
+  (a claim on a kid is ignored).
+- `profile-roles-record-parse.json` pins the parse: role keys read back,
+  each malformed key dropped alone, the role-stamp bounds (§7: `0` kept for
+  `kidsAge` only, `2^53 − 1` kept, `2^53` dropped), numeric-string times
+  coerced like every older row's, and a Kids tombstone's `age` stripped.
 
 ## 11. Client filter — both surfaces
 

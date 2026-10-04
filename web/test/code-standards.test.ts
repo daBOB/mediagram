@@ -48,6 +48,7 @@ const ROOT = join(import.meta.dir, "..");
  * are counted against, and for `app.js`, once the player's lazy loader moved
  * out to `lib/playback/player-loader.js`. Lowered 2026-10-04 for `app.js`,
  * once marking the current nav link moved out to `lib/nav-current.js`.
+ * Raised 2026-10-04 for `src/state/schema.ts`, by 2, to list the profile-roles migration group.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 695,
@@ -74,7 +75,7 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 243,
-  "src/state/schema.ts": 243,
+  "src/state/schema.ts": 245,
   "src/state/store.ts": 800,
   "src/state/sync-record.ts": 328,
   "src/transcode/registry.ts": 338,

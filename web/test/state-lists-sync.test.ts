@@ -267,3 +267,133 @@ describe("hostile input", () => {
     expect(record.profiles[0]!.collections).toBeUndefined();
   });
 });
+
+describe("a Kids mark's age", () => {
+  test("a mark is from 12 unless it says 6, and changing it moves its clock", () => {
+    const state = new WatchState(tempPath());
+    state.setKids("01A", true);
+    state.setKids("01B", true, 6);
+    expect([...state.kids()].sort()).toEqual(["01A", "01B"]);
+    expect(state.kidsFromSix()).toEqual(["01B"]);
+
+    const before = state.exportRecord("laptop").kids!.find((row) => row.setId === "01A")!;
+    state.setKids("01A", true, 6);
+    const after = state.exportRecord("laptop").kids!.find((row) => row.setId === "01A")!;
+    expect(after.age).toBe(6);
+    expect(after.updatedAt).toBeGreaterThan(before.updatedAt);
+    expect([...state.kidsFromSix()].sort()).toEqual(["01A", "01B"]);
+    state.close();
+  });
+
+  test("marking again at the age it has changes nothing", () => {
+    const state = new WatchState(tempPath());
+    state.setKids("01A", true, 6);
+    const before = state.exportRecord("laptop").kids![0];
+    Bun.sleepSync(2);
+    state.setKids("01A", true, 6);
+    expect(state.exportRecord("laptop").kids![0]).toEqual(before);
+    state.close();
+  });
+
+  test("the wire says 6 on a live mark only — never 12, a tombstone or the editor's choice", () => {
+    const state = new WatchState(tempPath());
+    state.setKids("K6", true, 6);
+    state.setKids("K12", true, 12);
+    state.setKids("GONE", true, 6);
+    state.setKids("GONE", false);
+    state.setEditorsChoice("E", true);
+    const record = state.exportRecord("laptop");
+    const byId = new Map(record.kids!.map((row) => [row.setId, row]));
+    expect(byId.get("K6")!.age).toBe(6);
+    expect("age" in byId.get("K12")!).toBe(false);
+    expect(byId.get("GONE")).toMatchObject({ removed: true });
+    expect("age" in byId.get("GONE")!).toBe(false);
+    expect("age" in record.editorsChoice![0]!).toBe(false);
+    expect(state.kidsFromSix()).toEqual(["K6"]);
+    state.close();
+  });
+
+  test("a mark moved from 12 to 6 on one machine arrives as 6 on the other", () => {
+    const laptop = new WatchState(tempPath());
+    const tv = new WatchState(tempPath());
+    const wire = (state: WatchState, device: string) => parseRecord(JSON.stringify(state.exportRecord(device)))!;
+    laptop.setKids("01A", true);
+    tv.importMerged(mergeStates([wire(tv, "tv"), wire(laptop, "laptop")]));
+    expect(tv.kidsFromSix()).toEqual([]);
+
+    laptop.setKids("01A", true, 6);
+    expect(tv.importMerged(mergeStates([wire(tv, "tv"), wire(laptop, "laptop")]))).toBe(1);
+    expect(tv.kidsFromSix()).toEqual(["01A"]);
+    expect(tv.importMerged(mergeStates([wire(tv, "tv"), wire(laptop, "laptop")]))).toBe(0);
+    laptop.close();
+    tv.close();
+  });
+
+  test("an equal-time winner with a different age is taken, as any tie the merge broke", () => {
+    const state = new WatchState(tempPath());
+    state.importMerged({ profiles: [], kids: [{ setId: "01A", updatedAt: 1000 }] });
+    expect(state.importMerged({ profiles: [], kids: [{ setId: "01A", updatedAt: 1000, age: 6 }] })).toBe(1);
+    expect(state.kidsFromSix()).toEqual(["01A"]);
+    expect(state.importMerged({ profiles: [], kids: [{ setId: "01A", updatedAt: 1000, age: 6 }] })).toBe(0);
+    state.close();
+  });
+
+  test("a change here outdates what another device's clock stamped, however far ahead", () => {
+    const state = new WatchState(tempPath());
+    const ahead = Date.now() + 60_000;
+    state.importMerged({ profiles: [], kids: [{ setId: "01A", updatedAt: ahead }] });
+    state.setKids("01A", true, 6);
+    const moved = state.exportRecord("laptop").kids![0]!;
+    expect(moved.age).toBe(6);
+    expect(moved.updatedAt).toBeGreaterThan(ahead);
+    state.setKids("01A", false);
+    const removed = state.exportRecord("laptop").kids![0]!;
+    expect(removed.removed).toBe(true);
+    expect(removed.updatedAt).toBeGreaterThan(moved.updatedAt);
+    state.setKids("01A", true);
+    const back = state.exportRecord("laptop").kids![0]!;
+    expect(back.removed).toBeUndefined();
+    expect(back.updatedAt).toBeGreaterThan(removed.updatedAt);
+    state.close();
+  });
+
+  test("a mark already past the safe range is written back within it", () => {
+    const path = tempPath();
+    const state = new WatchState(path);
+    state.setKids("01A", true);
+    const db = new Database(path);
+    try {
+      // What importing a peer's largest-integer stamp used to leave behind.
+      db.query("UPDATE kids SET marked_at = ?1").run(9223372036854775807n);
+    } finally {
+      db.close();
+    }
+    state.setKids("01A", true, 6);
+    expect(state.exportRecord("laptop").kids![0]!.updatedAt).toBeLessThanOrEqual(Number.MAX_SAFE_INTEGER);
+    state.setKids("01A", false);
+    expect(state.exportRecord("laptop").kids![0]!.updatedAt).toBeLessThanOrEqual(Number.MAX_SAFE_INTEGER);
+    state.close();
+  });
+
+  test("an older build's echo of a mark from 6 changes nothing here, whichever device id sorts higher", () => {
+    const state = new WatchState(tempPath());
+    state.setKids("01A", true, 6);
+    const [mine] = state.exportRecord("laptop").kids!;
+    // What a build from before ages writes back: the same mark, its age dropped.
+    const echo = parseRecord(JSON.stringify({
+      format: 1, device: "zz-old-tv", writtenAt: 1, profiles: [], kids: [{ setId: "01A", updatedAt: mine!.updatedAt }],
+    }))!;
+    expect(state.importMerged(mergeStates([state.exportRecord("laptop"), echo]))).toBe(0);
+    expect(state.kidsFromSix()).toEqual(["01A"]);
+    state.close();
+  });
+
+  test("its own document, a removed mark from 6 included, imports as no change", () => {
+    const state = new WatchState(tempPath());
+    state.setKids("LIVE", true, 6);
+    state.setKids("GONE", true, 6);
+    state.setKids("GONE", false);
+    expect(state.importMerged(mergeStates([state.exportRecord("self")]))).toBe(0);
+    state.close();
+  });
+});

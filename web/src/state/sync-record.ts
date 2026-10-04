@@ -54,6 +54,8 @@
  */
 
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
+import { asArray, isStamp, numberFromScalar, objectRow, text_ } from "./record-scalars";
+import { parseRoleKeys, type RoleKeys } from "./roles-record";
 import { parseDayStatRows, parseTitleStatRows, type StatsRows } from "./stats-record";
 
 /** Bumped when a reader could no longer make sense of an older document. */
@@ -98,6 +100,9 @@ export interface ListRow {
   updatedAt: number;
   /** Present, and `true`, only for a tombstone — absent means still on. */
   removed?: true;
+  /** A live Kids mark only: marked "from 6". Absent is from 12, as every mark
+   * was before ages — so an older reader, dropping this, still reads 12. */
+  age?: 6;
 }
 
 /** A hand-built list, whole: merged as one row, not title by title — see
@@ -110,17 +115,13 @@ export interface CollectionRow {
   removed?: true;
 }
 
-/** `titleStats`/`dayStats` come from `StatsRows`: see `stats-record.ts`. */
-export interface ProfileState extends StatsRows {
+/** `titleStats`/`dayStats` come from `StatsRows` (`stats-record.ts`); `kids`,
+ * `admin`, `kidsAge`, `parent` and `pin` from `RoleKeys` (`roles-record.ts`). */
+export interface ProfileState extends StatsRows, RoleKeys {
   /** The viewer. See the plan's Identity section: the name, not the id. */
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
   localId?: string;
-  /**
-   * Present only on a kids profile. Written only when true, so an ordinary
-   * profile's entry reads exactly as it did before the flag existed.
-   */
-  kids?: true;
   progress: ProgressRow[];
   watched: WatchedRow[];
   /** Absent on a document from before this existed — not the same as empty,
@@ -194,9 +195,7 @@ export function parseRecord(text: string): SyncRecord | null {
     profiles.push({
       name,
       localId: text_(row.localId) ?? undefined,
-      // Only a literal `true`: a flag that restricts what a child sees must
-      // not be switched on by a string that merely looks truthy.
-      ...(row.kids === true ? { kids: true as const } : {}),
+      ...parseRoleKeys(row),
       progress: parseRows(row.progress, progressRow),
       watched: parseRows(row.watched, watchedRow),
       unwatched: row.unwatched === undefined ? undefined : parseRows(row.unwatched, unwatchedRow),
@@ -213,7 +212,7 @@ export function parseRecord(text: string): SyncRecord | null {
     device,
     writtenAt: numberFromScalar(held.writtenAt) || 0,
     profiles,
-    kids: held.kids === undefined ? undefined : parseRows(held.kids, listRow),
+    kids: held.kids === undefined ? undefined : parseRows(held.kids, kidsRow),
     editorsChoice: held.editorsChoice === undefined ? undefined : parseRows(held.editorsChoice, listRow),
   };
 }
@@ -235,16 +234,6 @@ function progressRow(value: unknown): ProgressRow | null {
     duration: Number.isFinite(runtime) && runtime > 0 ? runtime : null,
     updatedAt,
   };
-}
-
-/**
- * A time a synced row may carry: positive, no later than `Number.MAX_SAFE_INTEGER`.
- * Rows are last-writer-wins, so one stamped past it would outrank every later
- * edit of that row on every device it reached (dropped, not clamped: clamped,
- * it would too), and the core's own `+ 1` on it could leave its integer range.
- */
-function isStamp(at: number): boolean {
-  return at > 0 && at <= Number.MAX_SAFE_INTEGER;
 }
 
 function watchedRow(value: unknown): WatchedRow | null {
@@ -276,6 +265,13 @@ function listRow(value: unknown): ListRow | null {
   return raw.removed === true ? { setId, updatedAt, removed: true } : { setId, updatedAt };
 }
 
+/** A Kids mark: a list row, "from 6" only when a live mark says the literal
+ * 6 — anything else is from 12, and a removal has no age at all. */
+function kidsRow(value: unknown): ListRow | null {
+  const row = listRow(value);
+  return row !== null && !row.removed && objectRow(value)?.age === 6 ? { ...row, age: 6 } : row;
+}
+
 /** How long a list's name from another device's document may be — not
  * `store.ts`'s `MAX_NAME`: that caps what this player lets someone type,
  * this caps what a stranger's document is allowed to claim. */
@@ -302,27 +298,4 @@ export function parseRows<T>(value: unknown, one: (entry: unknown) => T | null):
     const row = one(entry);
     return row === null ? [] : [row];
   });
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-export function objectRow(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-/** Older documents allow numeric strings and other primitives. Objects and
- * arrays are not numbers; coercing a JSON object's own `toString` can throw. */
-function numberFromScalar(value: unknown): number {
-  return value !== null && typeof value === "object" ? Number.NaN : Number(value);
-}
-
-/** A non-empty string, trimmed — the only kind of text worth keeping here. */
-export function text_(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const clean = value.trim();
-  return clean === "" ? null : clean;
 }

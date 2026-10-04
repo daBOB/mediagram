@@ -1,0 +1,357 @@
+[
+  {
+    "name": "a profile's role keys read back as written",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":1789000000000},\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1789000000000}},{\"name\":\"Mia\",\"progress\":[],\"watched\":[],\"kids\":true,\"kidsAge\":{\"age\":6,\"updatedAt\":1789000000000},\"parent\":\"André\"}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "admin": {
+            "claimedAt": 1789000000000
+          },
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1789000000000
+          }
+        },
+        {
+          "name": "Mia",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "kidsAge": {
+            "age": 6,
+            "updatedAt": 1789000000000
+          },
+          "parent": "André"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a kid's limit dated 0 is the limit nobody chose, and is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Mia\",\"progress\":[],\"watched\":[],\"kids\":true,\"kidsAge\":{\"age\":12,\"updatedAt\":0}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "Mia",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "a parent's name is trimmed like any text; an empty or non-text one is nothing said",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Mia\",\"progress\":[],\"watched\":[],\"parent\":\" André \"},{\"name\":\"Leo\",\"progress\":[],\"watched\":[],\"parent\":\"  \"},{\"name\":\"Ben\",\"progress\":[],\"watched\":[],\"parent\":7}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "Mia",
+          "progress": [],
+          "watched": [],
+          "parent": "André"
+        },
+        {
+          "name": "Leo",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "Ben",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "a time written as a numeric string is read the way every older row's is",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":\"1789000000000\"},\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":\"1789000000000\"}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "admin": {
+            "claimedAt": 1789000000000
+          },
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1789000000000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "a malformed role key is dropped on its own; the profile, its rows and its other keys survive",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":0},\"kidsAge\":{\"age\":12,\"updatedAt\":3}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"admin\":true},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":\"soon\"}},{\"name\":\"D\",\"progress\":[],\"watched\":[],\"kidsAge\":{\"age\":9,\"updatedAt\":1}},{\"name\":\"E\",\"progress\":[],\"watched\":[],\"kidsAge\":{\"age\":\"6\",\"updatedAt\":1}},{\"name\":\"F\",\"progress\":[],\"watched\":[],\"kidsAge\":{\"age\":6,\"updatedAt\":-1}},{\"name\":\"G\",\"progress\":[],\"watched\":[],\"kidsAge\":{\"age\":6}},{\"name\":\"H\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"F377124B2C2FFEB096001D94CB0E3DF86FBE20AD9981335BC624B960D4D80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1}},{\"name\":\"I\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"abc\",\"updatedAt\":1}},{\"name\":\"J\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":0}},{\"name\":\"K\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\"}},{\"name\":\"L\",\"progress\":[{\"setId\":\"01A\",\"at\":5,\"duration\":null,\"updatedAt\":1789000000000}],\"watched\":[],\"kids\":\"yes\"}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 3
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "D",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "E",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "F",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "G",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "H",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "I",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "J",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "K",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "L",
+          "progress": [
+            {
+              "setId": "01A",
+              "at": 5,
+              "duration": null,
+              "updatedAt": 1789000000000
+            }
+          ],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "admin.claimedAt: 2^53 - 1 is kept, 2^53 drops the key",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":9007199254740991}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"admin\":{\"claimedAt\":9007199254740992}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "admin": {
+            "claimedAt": 9007199254740991
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "pin.updatedAt: 2^53 - 1 is kept, 2^53 drops the key",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":9007199254740991}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":9007199254740992}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 9007199254740991
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "kidsAge.updatedAt: 0 and 2^53 - 1 are kept, 2^53 drops the key",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"kids\":true,\"kidsAge\":{\"age\":6,\"updatedAt\":0}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"kids\":true,\"kidsAge\":{\"age\":6,\"updatedAt\":9007199254740991}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"kids\":true,\"kidsAge\":{\"age\":6,\"updatedAt\":9007199254740992}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "kidsAge": {
+            "age": 6,
+            "updatedAt": 0
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "kidsAge": {
+            "age": 6,
+            "updatedAt": 9007199254740991
+          }
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "a Kids mark keeps only the literal 6, only while live; a tombstone carrying one is read without it",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[],\"kids\":[{\"setId\":\"K6\",\"updatedAt\":1789000000000,\"age\":6},{\"setId\":\"K12\",\"updatedAt\":1789000000000,\"age\":12},{\"setId\":\"KS\",\"updatedAt\":1789000000000,\"age\":\"6\"},{\"setId\":\"KN\",\"updatedAt\":1789000000000},{\"setId\":\"KR\",\"updatedAt\":1789000000000,\"removed\":true,\"age\":6}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K6",
+          "updatedAt": 1789000000000,
+          "age": 6
+        },
+        {
+          "setId": "K12",
+          "updatedAt": 1789000000000
+        },
+        {
+          "setId": "KS",
+          "updatedAt": 1789000000000
+        },
+        {
+          "setId": "KN",
+          "updatedAt": 1789000000000
+        },
+        {
+          "setId": "KR",
+          "updatedAt": 1789000000000,
+          "removed": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "an age does not save a Kids mark stamped past 2^53 - 1",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[],\"kids\":[{\"setId\":\"K1\",\"updatedAt\":9007199254740991,\"age\":6},{\"setId\":\"K2\",\"updatedAt\":9007199254740992,\"age\":6}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [],
+      "kids": [
+        {
+          "setId": "K1",
+          "updatedAt": 9007199254740991,
+          "age": 6
+        }
+      ]
+    }
+  },
+  {
+    "name": "a watchlist row and an editor's choice never carry an age",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"watchlist\":[{\"setId\":\"W\",\"updatedAt\":1789000000000,\"age\":6}]}],\"editorsChoice\":[{\"setId\":\"E\",\"updatedAt\":1789000000000,\"age\":6}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "watchlist": [
+            {
+              "setId": "W",
+              "updatedAt": 1789000000000
+            }
+          ]
+        }
+      ],
+      "editorsChoice": [
+        {
+          "setId": "E",
+          "updatedAt": 1789000000000
+        }
+      ]
+    }
+  }
+]

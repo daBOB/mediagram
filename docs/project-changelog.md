@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.105.0 — profiles carry a role, a PIN and a kid's own age limit (web data layer)
+
+**Added** (web player state; the screens and rules follow)
+
+- State schema v12: a profile can be the household admin, hold a PIN, and — as a kid —
+  carry its own age limit and a parent; a Kids mark can say "from 6". All of it syncs
+  through the state channel as new keys (`admin`, `pin`, `kidsAge`, `parent`, a list
+  row's `age`) and merges deterministically: the earliest grown-up claim is admin, a kid
+  is never admin and never has a PIN, and at an exact tie a Kids mark from 6 beats one
+  without it (an older build echoes a mark without its age at the same stamp).
+- Every new time is bounded like the shipped ones (2^53 − 1) and own writes are clamped.
+  Builds without this ignore the new keys and echo nothing that undoes them.
+- Shared fixtures for the core to follow: `profile-roles-merge.json` (20 cases) and
+  `profile-roles-record-parse.json` (11 cases).
+
 ## 0.104.0 — the television's title and series pages read like the web's
 
 **Changed** (Android TV)

@@ -12,6 +12,7 @@
  */
 
 import { STATS_GROUP } from "./stats-schema";
+import { ROLES_GROUP } from "./roles-schema";
 
 /**
  * Statements grouped by the version they produce, the same shape the index's
@@ -240,4 +241,5 @@ export const GROUPS: readonly (readonly string[])[] = [
   ],
 
   STATS_GROUP,
+  ROLES_GROUP,
 ];

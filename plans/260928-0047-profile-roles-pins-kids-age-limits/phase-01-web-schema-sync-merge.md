@@ -12,7 +12,14 @@
 
 ## Overview
 
-Priority P1 (every later phase reads what this one stores and syncs). Status: pending.
+Priority P1 (every later phase reads what this one stores and syncs). Status: done (pending merge) —
+commits `b85dd7e8` (moves) and `2b37b552` (feature), built to the pre-flight rulings (schema **v12** in
+`roles-schema.ts`, `record-scalars.ts`, `merged.ts`, `mergeRoles`, `kidsRow`, `isStamp` bounds, clamped
+Kids writes). Three deviations the core must port, with reasons, in
+`../261004-1508-open-tasks-sweep/reports/b3-phase-01-web-roles-sync-report.md`: a Kids-mark tie ranks
+"from 6" before the device id; `toProfile` never calls a kid admin or `hasPin`; the fixture's expected
+profiles carry `displayName`. All three adopted by review and written into `shared-contract.md` §7/§8/§10;
+fixtures `profile-roles-merge.json` (20 cases) and `profile-roles-record-parse.json` (11 cases).
 Give each profile room for a role — a kid's own limit and parent, the one admin claim, a
 grown-up's PIN hash — and each Kids mark an age; carry both on the existing sync record as
 new optional keys; merge them by the contract's rules; export and import them correctly.
@@ -2053,14 +2060,14 @@ Expected: every test passes (including `code-standards.test.ts`); no type or lin
 
 ## Todo list
 
-- [ ] Task 1 — schema v11, migration tests, `schema.ts` ceiling (minor bump)
-- [ ] Task 2 — `profiles.ts`; `Profile` carries its role; delegates in `store.ts`
-- [ ] Task 3 — `record-scalars.ts`, `roles-record.ts`; `ListRow.age`
-- [ ] Task 4 — `roles-merge.ts` and the `mergeStates` hook
-- [ ] Task 5 — `setKids` age, `kidsFromSix`, Kids mark age on the wire
-- [ ] Task 6 — `roles-exchange.ts`; export and import in `store.ts`
-- [ ] Task 7 — `profile-roles-merge.json` + runner (passes first run)
-- [ ] Task 8 — phase gate green
+- [x] Task 1 — schema **v12** (`roles-schema.ts`), migration tests, `schema.ts` ceiling 245 (no bump: the lead bumps at merge)
+- [x] Task 2 — `profiles.ts`; `Profile` carries its role; delegates in `store.ts`
+- [x] Task 3 — `record-scalars.ts`, `roles-record.ts`; `ListRow.age` via `kidsRow`
+- [x] Task 4 — `roles-merge.ts` (`mergeRoles`, `kidsMarkRank`), `merged.ts`, the `mergeStates` hook
+- [x] Task 5 — `setKids` age (clamped), `kidsFromSix`, Kids mark age on the wire
+- [x] Task 6 — `roles-exchange.ts`; export and import in `store.ts`
+- [x] Task 7 — `profile-roles-merge.json` (20 cases) and `profile-roles-record-parse.json` (11 cases) + runners
+- [x] Task 8 — phase gate green (2742 pass)
 
 ## Success criteria
 

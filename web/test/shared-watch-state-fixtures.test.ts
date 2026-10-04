@@ -5,9 +5,10 @@
  * These fixtures are read by other languages too, so a case here is a rule
  * both engines must agree on. The sync, resume and Next up cases describe
  * behaviour the web already has, and a case that only passes after a change
- * to `src/state` or `public/lib` does not belong with them. The stats
- * fixtures are different: they pin the new counting rules first, and the
- * web's modules under `src/state/stats-*` are written to satisfy them.
+ * to `src/state` or `public/lib` does not belong with them. The stats and
+ * profile-roles fixtures are different: they pin new rules first, and the
+ * web's modules under `src/state/stats-*` and `src/state/roles-*` are
+ * written to satisfy them.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -124,6 +125,55 @@ describe("lists-merge fixtures", () => {
     test(one.name, () => {
       expect(canonicalLists(mergeStates(one.records))).toEqual(one.expect);
       expect(canonicalLists(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
+
+describe("profile-roles-record-parse fixtures", () => {
+  interface Case {
+    name: string;
+    input: string;
+    expect: SyncRecord | null;
+  }
+
+  for (const one of load<Case[]>("profile-roles-record-parse.json")) {
+    test(one.name, () => {
+      expect(parseRecord(one.input)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("profile-roles-merge fixtures", () => {
+  interface Case {
+    name: string;
+    records: SyncRecord[];
+    expect: ReturnType<typeof canonicalRoles>;
+  }
+
+  /** Who a viewer is, its role keys and the Kids marks — positions, lists and
+   * stats are the other fixtures' concern. A key absent here is one the merge
+   * must not say. */
+  function canonicalRoles(state: MergedState) {
+    return {
+      profiles: state.profiles
+        .map((profile) => ({
+          name: profile.name,
+          displayName: profile.displayName,
+          ...(profile.admin ? { admin: profile.admin } : {}),
+          ...(profile.kids ? { kids: profile.kids } : {}),
+          ...(profile.kidsAge ? { kidsAge: profile.kidsAge } : {}),
+          ...(profile.parent !== undefined ? { parent: profile.parent } : {}),
+          ...(profile.pin ? { pin: profile.pin } : {}),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      kids: [...(state.kids ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
+    };
+  }
+
+  for (const one of load<Case[]>("profile-roles-merge.json")) {
+    test(one.name, () => {
+      expect(canonicalRoles(mergeStates(one.records))).toEqual(one.expect);
+      expect(canonicalRoles(mergeStates([...one.records].reverse()))).toEqual(one.expect);
     });
   }
 });

@@ -31,14 +31,26 @@ function toListRow(setId: string, addedOrMarkedAt: number, removedAt: number | n
  */
 export type TitleMarkTable = "kids" | "editors_choice";
 
+/** Only a Kids mark has an age; the editor's choice reads as having none. */
+const ageOf = (table: TitleMarkTable) => (table === "kids" ? "age" : "NULL");
+
+/** "From 6" is said by a live mark only. A tombstone's column can still hold
+ * the age it had while live — an older build's removal leaves it there — and
+ * a removal says nothing about an age. */
+const liveAge = (age: unknown, removed: boolean): 6 | null => (age === 6 && !removed ? 6 : null);
+
 /** A table's marks, tombstones included — everything the wire needs to say.
- * `kids()` on `WatchState` is the live-only half of this. */
+ * `kids()` on `WatchState` is the live-only half of this. From 12 is said by
+ * saying nothing, which is all an older reader, dropping `age`, will hear. */
 export function exportTitleMarks(db: Database | null, table: TitleMarkTable): ListRow[] {
   if (!db) return [];
   const rows = db
-    .query(`SELECT set_id AS setId, marked_at AS markedAt, removed_at AS removedAt FROM ${table}`)
-    .all() as { setId: string; markedAt: number; removedAt: number | null }[];
-  return rows.map((row) => toListRow(row.setId, row.markedAt, row.removedAt));
+    .query(`SELECT set_id AS setId, marked_at AS markedAt, removed_at AS removedAt, ${ageOf(table)} AS age FROM ${table}`)
+    .all() as { setId: string; markedAt: number; removedAt: number | null; age: number | null }[];
+  return rows.map((row) => {
+    const wire = toListRow(row.setId, row.markedAt, row.removedAt);
+    return liveAge(row.age, !!wire.removed) === 6 ? { ...wire, age: 6 } : wire;
+  });
 }
 
 export function exportWatchlist(db: Database | null, profileId: string): ListRow[] {
@@ -80,11 +92,13 @@ export function importTitleMarks(db: Database | null, table: TitleMarkTable, row
   for (const row of rows) {
     const standing = db
       .query(
-        `SELECT removed_at AS removedAt, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM ${table} WHERE set_id = ?1`,
+        `SELECT removed_at AS removedAt, ${ageOf(table)} AS age, CASE WHEN removed_at IS NOT NULL THEN removed_at ELSE marked_at END AS updatedAt FROM ${table} WHERE set_id = ?1`,
       )
-      .get(row.setId) as { updatedAt: number; removedAt: number | null } | null;
+      .get(row.setId) as { updatedAt: number; removedAt: number | null; age: number | null } | null;
+    const age = liveAge(row.age, !!row.removed);
     if (standing !== null && (standing.updatedAt > row.updatedAt ||
-      (standing.updatedAt === row.updatedAt && (standing.removedAt !== null) === !!row.removed))) continue;
+      (standing.updatedAt === row.updatedAt && (standing.removedAt !== null) === !!row.removed &&
+        liveAge(standing.age, standing.removedAt !== null) === age))) continue;
 
     if (row.removed) {
       db.query(
@@ -97,6 +111,9 @@ export function importTitleMarks(db: Database | null, table: TitleMarkTable, row
            ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL`,
       ).run(row.setId, row.updatedAt);
     }
+    // Written with the row it rides on, a removal's included: "from 6" on
+    // a live mark, nothing on a tombstone.
+    if (table === "kids") db.query("UPDATE kids SET age = ?2 WHERE set_id = ?1").run(row.setId, age);
     changed += 1;
   }
   return changed;

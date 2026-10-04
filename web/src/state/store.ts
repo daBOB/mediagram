@@ -21,8 +21,10 @@ import { failureMessage } from "../failure-message";
 
 import { GROUPS } from "./schema";
 import { Settings } from "./settings";
-import { normalName, SYNC_FORMAT, type SyncRecord } from "./sync-record";
+import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
+import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
+import { exportRoles, importRoles } from "./roles-exchange";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
 import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
@@ -47,14 +49,6 @@ export interface Collection {
   name: string;
   createdAt: number;
   items: string[];
-}
-
-export interface Profile {
-  id: string;
-  name: string;
-  createdAt: number;
-  /** Sees only titles rated FSK 12 or under, or marked for Kids by hand. */
-  kids: boolean;
 }
 
 export interface StateSnapshot {
@@ -84,9 +78,6 @@ export interface Preference {
   name: string;
   value: string;
 }
-
-/** How long a name may be. Long enough for a sentence, short enough to show. */
-const MAX_NAME = 120;
 
 /**
  * How long a preference's three strings may be.
@@ -118,23 +109,11 @@ export class WatchState {
 
   /** Who watches this library. Empty until someone says. */
   profiles(): Profile[] {
-    if (!this.db) return [];
-    const rows = this.db
-      .query("SELECT id, name, created_at AS createdAt, kids FROM profiles ORDER BY created_at")
-      .all() as { id: string; name: string; createdAt: number; kids: number }[];
-    return rows.map((row) => ({ ...row, kids: row.kids !== 0 }));
+    return listProfiles(this.db);
   }
 
   createProfile(name: unknown, kids = false): Profile | null {
-    if (!this.db) return null;
-    const clean = cleanName(name);
-    if (clean === null) return null;
-
-    const profile = { id: crypto.randomUUID(), name: clean, createdAt: Date.now(), kids };
-    this.db
-      .query("INSERT INTO profiles(id, name, created_at, kids) VALUES (?1, ?2, ?3, ?4)")
-      .run(profile.id, profile.name, profile.createdAt, kids ? 1 : 0);
-    return profile;
+    return insertProfile(this.db, name, { kids });
   }
 
   renameProfile(id: string, name: unknown): boolean {
@@ -146,13 +125,11 @@ export class WatchState {
 
   /** Takes everything that was theirs with it — every table cascades. */
   deleteProfile(id: string): boolean {
-    if (!this.db) return false;
-    return this.db.query("DELETE FROM profiles WHERE id = ?1").run(id).changes > 0;
+    return deleteProfileById(this.db, id);
   }
 
   has(profileId: string): boolean {
-    if (!this.db) return false;
-    return this.db.query("SELECT 1 FROM profiles WHERE id = ?1").get(profileId) !== null;
+    return profileExists(this.db, profileId);
   }
 
   /**
@@ -378,12 +355,13 @@ export class WatchState {
    * snapshots retain progress and watched timestamps for playback and shelves.
    */
   exportRecord(device: string): SyncRecord {
+    const roles = exportRoles(this.db);
     const profiles = this.profiles().map((profile) => {
       const { watched, unwatched } = exportWatched(this.db, profile.id);
       return {
         name: profile.name,
         localId: profile.id,
-        ...(profile.kids ? { kids: true as const } : {}),
+        ...roles.get(profile.id),
         progress: (this.db
           ?.query(
             `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
@@ -430,14 +408,16 @@ export class WatchState {
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
-        const matched = this.findOrCreateProfile(profile.name, profile.displayName, profile.kids === true);
+        const matched = findOrCreateProfile(this.db, profile.name, profile.displayName, profile.kids === true);
         if (matched === null) continue;
         const profileId = matched.id;
         if (matched.created) changed += 1;
         // Another device made this viewer a kids profile. Only ever upgraded:
         // a merge without the flag says nothing, it does not say "not kids".
+        // FSK 12 until `importRoles` brings the merged limit, so a kid never
+        // reads as having none.
         if (profile.kids === true && !matched.kids) {
-          this.db.query("UPDATE profiles SET kids = 1 WHERE id = ?1").run(profileId);
+          this.db.query("UPDATE profiles SET kids = 1, kids_age = COALESCE(kids_age, 12) WHERE id = ?1").run(profileId);
           changed += 1;
         }
 
@@ -460,35 +440,15 @@ export class WatchState {
         changed += importPreferences(this.db, profileId, profile.preferences ?? []);
         changed += importStats(this.db, profileId, profile);
       }
+      // After the loop, not in it: a kid's parent may be a viewer this same
+      // import has only just made.
+      changed += importRoles(this.db, merged.profiles);
       this.db.exec("COMMIT");
       return changed;
     } catch (error) {
       this.db.exec("ROLLBACK");
       throw error;
     }
-  }
-
-  /**
-   * This player's id for a viewer, made if it has never seen them.
-   *
-   * Made rather than skipped, because the first thing a second machine knows
-   * about a viewer is a document written by the first — refusing to create
-   * one would mean the sync could only ever flow towards a machine that had
-   * already met them.
-   */
-  private findOrCreateProfile(
-    name: string,
-    displayName?: string,
-    kids = false,
-  ): { id: string; created: boolean; kids: boolean } | null {
-    const wanted = normalName(name);
-    if (wanted === null) return null;
-    const found = this.profiles().find((profile) => normalName(profile.name) === wanted);
-    // Created from the spelling somebody typed, never from the normalised
-    // identity — that would greet a viewer as "andré" on every new machine.
-    if (found) return { id: found.id, created: false, kids: found.kids };
-    const created = this.createProfile(displayName ?? name, kids);
-    return created ? { id: created.id, created: true, kids } : null;
   }
 
   /**
@@ -502,21 +462,36 @@ export class WatchState {
     return this.setIds("SELECT set_id AS setId FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC");
   }
 
-  /** A removal is a tombstone, not a delete — the same reason and the same
-   * shape as `setWatchlisted`. */
-  setKids(setId: string, marked: boolean): void {
+  /** The live marks made "from 6" — a subset of `kids()`, which is every live mark. */
+  kidsFromSix(): string[] {
+    return this.setIds("SELECT set_id AS setId FROM kids WHERE removed_at IS NULL AND age = 6 ORDER BY marked_at DESC");
+  }
+
+  /**
+   * Marks `setId` for Kids — "from 6", or from 12 as every mark was before
+   * ages — or takes the mark off. A removal is a tombstone, not a delete, the
+   * same reason and shape as `setWatchlisted`. Changing a live mark's age is
+   * a new mark, so another device hears of it; marking again at the age it
+   * has changes nothing. Every change is clamped past the stored time, as
+   * `setWatched`'s are and for the same reason.
+   */
+  setKids(setId: string, marked: boolean, age: 6 | 12 = 12): void {
     if (marked) {
       tolerate(() =>
         this.db
           ?.query(
-            `INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
-               ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL
-                 WHERE removed_at IS NOT NULL`,
+            `INSERT INTO kids(set_id, marked_at, removed_at, age) VALUES (?1, ?2, NULL, ?3)
+               ON CONFLICT(set_id) DO UPDATE SET
+                 marked_at = MAX(excluded.marked_at, MIN(COALESCE(removed_at, marked_at), ?4) + 1),
+                 removed_at = NULL, age = excluded.age
+                 WHERE removed_at IS NOT NULL OR age IS NOT excluded.age`,
           )
-          .run(setId, Date.now()),
+          .run(setId, Date.now(), age === 6 ? 6 : null, Number.MAX_SAFE_INTEGER - 1),
       );
     } else {
-      this.db?.query("UPDATE kids SET removed_at = ?2 WHERE set_id = ?1 AND removed_at IS NULL").run(setId, Date.now());
+      this.db
+        ?.query("UPDATE kids SET removed_at = MAX(?2, MIN(marked_at, ?3) + 1) WHERE set_id = ?1 AND removed_at IS NULL")
+        .run(setId, Date.now(), Number.MAX_SAFE_INTEGER - 1);
     }
   }
 
@@ -705,13 +680,6 @@ function tolerate(write: () => void): boolean {
 function short(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const clean = value.trim().slice(0, MAX_PREFERENCE);
-  return clean === "" ? null : clean;
-}
-
-/** A name with its edges trimmed, or `null` when there is nothing left. */
-function cleanName(name: unknown): string | null {
-  if (typeof name !== "string") return null;
-  const clean = name.trim().replace(/\s+/g, " ").slice(0, MAX_NAME);
   return clean === "" ? null : clean;
 }
 

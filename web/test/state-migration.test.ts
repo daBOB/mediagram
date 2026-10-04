@@ -33,6 +33,11 @@ function migrationsUpTo(version: number): string[] {
   return GROUPS.slice(0, Math.max(0, version)).flatMap((group) => [...group]);
 }
 
+/** The one profile these files hold, as `profiles()` reads it back: a grown-up with no role. */
+const ANDRE = {
+  id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, parentId: null, admin: false, hasPin: false,
+};
+
 /** A database at version 1, as a player that ran before profiles left one. */
 function v1With(path: string, rows: () => string[]): void {
   const db = new Database(path, { create: true });
@@ -286,7 +291,7 @@ describe("v6 to v7", () => {
     db.close();
 
     const state = new WatchState(path);
-    expect(state.profiles()).toEqual([{ id: "p1", name: "André", createdAt: 1, kids: false }]);
+    expect(state.profiles()).toEqual([ANDRE]);
     state.close();
   });
 });
@@ -320,7 +325,7 @@ describe("v9 to v10", () => {
     db.close();
 
     const state = new WatchState(path);
-    expect(state.profiles()).toEqual([{ id: "p1", name: "André", createdAt: 1, kids: false }]);
+    expect(state.profiles()).toEqual([ANDRE]);
     expect(state.settings().cacheMaxBytes()).toBeNull();
 
     state.settings().setCacheMaxBytes(1024 ** 3);
@@ -343,7 +348,7 @@ describe("v10 to v11", () => {
     raw.query("INSERT INTO stats_days(profile_id, day, device, seconds, updated_at) VALUES ('p1', '2026-10-03', 'laptop', 600, 1)").run();
     raw.query(`INSERT INTO stats_titles(profile_id, set_id, device, started_at, last_watched_at, seconds, again_at, updated_at)
       VALUES ('p1', '01SET', 'laptop', 1, 1, 600, NULL, 1)`).run();
-    expect(raw.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "11" });
+    expect(raw.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: String(GROUPS.length) });
     raw.close();
 
     // A second open replays nothing over them.
@@ -355,5 +360,59 @@ describe("v10 to v11", () => {
     expect(check.query("SELECT COUNT(*) AS n FROM stats_titles").get()).toEqual({ n: 0 });
     check.close();
     state.close();
+  });
+});
+
+describe("v11 to v12", () => {
+  test("an existing kid is FSK 12, a grown-up has no limit, and every hand mark is from 12", () => {
+    const path = tempPath();
+    atVersion(path, 11, () => [
+      "INSERT INTO profiles(id, name, created_at, kids) VALUES ('p1', 'André', 1, 0)",
+      "INSERT INTO profiles(id, name, created_at, kids) VALUES ('k1', 'TV kids', 2, 1)",
+      "INSERT INTO kids(set_id, marked_at) VALUES ('01K', 3)",
+    ]);
+
+    new WatchState(path).close();
+
+    const db = new Database(path);
+    try {
+      expect(
+        db.query(
+          `SELECT id, kids_age AS kidsAge, kids_age_updated_at AS kidsAgeUpdatedAt, parent_id AS parentId,
+                  admin_claimed_at AS adminClaimedAt, pin_hash AS pinHash, pin_salt AS pinSalt,
+                  pin_updated_at AS pinUpdatedAt
+             FROM profiles ORDER BY created_at`,
+        ).all(),
+      ).toEqual([
+        { id: "p1", kidsAge: null, kidsAgeUpdatedAt: 0, parentId: null, adminClaimedAt: null, pinHash: null, pinSalt: null, pinUpdatedAt: 0 },
+        { id: "k1", kidsAge: 12, kidsAgeUpdatedAt: 0, parentId: null, adminClaimedAt: null, pinHash: null, pinSalt: null, pinUpdatedAt: 0 },
+      ]);
+      expect(db.query("SELECT set_id AS setId, age FROM kids").all()).toEqual([{ setId: "01K", age: null }]);
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "12" });
+    } finally {
+      db.close();
+    }
+  });
+
+  test("a second open does not run it again", () => {
+    const path = tempPath();
+    atVersion(path, 11, () => ["INSERT INTO profiles(id, name, created_at, kids) VALUES ('k1', 'TV kids', 1, 1)"]);
+    new WatchState(path).close();
+    const first = new Database(path);
+    first.query("UPDATE profiles SET kids_age = 6 WHERE id = 'k1'").run();
+    first.close();
+
+    // A replay of the group would refuse to add a column twice, and the
+    // player would open remembering nothing — or, were it to get past that,
+    // put every kid back to 12.
+    const second = new WatchState(path);
+    expect(second.remembers).toBe(true);
+    second.close();
+    const again = new Database(path);
+    try {
+      expect(again.query("SELECT kids_age AS kidsAge FROM profiles").get()).toEqual({ kidsAge: 6 });
+    } finally {
+      again.close();
+    }
   });
 });
