@@ -97,15 +97,15 @@ class PlayerMarksTest {
             vm.marks.test {
                 assertNull(awaitItem())
                 vm.open("s1")
-                assertEquals(false, awaitItem()?.kids)
+                assertNull(awaitItem()?.kidsMark)
 
                 vm.toggleKids()
                 advanceUntilIdle()
-                assertEquals(true, expectMostRecentItem()?.kids)
+                assertEquals(12, expectMostRecentItem()?.kidsMark)
 
                 vm.toggleKids()
                 advanceUntilIdle()
-                assertEquals(false, expectMostRecentItem()?.kids)
+                assertNull(expectMostRecentItem()?.kidsMark)
             }
         }
 
@@ -147,7 +147,8 @@ class PlayerMarksTest {
                 val marks = awaitItem()
                 assertEquals(KidsVerdict.SAFE, marks?.kidsVerdict)
                 assertEquals(true, marks?.forKids)
-                assertEquals(false, marks?.kids)
+                assertEquals(true, marks?.forEveryKid)
+                assertNull(marks?.kidsMark)
             }
         }
 
@@ -165,12 +166,67 @@ class PlayerMarksTest {
 
                 // Refused: nothing is written, so nothing changes.
                 vm.toggleKids()
+                vm.setKidsMark(6)
                 advanceUntilIdle()
                 expectNoEvents()
                 assertTrue(
                     repository.snapshot.value.kids
                         .isEmpty(),
                 )
+            }
+        }
+
+    /** The web's select: "Not for kids", "From 6", "From 12" — and no other age. */
+    @Test
+    fun theKidsChoiceMarksFromSixFromTwelveOrNotAtAll() =
+        runTest {
+            installMainDispatcher()
+            val repository = WatchStateFixture().repository
+            val vm = viewModel(repository)
+
+            vm.marks.test {
+                assertNull(awaitItem())
+                vm.open("s1")
+                assertNull(awaitItem()?.kidsMark)
+
+                vm.setKidsMark(6)
+                advanceUntilIdle()
+                assertEquals(6, expectMostRecentItem()?.kidsMark)
+                assertEquals(listOf("s1"), repository.snapshot.value.kidsFromSix)
+
+                vm.setKidsMark(12)
+                advanceUntilIdle()
+                assertEquals(12, expectMostRecentItem()?.kidsMark)
+
+                vm.setKidsMark(7)
+                advanceUntilIdle()
+                expectNoEvents()
+
+                vm.setKidsMark(null)
+                advanceUntilIdle()
+                assertNull(expectMostRecentItem()?.kidsMark)
+                assertEquals(emptyList(), repository.snapshot.value.kids)
+            }
+        }
+
+    /** A grown-up reads a rating against the widest limit a kid can have: FSK 12 is for some kids, and is not chosen for. */
+    @Test
+    fun aTwelveIsForKidsFromTwelveAndCannotBeChosenFor() =
+        runTest {
+            installMainDispatcher()
+            val repository = WatchStateFixture().repository
+            val vm = viewModel(repository)
+
+            vm.marks.test {
+                assertNull(awaitItem())
+                vm.open("s1", fsk = "12")
+                val marks = awaitItem()
+                assertEquals(KidsVerdict.SAFE, marks?.kidsVerdict)
+                assertEquals(false, marks?.forEveryKid)
+                vm.setKidsMark(6)
+                advanceUntilIdle()
+                expectNoEvents()
+                assertTrue(repository.snapshot.value.kids.isEmpty())
             }
         }
 

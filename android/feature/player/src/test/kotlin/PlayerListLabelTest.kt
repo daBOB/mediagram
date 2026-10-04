@@ -9,7 +9,7 @@ class PlayerListLabelTest {
     private fun marks(listed: Boolean) =
         PlayerMarksState(
             watchlisted = listed,
-            kids = false,
+            kidsMark = null,
             lists = emptyList(),
             memberOf = emptySet(),
             kidsVerdict = KidsVerdict.UNRATED,

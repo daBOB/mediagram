@@ -47,5 +47,6 @@ fun PlayerViewModel.chooseFraming(next: Framing) = choicesController.chooseFrami
 
 fun PlayerViewModel.toggleWatchlist() = marksController.toggleWatchlist()
 fun PlayerViewModel.toggleKids() = marksController.toggleKids()
+fun PlayerViewModel.setKidsMark(age: Int?) = marksController.setKidsMark(age)
 fun PlayerViewModel.setInList(listId: String, included: Boolean) = marksController.setInList(listId, included)
 fun PlayerViewModel.createListAndAdd(name: String) = marksController.createListAndAdd(name)

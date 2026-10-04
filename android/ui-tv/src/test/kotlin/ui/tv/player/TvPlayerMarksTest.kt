@@ -42,7 +42,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
 
     @Test
     fun theRailCarriesTheThreeMarksAndWatchlistWrites() {
-        compose.onNodeWithText("Kids").assertExists()
+        compose.onNodeWithText("Not for kids").assertExists()
         compose.onNodeWithText("Add to list").assertExists()
 
         press(Key.DirectionDown)
@@ -123,7 +123,7 @@ class TvPlayerKidsProfileMarksTest : TvPlayerScreenHarness() {
     fun aKidsProfileHasNoKidsMark() {
         compose.onNodeWithText("My List").assertExists()
         compose.onNodeWithText("Add to list").assertExists()
-        compose.onNodeWithText("Kids").assertDoesNotExist()
+        compose.onNodeWithText("Not for kids").assertDoesNotExist()
 
         press(Key.DirectionDown)
         press(Key.DirectionRight)
