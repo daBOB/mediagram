@@ -2,9 +2,9 @@
 
 Branch `worktree-agent-aecc271f05e5665ba`, from `main` 3f75e503. No version bump, nothing pushed.
 
-**Status: partial.** #1, #2, #4 are done. #3 is done in the core; its Android half is
-blocked because the user paused the NDK / bindings run (coordinator, mid-task) before
-the Kotlin bindings were regenerated.
+**Status: done.** All four findings are fixed. The NDK / bindings run was paused mid-task
+by the user, then resumed. #3's Android half landed in one commit with the
+regenerated bindings (`b37b0077`).
 
 ## Commits
 
@@ -13,6 +13,7 @@ the Kotlin bindings were regenerated.
 | `e22bd863` | fix(core): wrong-PIN wait persisted; first profile held until a sync round (#2, #3 core) + contract amendments |
 | `e0f54f35` | fix(android): Manage closes and drops its PIN when the library shows again or on ON_STOP; picker prompt given up (#1) |
 | `dd876244` | refactor(android): one shared `ManageActions` in ui-common (#4) |
+| `b37b0077` | fix(android): regenerated bindings + #3's Android half (first profile only after a sync round) |
 
 ## RED first (recorded failing output)
 
@@ -47,39 +48,52 @@ the Kotlin bindings were regenerated.
 
 ## Tests
 
-- `cargo test -p mediagram-core`: green. `cargo test` (workspace, incl. code_standards):
-  **1792 passed, 0 failed, 4 ignored**. `cargo clippy --all-targets --all-features -D warnings`: clean.
-- `./gradlew testDebugUnitTest :core:rust:compileDebugAndroidTestKotlin :ui-tv:compileDebugAndroidTestKotlin lint`:
-  green, **2329 unit tests passed, 0 failed**. This ran against the *old* committed bindings.
+- `cargo test` (workspace, incl. code_standards): **1792 passed, 0 failed, 4 ignored**.
+  `cargo clippy --all-targets --all-features -D warnings`: clean.
+- `./gradlew --rerun-tasks testDebugUnitTest :core:rust:compileDebugAndroidTestKotlin :ui-tv:compileDebugAndroidTestKotlin lint`:
+  green, **2337 unit tests passed, 0 failed**, run against the regenerated bindings. There are
+  8 new tests: one WatchSync test, four first-profile view-model tests, one never-synced
+  contract case, and one more each in the phone and TV picker screens (the old
+  "Try again beside the first-profile form" tests were replaced).
+- The bindings are regenerated from the same Rust as `e22bd863`. After `b37b0077`,
+  `git status` under `android/core/rust/src/main/kotlin` is clean.
+- `RealCoreContractTest` compiles but has not been run (no adb).
 
-## Left for #3 (needs the regenerated bindings, which should be committed together)
+## #3 on Android (`b37b0077`)
 
-The paused `generate-android-bindings.sh` (stopped at `cargo run … uniffi-bindgen`; the four
-ABI `.so` are already built from `e22bd863`) will rewrite `mediagram_core.kt` when it resumes.
-Kotlin then fails to compile until the following land, so the regenerated bindings and these
-changes must go in one commit:
-
-1. `CoreProfileCalls`: `CoreOutcome.NotSynced` → `model.ProfileOutcome.NotSynced`. Its sentence
-   is "Waiting for this household’s profiles…".
-2. `WatchStateRepository.syncedOnce: StateFlow<Boolean>`, read in `reload()` via
-   `core.hasSyncedOnce()`. `DefaultWatchSync.attempt` also reloads while it is still false
-   (an empty first round pulls 0 rows).
-3. `FakeCore.syncedOnce` (default `true`, documented as "a device that has synced once") +
-   `hasSyncedOnce()`. `FakeProfiles.createFirst` answers `NotSynced` last.
-4. `ProfileUiState.Picking.synced`: `needsFirstProfile = synced && no grown-up`. New
-   `awaitingHousehold`. `needsAdmin` requires a grown-up (otherwise it fires with none).
-5. Phone and TV pickers show the waiting line + Try again. The TV `focusSpot` falls back to TryAgain.
-6. View-model tests: no round → not offered / refused; empty round → offered; round with
-   profiles → tiles.
-7. `CoreContract.core(synced = true)` + a "fresh core refuses a first profile" case.
-   `RealCoreContractTest` seeds `state_meta(first_round_imported)` through Android SQLite
-   before `Core` opens the directory. **Until this lands, every profile case of
-   `RealCoreContractTest` fails on a device with the new `.so`.**
+1. `CoreProfileCalls` maps `NotSynced` to `model.ProfileOutcome.NotSynced`, which reads
+   "Waiting for this household’s profiles…" (`WAITING_FOR_HOUSEHOLD`).
+2. `WatchStateRepository.syncedOnce` is read in `reload()`. `DefaultWatchSync.attempt` also
+   re-reads while it is still false, because a new household's first round pulls 0 rows and
+   can outlast the picker's 5 s wait.
+3. `FakeCore.syncedOnce` defaults to `true` (a device that has synced). `FakeProfiles.createFirst`
+   answers `NotSynced` last, as `manage.rs` does.
+4. `ProfileUiState.Picking.synced`:
+   - `needsFirstProfile` needs a round to have landed.
+   - New `awaitingHousehold` covers no grown-up and no round yet.
+   - `needsAdmin` now requires a grown-up to exist.
+5. The phone and TV pickers show the waiting line with Try again in place of the form. The TV
+   `focusSpot` lands on Try again when there are no tiles. Try again no longer sits beside the
+   form once a round has said the household is empty.
+6. `FirstProfileWaitsForASyncRoundTest` covers four cases:
+   - before any round: not offered, and refused with the waiting sentence;
+   - an empty round: offered and made;
+   - a round that brought profiles: tiles only;
+   - a late round: the form appears when it lands.
+7. `CoreContract.core(synced: Boolean = true)` plus a new `aFirstProfileWaitsForASyncRound` case.
+   `RealCoreContractTest` builds its core lazily and seeds `state_meta(first_round_imported)`
+   through Android SQLite before the core opens the directory.
 
 ## Concerns
 
-- **Do not install from this worktree yet.** The gitignored `.so` files are newer than the
-  committed bindings (UniFFI checksum mismatch at load).
+- **Stale Gradle build cache.** After the bindings change, `core:data`'s unit-test compile
+  was restored from cache without the new delegate method. `WatchStateLocalDayTest`'s
+  `CoreInterface by seeded` then threw `AbstractMethodError: … hasSyncedOnce`, and `clean`
+  did not help because the cache restored it again. `--rerun-tasks` (or a `--rerun` on that
+  compile) fixes it. Expect the same on other machines after pulling: rebuild with
+  `--rerun-tasks` once.
+- `RealCoreContractTest` seeds the marker by its key (`first_round_imported`). If that key is
+  renamed in `state/sync/first_round.rs`, the seed must follow.
 - `error::tests::io_diagnostics_keep_nested_context_and_the_underlying_cause` failed once in a
   parallel run and passed on every rerun. It is a tracing-subscriber test, flaky, and not
   touched by this branch.
