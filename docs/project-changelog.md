@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.107.0 — the core carries profile roles, PINs and kid limits (data layer)
+
+**Added** (Rust core, for Android; the rules and screens follow)
+
+- Core state schema v8 — the same roles the web player's v12 carries: an admin claim, a PIN,
+  a kid's own limit and parent, and a Kids mark's age — on the sync record, merged and
+  exchanged exactly as the web does. All 31 shared role-fixture cases pass, and 3,000
+  random cases agree with the web in both orders. The migration repairs before it
+  migrates, so an early pre-release file gets the `kids` column the v8 step needs.
+- A same-millisecond admin claim breaks its tie in UTF-16 name order, as JavaScript
+  compares, so the web and Android never name different admins.
+- No change to the Kotlin API yet; Android takes the core with its next native build.
+
 ## 0.106.2 — DTS and TrueHD films play on the television
 
 **Fixed** (Android)

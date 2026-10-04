@@ -77,6 +77,13 @@ fn stats_record_parse_fixtures_match_the_web() {
     run_record_parse_fixture("stats-record-parse.json");
 }
 
+/// Admin, limit, parent and PIN: each bad key dropped on its own, never the
+/// profile; the role-stamp bounds; a Kids tombstone's age stripped.
+#[test]
+fn profile_roles_record_parse_fixtures_match_the_web() {
+    run_record_parse_fixture("profile-roles-record-parse.json");
+}
+
 #[derive(Deserialize)]
 struct MergeCase {
     name: String,
@@ -113,36 +120,49 @@ fn canonical(mut state: MergedState) -> MergedState {
     state
 }
 
-fn run_merge_fixture(file: &str) {
+/// Each case merged forward and reversed, compared through `project`: a
+/// whole state, or only the keys a file is about, as the web's own runner
+/// picks them.
+fn run_merge_fixture<T: PartialEq + std::fmt::Debug>(file: &str, project: fn(MergedState) -> T) {
     let Some(cases) = load::<MergeCase>(file) else {
         return;
     };
     assert!(!cases.is_empty(), "{file} holds no cases");
     for case in cases {
-        let expect = canonical(case.expect);
+        let expect = project(case.expect);
 
-        let forward = canonical(merge_states(&case.records));
+        let forward = project(merge_states(&case.records));
         assert_eq!(forward, expect, "case: {} (forward)", case.name);
 
         // Order-independent, spelling included: devices see each other's
         // documents in whatever order Telegram hands them over.
         let mut reversed = case.records.clone();
         reversed.reverse();
-        let backward = canonical(merge_states(&reversed));
+        let backward = project(merge_states(&reversed));
         assert_eq!(backward, expect, "case: {} (reversed)", case.name);
     }
 }
 
+/// Everything but the role keys. `merge.json` and `lists-merge.json` predate
+/// those and say nothing of them — a merged kid now carries a limit there.
+fn without_roles(state: MergedState) -> MergedState {
+    let mut state = canonical(state);
+    for profile in &mut state.profiles {
+        profile.roles = Default::default();
+    }
+    state
+}
+
 #[test]
 fn merge_fixtures_match_the_web_in_both_orders() {
-    run_merge_fixture("merge.json");
+    run_merge_fixture("merge.json", without_roles);
 }
 
 /// Watchlist, Kids and collections: added, removed, re-added, tied, and a
 /// tombstone against a live row — `merge.json`'s cases predate all three.
 #[test]
 fn lists_merge_fixtures_match_the_web_in_both_orders() {
-    run_merge_fixture("lists-merge.json");
+    run_merge_fixture("lists-merge.json", without_roles);
 }
 
 /// The stats keys only, per viewer, as the web's own runner compares them:
@@ -165,27 +185,32 @@ fn stats_only(state: MergedState) -> Vec<MergedProfile> {
 /// device), in either order.
 #[test]
 fn stats_merge_fixtures_match_the_web_in_both_orders() {
-    let Some(cases) = load::<MergeCase>("stats-merge.json") else {
-        return;
-    };
-    assert!(!cases.is_empty(), "stats-merge.json holds no cases");
-    for case in cases {
-        let expect = stats_only(case.expect);
-        let mut records = case.records;
-        assert_eq!(
-            stats_only(merge_states(&records)),
-            expect,
-            "case: {} (forward)",
-            case.name
-        );
-        records.reverse();
-        assert_eq!(
-            stats_only(merge_states(&records)),
-            expect,
-            "case: {} (reversed)",
-            case.name
-        );
-    }
+    run_merge_fixture("stats-merge.json", stats_only);
+}
+
+/// The role keys per viewer, and the Kids marks: what
+/// `profile-roles-merge.json` states, and nothing it does not.
+fn roles_only(state: MergedState) -> MergedState {
+    let state = canonical(state);
+    let profiles = state
+        .profiles
+        .into_iter()
+        .map(|profile| MergedProfile {
+            name: profile.name,
+            display_name: profile.display_name,
+            kids: profile.kids,
+            roles: profile.roles,
+            ..Default::default()
+        })
+        .collect();
+    MergedState { profiles, kids: state.kids, ..Default::default() }
+}
+
+/// Admin, limit, parent and PIN across devices, and a Kids mark's age —
+/// including the tie a mark from 6 wins before the device id is asked.
+#[test]
+fn profile_roles_merge_fixtures_match_the_web_in_both_orders() {
+    run_merge_fixture("profile-roles-merge.json", roles_only);
 }
 
 /// The web compares only the keys a case names — one about the week need

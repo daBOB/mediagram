@@ -174,7 +174,7 @@ impl Core {
     pub async fn set_kids(self: Arc<Self>, set_id: String, marked: bool) {
         self.blocking(move |core| {
             core.state_db
-                .with(|conn| rows::set_kids(conn, &set_id, marked))
+                .with(|conn| rows::set_kids(conn, &set_id, marked.then_some(12)))
         })
         .await;
     }

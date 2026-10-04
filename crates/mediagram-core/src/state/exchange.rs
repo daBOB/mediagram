@@ -13,6 +13,8 @@ use super::rows;
 use super::stats;
 use super::watched_exchange;
 
+mod roles;
+
 /// What this device has to say about where things were left off.
 ///
 /// Includes every profile, because a document belongs to a device rather
@@ -36,6 +38,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         let collections = lists_exchange::export_collections(conn, &profile.id)?;
         let preferences = preferences_exchange::export_preferences(conn, &profile.id)?;
         let (title_stats, day_stats) = stats::exchange::export(conn, &profile.id)?;
+        let roles = roles::export(conn, &profile.id)?;
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
@@ -48,6 +51,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             preferences,
             title_stats,
             day_stats,
+            roles,
         });
     }
     let kids = lists_exchange::export_kids(conn)?;
@@ -91,8 +95,13 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed += u64::from(created);
         // Another device made this viewer a kids profile. Only ever upgraded:
         // a merge without the flag says nothing, it does not say "not kids".
+        // FSK 12 until `roles::import` brings the merged limit, so a kid
+        // never reads as having none.
         if profile.kids && !already_kids {
-            conn.execute("UPDATE profiles SET kids = 1 WHERE id = ?1", [&profile_id])?;
+            conn.execute(
+                "UPDATE profiles SET kids = 1, kids_age = COALESCE(kids_age, 12) WHERE id = ?1",
+                [&profile_id],
+            )?;
             changed += 1;
         }
 
@@ -108,6 +117,9 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         changed +=
             stats::exchange::import(conn, &profile_id, &profile.title_stats, &profile.day_stats)?;
     }
+    // After the loop, not in it: a kid's parent may be a viewer this same
+    // import has only just made.
+    changed += roles::import(conn, &merged.profiles)?;
     transaction.commit()?;
     Ok(changed)
 }

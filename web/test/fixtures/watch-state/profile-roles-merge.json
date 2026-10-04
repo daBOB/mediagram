@@ -918,5 +918,56 @@
         }
       ]
     }
+  },
+  {
+    "name": "admin claimed in the same millisecond: the smaller name in UTF-16 order wins, as JavaScript compares (an emoji's surrogate pair sorts before U+FF41)",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "ａ",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "😀",
+            "admin": {
+              "claimedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "😀",
+          "displayName": "😀",
+          "admin": {
+            "claimedAt": 1000
+          }
+        },
+        {
+          "name": "ａ",
+          "displayName": "ａ"
+        }
+      ],
+      "kids": []
+    }
   }
 ]

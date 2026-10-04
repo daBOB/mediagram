@@ -129,6 +129,6 @@ fn adding_to_the_watchlist_twice_is_not_two_rows() {
 fn kids_is_not_scoped_to_a_profile() {
     let dir = tempfile::tempdir().unwrap();
     let db = StateDb::new(dir.path().to_path_buf());
-    db.with(|conn| set_kids(conn, "01A", true)).unwrap();
+    db.with(|conn| set_kids(conn, "01A", Some(12))).unwrap();
     assert_eq!(db.with(kids).unwrap(), vec!["01A".to_string()]);
 }

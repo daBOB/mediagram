@@ -101,3 +101,46 @@ fn a_store_from_before_stats_gains_empty_stats_tables() {
     .unwrap();
     assert_eq!(count("stats_days"), 0, "a profile's stats go with it");
 }
+
+/// A store from before profile roles gains their columns: every existing
+/// kid is FSK 12 dated 0 (the one limit there was, older than any choice),
+/// every existing mark stays "from 12", and nobody is an admin, has a
+/// parent or holds a PIN.
+#[test]
+fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
+        for statement in schema::migrations_up_to(7) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 7i64).unwrap();
+        conn.execute_batch(
+            "INSERT INTO profiles(id, name, created_at, kids) VALUES ('p1', 'André', 0, 0), ('p2', 'Mia', 1, 1);
+             INSERT INTO kids(set_id, marked_at) VALUES ('family', 5);",
+        )
+        .unwrap();
+    }
+
+    let conn = open(dir.path()).unwrap();
+
+    let row = |id: &str| -> (Option<i64>, i64, bool) {
+        conn.query_row(
+            "SELECT kids_age, kids_age_updated_at,
+                    parent_id IS NULL AND admin_claimed_at IS NULL AND pin_hash IS NULL
+                      AND pin_salt IS NULL AND pin_updated_at = 0
+               FROM profiles WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .unwrap()
+    };
+    assert_eq!(row("p1"), (None, 0, true));
+    assert_eq!(row("p2"), (Some(12), 0, true));
+    let age: Option<i64> = conn
+        .query_row("SELECT age FROM kids WHERE set_id = 'family'", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(age, None);
+    let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
+    assert_eq!(version, 8);
+}

@@ -1,3 +1,6 @@
+use std::path::Path;
+
+use super::open::migrate;
 use super::*;
 
 fn populated_v1(path: &Path) -> Connection {

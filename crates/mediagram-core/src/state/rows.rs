@@ -8,6 +8,9 @@ use rusqlite::{Connection, params};
 
 use super::{profiles::now_ms, record::MAX_STAMP};
 
+mod kids_marks;
+pub use kids_marks::{kids, kids_from_six, set_kids};
+
 /// Where a profile is in one title. `at`/`duration` are seconds, never a
 /// percentage — a set's runtime can be unknown, and a percentage recorded
 /// against an unknown length cannot be turned back into a position to seek
@@ -161,34 +164,6 @@ pub fn set_watchlisted(
         conn.execute(
             "UPDATE watchlist SET removed_at = ?3 WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
             params![profile_id, set_id, now_ms()],
-        )?;
-    }
-    Ok(())
-}
-
-/// The titles marked as a child's, for everyone on this player. Not scoped
-/// to a profile: see `schema.rs` on why.
-pub fn kids(conn: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt =
-        conn.prepare("SELECT set_id FROM kids WHERE removed_at IS NULL ORDER BY marked_at DESC")?;
-    let rows = stmt.query_map([], |row| row.get(0))?;
-    rows.collect()
-}
-
-/// A removal is a tombstone, not a delete — the same reason and the same
-/// shape as `set_watchlisted`.
-pub fn set_kids(conn: &Connection, set_id: &str, marked: bool) -> rusqlite::Result<()> {
-    if marked {
-        conn.execute(
-            "INSERT INTO kids(set_id, marked_at, removed_at) VALUES (?1, ?2, NULL)
-               ON CONFLICT(set_id) DO UPDATE SET marked_at = excluded.marked_at, removed_at = NULL
-                 WHERE removed_at IS NOT NULL",
-            params![set_id, now_ms()],
-        )?;
-    } else {
-        conn.execute(
-            "UPDATE kids SET removed_at = ?2 WHERE set_id = ?1 AND removed_at IS NULL",
-            params![set_id, now_ms()],
         )?;
     }
     Ok(())

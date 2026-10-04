@@ -18,6 +18,10 @@ pub struct ListRow {
     pub updated_at: f64,
     #[serde(default)]
     pub removed: bool,
+    /// A live Kids mark only: `Some(6)` is "from 6". Absent is "from 12" —
+    /// also what a reader that predates the key makes of every mark.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub age: Option<u8>,
 }
 
 /// A hand-built list, whole: merged as one row, not title by title — see
@@ -46,7 +50,18 @@ pub(super) fn list_row(raw: &Value) -> Option<ListRow> {
         set_id,
         updated_at,
         removed,
+        age: None,
     })
+}
+
+/// A Kids mark: a list row that says "from 6" only when it is live and its
+/// `age` is the number 6. Anything else, 12 included, is from 12, and a
+/// removal says nothing about an age.
+pub(super) fn kids_row(raw: &Value) -> Option<ListRow> {
+    let mut row = list_row(raw)?;
+    let six = raw.get("age").and_then(Value::as_f64) == Some(6.0);
+    row.age = (six && !row.removed).then_some(6);
+    Some(row)
 }
 
 /// How long a list's name from another device's document may be — not

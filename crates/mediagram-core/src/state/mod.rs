@@ -20,6 +20,7 @@ pub mod exchange;
 pub mod lists;
 mod lists_exchange;
 pub mod merge;
+mod open;
 pub mod preferences;
 mod preferences_exchange;
 pub mod profiles;
@@ -31,10 +32,12 @@ pub mod stats;
 pub(crate) mod sync;
 mod watched_exchange;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use rusqlite::Connection;
+
+use open::open;
 
 const STATE_FILE: &str = "state.db";
 
@@ -105,48 +108,6 @@ impl StateDb {
             }
         }
     }
-}
-
-/// Opens (creating if needed) `<data_dir>/state.db`, enables WAL and foreign
-/// keys, and applies every migration this file has not had.
-fn open(data_dir: &Path) -> anyhow::Result<Connection> {
-    std::fs::create_dir_all(data_dir)?;
-    let conn = Connection::open(data_dir.join(STATE_FILE))?;
-    conn.pragma_update(None, "journal_mode", "WAL")?;
-    migrate(&conn)?;
-    repair::add_missing_kids_column(&conn)?;
-    conn.pragma_update(None, "foreign_keys", true)?;
-    Ok(conn)
-}
-
-/// Applies every statement past the version `PRAGMA user_version` records,
-/// then advances it — both in one transaction, so a migration killed half
-/// way leaves the version it started at rather than a shape matching no
-/// version at all. The same shape `details.rs`'s `migrate_from` uses for the
-/// sidecar description store.
-fn migrate(conn: &Connection) -> anyhow::Result<()> {
-    let at: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
-    if at >= schema::VERSION {
-        return Ok(());
-    }
-
-    let applied = schema::migrations_up_to(at).len();
-    conn.execute_batch("BEGIN")?;
-    for statement in schema::migrations_up_to(schema::VERSION)
-        .into_iter()
-        .skip(applied)
-    {
-        if let Err(err) = conn.execute(statement, []) {
-            let _ = conn.execute_batch("ROLLBACK");
-            return Err(err.into());
-        }
-    }
-    if let Err(err) = conn.pragma_update(None, "user_version", schema::VERSION) {
-        let _ = conn.execute_batch("ROLLBACK");
-        return Err(err.into());
-    }
-    conn.execute_batch("COMMIT")?;
-    Ok(())
 }
 
 #[cfg(test)]

@@ -21,7 +21,8 @@
 //! weighs a live row against its removal (`record.rs` explains the key).
 //! Watchlist, Kids, collections, preferences and viewing stats need no such
 //! trick — each row carries its own timestamp (and `removed` flag),
-//! reconciled by `keep`.
+//! reconciled by `keep`; a Kids mark's tie asks first whether it says "from
+//! 6" (`roles::kids_mark_rank`). A viewer's role keys are `roles.rs`'s.
 
 use std::collections::HashMap;
 
@@ -31,11 +32,12 @@ use super::record::{
 
 mod merged;
 mod preferences;
+mod roles;
 mod stats;
 mod tie_break;
 mod watched;
 pub use merged::{MergedProfile, MergedState};
-use tie_break::{Held, keep};
+use tie_break::{Held, keep, keep_ranked};
 
 struct ViewerState {
     display_name: String,
@@ -64,7 +66,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
     for record in records {
         let device = record.device.as_str();
         for row in &record.kids {
-            keep(&mut kids, row.set_id.clone(), row.clone(), device);
+            keep_ranked(&mut kids, row.set_id.clone(), row.clone(), device, roles::kids_mark_rank);
         }
         for row in &record.editors_choice {
             keep(&mut editors_choice, row.set_id.clone(), row.clone(), device);
@@ -118,6 +120,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
         }
     }
 
+    let mut merged_roles = roles::merge(records);
     let mut profiles = Vec::with_capacity(by_viewer.len());
     for (name, held) in by_viewer {
         let watched_map: HashMap<String, WatchedRow> =
@@ -148,6 +151,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             .collect();
 
         let (title_stats, day_stats) = stats::rows(held.stats);
+        let roles = merged_roles.remove(&name).unwrap_or_default();
         profiles.push(MergedProfile {
             name,
             display_name: held.display_name,
@@ -160,6 +164,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             preferences: preferences::rows(held.preferences),
             title_stats,
             day_stats,
+            roles,
         });
     }
     MergedState {

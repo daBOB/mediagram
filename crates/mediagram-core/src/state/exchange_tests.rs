@@ -307,9 +307,9 @@ fn a_peer_collection_past_the_safe_range_cannot_outrank_a_later_rename() {
 fn a_peer_kids_mark_past_the_safe_range_cannot_outrank_a_later_removal() {
     for stamp in PAST_SAFE {
         let (_dir, db) = db();
-        db.with(|conn| rows::set_kids(conn, "01A", true)).unwrap();
+        db.with(|conn| rows::set_kids(conn, "01A", Some(12))).unwrap();
         let peer = format!(r#""kids":[{{"setId":"01A","updatedAt":{stamp}}}]"#);
-        edit_between_rounds(&db, &peer, |conn| rows::set_kids(conn, "01A", false));
+        edit_between_rounds(&db, &peer, |conn| rows::set_kids(conn, "01A", None));
         let kids = db.with(rows::kids).unwrap();
         assert_eq!(
             kids,

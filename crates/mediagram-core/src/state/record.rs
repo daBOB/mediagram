@@ -31,11 +31,13 @@ mod hostile_json;
 mod list_record;
 mod parse;
 mod preference_record;
+mod roles_record;
 mod stats_record;
 pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use parse::parse_record;
+pub use roles_record::{AdminClaim, KidsAge, PinRecord, ProfileRoles};
 pub use stats_record::{DayStatRow, TitleStatRow};
 
 /// Bumped when a reader could no longer make sense of an older document.
@@ -117,6 +119,10 @@ pub struct ProfileState {
     pub title_stats: Vec<TitleStatRow>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub day_stats: Vec<DayStatRow>,
+    /// Admin claim, limit, parent and PIN (`roles_record.rs`), each written
+    /// only when set, beside `kids` on the wire.
+    #[serde(flatten)]
+    pub roles: ProfileRoles,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

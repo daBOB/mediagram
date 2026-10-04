@@ -18,7 +18,8 @@ fn a_list_row_reads_removed_only_when_it_is_literally_true() {
         Some(ListRow {
             set_id: "01A".into(),
             updated_at: 1.0,
-            removed: false
+            removed: false,
+            age: None,
         })
     );
     assert_eq!(
@@ -26,7 +27,8 @@ fn a_list_row_reads_removed_only_when_it_is_literally_true() {
         Some(ListRow {
             set_id: "01A".into(),
             updated_at: 1.0,
-            removed: true
+            removed: true,
+            age: None,
         })
     );
     assert_eq!(
@@ -34,9 +36,27 @@ fn a_list_row_reads_removed_only_when_it_is_literally_true() {
         Some(ListRow {
             set_id: "01A".into(),
             updated_at: 1.0,
-            removed: false
+            removed: false,
+            age: None,
         })
     );
+}
+
+#[test]
+fn a_kids_mark_reads_its_age_only_from_the_number_six_and_only_while_live() {
+    let age = |value: serde_json::Value| kids_row(&value).unwrap().age;
+    assert_eq!(age(json!({ "setId": "01A", "updatedAt": 1, "age": 6 })), Some(6));
+    assert_eq!(age(json!({ "setId": "01A", "updatedAt": 1, "age": 6.0 })), Some(6));
+    for other in [json!(12), json!("6"), json!(6.5), json!(null), json!(true)] {
+        assert_eq!(age(json!({ "setId": "01A", "updatedAt": 1, "age": other })), None);
+    }
+    assert_eq!(age(json!({ "setId": "01A", "updatedAt": 1, "removed": true, "age": 6 })), None);
+}
+
+#[test]
+fn a_watchlist_row_never_carries_an_age() {
+    let row = list_row(&json!({ "setId": "01A", "updatedAt": 1, "age": 6 })).unwrap();
+    assert_eq!(row.age, None);
 }
 
 #[test]

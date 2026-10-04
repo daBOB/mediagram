@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn import_is_not_scoped_to_a_profile() {
         let conn = conn();
-        let mark = ListRow { set_id: "01A".into(), updated_at: 1000.0, removed: false };
+        let mark = ListRow { set_id: "01A".into(), updated_at: 1000.0, removed: false, age: None };
 
         import_editors_choice(&conn, &[mark]).unwrap();
 
@@ -104,7 +104,7 @@ mod tests {
         set_editors_choice(&conn, "01A", true).unwrap();
         let local_mark = export_editors_choice(&conn).unwrap()[0].clone();
 
-        let stale = ListRow { set_id: "01A".into(), updated_at: local_mark.updated_at - 1.0, removed: true };
+        let stale = ListRow { set_id: "01A".into(), updated_at: local_mark.updated_at - 1.0, removed: true, age: None };
         import_editors_choice(&conn, &[stale]).unwrap();
 
         assert_eq!(editors_choice(&conn).unwrap(), Some("01A".to_string()));

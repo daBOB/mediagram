@@ -158,6 +158,24 @@ const GROUPS: &[&[&str]] = &[
        PRIMARY KEY(profile_id, day, device)
      )",
     ],
+    // v7 -> v8: who may manage whom — the web's v12 (`roles-schema.ts`),
+    // statement for statement. A kid carries its own limit (6 or 12) and the
+    // grown-up who made it; one grown-up may be the admin; a grown-up may
+    // hold a PIN, stored as its salted hash, never the digits. `parent_id`
+    // is not a foreign key: a parent removed here must leave a kid another
+    // device still knows readable. Every existing kid was FSK 12, the one
+    // limit there was; every existing mark stays "from 12" (`age` NULL).
+    &[
+        "ALTER TABLE profiles ADD COLUMN kids_age INTEGER",
+        "ALTER TABLE profiles ADD COLUMN kids_age_updated_at INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE profiles ADD COLUMN parent_id TEXT",
+        "ALTER TABLE profiles ADD COLUMN admin_claimed_at INTEGER",
+        "ALTER TABLE profiles ADD COLUMN pin_hash TEXT",
+        "ALTER TABLE profiles ADD COLUMN pin_salt TEXT",
+        "ALTER TABLE profiles ADD COLUMN pin_updated_at INTEGER NOT NULL DEFAULT 0",
+        "UPDATE profiles SET kids_age = 12 WHERE kids = 1",
+        "ALTER TABLE kids ADD COLUMN age INTEGER",
+    ],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

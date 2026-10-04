@@ -13,7 +13,7 @@
 
 ## Overview
 
-Priority P1 (05 and 06 build on it). Status: pending. Effort ~5h.
+Priority P1 (05 and 06 build on it). Status: **done (pending merge)**, 2026-10-04 — built to the pre-flight rulings (schema v8, `state/open.rs`, `merge/roles.rs`, `record/roles_record.rs`, `exchange/roles.rs`, `rows/kids_marks.rs`); report `../261004-1508-open-tasks-sweep/reports/b3-phase-04-core-roles-sync-report.md`. Effort ~5h.
 The data half of the core: schema v7 (web's v11 statements), the new optional
 `ProfileState` keys and the Kids mark `age`, their merge (pinned to the web by
 `profile-roles-merge.json`), export/import, and `rows::set_kids` with an age.
@@ -1524,14 +1524,14 @@ belongs to phase 05.
 
 ## Todo list
 
-- [ ] Task 0 preflight (fixture present, baseline green)
-- [ ] Task 1 merged.rs + kids_marks.rs moves
-- [ ] Task 2 schema v7 + repair before migrate
-- [ ] Task 3 ProfileRoles wire keys + ListRow.age + kids_row
-- [ ] Task 4 role merge + fixture runner + old-fixture projection
-- [ ] Task 5 set_kids(age) / kids_from_six / Kids export-import age
-- [ ] Task 6 role export/import
-- [ ] Task 7 verify, .so rebuilt, bindings identical
+- [x] Task 0 preflight (fixture present, baseline green)
+- [x] Task 1 merged.rs + kids_marks.rs moves
+- [x] Task 2 schema v8 (v7 is stats) + repair before migrate
+- [x] Task 3 ProfileRoles wire keys + ListRow.age + kids_row
+- [x] Task 4 role merge + fixture runner + old-fixture projection
+- [x] Task 5 set_kids(age) / kids_from_six / Kids export-import age
+- [x] Task 6 role export/import
+- [x] Task 7 verify, bindings identical (generated from the host library; not cross-compiled here: the Android .so is rebuilt at release)
 
 ## Success criteria
 

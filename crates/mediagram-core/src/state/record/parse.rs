@@ -6,8 +6,9 @@
 use serde_json::Value;
 
 use super::hostile_json::{as_array, is_integer, js_number, text_};
-use super::list_record::{collection_row, list_row};
+use super::list_record::{collection_row, kids_row, list_row};
 use super::preference_record::preference_row;
+use super::roles_record::profile_roles;
 use super::stats_record::{day_stat_row, title_stat_row};
 use super::{
     ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord, UnwatchedRow, WatchedRow, is_stamp,
@@ -41,7 +42,7 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         .collect();
     let kids = as_array(held.get("kids"))
         .iter()
-        .filter_map(list_row)
+        .filter_map(kids_row)
         .collect();
     let editors_choice = as_array(held.get("editorsChoice"))
         .iter()
@@ -104,6 +105,7 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
             .iter()
             .filter_map(day_stat_row)
             .collect(),
+        roles: profile_roles(row),
     })
 }
 

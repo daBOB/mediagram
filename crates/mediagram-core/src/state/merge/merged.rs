@@ -4,8 +4,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, ListRow, ProgressRow, SyncPreference, TitleStatRow, UnwatchedRow,
-    WatchedRow,
+    CollectionRow, DayStatRow, ListRow, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
+    UnwatchedRow, WatchedRow,
 };
 
 /// Everything the devices agree on, once they have been reconciled.
@@ -39,6 +39,10 @@ pub struct MergedProfile {
     pub title_stats: Vec<TitleStatRow>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub day_stats: Vec<DayStatRow>,
+    /// Admin claim, limit, parent and PIN, settled across the household by
+    /// `roles::merge` — each only where it applies.
+    #[serde(flatten)]
+    pub roles: ProfileRoles,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
