@@ -877,6 +877,22 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   no remote equivalent; the action sits one press down from the plate.
 - **Previous key is previous-in-run, never restart.** The remote's Previous steps back
   through the episode run; the session's own "restart this title" is not exposed.
+- **A PIN is typed on a pad, and goes at the fourth digit.** The web asks in a masked field
+  with OK; a remote may have nothing but a D-pad, so the television shows a telephone grid
+  (1–9, 0, Delete) the remote walks, starting on 1, with dots for what is typed. A remote
+  with digit keys types with those too. Four digits are handed over at once, so there is no
+  OK, and a new PIN's second entry is a step of its own headed as the web's second field is
+  ("The new PIN again").
+- **Manage profiles opens a person's choices in a dialog.** The web lays Reset PIN, the
+  limit select and Remove along each row; on a remote, buttons along a row would make Down
+  mean "next button" in one row and "next person" in another. Each row is one stop that
+  opens its choices (a kid's FSK 6 / FSK 12, the current one holding the remote, then
+  Remove; a grown-up's Reset PIN, then Remove), and Remove still asks in the web's words.
+  Adding asks the name on a screen of its own and then, for a kid, the limit (FSK 6 first),
+  for the reason text entry has its own screen everywhere on the television.
+- **The player's Kids choice is a dialog.** The web's select ("For kids": Not for kids,
+  From 6, From 12) opens from the Kids mark as a dialog over the film, as Add to list does,
+  so it outlasts the controls fading behind it.
 - **Subtitles never rise above the title band.** Lifted clear of the controls and the
   up-next card as on phone, but capped under the statistics bar so cues over the title
   are not unreadable.

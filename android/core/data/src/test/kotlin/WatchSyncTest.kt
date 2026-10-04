@@ -62,11 +62,6 @@ private class RecordingRepository : WatchStateRepository {
 
     override suspend fun chooseProfile(id: String) = false
 
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile? = null
-
     override suspend fun setProgress(
         setId: String,
         at: Double,
@@ -85,7 +80,7 @@ private class RecordingRepository : WatchStateRepository {
 
     override suspend fun setKids(
         setId: String,
-        marked: Boolean,
+        age: Int?,
     ) = Unit
 
     override suspend fun setEditorsChoice(

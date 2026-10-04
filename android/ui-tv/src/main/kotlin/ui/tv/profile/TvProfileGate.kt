@@ -1,10 +1,16 @@
 package ui.tv.profile
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.profile.ManageProfilesViewModel
+import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
 
@@ -21,36 +27,66 @@ data class TvChosenProfile(
 
 /**
  * The television counterpart to `ui.profile.ProfileGate`: the same
- * [ProfileViewModel] decides the same thing it decides on a phone — whether
- * a viewer has been chosen yet — and television asks it the same way,
- * showing [TvProfilePicker] in place of [content] until one has.
+ * [ProfileViewModel] and [ManageProfilesViewModel] decide the same things
+ * they decide on a phone, and [TvProfilePicker] stands in for [content] until
+ * a viewer has been chosen. One screen at a time — whichever PIN is asked
+ * replaces what asked for it, and Manage replaces the picker — so nothing
+ * behind competes for the remote. Manage cannot be reached once a profile is
+ * chosen: entering a profile never hands a child the controls.
  *
- * Once one has, [content] is handed that viewer the way the phone's gate
+ * Once a viewer is chosen, [content] is handed it the way the phone's gate
  * hands its bar a `ProfileBarState`: the name, and [ProfileViewModel.reopen]
- * as what choosing it does — the same way back to the picker from the
- * masthead as the phone's bar offers, so switching viewer never needs a
- * second route.
+ * as what choosing it does.
  */
 @Composable
 internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val viewModel: ProfileViewModel = hiltViewModel()
+    val manage: ManageProfilesViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val chosen = state as? ProfileUiState.Chosen
+    val managing by manage.state.collectAsStateWithLifecycle()
+    val pickPin by viewModel.pin.collectAsStateWithLifecycle()
+    val managePin by manage.pin.collectAsStateWithLifecycle()
 
-    if (chosen == null) {
-        // Back on a reopened picker is "Stay as I am" — the phone's gate
-        // says why; the add-profile flow's own handlers, composed after this
-        // one, still take Back first while it is open.
-        BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
-        TvProfilePicker(
-            state = state,
-            onChoose = viewModel::choose,
-            onAdd = viewModel::add,
-            onStay = viewModel::stay,
-            onRetry = viewModel::retry,
-            onRemove = viewModel::remove,
-        )
+    val chosen = state as? ProfileUiState.Chosen
+    if (chosen != null) {
+        content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
         return
     }
-    content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
+    // Back on a reopened picker is "Stay as I am" — the phone's gate says
+    // why. Registered first, so the PIN, Manage and the add flow, each with
+    // a Back of its own composed after this one, take Back first while open.
+    BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
+    // What the remote left the picker from, and the row's scroll, kept here
+    // while a PIN or Manage stands in for the picker.
+    var landing by remember { mutableStateOf<TvPickerSpot?>(null) }
+    val tiles = rememberLazyListState()
+    val inManage = managing != ManageUiState.Closed
+    val pickPrompt = pickPin
+    val managePrompt = managePin
+    when {
+        inManage && managePrompt != null -> TvPinPrompt(managePrompt, onPin = manage::enterPin, onCancel = manage::cancelPin)
+        inManage -> TvManageProfiles(managing, remember(manage) { manage.tvActions() })
+        pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
+        else ->
+            TvProfilePicker(
+                state = state,
+                onChoose = { id ->
+                    landing = TvPickerSpot.Tile(id)
+                    viewModel.pick(id)
+                },
+                onStay = viewModel::stay,
+                onRetry = viewModel::retry,
+                onClaim = { id ->
+                    landing = TvPickerSpot.Claim(id)
+                    viewModel.claim(id)
+                },
+                onCreateFirst = viewModel::createFirst,
+                onManage = {
+                    landing = TvPickerSpot.Manage
+                    manage.open()
+                },
+                landing = landing,
+                tiles = tiles,
+            )
+    }
 }

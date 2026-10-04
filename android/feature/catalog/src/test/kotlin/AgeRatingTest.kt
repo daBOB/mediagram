@@ -17,20 +17,22 @@ import kotlin.test.assertNull
  */
 class AgeRatingTest {
     @Test
-    fun twelveAndYoungerIsForKidsAndOlderIsNot() {
-        assertEquals(KidsVerdict.SAFE, kidsVerdictOf("0"))
-        assertEquals(KidsVerdict.SAFE, kidsVerdictOf("12"))
-        assertEquals(KidsVerdict.UNSAFE, kidsVerdictOf("16"))
-        assertEquals(KidsVerdict.UNSAFE, kidsVerdictOf("18"))
+    fun theKidsOwnLimitDecidesARatedTitle() {
+        assertEquals(KidsVerdict.SAFE, kidsVerdictOf("0", 6))
+        assertEquals(KidsVerdict.SAFE, kidsVerdictOf("6", 6))
+        assertEquals(KidsVerdict.UNSAFE, kidsVerdictOf("12", 6))
+        assertEquals(KidsVerdict.SAFE, kidsVerdictOf("12", 12))
+        assertEquals(KidsVerdict.UNSAFE, kidsVerdictOf("16", 12))
+        assertEquals(KidsVerdict.UNSAFE, kidsVerdictOf("18", 12))
     }
 
     @Test
     fun anythingThatIsNotABareAgeIsUnrated() {
-        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf(null))
-        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf(""))
-        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("PG-13"))
-        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("FSK 12"))
-        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("120"))
+        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf(null, 12))
+        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("", 12))
+        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("PG-13", 12))
+        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("FSK 12", 12))
+        assertEquals(KidsVerdict.UNRATED, kidsVerdictOf("120", 12))
     }
 
     @Test
@@ -51,17 +53,25 @@ class AgeRatingTest {
     )
 
     @Test
-    fun aKidsProfileSeesRatedForKidsOrMarkedByHandAndNothingElse() {
+    fun aKidAtTwelveSeesRatedTwelveOrUnderAndEveryHandMark() {
         val sets = listOf(
             rated("Zero", "0"), rated("Six", "6"), rated("Twelve", "12"),
             rated("Sixteen", "16"), rated("Eighteen", "18"),
-            rated("Unrated", null), rated("UnratedMarked", null), rated("SixteenMarked", "16"),
+            rated("Unrated", null), rated("FromTwelve", null), rated("FromSix", null), rated("SixteenMarked", "16"),
             rated("lesson-1", null, Kind.TUTORIAL), rated("lesson-2", null, Kind.TUTORIAL),
         )
-        val marked = setOf("UnratedMarked", "SixteenMarked", "lesson-2")
+        val marks = mapOf("FromTwelve" to 12, "FromSix" to 6, "SixteenMarked" to 12, "lesson-2" to 12)
         assertEquals(
-            listOf("Zero", "Six", "Twelve", "UnratedMarked", "lesson-2"),
-            forKidsProfile(sets, marked).map { it.setId },
+            listOf("Zero", "Six", "Twelve", "FromTwelve", "FromSix", "lesson-2"),
+            forKidsProfile(sets, marks, 12).map { it.setId },
         )
+    }
+
+    @Test
+    fun aKidAtSixSeesRatedSixOrUnderAndOnlyMarksFromSix() {
+        val sets = listOf(rated("Six", "6"), rated("Twelve", "12"), rated("FromTwelve", null), rated("FromSix", null))
+        // A mark on a rated title never counts: "Twelve" marked from 6 stays out at 6.
+        val marks = mapOf("FromTwelve" to 12, "FromSix" to 6, "Twelve" to 6)
+        assertEquals(listOf("Six", "FromSix"), forKidsProfile(sets, marks, 6).map { it.setId })
     }
 }

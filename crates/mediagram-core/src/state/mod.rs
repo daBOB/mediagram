@@ -52,6 +52,9 @@ pub struct StateDb {
     conn: Mutex<LocalState>,
     /// The last own position write per title, for watch time; see `stats`.
     ticks: Mutex<stats::Ticks>,
+    /// Wrong PINs per profile, for as long as this owner lives; see
+    /// `profiles::pin_wait`.
+    pin_wait: Mutex<profiles::pin_wait::PinWait>,
 }
 
 enum LocalState {
@@ -66,6 +69,7 @@ impl StateDb {
             data_dir,
             conn: Mutex::new(LocalState::Unopened),
             ticks: Mutex::default(),
+            pin_wait: Mutex::default(),
         }
     }
 

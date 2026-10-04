@@ -47,8 +47,12 @@ class FakeWatchState(
 
     private class Watched(var finishedAt: Long, var removedAt: Long?)
 
-    /** A mark that can be taken back: set, and possibly later removed — a watchlist entry and a Kids mark are this same shape today. */
-    private class Mark(val at: Long, var removedAt: Long? = null)
+    /**
+     * A mark that can be taken back: set, and possibly later removed — a
+     * watchlist entry and a Kids mark are this same shape; only a Kids mark
+     * says it is [fromSix].
+     */
+    private class Mark(val at: Long, var removedAt: Long? = null, val fromSix: Boolean = false)
 
     private class Collection(var name: String, val items: MutableList<String> = mutableListOf(), var deleted: Boolean = false)
 
@@ -75,6 +79,7 @@ class FakeWatchState(
             kids = liveKids(),
             collections = collectionsFor(profileId),
             editorsChoice = editorsChoiceSetId,
+            kidsFromSix = liveKids(fromSixOnly = true),
         )
 
     /** Drops everything a deleted profile owned — the same cascade `ON DELETE CASCADE` runs on the real tables. Kids and the editor's choice outlive it; neither belongs to any profile. */
@@ -150,20 +155,33 @@ class FakeWatchState(
         markOrUnmark(forProfile, setId, listed) { Mark(now()) }
     }
 
-    private fun liveKids(): List<String> =
-        kidsMarks.entries.filter { it.value.removedAt == null }.sortedByDescending { it.value.at }.map { it.key }
+    private fun liveKids(fromSixOnly: Boolean = false): List<String> =
+        kidsMarks.entries
+            .filter { it.value.removedAt == null && (it.value.fromSix || !fromSixOnly) }
+            .sortedByDescending { it.value.at }
+            .map { it.key }
 
+    /**
+     * As `rows::set_kids`: [age] 6 marks "from 6", any other "from 12" — the
+     * stricter reading — and `null` takes the mark off. Marking again at the
+     * age a live mark has changes nothing; a new age is a new mark.
+     */
     @Synchronized
-    fun setKids(setId: String, marked: Boolean) {
-        markOrUnmark(kidsMarks, setId, marked) { Mark(now()) }
+    fun setKids(setId: String, age: UByte?) {
+        val fromSix = age?.toInt() == 6
+        val live = kidsMarks[setId]?.takeIf { it.removedAt == null }
+        if (age != null && live?.fromSix != fromSix) {
+            kidsMarks[setId] = Mark(now(), fromSix = fromSix)
+        } else if (age == null && live != null) {
+            live.removedAt = now()
+        }
     }
 
     /**
-     * The shape [setWatchlisted] and [setKids] share: adding is idempotent
-     * (a live mark does not move for a second `true`, matching the
-     * `WHERE removed_at IS NOT NULL` guard on both real tables' upserts —
-     * only a tombstoned or absent mark is (re)created), and only a live
-     * mark can be taken back.
+     * [setWatchlisted]'s shape: adding is idempotent (a live mark does not
+     * move for a second `true`, matching the `WHERE removed_at IS NOT NULL`
+     * guard on the real table's upsert — only a tombstoned or absent mark is
+     * (re)created), and only a live mark can be taken back.
      */
     private fun markOrUnmark(marks: MutableMap<String, Mark>, setId: String, marked: Boolean, onNew: () -> Mark) {
         if (marked) {

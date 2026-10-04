@@ -12,7 +12,8 @@ dependencies {
     // one for its tests needs those types on its own classpath too.
     api(project(":core:data"))
     // WatchStateFixture takes the profiles it seeds as the repository hands
-    // them back, so a test compares like with like.
+    // them back, so a test compares like with like; FakeProfiles enforces the
+    // same `allowed` Manage offers from.
     implementation(project(":core:model"))
 
     // The contract suite's `@Test` methods and `kotlin.test` assertions live

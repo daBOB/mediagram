@@ -307,7 +307,7 @@ class TvCatalogScreenStateTest {
             mapOf(
                 CatalogUiState.Loading to "Loading your library…",
                 CatalogUiState.Empty to "The library is empty.",
-                CatalogUiState.KidsEmpty to "Nothing rated FSK 12 or under yet.",
+                CatalogUiState.KidsEmpty(6) to "Nothing rated FSK 6 or under yet.",
                 CatalogUiState.Failed("Could not reach the channel.") to "Could not reach the channel.",
             )
         for ((state, message) in messages) {

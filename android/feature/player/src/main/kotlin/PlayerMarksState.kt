@@ -15,20 +15,24 @@ import model.ListOfSets
  */
 data class PlayerMarksState(
     val watchlisted: Boolean,
-    val kids: Boolean,
+    /** The age the open title is marked for kids from — 6 or 12 — or null when it is not marked. */
+    val kidsMark: Int?,
     val lists: List<ListOfSets>,
     val memberOf: Set<String>,
     /**
-     * What the open title's rating decides — `kidsVerdict` in `player.js`'s
-     * `refreshKids`. Only an [KidsVerdict.UNRATED] title is marked by hand;
-     * a rated one is shown what its rating decided, and cannot be pressed.
+     * What the open title's rating decides at the widest limit a kid can
+     * have — `refreshKids` in `player-library-marks.js`. Only an
+     * [KidsVerdict.UNRATED] title is marked by hand; a rated one is shown
+     * what its rating decided, and cannot be pressed.
      */
     val kidsVerdict: KidsVerdict = KidsVerdict.UNRATED,
     /** `"FSK 12"`, or null for an unrated title. */
     val ageLabel: String? = null,
+    /** Rated for the youngest limit too, so for every kid — not only one at 12. */
+    val forEveryKid: Boolean = false,
     /** False on a kids profile: a child does not approve titles for themselves. */
     val canMarkKids: Boolean = true,
 ) {
-    /** Whether a child may watch this: rated for it, or unrated and marked. */
-    val forKids: Boolean get() = kidsVerdict == KidsVerdict.SAFE || (kidsVerdict == KidsVerdict.UNRATED && kids)
+    /** Whether some child may watch this: rated for one, or unrated and marked. */
+    val forKids: Boolean get() = kidsVerdict == KidsVerdict.SAFE || (kidsVerdict == KidsVerdict.UNRATED && kidsMark != null)
 }

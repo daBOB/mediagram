@@ -2,17 +2,13 @@ package ui.tv.profile
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import catalog.profile.ProfileUiState
@@ -23,7 +19,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ui.tv.LeavesTouchModeRule
 import ui.tv.TvTheme
-import ui.tv.setup.TvTextQuestionFieldTag
 
 /**
  * The three behaviours [TvProfilePicker] exists for on television — the
@@ -72,15 +67,15 @@ class TvProfilePickerTest {
      * room.
      */
     @Test
-    fun dPadRightRepeatedlyReachesAndFocusesTheAddTileWithSixProfiles() {
+    fun dPadRightRepeatedlyReachesAndFocusesTheLastOfSixProfiles() {
         val profiles = (1..6).map { Profile(id = "profile-$it", name = "Profile $it") }
         show(profiles = profiles)
 
-        repeat(profiles.size) {
+        repeat(profiles.size - 1) {
             compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionRight) }
         }
 
-        compose.onNodeWithTag(TvProfilePickerAddTileTag).assertIsFocused()
+        compose.onNodeWithTag("tv-profile-tile-profile-6").assertIsFocused()
     }
 
     @Test
@@ -93,47 +88,16 @@ class TvProfilePickerTest {
         assertEquals(ada.id, chosen)
     }
 
+    /** With no grown-up there is nobody to pick a PIN for: making the first profile is what the remote lands on. */
     @Test
-    fun theAddTileOpensTheNameQuestionWithTheFieldFocused() {
-        show()
+    fun theFirstProfileRowTakesTheRemoteOnADeviceWithNoGrownUp() {
+        show(profiles = listOf(Profile(id = "k", name = "TV kids", kids = true)))
 
-        compose.onNodeWithTag(TvProfilePickerAddTileTag).performSemanticsAction(SemanticsActions.RequestFocus)
-        compose.onNodeWithTag(TvProfilePickerAddTileTag).performKeyInput { pressKey(Key.Enter) }
-
-        compose.onNodeWithTag(TvTextQuestionFieldTag).assertIsFocused()
-    }
-
-    /**
-     * The kids-choice step reached past the name question: focused on
-     * arrival, centre flips it, D-pad down reaches the Add row beneath it,
-     * and centre there adds with whatever the toggle was last left at.
-     */
-    @Test
-    fun theKidsStepIsFocusedFlipsAndAddsWithTheChosenValue() {
-        var added: Pair<String, Boolean>? = null
-        show(onAdd = { name, kids -> added = name to kids })
-
-        compose.onNodeWithTag(TvProfilePickerAddTileTag).performSemanticsAction(SemanticsActions.RequestFocus)
-        compose.onNodeWithTag(TvProfilePickerAddTileTag).performKeyInput { pressKey(Key.Enter) }
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput("Cara")
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-
-        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertIsFocused()
-        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertTextContains("Off")
-
-        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).performKeyInput { pressKey(Key.Enter) }
-        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).assertTextContains("On")
-
-        compose.onNodeWithTag(TvProfilePickerKidsToggleTag).performKeyInput { pressKey(Key.DirectionDown) }
-        compose.onNodeWithTag(TvProfilePickerAddConfirmTag).assertIsFocused()
-        compose.onNodeWithTag(TvProfilePickerAddConfirmTag).performKeyInput { pressKey(Key.Enter) }
-
-        assertEquals("Cara" to true, added)
+        compose.onNodeWithText("Create the first profile — it runs this household").assertIsFocused()
     }
 
     private fun show(
         onChoose: (String) -> Unit = {},
-        onAdd: (String, Boolean) -> Unit = { _, _ -> },
         profiles: List<Profile> = listOf(ada, bea),
     ) {
         compose.setContent {
@@ -141,7 +105,6 @@ class TvProfilePickerTest {
                 TvProfilePicker(
                     state = ProfileUiState.Picking(profiles = profiles, canStay = false),
                     onChoose = onChoose,
-                    onAdd = onAdd,
                     onStay = {},
                     onRetry = {},
                 )

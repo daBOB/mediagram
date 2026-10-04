@@ -8,6 +8,7 @@ import testing.ResolvedCoreProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import uniffi.mediagram_core.ProfileOutcome
 import uniffi.mediagram_core.Profile as CoreProfile
 
 /** [WatchStateRepository.chosenProfile]: who is watching, answered by the repository rather than by each screen. */
@@ -19,13 +20,13 @@ class WatchStateChosenProfileTest {
     private val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
     @Test
-    fun reloadPublishesTheChosenProfileWithItsKidsFlag() =
+    fun reloadPublishesTheChosenProfileWithItsKidsFlagAndLimit() =
         runTest {
             core.chosen = "k"
 
             repository.reload()
 
-            assertEquals(Profile("k", "Mia", kids = true), repository.chosenProfile.value)
+            assertEquals(Profile("k", "Mia", kids = true, kidsAge = 12), repository.chosenProfile.value)
         }
 
     @Test
@@ -39,11 +40,15 @@ class WatchStateChosenProfileTest {
             assertEquals(Profile("a", "Ana"), repository.chosenProfile.value)
         }
 
-    /** The setup flow's path: a profile made on this device is chosen before any reload lists it. */
+    /** A profile the core made after the last reload is the chosen profile once listed and chosen. */
     @Test
-    fun aProfileCreatedHereIsTheChosenProfileOnceChosen() =
+    fun aProfileMadeSinceTheLastReloadIsTheChosenProfileOnceChosen() =
         runTest {
-            val created = repository.createProfile("Bea", kids = true)!!
+            repository.reload()
+            assertEquals(ProfileOutcome.Done, core.claimAdmin("a", "1234"))
+            assertEquals(ProfileOutcome.Done, core.createKid("a", "1234", "Bea", 12u))
+            repository.reload()
+            val created = repository.profiles.value.single { it.name == "Bea" }
 
             repository.chooseProfile(created.id)
 
@@ -51,12 +56,14 @@ class WatchStateChosenProfileTest {
         }
 
     @Test
-    fun deletingTheChosenProfileLeavesNobodyChosen() =
+    fun aChosenProfileRemovedOnTheCoreLeavesNobodyChosen() =
         runTest {
+            assertEquals(ProfileOutcome.Done, core.claimAdmin("a", "1234"))
             core.chosen = "k"
             repository.reload()
 
-            repository.deleteProfile("k")
+            assertEquals(ProfileOutcome.Done, core.deleteProfile("a", "1234", "k"))
+            repository.reload()
 
             assertNull(repository.chosenProfile.value)
         }

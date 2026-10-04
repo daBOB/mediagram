@@ -3,6 +3,8 @@ package data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Profile
+import model.ProfileOutcome
+import model.ProfileRequest
 import model.WatchSnapshot
 import testing.FakeCore
 import testing.ResolvedCoreProvider
@@ -80,28 +82,115 @@ class WatchStateRepositoryTest {
         }
 
     @Test
-    fun creatingAProfileAddsItWithoutChoosingIt() =
+    fun aDoneRequestRereadsWhoExistsAndWhatTheyAre() =
         runTest {
-            val core = FakeCore()
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
+            core.roles.pins["a"] = "1234"
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
 
-            val created = repository.createProfile("Bea")
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.CreateKid("a", "1234", "Mia", 6)))
 
-            assertEquals("Bea", created?.name)
-            assertEquals(listOf(Profile(created!!.id, "Bea")), repository.profiles.value)
-            assertNull(repository.chosenProfileId.value)
+            val mia = repository.profiles.value.single { it.name == "Mia" }
+            assertEquals(Triple(true, 6, "a"), Triple(mia.kids, mia.kidsAge, mia.parentId))
+            assertEquals(Profile("a", "andre", admin = true, hasPin = true), repository.profiles.value.single { it.id == "a" })
+        }
+
+    /**
+     * The change took, so it is Done even when reading the list back fails —
+     * answering otherwise would send a viewer to set a PIN that is already
+     * set. The list catches up at the next read.
+     */
+    @Test
+    fun aChangeThatTookIsDoneEvenWhenReadingItBackFails() =
+        runTest {
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
+            core.roles.pins["a"] = "1234"
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+            core.profilesFailure = IllegalStateException("disk")
+
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.CreateKid("a", "1234", "Mia", 6)))
+
+            assertEquals(listOf("a"), repository.profiles.value.map { it.id })
+            core.profilesFailure = null
+            repository.reload()
+            assertEquals(listOf("a", "Mia"), repository.profiles.value.map { if (it.kids) it.name else it.id })
         }
 
     @Test
-    fun aKidsProfileIsCreatedAndListedAsOne() =
+    fun anUnlockOrARefusalRereadsNothing() =
         runTest {
-            val core = FakeCore()
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
+            core.roles.pins["a"] = "1234"
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+            val reads = core.profilesCalls
 
-            val created = repository.createProfile("Mia", kids = true)
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.Unlock("a", "1234")))
+            assertEquals(ProfileOutcome.WrongPin, repository.manage(ProfileRequest.CreateKid("a", "0000", "Mia", 6)))
 
-            assertEquals(true, created?.kids)
-            assertEquals(listOf(Profile(created!!.id, "Mia", kids = true)), repository.profiles.value)
+            assertEquals(reads, core.profilesCalls)
+        }
+
+    /** Every reason the core gives comes through as the app's own, the wait's seconds included. */
+    @Test
+    fun eachReasonTheCoreGivesIsTheAppsOwn() =
+        runTest {
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("a", "andre", admin = true), CoreProfile("b", "Bea"), CoreProfile("k", "Kim", kids = true))
+                }
+            core.roles.pins["a"] = "1234"
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+
+            assertEquals(ProfileOutcome.Invalid, repository.manage(ProfileRequest.CreateGrownUp("a", "1234", "Bo", "12")))
+            assertEquals(ProfileOutcome.NameTaken, repository.manage(ProfileRequest.CreateKid("a", "1234", " KIM ", 6)))
+            assertEquals(ProfileOutcome.NotFound, repository.manage(ProfileRequest.Remove("a", "1234", "nobody")))
+            assertEquals(ProfileOutcome.NotAllowed, repository.manage(ProfileRequest.CreateFirstAdmin("Bo", "1234")))
+            assertEquals(ProfileOutcome.NoPin, repository.manage(ProfileRequest.Unlock("b", "1234")))
+            repeat(5) { assertEquals(ProfileOutcome.WrongPin, repository.manage(ProfileRequest.Unlock("a", "0000"))) }
+            assertEquals(ProfileOutcome.Wait(60), repository.manage(ProfileRequest.Unlock("a", "1234")))
+        }
+
+    /** Who is watching is re-read with the list: a limit changed in Manage reaches every screen reading the chosen kid. */
+    @Test
+    fun aChangeToTheChosenKidRepublishesTheChosenProfile() =
+        runTest {
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("a", "andre", admin = true), CoreProfile("k", "Kim", kids = true, kidsAge = 12u, parentId = "a"))
+                    chosen = "k"
+                }
+            core.roles.pins["a"] = "1234"
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+            assertEquals(12, repository.chosenProfile.value?.kidsLimit)
+
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.SetKidsAge("a", "1234", "k", 6)))
+
+            assertEquals(6, repository.chosenProfile.value?.kidsLimit)
+        }
+
+    /** The core forgets a removed profile's choice itself; the re-read carries that out to every screen. */
+    @Test
+    fun removingTheChosenProfileLeavesNobodyChosen() =
+        runTest {
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("a", "andre", admin = true), CoreProfile("k", "Kim", kids = true, parentId = "a"))
+                    chosen = "k"
+                }
+            core.roles.pins["a"] = "1234"
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.Remove("a", "1234", "k")))
+
+            assertNull(repository.chosenProfileId.value)
+            assertNull(repository.chosenProfile.value)
+            assertEquals(listOf("a"), repository.profiles.value.map { it.id })
         }
 
     @Test
@@ -158,11 +247,15 @@ class WatchStateRepositoryTest {
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
-            repository.setKids("set-1", true)
+            repository.setKids("set-1", 6)
+            repository.setKids("set-2", 12)
 
-            assertEquals(listOf("set-1"), repository.snapshot.value.kids)
-            // A second profile that never wrote anything sees the same mark.
-            assertEquals(listOf("set-1"), core.snapshot("p2").kids)
+            assertEquals(mapOf("set-1" to 6, "set-2" to 12), repository.snapshot.value.kidsMarks)
+            // A second profile that never wrote anything sees the same marks.
+            assertEquals(listOf("set-1"), core.snapshot("p2").kidsFromSix)
+
+            repository.setKids("set-1", null)
+            assertEquals(mapOf("set-2" to 12), repository.snapshot.value.kidsMarks)
         }
 
     /**

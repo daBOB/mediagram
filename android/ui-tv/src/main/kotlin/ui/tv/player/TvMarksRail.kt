@@ -60,7 +60,7 @@ internal fun TvMarksRail(
             if (marks.canMarkKids) {
                 MarkButton(
                     label = kidsLabel(marks),
-                    onClick = actions.onToggleKids,
+                    onClick = actions.onKids,
                     enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
                     modifier = toTransport,
                 )
@@ -72,13 +72,13 @@ internal fun TvMarksRail(
 }
 
 /**
- * What the rail's marks do. Add to list only opens the dialog: the dialog
- * lives with the screen rather than the rail, so it outlasts the controls
+ * What the rail's marks do. Kids and Add to list only open their dialogs:
+ * those live with the screen rather than the rail, so they outlast the controls
  * fading behind it.
  */
 internal data class TvMarksActions(
     val onToggleWatchlist: () -> Unit,
-    val onToggleKids: () -> Unit,
+    val onKids: () -> Unit,
     val onAddToList: () -> Unit,
 )
 

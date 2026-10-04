@@ -40,7 +40,8 @@ class WatchStateFixture(
     val repository: WatchStateRepository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
 
     init {
-        core.profiles += profiles.map { CoreProfile(it.id, it.name, it.kids) }
+        // `hasPin` is not seeded: the fake answers it from `core.roles.pins`.
+        core.profiles += profiles.map { CoreProfile(it.id, it.name, it.kids, it.kidsAge?.toUByte(), it.parentId, it.admin) }
         core.chosen = chosen
         runBlocking {
             repository.reload()

@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.setMain
 import model.Kind
 import model.ListOfSets
 import model.Profile
+import model.ProfileRequest
 import model.WatchSnapshot
 import org.junit.After
 import playback.ActivePreload
@@ -644,7 +645,7 @@ class CatalogViewModelTest {
                             fakeSet(Kind.MOVIE, "Marked"),
                         ),
                 )
-            val watch = WatchStateFixture(listOf(MIA, ANA), seed = { setKids("Marked", true) })
+            val watch = WatchStateFixture(listOf(MIA, ANA), seed = { setKids("Marked", 12) })
             val vm = catalogViewModel(repository, watch.repository)
             vm.state.test {
                 awaitItem()
@@ -740,9 +741,63 @@ class CatalogViewModelTest {
             val vm = catalogViewModel(repository, WatchStateFixture(listOf(MIA)).repository)
             vm.state.test {
                 awaitItem()
-                assertEquals(CatalogUiState.KidsEmpty, awaitItem())
+                assertEquals(CatalogUiState.KidsEmpty(12), awaitItem())
             }
         }
+
+    /**
+     * A kid at 6 sees only what is rated 6 or under and marked from 6; its
+     * limit changed in Manage refilters the shelves it is already on, without
+     * reading the library again.
+     */
+    @Test
+    fun aKidAtSixSeesItsOwnLimitAndAChangedLimitRefiltersWithoutARead() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository =
+                FakeCatalogRepository(
+                    given =
+                        listOf(
+                            fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"),
+                            fakeSet(Kind.MOVIE, "Teen").copy(fsk = "12"),
+                            fakeSet(Kind.MOVIE, "FromSix"),
+                            fakeSet(Kind.MOVIE, "FromTwelve"),
+                        ),
+                )
+            val admin = Profile("a", "Ana", admin = true)
+            val kid = Profile("k", "Mia", kids = true, kidsAge = 6, parentId = "a")
+            val watch =
+                WatchStateFixture(listOf(kid, admin)) {
+                    setKids("FromSix", 6)
+                    setKids("FromTwelve", 12)
+                }
+            watch.core.roles.pins["a"] = "1234"
+            val vm = catalogViewModel(repository, watch.repository)
+            vm.state.test {
+                awaitItem()
+                val atSix = awaitItem() as CatalogUiState.Ready
+                assertEquals(setOf("Family", "FromSix"), atSix.filmIds())
+                val reads = repository.reads
+
+                watch.repository.manage(ProfileRequest.SetKidsAge("a", "1234", "k", 12))
+
+                val atTwelve = awaitItem() as CatalogUiState.Ready
+                assertEquals(setOf("Family", "Teen", "FromSix", "FromTwelve"), atTwelve.filmIds())
+                assertEquals(reads, repository.reads)
+            }
+        }
+
+    @Test
+    fun anEmptyShelfNamesTheKidsOwnLimit() {
+        assertEquals("Nothing rated FSK 6 or under yet.", CatalogUiState.KidsEmpty(6).message)
+    }
+
+    private fun CatalogUiState.Ready.filmIds() =
+        shelves
+            .flatMap { it.entries }
+            .filterIsInstance<Entry.Film>()
+            .map { it.set.setId }
+            .toSet()
 
     /**
      * A snapshot change that leaves the kids projection at [CatalogUiState.KidsEmpty]
@@ -759,7 +814,7 @@ class CatalogViewModelTest {
             val vm = catalogViewModel(repository, watch.repository)
             vm.state.test {
                 awaitItem()
-                assertEquals(CatalogUiState.KidsEmpty, awaitItem())
+                assertEquals(CatalogUiState.KidsEmpty(12), awaitItem())
 
                 // Changes the catalog's watch payload, not which titles are kids-marked —
                 // the projection stays KidsEmpty, so this must not re-emit it.
@@ -810,7 +865,7 @@ class CatalogViewModelTest {
                     when (first) {
                         is CatalogUiState.Ready ->
                             first.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }.toSet()
-                        CatalogUiState.KidsEmpty -> emptySet()
+                        is CatalogUiState.KidsEmpty -> emptySet()
                         else -> error("unexpected first item after resubscribing: $first")
                     }
                 assertEquals(setOf("Family"), ids)

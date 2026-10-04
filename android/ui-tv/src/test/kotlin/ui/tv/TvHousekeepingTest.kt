@@ -4,15 +4,12 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
@@ -32,11 +29,9 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import kotlin.test.assertFalse
 import ui.tv.catalog.films
-import ui.tv.setup.TvConfirmDialogCancelTag
-import ui.tv.setup.TvConfirmDialogConfirmTag
 
 /**
- * The offline badge, Continue's "Mark finished" and "Remove a profile…",
+ * The offline badge, Continue's "Mark finished" and Back on the picker,
  * walked through the whole app over the real `CatalogViewModel` and
  * `ProfileViewModel` [TvAppFixture] builds — so what is proved is that each
  * reaches the model and comes back as the screen the viewer sees.
@@ -124,52 +119,6 @@ class TvHousekeepingTest {
         press(compose.onNodeWithContentDescription("Continue"))
     }
 
-    @Test
-    fun removingAProfileAsksWhichThenWhetherWithCancelFirst() {
-        launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = null)
-        press(compose.onNodeWithText("Remove a profile…"))
-
-        compose.onNodeWithText("Remove which profile?").assertExists()
-        compose.onNodeWithText("Everything of theirs goes with it.").assertExists()
-        nameInDialog("Ada").assertIsFocused()
-        press(nameInDialog("Bo"))
-
-        compose.onNodeWithText("Remove \"Bo\" and everything they have watched?").assertExists()
-        compose.onNodeWithTag(TvConfirmDialogCancelTag).assertIsFocused()
-        press(compose.onNodeWithTag(TvConfirmDialogConfirmTag))
-
-        compose.onAllNodesWithText("Bo").assertCountEquals(0)
-        compose.onNodeWithText("Ada").assertExists()
-    }
-
-    @Test
-    fun cancellingTheQuestionRemovesNobody() {
-        launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = null)
-        press(compose.onNodeWithText("Remove a profile…"))
-        press(nameInDialog("Bo"))
-
-        press(compose.onNodeWithTag(TvConfirmDialogCancelTag))
-
-        compose.onAllNodesWithText("Remove which profile?").assertCountEquals(0)
-        compose.onNodeWithText("Bo").assertExists()
-    }
-
-    /** The one being watched as can go too, as on the phone — and "Stay as I am" goes with it. */
-    @Test
-    fun removingTheProfileBeingWatchedStopsOfferingToStayAsIt() {
-        launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = "ada", films = 1)
-        // The bar's own avatar is the viewer's own initial, and reopens the picker.
-        press(compose.onNodeWithContentDescription("Who's watching: Ada"))
-        compose.onNodeWithText("Stay as I am").assertExists()
-
-        press(compose.onNodeWithText("Remove a profile…"))
-        press(nameInDialog("Ada"))
-        press(compose.onNodeWithTag(TvConfirmDialogConfirmTag))
-
-        compose.onAllNodesWithText("Ada").assertCountEquals(0)
-        compose.onAllNodesWithText("Stay as I am").assertCountEquals(0)
-    }
-
     /** Back on the reopened picker is "Stay as I am", as on the phone — not a way out of the app. */
     @Test
     fun backOnTheReopenedPickerStaysAsTheViewer() {
@@ -183,18 +132,6 @@ class TvHousekeepingTest {
         compose.onAllNodesWithText("Who's watching?").assertCountEquals(0)
         compose.onNodeWithText("Film 0").assertExists()
         assertFalse(controller.get().isFinishing, "Back left the app")
-    }
-
-    /** With the last profile gone, "Remove a profile…" goes too, and the remote lands on New profile. */
-    @Test
-    fun removingTheLastProfileLandsOnNewProfile() {
-        launch(profiles = listOf(Profile("ada", "Ada")), chosen = null)
-        press(compose.onNodeWithText("Remove a profile…"))
-        press(nameInDialog("Ada"))
-        press(compose.onNodeWithTag(TvConfirmDialogConfirmTag))
-
-        compose.onAllNodesWithText("Remove a profile…").assertCountEquals(0)
-        compose.onNode(hasText("New profile") and hasClickAction()).assertIsFocused()
     }
 
     private fun launch(
@@ -224,9 +161,6 @@ class TvHousekeepingTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-
-    /** A name in the dialog's list, not the picker's tile of the same name behind it. */
-    private fun nameInDialog(name: String) = compose.onNode(hasText(name) and hasClickAction() and hasAnyAncestor(isDialog()))
 
     private fun press(node: SemanticsNodeInteraction) {
         node.performSemanticsAction(SemanticsActions.OnClick)

@@ -54,18 +54,26 @@ class CatalogViewModel
         /** The sets behind the last Ready state, before any profile's filter. */
         private var lastSets: List<MediaSet> = emptyList()
 
+        /** What a kids profile is shown by: the hand marks by age, and its own limit. */
+        private data class KidsView(
+            val marks: Map<String, Int>,
+            val limit: Int,
+        )
+
         /**
-         * The marked-by-hand set when the chosen profile is a kids profile,
-         * `null` otherwise. Distinct, so progress updates — which also move
-         * `snapshot` — do not regroup the shelves.
+         * The chosen kid's [KidsView], `null` for a grown-up. Distinct, so
+         * progress updates — which also move `snapshot` — do not regroup the
+         * shelves; a limit changed in Manage or by sync does.
          */
-        private val kidsFilter: Flow<Set<String>?> =
+        private val kidsFilter: Flow<KidsView?> =
             combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentKids() }
                 .distinctUntilChanged()
 
-        /** [currentKids] as a synchronous read, for a value computed outside collection. */
-        private fun currentKids(): Set<String>? =
-            if (watchState.chosenProfile.value?.kids == true) watchState.snapshot.value.kids.toSet() else null
+        /** [kidsFilter] as a synchronous read, for a value computed outside collection. */
+        private fun currentKids(): KidsView? {
+            val kid = watchState.chosenProfile.value?.takeIf { it.kids } ?: return null
+            return KidsView(watchState.snapshot.value.kidsMarks, kid.kidsLimit)
+        }
 
         /**
          * Whether the chosen profile is a kids profile — the title page's own
@@ -158,12 +166,12 @@ class CatalogViewModel
         /** One place the filter applies: every wall and title page on the phone is built from these shelves. */
         private fun project(
             shown: CatalogUiState,
-            kids: Set<String>?,
+            kids: KidsView?,
         ): CatalogUiState =
             when {
                 shown is CatalogUiState.Ready && kids != null -> {
-                    val shelves = shelvesOf(forKidsProfile(lastSets, kids))
-                    if (!shelves.hasContent()) CatalogUiState.KidsEmpty else shown.copy(shelves = shelves)
+                    val shelves = shelvesOf(forKidsProfile(lastSets, kids.marks, kids.limit))
+                    if (!shelves.hasContent()) CatalogUiState.KidsEmpty(kids.limit) else shown.copy(shelves = shelves)
                 }
                 else -> shown
             }

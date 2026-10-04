@@ -11,7 +11,6 @@ import player.UpNextPhase
 import player.UpNextUiState
 import player.createListAndAdd
 import player.setInList
-import player.toggleKids
 import player.toggleSubtitles
 import player.toggleWatchlist
 import ui.tv.setup.LocalTvDialogKeys
@@ -33,6 +32,7 @@ internal class TvControlsView(
 internal class TvControlsActions(
     val onToggleStats: () -> Unit,
     val onAddToList: () -> Unit,
+    val onKids: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onPlayNext: () -> Unit,
     val onToggleNotes: (() -> Unit)?,
@@ -66,7 +66,7 @@ internal fun TvPlayerControlsForViewModel(
                 markActions =
                     TvMarksActions(
                         onToggleWatchlist = viewModel::toggleWatchlist,
-                        onToggleKids = viewModel::toggleKids,
+                        onKids = actions.onKids,
                         onAddToList = actions.onAddToList,
                     ),
                 statsShown = view.statsShown,

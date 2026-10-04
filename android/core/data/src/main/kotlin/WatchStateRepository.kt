@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,8 +9,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import model.KIDS_LIMITS
 import model.ListOfSets
 import model.Profile
+import model.ProfileOutcome
+import model.ProfileRequest
 import model.Progress
 import model.WatchSnapshot
 import model.Watched
@@ -55,14 +59,29 @@ interface WatchStateRepository {
     /** The chosen profile's everything; [WatchSnapshot.Empty] until one is chosen. */
     val snapshot: StateFlow<WatchSnapshot>
 
-    /** Chooses and reloads a profile; false means refused or superseded before acknowledgement. */
+    /**
+     * Chooses and reloads a profile; false means refused or superseded before
+     * acknowledgement. The core does not ask for a PIN here: the picker
+     * unlocks a grown-up first ([ProfileRequest.Unlock]), and a remembered
+     * choice at start-up asks nothing.
+     */
     suspend fun chooseProfile(id: String): Boolean
 
-    /** Creates without choosing; null means refused or the owning account was reset/replaced. */
-    suspend fun createProfile(
-        name: String,
-        kids: Boolean = false,
-    ): Profile?
+    /**
+     * Sends one profile request to the core, which checks it against who is
+     * asking and their PIN — the household's rule is enforced there, not
+     * here. On [ProfileOutcome.Done] for anything that may have changed who
+     * exists or what they are, [profiles], the choice and [chosenProfile] are
+     * re-read (the core forgets a removed profile's choice itself); an unlock
+     * changes nothing stored and re-reads nothing, and neither does a request
+     * that answered after an account reset. A change that took answers
+     * [ProfileOutcome.Done] even when that re-read fails. The default
+     * refuses, for a repository with no core behind it.
+     *
+     * Local, as on the web: a profile another device's sync document still
+     * names is created again by the next round that pulls it.
+     */
+    suspend fun manage(request: ProfileRequest): ProfileOutcome = ProfileOutcome.NotAllowed
 
     /**
      * Saves progress for the chosen profile, the watch time since this
@@ -87,10 +106,14 @@ interface WatchStateRepository {
         listed: Boolean,
     )
 
-    /** Changes the global kids mark, but still requires a chosen profile; otherwise does nothing. */
+    /**
+     * Marks a title for kids from [age] — 6 or 12 — or takes the mark away
+     * with null. The mark is the household's, not the profile's, but still
+     * requires a chosen profile; otherwise does nothing.
+     */
     suspend fun setKids(
         setId: String,
-        marked: Boolean,
+        age: Int?,
     )
 
     /**
@@ -128,16 +151,6 @@ interface WatchStateRepository {
      * rows — nothing here refreshes itself.
      */
     suspend fun reload()
-
-    /**
-     * Removes a profile and everything it has watched, then re-reads who
-     * exists and who is chosen — the core forgets the choice itself when it
-     * named the one removed. False when nothing was removed.
-     *
-     * Local, as on the web: a profile another device's sync document still
-     * names is created again by the next round that pulls it.
-     */
-    suspend fun deleteProfile(id: String): Boolean = false
 
     /**
      * Treats a title as watched to the end — `markFinished` in the web's
@@ -227,7 +240,7 @@ class DefaultWatchStateRepository(
                         if (resetRevision != account || coreProvider.core.value !== core) return
                         revision
                     }
-                withContext(dispatcher) { Read(core, started, core.profiles().map(::toProfile), core.chosenProfile()) }
+                withContext(dispatcher) { Read(core, started, core.profiles().map { it.toModel() }, core.chosenProfile()) }
             }
         val snapshot =
             read.chosen?.let { withContext(dispatcher) { core.snapshot(it) }.toModel() }
@@ -273,34 +286,6 @@ class DefaultWatchStateRepository(
         return true
     }
 
-    override suspend fun deleteProfile(id: String): Boolean {
-        val started = synchronized(publicationLock) { resetRevision }
-        val core = coreProvider.awaitCore()
-        if (!withContext(dispatcher) { core.deleteProfile(id) }) return false
-        synchronized(publicationLock) {
-            if (resetRevision != started || coreProvider.core.value !== core) return false
-        }
-        // The core forgets the choice itself when it named the one removed;
-        // a reload is what publishes that, along with the shorter list.
-        reload()
-        return true
-    }
-
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile? {
-        val started = synchronized(publicationLock) { resetRevision }
-        val core = coreProvider.awaitCore()
-        val created = withContext(dispatcher) { core.createProfile(name, kids) } ?: return null
-        synchronized(publicationLock) {
-            if (resetRevision != started || coreProvider.core.value !== core) return null
-            _profiles.value = _profiles.value + toProfile(created)
-            publishChosenProfile()
-        }
-        return toProfile(created)
-    }
-
     override suspend fun setProgress(
         setId: String,
         at: Double,
@@ -323,10 +308,36 @@ class DefaultWatchStateRepository(
         core.setWatchlisted(id, setId, listed)
     }
 
+    override suspend fun manage(request: ProfileRequest): ProfileOutcome {
+        val account = synchronized(publicationLock) { resetRevision }
+        val core = coreProvider.awaitCore()
+        val outcome = withContext(dispatcher) { request.sendTo(core) }
+        if (outcome != ProfileOutcome.Done || request is ProfileRequest.Unlock) return outcome
+        // A reset or a replaced core while the request was out: what it changed
+        // belongs to an account this repository has already let go of.
+        val stale = synchronized(publicationLock) { resetRevision != account || coreProvider.core.value !== core }
+        if (stale) return outcome
+        try {
+            reload()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (
+            @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
+        ) {
+            // The change took; saying otherwise would send a viewer to redo
+            // what is already done. The list catches up at the next read.
+        }
+        return outcome
+    }
+
     override suspend fun setKids(
         setId: String,
-        marked: Boolean,
-    ) = writing { core, _ -> core.setKids(setId, marked) }
+        age: Int?,
+    ) = writing { core, _ ->
+        // Anything but 6 is a mark from 12, as the core and the web read one;
+        // said here so an Int past a byte cannot wrap round to 6 on the way.
+        core.setKids(setId, age?.let { if (it == KIDS_LIMITS.min()) it else KIDS_LIMITS.max() }?.toUByte())
+    }
 
     override suspend fun setEditorsChoice(
         setId: String,
@@ -414,8 +425,6 @@ class DefaultWatchStateRepository(
     ): Boolean = revision == started && coreProvider.core.value === core
 }
 
-private fun toProfile(profile: uniffi.mediagram_core.Profile): Profile = Profile(profile.id, profile.name, profile.kids)
-
 private fun ProgressRow.toModel(): Progress = Progress(setId, at, duration, updatedAt)
 
 private fun WatchedRow.toModel(): Watched = Watched(setId, finishedAt)
@@ -430,4 +439,5 @@ private fun StateSnapshot.toModel(): WatchSnapshot =
         kids = kids,
         collections = collections.map { it.toModel() },
         editorsChoice = editorsChoice,
+        kidsFromSix = kidsFromSix,
     )

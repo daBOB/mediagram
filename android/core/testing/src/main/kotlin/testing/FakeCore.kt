@@ -19,6 +19,7 @@ import uniffi.mediagram_core.PeopleHitRecord
 import uniffi.mediagram_core.PersonRecord
 import uniffi.mediagram_core.PreferenceRow
 import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.ProfileOutcome
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SessionSummary
 import uniffi.mediagram_core.SetSummary
@@ -157,11 +158,22 @@ class FakeCore(
     // was built (before `profiles` even has its own initial value).
     private val watchState = FakeWatchState(now = { clock() }, exists = { id -> profiles.any { it.id == id } })
 
-    /** Every profile this fake knows about. Written directly to seed a test, or grown through [createProfile]. */
+    /**
+     * Every profile this fake knows about, as stored. Written directly to
+     * seed a test, or grown through [createFirstAdmin] and the other calls
+     * [roles] answers; [profiles] reads them as the real core does.
+     */
     var profiles: List<Profile> = emptyList()
 
     /** Who this fake reports as chosen, read back by [chosenProfile]. */
     var chosen: String? = null
+
+    /** The household's PINs and wrong-PIN wait, and the rules every profile change is checked against. */
+    val roles =
+        FakeProfiles(read = { profiles }, write = { profiles = it }) { id ->
+            if (chosen == id) chosen = null
+            watchState.forget(id)
+        }
 
     var signedOut: Boolean = false
         private set
@@ -440,37 +452,28 @@ class FakeCore(
     override suspend fun profiles(): List<Profile> {
         profilesCalls++
         profilesFailure?.let { throw it }
-        return profiles
+        return profiles.map(roles::shown)
     }
 
-    // Monotonic rather than derived from the current list's size: a create
-    // after a delete must not reissue an id a still-live row once had —
-    // crates/mediagram-core/src/state/profiles.rs mints a fresh ULID per
-    // row for the same reason, just not one this fake needs to match. Also
-    // skipped past any id a test seeded directly into `profiles` — a seeded
-    // "p1" must not be handed out again to a second, distinct profile.
-    private var nextProfileId = 1
+    override suspend fun createFirstAdmin(name: String, newPin: String): ProfileOutcome = roles.createFirst(name, newPin)
 
-    override suspend fun createProfile(name: String, kids: Boolean): Profile? {
-        val cleanName = cleanProfileName(name) ?: return null
-        while (profiles.any { it.id == "p$nextProfileId" }) nextProfileId++
-        val created = Profile("p${nextProfileId++}", cleanName, kids)
-        profiles = profiles + created
-        return created
-    }
+    override suspend fun createGrownUp(actorId: String, pin: String, name: String, newPin: String): ProfileOutcome =
+        roles.createGrownUp(actorId, pin, name, newPin)
 
-    /**
-     * Trims and collapses internal whitespace, answering `null` when
-     * nothing is left — the same rule `clean_name`
-     * (crates/mediagram-core/src/state/profiles.rs:145) applies before a
-     * name ever reaches storage.
-     */
-    private fun cleanProfileName(name: String): String? =
-        name
-            .split(Regex("\\s+"))
-            .filter { it.isNotEmpty() }
-            .joinToString(" ")
-            .takeIf { it.isNotEmpty() }
+    override suspend fun createKid(actorId: String, pin: String, name: String, kidsAge: UByte): ProfileOutcome =
+        roles.createKid(actorId, pin, name, kidsAge)
+
+    override suspend fun deleteProfile(actorId: String, pin: String, id: String): ProfileOutcome = roles.remove(actorId, pin, id)
+
+    override suspend fun unlockProfile(id: String, pin: String): ProfileOutcome = roles.unlock(id, pin)
+
+    override suspend fun claimAdmin(id: String, pin: String): ProfileOutcome = roles.claimAdmin(id, pin)
+
+    override suspend fun setPin(actorId: String, pin: String, id: String, newPin: String): ProfileOutcome =
+        roles.setPin(actorId, pin, id, newPin)
+
+    override suspend fun setKidsAge(actorId: String, pin: String, id: String, kidsAge: UByte): ProfileOutcome =
+        roles.setKidsAge(actorId, pin, id, kidsAge)
 
     // Checked against `profiles` on every read, not trusted from whatever
     // was last written — the same reason `profiles::chosen` re-checks on
@@ -480,14 +483,6 @@ class FakeCore(
     override suspend fun chooseProfile(id: String): Boolean {
         if (profiles.none { it.id == id }) return false
         chosen = id
-        return true
-    }
-
-    override suspend fun deleteProfile(id: String): Boolean {
-        if (profiles.none { it.id == id }) return false
-        profiles = profiles.filterNot { it.id == id }
-        if (chosen == id) chosen = null
-        watchState.forget(id)
         return true
     }
 
@@ -523,7 +518,7 @@ class FakeCore(
     override suspend fun setWatchlisted(profileId: String, setId: String, listed: Boolean) =
         watchState.setWatchlisted(profileId, setId, listed)
 
-    override suspend fun setKids(setId: String, marked: Boolean) = watchState.setKids(setId, marked)
+    override suspend fun setKids(setId: String, age: UByte?) = watchState.setKids(setId, age)
 
     override suspend fun editorsChoice(): String? = watchState.editorsChoice()
 

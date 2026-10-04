@@ -10,8 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import model.KIDS_LIMITS
 import model.KidsVerdict
 import model.ageLabelOf
+import model.ageOf
 import model.kidsVerdictOf
 
 /**
@@ -47,11 +49,14 @@ class PlayerMarksController(
             setId?.let {
                 PlayerMarksState(
                     watchlisted = it in snapshot.watchlist,
-                    kids = it in snapshot.kids,
+                    kidsMark = snapshot.kidsMarks[it],
                     lists = snapshot.collections,
                     memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
-                    kidsVerdict = kidsVerdictOf(fsk),
+                    // A grown-up reads a rating against the widest limit a kid can have; a
+                    // kid at 6 is kept from an FSK 12 film by its own filter, not by this label.
+                    kidsVerdict = kidsVerdictOf(fsk, KIDS_LIMITS.max()),
                     ageLabel = ageLabelOf(fsk),
+                    forEveryKid = kidsVerdictOf(fsk, KIDS_LIMITS.min()) == KidsVerdict.SAFE,
                     // A child does not approve titles for themselves.
                     canMarkKids = profile?.kids != true,
                 )
@@ -77,18 +82,28 @@ class PlayerMarksController(
         }
     }
 
-    /** Marked here rather than on a shelf: "this is where a viewer is when they find out what a film actually is." */
-    fun toggleKids() {
+    /**
+     * "Not for kids", "From 6" or "From 12" — the web's select, as [age] null,
+     * 6 or 12. Marked here rather than on a shelf: "this is where a viewer is
+     * when they find out what a film actually is."
+     */
+    fun setKidsMark(age: Int?) {
         val setId = session.openSetId ?: return
         // A kids profile does not approve titles for itself.
-        if (marks.value?.canMarkKids == false) return
+        if (repository.chosenProfile.value?.kids == true || marks.value?.canMarkKids == false) return
         // A rated title is not marked: its rating already decided.
-        if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
-        val marked = setId in repository.snapshot.value.kids
+        if (ageOf(openFsk.value) != null) return
+        if (age != null && age !in KIDS_LIMITS) return
         write("Kids update") {
-            repository.setKids(setId, !marked)
+            repository.setKids(setId, age)
             true
         }
+    }
+
+    /** The single-button form of [setKidsMark]: a mark from 12 — the one age a mark had before there were two — or none. */
+    fun toggleKids() {
+        val setId = session.openSetId ?: return
+        setKidsMark(if (setId in repository.snapshot.value.kids) null else KIDS_LIMITS.max())
     }
 
     fun setInList(
