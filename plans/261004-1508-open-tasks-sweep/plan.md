@@ -34,9 +34,9 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 |---|------|-----|--------|
 | A1 | Decisions 2–4 on web + Android, plus the web's stale department pill on rail pages | subagent, worktree | pending |
 | A2 | `watched` finish-stamp overflow in the core (`state/rows.rs`, `state/watched_exchange.rs`), the stats-stamp bug's twin | subagent, worktree | pending |
-| A3 | Episode label parity, Android `core/model/EpisodeLabel.kt` vs web `lib/format.js` (episode 0, ranges) | subagent, worktree | pending |
+| A3 | Episode label parity, Android `core/model/EpisodeLabel.kt` vs web `lib/format.js` (episode 0, ranges) | subagent, worktree | done 0.99.10 — web printed ranges as JSON |
 | A4 | TV box mDNS finds no cache server within the 10 s window | lead, device | pending |
-| A5 | Tutorials "Continue your courses": tablet showed a Next-up card the web did not | lead, data | pending |
+| A5 | Tutorials "Continue your courses": tablet showed a Next-up card the web did not | lead, data | done 0.99.11 — both narrowed after limiting |
 | A6 | 4K playback measurement on the box (HDR10 + DV, cold, "TV test" profile) | lead, device | pending |
 | A7 | Reconcile stale plan status tables (`260916`, `260919`, `260920-*`, `260921`, `260923-*`, `260924-*`, `260925-1923`, `260929-0215`, `260928-0306`, `261002-0213`) | lead, docs | pending |
 

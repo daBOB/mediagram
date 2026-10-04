@@ -60,3 +60,19 @@ export interface HomeShelvesInput {
 }
 
 export function homeShelves(from: HomeShelvesInput): HomeShelves;
+
+export const DEPARTMENT_ROW: number;
+
+export interface DepartmentUnderwayInput {
+  /** The department's own shows or courses. */
+  collections: Collection[];
+  /** Which started titles and next-up episodes belong on this department's row. */
+  keep: (set: CatalogSet) => boolean;
+  byId: Map<string, CatalogSet>;
+  progress?: ProgressRow[];
+  watchedAt?: (setId: string) => number | null;
+  /** Defaults to `DEPARTMENT_ROW`. */
+  limit?: number;
+}
+
+export function departmentUnderway(from: DepartmentUnderwayInput): Pick<HomeShelves, "continues" | "nextUp">;

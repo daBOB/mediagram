@@ -45,12 +45,11 @@ fun groupAnime(sets: List<MediaSet>): AnimeLibrary {
  * the web's `anime-department.js`. `null` for an empty library, the same
  * empty state a department page falls back to.
  *
- * [continuing] is the general Continue list narrowed to `anime: true` sets —
- * not to [library]'s own shows, the same reason [documentariesDepartmentOf]
- * narrows by kind instead of by its own folders: an anime film is a
- * [Kind.MOVIE] the plain Continue computation cannot otherwise single out.
- * [nextUp] needs no such narrowing — it already comes from [underwayOf]
- * walking only [library]'s own, already-anime-only shows.
+ * [continuing] is every started title narrowed to `anime: true` sets — not to
+ * [library]'s own shows, the same reason [documentariesDepartmentOf] narrows
+ * by kind instead of by its own folders: an anime film is a [Kind.MOVIE] the
+ * plain Continue computation cannot otherwise single out. [nextUp] walks only
+ * [library]'s own, already-anime-only shows ([departmentUnderwayOf]).
  */
 data class AnimeDepartment(
     val showCount: Int,
@@ -73,12 +72,12 @@ fun animeDepartmentOf(
     val unwatched = (library.films + showLeads).filterNot { it.setId in watchedIds }
     val byPopularity = unwatched.sortedByDescending { it.popularity ?: 0.0 }
     val lead = byPopularity.firstOrNull { it.backdropPath != null }
-    val underway = underwayOf(library.shows, byId, watch, DEPARTMENT_ROW)
+    val underway = departmentUnderwayOf(library.shows, byId, watch, keep = MediaSet::anime)
     return AnimeDepartment(
         showCount = library.shows.size,
         filmCount = library.films.size,
         lead = lead,
-        continuing = underway.continues.filter(MediaSet::anime),
+        continuing = underway.continues,
         nextUp = underway.nextUp,
         shows = library.shows,
         films = library.films.sortedByDescending(MediaSet::addedAt),

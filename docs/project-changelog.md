@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.11 — a department's Continue row keeps its own titles
+
+**Fixed**
+
+- Web and Android: a department page's Continue row (Series, Tutorials, Anime,
+  Documentaries) is now built from that department's own titles first and only
+  then cut to twelve. Both surfaces used to narrow lists already cut to the
+  titles touched most recently anywhere. So on the web a course with a next
+  lesson dropped off "Continue your courses" once six series had been watched
+  since, and on both surfaces a lesson or episode in progress dropped off once
+  a dozen films had been started since. Same function on both surfaces:
+  `departmentUnderway` and `departmentUnderwayOf`.
+
 ## 0.99.10 — an episode range reads 3-4 on the web, as on Android
 
 **Fixed**

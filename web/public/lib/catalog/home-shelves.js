@@ -20,6 +20,9 @@ export const SHELF_LIMIT = 6;
  *  page's width. Rows of wide cards and lists keep the shorter limit. */
 export const POSTER_ROW_LIMIT = 8;
 
+/** A department page's rows hold twelve — the same as Android's `DEPARTMENT_ROW`. */
+export const DEPARTMENT_ROW = 12;
+
 /**
  * The five rows, from the library and what this viewer has watched.
  *
@@ -74,6 +77,30 @@ export function homeShelves({
       latestSeries: library.series.length,
       latestCourses: library.tutorials.length,
     },
+  };
+}
+
+/**
+ * A department page's own Continue row: what is underway among
+ * `collections` alone, and the started titles `keep` admits — each list
+ * narrowed first and only then cut to `limit`. Filtering the start page's
+ * rows instead would narrow lists already cut to the titles touched most
+ * recently anywhere, so a course would drop off "Continue your courses"
+ * whenever six series had been watched since.
+ *
+ * @param {import("./home-shelves.js").DepartmentUnderwayInput} from
+ */
+export function departmentUnderway({ collections, keep, byId, progress = [], watchedAt = () => null, limit = DEPARTMENT_ROW }) {
+  // Every collection in one slot: homeShelves walks series, anime and
+  // tutorials alike, and the slot only decides its latest-arrivals rows,
+  // which this row never reads.
+  const all = homeShelves({
+    library: { movies: [], series: collections, anime: { collections: [] }, tutorials: [] },
+    byId, progress, watchedAt, limit: Infinity, posterLimit: 0,
+  });
+  return {
+    continues: all.continues.filter(keep).slice(0, limit),
+    nextUp: all.nextUp.filter((entry) => keep(entry.set)).slice(0, limit),
   };
 }
 

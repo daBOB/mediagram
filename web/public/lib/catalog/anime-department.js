@@ -13,7 +13,7 @@ import { firstItemOf } from "../library.js";
 import { collectionGrid, emptyState, movieGrid, SECTIONS } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
-import { homeShelves } from "./home-shelves.js";
+import { departmentUnderway } from "./home-shelves.js";
 import { resumeCards } from "./home-resume.js";
 import { revealWithin } from "../reveal.js";
 import { href } from "../address.js";
@@ -45,11 +45,10 @@ export function renderAnimeDept(main, cx) {
         : href({ page: "show", section: "anime", name: lead.show, folders: [] }),
   }));
 
-  const shelves = homeShelves({ library: cx.library, byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt });
-  const underway = resumeCards(
-    { continues: shelves.continues.filter((set) => set.anime), nextUp: shelves.nextUp.filter((entry) => entry.set.anime) },
-    cx.play,
-  );
+  const underway = resumeCards(departmentUnderway({
+    collections: shows, keep: (set) => set.anime,
+    byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt,
+  }), cx.play);
   if (underway.length > 0) {
     const strip = el("div", "resume-strip");
     strip.append(...underway);

@@ -82,12 +82,9 @@ fun documentariesDepartmentOf(
     val items = library.singles + library.collections.flatMap { playOrder(it.divisions) }
     if (items.isEmpty()) return null
     val byRecent = items.sortedByDescending(MediaSet::addedAt)
-    // The general Continue list, any kind, narrowed to documentaries after
-    // the fact — the same order `renderDocumentariesDept` reads it in: this
-    // page never contributes its own folders to that list's "next up" half,
-    // so passing none here is what keeps this call a plain narrowing rather
-    // than a second, documentary-flavoured underway computation.
-    val continuing = underwayOf(emptyList(), byId, watch, DEPARTMENT_ROW).continues.filter { it.kind == Kind.DOCUMENTARY }
+    // No collections: a documentary has no next episode to offer, only a
+    // position to resume — the web's `renderDocumentariesDept` reads it the same way.
+    val continuing = departmentUnderwayOf(emptyList(), byId, watch) { it.kind == Kind.DOCUMENTARY }.continues
     val categoryUnits: List<Entry> = library.collections + library.singles.map(Entry::Film)
     return DocumentariesDepartment(
         itemCount = items.size,
@@ -131,17 +128,11 @@ fun showsDepartmentOf(
     if (shows.isEmpty()) return null
     val lead = shows.filter { firstItemOf(it.divisions)?.backdropPath != null }
         .maxByOrNull { firstItemOf(it.divisions)?.popularity ?: 0.0 }
-    val underway = underwayOf(shows, byId, watch, DEPARTMENT_ROW).let {
-        it.copy(
-            // An anime episode is still `Kind.EPISODE`, so kind alone would
-            // let it leak into the Series department's own Continue row —
-            // anime left this shelf entirely at `shelvesOf`, and its own
-            // department page offers the same title under its own Continue
-            // watching instead (`animeDepartmentOf`).
-            continues = it.continues.filter { set -> set.kind == kind && !set.anime },
-            nextUp = it.nextUp.filter { entry -> entry.set.kind == kind },
-        )
-    }
+    // An anime episode is still `Kind.EPISODE`, so kind alone would let it
+    // leak into the Series department's own Continue row — anime left this
+    // shelf entirely at `shelvesOf`, and its own department page offers the
+    // same title under its own Continue watching instead (`animeDepartmentOf`).
+    val underway = departmentUnderwayOf(shows, byId, watch) { set -> set.kind == kind && !set.anime }
     val bigEnough = kind == Kind.EPISODE && shows.size > DEPARTMENT_ROW
     val popular =
         if (bigEnough) {

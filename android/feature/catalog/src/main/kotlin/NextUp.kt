@@ -68,6 +68,28 @@ fun underwayOf(
 }
 
 /**
+ * A department page's own Continue row: what is underway among [collections]
+ * and the started titles [keep] admits — each narrowed first and only then cut
+ * to [limit]. Narrowing [underwayOf]'s own lists instead would narrow lists
+ * already cut to the titles started most recently anywhere, so a course would
+ * drop off "Continue your courses" whenever a dozen films had been started
+ * since. The same as the web's `departmentUnderway`.
+ */
+fun departmentUnderwayOf(
+    collections: List<Entry.Collection>,
+    byId: Map<String, MediaSet>,
+    watch: WatchSnapshot,
+    limit: Int = DEPARTMENT_ROW,
+    keep: (MediaSet) -> Boolean,
+): Underway {
+    val all = underwayOf(collections, byId, watch, Int.MAX_VALUE)
+    return all.copy(
+        continues = all.continues.filter(keep).take(limit),
+        nextUp = all.nextUp.filter { keep(it.set) }.take(limit),
+    )
+}
+
+/**
  * What to offer from one show or course, or `null` when it offers nothing.
  * Ported from `nextInCollection` in home-shelves.js — see that file for the
  * four cases this walks through.

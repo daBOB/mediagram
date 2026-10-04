@@ -169,6 +169,26 @@ class DepartmentsTest {
         assertEquals(listOf(plainEpisode.setId), dept.underway.continues.map { it.setId })
     }
 
+    /** The row is narrowed to the department before it is cut to size, not after — the web's `departmentUnderway`. */
+    @Test
+    fun anEpisodeInProgressStaysOnTheSeriesRowHoweverManyFilmsWereStartedSince() {
+        val episode = MediaSet(
+            setId = "plain-ep", kind = Kind.EPISODE, title = "Plain", show = "Plain Show", chapter = null, path = null,
+            season = 1, episodeFirst = 1, episodeLast = null, year = null, durationSecs = 1200,
+            posterPath = null, totalBytes = 0,
+        )
+        val films = (1..DEPARTMENT_ROW + 1).map { film("film-$it", durationSecs = 1200) }
+        val byId = (films + episode).associateBy(MediaSet::setId)
+        val watch = WatchSnapshot.Empty.copy(
+            progress = listOf(Progress(episode.setId, at = 60.0, duration = 1200.0, updatedAt = 1)) +
+                films.mapIndexed { i, one -> Progress(one.setId, at = 60.0, duration = 1200.0, updatedAt = 2L + i) },
+        )
+
+        val dept = showsDepartmentOf(Kind.EPISODE, listOf(show("Plain Show")), byId, watch)!!
+
+        assertEquals(listOf(episode.setId), dept.underway.continues.map { it.setId })
+    }
+
     @Test
     fun aFiledCourseGetsItsOwnRowAndAnUnfiledOneFallsToOther() {
         val courses = listOf(show("Forex", category = "Trading"), show("Geld"))

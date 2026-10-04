@@ -22,12 +22,12 @@ import { GRID, LIST } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
 import { courseCategoryRows, documentaryCategoryRows } from "./category-rows.js";
 import { genreIndex, genreTiles } from "./utility-pages.js";
-import { homeShelves } from "./home-shelves.js";
+import { DEPARTMENT_ROW, departmentUnderway, homeShelves } from "./home-shelves.js";
 import { resumeCards } from "./home-resume.js";
 import { revealWithin } from "../reveal.js";
 import { href } from "../address.js";
 
-const ROW = 12;
+const ROW = DEPARTMENT_ROW;
 const ACCLAIMED = 7.5;
 const popular = (a, b) => (b.popularity ?? 0) - (a.popularity ?? 0);
 
@@ -99,11 +99,12 @@ export function renderDocumentariesDept(main, cx) {
   }));
 
   const shelf = (sets) => movieGrid(sets, cx.play, { mode: GRID, strip: true });
-  const shelves = homeShelves({ library: cx.library, byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt });
-  const underway = resumeCards(
-    { continues: shelves.continues.filter((set) => set.kind === "docu"), nextUp: [] },
-    cx.play,
-  );
+  // No collections: a documentary has no next episode to offer, only a
+  // position to resume.
+  const underway = resumeCards(departmentUnderway({
+    collections: [], keep: (set) => set.kind === "docu",
+    byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt,
+  }), cx.play);
   if (underway.length > 0) {
     const strip = el("div", "resume-strip");
     strip.append(...underway);
@@ -147,13 +148,13 @@ export function renderShowsDept(main, section, cx) {
   }));
 
   const kind = series ? "ep" : "tut";
-  const shelves = homeShelves({ library: cx.library, byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt });
-  // Kind alone is not enough for Series: an anime episode is kind "ep" too,
-  // and anime has its own "Continue watching" on its own department page.
-  const underway = resumeCards({
-    continues: shelves.continues.filter((set) => set.kind === kind && !set.anime),
-    nextUp: shelves.nextUp.filter((entry) => entry.set.kind === kind && !entry.set.anime),
-  }, cx.play);
+  const underway = resumeCards(departmentUnderway({
+    collections: shows,
+    // Kind alone is not enough for Series: an anime episode is kind "ep" too,
+    // and anime has its own "Continue watching" on its own department page.
+    keep: (set) => set.kind === kind && !set.anime,
+    byId: cx.byId, progress: cx.progress, watchedAt: cx.watchedAt,
+  }), cx.play);
   if (underway.length > 0) {
     const strip = el("div", "resume-strip");
     strip.append(...underway);
@@ -170,7 +171,8 @@ export function renderShowsDept(main, section, cx) {
   if (series && shows.length > ROW) {
     const byLead = (rank) => [...shows].sort((a, b) => rank(firstItemOf(a.divisions), firstItemOf(b.divisions))).slice(0, ROW);
     main.append(deptRow("Popular series", collectionGrid(section, byLead(popular), open, { mode, strip: true })));
-    main.append(deptRow("New episodes", collectionGrid(section, shelves.latestSeries, open, { mode, strip: true })));
+    const newEpisodes = homeShelves({ library: cx.library, byId: cx.byId }).latestSeries;
+    main.append(deptRow("New episodes", collectionGrid(section, newEpisodes, open, { mode, strip: true })));
   }
   main.append(deptRow(series ? "All shows" : "All courses", collectionGrid(section, shows, open, { mode })));
   revealWithin(main);

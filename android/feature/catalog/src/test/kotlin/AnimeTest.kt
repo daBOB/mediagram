@@ -116,6 +116,21 @@ class AnimeTest {
         assertTrue(dept.nextUp.isEmpty(), "nothing watched yet, so nothing is next")
     }
 
+    @Test
+    fun anAnimeFilmInProgressStaysOnTheRowHoweverManyOtherFilmsWereStartedSince() {
+        val animeFilm = film("Anime Film")
+        val others = (1..DEPARTMENT_ROW + 1).map { film("Plain $it").copy(anime = false) }
+        val byId = (others + animeFilm).associateBy(MediaSet::setId)
+        val watch = WatchSnapshot.Empty.copy(
+            progress = listOf(Progress(animeFilm.setId, at = 10.0, duration = 100.0, updatedAt = 1)) +
+                others.mapIndexed { i, one -> Progress(one.setId, at = 10.0, duration = 100.0, updatedAt = 2L + i) },
+        )
+
+        val dept = animeDepartmentOf(AnimeLibrary(emptyList(), listOf(animeFilm)), byId, watch)!!
+
+        assertEquals(listOf(animeFilm.setId), dept.continuing.map { it.setId })
+    }
+
     private fun film(
         title: String,
         popularity: Double? = null,

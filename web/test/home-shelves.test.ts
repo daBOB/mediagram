@@ -12,7 +12,7 @@ import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
 import type { CatalogSet } from "../public/lib/library.js";
 import { groupDepartments } from "../public/lib/departments.js";
-import { POSTER_ROW_LIMIT, homeShelves } from "../public/lib/catalog/home-shelves.js";
+import { POSTER_ROW_LIMIT, departmentUnderway, homeShelves } from "../public/lib/catalog/home-shelves.js";
 
 const set = (over: Partial<CatalogSet> = {}): CatalogSet => catalogSet({ duration: 3600, addedAt: 1_000, ...over });
 
@@ -269,3 +269,47 @@ describe("the same title never appears twice", () => {
     expect(shelves.continues.map((one) => one.title)).toEqual(["A Film"]);
   });
 });
+
+describe("a department's own Continue row", () => {
+  /** The row for Tutorials, from everything the library holds. */
+  function coursesRow(sets: CatalogSet[], state: { progress?: ReturnType<typeof halfway>[]; watched?: Record<string, number> }) {
+    const watched = state.watched ?? {};
+    return departmentUnderway({
+      collections: groupDepartments(sets).tutorials,
+      keep: (one) => one.kind === "tut" && !one.anime,
+      byId: new Map(sets.map((one) => [one.setId, one])),
+      progress: [...(state.progress ?? [])].sort((a, b) => b.updatedAt - a.updatedAt),
+      watchedAt: (setId: string) => watched[setId] ?? null,
+      limit: 12,
+    });
+  }
+
+  test("a course finished long ago still offers its next lesson after many series were watched since", () => {
+    const lessons = [
+      set({ kind: "tut", show: "Java", title: "L1", path: null }),
+      set({ kind: "tut", show: "Java", title: "L2", path: null }),
+    ];
+    // Seven shows touched after the course: more than the start page's row holds.
+    const shows = Array.from({ length: 7 }, (_, i) => [episode(`Show ${i}`, 1, 1), episode(`Show ${i}`, 1, 2)]).flat();
+    const watched: Record<string, number> = { [lessons[0]!.setId]: 1_000 };
+    shows.filter((_, i) => i % 2 === 0).forEach((one, i) => (watched[one.setId] = 2_000 + i));
+
+    const row = coursesRow([...lessons, ...shows], { watched });
+
+    expect(row.nextUp.map((entry) => entry.set.title)).toEqual(["L2"]);
+  });
+
+  test("a lesson in progress stays on the row however many films were started since", () => {
+    const lessons = [
+      set({ kind: "tut", show: "Java", title: "L1", path: null }),
+      set({ kind: "tut", show: "Java", title: "L2", path: null }),
+    ];
+    const films = Array.from({ length: 14 }, (_, i) => set({ title: `Film ${i}` }));
+    const progress = [halfway(lessons[1]!.setId, 1_000), ...films.map((one, i) => halfway(one.setId, 2_000 + i))];
+
+    const row = coursesRow([...lessons, ...films], { progress });
+
+    expect([...row.nextUp.map((entry) => entry.set.title), ...row.continues.map((one) => one.title)]).toEqual(["L2"]);
+  });
+});
+
