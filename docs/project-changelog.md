@@ -5,6 +5,31 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.110.0 — household admin, PINs and each kid's own limit on Android
+
+**Added** (Android phone, tablet and TV; Rust core)
+
+- The core enforces the household's rules, the same as the web player: the admin is a
+  grown-up, a kid is never admin and has no PIN, a name another profile answers to is
+  refused, five wrong PINs for one profile make that profile wait 60 s, removing a
+  grown-up removes that grown-up's kids. PINs are salted and hashed in the core and never
+  cross into Kotlin. All four shared rule fixtures (pin-hash, profile-rules, profile-names,
+  pin-wait) pass in the core as on the web.
+- The picker's three start states — the first profile (created as admin, with a PIN), "Who
+  runs this household?", and tiles plus "Manage profiles" — on phone, tablet and TV. Grown-
+  ups enter with their PIN; kids open freely; tiles read "Kids · FSK N". A reopened picker
+  still offers "Stay as I am", and Back means it.
+- Manage profiles: add a grown-up or a kid (a new kid starts at **FSK 6**, 12 selectable),
+  set a kid's limit, reset a PIN, remove. On TV, a PIN pad the remote walks (number keys
+  type too) and the choices in dialogs — written under "Television differs".
+- Each kid sees titles up to its own limit; the player's Kids control chooses Not for kids /
+  From 6 / From 12 (a menu on the phone, a dialog on TV); Settings › Profile reads
+  "Name · Kids · FSK N".
+
+**Removed**
+
+- The player's one-button Kids toggle; every surface now sets an age.
+
 ## 0.109.1 — Back from Home's lead card returns to it on the television
 
 **Fixed** (Android TV)

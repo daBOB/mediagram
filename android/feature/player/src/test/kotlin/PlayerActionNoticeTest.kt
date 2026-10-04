@@ -39,7 +39,7 @@ class PlayerActionNoticeTest {
                 vm.toggleWatchlist()
                 runCurrent()
                 val notice = assertNotNull(vm.actionNotice.value)
-                vm.toggleKids()
+                vm.setKidsMark(12)
                 runCurrent()
                 assertEquals(notice, vm.actionNotice.value)
                 vm.toggleWatchlist()
@@ -144,7 +144,7 @@ class PlayerActionNoticeTest {
             val vm = actionViewModel(handle, watch.repository)
             try {
                 vm.open("s1")
-                vm.toggleKids()
+                vm.setKidsMark(12)
                 vm.open("s2")
                 vm.open("s1")
                 finish.complete(Unit)

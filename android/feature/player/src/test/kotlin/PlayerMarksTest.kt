@@ -89,7 +89,7 @@ class PlayerMarksTest {
         }
 
     @Test
-    fun toggleKidsMarksAndUnmarksTheOpenTitle() =
+    fun aKidsMarkIsSetAndClearedOnTheOpenTitle() =
         runTest {
             installMainDispatcher()
             val vm = viewModel()
@@ -99,11 +99,11 @@ class PlayerMarksTest {
                 vm.open("s1")
                 assertNull(awaitItem()?.kidsMark)
 
-                vm.toggleKids()
+                vm.setKidsMark(12)
                 advanceUntilIdle()
                 assertEquals(12, expectMostRecentItem()?.kidsMark)
 
-                vm.toggleKids()
+                vm.setKidsMark(null)
                 advanceUntilIdle()
                 assertNull(expectMostRecentItem()?.kidsMark)
             }
@@ -125,7 +125,7 @@ class PlayerMarksTest {
                 assertEquals(false, marks?.forKids)
 
                 // Refused: nothing is written, so nothing changes.
-                vm.toggleKids()
+                vm.setKidsMark(12)
                 advanceUntilIdle()
                 expectNoEvents()
                 assertTrue(
@@ -165,7 +165,7 @@ class PlayerMarksTest {
                 assertEquals(false, awaitItem()?.canMarkKids)
 
                 // Refused: nothing is written, so nothing changes.
-                vm.toggleKids()
+                vm.setKidsMark(12)
                 vm.setKidsMark(6)
                 advanceUntilIdle()
                 expectNoEvents()

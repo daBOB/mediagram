@@ -101,7 +101,7 @@ class PlayerActionFailureTest(
     private fun act(vm: PlayerViewModel) =
         when (action) {
             "watchlist" -> vm.toggleWatchlist()
-            "kids" -> vm.toggleKids()
+            "kids" -> vm.setKidsMark(12)
             "membership" -> vm.setInList("missing", true)
             else -> vm.createListAndAdd("Favourites")
         }

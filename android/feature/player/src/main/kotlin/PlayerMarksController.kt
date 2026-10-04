@@ -100,12 +100,6 @@ class PlayerMarksController(
         }
     }
 
-    /** The single-button form of [setKidsMark]: a mark from 12 — the one age a mark had before there were two — or none. */
-    fun toggleKids() {
-        val setId = session.openSetId ?: return
-        setKidsMark(if (setId in repository.snapshot.value.kids) null else KIDS_LIMITS.max())
-    }
-
     fun setInList(
         listId: String,
         included: Boolean,
