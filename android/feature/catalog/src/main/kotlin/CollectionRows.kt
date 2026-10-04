@@ -7,9 +7,9 @@ import model.MediaSet
  * One line of what is inside a show or a course: a heading for a division,
  * or a set under it.
  *
- * Public rather than module-private: the season screen renders the same
- * rows for the one division a season plate was opened from, and a set of
- * episodes is not something worth two rendering paths.
+ * Public rather than module-private: a show's Episodes tab renders the
+ * same rows for the one season its picker shows, on both surfaces, and a
+ * set of episodes is not something worth two rendering paths.
  */
 sealed interface CollectionRow {
     val depth: Int
@@ -60,3 +60,6 @@ fun courseExtentOf(divisions: List<Division>): String {
     return listOfNotNull(spelledCountOf(sets.size - documents, noun), documents.takeIf { it > 0 }?.let { spelledCountOf(it, "document") })
         .joinToString(" · ")
 }
+
+/** `Season 2 · eight episodes` — one choice in a show's season picker, as the option in `series-page.js`'s select words it. */
+fun seasonOptionOf(division: Division): String = "${division.title} · ${spelledCountOf(division.items.size, "episode")}"

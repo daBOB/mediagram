@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -18,41 +21,56 @@ import designsystem.Palette
 import designsystem.Spacing
 import playback.FilmPreloadState
 import player.preloadBarLabel
+import player.preloadIsAffirmative
 import player.preloadIsEnabled
 import player.preloadLabel
 import ui.tv.TvTextRow
 
 /**
- * What [TvTitlePage] adds beside Play for a film: a plate carrying the
- * same [FilmPreloadState] labels [player.preloadLabel] gives the phone,
- * a second plate for Remove once it is [FilmPreloadState.Done], and the
+ * What [TvTitlePage] adds beside Play for a film: an outlined pill carrying
+ * the same [FilmPreloadState] labels [player.preloadLabel] gives the phone,
+ * a second pill for Remove once it is [FilmPreloadState.Done], and the
  * numeric progress/home-server lines as quiet text underneath — the
  * television's own reading of what the phone draws as a bar. Android-only
  * by decision: the web player has no film preload.
+ *
+ * Outlined as the phone's is, in the same pair: the accent line while it
+ * waits to be started ([preloadIsAffirmative]), the quiet rule once it is
+ * under way. A state that takes no press (Done) is drawn faint, but the
+ * remote can still land on it, for [TvTextRow]'s reason; the faintness is
+ * an alpha on a chain that never changes shape, so the pill the remote is
+ * on keeps it when its state moves.
  */
 @Composable
 internal fun TvPreloadPlate(
     state: FilmPreloadState,
     onClick: () -> Unit,
+    focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester? = null,
     queuedAheadLabel: String? = null,
     needsSpaceBudgetBytes: Long? = null,
 ) {
-    TvTextRow(
+    val enabled = preloadIsEnabled(state)
+    TvSpreadPill(
         text = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes),
-        onClick = onClick,
-        enabled = preloadIsEnabled(state),
-        modifier = modifier,
-        focusRequester = focusRequester,
+        onClick = { if (enabled) onClick() },
+        accent = preloadIsAffirmative(state),
+        modifier =
+            modifier
+                .focusRequester(focusRequester)
+                .alpha(if (enabled) 1f else DisabledAlpha)
+                .semantics { if (!enabled) disabled() },
     )
 }
 
-/** The second plate Done offers beside the main one — see [TvPreloadPlate]. */
+/** The second pill Done offers beside the main one — see [TvPreloadPlate]. */
 @Composable
 internal fun TvPreloadRemovePlate(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TvTextRow(text = "Remove preload", onClick = onClick, modifier = modifier)
+    TvSpreadPill(text = "Remove preload", onClick = onClick, modifier = modifier)
 }
+
+/** How faint a pill that cannot be pressed is drawn — [TvTextRow]'s own. */
+private const val DisabledAlpha = 0.5f
 
 /** NeedsSpace's own further row — opens Settings › Storage. */
 @Composable

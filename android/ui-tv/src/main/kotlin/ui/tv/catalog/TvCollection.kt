@@ -3,14 +3,11 @@ package ui.tv.catalog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.tv.material3.Text
 import catalog.CollectionKind
-import catalog.Division
 import catalog.Entry
 import catalog.SeriesResumePick
 import catalog.courseExtentOf
 import catalog.rowsOf
-import designsystem.TvTypeScale
 import model.TitleCredits
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
@@ -105,30 +102,5 @@ private fun TvCoursePage(
             },
             heldIds = heldIds,
         )
-    }
-}
-
-/**
- * One season's episodes — the television twin of the phone's
- * `SeasonScreen`, in the same rows [TvCollectionRows] draws for a whole
- * course: a season is just the one division a search result or another
- * direct link may still open on its own, so it is shown the same way.
- *
- * Headed with the season's title at the size every other page's name
- * takes, as the phone's bar names it. The rows' own heading for the season
- * is left out under it: the same words twice, one above the other, with
- * nothing between them.
- */
-@Composable
-fun TvSeason(
-    division: Division,
-    watch: WatchSnapshot,
-    onPlay: (setId: String) -> Unit,
-    restoreKey: String? = null,
-    heldIds: Set<String> = emptySet(),
-) {
-    val rows = remember(division) { rowsOf(listOf(division)).drop(1) }
-    TvPage {
-        TvCollectionRows(rows, watch, onPlay, restoreKey, header = { Text(text = division.title, style = TvTypeScale.title) }, heldIds)
     }
 }

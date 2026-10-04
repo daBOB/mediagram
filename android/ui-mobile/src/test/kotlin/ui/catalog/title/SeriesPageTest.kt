@@ -105,7 +105,7 @@ class SeriesPageTest {
         show {
             CollectionScreen(
                 collection = collection, info = info, watch = watch, heldIds = emptySet(),
-                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenGenre = {},
                 onOpenPerson = onOpenPerson,
                 titleCredits = titleCredits,
                 season = chosenSeason,
@@ -212,7 +212,7 @@ class SeriesPageTest {
         show {
             CollectionScreen(
                 collection = twoSeasonShow(), info = null, watch = watch, heldIds = emptySet(),
-                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenGenre = {},
             )
         }
         compose.onNodeWithText("Ep 1.1", substring = true).assertIsDisplayed()
@@ -234,7 +234,7 @@ class SeriesPageTest {
         show {
             CollectionScreen(
                 collection = oneSeasonShow(), info = null, watch = watch, heldIds = emptySet(),
-                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenGenre = {},
                 titleCredits = { credits },
             )
         }

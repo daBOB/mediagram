@@ -35,6 +35,17 @@ fun franchisesIn(movies: List<MediaSet>): List<Franchise> {
         .sortedWith(compareByDescending<Franchise> { it.films.size }.thenBy { it.name })
 }
 
+/**
+ * A franchise hero's line — "25 films · 1962–2021", `renderFranchise`'s
+ * count and span; a film with no known year is left out of the span, and
+ * with none known at all the span is left out.
+ */
+fun franchiseLineOf(franchise: Franchise): String {
+    val years = franchise.films.mapNotNull { it.year?.takeIf { year -> year > 0 } }
+    val span = years.minOrNull()?.let { first -> "$first–${years.max()}" }
+    return listOfNotNull(spelledCountOf(franchise.films.size, "film"), span).joinToString(" · ")
+}
+
 /** One franchise's own page: its films, and TMDB's introduction to it, when there is one. */
 data class FranchisePage(val franchise: Franchise, val overview: String?)
 

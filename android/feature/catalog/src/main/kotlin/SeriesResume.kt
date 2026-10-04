@@ -1,5 +1,6 @@
 package catalog
 
+import model.Kind
 import model.MediaSet
 
 /** In order of how plausibly the viewer wants it, what a "Resume" button offers. */
@@ -46,6 +47,33 @@ fun seriesResume(
         episodes.getOrNull(furthest + 1)?.let { return SeriesResumePick(it, null, ResumeVerb.CONTINUE) }
     }
     return SeriesResumePick(episodes[0], null, ResumeVerb.PLAY)
+}
+
+/** The word a resume pill starts with — the `verb` `seriesResume` answers in series-resume.js. */
+val ResumeVerb.word: String
+    get() =
+        when (this) {
+            ResumeVerb.RESUME -> "Resume"
+            ResumeVerb.CONTINUE -> "Continue"
+            ResumeVerb.PLAY -> "Play"
+        }
+
+/**
+ * What a resume pill says after its mark — `Resume S1 E3`, the verb and
+ * [episodeShort], as `series-page.js` words a show's. A course's lesson
+ * says `Continue lesson 4` instead: the season a lesson carries is the
+ * chapter it was filed under, so `S1 E4` would name a season the course
+ * does not have. Anything else in a course (a documentary) goes by its title.
+ */
+fun resumeWordsOf(pick: SeriesResumePick): String {
+    val set = pick.set
+    val target =
+        when {
+            set.kind == Kind.EPISODE -> episodeShort(set)
+            set.kind == Kind.TUTORIAL && set.episodeFirst != null -> "lesson ${set.episodeFirst}"
+            else -> set.title
+        }
+    return "${pick.verb.word} $target"
 }
 
 /** `S3 E15` for an episode with both numbers, else its title — ported from `episodeShort` in series-resume.js. */

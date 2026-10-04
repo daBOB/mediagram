@@ -37,8 +37,13 @@ import kotlin.random.Random
 /** How wide one poster runs in a department's own horizontal rows. */
 private val DEPT_CARD_WIDTH = 140.dp
 
-/** `.dept-row .genre-tiles{grid-auto-columns:minmax(12rem,1fr)}`. */
-private val GENRE_ROW_TILE_WIDTH = 192.dp
+/**
+ * Wider than the web's `.dept-row .genre-tiles` 12rem floor, as television's
+ * row is: at 12rem a 16:8 tile stands 96dp, and a genre name wrapping to two
+ * lines over its count already needs more than that at the default font size.
+ * [ArtTile] still grows past its proportion where a larger font needs it.
+ */
+private val GENRE_ROW_TILE_WIDTH = 240.dp
 
 /**
  * The Movies department's opening page — a Compose port of

@@ -39,7 +39,7 @@ import ui.tv.TvFocus
 
 /**
  * One poster, for every television screen a plate is built from — Home
- * rows, shelves, kept walls, season walls alike — so a viewer meets the
+ * rows, shelves, kept walls, franchise walls alike — so a viewer meets the
  * same object everywhere on this surface, the way the phone's `PosterCard`
  * is the one plate every mobile shelf draws through.
  *

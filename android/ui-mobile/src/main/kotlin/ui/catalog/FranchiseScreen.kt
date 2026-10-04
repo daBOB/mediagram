@@ -12,7 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.Entry
 import catalog.FranchisePage
-import catalog.spelledCountOf
+import catalog.franchiseLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -32,8 +32,6 @@ internal fun FranchiseScreen(
     val franchise = page.franchise
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    val years = franchise.films.mapNotNull { it.year?.takeIf { year -> year > 0 } }
-    val span = years.minOrNull()?.let { min -> "$min–${years.max()}" }
     val lead = franchise.films.find { it.backdropPath != null }
 
     LazyVerticalGrid(
@@ -46,7 +44,7 @@ internal fun FranchiseScreen(
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
                 title = franchise.name,
-                line = listOfNotNull(spelledCountOf(franchise.films.size, "film"), span).joinToString(" · "),
+                line = franchiseLineOf(franchise),
                 lead = lead,
                 onOpenTitle = onOpenTitle,
                 franchiseTitle = true,

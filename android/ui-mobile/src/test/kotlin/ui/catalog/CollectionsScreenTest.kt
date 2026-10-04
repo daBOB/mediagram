@@ -4,10 +4,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import catalog.Franchise
 import model.ListOfSets
 import model.MediaSet
@@ -62,13 +65,32 @@ class CollectionsScreenTest : BrowsePageTest() {
     }
 
     /**
+     * A library's worth of franchises builds only the lines in view, not every
+     * card at once: the last one is not composed until it is scrolled to.
+     */
+    @Test fun onlyTheLinesInViewAreBuilt() {
+        val many = (1..109).map { Franchise(it.toLong(), "Saga $it", dune, null) }
+        show {
+            CollectionsScreen(
+                franchises = many, lists = emptyList(), setsById = emptyMap(),
+                onOpenFranchise = {}, onOpenList = {}, onCreateList = {}, onOpenTitle = {},
+            )
+        }
+        card("SAGA 1").assertExists()
+        compose.onAllNodes(hasText("SAGA 109")).assertCountEquals(0)
+
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("SAGA 109"))
+        card("SAGA 109").assertExists()
+    }
+
+    /**
      * The section on its own, not the whole screen: the name dialog the
      * screen opens next holds a text field that never lets Compose go idle
      * under Robolectric, and what is new here is the pill, not the dialog.
      */
     @Test fun newListIsAPillUnderAnEmptySection() {
         var asked = false
-        show { LazyColumn { listsSection(lists = emptyList(), setsById = emptyMap(), onOpen = {}, onNewList = { asked = true }) } }
+        show { LazyColumn { listsSection(lists = emptyList(), setsById = emptyMap(), columns = 1, onOpen = {}, onNewList = { asked = true }) } }
         assertTrue(boundsOf("No lists yet.").bottom <= boundsOf("＋ New list").top)
         compose.onNodeWithText("＋ New list").performClick()
         assertTrue(asked)

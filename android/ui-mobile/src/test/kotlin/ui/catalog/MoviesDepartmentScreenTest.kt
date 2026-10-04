@@ -1,6 +1,9 @@
 package ui.catalog
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.compose.ui.test.hasClickAction
@@ -46,6 +49,23 @@ class MoviesDepartmentScreenTest : BrowsePageTest() {
         assertTrue(bounds.contains(boundsOf("two titles")))
         tile.performClick()
         assertEquals("Drama", opened)
+    }
+
+    /** A big system font grows the tile rather than cutting the count off its foot. */
+    @Test fun aGenreTileGrowsToHoldItsNameAndCountAtTwiceTheFontSize() {
+        show {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MoviesDepartmentScreen(
+                    department = department.copy(genres = listOf(GenreIndexEntry("Science Fiction", 2, "sf.jpg"))), films = films,
+                    watch = WatchSnapshot.Empty, onOpenTitle = {}, onOpenGenre = {}, onOpenGenresIndex = {}, onOpenLatest = {},
+                    onSeeAllFilms = {}, onPlay = {}, titleInfo = { null },
+                )
+            }
+        }
+        val bounds = compose.onNode(hasText("Science Fiction") and hasClickAction()).getUnclippedBoundsInRoot()
+        assertTrue(bounds.contains(boundsOf("two titles")), "expected the count on the tile, got tile $bounds, count ${boundsOf("two titles")}")
+        assertTrue(bounds.height >= bounds.width / 2f, "expected at least 16:8, got ${bounds.width} x ${bounds.height}")
     }
 
     @Test fun theWholeShelfIsOfferedAtTheFootAsWellAsBesideFeatured() {

@@ -14,9 +14,12 @@ import catalog.MenuScreen
  * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS] and [STATS]
  * are additive: every existing branch keeps its own value, so a stack
  * encoded by an older build still decodes the same frames it always did —
- * see [encode]/[decode].
+ * see [encode]/[decode]. A frame is saved by name, never by position, so a
+ * kind can go too: a season's own frame, gone since a show's page picks its
+ * season itself, decodes to nothing, and a stack saved with one over its show
+ * comes back on the show's page.
  */
-enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, SEASON, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS }
+enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS }
 
 /**
  * One screen on [LibraryPositions]'s stack: which kind it is, and the one
@@ -133,7 +136,6 @@ class LibraryPositions(frames: MutableState<String>) {
                 val at = payload.indexOf(SEASON_SEP)
                 if (at == -1) null else payload.substring(at + 1)
             }
-    val season: String? get() = payloadOf(FrameKind.SEASON)
     /** Which hand-built list is open, by its own id — the Collections tab's counterpart to [collection]. */
     val listId: String? get() = payloadOf(FrameKind.LIST)
     /** The search field's own text, or `null` while it is closed. */
@@ -204,7 +206,6 @@ class LibraryPositions(frames: MutableState<String>) {
     fun openSearch() = push(FrameKind.SEARCH, "")
     fun openGenre(name: String) = push(FrameKind.GENRE, name)
     fun openTitle(id: String) = push(FrameKind.TITLE, id)
-    fun openSeason(name: String) = push(FrameKind.SEASON, name)
     fun openCollection(key: String) = push(FrameKind.COLLECTION, key)
     fun openList(id: String) = push(FrameKind.LIST, id)
     fun openPerson(id: String) = push(FrameKind.PERSON, id)

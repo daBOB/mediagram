@@ -21,8 +21,8 @@ import model.Kind
 import model.Progress
 
 /**
- * The flat, indented row rendering [CollectionScreen] and [SeasonScreen]
- * both draw from — split out once the screen around it grew past what one
+ * The flat, indented row rendering a course's page and a show's Episodes
+ * tab both draw from — split out once the screen around it grew past what one
  * file should carry alongside the layout that places these rows.
  */
 

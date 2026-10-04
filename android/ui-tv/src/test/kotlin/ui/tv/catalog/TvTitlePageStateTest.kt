@@ -12,12 +12,16 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import designsystem.Overscan
+import model.Credit
 import model.Kind
 import model.Progress
+import model.TitleCredits
+import playback.FilmPreloadState
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import uniffi.mediagram_core.TitleInfo
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -142,5 +146,47 @@ class TvTitlePageStateTest : TvScreenStateTest() {
 
         compose.onNodeWithText("▶ Resume from 12:30").assertIsFocused()
         compose.onNodeWithText("▶ Play").assertDoesNotExist()
+    }
+
+    /** The pills wrap inside the copy's own width, as `.spread-actions` sits in `.spread-copy`, never running on under the tagline's quote. */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun aFullRowOfPillsStaysClearOfTheQuote() {
+        val info = TitleInfo(overview = "What happens.", tagline = "A line of marketing", genres = null, rating = null, network = null, status = null)
+        show {
+            TvTitlePage(
+                set = film.copy(backdropPath = "/nowhere/backdrop.jpg"), info = info, progress = null, onPlay = {},
+                preload = TvTitlePreloadUi(FilmPreloadState.Done, serverLine = null, onToggle = {}, onRemove = {}, onOpenStorage = {}),
+                onToggleEditorsChoice = {},
+            )
+        }
+
+        val quote = compose.onNodeWithTag(TvTitleSpreadQuoteTag).getUnclippedBoundsInRoot()
+        for (pill in listOf("▶ Play", "Preloaded ✓", "Remove preload", "+ My List", "⋯")) {
+            val bounds = compose.onNodeWithText(pill).getUnclippedBoundsInRoot()
+            assertTrue(bounds.right <= quote.left, "$pill runs under the quote: $bounds against $quote")
+        }
+    }
+
+    /**
+     * Back from the franchise a "Part of" link opened lands on that link, not
+     * on Play — and the franchise's id is never read as a person's, though a
+     * cast member here shares it.
+     */
+    @Test
+    fun comingBackFromTheFranchiseLandsOnItsPartOfLink() {
+        val saga = listOf(film.copy(collectionId = 5, collectionName = "The Saga"), set("g", Kind.MOVIE, "Sequel", addedAt = 1).copy(collectionId = 5, collectionName = "The Saga"))
+        var opened: Long? = null
+        val credits = TitleCredits(cast = listOf(Credit(personId = 5L, name = "Ada Actor", role = "Herself", portraitPath = null)), crew = emptyList())
+        show {
+            TvTitlePage(
+                set = saga[0], info = null, progress = null, onPlay = {}, allFilms = saga, credits = credits,
+                onOpenFranchise = { opened = it }, restoreKey = franchiseRestoreKey(5),
+            )
+        }
+
+        compose.onNodeWithText("The Saga").assertIsFocused()
+        compose.onNodeWithText("The Saga").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(5L, opened)
     }
 }

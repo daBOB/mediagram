@@ -13,8 +13,8 @@ import kotlin.test.assertNull
  * property reads the most recent frame of its own kind, so opening one
  * position never disturbs another already open beneath it.
  *
- * Every existing hop, covered here: catalog → collection → season → title →
- * player, a menu screen, and a hand-built list. The nesting a screen opened
+ * Every existing hop, covered here: catalog → collection → title → player,
+ * a menu screen, and a hand-built list. The nesting a screen opened
  * over another needs — a title opened from a genre page, search opened from
  * anywhere — is [LibraryPositionsBackStackTest].
  *
@@ -50,21 +50,17 @@ class LibraryPositionsTest {
         assertNull(at.titleId)
     }
 
-    /** Every existing hop, still one level at a time: catalog → collection → season → title → player. */
+    /** Every existing hop, still one level at a time: catalog → collection → title → player. */
     @Test
-    fun eachOfCollectionSeasonTitleAndPlayerLeavesToTheOneBeneathIt() {
+    fun eachOfCollectionTitleAndPlayerLeavesToTheOneBeneathIt() {
         val at = positions()
         at.openCollection("spartacus")
-        at.openSeason("Season 1")
         at.openTitle("set-1")
         at.openPlayer("set-1")
         assertEquals(FrameKind.PLAYER, at.top)
 
         at.pop()
         assertEquals(FrameKind.TITLE, at.top)
-
-        at.pop()
-        assertEquals(FrameKind.SEASON, at.top)
         assertEquals("spartacus", at.collection)
 
         at.pop()
@@ -209,7 +205,6 @@ class LibraryPositionsTest {
     fun toCatalogClearsEveryPositionAndTheStack() {
         val at = positions()
         at.openCollection("spartacus")
-        at.openSeason("Season 1")
         at.openTitle("set-1")
         at.openPlayer("set-1")
 
@@ -219,7 +214,6 @@ class LibraryPositionsTest {
         assertNull(at.setId)
         assertNull(at.titleId)
         assertNull(at.collection)
-        assertNull(at.season)
         assertNull(at.listId)
         assertNull(at.search)
         assertNull(at.genre)

@@ -1,11 +1,18 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
@@ -17,7 +24,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * [TvFranchisePage]: the web's franchise hero — the name, "two films ·
@@ -84,6 +93,39 @@ class TvFranchisePageStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Adventure One").assertIsFocused()
     }
 
+    /**
+     * On the box the remote resting on the introduction left the franchise's
+     * name and years scrolled off the top: a television moves whatever takes
+     * focus to its pivot a third of the way down, and a page holds still for
+     * a stop already in its safe band, so the introduction alone never asked
+     * for the name above it. Under that same rule — the leanback default,
+     * which Robolectric does not apply on its own — the hero shows from its
+     * top whenever the introduction has the remote: on arrival, and on the
+     * way back up from the first film, where the name was otherwise lost.
+     */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun theIntroductionHoldingTheRemoteShowsTheHeroFromItsTop() {
+        val intro = "Two films about an adventure."
+        show {
+            CompositionLocalProvider(LocalBringIntoViewSpec provides LeanbackPivot) {
+                TvFranchisePage(FranchisePage(saga, intro), WatchSnapshot.Empty, onOpenTitle = {})
+            }
+        }
+        val screen = compose.onRoot().getUnclippedBoundsInRoot()
+        fun heroTop() = compose.onNodeWithTag(TvDepartmentHeroTestTag).getUnclippedBoundsInRoot().top
+
+        compose.onNodeWithText(intro).assertIsFocused()
+        assertTrue(heroTop() >= screen.top, "arrival scrolled the hero's top off: ${heroTop()}")
+
+        press(Key.DirectionDown)
+        compose.onNodeWithText("Adventure One").assertIsFocused()
+        press(Key.DirectionUp)
+        compose.onNodeWithText(intro).assertIsFocused()
+        assertTrue(heroTop() >= screen.top, "back on the introduction, the hero's top is still off: ${heroTop()}")
+        compose.onNodeWithText("ADVENTURE SAGA").assertIsDisplayed()
+    }
+
     /** Coming back from a film is not a fresh visit: the film opened takes the remote, introduction or not. */
     @Test
     fun comingBackWithAnIntroductionStillLandsOnTheFilmOpened() {
@@ -103,5 +145,23 @@ class TvFranchisePageStateTest : TvScreenStateTest() {
     private fun press(key: Key) {
         compose.onNode(isFocused()).performKeyInput { pressKey(key) }
         compose.waitForIdle()
+    }
+
+    /**
+     * Compose's own `PivotBringIntoViewSpec`, which it applies on a leanback
+     * device: what takes focus has its leading edge moved to 30% of the way
+     * down, unless that would push a child that fits off the far end.
+     */
+    @OptIn(ExperimentalFoundationApi::class)
+    private object LeanbackPivot : BringIntoViewSpec {
+        override fun calculateScrollDistance(
+            offset: Float,
+            size: Float,
+            containerSize: Float,
+        ): Float {
+            val target = 0.3f * containerSize
+            val leading = if (size <= containerSize && containerSize - target < size) containerSize - size else target
+            return offset - leading
+        }
     }
 }

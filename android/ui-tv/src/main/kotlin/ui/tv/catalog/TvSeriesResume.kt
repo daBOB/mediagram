@@ -3,9 +3,8 @@ package ui.tv.catalog
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import catalog.ResumeVerb
 import catalog.SeriesResumePick
-import catalog.episodeShort
+import catalog.resumeWordsOf
 import designsystem.Spacing
 import ui.tv.TvTextRow
 
@@ -25,13 +24,5 @@ internal fun SeriesResumeRow(
     )
 }
 
-/** `▶ Resume S1 E3` — `series-page.js`'s own pill words, [ResumeVerb] naming which of the three it is. */
-internal fun resumeLabel(pick: SeriesResumePick): String {
-    val verb =
-        when (pick.verb) {
-            ResumeVerb.RESUME -> "Resume"
-            ResumeVerb.CONTINUE -> "Continue"
-            ResumeVerb.PLAY -> "Play"
-        }
-    return "▶ $verb ${episodeShort(pick.set)}"
-}
+/** `▶ Resume S1 E3`, `▶ Continue lesson 4` — the phone's and the web's resume words ([resumeWordsOf]) after the play mark. */
+internal fun resumeLabel(pick: SeriesResumePick): String = "▶ ${resumeWordsOf(pick)}"

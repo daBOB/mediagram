@@ -89,44 +89,45 @@ internal fun TvTitleSpread(
             modifier =
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical, bottom = Spacing.large),
+                    .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical, bottom = Spacing.large)
+                    .widthIn(max = SpreadCopyMaxWidth),
         ) {
-            Column(modifier = Modifier.widthIn(max = SpreadCopyMaxWidth)) {
-                val long = title.length > LongTitle
+            val long = title.length > LongTitle
+            Text(
+                text = title,
+                style =
+                    TvTypeScale.title.copy(
+                        fontSize = if (long) LongTitleSize else TitleSize,
+                        lineHeight = if (long) 0.96.em else 0.92.em,
+                        letterSpacing = (-0.025).em,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.medium),
+            )
+            facts?.takeIf(String::isNotEmpty)?.let {
                 Text(
-                    text = title,
-                    style =
-                        TvTypeScale.title.copy(
-                            fontSize = if (long) LongTitleSize else TitleSize,
-                            lineHeight = if (long) 0.96.em else 0.92.em,
-                            letterSpacing = (-0.025).em,
-                        ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.medium),
+                    text = it,
+                    style = TvTypeScale.body.copy(fontFeatureSettings = "tnum"),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = Spacing.medium),
                 )
-                facts?.takeIf(String::isNotEmpty)?.let {
-                    Text(
-                        text = it,
-                        style = TvTypeScale.body.copy(fontFeatureSettings = "tnum"),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = Spacing.medium),
-                    )
-                }
-                overview?.takeIf(String::isNotBlank)?.let {
-                    // Four lines, as `.spread-overview` clamps it: the spread
-                    // introduces the title, it does not carry its whole synopsis.
-                    Text(
-                        text = it,
-                        style = TvTypeScale.body.copy(lineHeight = 1.5.em),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 4,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(bottom = Spacing.large),
-                    )
-                }
             }
+            overview?.takeIf(String::isNotBlank)?.let {
+                // Four lines, as `.spread-overview` clamps it: the spread
+                // introduces the title, it does not carry its whole synopsis.
+                Text(
+                    text = it,
+                    style = TvTypeScale.body.copy(lineHeight = 1.5.em),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(bottom = Spacing.large),
+                )
+            }
+            // Inside the copy's own width, as `.spread-actions` sits in `.spread-copy`:
+            // a row of pills wider than it would run on under the tagline's quote.
             actions()
         }
         if (art != null && !tagline.isNullOrBlank()) {

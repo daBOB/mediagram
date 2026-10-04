@@ -28,7 +28,6 @@ import ui.catalog.DepartmentScrollStates
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
-import ui.catalog.SeasonScreen
 import ui.catalog.posterColumnsFor
 import ui.catalog.rememberDepartmentScrollStates
 import ui.catalog.visibleTabIndices
@@ -182,10 +181,6 @@ internal fun LibraryBranches(
         }
 
         FrameKind.TITLE -> TitleFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
-
-        FrameKind.SEASON -> ResolvedBranch(resolved.season, catalogState, Destination.Season(LOADING), menuActions, profileBar, browse, at, { Destination.Season(it.title) }) { season ->
-            SeasonScreen(division = season, watch = resolved.watch, heldIds = catalogState.heldIdsOrEmpty(), onPlay = at::openPlayer)
-        }
 
         FrameKind.COLLECTION -> CollectionFrame(at, catalogState, catalogViewModel, resolved, menuActions, profileBar, browse)
 

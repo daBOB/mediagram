@@ -18,7 +18,8 @@ import model.MediaSet
 /**
  * The lists a viewer has built, as [CollectionsScreen]'s own
  * [LazyColumn][androidx.compose.foundation.lazy.LazyColumn] items: each a
- * large card pictured by its first pictured title, then "＋ New list" — the
+ * large card pictured by its first pictured title, [columns] to a line and
+ * each line its own item, then "＋ New list" — the
  * "Your lists" half of `collections-page.js#renderCollectionsPage`. Titles
  * are filed onto a list from the player's "Add to list" dialog, not from
  * here.
@@ -30,6 +31,7 @@ import model.MediaSet
 internal fun LazyListScope.listsSection(
     lists: List<ListOfSets>,
     setsById: Map<String, MediaSet>,
+    columns: Int,
     onOpen: (id: String) -> Unit,
     onNewList: () -> Unit,
 ) {
@@ -46,18 +48,16 @@ internal fun LazyListScope.listsSection(
             )
         }
     } else {
-        item(key = "lists") {
-            TileFlow(lists, DESTINATION_MIN_WIDTH, Modifier.padding(horizontal = Spacing.medium)) { list, modifier ->
-                ArtTile(
-                    name = list.name,
-                    meta = spelledCountOf(list.items.size, "title"),
-                    art = listArtOf(list, setsById),
-                    aspectRatio = DESTINATION_ASPECT,
-                    onClick = { onOpen(list.id) },
-                    modifier = modifier,
-                    destination = true,
-                )
-            }
+        tileLines("lists", lists, columns, ListOfSets::id, Modifier.padding(horizontal = Spacing.medium)) { list, modifier ->
+            ArtTile(
+                name = list.name,
+                meta = spelledCountOf(list.items.size, "title"),
+                art = listArtOf(list, setsById),
+                aspectRatio = DESTINATION_ASPECT,
+                onClick = { onOpen(list.id) },
+                modifier = modifier,
+                destination = true,
+            )
         }
     }
     item(key = "new-list") {

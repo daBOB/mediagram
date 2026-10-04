@@ -3,7 +3,12 @@ package ui.tv.catalog
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.height
 import androidx.compose.ui.test.assertRangeInfoEquals
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.onNodeWithText
@@ -17,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import playback.FilmPreloadState
 import playback.PauseReason
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -52,6 +58,23 @@ class TvTitlePreloadStateTest : TvScreenStateTest() {
         compose.onNodeWithText("▶ Play").assertIsFocused()
         compose.onNodeWithText("▶ Play").performKeyInput { pressKey(Key.DirectionRight) }
         compose.onNodeWithText("Preload · 5.0 GB").assertIsFocused()
+    }
+
+    /**
+     * A pill like the ones beside it — outlined, as the phone's Preload is —
+     * not a bare line of text: it stands as tall as Play. Done takes no
+     * press, and says so, while the remote can still rest on it.
+     */
+    @Test
+    fun thePlateIsAPillAsTallAsPlayAndDoneReadsDisabled() {
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, preload = ui(FilmPreloadState.Idle(0L, TOTAL))) }
+        val play = compose.onNodeWithText("▶ Play").getUnclippedBoundsInRoot()
+        val preload = compose.onNodeWithText("Preload · 5.0 GB").getUnclippedBoundsInRoot()
+        assertEquals(play.height, preload.height)
+        close()
+
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, preload = ui(FilmPreloadState.Done)) }
+        compose.onNodeWithText("Preloaded ✓").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
     }
 
     @Test

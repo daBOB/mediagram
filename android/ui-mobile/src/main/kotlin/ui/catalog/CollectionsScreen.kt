@@ -1,5 +1,6 @@
 package ui.catalog
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,7 +28,8 @@ import model.MediaSet
  * nested, second scrollable: a phone screen short enough to clip a nested
  * section once left "＋ New list" beyond a list that never scrolled. A
  * single scroll also gives this hero a real list position to bleed the bar
- * over, the same way Movies' or Series' own hero does.
+ * over, the same way Movies' or Series' own hero does. Each line of cards is
+ * an item of that list ([tileLines]), so only the lines in view are built.
  *
  * [setsById] resolves a list's titles for its card's art ([listsSection]).
  */
@@ -48,19 +50,20 @@ internal fun CollectionsScreen(
     // to a franchise or a list.
     val lead: MediaSet? = franchises.firstOrNull()?.films?.find { it.backdropPath != null }
 
-    LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
-        item {
-            DepartmentHero(
-                title = "Collections",
-                line = collectionsLineOf(franchises.size, lists.size),
-                lead = lead,
-                onOpenTitle = onOpenTitle,
-            )
-        }
-        if (franchises.isNotEmpty()) {
-            item { DeptRowHeading(title = "Franchises") }
-            item(key = "franchises") {
-                TileFlow(franchises, DESTINATION_MIN_WIDTH, Modifier.padding(horizontal = Spacing.medium)) { franchise, modifier ->
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val columns = tileColumnsOf(maxWidth - Spacing.medium * 2, DESTINATION_MIN_WIDTH)
+        LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
+            item(key = "hero") {
+                DepartmentHero(
+                    title = "Collections",
+                    line = collectionsLineOf(franchises.size, lists.size),
+                    lead = lead,
+                    onOpenTitle = onOpenTitle,
+                )
+            }
+            if (franchises.isNotEmpty()) {
+                item(key = "franchises-heading") { DeptRowHeading(title = "Franchises") }
+                tileLines("franchises", franchises, columns, Franchise::id, Modifier.padding(horizontal = Spacing.medium)) { franchise, modifier ->
                     ArtTile(
                         name = franchise.name,
                         meta = spelledCountOf(franchise.films.size, "film"),
@@ -72,9 +75,9 @@ internal fun CollectionsScreen(
                     )
                 }
             }
+            item(key = "lists-heading") { DeptRowHeading(title = "Your lists") }
+            listsSection(lists = lists, setsById = setsById, columns = columns, onOpen = onOpenList, onNewList = { naming = true })
         }
-        item { DeptRowHeading(title = "Your lists") }
-        listsSection(lists = lists, setsById = setsById, onOpen = onOpenList, onNewList = { naming = true })
     }
 
     if (naming) {

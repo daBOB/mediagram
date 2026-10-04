@@ -25,13 +25,13 @@ internal fun TvFilmOverview(
     franchise: Franchise?,
     onOpenGenre: (String) -> Unit,
     onOpenFranchise: (Long) -> Unit,
-    genreFocus: String?,
+    restoreKey: String?,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
         set.posterPath?.let { poster ->
             TvPlateArt(posterPath = File(poster), title = set.title, progress = null, watched = false, modifier = Modifier.width(PosterWidth))
         }
-        TvFactSheet(filmOverviewFacts(set, info, franchise), onOpenGenre = onOpenGenre, onOpenFranchise = onOpenFranchise, genreFocus = genreFocus)
+        TvFactSheet(filmOverviewFacts(set, info, franchise), onOpenGenre = onOpenGenre, onOpenFranchise = onOpenFranchise, restoreKey = restoreKey)
     }
 }
 

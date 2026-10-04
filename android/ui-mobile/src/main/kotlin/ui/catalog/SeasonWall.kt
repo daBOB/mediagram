@@ -3,12 +3,9 @@ package ui.catalog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -26,7 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import catalog.Division
 import catalog.Entry
 import catalog.rowsOf
-import catalog.spelledCountOf
+import catalog.seasonOptionOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -85,16 +82,13 @@ private fun SeasonPicker(
                     .padding(vertical = Spacing.small),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = "${shown.title} · ${spelledCountOf(shown.items.size, "episode")}",
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Text(text = seasonOptionOf(shown), style = MaterialTheme.typography.titleMedium)
             Text(text = "▾", style = MaterialTheme.typography.titleMedium)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (division in divisions) {
                 DropdownMenuItem(
-                    text = { Text("${division.title} · ${spelledCountOf(division.items.size, "episode")}") },
+                    text = { Text(seasonOptionOf(division)) },
                     onClick = {
                         expanded = false
                         onSelect(division.title)
@@ -102,24 +96,5 @@ private fun SeasonPicker(
                 )
             }
         }
-    }
-}
-
-/**
- * One season's episodes, in the same rows [CollectionScreen] draws for a
- * course — a season is just the one division a search result or another
- * direct link may still open on its own, the same way it always has.
- */
-@Composable
-internal fun SeasonScreen(division: Division, watch: WatchSnapshot, heldIds: Set<String>, onPlay: (setId: String) -> Unit) {
-    val rows = remember(division) { rowsOf(listOf(division)) }
-    val positions = remember(watch) { watch.progress.associateBy { it.setId } }
-    val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.large),
-        verticalArrangement = Arrangement.spacedBy(Spacing.small),
-    ) {
-        items(rows, positions, watchedIds, heldIds, onPlay)
     }
 }

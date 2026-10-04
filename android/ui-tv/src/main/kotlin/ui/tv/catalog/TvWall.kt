@@ -51,9 +51,9 @@ private val CacheBehind = 320.dp
 
 /**
  * One catalogue wall, for every television screen a grid of plates is built
- * from — a shelf, a kept wall, a season wall, later a collection's wall too.
+ * from — a shelf, a kept wall, a franchise, a person's page.
  * Generic over the item type so each of those can hand it whatever it
- * already has ([model.MediaSet], an entry, a season) without this file
+ * already has ([model.MediaSet], an entry, a genre) without this file
  * needing to know the difference.
  *
  * [key] is a stable identity per item, the same reason `catalog.keyOf` exists

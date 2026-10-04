@@ -2,10 +2,9 @@ package catalog
 
 /**
  * Where in the library a viewer currently is. The catalog is the root; a
- * collection is named after whatever course or show it opened; a season is
- * named after itself and is reachable from a show's collection screen, when
- * that show has more than one; a title is named after itself, and is
- * reachable from any of them; a hand-built list is named after itself and is
+ * collection is named after whatever course or show it opened; a title is
+ * named after itself, and is reachable from any of them; a hand-built list
+ * is named after itself and is
  * reachable from the Collections tab; the system screen sits alongside all
  * of them rather than under any.
  */
@@ -13,10 +12,6 @@ sealed interface Destination {
     data object Catalog : Destination
 
     data class Collection(
-        val name: String,
-    ) : Destination
-
-    data class Season(
         val name: String,
     ) : Destination
 
@@ -78,7 +73,6 @@ fun barTitleFor(destination: Destination): String =
     when (destination) {
         Destination.Catalog -> "Mediagram"
         is Destination.Collection -> destination.name
-        is Destination.Season -> destination.name
         is Destination.Title -> destination.name
         is Destination.List -> destination.name
         Destination.Search -> "Search"
@@ -104,7 +98,6 @@ fun backLabelFor(destination: Destination): String? =
     when (destination) {
         Destination.Catalog -> null
         is Destination.Collection -> "Back"
-        is Destination.Season -> "Back"
         is Destination.Title -> "Back"
         is Destination.List -> "Back"
         Destination.Search -> "Back"

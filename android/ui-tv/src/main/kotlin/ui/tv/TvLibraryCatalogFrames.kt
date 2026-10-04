@@ -5,7 +5,7 @@ import androidx.compose.runtime.remember
 import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
-import catalog.Division
+import catalog.CollectionKind
 import catalog.Entry
 import catalog.MenuScreen
 import catalog.firstItemOf
@@ -19,13 +19,13 @@ import ui.LibraryPositions
 import ui.catalog.rememberTitleCredits
 import ui.catalog.rememberTitleInfo
 import ui.tv.catalog.TvCollection
-import ui.tv.catalog.TvSeason
 import ui.tv.catalog.TvTitlePage
+import ui.tv.catalog.franchiseRestoreKey
 
 /**
- * The film, season and show/course frames — [TvLibrary]'s three biggest
- * branches, split out here so that file stays a dispatcher rather than
- * growing a page's worth of wiring for each of them.
+ * The film and show/course frames — [TvLibrary]'s two biggest branches,
+ * split out here so that file stays a dispatcher rather than growing a
+ * page's worth of wiring for each of them.
  */
 @Composable
 internal fun TvTitleFrame(
@@ -74,7 +74,7 @@ internal fun TvTitleFrame(
             },
             allFilms = allFilms,
             onOpenFranchise = { id ->
-                restore.opened(here, id.toString())
+                restore.opened(here, franchiseRestoreKey(id))
                 at.openFranchise(id.toString())
             },
             editorsChoice = watch.editorsChoice,
@@ -89,31 +89,6 @@ internal fun TvTitleFrame(
             preload = if (set.kind == Kind.MOVIE) rememberTvFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             watchlisted = set.setId in watch.watchlist,
             onToggleWatchlist = { catalogViewModel.setWatchlisted(set.setId, set.setId !in watch.watchlist) },
-        )
-    }
-}
-
-@Composable
-internal fun TvSeasonFrame(
-    at: LibraryPositions,
-    catalogState: CatalogUiState,
-    season: Division?,
-    watch: WatchSnapshot,
-    heldIds: Set<String>,
-    restore: TvRestoreKeys,
-    here: Int,
-    leave: () -> Unit,
-) {
-    TvResolvedBranch(season, catalogState, leave) { division ->
-        TvSeason(
-            division = division,
-            watch = watch,
-            onPlay = { setId ->
-                restore.opened(here, setId)
-                at.openPlayer(setId)
-            },
-            restoreKey = restore.of(here),
-            heldIds = heldIds,
         )
     }
 }
@@ -137,12 +112,15 @@ internal fun TvCollectionFrame(
     TvResolvedBranch(collection, catalogState, leave) { coll ->
         // A show is listed and pinned by its first episode, as the web's page does.
         val firstEpisodeId = remember(coll) { firstItemOf(coll.divisions)?.setId }
-        val credits = rememberTitleCredits(coll.posterKey, catalogViewModel::titleCredits)
-        val similar = remember(coll, allShows, watchedIds) { similarShows(coll, allShows) { id -> id in watchedIds } }
+        // A course's page draws no facts, cast or similar courses, so it asks for none.
+        val show = coll.kind == CollectionKind.SHOW
+        val providerKey = coll.posterKey.takeIf { show }
+        val credits = rememberTitleCredits(providerKey, catalogViewModel::titleCredits)
+        val similar = remember(coll, allShows, watchedIds) { if (show) similarShows(coll, allShows) { id -> id in watchedIds } else emptyList() }
         val resume = remember(coll, watch) { seriesResumeFor(coll, watch) }
         TvCollection(
             collection = coll,
-            info = rememberTitleInfo(coll.posterKey, catalogViewModel::titleInfo),
+            info = rememberTitleInfo(providerKey, catalogViewModel::titleInfo),
             watch = watch,
             onPlay = { setId ->
                 restore.opened(here, setId)

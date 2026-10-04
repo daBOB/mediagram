@@ -111,6 +111,27 @@ class TvCoursePageStateTest : TvScreenStateTest() {
         assertEquals("l2", resumed)
     }
 
+    /**
+     * A numbered lesson is named as a lesson, not by the chapter its index
+     * files it under: "▶ Continue lesson 3", never "▶ Continue S1 E3".
+     */
+    @Test
+    fun theResumeLineNamesALessonByItsNumber() {
+        val third = lesson("l3", "Signals").copy(season = 1, episodeFirst = 3, episodeLast = 3)
+        show {
+            TvCollection(
+                collection = course,
+                info = null,
+                watch = WatchSnapshot.Empty,
+                onPlay = {},
+                resume = SeriesResumePick(third, at = null, verb = ResumeVerb.CONTINUE),
+            )
+        }
+
+        compose.onNodeWithText("▶ Continue lesson 3").assertExists()
+        compose.onNodeWithText("S1 E3", substring = true).assertDoesNotExist()
+    }
+
     private fun press(key: Key) {
         compose.onNode(isFocused()).performKeyInput { pressKey(key) }
         compose.waitForIdle()

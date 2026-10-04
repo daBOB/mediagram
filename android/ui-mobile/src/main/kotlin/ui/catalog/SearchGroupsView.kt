@@ -232,7 +232,7 @@ private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> U
 private fun CollectionsSection(collections: List<SearchDestination>, onOpenFranchise: (Long) -> Unit, onOpenList: (String) -> Unit) {
     Column(modifier = Modifier.padding(top = Spacing.medium)) {
         Text("Collections", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
-        TileFlow(collections, DESTINATION_MIN_WIDTH) { destination, modifier ->
+        TileFlow(collections, DESTINATION_MIN_WIDTH, SearchDestination::href) { destination, modifier ->
             val franchiseId = destination.franchiseId
             ArtTile(
                 name = destination.name,

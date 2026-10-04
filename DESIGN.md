@@ -589,7 +589,10 @@ says what it is.
 - **Scrim:** a dark fade up from the foot; name and figures in on-image
   light. With no art, no scrim and the words in text on the sunk ground.
 - **Genre tile:** Fraunces Medium 21.6sp name, Geist 12sp count at 80%;
-  16:9 on the Genres page, 16:8 in the Movies department's row.
+  16:9 on the Genres page, 16:8 and 240dp wide in the Movies department's
+  row — television's width, since the web's 12rem leaves a two-line name
+  and its count no room. The proportion is a floor: a name set larger by
+  the system font grows the tile rather than cutting its count off.
 - **Destination:** the name uppercase, Fraunces Medium 22–29sp; 4:3, as many
   columns of at least 256dp as fit — franchises and lists on Collections,
   and Search's Collections part. A list is pictured by its first pictured
@@ -651,11 +654,13 @@ raised (NeedsSpace); Quiet once queued, running, done, or paused for any
 reason — a background-limit pause resumes on a tap too, but is a queue
 unclogging on its own, not a fresh choice the viewer made, so it stays
 Quiet with the rest of a pause rather than reading as a new affirmative
-action. TV reads the same states as a focusable plate, in this catalogue's
-one television focus treatment — the accent border and scale every other
-TV card and row already carries — with the same thin bar the phone draws,
-drawn plainly rather than focused (nothing here answers a direction key;
-cancelling or resuming is the plate's own OK, not the bar's).
+action. TV reads the same states as an outlined pill in the spread's own
+row beside Play — its border and words in the accent for Line, the rule
+and ink for Quiet — in this catalogue's one television focus treatment
+(the accent ring and scale every other TV card and row already carries),
+with the same thin bar the phone draws, drawn plainly rather than focused
+(nothing here answers a direction key; cancelling or resuming is the
+pill's own OK, not the bar's).
 
 The Preloads page (Android only, the same reason) is a plain list rather
 than a poster wall — three sections, Preloading/Queued/On this device, each

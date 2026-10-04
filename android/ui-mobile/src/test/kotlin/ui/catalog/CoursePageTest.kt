@@ -50,7 +50,6 @@ class CoursePageTest : BrowsePageTest() {
             watch = WatchSnapshot.Empty,
             heldIds = emptySet(),
             onOpenTitle = {},
-            onOpenSeason = {},
             onOpenGenre = {},
             onPlay = onPlay,
         )

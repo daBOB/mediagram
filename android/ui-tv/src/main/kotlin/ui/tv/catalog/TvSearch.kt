@@ -153,8 +153,8 @@ internal fun TvSearchScreen(
     }
 
     val onOpenDestination: (SearchDestination) -> Unit = { destination ->
-        val franchiseId = destination.href.removePrefix("tmdb-").toLongOrNull()
-        if (destination.href.startsWith("tmdb-") && franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href)
+        val franchiseId = destination.franchiseId
+        if (franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical)) {

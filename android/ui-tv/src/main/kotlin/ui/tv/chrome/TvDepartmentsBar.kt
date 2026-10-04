@@ -79,6 +79,10 @@ internal fun TvDepartmentsBar(
     val bg = lerp(TvBarOverCoverBg, solidBg, blend)
     val ink = lerp(TvOverCoverInk, solidInk, blend)
     val downModifier = Modifier.focusProperties { down = downTarget }
+    // Each pill's own requester, held here rather than inside the pill so Search can name the last one.
+    val pillRequesters = remember { HashMap<String, FocusRequester>() }
+
+    fun requesterOf(index: Int): FocusRequester = if (index == selected) selectedPillFocus else pillRequesters.getOrPut(pills[index].title) { FocusRequester() }
 
     Row(
         modifier =
@@ -101,16 +105,25 @@ internal fun TvDepartmentsBar(
                     // in its own modifier chain on every recomposition, or
                     // the pill the remote is actually on resets the moment
                     // a different one becomes selected.
-                    val ownRequester = remember { FocusRequester() }
-                    val pillModifier = downModifier.focusRequester(if (index == selected) selectedPillFocus else ownRequester)
+                    val pillModifier = downModifier.focusRequester(requesterOf(index))
                     TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
                 }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
+            // Left goes to the last pill by name, not by where it is drawn: scrolled out of the
+            // row's view, Tutorials and Collections were no candidates for a geometric search,
+            // which skipped them for the nearest pill still in sight. The pill taking the remote
+            // scrolls the row to it.
+            val lastPill = pills.lastIndex
             TvRoundIconButton(
                 icon = painterResource(R.drawable.core_designsystem_ic_search), description = "Search", ink = ink, onClick = onSearch,
-                modifier = downModifier.focusRequester(searchFocus),
+                modifier =
+                    Modifier
+                        .focusProperties {
+                            down = downTarget
+                            if (lastPill >= 0) left = requesterOf(lastPill)
+                        }.focusRequester(searchFocus),
             )
             TvAvatar(profile = profile, modifier = downModifier)
             TvRoundIconButton(

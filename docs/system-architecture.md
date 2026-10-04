@@ -832,7 +832,9 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
 - **A show's season picker is a row of pills, not a drop-down.** Each pill says what the
   web's option says ("Season 2 · eight episodes"); every season is in sight and one press
   away, where a drop-down would hide them behind an extra press and a list the remote
-  then has to leave. Picking is OK, not focus, for the tabs' reason.
+  then has to leave. Picking is OK, not focus, for the tabs' reason. The row is the only
+  place the shown season is named, so it scrolls to keep that pill in sight, and the remote
+  arriving from the tabs above lands on it, as Up from a panel lands on the showing tab.
 - **The ⋯ beside a title's pills opens its choices in the pill row itself.** The web's
   list floats under the button; on television it would sit over the tab row the remote
   reaches with Down. Back, or a choice, closes it onto the ⋯.
@@ -885,8 +887,9 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   band under a heading reads as something that failed to load.
 - **A course's page keeps a resume line under its head.** The web's course page is its
   shelf head and its lessons, and so is television's — but under the head the television
-  also offers "▶ Continue" and the lesson's name, the series pill's own words, one press
-  up from the first lesson. A pointer reaches lesson 87 of a 162-lesson course in one fling, where its
+  also offers the series pill's verb and the lesson by its number — "▶ Continue lesson 4",
+  never a show's "S1 E4", since a lesson's season is only the chapter it was filed under;
+  a lesson with no number goes by its name — one press up from the first lesson. A pointer reaches lesson 87 of a 162-lesson course in one fling, where its
   progress rule shows; a remote walks there a row at a time.
 - **Home unmounts under a pushed frame and rebuilds on return, not kept alive.** Tried
   (2026-09-30): keep the root library composed and laid out under every pushed frame —

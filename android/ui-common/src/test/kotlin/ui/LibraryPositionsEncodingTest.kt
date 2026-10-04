@@ -59,16 +59,34 @@ class LibraryPositionsEncodingTest {
      */
     @Test
     fun aStackSavedBeforeTheNewFramesExistedRestoresUnchanged() {
-        val at = positions("COLLECTION\u001Fspartacus\u001ESEASON\u001FSeason 1\u001ETITLE\u001Fset-1")
+        val at = positions("COLLECTION\u001Fspartacus\u001EGENRE\u001FDrama\u001ETITLE\u001Fset-1")
 
         assertEquals(FrameKind.TITLE, at.top)
         assertEquals("set-1", at.titleId)
         assertEquals("spartacus", at.collection)
-        assertEquals("Season 1", at.season)
+        assertEquals("Drama", at.genre)
 
         at.pop()
-        assertEquals(FrameKind.SEASON, at.top)
+        assertEquals(FrameKind.GENRE, at.top)
         at.pop()
         assertEquals(FrameKind.COLLECTION, at.top)
+    }
+
+    /**
+     * A season had a frame of its own before a show's page picked its season
+     * itself. A stack saved with one still restores: the season's frame is
+     * dropped, so the show's page is what Back from the title above it finds.
+     */
+    @Test
+    fun aSavedSeasonFrameRestoresToItsShowsPage() {
+        val at = positions("COLLECTION\u001Fspartacus\u001ESEASON\u001FSeason 1\u001ETITLE\u001Fset-1")
+
+        assertEquals(FrameKind.TITLE, at.top)
+        assertEquals("spartacus", at.collection)
+        assertEquals(2, at.depth)
+
+        at.pop()
+        assertEquals(FrameKind.COLLECTION, at.top)
+        assertEquals("spartacus", at.collection)
     }
 }

@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
@@ -28,8 +31,9 @@ import ui.tv.TvTextRow
  * a soft rule under each row.
  *
  * Words are only read; genres and a franchise are stops the remote can
- * press, the same links the phone draws. [genreFocus] names the genre whose
- * page was just left, which takes the remote back.
+ * press, the same links the phone draws. [restoreKey] names what was just
+ * left — a genre's page, or a franchise's ([franchiseRestoreKey]) — and
+ * that link takes the remote back.
  */
 @Composable
 internal fun TvFactSheet(
@@ -37,9 +41,10 @@ internal fun TvFactSheet(
     modifier: Modifier = Modifier,
     onOpenGenre: (String) -> Unit = {},
     onOpenFranchise: (Long) -> Unit = {},
-    genreFocus: String? = null,
+    restoreKey: String? = null,
 ) {
     val tones = LocalCatalogueTones.current
+    val partOf = remember { FocusRequester() }
     Column(modifier = modifier.widthIn(max = FactSheetMaxWidth)) {
         for ((label, value) in rows) {
             Row(modifier = Modifier.padding(vertical = RowPadding)) {
@@ -51,14 +56,25 @@ internal fun TvFactSheet(
                 )
                 when (value) {
                     is FactValue.Words -> Text(text = value.text, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurface)
-                    is FactValue.Genres -> TvGenreLinks(value.names, onOpenGenre, genreFocus)
-                    is FactValue.PartOf -> TvTextRow(text = value.franchise.name, onClick = { onOpenFranchise(value.franchise.id) })
+                    is FactValue.Genres -> TvGenreLinks(value.names, onOpenGenre, restoreKey)
+                    is FactValue.PartOf -> {
+                        val back = franchiseRestoreKey(value.franchise.id) == restoreKey
+                        TvTextRow(text = value.franchise.name, onClick = { onOpenFranchise(value.franchise.id) }, focusRequester = partOf.takeIf { back })
+                        LaunchedEffect(back) { if (back) partOf.requestFocus() }
+                    }
                 }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(tones.ruleSoft))
         }
     }
 }
+
+/**
+ * The restore key a title page saves for its "Part of" link — prefixed, so
+ * a franchise's id is never read as a person's on the Cast tab, nor a
+ * genre's name, which share the same key on the way back.
+ */
+internal fun franchiseRestoreKey(id: Long): String = "franchise:$id"
 
 /** `.fact-sheet{max-width:40rem}`. */
 private val FactSheetMaxWidth = 640.dp

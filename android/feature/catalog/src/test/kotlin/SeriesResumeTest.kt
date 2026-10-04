@@ -80,4 +80,25 @@ class SeriesResumeTest {
             ),
         )
     }
+
+    /**
+     * What the pill says after its mark, shared by both surfaces: a show's
+     * episode by season and number, a course's lesson by its number alone —
+     * its season is the chapter it was filed under — anything else by title.
+     */
+    @Test
+    fun theResumeWords() {
+        val lesson = ep(1, 4).copy(kind = Kind.TUTORIAL, title = "Signals")
+        val documentary = ep(1, 2).copy(kind = Kind.DOCUMENTARY, title = "The Deep")
+        assertEquals("Resume S3 E15", resumeWordsOf(SeriesResumePick(ep(3, 15), 60.0, ResumeVerb.RESUME)))
+        assertEquals("Continue lesson 4", resumeWordsOf(SeriesResumePick(lesson, null, ResumeVerb.CONTINUE)))
+        assertEquals("Play Signals", resumeWordsOf(SeriesResumePick(lesson.copy(episodeFirst = null), null, ResumeVerb.PLAY)))
+        assertEquals("Play The Deep", resumeWordsOf(SeriesResumePick(documentary, null, ResumeVerb.PLAY)))
+    }
+
+    /** `Season 2 · eight episodes`, as the web's select words each option. */
+    @Test
+    fun aSeasonOptionNamesTheSeasonAndCountsItsEpisodes() {
+        assertEquals("Season 2 · two episodes", seasonOptionOf(Division("Season 2", season = 2, items = listOf(ep(2, 1), ep(2, 2)), children = emptyList())))
+    }
 }

@@ -45,8 +45,10 @@ import uniffi.mediagram_core.TitleInfo
  * start by, so a glance at the opening or a position in the credits says
  * Play.
  *
- * Its genres open their own pages through [onOpenGenre]; coming back from
- * one, [restoreKey] names it and that link takes the remote instead of Play.
+ * Its genres open their own pages through [onOpenGenre], its franchise
+ * through [onOpenFranchise]; coming back from one, [restoreKey] names it
+ * (a franchise by [franchiseRestoreKey]) and that link takes the remote
+ * instead of Play.
  * The same [restoreKey] also picks up whichever of Cast or Similar it was
  * opened from — a person's or a similar film's id — and drives both which
  * tab is initially showing and which of its plates takes focus, recomputed
@@ -168,15 +170,17 @@ internal fun TvTitlePage(
                     "Cast" -> TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey)
                     "Similar" -> TvSimilarFilms(similar, onOpenTitle, restoreKey)
                     "Details" -> TvFactSheet(filmDetailFacts(set))
-                    else -> TvFilmOverview(set, info, franchise, onOpenGenre, onOpenFranchise, genreFocus = restoreKey)
+                    else -> TvFilmOverview(set, info, franchise, onOpenGenre, onOpenFranchise, restoreKey = restoreKey)
                 }
             }
         }
     }
     // Arrival only — keyed on the title, not the tab, so pressing Overview
     // leaves the remote on its tab rather than throwing it back up to Play.
+    // A genre or the franchise coming back takes the remote on its own link.
+    val backToALink = restoreKey != null && (restoreKey in set.genres || restoreKey == franchise?.let { franchiseRestoreKey(it.id) })
     LaunchedEffect(set.setId) {
-        if (selected == 0 && restoreKey !in set.genres) play.requestFocus()
+        if (selected == 0 && !backToALink) play.requestFocus()
     }
 }
 

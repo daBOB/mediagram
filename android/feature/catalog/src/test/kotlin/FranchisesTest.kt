@@ -75,4 +75,13 @@ class FranchisesTest {
         assertEquals("b-bg", listArtOf(ListOfSets("l", "Mine", listOf("both", "poster-only")), byId))
         assertNull(listArtOf(ListOfSets("l", "Mine", listOf("gone", "bare")), byId))
     }
+
+    /** "25 films · 1962–2021": the count in words and the span of the years known, an undated film left out of it. */
+    @Test
+    fun aFranchisesLineCountsItsFilmsAndSpansTheirKnownYears() {
+        fun saga(vararg years: Int) = Franchise(5, "Saga", years.mapIndexed { i, year -> film("f$i", year, 5) }, null)
+        assertEquals("three films · 1962–2021", franchiseLineOf(saga(1979, 1962, 2021)))
+        assertEquals("two films · 1999–1999", franchiseLineOf(saga(1999, 0)))
+        assertEquals("two films", franchiseLineOf(saga(0, 0)))
+    }
 }

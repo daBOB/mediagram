@@ -41,8 +41,10 @@ import ui.tv.TvFocus
  * One of a title spread's pills — `.pill` in `title-page.css`: fully round,
  * 48dp tall. [solid] is the one that starts the title (`.pill-solid`, ink
  * on paper reversed); the rest are line pills (`.pill-line`, a rule border
- * over a faint wash). Focus is this surface's one treatment — the accent
- * ring and the scale every other control carries.
+ * over a faint wash). [accent] draws a line pill's border and words in the
+ * accent instead — the phone's line pill for an affirmative action, which a
+ * film's Preload is while it waits to be started. Focus is this surface's
+ * one treatment — the accent ring and the scale every other control carries.
  */
 @Composable
 internal fun TvSpreadPill(
@@ -50,11 +52,13 @@ internal fun TvSpreadPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     solid: Boolean = false,
+    accent: Boolean = false,
     description: String? = null,
 ) {
     val ink = MaterialTheme.colorScheme.onSurface
     val container = if (solid) ink else ink.copy(alpha = 0.05f)
-    val content = if (solid) MaterialTheme.colorScheme.background else ink
+    val content = if (solid) MaterialTheme.colorScheme.background else if (accent) Palette.Imprint else ink
+    val line = if (accent) Palette.Imprint else MaterialTheme.colorScheme.border
     Surface(
         onClick = onClick,
         modifier =
@@ -74,7 +78,7 @@ internal fun TvSpreadPill(
         scale = TvFocus.surfaceScale(),
         border =
             ClickableSurfaceDefaults.border(
-                border = if (solid) Border.None else Border(BorderStroke(1.dp, MaterialTheme.colorScheme.border), shape = TvFocus.PillShape),
+                border = if (solid) Border.None else Border(BorderStroke(1.dp, line), shape = TvFocus.PillShape),
                 focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, Palette.Imprint), shape = TvFocus.PillShape),
             ),
         glow = TvFocus.surfaceGlow(),

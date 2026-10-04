@@ -9,14 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.CollectionKind
-import catalog.Division
 import catalog.Entry
-import catalog.ResumeVerb
 import catalog.Shelf
 import catalog.courseExtentOf
-import catalog.episodeShort
 import catalog.extentOf
 import catalog.firstItemOf
+import catalog.resumeWordsOf
 import catalog.rowsOf
 import catalog.seriesAboutFacts
 import catalog.seriesFactsLine
@@ -34,10 +32,9 @@ import uniffi.mediagram_core.TitleInfo
  * What is inside one show or course: a show's own feature-article page
  * ([SeriesPage]) when [collection] is one, else a course's index
  * ([CoursePage]) — its chapters and lessons, flattened once and shown as
- * one indented list, the same list a season screen shows for the one
- * division a search result may still open on its own.
+ * one indented list.
  *
- * Every parameter beyond the first seven defaults to something inert, so
+ * Every parameter beyond the first six defaults to something inert, so
  * a caller not yet wired for credits, similar shows or a person page keeps
  * compiling — see [TitleDetailScreen]'s own doc comment for the same rule
  * on the film side.
@@ -49,7 +46,6 @@ fun CollectionScreen(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     onOpenTitle: (setId: String) -> Unit,
-    onOpenSeason: (Division) -> Unit,
     onOpenGenre: (String) -> Unit,
     shelves: List<Shelf> = emptyList(),
     onOpenCollection: (key: String) -> Unit = {},
@@ -193,7 +189,7 @@ private fun SeriesPage(
             ) {
                 if (firstEpisode != null) {
                     TitlePills(
-                        playLabel = resume?.let { "${verbLabel(it.verb)} ${episodeShort(it.set)}" },
+                        playLabel = resume?.let(::resumeWordsOf),
                         onPlay = { resume?.let { onPlay(it.set.setId) } },
                         watchlisted = firstEpisode.setId in watch.watchlist,
                         onToggleWatchlist = onToggleWatchlist,
@@ -246,10 +242,3 @@ private fun SeriesSimilarTab(
         },
     )
 }
-
-private fun verbLabel(verb: ResumeVerb): String =
-    when (verb) {
-        ResumeVerb.RESUME -> "Resume"
-        ResumeVerb.CONTINUE -> "Continue"
-        ResumeVerb.PLAY -> "Play"
-    }

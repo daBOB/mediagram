@@ -15,7 +15,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.FranchisePage
-import catalog.spelledCountOf
+import catalog.franchiseLineOf
 import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.chrome.LocalTvPagePadding
@@ -32,9 +32,13 @@ import ui.tv.chrome.TvPagePadding
  * itself, so the page shows from its top the way the web's does: TMDB's
  * introductions run to several lines, and landing on the first film instead
  * would scroll the franchise's own name off the screen before anyone had
- * read it. Down from it is the first film. Coming back from a film lands on
- * that film, as every wall does; with no introduction the first film takes
- * the remote and the hero's words, at its foot, stay in view.
+ * read it. The introduction asks for the whole hero above it whenever it
+ * takes the remote ([revealsFromTop]): asking only for itself, a page that
+ * holds still for a stop already in its safe band, or a television moving
+ * it to its pivot, could leave the name scrolled off above it. Down from it
+ * is the first film. Coming back from a film lands on that film, as every
+ * wall does; with no introduction the first film takes the remote and the
+ * hero's words, at its foot, stay in view.
  *
  * The hero sits inside the wall's own page margins, its words flush with
  * the plates below rather than inset a second time — a pushed frame has no
@@ -50,12 +54,7 @@ internal fun TvFranchisePage(
 ) {
     val franchise = page.franchise
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    val line =
-        remember(franchise) {
-            val years = franchise.films.mapNotNull { it.year?.takeIf { year -> year > 0 } }
-            val span = years.minOrNull()?.let { first -> "$first–${years.max()}" }
-            listOfNotNull(spelledCountOf(franchise.films.size, "film"), span).joinToString(" · ")
-        }
+    val line = remember(franchise) { franchiseLineOf(franchise) }
     val overview = page.overview?.takeIf(String::isNotBlank)
     // Once per visit, not on every return of the hero into composition: a
     // lazy header scrolled away and back would otherwise pull the remote up
@@ -76,6 +75,9 @@ internal fun TvFranchisePage(
                         title = franchise.name,
                         line = line,
                         lead = franchise.films.find { it.backdropPath != null },
+                        // The introduction taking the remote asks for the hero from its own top,
+                        // name and years included, not for the paragraph alone.
+                        modifier = Modifier.revealsFromTop(),
                         franchiseTitle = true,
                         overview =
                             overview?.let { text ->

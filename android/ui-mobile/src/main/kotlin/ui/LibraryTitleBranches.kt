@@ -7,6 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
+import catalog.CollectionKind
 import catalog.Destination
 import catalog.MenuScreen
 import catalog.firstItemOf
@@ -83,11 +84,11 @@ internal fun CollectionFrame(
         val firstEpisodeId = firstItemOf(collection.divisions)?.setId
         CollectionScreen(
             collection = collection,
-            info = rememberTitleInfo(collection.posterKey, catalogViewModel::titleInfo),
+            // A course's page draws nothing a provider entry would fill, so it asks for none.
+            info = rememberTitleInfo(collection.posterKey.takeIf { collection.kind == CollectionKind.SHOW }, catalogViewModel::titleInfo),
             watch = resolved.watch,
             heldIds = catalogState.heldIdsOrEmpty(),
             onOpenTitle = at::openTitle,
-            onOpenSeason = { at.openSeason(it.title) },
             onOpenGenre = at::openGenre,
             shelves = catalogState.shelvesOrEmpty(),
             onOpenCollection = at::openCollection,

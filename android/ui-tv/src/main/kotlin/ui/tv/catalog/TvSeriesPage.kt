@@ -144,7 +144,7 @@ internal fun TvSeriesPage(
             }
             val panel = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small)
             when (tabs[selected]) {
-                "About" -> item(key = "about") { TvFactSheet(seriesAboutFacts(facts, info, genres), panel, onOpenGenre = onOpenGenre, genreFocus = restoreKey) }
+                "About" -> item(key = "about") { TvFactSheet(seriesAboutFacts(facts, info, genres), panel, onOpenGenre = onOpenGenre, restoreKey = restoreKey) }
                 "Cast" -> item(key = "cast") { Box(panel) { TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey) } }
                 "Similar" -> item(key = "similar") { Box(panel) { TvSimilarShows(similar, onOpenCollection, restoreKey) } }
                 else -> {

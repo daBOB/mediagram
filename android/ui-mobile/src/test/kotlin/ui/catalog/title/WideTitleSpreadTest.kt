@@ -112,7 +112,7 @@ class WideTitleSpreadTest {
         show {
             CollectionScreen(
                 collection = series, info = info, watch = WatchSnapshot.Empty, heldIds = emptySet(),
-                onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenTitle = {}, onOpenGenre = {},
             )
         }
         val root = compose.onRoot().getBoundsInRoot()

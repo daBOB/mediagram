@@ -18,8 +18,8 @@ import androidx.compose.ui.relocation.bringIntoView
 import designsystem.Overscan
 
 /**
- * A page opened from the catalogue — a title, a show or course, a season,
- * a list — whose scrolling leaves its heading where it is while the remote
+ * A page opened from the catalogue — a title, a show or course, a list —
+ * whose scrolling leaves its heading where it is while the remote
  * rests on something already in plain view.
  *
  * A television's own rule moves whatever takes focus to about a third of

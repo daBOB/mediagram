@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.108.1 — what the TV box walk and the final review found
+
+**Fixed** (Android)
+
+- Phone: the Collections tab builds only the lines in view rather than every franchise card
+  at once; art tiles grow to hold their words at large font sizes (genre tiles 240 dp).
+- TV: arriving on a franchise page keeps its name and hero in view; Left from Search reaches
+  the department pills scrolled out of view; the season picker scrolls to and enters the
+  season it shows; title pills stay inside the text column, clear of the tagline; Back from a
+  franchise returns to its "Part of" link; a course's play line reads "▶ Continue lesson 3";
+  the Preload and Remove pills are outlined like the rest.
+- Resume wording, season labels and franchise year spans are built once for phone and TV;
+  the unused season screen is gone on both, and course pages stop fetching details they
+  never show.
+
 ## 0.108.0 — the web player: household admin, PINs and each kid's own limit
 
 **Added** (web player)

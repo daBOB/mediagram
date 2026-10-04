@@ -30,10 +30,10 @@ import ui.tv.system.TvMenuPage
 
 /**
  * The library on a television — the twin of the phone's `LibraryFlow`: the
- * catalogue, whichever show or course it opened, whichever season of that,
- * whichever title that described, whichever set that played, whichever
- * hand-built list the Collections tab opened, search, whichever genre a
- * title's link opened, a person's own page, a franchise's own page, the
+ * catalogue, whichever show or course it opened, whichever title that
+ * described, whichever set that played, whichever hand-built list the
+ * Collections tab opened, search, whichever genre a title's link opened, a
+ * person's own page, a franchise's own page, the
  * Genres index, the Latest page, the Movies department's own full wall, and
  * the menu with the screens it opens. Where the viewer is, and what Back
  * uncovers, is the shared [LibraryPositions] stack, asked the same way the
@@ -117,8 +117,6 @@ internal fun TvLibrary(
 
         FrameKind.TITLE ->
             TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
-
-        FrameKind.SEASON -> TvSeasonFrame(at, catalogState, resolved.season, watch, heldIds, restore, here, leave)
 
         FrameKind.COLLECTION ->
             TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)

@@ -6,16 +6,21 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
+import catalog.ResumeVerb
+import catalog.SeriesResumePick
+import catalog.seasonOptionOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -24,12 +29,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * [TvCollection] and [TvSeason]: a show's Episodes tab is the web's season
+ * [TvCollection]: a show's Episodes tab is the web's season
  * picker over one season's episodes, a course the phone's indented rows,
  * and a document is a line that says why it does not open rather than a
  * thing to press.
@@ -143,45 +149,37 @@ class TvCollectionStateTest : TvScreenStateTest() {
     }
 
     @Test
-    fun aSeasonOfDocumentsOnlyFocusesItsFirstDocument() {
-        show { TvSeason(division("Extras", null, document("d1", "Script"), document("d2", "Notes")), WatchSnapshot.Empty, onPlay = {}) }
-
-        compose.onNodeWithText("1. Script", substring = true).assertIsFocused()
-    }
-
-    @Test
-    fun aSeasonListsItsOwnEpisodesAndFocusesTheFirst() {
-        var played: String? = null
-        show { TvSeason(division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")), WatchSnapshot.Empty, onPlay = { played = it }) }
-
-        compose.onNodeWithText("Season 2").assertExists()
-        compose.onNodeWithText("1. Late").assertIsFocused()
-        compose.onNodeWithText("2. Later").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals("e4", played)
-    }
-
-    @Test
     fun anEpisodeThisDeviceHoldsSaysOffline() {
-        show {
-            TvSeason(
-                division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later")),
-                WatchSnapshot.Empty,
-                onPlay = {},
-                heldIds = setOf("e4"),
-            )
-        }
+        showCollection(show(division("Season 2", 2, episode("e3", "Late"), episode("e4", "Later"))), heldIds = setOf("e4"))
 
         compose.onAllNodesWithTag(TvOfflineBadgeTag).assertCountEquals(1)
         compose.onNodeWithText("offline").assertExists()
     }
 
-    /** Named at a page's size, as the phone's bar names it — and once, not again as the rows' own heading under it. */
+    /**
+     * A show resuming in Season 5 of 6 opens with Season 5's pill in sight —
+     * the picker is the only place the shown season is named — and Down from
+     * the Episodes tab lands on that pill rather than on Season 1.
+     */
     @Test
-    fun aSeasonIsHeadedWithItsTitleOnce() {
-        show { TvSeason(division("Season 2", 2, episode("e3", "Late")), WatchSnapshot.Empty, onPlay = {}) }
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun theShownSeasonsPillIsInSightAndTakesTheRemoteFromTheTab() {
+        val seasons = (1..6).map { n -> division("Season $n", n, episode("s${n}e1", "Opener $n")) }
+        val fifth = seasons[4].items.single()
+        val fifthPill = seasonOptionOf(seasons[4])
+        showCollection(show(*seasons.toTypedArray()), resume = SeriesResumePick(fifth, at = null, verb = ResumeVerb.CONTINUE))
+        compose.onNodeWithText("1. Opener 5").assertExists()
 
-        compose.onAllNodesWithText("Season 2").assertCountEquals(1)
-        compose.onNodeWithText("1. Late").assertIsFocused()
+        // Real type, so six pills run past the screen's edge as they do on the box.
+        val sixth = compose.onNodeWithText(seasonOptionOf(seasons[5])).getUnclippedBoundsInRoot()
+        val screen = compose.onRoot().getUnclippedBoundsInRoot()
+        assertTrue(sixth.right > screen.right, "expected the row to run past the screen, got Season 6 at $sixth")
+        val pill = compose.onNodeWithText(fifthPill).getUnclippedBoundsInRoot()
+        assertTrue(pill.left >= screen.left && pill.right <= screen.right, "expected Season 5's pill on screen, got $pill on $screen")
+
+        compose.onNodeWithText("Episodes").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Episodes").performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithText(fifthPill).assertIsFocused()
     }
 
     private fun showCollection(
@@ -189,6 +187,8 @@ class TvCollectionStateTest : TvScreenStateTest() {
         watch: WatchSnapshot = WatchSnapshot.Empty,
         onPlay: (String) -> Unit = {},
         restoreKey: String? = null,
+        heldIds: Set<String> = emptySet(),
+        resume: SeriesResumePick? = null,
     ) = show {
         TvCollection(
             collection = collection,
@@ -196,6 +196,8 @@ class TvCollectionStateTest : TvScreenStateTest() {
             watch = watch,
             onPlay = onPlay,
             restoreKey = restoreKey,
+            heldIds = heldIds,
+            resume = resume,
         )
     }
 
