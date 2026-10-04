@@ -3,7 +3,8 @@
 
 /// One variant per reason the web answers a refusal with — `invalid`,
 /// `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed` —
-/// so both surfaces can say exactly what went wrong.
+/// so both surfaces can say exactly what went wrong; and one the web never
+/// needs, `NotSynced`.
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum ProfileOutcome {
     Done,
@@ -20,6 +21,10 @@ pub enum ProfileOutcome {
     WrongPin,
     /// The rule says no.
     NotAllowed,
+    /// A first profile on a device that has not yet taken in a sync round:
+    /// it has not heard who the household already is. Core only — the web's
+    /// server finishes a round before it answers anyone.
+    NotSynced,
 }
 
 /// An answer, or the store could not be read or written.

@@ -40,7 +40,7 @@ async fn play(core: &Arc<Core>, profile: &str, at: f64) {
 async fn watching_finishing_and_starting_over_read_back_as_history() {
     let dir = tempfile::tempdir().unwrap();
     let core = core(dir.path());
-    let viewer = state_seed::household(&core, &["André"], &[]).await.remove(0);
+    let viewer = state_seed::household(&core, dir.path(), &["André"], &[]).await.remove(0);
 
     play(&core, &viewer.id, 0.0).await;
     play(&core, &viewer.id, 10.0).await;
@@ -96,7 +96,7 @@ async fn a_profile_with_nothing_watched_reads_as_thirty_empty_days() {
 async fn the_write_after_finishing_counts_nothing_however_long_the_gap() {
     let dir = tempfile::tempdir().unwrap();
     let core = core(dir.path());
-    let viewer = state_seed::household(&core, &["André"], &[]).await.remove(0);
+    let viewer = state_seed::household(&core, dir.path(), &["André"], &[]).await.remove(0);
 
     play(&core, &viewer.id, 100.0).await;
     core.clone()

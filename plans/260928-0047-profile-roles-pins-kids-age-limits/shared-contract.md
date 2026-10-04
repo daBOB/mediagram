@@ -101,6 +101,18 @@ Exceptions:
   install could never get a first profile. A device that bootstraps before
   its first sync and later learns of an older claim loses admin to it by the
   earliest-claim rule (§7) — no special case.
+- **`create-first` waits for a sync round — core only (amended 2026-10-05).**
+  After every check above says yes, the core answers `NotSynced` until this
+  device has imported one sync round (a local `state_meta` marker the import
+  sets in its own transaction; a channel that could not be listed or an
+  import that rolled back sets nothing). Why: sync merges viewers by name and
+  the newer PIN wins, so a first profile made blind under a household
+  member's name handed its PIN to that member on every device. A new
+  household's first round finds nobody and sets the marker, so it can still
+  begin. `Core::has_synced_once()` tells the picker whether to offer the
+  form ("Waiting for this household's profiles…" with Try again until then).
+  The web has no such outcome: its server finishes a round at start before it
+  answers anyone.
 
 ## 4. Wrong-PIN wait
 
@@ -111,9 +123,17 @@ action) adds one to X's count. X's 5th failure starts a 60 s wait during
 which every call that would compare X's PIN answers `wait` with the seconds
 left (rounded up), without comparing; other profiles' PINs are compared as
 usual. When X's wait ends, X's count is 0. A successful comparison of X's
-PIN resets X's count only. In memory only (web: one per server process;
-core: one per `Core`). The clock is injectable for tests. Pinned by
+PIN resets X's count only. The clock is injectable for tests. Pinned by
 `pin-wait.json`.
+
+**Where the count lives differs by surface (amended 2026-10-05).** Web: in
+memory, one per server process — it restarts rarely, and only at its admin's
+hand. Core: in the local `state.db` (`state_meta`, never exported, never
+synced), read and written around every comparison — on a device a child
+holds, swiping the app away is a restart, and an in-memory count turned
+~33 h of guessing into hours. A stored wait further off than `WAIT_MS` (the
+clock went back, e.g. a box booting before its time is set) is re-anchored
+to `now + WAIT_MS`, never longer.
 
 Why per profile: one count for the whole player was reset by any right
 PIN, so four guesses at the admin, then one's own known PIN, repeated,
@@ -270,10 +290,11 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
-pub enum ProfileOutcome { Done, Invalid, NameTaken, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed }
+pub enum ProfileOutcome { Done, Invalid, NameTaken, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed, NotSynced }
 
 // on Core, async like the rest of api/state.rs:
-create_first_admin(name, new_pin) -> ProfileOutcome     // create-first, §3
+create_first_admin(name, new_pin) -> ProfileOutcome     // create-first, §3; NotSynced before a round
+has_synced_once() -> bool                                // a sync round imported here (2026-10-05)
 create_grown_up(actor_id, pin, name, new_pin) -> ProfileOutcome
 create_kid(actor_id, pin, name, kids_age: u8) -> ProfileOutcome
 delete_profile(actor_id, pin, id) -> ProfileOutcome      // replaces delete_profile(id) -> bool

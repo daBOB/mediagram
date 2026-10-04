@@ -30,7 +30,7 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
     runtime.block_on(async {
         let old = core(&path);
         if opened {
-            state_seed::household(&old, &["Before reset"], &[]).await;
+            state_seed::household(&old, &path, &["Before reset"], &[]).await;
         }
         let (entered, running) = mpsc::channel();
         let (release, blocked) = mpsc::channel();
@@ -86,7 +86,7 @@ fn retired_open_core_cannot_restore_deleted_storage_from_a_queued_write() {
 async fn replacing_a_retired_core_preserves_profiles_without_reviving_its_owner() {
     let dir = tempfile::tempdir().unwrap();
     let old = core(dir.path());
-    let retained = state_seed::household(&old, &["Retained"], &[]).await.remove(0);
+    let retained = state_seed::household(&old, dir.path(), &["Retained"], &[]).await.remove(0);
     old.retire_local_state();
 
     let replacement = core(dir.path());

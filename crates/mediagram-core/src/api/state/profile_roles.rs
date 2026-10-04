@@ -20,7 +20,8 @@ impl Core {
     /// The household's first profile, while this device knows no grown-up
     /// (kids alone do not count): a grown-up with `new_pin`, the admin from
     /// now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
-    /// a household with grown-ups but no admin.
+    /// a household with grown-ups but no admin — and `NotSynced` until this
+    /// device has taken in a sync round (`has_synced_once`).
     pub async fn create_first_admin(self: Arc<Self>, name: String, new_pin: String) -> ProfileOutcome {
         self.blocking(move |core| core.state_db.manage(|m| m.create_first(&name, &new_pin)))
             .await

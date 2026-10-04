@@ -3,14 +3,13 @@
 //! calls are made from. Split out of `manage.rs` to keep it under the line
 //! limit.
 
-use std::sync::PoisonError;
-
 use super::ProfileManager;
 use crate::state::StateDb;
 use crate::state::profiles::ProfileOutcome::{
     self, Done, Invalid, NameTaken, NoPin, NotAllowed, NotFound, Wait, WrongPin,
 };
 use crate::state::profiles::Answer;
+use crate::state::profiles::pin_wait::PinWait;
 use crate::state::profiles::role_rows::{self, NewProfile, Stored};
 use crate::state::profiles::rules::{self, Action};
 use crate::state::profiles::{clean_name, now_ms, pin};
@@ -62,7 +61,7 @@ impl ProfileManager<'_> {
             return Ok(Some(NotAllowed));
         }
         if !unproven {
-            if let Some(refused) = self.prove(actor, pin) {
+            if let Some(refused) = self.prove(actor, pin)? {
                 return Ok(Some(refused));
             }
         }
@@ -73,29 +72,33 @@ impl ProfileManager<'_> {
 
     /// A grown-up's PIN: none yet; or — only now that one is about to be
     /// compared — that profile's wait, then the comparison and the count it
-    /// keeps. A PIN that is not four digits is compared like any other, and
-    /// is wrong.
-    pub(super) fn prove(&mut self, row: &Stored, pin: &str) -> Option<ProfileOutcome> {
+    /// keeps, stored before the answer leaves. A PIN that is not four digits
+    /// is compared like any other, and is wrong. A count that cannot be
+    /// stored fails the call, so a guess never goes uncounted and answered.
+    pub(super) fn prove(&self, row: &Stored, pin: &str) -> Check {
         let (Some(hash), Some(salt)) = (&row.pin_hash, &row.pin_salt) else {
-            return Some(NoPin);
+            return Ok(Some(NoPin));
         };
-        let seconds = self.wait.seconds_left(&row.id, self.now);
-        if seconds > 0 {
-            return Some(Wait { seconds });
-        }
-        if !pin::valid(pin) || !pin::matches(hash, salt, pin) {
-            self.wait.failed(&row.id, self.now);
-            return Some(WrongPin);
-        }
-        self.wait.succeeded(&row.id);
-        None
+        let mut wait = PinWait::load(self.conn)?;
+        let seconds = wait.seconds_left(&row.id, self.now);
+        let refused = if seconds > 0 {
+            Some(Wait { seconds })
+        } else if !pin::valid(pin) || !pin::matches(hash, salt, pin) {
+            wait.failed(&row.id, self.now);
+            Some(WrongPin)
+        } else {
+            wait.succeeded(&row.id);
+            None
+        };
+        wait.save(self.conn)?;
+        Ok(refused)
     }
 }
 
 impl StateDb {
-    /// Runs one management call against the store and this owner's
-    /// wrong-PIN counts. A store that cannot be read or written is logged by
-    /// `with` and answered `Invalid` — nothing on this surface throws.
+    /// Runs one management call against the store, the wrong-PIN counts
+    /// with it. A store that cannot be read or written is logged by `with`
+    /// and answered `Invalid` — nothing on this surface throws.
     pub fn manage(&self, call: impl FnOnce(&mut ProfileManager<'_>) -> Answer) -> ProfileOutcome {
         self.manage_at(now_ms(), call)
     }
@@ -106,13 +109,7 @@ impl StateDb {
         now: i64,
         call: impl FnOnce(&mut ProfileManager<'_>) -> Answer,
     ) -> ProfileOutcome {
-        self.with(|conn| {
-            // Taken inside the connection's lock, as `ticks` is, so the two
-            // are always taken in the same order.
-            let mut wait = self.pin_wait.lock().unwrap_or_else(PoisonError::into_inner);
-            let wait = &mut *wait;
-            call(&mut ProfileManager { conn, wait, now })
-        })
-        .unwrap_or(Invalid)
+        self.with(|conn| call(&mut ProfileManager { conn, now }))
+            .unwrap_or(Invalid)
     }
 }

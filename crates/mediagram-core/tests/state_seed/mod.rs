@@ -1,18 +1,23 @@
 //! A household made the way the surface makes one, for the integration tests
 //! that need profiles to exist: the first grown-up runs it, every later one
 //! is added by that one, all with the PIN [`PIN`]; every kid belongs to the
-//! first grown-up and is limited to FSK 12.
+//! first grown-up and is limited to FSK 12. A first profile waits for a sync
+//! round, so the player is first given one that found nobody.
 
+use std::path::Path;
 use std::sync::Arc;
 
 use mediagram_core::api::Core;
+use mediagram_core::state::exchange::import_merged;
+use mediagram_core::state::merge::MergedState;
 use mediagram_core::state::profiles::{Profile, ProfileOutcome};
 
 pub const PIN: &str = "1234";
 
 /// Grown-ups, then kids, each answered as `profiles` lists it, in the order
-/// given.
-pub async fn household(player: &Arc<Core>, grown_ups: &[&str], kids: &[&str]) -> Vec<Profile> {
+/// given. `dir` is the player's data directory.
+pub async fn household(player: &Arc<Core>, dir: &Path, grown_ups: &[&str], kids: &[&str]) -> Vec<Profile> {
+    first_round_found_nobody(player, dir).await;
     let mut made: Vec<Profile> = Vec::new();
     for name in grown_ups.iter().chain(kids) {
         let (name, kid) = (name.to_string(), kids.contains(name));
@@ -32,4 +37,14 @@ pub async fn household(player: &Arc<Core>, grown_ups: &[&str], kids: &[&str]) ->
         made.push(listed.into_iter().find(|p| p.name == name).unwrap());
     }
     made
+}
+
+/// The player in `dir` has taken in one sync round, which found nobody — a
+/// new household's first. Through the import a real round commits, on a
+/// second connection to the player's own file, which `profiles` opens and
+/// migrates first.
+pub async fn first_round_found_nobody(player: &Arc<Core>, dir: &Path) {
+    player.clone().profiles().await;
+    let conn = rusqlite::Connection::open(dir.join("state.db")).unwrap();
+    import_merged(&conn, &MergedState::default()).unwrap();
 }

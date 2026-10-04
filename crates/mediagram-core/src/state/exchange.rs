@@ -120,6 +120,9 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     // After the loop, not in it: a kid's parent may be a viewer this same
     // import has only just made.
     changed += roles::import(conn, &merged.profiles)?;
+    // Not a row taken in, so not counted: it says this device has now heard
+    // the household's names, which a first profile waits for.
+    super::sync::mark_round_imported(conn)?;
     transaction.commit()?;
     Ok(changed)
 }

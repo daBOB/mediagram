@@ -70,7 +70,7 @@ async fn a_kids_profile_earns_the_film_but_never_hours_streaks_or_binges() {
     let dir = tempfile::tempdir().unwrap();
     seed_catalog(dir.path());
     let core = core(dir.path());
-    let made = state_seed::household(&core, &["Grown"], &["Kid"]).await;
+    let made = state_seed::household(&core, dir.path(), &["Grown"], &["Kid"]).await;
     let (grown, kid) = (made[0].clone(), made[1].clone());
     for profile in [&kid, &grown] {
         core.clone()
@@ -118,7 +118,7 @@ async fn a_profile_this_device_does_not_hold_has_earned_nothing() {
 async fn with_no_catalog_installed_the_hours_still_count() {
     let dir = tempfile::tempdir().unwrap();
     let core = core(dir.path());
-    let grown = state_seed::household(&core, &["Grown"], &[]).await.remove(0);
+    let grown = state_seed::household(&core, dir.path(), &["Grown"], &[]).await.remove(0);
     seed_days(dir.path(), &grown.id);
     let answer = core
         .clone()
@@ -138,7 +138,7 @@ async fn a_corrupt_synced_finish_stamp_cannot_overflow_the_achievement_dates() {
     let dir = tempfile::tempdir().unwrap();
     seed_catalog(dir.path());
     let core = core(dir.path());
-    let grown = state_seed::household(&core, &["Grown"], &[]).await.remove(0);
+    let grown = state_seed::household(&core, dir.path(), &["Grown"], &[]).await.remove(0);
     Connection::open(dir.path().join("catalog").join("current").join("library.db"))
         .unwrap()
         .execute(
