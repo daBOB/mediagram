@@ -5396,6 +5396,23 @@ data class TitleInfo (
     var `network`: kotlin.String?
     ,
     var `status`: kotlin.String?
+    ,
+    /**
+     * When a series first and last aired, as the provider dates them
+     * (`YYYY-MM-DD`). A show still running has no last date. Absent for a
+     * film.
+     */
+    var `firstAir`: kotlin.String? = null
+    ,
+    var `lastAir`: kotlin.String? = null
+    ,
+    /**
+     * What the provider says exists, so a page can say "8 of 16 episodes"
+     * against what the library holds rather than only what it holds.
+     */
+    var `totalSeasons`: kotlin.UInt? = null
+    ,
+    var `totalEpisodes`: kotlin.UInt? = null
 
 ){
 
@@ -5418,6 +5435,10 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
             FfiConverterOptionalDouble.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalUInt.read(buf),
         )
     }
 
@@ -5427,7 +5448,11 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
             FfiConverterOptionalString.allocationSize(value.`genres`) +
             FfiConverterOptionalDouble.allocationSize(value.`rating`) +
             FfiConverterOptionalString.allocationSize(value.`network`) +
-            FfiConverterOptionalString.allocationSize(value.`status`)
+            FfiConverterOptionalString.allocationSize(value.`status`) +
+            FfiConverterOptionalString.allocationSize(value.`firstAir`) +
+            FfiConverterOptionalString.allocationSize(value.`lastAir`) +
+            FfiConverterOptionalUInt.allocationSize(value.`totalSeasons`) +
+            FfiConverterOptionalUInt.allocationSize(value.`totalEpisodes`)
     )
 
     override fun write(value: TitleInfo, buf: ByteBuffer) {
@@ -5437,6 +5462,10 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
             FfiConverterOptionalDouble.write(value.`rating`, buf)
             FfiConverterOptionalString.write(value.`network`, buf)
             FfiConverterOptionalString.write(value.`status`, buf)
+            FfiConverterOptionalString.write(value.`firstAir`, buf)
+            FfiConverterOptionalString.write(value.`lastAir`, buf)
+            FfiConverterOptionalUInt.write(value.`totalSeasons`, buf)
+            FfiConverterOptionalUInt.write(value.`totalEpisodes`, buf)
     }
 }
 

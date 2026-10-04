@@ -20,8 +20,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import catalog.initialsOf
 import coil3.compose.AsyncImage
@@ -47,7 +54,7 @@ internal fun CastPanel(
     shouldRequestPortrait: (Long) -> Boolean,
 ) {
     Column {
-        crewLine(credits.crew)?.let {
+        crewLine(credits.crew, onOpenPerson)?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
@@ -65,12 +72,28 @@ internal fun CastPanel(
 /**
  * "Directed by A, B" or "Created by A, B" — a show's own crew calls itself
  * a creator rather than a director, and only the first credited name says
- * which this is, exactly as `cast.js`'s own crew line reads it.
+ * which this is, exactly as `cast.js`'s own crew line reads it. Each name
+ * opens that person's page, as the cast cards beneath it do: a director is
+ * as likely to be what a viewer came looking for as an actor.
  */
-private fun crewLine(crew: List<Credit>): String? {
+private fun crewLine(
+    crew: List<Credit>,
+    onOpenPerson: (Long) -> Unit,
+): AnnotatedString? {
     if (crew.isEmpty()) return null
     val verb = if (crew.first().role == "Creator") "Created by" else "Directed by"
-    return "$verb " + crew.joinToString(", ") { it.name }
+    // The line's own colour, underlined — `.cast-crew a` keeps the text's
+    // ink and marks the link with its underline alone.
+    val link = TextLinkStyles(SpanStyle(textDecoration = TextDecoration.Underline))
+    return buildAnnotatedString {
+        append("$verb ")
+        crew.forEachIndexed { at, person ->
+            if (at > 0) append(", ")
+            withLink(LinkAnnotation.Clickable(tag = "person-${person.personId}", styles = link) { onOpenPerson(person.personId) }) {
+                append(person.name)
+            }
+        }
+    }
 }
 
 @Composable

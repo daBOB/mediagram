@@ -97,34 +97,34 @@ fun TitleDetailScreen(
         TitleSpread(
             backdropPath = set.backdropPath ?: set.posterPath,
             title = set.title,
-            facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
+            facts = factsLine(set.year, set.durationSecs, set.ageLabel(), set.genres),
             overview = info?.overview,
             tagline = info?.tagline,
-        )
-        TitlePills(
-            playLabel = resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play",
-            onPlay = onPlay,
-            watchlisted = set.setId in watch.watchlist,
-            onToggleWatchlist = onToggleWatchlist,
-            editorsChoicePinned = editorsChoice == set.setId,
-            onToggleEditorsChoice = onToggleEditorsChoice,
-            modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small),
-            preloadPill =
-                preload?.let { p ->
-                    {
-                        PreloadPill(
-                            state = p.state,
-                            onClick = p.onToggle,
-                            queuedAheadLabel = p.queuedAheadLabel,
-                            needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
-                        )
-                    }
-                },
-            preloadRemoveItem =
-                preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
-                    { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }
-                },
-        )
+        ) {
+            TitlePills(
+                playLabel = resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play",
+                onPlay = onPlay,
+                watchlisted = set.setId in watch.watchlist,
+                onToggleWatchlist = onToggleWatchlist,
+                editorsChoicePinned = editorsChoice == set.setId,
+                onToggleEditorsChoice = onToggleEditorsChoice,
+                preloadPill =
+                    preload?.let { p ->
+                        {
+                            PreloadPill(
+                                state = p.state,
+                                onClick = p.onToggle,
+                                queuedAheadLabel = p.queuedAheadLabel,
+                                needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
+                            )
+                        }
+                    },
+                preloadRemoveItem =
+                    preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
+                        { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }
+                    },
+            )
+        }
         preload?.takeIf { showsPreloadBar(it.state) || it.state is FilmPreloadState.NeedsSpace || it.serverLine != null }?.let { p ->
             Column(
                 modifier = Modifier.padding(horizontal = Spacing.large).padding(bottom = Spacing.small),
@@ -202,12 +202,16 @@ private fun filmDetailsRows(set: MediaSet): List<Pair<String, (@Composable () ->
         "Quality" to textFact(listOfNotNull(set.quality, hdrLabel(set.hdr)).joinToString(" · ").takeIf(String::isNotEmpty)),
         "Video" to textFact(set.vcodec?.takeIf(String::isNotEmpty)),
         "Audio" to textFact(set.acodec?.takeIf(String::isNotEmpty)),
-        "Subtitles" to textFact(set.slang.takeIf { it.isNotEmpty() }?.joinToString(", ", transform = ::languageName)),
+        "Audio languages" to textFact(languagesOf(set.alang)),
+        "Subtitles" to textFact(languagesOf(set.slang)),
         "Container" to textFact(set.container.takeIf(String::isNotEmpty)),
         "Size" to textFact(set.totalBytes.takeIf { it > 0 }?.let(::humanSize)),
         "Bitrate" to textFact(bitrateLabel(set.totalBytes, set.durationSecs)),
         "Parts" to textFact(set.partCount.takeIf { it > 1 }?.toString()),
     )
+
+/** `English, German` from the file's own track codes, or no row when it recorded none. */
+private fun languagesOf(codes: List<String>): String? = codes.takeIf { it.isNotEmpty() }?.joinToString(", ", transform = ::languageName)
 
 /**
  * The block that describes something: its artwork beside its facts, then

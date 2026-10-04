@@ -37,6 +37,9 @@ fun humanDuration(seconds: Int?): String? {
  * The line beside a poster: `2004 · 1h 53m · FSK 12`, or whichever parts of
  * it are known, or nothing when none is. The age rating sits after the
  * runtime, where the web's film page puts it; a shelf card leaves it off.
+ * A film's own page ends it with the first three of its [genres], as
+ * `film-page.js` does — enough to say what kind of film it is without the
+ * line wrapping into a list.
  *
  * A year of zero is what an index writes when it has no year rather than a
  * title from the year zero, so it is not printed.
@@ -45,11 +48,13 @@ fun factsLine(
     year: Int?,
     durationSecs: Int?,
     ageLabel: String? = null,
+    genres: List<String> = emptyList(),
 ): String? =
     listOfNotNull(
         year?.takeIf { it > 0 }?.toString(),
         humanDuration(durationSecs),
         ageLabel,
+        genres.take(3).joinToString(", ").takeIf(String::isNotEmpty),
     ).joinToString(" · ").takeIf(String::isNotEmpty)
 
 /**

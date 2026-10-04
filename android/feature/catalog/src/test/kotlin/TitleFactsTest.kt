@@ -58,6 +58,16 @@ class TitleFactsTest {
         assertEquals("2004 · 1h 53m", factsLine(2004, 6_780))
     }
 
+    /** A film's page names what kind of film it is, as `film-page.js` does — three genres at most. */
+    @Test
+    fun aFilmsFirstThreeGenresCloseTheLine() {
+        assertEquals(
+            "2004 · 1h 53m · FSK 12 · Drama, Crime, Thriller",
+            factsLine(2004, 6_780, "FSK 12", listOf("Drama", "Crime", "Thriller", "Mystery")),
+        )
+        assertEquals("Drama", factsLine(null, null, genres = listOf("Drama")))
+    }
+
     /** Half a line is worth printing; the separator alone is not. */
     @Test
     fun eitherHalfStandsOnItsOwn() {

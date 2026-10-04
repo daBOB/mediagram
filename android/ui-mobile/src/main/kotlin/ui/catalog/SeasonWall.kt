@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import catalog.Division
 import catalog.Entry
 import catalog.rowsOf
+import catalog.spelledCountOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -85,7 +86,7 @@ private fun SeasonPicker(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "${shown.title} · ${shown.items.size} ${if (shown.items.size == 1) "episode" else "episodes"}",
+                text = "${shown.title} · ${spelledCountOf(shown.items.size, "episode")}",
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(text = "▾", style = MaterialTheme.typography.titleMedium)
@@ -93,7 +94,7 @@ private fun SeasonPicker(
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (division in divisions) {
                 DropdownMenuItem(
-                    text = { Text("${division.title} · ${division.items.size} ${if (division.items.size == 1) "episode" else "episodes"}") },
+                    text = { Text("${division.title} · ${spelledCountOf(division.items.size, "episode")}") },
                     onClick = {
                         expanded = false
                         onSelect(division.title)

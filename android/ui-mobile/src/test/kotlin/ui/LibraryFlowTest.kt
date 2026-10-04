@@ -79,7 +79,7 @@ class LibraryFlowTest {
     private fun season() {
         collection()
         compose.onNode(hasText("Season 1", substring = true) and hasClickAction()).performClick()
-        compose.onNodeWithText("Season 2 · 1 episode").performClick()
+        compose.onNodeWithText("Season 2 · one episode").performClick()
         compose.onNode(hasText("Second episode", substring = true) and hasClickAction()).assertIsDisplayed()
     }
 

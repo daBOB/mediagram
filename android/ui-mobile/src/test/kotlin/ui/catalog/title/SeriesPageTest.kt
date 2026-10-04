@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performFirstLinkClick
 import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
@@ -30,6 +31,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.catalog.CollectionScreen
+import uniffi.mediagram_core.TitleInfo
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -95,17 +98,62 @@ class SeriesPageTest {
         watch: WatchSnapshot = WatchSnapshot.Empty,
         titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
         season: String? = null,
+        info: TitleInfo? = null,
+        onOpenPerson: (Long) -> Unit = {},
     ) {
         var chosenSeason by mutableStateOf(season)
         show {
             CollectionScreen(
-                collection = collection, info = null, watch = watch, heldIds = emptySet(),
+                collection = collection, info = info, watch = watch, heldIds = emptySet(),
                 onOpenTitle = {}, onOpenSeason = {}, onOpenGenre = {},
+                onOpenPerson = onOpenPerson,
                 titleCredits = titleCredits,
                 season = chosenSeason,
                 onSelectSeason = { chosenSeason = it },
             )
         }
+    }
+
+    /** What the provider says about the whole show: when it ran and how much of it exists. */
+    private val aired =
+        TitleInfo(
+            overview = null, tagline = null, genres = null, rating = null, network = null, status = null,
+            firstAir = "2011-04-17", lastAir = "2019-05-19", totalSeasons = 8u, totalEpisodes = 73u,
+        )
+
+    /** `series-page.js` spells the seasons — "two seasons", not "2 seasons". */
+    @Test fun theFactsLineSpellsItsSeasons() {
+        renderCollection(twoSeasonShow())
+        compose.onNodeWithText("2020 · two seasons").assertIsDisplayed()
+    }
+
+    /** The provider's air dates say when the show ran, not only when the copies held are from. */
+    @Test fun theFactsLineAndAboutFollowTheProvidersAirDatesAndTotals() {
+        renderCollection(twoSeasonShow(), info = aired)
+        compose.onNodeWithText("2011–2019 · two seasons").assertIsDisplayed()
+        compose.onNodeWithText("About").performClick()
+        compose.onNodeWithText("2011–2019").assertIsDisplayed()
+        compose.onNodeWithText("2 of 73 episodes · 2 of 8 seasons", substring = true).assertIsDisplayed()
+    }
+
+    @Test fun aboutNamesTheAudioLanguagesTheEpisodesCarry() {
+        val show = oneSeasonShow().let { it.copy(divisions = listOf(Division("Season 1", 1, listOf(ep(1, 1).copy(alang = listOf("ja", "en"))), emptyList()))) }
+        renderCollection(show)
+        compose.onNodeWithText("About").performClick()
+        compose.onNodeWithText("Audio").assertIsDisplayed()
+        compose.onNodeWithText("Japanese, English").assertIsDisplayed()
+    }
+
+    @Test fun aCreatorsNameOpensTheirPage() {
+        val credits = TitleCredits(
+            cast = listOf(Credit(2, "Bryan Cranston", "Walter White", null)),
+            crew = listOf(Credit(1, "Vince Gilligan", "Creator", null)),
+        )
+        var opened: Long? = null
+        renderCollection(oneSeasonShow(), titleCredits = { credits }, onOpenPerson = { opened = it })
+        compose.onNodeWithText("Cast").performClick()
+        compose.onNodeWithText("Created by Vince Gilligan").performFirstLinkClick()
+        assertEquals(1L, opened)
     }
 
     @Test fun aFreshShowOffersToPlayItsFirstEpisode() {
@@ -137,8 +185,8 @@ class SeriesPageTest {
     @Test fun theSeasonPickerSwitchesWhichEpisodesShow() {
         renderCollection(twoSeasonShow())
         compose.onNodeWithText("Ep 1.1", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Season 1 · 1 episode").performClick()
-        compose.onNodeWithText("Season 2 · 1 episode").performClick()
+        compose.onNodeWithText("Season 1 · one episode").performClick()
+        compose.onNodeWithText("Season 2 · one episode").performClick()
         compose.onNodeWithText("Ep 2.1", substring = true).assertIsDisplayed()
     }
 

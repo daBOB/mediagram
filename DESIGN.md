@@ -641,13 +641,11 @@ art: a film's title page, a department's cover story, Movies and Shows.
 - **Blurred:** the same artwork behind a 28dp blur, scaled 1.12× and
   saturated 1.25×, so the colour and light carry without the picture
   competing with the words over it.
-- **Artwork:** "the picture behind the words" — today this draws exactly as
-  Default does. The web's own version of this mode only separates from
-  Default in a wide two-column layout (`departments.css`'s ≥900px
-  breakpoint); Android has not built that layout yet (see What this system
-  does not yet cover), so a phone or a tablet showing the two identically is
-  web narrow parity, not a bug — the web's own narrow width draws them the
-  same way.
+- **Artwork:** "the picture behind the words" — on a wide window (a tablet
+  in landscape) a department hero's and a title spread's art runs the full
+  width behind the words instead of starting partway across, as the web's
+  does above 900px. A phone, or a tablet in portrait, draws it exactly as
+  Default: the web's own narrow width draws the two the same way.
 - **Solid:** no artwork at all — the hero art, its gradient and the
   department's own pull-quote are skipped entirely; a film's title page and
   a department's own cover story fall back to the same no-art layout each

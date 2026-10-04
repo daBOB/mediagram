@@ -24,6 +24,7 @@ import catalog.pictureLine
 import catalog.provenance
 import catalog.rowsOf
 import catalog.scaleLine
+import catalog.seriesFactsLine
 import catalog.seriesResumeFor
 import catalog.showsOf
 import catalog.similarShows
@@ -183,9 +184,11 @@ private fun SeriesPage(
     // a few hundred rows: those join this list directly ([seriesEpisodes])
     // instead of nesting a second lazily-scrolled list inside this one,
     // which either crashes on unbounded height or clips to whichever bound
-    // wins. The one visible cost is the spread's own backdrop, inset by the
-    // same margin as everything else here rather than filling the edge —
-    // a deliberate, minor difference from the film page's edge-to-edge hero.
+    // wins. The one visible cost, on a phone, is the spread's own backdrop,
+    // inset by the same margin as everything else here rather than filling
+    // the edge — a deliberate, minor difference from the film page's
+    // edge-to-edge hero. A wide window's spread reaches back over the margin
+    // ([TitleSpread]'s `bleed`), since there the art is the page's opener.
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = Spacing.large, vertical = Spacing.medium),
@@ -195,21 +198,21 @@ private fun SeriesPage(
             TitleSpread(
                 backdropPath = firstEpisode?.backdropPath ?: firstEpisode?.posterPath ?: collection.posterPath,
                 title = collection.name,
-                facts = seriesFactsLine(facts, firstEpisode?.genres.orEmpty()),
+                facts = seriesFactsLine(facts, info, firstEpisode?.genres.orEmpty()),
                 overview = info?.overview,
                 tagline = info?.tagline,
-            )
-        }
-        if (firstEpisode != null) {
-            item(key = "pills") {
-                TitlePills(
-                    playLabel = resume?.let { "${verbLabel(it.verb)} ${episodeShort(it.set)}" },
-                    onPlay = { resume?.let { onPlay(it.set.setId) } },
-                    watchlisted = firstEpisode.setId in watch.watchlist,
-                    onToggleWatchlist = onToggleWatchlist,
-                    editorsChoicePinned = editorsChoice == firstEpisode.setId,
-                    onToggleEditorsChoice = onToggleEditorsChoice,
-                )
+                bleed = Spacing.large,
+            ) {
+                if (firstEpisode != null) {
+                    TitlePills(
+                        playLabel = resume?.let { "${verbLabel(it.verb)} ${episodeShort(it.set)}" },
+                        onPlay = { resume?.let { onPlay(it.set.setId) } },
+                        watchlisted = firstEpisode.setId in watch.watchlist,
+                        onToggleWatchlist = onToggleWatchlist,
+                        editorsChoicePinned = editorsChoice == firstEpisode.setId,
+                        onToggleEditorsChoice = onToggleEditorsChoice,
+                    )
+                }
             }
         }
         item(key = "tab-row") { TitleTabRow(labels, shownTab, onSelectTab, modifier = Modifier.padding(top = Spacing.small)) }
@@ -231,15 +234,6 @@ private fun SeriesPage(
     }
 }
 
-/** `1987–1994 · 2 seasons · Sci-Fi, Drama` — a Compose port of `series-page.js`'s own `factsLine`. */
-private fun seriesFactsLine(
-    facts: SeriesFacts,
-    genres: List<String>,
-): String? =
-    listOfNotNull(yearLine(facts), "${facts.seasons} ${if (facts.seasons == 1) "season" else "seasons"}", genres.take(3).joinToString(", ").takeIf(String::isNotEmpty))
-        .joinToString(" · ")
-        .takeIf(String::isNotEmpty)
-
 private fun seriesAboutRows(
     facts: SeriesFacts,
     info: TitleInfo?,
@@ -247,8 +241,8 @@ private fun seriesAboutRows(
     onOpenGenre: (String) -> Unit,
 ): List<Pair<String, (@Composable () -> Unit)?>> =
     buildList {
-        add("Aired" to textFact(yearLine(facts)))
-        add("Held" to textFact(scaleLine(facts)))
+        add("Aired" to textFact(yearLine(facts, info)))
+        add("Held" to textFact(scaleLine(facts, info)))
         add("From" to textFact(provenance(info)))
         add("Genres" to genreFact(genres, onOpenGenre))
         add("Picture" to textFact(pictureLine(facts)))

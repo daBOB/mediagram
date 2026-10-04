@@ -118,6 +118,33 @@ async fn a_series_key_finds_the_row_that_belongs_to_the_whole_show() {
     );
 }
 
+/// A series' air dates and the provider's totals reach the boundary, so a
+/// page can say "8 of 16 episodes" and when the show ran rather than only
+/// what the library holds — the same columns the web player's `showMeta`
+/// reads from the same row.
+#[tokio::test]
+async fn a_series_reports_when_it_aired_and_how_much_of_it_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    index_db(dir.path())
+        .execute(
+            "INSERT INTO shows(source, kind, id, lang, first_air, last_air, total_seasons, total_episodes)
+             VALUES ('tmdb', 'tv', 1399, 'en-US', '2011-04-17', '2019-05-19', 8, 73)",
+            [],
+        )
+        .unwrap();
+    let core = core_at(dir.path());
+
+    let info = core
+        .clone()
+        .title_info("tmdb-tv-1399".into())
+        .await
+        .expect("a recorded show");
+    assert_eq!(info.first_air.as_deref(), Some("2011-04-17"));
+    assert_eq!(info.last_air.as_deref(), Some("2019-05-19"));
+    assert_eq!(info.total_seasons, Some(8));
+    assert_eq!(info.total_episodes, Some(73));
+}
+
 /// A title the uploader never resolved has no row, and that is ordinary
 /// rather than an error: a course has no provider entry at all.
 #[tokio::test]

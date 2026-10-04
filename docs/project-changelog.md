@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.101.0 — Android title pages read like the web's
+
+**Added / changed** (Android phone and tablet)
+
+- A tablet in landscape draws a title page the way the web does above 900 px: art
+  full-bleed from 28% across, the words and buttons bottom-left, the tagline quote
+  bottom-right. Phones keep the stacked layout.
+- Film page: the facts line ends with the first three genres, and Details has an
+  "Audio languages" row. Series page: About has an "Audio" row, the facts line spells
+  seasons ("two seasons"), and the season picker reads "Season 1 · one episode".
+- Series pages show the provider's air dates, and "8 of 16 episodes" when the library
+  holds fewer than the provider lists. The core's title info now carries `first_air`,
+  `last_air`, `total_seasons` and `total_episodes`, read from the same `shows` row the
+  web reads, so both surfaces print the same thing.
+- "Directed by" and "Created by" names open that person's page, as on the web.
+
 ## 0.100.1 — no synced row can be stamped into the far future
 
 **Fixed**

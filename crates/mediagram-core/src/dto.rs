@@ -20,6 +20,21 @@ pub struct TitleInfo {
     pub rating: Option<f64>,
     pub network: Option<String>,
     pub status: Option<String>,
+    // The fields below are defaulted in the generated Kotlin, so a caller
+    // that only builds a description (a test, a fake core) keeps compiling.
+    /// When a series first and last aired, as the provider dates them
+    /// (`YYYY-MM-DD`). A show still running has no last date. Absent for a
+    /// film.
+    #[uniffi(default = None)]
+    pub first_air: Option<String>,
+    #[uniffi(default = None)]
+    pub last_air: Option<String>,
+    /// What the provider says exists, so a page can say "8 of 16 episodes"
+    /// against what the library holds rather than only what it holds.
+    #[uniffi(default = None)]
+    pub total_seasons: Option<u32>,
+    #[uniffi(default = None)]
+    pub total_episodes: Option<u32>,
 }
 
 impl From<TitleDetailsRow> for TitleInfo {
@@ -31,6 +46,10 @@ impl From<TitleDetailsRow> for TitleInfo {
             rating: record.rating,
             network: record.network,
             status: record.status,
+            first_air: record.first_air,
+            last_air: record.last_air,
+            total_seasons: record.total_seasons,
+            total_episodes: record.total_episodes,
         }
     }
 }
