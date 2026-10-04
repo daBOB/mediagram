@@ -68,9 +68,9 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 
 | # | Plan | Status |
 |---|------|--------|
-| B1 | `260926-1330` — all groups merged (A–G), check.sh green, final review + TV box walk done 2026-10-04; H (their findings) building; box build 0.106.1+audio fix installed by adb (not published) | in progress |
+| B1 | `260926-1330` — all groups A–H merged (H 0.108.1); check.sh green; final review + TV box walk done; left: box re-walk of H fixes with the next build (item 13 focus-after-launch to confirm) | in progress |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01 0.105.0, 04 0.107.0, 02+03 0.108.0 merged (live; admin unclaimed — user asked to claim); 05 (core rules, matching name-taken + per-profile wait) building; 06/07 Android after 05 | in progress |
+| B3 | `260928-0047` — 01, 02+03 (web, live), 04 merged; 05 built (core rules/PIN/API; merges together with 06); 06 (Android data) building; 07 (screens) after; 08 verify + publish | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.
