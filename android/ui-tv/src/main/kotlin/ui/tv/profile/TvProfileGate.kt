@@ -14,6 +14,7 @@ import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
 import ui.profile.ForgetManageWhenAway
+import ui.profile.manageActions
 
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
@@ -69,7 +70,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val managePrompt = managePin
     when {
         inManage && managePrompt != null -> TvPinPrompt(managePrompt, onPin = manage::enterPin, onCancel = manage::cancelPin)
-        inManage -> TvManageProfiles(managing, remember(manage) { manage.tvActions() })
+        inManage -> TvManageProfiles(managing, remember(manage) { manage.manageActions() })
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         else ->
             TvProfilePicker(

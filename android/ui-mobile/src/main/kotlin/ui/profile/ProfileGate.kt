@@ -71,18 +71,7 @@ private fun ManageRoute(
     state: ManageUiState,
 ) {
     val pin by viewModel.pin.collectAsStateWithLifecycle()
-    val actions =
-        remember(viewModel) {
-            ManageActions(
-                viewModel::actAs,
-                viewModel::addKid,
-                viewModel::setKidsAge,
-                viewModel::remove,
-                viewModel::addGrownUp,
-                viewModel::changePin,
-                viewModel::close,
-            )
-        }
+    val actions = remember(viewModel) { viewModel.manageActions() }
     BackHandler(onBack = viewModel::close)
     ManageProfilesScreen(state, actions)
     pin?.let { PinDialog(it, onPin = viewModel::enterPin, onDismiss = viewModel::cancelPin) }
