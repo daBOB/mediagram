@@ -2,6 +2,7 @@ package catalog
 
 import model.FranchiseInfo
 import model.Kind
+import model.ListOfSets
 import model.MediaSet
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,5 +61,18 @@ class FranchisesTest {
     @Test
     fun aFranchisePageAnswersNullBelowTwoHeldFilms() {
         assertNull(franchisePageOf(1, listOf(film("nemesis", 2002, 1)), emptyList()))
+    }
+
+    @Test
+    fun aListIsPicturedByItsFirstPicturedTitleBackdropBeforePoster() {
+        val byId = listOf(
+            film("bare", 2000, null),
+            film("poster-only", 2001, null).copy(posterPath = "p-poster"),
+            film("both", 2002, null, backdropPath = "b-bg").copy(posterPath = "b-poster"),
+        ).associateBy(MediaSet::setId)
+
+        assertEquals("p-poster", listArtOf(ListOfSets("l", "Mine", listOf("gone", "bare", "poster-only", "both")), byId))
+        assertEquals("b-bg", listArtOf(ListOfSets("l", "Mine", listOf("both", "poster-only")), byId))
+        assertNull(listArtOf(ListOfSets("l", "Mine", listOf("gone", "bare")), byId))
     }
 }

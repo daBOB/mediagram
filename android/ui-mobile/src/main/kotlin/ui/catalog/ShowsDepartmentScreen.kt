@@ -1,9 +1,11 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -25,6 +27,7 @@ import catalog.resumeCardsOf
 import catalog.showsLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
+import ui.catalog.home.CourseList
 
 private val DEPT_CARD_WIDTH = 140.dp
 
@@ -119,8 +122,18 @@ internal fun ShowsDepartmentScreen(
         item(key = "all-heading", span = { GridItemSpan(maxLineSpan) }) {
             DeptRowHeading(title = if (label == "Series") "All shows" else "All courses")
         }
-        items(items = department.all, key = { "all/${it.key}" }) { entry ->
-            EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+        if (label == "Series") {
+            items(items = department.all, key = { "all/${it.key}" }) { entry ->
+                EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+            }
+        } else {
+            // Courses as a list, the web's `{mode: LIST}` here: a course
+            // carries no artwork to fill a plate with. One item rather than
+            // one per course, so the grid's gap does not open between rows
+            // the list draws edge to edge.
+            item(key = "all-courses", span = { GridItemSpan(maxLineSpan) }) {
+                Box(Modifier.padding(horizontal = Spacing.medium)) { CourseList(department.all, onOpenCollection) }
+            }
         }
     }
 }

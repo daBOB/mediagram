@@ -102,7 +102,7 @@ class OverflowUtilitiesTest {
         tapIcon("Latest")
         // "Latest" itself names both the icon and the page's own heading;
         // this one line is unique to the page having actually rendered.
-        compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
+        compose.onNodeWithText("NEWEST ARRIVALS FIRST").assertIsDisplayed()
     }
 
     @Test fun statsOpensFromItsOwnHeaderIcon() {

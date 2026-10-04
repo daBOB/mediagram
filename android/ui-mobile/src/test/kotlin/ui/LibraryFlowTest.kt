@@ -219,7 +219,7 @@ class LibraryFlowTest {
 
     @Test fun playingFromAHandBuiltListReturnsToThatList() {
         compose.onNode(hasText("Collections") and hasClickAction()).performScrollTo().performClick()
-        compose.onNode(hasText("Favourites") and hasClickAction()).performClick()
+        compose.onNode(hasText("FAVOURITES") and hasClickAction()).performClick()
         compose.onNode(hasText("First episode", substring = true) and hasClickAction()).performClick()
         compose.onNodeWithText("←").assertIsDisplayed()
         systemBack()

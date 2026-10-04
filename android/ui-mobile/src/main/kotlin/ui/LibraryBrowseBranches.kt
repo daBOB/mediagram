@@ -71,7 +71,6 @@ internal fun FranchiseFrame(
 internal fun GenresFrame(
     at: LibraryPositions,
     catalogState: CatalogUiState,
-    columns: Int,
     menuActions: MenuActions,
     profileBar: ProfileBarState,
     browse: BrowseActions,
@@ -82,7 +81,7 @@ internal fun GenresFrame(
             CenteredMessage("Loading your library…")
         } else {
             val genres = remember(shelves) { genreIndex(allTitles(shelves)) }
-            GenresIndexScreen(genres = genres, columns = columns, onOpenGenre = at::openGenre)
+            GenresIndexScreen(genres = genres, onOpenGenre = at::openGenre)
         }
     }
 }

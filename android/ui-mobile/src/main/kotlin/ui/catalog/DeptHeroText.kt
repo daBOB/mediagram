@@ -3,6 +3,7 @@ package ui.catalog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +63,7 @@ internal fun DeptHeroWords(
     compact: Boolean,
     width: Dp,
     franchiseTitle: Boolean = false,
+    overview: String? = null,
 ) {
     if (franchiseTitle) {
         Text(
@@ -100,6 +102,16 @@ internal fun DeptHeroWords(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 14.dp),
     )
+    // `.franchise-overview` (`departments.css`): the reading face at 17px/1.6,
+    // in figures grey, no wider than 36rem.
+    overview?.let {
+        Text(
+            text = it,
+            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.6.em),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 18.dp).widthIn(max = 576.dp),
+        )
+    }
 }
 
 /**

@@ -212,6 +212,7 @@ private fun Shelves(
                 CollectionsScreen(
                     franchises = remember(movies) { franchisesIn(movies) },
                     lists = state.watch.collections,
+                    setsById = remember(shelves) { allSetsById(shelves) },
                     onOpenFranchise = onOpenFranchise,
                     onOpenList = onOpenList,
                     onCreateList = onCreateList,

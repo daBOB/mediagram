@@ -1,6 +1,7 @@
 package catalog
 
 import model.FranchiseInfo
+import model.ListOfSets
 import model.MediaSet
 
 /** One franchise the library holds: at least two of its films, kept. */
@@ -47,3 +48,12 @@ fun franchisePageOf(id: Long, movies: List<MediaSet>, overviews: List<FranchiseI
     val franchise = franchisesIn(movies).find { it.id == id } ?: return null
     return FranchisePage(franchise, overviews.find { it.id == id }?.overview)
 }
+
+/**
+ * A list's own card art on Collections: the backdrop (or poster) of its
+ * first title that has either — `renderCollectionsPage`'s
+ * `setsFor(list.items).find(…)`. `null` once nothing on it is pictured, or
+ * nothing it names is in this library any more.
+ */
+fun listArtOf(list: ListOfSets, byId: Map<String, MediaSet>): String? =
+    list.items.firstNotNullOfOrNull { id -> byId[id]?.let { it.backdropPath ?: it.posterPath } }

@@ -30,6 +30,7 @@ import catalog.SearchRow
 import catalog.VisiblePerson
 import catalog.extentOf
 import catalog.factsLine
+import catalog.spelledCountOf
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
@@ -216,7 +217,7 @@ private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> U
                     PersonFace(name = person.name, portraitPath = portrait, size = 64.dp)
                     Text(person.name, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = Spacing.extraSmall))
                     Text(
-                        countOf(person.titles, "title"),
+                        spelledCountOf(person.titles, "title"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -226,24 +227,22 @@ private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> U
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Franchises and lists as the same large cards Collections draws — a franchise counts its films, a list its titles, as `search-view.js` does. */
 @Composable
 private fun CollectionsSection(collections: List<SearchDestination>, onOpenFranchise: (Long) -> Unit, onOpenList: (String) -> Unit) {
     Column(modifier = Modifier.padding(top = Spacing.medium)) {
         Text("Collections", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            for (destination in collections) {
-                PosterCard(
-                    posterPath = destination.art,
-                    title = destination.name,
-                    caption = countOf(destination.itemCount, "title"),
-                    modifier = Modifier.width(SEARCH_CARD_WIDTH),
-                    onClick = {
-                        val franchiseId = destination.href.removePrefix("tmdb-").toLongOrNull()
-                        if (franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href)
-                    },
-                )
-            }
+        TileFlow(collections, DESTINATION_MIN_WIDTH) { destination, modifier ->
+            val franchiseId = destination.franchiseId
+            ArtTile(
+                name = destination.name,
+                meta = spelledCountOf(destination.itemCount, if (franchiseId != null) "film" else "title"),
+                art = destination.art,
+                aspectRatio = DESTINATION_ASPECT,
+                onClick = { if (franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href) },
+                modifier = modifier,
+                destination = true,
+            )
         }
     }
 }

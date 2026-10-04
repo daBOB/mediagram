@@ -452,7 +452,8 @@ yet.
 
 The 2:3 plate remains the one recurring square silhouette, on every surface
 that shows artwork. A picture card takes `{rounded.card}` (12dp), the web's own
-`--radius-card`: home's feature cards, and Appearance's swatch cards, which are
+`--radius-card`: home's feature cards, art tiles (genres, franchises, lists —
+see Components › Art tile), and Appearance's swatch cards, which are
 pictures of a theme rather than controls that act on one. The chrome's
 department pills, search and avatar circles are fully round
 (`{rounded.full}`), as the web's `.departments a` are.
@@ -558,6 +559,37 @@ the way a magazine department does.
   one line rather than wrapping or clipping.
 - **Semantics:** eyebrow and title merge into one heading node, the same way
   a plate merges artwork and caption.
+
+**Shelf head** (`ShelfHead`) is the plainer opener the web gives a reference
+page — Latest, Genres, one genre, a person (`heading()`, `.shelf-head`): the
+title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
+3.6rem)`), not uppercased; the extent flush right in Geist 11sp caps at
+0.24em tracking in quiet, dropping under the title when it needs the width;
+a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
+Fraunces SemiBold 24sp (`.shelf-sub`).
+
+### Art tile
+
+A picture card that names what it opens across its own art (`ArtTile`) —
+the web's `.genre-tile` and `.destination`. Unlike a plate, the name sits
+on the face: a tile stands for a group (a genre, a franchise, a list)
+whose art is borrowed from one member, so nothing on the picture already
+says what it is.
+
+- **Corner style:** `{rounded.card}` (12dp); sunk behind the art.
+- **Scrim:** a dark fade up from the foot; name and figures in on-image
+  light. With no art, no scrim and the words in text on the sunk ground.
+- **Genre tile:** Fraunces Medium 21.6sp name, Geist 12sp count at 80%;
+  16:9 on the Genres page, 16:8 in the Movies department's row.
+- **Destination:** the name uppercase, Fraunces Medium 22–29sp; 4:3, as many
+  columns of at least 256dp as fit — franchises and lists on Collections,
+  and Search's Collections part. A list is pictured by its first pictured
+  title.
+- **Target:** the whole tile, merged into one node.
+
+**Page pill** (`PagePill`): a fully round outline link in ink on the page
+itself — "All N films →" at the foot of Movies (52dp) and "＋ New list"
+under Your lists (44dp) — the web's `.dept-all` and `.make`.
 
 ### Settings index row
 

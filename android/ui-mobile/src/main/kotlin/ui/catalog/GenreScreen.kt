@@ -1,17 +1,12 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -19,6 +14,7 @@ import androidx.compose.ui.Modifier
 import catalog.CatalogUiState
 import catalog.GenreShelf
 import catalog.genreShelf
+import catalog.spelledCountOf
 import designsystem.Spacing
 import model.WatchSnapshot
 
@@ -56,24 +52,16 @@ fun GenreScreen(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         item(key = "title", span = { GridItemSpan(maxLineSpan) }) {
-            Column {
-                Text(text = name, style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    text = countOf(total, "title"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = Spacing.medium),
-                )
-            }
+            ShelfHead(title = name, sub = spelledCountOf(total, "title"))
         }
         if (shelf.films.isNotEmpty()) {
-            if (both) sectionHeading("Movies")
+            if (both) shelfSub("Movies")
             items(items = shelf.films, key = { it.set.setId }) { entry ->
                 EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
             }
         }
         if (shelf.series.isNotEmpty()) {
-            if (both) sectionHeading("Series")
+            if (both) shelfSub("Series")
             items(items = shelf.series, key = { it.key }) { entry ->
                 EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
             }
@@ -105,14 +93,4 @@ internal fun GenreBranch(
     }
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     GenreScreen(name, genreShelf(catalogState.shelves, name), watch, columns, onOpenTitle, onOpenCollection)
-}
-
-private fun LazyGridScope.sectionHeading(label: String) {
-    item(key = "heading-$label", span = { GridItemSpan(maxLineSpan) }) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = Spacing.small, bottom = Spacing.small),
-        )
-    }
 }

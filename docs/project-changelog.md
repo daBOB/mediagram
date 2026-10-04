@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.102.0 — Android browse pages read like the web's
+
+**Changed** (Android phone and tablet)
+
+- One art tile, the web's, with the name set over the picture: the Genres page (16:9),
+  the Movies department's genre row (16:8), Collections and Search (4:3 cards that wrap).
+  A list's card uses its first title's art, and in Search a franchise reads "N films".
+- Latest heads its parts Movies / Series / Tutorials and lists courses rather than
+  tiling them; the Tutorials department's "All courses" is a list too.
+- The Movies department ends with an "All N films →" pill; a franchise page carries its
+  overview inside the hero and heads its films "In release order".
+- Counts up to twenty are spelled out, as on the web; a person page reads "N in your
+  library"; Latest, Genres, a genre and a person open with the web's page heading.
+
 ## 0.101.0 — Android title pages read like the web's
 
 **Added / changed** (Android phone and tablet)

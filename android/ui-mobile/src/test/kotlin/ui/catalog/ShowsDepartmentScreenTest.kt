@@ -4,6 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.unit.width
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -121,5 +124,20 @@ class ShowsDepartmentScreenTest {
     @Test fun noCategoryHeadingDrawsWhenNothingIsFiled() {
         render("Tutorials", department(Underway(emptyList(), emptyList(), 0, 0)))
         compose.onAllNodes(hasText("Other")).assertCountEquals(0)
+    }
+
+    /** `renderShowsDept` asks for `{mode: LIST}` under Tutorials: a course row spans the page and says lessons and chapters. */
+    @Test fun allCoursesIsAListOfRowsAcrossThePage() {
+        var opened: String? = null
+        render(
+            "Tutorials",
+            department(Underway(emptyList(), emptyList(), 0, 0)).copy(all = listOf(course("Forex", null))),
+            onOpenCollection = { opened = it },
+        )
+        compose.onNode(hasText("one lesson · one chapter")).assertExists()
+        val row = compose.onNode(hasText("Forex", substring = true) and hasClickAction())
+        assertTrue(row.getUnclippedBoundsInRoot().width >= 360.dp, "expected a full-width row, got ${row.getUnclippedBoundsInRoot().width}")
+        row.performClick()
+        assertTrue(opened == "COURSE/Forex", "expected the course to open, got $opened")
     }
 }

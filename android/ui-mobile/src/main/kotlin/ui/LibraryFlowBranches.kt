@@ -212,7 +212,7 @@ internal fun LibraryBranches(
 
         FrameKind.PERSON -> PersonFrame(at, catalogState, resolved.watch, menuActions, profileBar, browse)
         FrameKind.FRANCHISE -> FranchiseFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
-        FrameKind.GENRES -> GenresFrame(at, catalogState, columns, menuActions, profileBar, browse)
+        FrameKind.GENRES -> GenresFrame(at, catalogState, menuActions, profileBar, browse)
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)

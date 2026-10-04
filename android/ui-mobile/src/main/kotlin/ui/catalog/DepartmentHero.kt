@@ -53,6 +53,9 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
  * does (`departments.css:108`): up to three lines rather than shrinking a
  * long collection's name onto one, since a franchise name — unlike a fixed
  * department name — is never chosen to fit.
+ *
+ * [overview] is a franchise's own introduction, set under the line inside
+ * the hero's copy, where `renderFranchise` appends `.franchise-overview`.
  */
 @Composable
 internal fun DepartmentHero(
@@ -63,6 +66,7 @@ internal fun DepartmentHero(
     modifier: Modifier = Modifier,
     leadName: String? = lead?.title,
     franchiseTitle: Boolean = false,
+    overview: String? = null,
 ) {
     // Solid hides a department's own art (`appearance.css:24`, unlike the
     // cover — see `ui.catalog.home.CoverSlide`'s own note on that split):
@@ -92,14 +96,14 @@ internal fun DepartmentHero(
                 .let { if (!compact && art != null) it.heightIn(min = heroMinHeight) else it },
     ) {
         if (compact) {
-            CompactDeptHero(title, line, art, width, franchiseTitle)
+            CompactDeptHero(title, line, art, width, franchiseTitle, overview)
         } else {
             // The web hides `.dept-quote` below 900px (`departments.css:91`)
             // — the quote is a wide-only concern, so only this branch ever
             // needs to know [lead]'s own tagline at all.
             val quote = art?.let { lead.tagline?.takeIf { it.isNotBlank() }?.let { tagline -> leadName?.let { name -> tagline to name } } }
             val onOpenLead = if (quote != null) onOpenTitle?.let { open -> { open(lead.setId) } } else null
-            WideDeptHero(title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction, franchiseTitle)
+            WideDeptHero(title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction, franchiseTitle, overview)
         }
     }
 }

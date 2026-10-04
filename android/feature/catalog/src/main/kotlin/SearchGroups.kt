@@ -9,7 +9,12 @@ import uniffi.mediagram_core.SearchHit
 enum class SearchFilter { ALL, MOVIES, SERIES, ANIME, DOCUMENTARIES, TUTORIALS, PEOPLE, COLLECTIONS }
 
 /** A franchise or a hand-built list matched by name — ported from `destination` in `collections-page.js`. */
-data class SearchDestination(val filter: SearchFilter, val name: String, val itemCount: Int, val art: String?, val href: String)
+data class SearchDestination(val filter: SearchFilter, val name: String, val itemCount: Int, val art: String?, val href: String) {
+    /** The franchise this opens, read back from [href] where [searchGroupsOf] wrote it — `null` for a viewer's own list. */
+    val franchiseId: Long? get() = href.takeIf { it.startsWith(FRANCHISE_HREF) }?.removePrefix(FRANCHISE_HREF)?.toLongOrNull()
+}
+
+private const val FRANCHISE_HREF = "tmdb-"
 
 /**
  * Search grouped the way the web's `search-view.js` groups it: films as
@@ -74,7 +79,7 @@ fun searchGroupsOf(
     fun named(name: String): Boolean = words.isNotEmpty() && words.all { name.lowercase().contains(it) }
     val collections = buildList {
         franchises.filter { named(it.name) }.forEach {
-            add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.films.size, it.art, "tmdb-${it.id}"))
+            add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.films.size, it.art, "$FRANCHISE_HREF${it.id}"))
         }
         lists.filter { named(it.name) }.forEach {
             add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.items.size, null, it.id))

@@ -3,14 +3,11 @@ package ui.catalog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
@@ -62,43 +59,24 @@ internal fun PersonScreen(
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         item(key = "header", span = { GridItemSpan(maxLineSpan) }) {
-            Column {
+            // In figures, not spelled: the web's own line here is a template
+            // string rather than `countOf` (`cast.js`), and says no noun.
+            ShelfHead(title = page.person.name, sub = "$total in your library") {
                 PersonFace(name = page.person.name, portraitPath = portraitPath, size = FACE_SIZE)
-                Text(
-                    text = page.person.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(top = Spacing.medium),
-                )
-                Text(
-                    text = countOf(total, "title") + " in your library",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = Spacing.medium),
-                )
             }
         }
         if (page.films.isNotEmpty()) {
-            sectionHeading("Films")
+            shelfSub("Films")
             items(items = page.films, key = { it.setId }) { set ->
                 EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, onOpenCollection)
             }
         }
         if (page.shows.isNotEmpty()) {
-            sectionHeading("Series")
+            shelfSub("Series")
             items(items = page.shows, key = { it.key }) { entry ->
                 EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection)
             }
         }
-    }
-}
-
-private fun LazyGridScope.sectionHeading(label: String) {
-    item(key = "heading-$label", span = { GridItemSpan(maxLineSpan) }) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = Spacing.small, bottom = Spacing.small),
-        )
     }
 }
 

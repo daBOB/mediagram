@@ -79,7 +79,7 @@ class LibraryRailTest {
 
     @Test fun latestLandsOnTheLatestPageWithTheRailStillBesideIt() {
         compose.onNodeWithText("Latest").performClick()
-        compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
+        compose.onNodeWithText("NEWEST ARRIVALS FIRST").assertIsDisplayed()
         // Still beside it, the same as before the tap — a pushed frame keeps the rail on EXPANDED.
         compose.onNodeWithText("Genres").assertIsDisplayed()
     }
@@ -126,9 +126,9 @@ class LibraryRailTest {
 
     @Test fun theWordmarkReturnsHomeFromWhereverTheRailOpenedSomethingElse() {
         compose.onNodeWithText("Latest").performClick()
-        compose.onNodeWithText("Newest arrivals first").assertIsDisplayed()
+        compose.onNodeWithText("NEWEST ARRIVALS FIRST").assertIsDisplayed()
         compose.onNodeWithContentDescription("mediagram — home").performClick()
-        compose.onNodeWithText("Newest arrivals first").assertDoesNotExist()
+        compose.onNodeWithText("NEWEST ARRIVALS FIRST").assertDoesNotExist()
     }
 
     @Test fun theAvatarReopensTheProfileChooser() {

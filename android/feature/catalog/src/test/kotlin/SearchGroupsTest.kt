@@ -97,6 +97,16 @@ class SearchGroupsTest {
         assertEquals(listOf("Weekend Watch"), none.collections.map(SearchDestination::name))
     }
 
+    @Test
+    fun aFranchiseDestinationKnowsItsFranchiseAndAListsDoesNotEvenWhenItsIdIsANumber() {
+        val franchise = Franchise(42, "Dune Collection", listOf(film("dune")), null)
+        val list = ListOfSets("7", "Dune night", listOf("f1"))
+
+        val groups = searchGroupsOf("dune", readyState(emptyList()), emptyList(), emptyList(), listOf(franchise), listOf(list))
+
+        assertEquals(listOf(42L, null), groups.collections.map(SearchDestination::franchiseId))
+    }
+
     /**
      * Anime is split off before the kind split, the same way it is split
      * off every shelf: a hit's own `anime` flag decides its group, not

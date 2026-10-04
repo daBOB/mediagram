@@ -39,6 +39,7 @@ internal fun BoxScope.WideDeptHero(
     heroMinHeight: Dp,
     artFraction: Float,
     franchiseTitle: Boolean,
+    overview: String?,
 ) {
     if (art != null) {
         // `ui.pageGround`, not `colorScheme.surface` — the window's own
@@ -99,7 +100,7 @@ internal fun BoxScope.WideDeptHero(
                 )
                 .widthIn(max = DEPT_COPY_MAX_WIDTH),
     ) {
-        DeptHeroWords(title, line, compact = false, width = width, franchiseTitle = franchiseTitle)
+        DeptHeroWords(title, line, compact = false, width = width, franchiseTitle = franchiseTitle, overview = overview)
     }
     if (quote != null) {
         DeptQuote(
@@ -136,6 +137,7 @@ internal fun CompactDeptHero(
     art: String?,
     width: Dp,
     franchiseTitle: Boolean,
+    overview: String?,
 ) {
     Column(Modifier.fillMaxWidth()) {
         if (art != null) {
@@ -170,7 +172,7 @@ internal fun CompactDeptHero(
             // The web hides `.dept-quote` entirely at this width
             // (`departments.css:91`); [DeptHeroWords] never receives a
             // quote to draw on this layout as a result.
-            DeptHeroWords(title, line, compact = true, width = width, franchiseTitle = franchiseTitle)
+            DeptHeroWords(title, line, compact = true, width = width, franchiseTitle = franchiseTitle, overview = overview)
         }
     }
 }
