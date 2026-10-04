@@ -121,7 +121,7 @@ internal fun TvLibrary(
         FrameKind.SEASON -> TvSeasonFrame(at, catalogState, resolved.season, watch, heldIds, restore, here, leave)
 
         FrameKind.COLLECTION ->
-            TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, leave)
+            TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
         FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 

@@ -1,10 +1,14 @@
 package ui.tv.catalog
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.pressKey
 import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
@@ -18,13 +22,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import uniffi.mediagram_core.TitleInfo
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
- * [TvCollection]'s own tabs — Episodes/About/Cast/Similar — this phase adds:
- * Cast and Similar are gated on having something to show, tab selection
- * survives a state update, and the [SeriesResumePick] pill sits in the
- * Episodes tab's own header, above the season wall or the rows.
+ * A show's own page ([TvCollection] → [TvSeriesPage]): its tabs — Episodes/
+ * About/Cast/Similar, as `series-page.js` tabs them — its pills, and the
+ * restore that brings the remote back to whatever it left from.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -41,15 +46,90 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
             divisions = listOf(Division("Season 1", 1, listOf(set("e1", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 0)), emptyList())),
         )
 
+    /** Similar is always a tab, as `series-page.js` has it, saying so when nothing is like the show; Cast only once credits name somebody. */
     @Test
-    fun withNoCastOrSimilarOnlyEpisodesAndAboutAreOffered() {
-        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onPlay = {}, onOpenSeason = {}) }
+    fun withNoCastSimilarIsStillOfferedAndEpisodesShows() {
+        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onPlay = {}) }
 
-        listOf("Episodes", "About").forEach { compose.onNodeWithText(it).assertExists() }
+        listOf("Episodes", "About", "Similar").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("Cast").assertDoesNotExist()
-        compose.onNodeWithText("Similar").assertDoesNotExist()
-        // Episodes is the default tab, unchanged from before this phase.
-        compose.onNodeWithText("1. Pilot").assertIsFocused()
+        compose.onNodeWithText("1. Pilot").assertExists()
+        // No resume pick, so the first pill there is takes the remote.
+        compose.onNodeWithText("+ My List").assertIsFocused()
+
+        compose.onNodeWithText("Similar").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText(NothingSimilar).assertExists()
+    }
+
+    /** `series-page.js#fillAbout`: when it aired, how much is held against what exists, who made it, its genres, picture and languages. */
+    @Test
+    fun aboutIsTheWebsFactSheet() {
+        var genre: String? = null
+        val episode = set("e1", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 0, durationSecs = 3000).copy(quality = "1080p", alang = listOf("en"), genres = listOf("Drama"))
+        val drama = show.copy(divisions = listOf(Division("Season 1", 1, listOf(episode), emptyList())))
+        val info =
+            TitleInfo(
+                overview = null, tagline = null, genres = "Drama", rating = 8.1, network = "HBO", status = "Ended",
+                firstAir = "2011-04-17", lastAir = "2019-05-19", totalSeasons = 8u, totalEpisodes = 73u,
+            )
+        show { TvCollection(drama, info = info, watch = WatchSnapshot.Empty, onPlay = {}, onOpenGenre = { genre = it }) }
+
+        // The facts line under the title spells its seasons and uses the provider's years.
+        compose.onNodeWithText("2011–2019 · one season · Drama").assertExists()
+        compose.onNodeWithText("About").performSemanticsAction(SemanticsActions.OnClick)
+        listOf(
+            "AIRED" to "2011–2019",
+            "HELD" to "1 of 73 episodes · 1 of 8 seasons · 50m",
+            "FROM" to "★ 8.1 · HBO · Ended",
+            "PICTURE" to "1080p",
+            "AUDIO" to "English",
+        ).forEach { (label, value) ->
+            compose.onNodeWithText(label).assertExists()
+            compose.onNodeWithText(value).assertExists()
+        }
+        compose.onNodeWithText("Drama").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals("Drama", genre)
+    }
+
+    /** Back from a genre's page lands on its link, which lives in About now. */
+    @Test
+    fun comingBackFromAGenreLandsOnItsLinkInAbout() {
+        val tagged = show.copy(divisions = listOf(Division("Season 1", 1, listOf(set("e1", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 0).copy(genres = listOf("Drama"))), emptyList())))
+        show { TvCollection(tagged, info = null, watch = WatchSnapshot.Empty, onPlay = {}, restoreKey = "Drama") }
+
+        compose.onNodeWithText("Drama").assertIsFocused()
+    }
+
+    /** Up from a panel enters its own tab — Cast here — not Episodes, the tab nearest the first plate. */
+    @Test
+    fun upFromCastEntersTheCastTab() {
+        val credits = TitleCredits(cast = listOf(Credit(personId = 4L, name = "Ada Actor", role = "Herself", portraitPath = null)), crew = emptyList())
+        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onPlay = {}, credits = credits) }
+        compose.onNodeWithText("Cast").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Ada Actor").assertIsFocused()
+
+        compose.onNodeWithText("Ada Actor").performKeyInput { pressKey(Key.DirectionUp) }
+
+        compose.onNodeWithText("Cast").assertIsFocused()
+    }
+
+    /** The web lists and pins a show by its first episode; the pills do the same through the caller. */
+    @Test
+    fun myListAndTheMoreMenuActOnTheShow() {
+        var listed = false
+        var pinned = false
+        show {
+            TvCollection(
+                show, info = null, watch = WatchSnapshot.Empty.copy(watchlist = listOf("e1")), onPlay = {},
+                onToggleWatchlist = { listed = true }, onToggleEditorsChoice = { pinned = true },
+            )
+        }
+
+        compose.onNodeWithText("✓ My List").performSemanticsAction(SemanticsActions.OnClick)
+        assertTrue(listed)
+        compose.onNodeWithContentDescription("More").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Make editor's choice").performSemanticsAction(SemanticsActions.OnClick)
+        assertTrue(pinned)
     }
 
     @Test
@@ -62,7 +142,6 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 credits = credits,
                 onOpenPerson = { opened = it },
             )
@@ -94,7 +173,6 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 similar = listOf(other),
                 onOpenCollection = { opened = it },
             )
@@ -107,7 +185,7 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
     }
 
     @Test
-    fun theResumePillSitsInTheEpisodesHeaderAndPlaysItsOwnEpisode() {
+    fun theResumePillTakesTheRemoteAndPlaysItsOwnEpisode() {
         var played: String? = null
         val pick = SeriesResumePick(set = set("e1", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 0, episode = 1), at = 30.0, verb = ResumeVerb.RESUME)
         show {
@@ -116,13 +194,14 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 resume = pick,
                 onResume = { played = it },
             )
         }
 
-        compose.onNodeWithText("▶ Resume", substring = true).performSemanticsAction(SemanticsActions.OnClick)
+        // `series-page.js`'s own pill words: the verb, then the episode.
+        compose.onNodeWithText("▶ Resume Pilot").assertIsFocused()
+        compose.onNodeWithText("▶ Resume Pilot").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("e1", played)
     }
 
@@ -149,7 +228,6 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 credits = credits,
                 restoreKey = "5",
             )
@@ -179,7 +257,6 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 similar = listOf(other),
                 restoreKey = "SHOW/Another Show",
             )
@@ -200,7 +277,6 @@ class TvCollectionTabsStateTest : TvScreenStateTest() {
                 info = null,
                 watch = WatchSnapshot.Empty,
                 onPlay = {},
-                onOpenSeason = {},
                 credits = currentCredits.value,
             )
         }

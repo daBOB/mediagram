@@ -102,7 +102,7 @@ class TvListAndCollectionTest {
                         Division("Deeper", null, listOf(set("l2", "More")), emptyList()),
                     ),
             )
-        show { TvCollection(course, null, WatchSnapshot.Empty, { null }, {}, {}) }
+        show { TvCollection(collection = course, info = null, watch = WatchSnapshot.Empty, onPlay = {}) }
         waitUntilFocused("1. Welcome")
 
         press(Key.DirectionDown)

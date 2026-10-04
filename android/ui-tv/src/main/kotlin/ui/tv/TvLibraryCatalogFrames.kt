@@ -8,6 +8,7 @@ import catalog.CatalogViewModel
 import catalog.Division
 import catalog.Entry
 import catalog.MenuScreen
+import catalog.firstItemOf
 import catalog.seriesResumeFor
 import catalog.similarShows
 import catalog.similarTo
@@ -86,6 +87,8 @@ internal fun TvTitleFrame(
             // Films only, same as the phone's own TitleDetailScreen — a
             // show's episodes preload two at a time on their own already.
             preload = if (set.kind == Kind.MOVIE) rememberTvFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
+            watchlisted = set.setId in watch.watchlist,
+            onToggleWatchlist = { catalogViewModel.setWatchlisted(set.setId, set.setId !in watch.watchlist) },
         )
     }
 }
@@ -128,9 +131,12 @@ internal fun TvCollectionFrame(
     here: Int,
     browse: BrowseViewModel,
     catalogViewModel: CatalogViewModel,
+    kidsProfile: Boolean,
     leave: () -> Unit,
 ) {
     TvResolvedBranch(collection, catalogState, leave) { coll ->
+        // A show is listed and pinned by its first episode, as the web's page does.
+        val firstEpisodeId = remember(coll) { firstItemOf(coll.divisions)?.setId }
         val credits = rememberTitleCredits(coll.posterKey, catalogViewModel::titleCredits)
         val similar = remember(coll, allShows, watchedIds) { similarShows(coll, allShows) { id -> id in watchedIds } }
         val resume = remember(coll, watch) { seriesResumeFor(coll, watch) }
@@ -141,10 +147,6 @@ internal fun TvCollectionFrame(
             onPlay = { setId ->
                 restore.opened(here, setId)
                 at.openPlayer(setId)
-            },
-            onOpenSeason = { division ->
-                restore.opened(here, division.title)
-                at.openSeason(division.title)
             },
             onOpenGenre = { name ->
                 restore.opened(here, name)
@@ -169,6 +171,16 @@ internal fun TvCollectionFrame(
                 restore.forget(here)
                 at.openPlayer(setId)
             },
+            season = at.collectionSeason,
+            onSelectSeason = at::setCollectionSeason,
+            onToggleWatchlist = { firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in watch.watchlist) } },
+            editorsChoice = watch.editorsChoice,
+            onToggleEditorsChoice =
+                if (kidsProfile || firstEpisodeId == null) {
+                    null
+                } else {
+                    { catalogViewModel.setEditorsChoice(firstEpisodeId, watch.editorsChoice != firstEpisodeId) }
+                },
         )
     }
 }

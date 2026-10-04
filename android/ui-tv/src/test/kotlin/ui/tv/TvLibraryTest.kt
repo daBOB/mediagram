@@ -78,9 +78,8 @@ class TvLibraryTest {
         compose.onNodeWithText("Film 1").assertIsFocused()
 
         press(plate("A Show"))
-        compose.onNodeWithText("Season 1").assertIsFocused()
-        press(compose.onNodeWithText("Season 1"))
-        compose.onNodeWithText("1. Pilot").assertIsFocused()
+        // The show's own Play takes the remote, its first season listed under the picker.
+        compose.onNodeWithText("▶ Play S1 E1").assertIsFocused()
         // An episode row plays, as on the phone and the web; no title page between.
         press(compose.onNodeWithText("1. Pilot"))
         compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
@@ -89,23 +88,22 @@ class TvLibraryTest {
         back() // the player
         compose.onNodeWithText("1. Pilot").assertIsFocused()
         back()
-        compose.onNodeWithText("Season 1").assertIsFocused()
-        back()
         plate("A Show").assertIsFocused()
     }
 
+    /** The season picked survives a refresh, and Back leaves the show from wherever its picker was left. */
     @Test
     fun aCatalogRefreshMidWalkKeepsThePositionAndTheWayBack() {
         press(plate("A Show"))
-        press(compose.onNodeWithText("Season 2"))
-        compose.onNodeWithText("1. Return").assertIsFocused()
+        compose.onNodeWithText("Season 2 · one episode").performSemanticsAction(SemanticsActions.RequestFocus)
+        press(compose.onNodeWithText("Season 2 · one episode"))
+        compose.onNodeWithText("1. Return").assertExists()
 
         compose.runOnUiThread { fixture.catalog.reload() }
         compose.waitForIdle()
 
         compose.onNodeWithText("1. Return").assertExists()
-        back()
-        compose.onNodeWithText("Season 2").assertIsFocused()
+        compose.onNodeWithText("Season 2 · one episode").assertIsFocused()
         back()
         plate("A Show").assertIsFocused()
     }
@@ -134,7 +132,6 @@ class TvLibraryTest {
     @Test
     fun anEpisodePlaysIntoItsShowAndNextMovesOnInPlace() {
         press(plate("A Show"))
-        press(compose.onNodeWithText("Season 1"))
         press(compose.onNodeWithText("1. Pilot"))
         compose.onNodeWithText("Pilot", substring = true).assertExists()
 
@@ -213,7 +210,7 @@ class TvLibraryTest {
         compose.waitForIdle()
     }
 
-    /** One show of two seasons, one episode each — enough for a season wall rather than a flat list. */
+    /** One show of two seasons, one episode each — enough for a season picker over its list. */
     private fun show(): List<MediaSet> =
         listOf(
             set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 10, episode = 1).copy(season = 1),

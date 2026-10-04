@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import catalog.FactRow
+import catalog.FactValue
 import designsystem.Spacing
 
 private val FACT_LABEL_WIDTH = 96.dp
@@ -42,6 +44,24 @@ internal fun FactSheet(
         }
     }
 }
+
+/**
+ * [catalog]'s shared fact rows, drawn the phone's way: words as text, genres
+ * and a franchise as the links [genreFact]/[linkFact] draw.
+ */
+internal fun factRows(
+    rows: List<FactRow>,
+    onOpenGenre: (String) -> Unit = {},
+    onOpenFranchise: (Long) -> Unit = {},
+): List<Pair<String, (@Composable () -> Unit)?>> =
+    rows.map { (label, value) ->
+        label to
+            when (value) {
+                is FactValue.Words -> textFact(value.text)
+                is FactValue.Genres -> genreFact(value.names, onOpenGenre)
+                is FactValue.PartOf -> linkFact(value.franchise.name) { onOpenFranchise(value.franchise.id) }
+            }
+    }
 
 /** A fact whose value is a plain sentence, or no row at all when there is none to print. */
 internal fun textFact(value: String?): (@Composable () -> Unit)? =

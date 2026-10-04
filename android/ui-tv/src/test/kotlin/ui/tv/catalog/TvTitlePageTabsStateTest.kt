@@ -3,6 +3,8 @@ package ui.tv.catalog
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import model.Credit
@@ -12,25 +14,73 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import uniffi.mediagram_core.TitleInfo
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
- * [TvTitlePage]'s own tabs — Overview/Cast/Similar/Details — this phase
- * adds: Cast and Similar are gated on there being something to show, the
- * editor's-choice toggle sits in Details, and a cast row opens a person.
+ * [TvTitlePage]'s tabs and pills — Overview/Cast/Similar/Details as the
+ * web's film page tabs them, My List and the ⋯ beside Play — and what each
+ * panel says.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvTitlePageTabsStateTest : TvScreenStateTest() {
-    private val film = set("f", Kind.MOVIE, "A Film", addedAt = 0)
+    private val film = set("f", Kind.MOVIE, "A Film", addedAt = 0, year = 2004, durationSecs = 6780).copy(fsk = "12", genres = listOf("Drama"))
 
+    /** Similar is always a tab, as on the web, and says so when nothing is like this film; Cast only once credits name somebody. */
     @Test
-    fun withNoCastOrSimilarOnlyOverviewAndDetailsAreOffered() {
+    fun withNoCastSimilarIsStillOfferedAndSaysNothingIsLikeIt() {
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}) }
 
-        listOf("Overview", "Details").forEach { compose.onNodeWithText(it).assertExists() }
+        listOf("Overview", "Similar", "Details").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("Cast").assertDoesNotExist()
-        compose.onNodeWithText("Similar").assertDoesNotExist()
+        compose.onNodeWithText("Similar").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText(NothingSimilar).assertExists()
+    }
+
+    @Test
+    fun theOverviewIsAFactSheetWhoseGenresAndFranchiseOpen() {
+        var genre: String? = null
+        var franchise: Long? = null
+        val saga = set("s", Kind.MOVIE, "Sequel", addedAt = 1).copy(collectionId = 9, collectionName = "The Saga")
+        show {
+            TvTitlePage(
+                set = film.copy(collectionId = 9, collectionName = "The Saga"),
+                info = TitleInfo(overview = null, tagline = null, genres = null, rating = 7.5, network = null, status = null),
+                progress = null,
+                onPlay = {},
+                onOpenGenre = { genre = it },
+                allFilms = listOf(film.copy(collectionId = 9, collectionName = "The Saga"), saga),
+                onOpenFranchise = { franchise = it },
+            )
+        }
+
+        listOf("RELEASED" to "2004", "RUNTIME" to "1h 53m", "RATED" to "FSK 12", "SCORE" to "★ 7.5").forEach { (label, value) ->
+            compose.onNodeWithText(label).assertExists()
+            compose.onNodeWithText(value).assertExists()
+        }
+        compose.onNodeWithText("Drama").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals("Drama", genre)
+        compose.onNodeWithText("The Saga").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(9L, franchise)
+    }
+
+    /** `film-page.js#details`: the file, row by row, the languages by name. */
+    @Test
+    fun detailsIsTheFileAsTheWebPrintsIt() {
+        val file = film.copy(container = "mkv", vcodec = "hevc", acodec = "eac3", quality = "1080p", alang = listOf("en", "de"), slang = listOf("de"))
+        show { TvTitlePage(set = file, info = null, progress = null, onPlay = {}) }
+
+        compose.onNodeWithText("Details").performSemanticsAction(SemanticsActions.OnClick)
+
+        listOf("QUALITY" to "1080p", "VIDEO" to "hevc", "AUDIO" to "eac3", "AUDIO LANGUAGES" to "English, German", "SUBTITLES" to "German", "CONTAINER" to "mkv")
+            .forEach { (label, value) ->
+                compose.onNodeWithText(label).assertExists()
+                compose.onNodeWithText(value).assertExists()
+            }
+        compose.onNodeWithText("PARTS").assertDoesNotExist()
     }
 
     @Test
@@ -57,26 +107,65 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
         assertEquals("g", opened)
     }
 
+    /** `list-toggle.js`'s pill, worded as the players word it. */
     @Test
-    fun detailsOffersTheEditorsChoiceToggleUnlessItIsNull() {
+    fun myListSaysWhetherTheFilmIsOnItAndToggles() {
         var toggled = false
-        show {
-            TvTitlePage(set = film, info = null, progress = null, onPlay = {}, editorsChoice = null, onToggleEditorsChoice = { toggled = true })
-        }
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, onToggleWatchlist = { toggled = true }) }
+        compose.onNodeWithText("+ My List").performSemanticsAction(SemanticsActions.OnClick)
+        assertTrue(toggled)
+        close()
 
-        compose.onNodeWithText("Details").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("Make editor's choice").performSemanticsAction(SemanticsActions.OnClick)
-
-        assert(toggled)
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, watchlisted = true) }
+        compose.onNodeWithText("✓ My List").assertExists()
     }
 
-    /** A kids profile's `null` hides the row entirely — the same gate the phone's own screen applies. */
+    /** The ⋯ opens its choice beside it and takes the remote there; pressing it puts the remote back on ⋯. */
     @Test
-    fun aKidsProfileHasNoEditorsChoiceRow() {
+    fun theMoreMenuOffersTheEditorsChoiceToggle() {
+        var toggled = false
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, editorsChoice = null, onToggleEditorsChoice = { toggled = true }) }
+        compose.onNodeWithText("Make editor's choice").assertDoesNotExist()
+
+        compose.onNodeWithContentDescription("More").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Make editor's choice").assertIsFocused()
+        compose.onNodeWithText("Make editor's choice").performSemanticsAction(SemanticsActions.OnClick)
+
+        assertTrue(toggled)
+        compose.onNodeWithText("Make editor's choice").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More").assertIsFocused()
+    }
+
+    /** Back closes an open ⋯ onto its button; with it closed the page takes no Back of its own, so Back still leaves the page. */
+    @Test
+    fun backClosesTheMoreMenuAndOtherwiseIsTheFramesOwn() {
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, editorsChoice = film.setId, onToggleEditorsChoice = {}) }
+        assertFalse(pageTakesBack())
+
+        compose.onNodeWithContentDescription("More").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Remove as editor's choice").assertIsFocused()
+        back()
+
+        compose.onNodeWithText("Remove as editor's choice").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More").assertIsFocused()
+        assertFalse(pageTakesBack())
+    }
+
+    /** A kids profile's `null` leaves the ⋯ out entirely — the same gate the web's `moreMenu` applies. */
+    @Test
+    fun aKidsProfileHasNoMoreMenu() {
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, onToggleEditorsChoice = null) }
 
-        compose.onNodeWithText("Details").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("Make editor's choice").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More").assertDoesNotExist()
+    }
+
+    /** Back from a genre's page lands on its link in the Overview, not on Play. */
+    @Test
+    fun comingBackFromAGenreLandsOnItsLink() {
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, restoreKey = "Drama") }
+
+        compose.onNodeWithText("Drama").assertIsFocused()
+        compose.onNodeWithText("▶ Play").assertIsNotFocused()
     }
 
     /**
@@ -98,7 +187,6 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
             )
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = credits, restoreKey = "8") }
 
-        compose.onNodeWithText("▶ Play").assertDoesNotExist()
         compose.onNodeWithText("Bo Actor").assertIsFocused()
     }
 
@@ -120,7 +208,6 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
         compose.runOnUiThread { credits.value = arrived }
         compose.waitForIdle()
 
-        compose.onNodeWithText("▶ Play").assertDoesNotExist()
         compose.onNodeWithText("Bo Actor").assertIsFocused()
     }
 
@@ -130,7 +217,6 @@ class TvTitlePageTabsStateTest : TvScreenStateTest() {
         val other = set("g", Kind.MOVIE, "Another Film", addedAt = 1)
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, similar = listOf(other), restoreKey = "g") }
 
-        compose.onNodeWithText("▶ Play").assertDoesNotExist()
         compose.onNodeWithText("Another Film").assertIsFocused()
     }
 }

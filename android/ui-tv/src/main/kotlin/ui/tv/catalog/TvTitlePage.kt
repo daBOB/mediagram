@@ -1,8 +1,7 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -16,40 +15,35 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
-import androidx.tv.material3.Text
 import catalog.factsLine
+import catalog.filmDetailFacts
 import catalog.franchisesIn
-import catalog.resumeLine
 import data.ProgressPoint
 import data.ResumePoint
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.MediaSet
 import model.Progress
 import model.TitleCredits
 import model.ageLabel
+import model.clockTime
 import playback.FilmPreloadState
-import player.technicalLine
-import ui.tv.TvTextRow
 import uniffi.mediagram_core.TitleInfo
 
 /**
- * What a title is, before playing it — the television twin of the phone's
- * `TitleDetailScreen` and the web's film page: the art beside the facts,
- * then Overview/Cast/Similar/Details, the same split the web's film page
- * tabs into.
+ * What a title is, before playing it — the television's `film-page.js`: the
+ * opening spread ([TvTitleSpread]) with the pills that start it, then tabs —
+ * Overview, Cast (once credits name somebody), Similar, Details.
  *
  * Play takes the remote the moment the page appears. It is the one thing
  * here to press and the reason a viewer came, so a single centre press
- * from the plate that opened this starts the title. It says Resume when
- * [progress] is a place the player will actually carry on from —
+ * from the plate that opened this starts the title. It says "Resume from"
+ * where [progress] is a place the player will actually carry on from —
  * [ResumePoint.resumeAt], the rule the player and the web's film page both
  * start by, so a glance at the opening or a position in the credits says
- * Play — over the line that says where, in [resumeLine]'s words, the same
- * the Continue wall captions its plates with. The phone's title page always
- * says Play; this follows the web's page, which says Resume.
+ * Play.
  *
  * Its genres open their own pages through [onOpenGenre]; coming back from
  * one, [restoreKey] names it and that link takes the remote instead of Play.
@@ -64,12 +58,10 @@ import uniffi.mediagram_core.TitleInfo
  * reason: a course has no provider entry, and a library assembled without
  * a TMDB key has none at all, so each block it would fill is left out.
  *
- * Cast and Similar are only offered as tabs once there is something to put
- * on them — [credits] with an empty `cast` and an empty [similar] both drop
- * their own tab, the same "nothing to show, nothing to tap into" rule every
- * other empty state on this surface follows. [editorsChoice]/[onToggleEditorsChoice]
- * mirror the phone's own pin: `null` on a kids profile, since a household
- * mark is not a kids profile's to make.
+ * Cast is offered as a tab only once [credits] name somebody, as `cast.js`
+ * adds it; Similar always, saying so when nothing in the library is like
+ * it. [onToggleEditorsChoice] is the ⋯'s one choice, `null` on a kids
+ * profile, since a household mark is not a kids profile's to make.
  */
 @Composable
 internal fun TvTitlePage(
@@ -90,24 +82,22 @@ internal fun TvTitlePage(
     editorsChoice: String? = null,
     onToggleEditorsChoice: (() -> Unit)? = null,
     preload: TvTitlePreloadUi? = null,
+    watchlisted: Boolean = false,
+    onToggleWatchlist: () -> Unit = {},
 ) {
     val play = remember { FocusRequester() }
     val preloadPlate = remember { FocusRequester() }
-    val resume =
-        remember(progress) {
-            val resumes = progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } != null
-            if (resumes) resumeLine(progress) else ""
-        }
+    val resumeAt = remember(progress) { progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } }
     val franchise =
         remember(set.setId, set.collectionId, allFilms) {
             set.collectionId?.let { id -> franchisesIn(allFilms).find { it.id == id } }
         }
     val tabs =
-        remember(credits, similar) {
+        remember(credits) {
             buildList {
                 add("Overview")
                 if (credits.cast.isNotEmpty()) add("Cast")
-                if (similar.isNotEmpty()) add("Similar")
+                add("Similar")
                 add("Details")
             }
         }
@@ -122,106 +112,77 @@ internal fun TvTitlePage(
             }
         }
     var selected by rememberSaveable(set.setId) { mutableIntStateOf(initialTab) }
-    // Credits and Similar arrive after the page does — on the way back from a person or a
-    // title they are still empty at first, so [initialTab] starts at 0 and the saved state
-    // keeps it. Once they land and name what was opened, switch to its tab.
+    // Credits arrive after the page does — on the way back from a person they are still
+    // empty at first, so [initialTab] starts at 0 and the saved state keeps it. Once they
+    // land and name what was opened, switch to its tab.
     LaunchedEffect(initialTab) { if (restoreKey != null && initialTab > 0) selected = initialTab }
     if (selected >= tabs.size) selected = 0
+    val scroll = rememberScrollState()
 
     TvPage {
-        Column(modifier = Modifier.fillMaxSize().padding(vertical = Overscan.vertical)) {
+        Column(modifier = Modifier.fillMaxSize().testTag(TvTitlePageBodyTag).verticalScroll(scroll).padding(bottom = Overscan.vertical)) {
+            TvTitleSpread(
+                backdropPath = set.backdropPath ?: set.posterPath,
+                title = set.title,
+                facts = factsLine(set.year, set.durationSecs, set.ageLabel(), set.genres),
+                overview = info?.overview,
+                tagline = info?.tagline,
+            ) {
+                TvPillRow {
+                    TvSpreadPill(
+                        text = resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
+                        onClick = onPlay,
+                        solid = true,
+                        modifier = Modifier.focusRequester(play),
+                    )
+                    preload?.let { p ->
+                        TvPreloadPlate(
+                            state = p.state,
+                            onClick = p.onToggle,
+                            focusRequester = preloadPlate,
+                            queuedAheadLabel = p.queuedAheadLabel,
+                            needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
+                        )
+                        // Remove takes the plate it removed with it — land back
+                        // on the main plate rather than wherever focus search
+                        // finds next.
+                        if (p.state is FilmPreloadState.Done) {
+                            TvPreloadRemovePlate(onClick = { preloadPlate.requestFocus(); p.onRemove() })
+                        }
+                    }
+                    TvListPill(watchlisted = watchlisted, onToggle = onToggleWatchlist)
+                    TvMorePill(editorsChoiceChoice(onToggleEditorsChoice, pinned = editorsChoice == set.setId))
+                }
+                preload?.let { p ->
+                    TvPreloadDetailLines(p.state, p.serverLine, p.onOpenStorage, modifier = Modifier.padding(top = Spacing.small))
+                }
+            }
             TvSectionTabs(
                 titles = tabs,
                 selected = selected,
                 onSelect = { selected = it },
-                modifier = Modifier.padding(horizontal = Overscan.horizontal),
+                modifier = Modifier.padding(horizontal = Overscan.horizontal).revealsPageBelow { scroll.viewportSize },
             )
-            when (tabs[selected]) {
-                "Cast" ->
-                    TvTabBody(TvTitlePageBodyTag) {
-                        TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey)
-                    }
-
-                "Similar" ->
-                    TvTabBody(TvTitlePageBodyTag) {
-                        TvSimilarFilms(similar, onOpenTitle, restoreKey)
-                    }
-
-                "Details" ->
-                    TvTabBody(TvTitlePageBodyTag) {
-                        TvTitleDetails(set, info, editorsChoice, onToggleEditorsChoice)
-                    }
-
-                else ->
-                    TvTitleHeader(
-                        posterPath = set.posterPath,
-                        title = set.title,
-                        facts = factsLine(set.year, set.durationSecs, set.ageLabel()),
-                        info = info,
-                        genres = set.genres,
-                        onOpenGenre = onOpenGenre,
-                        genreFocus = restoreKey,
-                        // The page scrolls inside the overscan-safe band rather
-                        // than across the whole screen — see the class doc for
-                        // why the inset is applied on the outer Column instead.
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .testTag(TvTitlePageBodyTag)
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = Overscan.horizontal),
-                        readableOverview = true,
-                    ) {
-                        // The franchise a film belongs to — `film-page.js`'s
-                        // own "Part of" fact — sits with the genres above it,
-                        // before the file's own technical line.
-                        franchise?.let { own ->
-                            TvTextRow(
-                                text = "Part of ${own.name}",
-                                onClick = { onOpenFranchise(own.id) },
-                                modifier = Modifier.padding(bottom = Spacing.small),
-                            )
-                        }
-                        // As stored, not shouted: the web prints the container
-                        // and codecs in the case the index recorded them.
-                        technicalLine(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
-                        if (resume.isNotEmpty()) Text(text = resume, style = TvTypeScale.body)
-                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium), modifier = Modifier.padding(top = Spacing.small)) {
-                            TvTextRow(
-                                text = if (resume.isEmpty()) "▶ Play" else "▶ Resume",
-                                onClick = onPlay,
-                                focusRequester = play,
-                            )
-                            preload?.let { p ->
-                                TvPreloadPlate(
-                                    state = p.state,
-                                    onClick = p.onToggle,
-                                    focusRequester = preloadPlate,
-                                    queuedAheadLabel = p.queuedAheadLabel,
-                                    needsSpaceBudgetBytes = p.needsSpaceBudgetBytes,
-                                )
-                                // Remove takes the plate it removed with it —
-                                // land back on the main plate rather than
-                                // wherever focus search finds next (the
-                                // Overview tab, at the top of the page).
-                                if (p.state is FilmPreloadState.Done) {
-                                    TvPreloadRemovePlate(onClick = { preloadPlate.requestFocus(); p.onRemove() })
-                                }
-                            }
-                        }
-                        preload?.let { p ->
-                            TvPreloadDetailLines(
-                                state = p.state,
-                                serverLine = p.serverLine,
-                                onOpenStorage = p.onOpenStorage,
-                                modifier = Modifier.padding(top = Spacing.small),
-                            )
-                        }
-                    }
+            Box(modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium)) {
+                when (tabs[selected]) {
+                    "Cast" -> TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey)
+                    "Similar" -> TvSimilarFilms(similar, onOpenTitle, restoreKey)
+                    "Details" -> TvFactSheet(filmDetailFacts(set))
+                    else -> TvFilmOverview(set, info, franchise, onOpenGenre, onOpenFranchise, genreFocus = restoreKey)
+                }
             }
         }
     }
-    LaunchedEffect(set.setId, selected) {
+    // Arrival only — keyed on the title, not the tab, so pressing Overview
+    // leaves the remote on its tab rather than throwing it back up to Play.
+    LaunchedEffect(set.setId) {
         if (selected == 0 && restoreKey !in set.genres) play.requestFocus()
     }
 }
+
+/** The ⋯'s editor's-choice toggle, worded as the phone's menu words it, or none on a kids profile. */
+internal fun editorsChoiceChoice(
+    onToggle: (() -> Unit)?,
+    pinned: Boolean,
+): List<Pair<String, () -> Unit>> =
+    onToggle?.let { listOf((if (pinned) "Remove as editor's choice" else "Make editor's choice") to it) }.orEmpty()

@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.requireDensity
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.relocation.BringIntoViewModifierNode
@@ -104,3 +105,49 @@ private class RevealsFromTopNode :
     }
 }
 
+
+/**
+ * Brought into view, this block — a title page's tab row — asks for the page
+ * from its own top down to the foot of the safe band, a screen's worth less
+ * the bottom inset. Every television rule settles a request that size the
+ * same way, flush with the bottom inset, which leaves the tab row at the
+ * top one: the panel it heads then shows whole beneath it.
+ *
+ * A panel of facts has nothing in it a remote can rest on, and a remote
+ * cannot scroll a page it has no stop in — without this, reaching the tabs
+ * from the spread above would leave Details or About peeking a few lines
+ * under the fold, out of reach. [viewport] is the page's own height in
+ * pixels, read when asked, since a request is made long after composition.
+ */
+internal fun Modifier.revealsPageBelow(viewport: () -> Int): Modifier = this then RevealsPageBelow(viewport)
+
+private data class RevealsPageBelow(
+    val viewport: () -> Int,
+) : ModifierNodeElement<RevealsPageBelowNode>() {
+    override fun create() = RevealsPageBelowNode(viewport)
+
+    override fun update(node: RevealsPageBelowNode) {
+        node.viewport = viewport
+    }
+}
+
+private class RevealsPageBelowNode(
+    var viewport: () -> Int,
+) : Modifier.Node(),
+    BringIntoViewModifierNode {
+    override suspend fun bringIntoView(
+        childCoordinates: LayoutCoordinates,
+        boundsProvider: () -> Rect?,
+    ) {
+        val block = requireLayoutCoordinates()
+        val inset = with(requireDensity()) { Overscan.vertical.toPx() }
+        bringIntoView {
+            val child = boundsProvider() ?: return@bringIntoView null
+            if (!childCoordinates.isAttached || !block.isAttached) return@bringIntoView null
+            val at = block.localPositionOf(childCoordinates, child.topLeft)
+            val height = viewport() - inset
+            if (height <= 0f) return@bringIntoView Rect(at, child.size)
+            Rect(left = at.x, top = 0f, right = at.x + child.width, bottom = height)
+        }
+    }
+}

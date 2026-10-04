@@ -3,7 +3,6 @@ package ui.tv.catalog
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -42,11 +41,9 @@ import uniffi.mediagram_core.TitleInfo
  * as on the phone and the web. [genreFocus] names the one whose page was
  * just left, to take the remote back.
  *
- * [beside] goes at the foot of the facts, still beside the art — where a
- * title page puts its Play, as the web's film page does, so the one thing
- * to press is on screen from the start however long the overview under it
- * runs. The name, the art and the facts are one block to scroll by
- * ([revealsFromTop]): the remote coming back up to Play brings the name
+ * A course's header — a film and a show open on [TvTitleSpread] instead.
+ * The name, the art and the facts are one block to scroll by
+ * ([revealsFromTop]): the remote coming back up to a genre brings the name
  * above it back too.
  *
  * [readableOverview] lets the remote rest on the overview — see
@@ -69,7 +66,6 @@ internal fun TvTitleHeader(
     genreFocus: String? = null,
     readableOverview: Boolean = false,
     readableTitle: Boolean = false,
-    beside: @Composable ColumnScope.() -> Unit = {},
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         Column(modifier = Modifier.revealsFromTop(), verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
@@ -90,7 +86,6 @@ internal fun TvTitleHeader(
                     facts?.let { Text(text = it, style = TvTypeScale.body) }
                     ratingLabel(info?.rating)?.let { Text(text = it, style = TvTypeScale.body) }
                     TvGenreLinks(genres, onOpenGenre, genreFocus)
-                    beside()
                 }
             }
         }

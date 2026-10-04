@@ -1,13 +1,18 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.pressKey
 import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
@@ -24,34 +29,68 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * [TvCollection] and [TvSeason]: a show of several seasons is a wall of
- * season plates, anything else the phone's indented rows, and a document
- * is a line that says why it does not open rather than a thing to press.
+ * [TvCollection] and [TvSeason]: a show's Episodes tab is the web's season
+ * picker over one season's episodes, a course the phone's indented rows,
+ * and a document is a line that says why it does not open rather than a
+ * thing to press.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvCollectionStateTest : TvScreenStateTest() {
     @Test
-    fun aShowOfSeveralSeasonsIsAWallOfSeasonsAndTheFirstIsFocused() {
-        var opened: Division? = null
-        val show = show(division("Season 1", 1, episode("e1", "Pilot")), division("Season 2", 2, episode("e2", "Return")))
-        showCollection(show, onOpenSeason = { opened = it })
+    fun aShowOfSeveralSeasonsPicksASeasonAndListsItsEpisodes() {
+        val show = show(division("Season 1", 1, episode("e1", "Pilot")), division("Season 2", 2, episode("e2", "Return"), episode("e3", "Again")))
+        val season = mutableStateOf<String?>(null)
+        show { TvCollection(show, info = null, watch = WatchSnapshot.Empty, onPlay = {}, season = season.value, onSelectSeason = { season.value = it }) }
 
         compose.onNodeWithText("A Show").assertExists()
-        compose.onNodeWithText("Season 1").assertIsFocused()
-        compose.onNodeWithText("Season 2").performSemanticsAction(SemanticsActions.OnClick)
-        assertEquals("Season 2", opened?.title)
+        compose.onNodeWithTag(TvSeasonPickerTag).assertExists()
+        compose.onNodeWithText("1. Pilot").assertExists()
+        compose.onNodeWithText("1. Return").assertDoesNotExist()
+
+        // The web's own option words, counted as `countOf` counts.
+        compose.onNodeWithText("Season 2 · two episodes").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Season 2 · two episodes").performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals("Season 2", season.value)
+        compose.onNodeWithText("1. Return").assertExists()
+        compose.onNodeWithText("1. Pilot").assertDoesNotExist()
+        // The pill just pressed keeps the remote while the list under it changes.
+        compose.onNodeWithText("Season 2 · two episodes").assertIsFocused()
+        // The picker names the season; the list under it does not name it again.
+        compose.onAllNodesWithText("Season 2").assertCountEquals(0)
     }
 
+    /** One season has nothing to pick from, as `series-page.js` leaves its select out. */
     @Test
-    fun aShowOfOneSeasonListsItsEpisodesAndFocusesTheFirst() {
+    fun aShowOfOneSeasonListsItsEpisodesWithNoPicker() {
         var played: String? = null
         val show = show(division("Season 1", 1, episode("e1", "Pilot"), episode("e2", "Return")))
         showCollection(show, onPlay = { played = it }, watch = WatchSnapshot.Empty.copy(watched = listOf(Watched("e1", 1))))
 
-        compose.onNodeWithText("1. ✓ Pilot").assertIsFocused()
+        compose.onNodeWithTag(TvSeasonPickerTag).assertDoesNotExist()
+        compose.onNodeWithText("1. ✓ Pilot").assertExists()
         compose.onNodeWithText("2. Return").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("e2", played)
+    }
+
+    /** Down from the pills enters Episodes, then the picker, then that season's first episode — and Up walks back to the tab. */
+    @Test
+    fun theRemoteWalksDownFromThePillsThroughThePickerIntoTheEpisodes() {
+        val show = show(division("Season 1", 1, episode("e1", "Pilot")), division("Season 2", 2, episode("e2", "Return")))
+        showCollection(show)
+        compose.onNodeWithText("+ My List").assertIsFocused()
+
+        compose.onNodeWithText("+ My List").performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithText("Episodes").assertIsFocused()
+        compose.onNodeWithText("Episodes").performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithText("Season 1 · one episode").assertIsFocused()
+        compose.onNodeWithText("Season 1 · one episode").performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithText("1. Pilot").assertIsFocused()
+
+        compose.onNodeWithText("1. Pilot").performKeyInput { pressKey(Key.DirectionUp) }
+        compose.onNodeWithText("Season 1 · one episode").performKeyInput { pressKey(Key.DirectionUp) }
+        compose.onNodeWithText("Episodes").assertIsFocused()
     }
 
     @Test
@@ -60,6 +99,15 @@ class TvCollectionStateTest : TvScreenStateTest() {
         showCollection(show, restoreKey = "e2")
 
         compose.onNodeWithText("2. Return").assertIsFocused()
+    }
+
+    /** Back from an episode of a season nobody picked still finds it: the page shows the season that holds it. */
+    @Test
+    fun comingBackToAnotherSeasonsEpisodeShowsThatSeason() {
+        val show = show(division("Season 1", 1, episode("e1", "Pilot")), division("Season 2", 2, episode("e2", "Return")))
+        showCollection(show, restoreKey = "e2")
+
+        compose.onNodeWithText("1. Return").assertIsFocused()
     }
 
     @Test
@@ -140,7 +188,6 @@ class TvCollectionStateTest : TvScreenStateTest() {
         collection: Entry.Collection,
         watch: WatchSnapshot = WatchSnapshot.Empty,
         onPlay: (String) -> Unit = {},
-        onOpenSeason: (Division) -> Unit = {},
         restoreKey: String? = null,
     ) = show {
         TvCollection(
@@ -148,7 +195,6 @@ class TvCollectionStateTest : TvScreenStateTest() {
             info = null,
             watch = watch,
             onPlay = onPlay,
-            onOpenSeason = onOpenSeason,
             restoreKey = restoreKey,
         )
     }

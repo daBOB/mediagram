@@ -818,6 +818,24 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   and System already draw their own index rail for the same reason the tablet exempts
   them, and the player is full screen regardless. Back returns to whichever pill, rail
   row or plate opened the frame.
+- **A title page's spread stands at least 380dp, not the web's `clamp(560px,76vh,780px)`.**
+  At a television's fixed 540dp that clamp would fill the screen and hide the tab row,
+  which is how a viewer learns the page goes on below the spread — the department hero's
+  own reason for its fixed height.
+- **A title page's tabs switch on OK, and the tab row rises to the top of the screen when
+  the remote reaches it.** The web's tabs switch as the arrow keys move along them; on a
+  remote that would swap the panel under the viewer at every step on the way to the tab
+  they meant. The rise is because Details and About are facts with nothing in them a
+  remote can rest on, and a remote cannot scroll a page it has no stop in: the panel has
+  to be on screen whole the moment the tabs are. Up from a panel, and Down from the
+  pills, land on the tab that is showing, as on the web.
+- **A show's season picker is a row of pills, not a drop-down.** Each pill says what the
+  web's option says ("Season 2 · eight episodes"); every season is in sight and one press
+  away, where a drop-down would hide them behind an extra press and a list the remote
+  then has to leave. Picking is OK, not focus, for the tabs' reason.
+- **The ⋯ beside a title's pills opens its choices in the pill row itself.** The web's
+  list floats under the button; on television it would sit over the tab row the remote
+  reaches with Down. Back, or a choice, closes it onto the ⋯.
 - **No voice search.** Search is typed through the system keyboard.
 - **Artwork needs a TMDB key on the device.** As on the phone, posters and backdrops come
   from TMDB; a device without a key shows initials on plain plates.

@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.Shelf
 import catalog.factsLine
+import catalog.filmDetailFacts
+import catalog.filmOverviewFacts
 import catalog.everyFilm
 import catalog.franchisesIn
-import catalog.humanDuration
-import catalog.languageName
 import catalog.ratingLabel
 import catalog.similarTo
 import data.ProgressPoint
@@ -33,10 +33,7 @@ import model.TitleCredits
 import model.WatchSnapshot
 import model.ageLabel
 import model.clockTime
-import model.humanSize
 import playback.FilmPreloadState
-import player.bitrateLabel
-import player.hdrLabel
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
@@ -140,7 +137,7 @@ fun TitleDetailScreen(
                 when (tab) {
                     "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)
                     "Similar" -> FilmSimilarTab(set, watch, shelves, onOpenTitle)
-                    "Details" -> FactSheet(filmDetailsRows(set))
+                    "Details" -> FactSheet(factRows(filmDetailFacts(set)))
                     else -> FilmOverviewTab(set, info, franchise, onOpenGenre, onOpenFranchise)
                 }
             }
@@ -158,16 +155,7 @@ private fun FilmOverviewTab(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         PosterArt(posterPath = set.posterPath, title = set.title, modifier = Modifier.width(POSTER_WIDTH))
-        FactSheet(
-            listOf(
-                "Released" to textFact(set.year?.takeIf { it > 0 }?.toString()),
-                "Runtime" to textFact(humanDuration(set.durationSecs)),
-                "Rated" to textFact(set.ageLabel()),
-                "Score" to textFact(ratingLabel(info?.rating)),
-                "Genres" to genreFact(set.genres, onOpenGenre),
-                "Part of" to franchise?.let { linkFact(it.name) { onOpenFranchise(it.id) } },
-            ),
-        )
+        FactSheet(factRows(filmOverviewFacts(set, info, franchise), onOpenGenre, onOpenFranchise))
     }
 }
 
@@ -195,23 +183,6 @@ private fun FilmSimilarTab(
         },
     )
 }
-
-/** What the file is: the questions a viewer asks when a title will not play — a Compose port of `film-page.js#details`. */
-private fun filmDetailsRows(set: MediaSet): List<Pair<String, (@Composable () -> Unit)?>> =
-    listOf(
-        "Quality" to textFact(listOfNotNull(set.quality, hdrLabel(set.hdr)).joinToString(" · ").takeIf(String::isNotEmpty)),
-        "Video" to textFact(set.vcodec?.takeIf(String::isNotEmpty)),
-        "Audio" to textFact(set.acodec?.takeIf(String::isNotEmpty)),
-        "Audio languages" to textFact(languagesOf(set.alang)),
-        "Subtitles" to textFact(languagesOf(set.slang)),
-        "Container" to textFact(set.container.takeIf(String::isNotEmpty)),
-        "Size" to textFact(set.totalBytes.takeIf { it > 0 }?.let(::humanSize)),
-        "Bitrate" to textFact(bitrateLabel(set.totalBytes, set.durationSecs)),
-        "Parts" to textFact(set.partCount.takeIf { it > 1 }?.toString()),
-    )
-
-/** `English, German` from the file's own track codes, or no row when it recorded none. */
-private fun languagesOf(codes: List<String>): String? = codes.takeIf { it.isNotEmpty() }?.joinToString(", ", transform = ::languageName)
 
 /**
  * The block that describes something: its artwork beside its facts, then

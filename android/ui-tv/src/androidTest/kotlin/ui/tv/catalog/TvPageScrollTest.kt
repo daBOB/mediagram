@@ -20,7 +20,7 @@ import model.Kind
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,53 +41,56 @@ class TvPageScrollTest {
 
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    /** Resume sits low enough — under a line saying where — that a television's own rule would scroll to it. */
+    /** Resume sits in the spread, on screen from the start: nothing scrolls the page on arrival. */
     @Test
-    fun aTitlePageOpensWithItsTitleInsideTheOverscanInset() {
+    fun aTitlePageOpensWithItsWholeSpreadOnScreen() {
         show { TvTitlePage(set = film, info = info, progress = stopped, onPlay = {}) }
-        waitUntilFocused("▶ Resume")
+        waitUntilFocused("▶ Resume from 12:30")
         compose.waitForIdle()
 
-        assertAtTheTop(compose.onNodeWithText("A Film"))
+        assertInsideTheSafeBand(compose.onNodeWithText("A Film"))
     }
 
+    /** Down from Resume reaches the tab row inside the safe band, and Up again brings the title back. */
     @Test
-    fun upToResumeFromTheOverviewBringsTheTitleBack() {
+    fun theTabsRiseToTheTopAndUpToResumeBringsTheTitleBack() {
         show { TvTitlePage(set = film, info = info, progress = stopped, onPlay = {}) }
-        waitUntilFocused("▶ Resume")
-        compose.onNodeWithText("▶ Resume").performKeyInput { pressKey(Key.DirectionDown) }
-        waitUntilFocused(info.overview!!)
+        waitUntilFocused("▶ Resume from 12:30")
+        compose.onNodeWithText("▶ Resume from 12:30").performKeyInput { pressKey(Key.DirectionDown) }
+        waitUntilFocused("Overview")
+        compose.waitForIdle()
+        assertInsideTheSafeBand(compose.onNodeWithText("Overview"))
 
-        compose.onNodeWithText(info.overview!!).performKeyInput { pressKey(Key.DirectionUp) }
-        waitUntilFocused("▶ Resume")
+        compose.onNodeWithText("Overview").performKeyInput { pressKey(Key.DirectionUp) }
+        waitUntilFocused("▶ Resume from 12:30")
         compose.waitForIdle()
 
-        assertAtTheTop(compose.onNodeWithText("A Film"))
+        assertInsideTheSafeBand(compose.onNodeWithText("A Film"))
     }
 
-    /**
-     * A show's art and overview stand taller than a screen leaves room for
-     * above its first season, so opening it has to scroll; Up from there
-     * reads the overview, and Up again brings the show's name back.
-     */
+    /** The same walk on a show's page: down to Episodes and its first season's picker, and back up to the show's name. */
     @Test
-    fun upFromAShowsFirstSeasonReachesItsOverviewThenItsName() {
-        show { TvCollection(collection = show, info = info, watch = WatchSnapshot.Empty, onPlay = {}, onOpenSeason = {}) }
-        waitUntilFocused("Season 1")
+    fun upFromAShowsPickerReachesItsPillsAndName() {
+        show { TvCollection(collection = show, info = info, watch = WatchSnapshot.Empty, onPlay = {}) }
+        waitUntilFocused("+ My List")
 
+        compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionDown) }
+        waitUntilFocused("Episodes")
+        compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionDown) }
+        waitUntilFocused("Season 1 · one episode")
         compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
-        waitUntilFocused(info.overview!!)
+        waitUntilFocused("Episodes")
         compose.onNode(isFocused()).performKeyInput { pressKey(Key.DirectionUp) }
-        waitUntilFocused("A Show")
+        waitUntilFocused("+ My List")
         compose.waitForIdle()
 
-        assertAtTheTop(compose.onNodeWithText("A Show"))
+        assertInsideTheSafeBand(compose.onNodeWithText("A Show"))
     }
 
-    private fun assertAtTheTop(node: SemanticsNodeInteraction) {
+    private fun assertInsideTheSafeBand(node: SemanticsNodeInteraction) {
         node.assertIsDisplayed()
         val inset = with(compose.density) { Overscan.vertical.toPx() }
-        assertEquals(inset, node.fetchSemanticsNode().boundsInRoot.top, 1f)
+        assertTrue(node.fetchSemanticsNode().boundsInRoot.top >= inset - 1f)
     }
 
     private fun show(content: @Composable () -> Unit) {

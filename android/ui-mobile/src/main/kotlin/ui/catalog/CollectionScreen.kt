@@ -14,23 +14,18 @@ import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
 import catalog.ResumeVerb
-import catalog.SeriesFacts
 import catalog.Shelf
-import catalog.detailRows
 import catalog.episodeShort
 import catalog.extentOf
 import catalog.firstItemOf
-import catalog.pictureLine
-import catalog.provenance
 import catalog.rowsOf
-import catalog.scaleLine
+import catalog.seriesAboutFacts
 import catalog.seriesFactsLine
 import catalog.seriesResumeFor
 import catalog.showsOf
 import catalog.similarShows
 import catalog.summarize
 import catalog.walk
-import catalog.yearLine
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
@@ -228,26 +223,11 @@ private fun SeriesPage(
                 }
             else ->
                 item(key = "about") {
-                    FactSheet(seriesAboutRows(facts, info, firstEpisode?.genres.orEmpty(), onOpenGenre))
+                    FactSheet(factRows(seriesAboutFacts(facts, info, firstEpisode?.genres.orEmpty()), onOpenGenre))
                 }
         }
     }
 }
-
-private fun seriesAboutRows(
-    facts: SeriesFacts,
-    info: TitleInfo?,
-    genres: List<String>,
-    onOpenGenre: (String) -> Unit,
-): List<Pair<String, (@Composable () -> Unit)?>> =
-    buildList {
-        add("Aired" to textFact(yearLine(facts, info)))
-        add("Held" to textFact(scaleLine(facts, info)))
-        add("From" to textFact(provenance(info)))
-        add("Genres" to genreFact(genres, onOpenGenre))
-        add("Picture" to textFact(pictureLine(facts)))
-        for ((label, value) in detailRows(facts)) add(label to textFact(value))
-    }
 
 @Composable
 private fun SeriesSimilarTab(

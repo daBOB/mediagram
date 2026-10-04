@@ -2,6 +2,8 @@ package player
 
 import model.Kind
 import model.MediaSet
+import model.bitrateLabel
+import model.hdrLabel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

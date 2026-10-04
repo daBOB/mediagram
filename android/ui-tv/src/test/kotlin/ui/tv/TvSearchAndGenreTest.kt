@@ -236,6 +236,8 @@ class TvSearchAndGenreTest {
     @Test
     fun aShowsGenreLinkIsWhereBackFromItsWallLands() {
         press(plate("A Show"))
+        // A show's genres are links in About, as `series-page.js` puts them.
+        press(compose.onNodeWithText("About"))
         press(compose.onNodeWithText("Drama"))
         plate("Film 1").assertIsFocused()
 
@@ -344,7 +346,7 @@ class TvSearchAndGenreTest {
         compose.waitForIdle()
     }
 
-    /** One show of two seasons, tagged Drama — a season wall with a header whose genre is a link. */
+    /** One show of two seasons, tagged Drama — a show page whose About names the genre as a link. */
     private fun show(): List<MediaSet> =
         listOf(
             set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 10, episode = 1).copy(season = 1, genres = listOf("Drama")),

@@ -25,6 +25,19 @@ abstract class TvScreenStateTest {
         controller = null
     }
 
+    /** The remote's Back, through the activity's own dispatcher — whatever a page registered, or nothing. */
+    protected fun back() {
+        compose.runOnUiThread { controller?.get()?.onBackPressedDispatcher?.onBackPressed() }
+        compose.waitForIdle()
+    }
+
+    /** Whether anything on the page would take a Back — `false` leaves it to the frame that shows the page. */
+    protected fun pageTakesBack(): Boolean {
+        var takes = false
+        compose.runOnUiThread { takes = controller?.get()?.onBackPressedDispatcher?.hasEnabledCallbacks() == true }
+        return takes
+    }
+
     protected fun show(content: @Composable () -> Unit) {
         compose.runOnUiThread {
             val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()

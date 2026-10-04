@@ -5,6 +5,22 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.104.0 — the television's title and series pages read like the web's
+
+**Changed** (Android TV)
+
+- A film or show opens on the web's spread: backdrop, title, facts, overview and tagline,
+  with Play (or "Resume from 12:30"), "+ My List" / "✓ My List" and ⋯ pills. ⋯ holds
+  editor's choice, for shows as well as films.
+- Overview, Details and a show's About are the web's fact sheets — Audio, air dates,
+  "1 of 73 episodes" — built once in the catalogue for phone and TV alike.
+- Similar is always a tab, with the web's sentence when nothing is similar. Episodes is a
+  season picker over that season's episode list, not a wall of season posters.
+- Up from a panel lands on the selected tab rather than the nearest one.
+- Written under "Television differs": a 380 dp minimum spread; tabs switch on OK and the
+  tab row rises to the top so a sheet with nothing to focus shows whole; the season picker
+  is a row of pills; ⋯ opens its choices in the same row.
+
 ## 0.103.0 — the television's browse pages read like the web's
 
 **Changed** (Android TV)

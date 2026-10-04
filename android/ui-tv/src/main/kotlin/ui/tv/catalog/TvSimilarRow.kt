@@ -26,8 +26,8 @@ private val SimilarPlateWidth = 140.dp
 /**
  * "Similar" on a film's own page — a horizontal row of [catalog.similarTo]'s
  * own picks, the television twin of the phone's Similar tab and the web's
- * `similar.js`. Nothing is drawn for a title with nothing similar in the
- * library.
+ * `similar.js`. A title with nothing similar in the library says so in the
+ * web's own words ([NothingSimilar]) rather than showing an empty tab.
  *
  * [restoreKey] names the film whose page was just left, if any, so the
  * remote comes back to its own plate; with none, or none still in [films],
@@ -40,7 +40,7 @@ internal fun TvSimilarFilms(
     onOpenTitle: (setId: String) -> Unit,
     restoreKey: String? = null,
 ) {
-    if (films.isEmpty()) return
+    if (films.isEmpty()) return TvQuietLine(NothingSimilar)
     val focusRequester = remember { FocusRequester() }
     val focusIndex =
         remember(films, restoreKey) {
@@ -75,7 +75,7 @@ internal fun TvSimilarShows(
     onOpenCollection: (key: String) -> Unit,
     restoreKey: String? = null,
 ) {
-    if (shows.isEmpty()) return
+    if (shows.isEmpty()) return TvQuietLine(NothingSimilar)
     val focusRequester = remember { FocusRequester() }
     val focusIndex =
         remember(shows, restoreKey) {
@@ -102,3 +102,6 @@ internal fun TvSimilarShows(
         }
     }
 }
+
+/** What Similar says with nothing to show — `similarShelf`/`similarShows`' own sentence in `film-page.js` and `series-page.js`. */
+internal const val NothingSimilar = "Nothing else in the library shares its genres."
