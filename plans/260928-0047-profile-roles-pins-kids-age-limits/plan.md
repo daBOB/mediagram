@@ -29,6 +29,19 @@ uniffi 0.32 (core); Kotlin, Compose, Hilt (Android).
 **Spec:** `docs/superpowers/specs/2026-09-28-profile-roles-design.md`
 **Contract (names, reasons, wire, API — read first):** [shared-contract.md](shared-contract.md)
 
+
+## Amendments (2026-10-04)
+
+- **Pre-flight against 0.102.1:** `../261004-1508-open-tasks-sweep/reports/b3-profile-roles-preflight-report.md`.
+  Its rulings override this plan's text where they differ: web state schema **v12**
+  (`roles-schema.ts`), core **v8**, the named file splits, role stamps bounded by the
+  shipped `isStamp`/`MAX_STAMP`, own writes clamped, Back on a reopened chooser stays
+  "Stay as I am", subtitle preferences keep syncing promptly.
+- **User, 2026-10-04:** start web + core (01–05a) now, ahead of the Android test cleanup;
+  a new kids profile starts at **FSK 6** (Open #1); the household-admin PIN stays
+  **separate** from the web's Settings admin token. Android Settings › Profile reads
+  "Name · Kids · FSK N" like the web (Open #3 closed — the screen exists since 0.90.0).
+
 ## Decisions (user, 2026-09-27 — do not reverse silently)
 
 1. Grown-ups get a PIN (4 digits, required); kids profiles open freely. Honest

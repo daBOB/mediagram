@@ -32,6 +32,12 @@ in, in what order, what was decided, and where each item stands.
    folders, paced. **Backfill: resume now — the user confirmed the other machine is idle.**
    Started 2026-10-04 20:00 (1,828 sets, log `~/.local/share/mediagram/backfill-channel-261004-2000.log`).
 
+6. **Profile roles (2026-10-04):** start the web + core half (01–05a) now, in parallel with the
+   Android work; a new kids profile starts at **FSK 6**; the household-admin PIN stays
+   **separate** from the web's Settings admin token. Pre-flight rulings in
+   `reports/b3-profile-roles-preflight-report.md` override the phase files where they differ
+   (state schema web v12 / core v8, file splits, stamp bounds, keep Back = "Stay as I am").
+
 Outward actions still need their own word each time: publishing to the TV channel,
 pushing to origin. Earlier rewatch-date default stands (watched keeps the latest finish).
 
