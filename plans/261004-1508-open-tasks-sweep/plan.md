@@ -71,7 +71,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 |---|------|--------|
 | B1 | `260926-1330` — A–H merged; box re-walk on 0.109.0: Left from Search ✓, franchise hero in view ✓, Back to franchise card ✓; Home feature-card Back → bar pill reproduces (not first-launch) → fix building | in progress |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01, 02+03 (web, live), 04 merged; 05 built (core rules/PIN/API; merges together with 06); 06 (Android data) building; 07 (screens) after; 08 verify + publish | in progress |
+| B3 | `260928-0047` — 01, 02+03 (web, live), 04 merged; 05 + 06 built on branch `worktree-agent-ac2ce5e3f3a3e5567` (merge together with 07 — until 07 a grown-up opens without a PIN); 07a phone + 07b TV building on that branch; then merge 05–07, rebuild .so, tablet contract run + device walks, 08, publish (with the user's word) | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.
