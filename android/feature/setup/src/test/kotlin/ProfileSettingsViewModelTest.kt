@@ -74,6 +74,13 @@ class ProfileSettingsViewModelTest {
             assertEquals("Alice", profileStatus(model.profile.value))
         }
 
+    /** The web's Settings line: a kid's own limit, never a fixed one. */
+    @Test
+    fun aKidsStatusNamesItsOwnLimit() {
+        assertEquals("Mia · Kids · FSK 6", profileStatus(model.Profile("k", "Mia", kids = true, kidsAge = 6)))
+        assertEquals("Old · Kids · FSK 12", profileStatus(model.Profile("o", "Old", kids = true)))
+    }
+
     @Test
     fun aValueOutsideTheOfferedSetIsNeverWritten() =
         runTest {

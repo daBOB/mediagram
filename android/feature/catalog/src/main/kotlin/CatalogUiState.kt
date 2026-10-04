@@ -32,8 +32,13 @@ sealed interface CatalogUiState {
 
     data object Empty : CatalogUiState
 
-    /** A kids profile over a library with nothing rated for kids yet. */
-    data object KidsEmpty : CatalogUiState
+    /** A kids profile over a library with nothing its own [limit] allows yet. */
+    data class KidsEmpty(
+        val limit: Int,
+    ) : CatalogUiState {
+        /** The web's own empty-shelf sentence, naming the kid's limit. */
+        val message: String get() = "Nothing rated FSK $limit or under yet."
+    }
 
     data class Failed(
         val message: String,

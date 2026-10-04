@@ -77,5 +77,5 @@ class ProfileSettingsViewModel
             }
     }
 
-/** The index row's line under "Profile". */
-fun profileStatus(profile: Profile?): String = profile?.let { "${it.name}${if (it.kids) " · Kids" else ""}" } ?: "Nobody chosen"
+/** The index row's line under "Profile" — the web's own: a kid's limit is its own, so it is named. */
+fun profileStatus(profile: Profile?): String = profile?.let { "${it.name}${if (it.kids) " · Kids · FSK ${it.kidsLimit}" else ""}" } ?: "Nobody chosen"

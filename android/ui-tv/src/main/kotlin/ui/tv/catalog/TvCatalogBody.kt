@@ -53,7 +53,7 @@ internal fun TvCatalogBody(
 ) {
     when {
         state is CatalogUiState.Loading -> TvCenteredMessage("Loading your library…")
-        state is CatalogUiState.KidsEmpty -> TvCenteredMessage("Nothing rated FSK 12 or under yet.")
+        state is CatalogUiState.KidsEmpty -> TvCenteredMessage(state.message)
         state is CatalogUiState.Failed -> TvCenteredMessage(state.message)
         ready == null -> TvCenteredMessage("The library is empty.")
         selected == 0 -> {

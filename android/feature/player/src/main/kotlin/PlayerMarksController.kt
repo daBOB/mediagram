@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.KIDS_LIMITS
-import model.KidsVerdict
 import model.ageLabelOf
+import model.ageOf
 import model.kidsVerdictOf
 
 /**
@@ -51,7 +51,9 @@ class PlayerMarksController(
                     kids = it in snapshot.kids,
                     lists = snapshot.collections,
                     memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
-                    kidsVerdict = kidsVerdictOf(fsk),
+                    // A grown-up reads a rating against the widest limit a kid can have; a
+                    // kid at 6 is kept from an FSK 12 film by its own filter, not by this label.
+                    kidsVerdict = kidsVerdictOf(fsk, KIDS_LIMITS.max()),
                     ageLabel = ageLabelOf(fsk),
                     // A child does not approve titles for themselves.
                     canMarkKids = profile?.kids != true,
@@ -84,7 +86,7 @@ class PlayerMarksController(
         // A kids profile does not approve titles for itself.
         if (marks.value?.canMarkKids == false) return
         // A rated title is not marked: its rating already decided.
-        if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
+        if (ageOf(openFsk.value) != null) return
         val marked = setId in repository.snapshot.value.kids
         write("Kids update") {
             // The single-button form marks from 12, the one age a mark had before there were two.
