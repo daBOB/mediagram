@@ -98,6 +98,7 @@ private class FakeCatalogWatchState(
 ) : WatchStateRepository {
     override val profiles = MutableStateFlow(emptyList<Profile>())
     override val chosenProfileId = MutableStateFlow<String?>(null)
+    override val chosenProfile = MutableStateFlow<Profile?>(null)
     override val snapshot = MutableStateFlow(watch)
 
     /** Every list write this fake was asked for, in order, e.g. `"createList Favourites"`. */
@@ -110,6 +111,7 @@ private class FakeCatalogWatchState(
     override fun invalidate() {
         profiles.value = emptyList()
         chosenProfileId.value = null
+        chosenProfile.value = null
         snapshot.value = WatchSnapshot.Empty
     }
 
@@ -125,8 +127,6 @@ private class FakeCatalogWatchState(
         at: Double,
         duration: Double?,
     ) = Unit
-
-    override suspend fun clearProgress(setId: String) = Unit
 
     override suspend fun setWatched(
         setId: String,
@@ -767,8 +767,7 @@ class CatalogViewModelTest {
                         ),
                 )
             val watch = FakeCatalogWatchState(WatchSnapshot.Empty.copy(kids = listOf("Marked")))
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true), Profile("a", "Ana"))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -777,7 +776,7 @@ class CatalogViewModelTest {
                 assertEquals(setOf("Family", "Marked"), ids.toSet())
                 val readsBefore = repository.reads
 
-                watch.chosenProfileId.value = "a"
+                watch.chosenProfile.value = Profile("a", "Ana")
                 val adultView = awaitItem() as CatalogUiState.Ready
                 val all = adultView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
                 assertEquals(setOf("Family", "Grown", "Marked"), all.toSet())
@@ -803,8 +802,7 @@ class CatalogViewModelTest {
                 given = listOf(fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"), fakeSet(Kind.DOCUMENTARY, "Baraka")),
             )
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -832,8 +830,7 @@ class CatalogViewModelTest {
                 ),
             )
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -854,8 +851,7 @@ class CatalogViewModelTest {
                 ),
             )
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -871,8 +867,7 @@ class CatalogViewModelTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -892,8 +887,7 @@ class CatalogViewModelTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true))
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
             val vm = catalogViewModel(repository, watch)
             vm.state.test {
                 awaitItem()
@@ -928,8 +922,7 @@ class CatalogViewModelTest {
                         ),
                 )
             val watch = FakeCatalogWatchState()
-            watch.profiles.value = listOf(Profile("k", "Mia", kids = true), Profile("a", "Ana"))
-            watch.chosenProfileId.value = "a"
+            watch.chosenProfile.value = Profile("a", "Ana")
             val vm = catalogViewModel(repository, watch)
 
             vm.state.test {
@@ -943,7 +936,7 @@ class CatalogViewModelTest {
             advanceTimeBy(6_000)
             runCurrent()
 
-            watch.chosenProfileId.value = "k"
+            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
 
             vm.state.test {
                 val first = awaitItem()

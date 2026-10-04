@@ -10,12 +10,9 @@ import data.SUBTITLE_PREFERENCE
 import data.WatchStateRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.Profile
 import javax.inject.Inject
@@ -38,9 +35,7 @@ class ProfileSettingsViewModel
         private val preferences: PlayerPreferences,
     ) : ViewModel() {
         /** The chosen profile, `null` until one is. */
-        val profile: StateFlow<Profile?> =
-            combine(watchState.profiles, watchState.chosenProfileId) { all, id -> all.find { it.id == id } }
-                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        val profile: StateFlow<Profile?> = watchState.chosenProfile
 
         private val _subtitle = MutableStateFlow(OFF)
 

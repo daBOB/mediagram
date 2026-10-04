@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.102.1 — Android's watch state says who is watching; no position clear without a finish
+
+**Changed** (internal, Android)
+
+- The watch-state repository answers who is watching (`chosenProfile`), so the catalogue,
+  the player's marks and Settings › Profile stop each looking the chosen id up for
+  themselves. `clearProgress` is gone from it: finishing a title, which always re-stamps
+  "watched", is now the only way a position is dropped. A position cleared without that
+  stamp is what let another device bring it back.
+- Tests can make a core call fail or hold it open (`FakeCoreProvider.beforeCore`), ready
+  for moving the remaining test doubles onto the real repository.
+
 ## 0.102.0 — Android browse pages read like the web's
 
 **Changed** (Android phone and tablet)

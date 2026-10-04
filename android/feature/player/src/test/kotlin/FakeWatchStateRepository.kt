@@ -22,6 +22,7 @@ class FakeWatchStateRepository(
 ) : WatchStateRepository {
     override val profiles = MutableStateFlow<List<Profile>>(emptyList())
     override val chosenProfileId = MutableStateFlow(if (profileChosen) "p1" else null)
+    override val chosenProfile = MutableStateFlow(if (profileChosen) Profile("p1", "Viewer") else null)
 
     private val _snapshot = MutableStateFlow(initialSnapshot)
     override val snapshot: StateFlow<WatchSnapshot> = _snapshot
@@ -32,6 +33,7 @@ class FakeWatchStateRepository(
     override fun invalidate() {
         profiles.value = emptyList()
         chosenProfileId.value = null
+        chosenProfile.value = null
         _snapshot.value = WatchSnapshot.Empty
     }
 
@@ -53,12 +55,6 @@ class FakeWatchStateRepository(
             _snapshot.value.copy(
                 progress = _snapshot.value.progress.filterNot { it.setId == setId } + Progress(setId, at, duration, 0),
             )
-    }
-
-    override suspend fun clearProgress(setId: String) {
-        if (chosenProfileId.value == null) return
-        calls += "clearProgress $setId"
-        _snapshot.value = _snapshot.value.copy(progress = _snapshot.value.progress.filterNot { it.setId == setId })
     }
 
     override suspend fun setWatched(

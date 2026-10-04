@@ -31,16 +31,20 @@ internal class FakeWatchStateRepository(
     private val mutableChosenProfileId = MutableStateFlow(chosenProfileId)
     override val chosenProfileId: StateFlow<String?> = mutableChosenProfileId.asStateFlow()
 
-    // Held for "Mark finished" alone: clearing a position and stamping a
-    // finish are what it writes, so those two land here and every other
+    private val mutableChosenProfile = MutableStateFlow(profiles.find { it.id == chosenProfileId })
+    override val chosenProfile: StateFlow<Profile?> = mutableChosenProfile.asStateFlow()
+
+    // Held for "Mark finished" alone: stamping a finish, which clears the
+    // position with it, is what it writes, so that lands here and every other
     // write stays a no-op — a title played in a walk must not start
     // appearing on Continue under a test that never asked for it.
     private val mutableSnapshot = MutableStateFlow(watch)
     override val snapshot: StateFlow<WatchSnapshot> = mutableSnapshot.asStateFlow()
 
     override suspend fun chooseProfile(id: String): Boolean {
-        if (mutableProfiles.value.none { it.id == id }) return false
+        val chosen = mutableProfiles.value.find { it.id == id } ?: return false
         mutableChosenProfileId.value = id
+        mutableChosenProfile.value = chosen
         return true
     }
 
@@ -59,10 +63,6 @@ internal class FakeWatchStateRepository(
         duration: Double?,
     ) = Unit
 
-    override suspend fun clearProgress(setId: String) {
-        mutableSnapshot.value = mutableSnapshot.value.let { it.copy(progress = it.progress.filterNot { p -> p.setId == setId }) }
-    }
-
     override suspend fun setWatched(
         setId: String,
         finished: Boolean,
@@ -77,7 +77,10 @@ internal class FakeWatchStateRepository(
     override suspend fun deleteProfile(id: String): Boolean {
         if (mutableProfiles.value.none { it.id == id }) return false
         mutableProfiles.value = mutableProfiles.value.filterNot { it.id == id }
-        if (mutableChosenProfileId.value == id) mutableChosenProfileId.value = null
+        if (mutableChosenProfileId.value == id) {
+            mutableChosenProfileId.value = null
+            mutableChosenProfile.value = null
+        }
         return true
     }
 
@@ -116,6 +119,7 @@ internal class FakeWatchStateRepository(
     override fun invalidate() {
         mutableProfiles.value = emptyList()
         mutableChosenProfileId.value = null
+        mutableChosenProfile.value = null
     }
 }
 

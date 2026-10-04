@@ -44,6 +44,14 @@ interface WatchStateRepository {
      */
     val chosenProfileId: StateFlow<String?>
 
+    /**
+     * The profile behind [chosenProfileId], as [profiles] last listed it —
+     * the one place to ask who is watching, kids profile or not, so no screen
+     * looks the id up in the list for itself. `null` with nobody chosen, and
+     * while the chosen id is not in [profiles] yet.
+     */
+    val chosenProfile: StateFlow<Profile?>
+
     /** The chosen profile's everything; [WatchSnapshot.Empty] until one is chosen. */
     val snapshot: StateFlow<WatchSnapshot>
 
@@ -66,9 +74,6 @@ interface WatchStateRepository {
         at: Double,
         duration: Double?,
     )
-
-    /** Clears progress for the chosen profile; does nothing without one. */
-    suspend fun clearProgress(setId: String)
 
     /** Changes completion for the chosen profile; does nothing without one. */
     suspend fun setWatched(
@@ -117,7 +122,7 @@ interface WatchStateRepository {
     ): Boolean
 
     /**
-     * Re-reads [profiles], [chosenProfileId] and, if one is chosen,
+     * Re-reads [profiles], [chosenProfileId], [chosenProfile] and, if one is chosen,
      * [snapshot], from the core. Called once by whoever first needs this
      * device's state, and again by [WatchSync] after a round that pulled
      * rows — nothing here refreshes itself.
@@ -147,7 +152,8 @@ interface WatchStateRepository {
      *
      * One call: the core's `setWatched` clears the position in the same
      * transaction that records the mark. Clearing it first, as a call of its
-     * own, is what could leave a position gone with no completion.
+     * own, is what could leave a position gone with no completion — which is
+     * why this repository offers no way to clear a position on its own.
      */
     suspend fun markFinished(setId: String) {
         setWatched(setId, true)
@@ -172,6 +178,9 @@ class DefaultWatchStateRepository(
 
     private val _chosenProfileId = MutableStateFlow<String?>(null)
     override val chosenProfileId: StateFlow<String?> = _chosenProfileId.asStateFlow()
+
+    private val _chosenProfile = MutableStateFlow<Profile?>(null)
+    override val chosenProfile: StateFlow<Profile?> = _chosenProfile.asStateFlow()
 
     private val _snapshot = MutableStateFlow(WatchSnapshot.Empty)
     override val snapshot: StateFlow<WatchSnapshot> = _snapshot.asStateFlow()
@@ -203,6 +212,7 @@ class DefaultWatchStateRepository(
             selectedCore = null
             _chosenProfileId.value = null
             _profiles.value = emptyList()
+            publishChosenProfile()
             _snapshot.value = WatchSnapshot.Empty
         }
     }
@@ -228,6 +238,7 @@ class DefaultWatchStateRepository(
             selectedCore = core
             _profiles.value = read.profiles
             _chosenProfileId.value = read.chosen
+            publishChosenProfile()
             _snapshot.value = snapshot
         }
     }
@@ -252,6 +263,7 @@ class DefaultWatchStateRepository(
                         revision++
                         selectedCore = core
                         _chosenProfileId.value = id
+                        publishChosenProfile()
                         _snapshot.value = WatchSnapshot.Empty
                         Selection(core, revision, id)
                     }
@@ -284,6 +296,7 @@ class DefaultWatchStateRepository(
         synchronized(publicationLock) {
             if (resetRevision != started || coreProvider.core.value !== core) return null
             _profiles.value = _profiles.value + toProfile(created)
+            publishChosenProfile()
         }
         return toProfile(created)
     }
@@ -295,8 +308,6 @@ class DefaultWatchStateRepository(
     ) = writing { core, id ->
         core.setProgress(id, setId, at, duration, today())
     }
-
-    override suspend fun clearProgress(setId: String) = writing { core, id -> core.clearProgress(id, setId) }
 
     override suspend fun setWatched(
         setId: String,
@@ -385,6 +396,15 @@ class DefaultWatchStateRepository(
                 _snapshot.value = snapshot
             }
         }
+    }
+
+    /**
+     * Called with [publicationLock] held wherever [_profiles] or
+     * [_chosenProfileId] moves, so [chosenProfile] never names a profile the
+     * list or the choice has since left behind.
+     */
+    private fun publishChosenProfile() {
+        _chosenProfile.value = _chosenProfileId.value?.let { id -> _profiles.value.find { it.id == id } }
     }
 
     /** Called with [publicationLock] held so invalidation cannot race the following publication. */

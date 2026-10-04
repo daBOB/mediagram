@@ -154,7 +154,7 @@ class PlayerMarksTest {
         runTest {
             installMainDispatcher()
             val repository = FakeWatchStateRepository()
-            repository.profiles.value = listOf(Profile("p1", "Mia", kids = true))
+            repository.chosenProfile.value = Profile("p1", "Mia", kids = true)
             val vm = viewModel(repository)
 
             vm.marks.test {

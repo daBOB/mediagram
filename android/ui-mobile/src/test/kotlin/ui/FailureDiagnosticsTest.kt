@@ -196,8 +196,7 @@ class FailureDiagnosticsTest {
     private fun catalogModel(repository: CatalogRepository): CatalogViewModel {
         val watch = mockk<WatchStateRepository>()
         every { watch.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
-        every { watch.profiles } returns MutableStateFlow(emptyList())
-        every { watch.chosenProfileId } returns MutableStateFlow(null)
+        every { watch.chosenProfile } returns MutableStateFlow(null)
         val enrichment = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
         return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment))
     }

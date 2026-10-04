@@ -78,6 +78,7 @@ internal class TvPlayerFixture(
             every { this@TvPlayerFixture.repository.snapshot } returns MutableStateFlow(snapshot)
             every { this@TvPlayerFixture.repository.profiles } returns MutableStateFlow(listOfNotNull(profile))
             every { this@TvPlayerFixture.repository.chosenProfileId } returns MutableStateFlow(profile?.id)
+            every { this@TvPlayerFixture.repository.chosenProfile } returns MutableStateFlow(profile)
         }
         every { media.applicationLooper } returns Looper.getMainLooper()
         every { media.videoSize } returns VideoSize.UNKNOWN

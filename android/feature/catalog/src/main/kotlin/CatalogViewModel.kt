@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
@@ -59,15 +60,12 @@ class CatalogViewModel
          * `snapshot` — do not regroup the shelves.
          */
         private val kidsFilter: Flow<Set<String>?> =
-            combine(watchState.profiles, watchState.chosenProfileId, watchState.snapshot) { _, _, _ -> currentKids() }
+            combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentKids() }
                 .distinctUntilChanged()
 
         /** [currentKids] as a synchronous read, for a value computed outside collection. */
-        private fun currentKids(): Set<String>? {
-            val chosen = watchState.chosenProfileId.value
-            val kids = watchState.profiles.value.firstOrNull { it.id == chosen }?.kids == true
-            return if (kids) watchState.snapshot.value.kids.toSet() else null
-        }
+        private fun currentKids(): Set<String>? =
+            if (watchState.chosenProfile.value?.kids == true) watchState.snapshot.value.kids.toSet() else null
 
         /**
          * Whether the chosen profile is a kids profile — the title page's own
@@ -75,9 +73,9 @@ class CatalogViewModel
          * the pin is not a kids profile's to make.
          */
         val kidsProfile: StateFlow<Boolean> =
-            combine(watchState.profiles, watchState.chosenProfileId) { profiles, chosen ->
-                profiles.firstOrNull { it.id == chosen }?.kids == true
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+            watchState.chosenProfile
+                .map { it?.kids == true }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
         /** Pins or unpins the household's editor's choice — see [data.WatchStateRepository.setEditorsChoice]. */
         fun setEditorsChoice(

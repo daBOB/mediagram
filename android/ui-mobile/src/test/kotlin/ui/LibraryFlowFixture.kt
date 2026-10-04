@@ -90,8 +90,10 @@ internal class LibraryFlowFixture(
     init {
         if (!loading) catalogReady.complete(Unit)
         val stored = playback.repository
-        every { stored.profiles } returns MutableStateFlow(listOf(Profile("viewer", "Viewer")))
-        every { stored.chosenProfileId } returns MutableStateFlow("viewer")
+        val viewer = Profile("viewer", "Viewer")
+        every { stored.profiles } returns MutableStateFlow(listOf(viewer))
+        every { stored.chosenProfileId } returns MutableStateFlow(viewer.id)
+        every { stored.chosenProfile } returns MutableStateFlow(viewer)
         every { stored.snapshot } returns watch
         coEvery { repository.refresh() } coAnswers {
             refreshes++

@@ -24,11 +24,25 @@ class FakeCoreProvider(
 ) : CoreProvider {
     private val built = MutableStateFlow(initial)
 
+    /**
+     * Runs first in every [awaitCore] and [coreOrNull]. The core's own state
+     * writes never throw, so a provider that cannot hand its core out is how
+     * a repository call fails: a test throws from here to fail one, or
+     * suspends here to hold one open. Lets every call through by default.
+     */
+    var beforeCore: suspend () -> Unit = {}
+
     override val core: StateFlow<CoreInterface?> = built
 
-    override suspend fun awaitCore(): CoreInterface = built.value ?: error("no core built for this fixture")
+    override suspend fun awaitCore(): CoreInterface {
+        beforeCore()
+        return built.value ?: error("no core built for this fixture")
+    }
 
-    override suspend fun coreOrNull(): CoreInterface? = built.value
+    override suspend fun coreOrNull(): CoreInterface? {
+        beforeCore()
+        return built.value
+    }
 
     override suspend fun supply(apiId: Int, apiHash: String) = Unit
 

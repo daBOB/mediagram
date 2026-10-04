@@ -1,7 +1,7 @@
 ---
 title: "Android: one watch-state fake that follows the core's rules"
 description: "Make FakeCore's watch state stateful and pinned by CoreContract against the real core; run the real repository in feature tests and delete the four hand-written fakes."
-status: pending
+status: in-progress
 priority: P2
 effort: 10h
 branch: refactor/android-one-watch-state-fake
@@ -47,11 +47,11 @@ re-implement the core's rules differently (player, TV, catalogue, `WatchStateRep
 | # | Phase | Owns | When | Status |
 |---|-------|------|------|--------|
 | 01 | [Stateful FakeCore watch state + contract cases](phase-01-stateful-fake-core-and-contract.md) | core/testing, core/data tests | now | done |
-| 02 | Repository: `chosenProfile`, drop `clearProgress` — the only guard against 40a43589's two-call shape once phase 03 deletes `ProgressRecorderTest`'s call-log fake, so this must land first — provider failure injection | core/data, feature view models | after merges | pending |
+| 02 | [Repository: `chosenProfile`, drop `clearProgress`](phase-02-chosen-profile-and-no-clear-progress.md) — the only guard against 40a43589's two-call shape once phase 03 deletes `ProgressRecorderTest`'s call-log fake, so this must land first — provider failure injection | core/data, feature view models | after merges | done (pending merge) |
 | 03 | Migrate feature/TV/mobile tests to the real repository; delete the four fakes | test sources across modules | after merges | pending |
 | 04 | Device contract run (tablet), docs, version | core/rust androidTest, docs | after 03 | pending |
 
-Phases 02-04 get their own files when their turn comes (their inputs depend on what the
+Phases 03-04 get their own files when their turn comes (their inputs depend on what the
 two open branches land).
 
 ## Coordination

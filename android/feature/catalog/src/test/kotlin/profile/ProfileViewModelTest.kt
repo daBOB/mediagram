@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -28,6 +29,9 @@ private class FakeWatchStateRepository(
 ) : WatchStateRepository {
     override val profiles = MutableStateFlow(initialProfiles)
     override val chosenProfileId = MutableStateFlow(chosenId)
+
+    // ProfileViewModel works from chosenProfileId alone; nothing under test reads this.
+    override val chosenProfile: StateFlow<Profile?> = MutableStateFlow(null)
     override val snapshot = MutableStateFlow(WatchSnapshot.Empty)
 
     var reloadCalls = 0
@@ -86,8 +90,6 @@ private class FakeWatchStateRepository(
         at: Double,
         duration: Double?,
     ) = Unit
-
-    override suspend fun clearProgress(setId: String) = Unit
 
     override suspend fun setWatched(
         setId: String,

@@ -36,12 +36,6 @@ class PlayerMarksController(
     /** Bumped on every open and stop, so a write that finishes late cannot speak about a title no longer open. */
     private var generation = 0L
 
-    /** Whether the chosen profile is a kids profile — a child does not approve titles for themselves. */
-    private val onKidsProfile =
-        combine(repository.profiles, repository.chosenProfileId) { profiles, chosen ->
-            profiles.firstOrNull { it.id == chosen }?.kids == true
-        }
-
     /**
      * `null` between titles, the same gate `player.js` puts in front of
      * its own three buttons. Joined from [openSetId] rather than read
@@ -49,7 +43,7 @@ class PlayerMarksController(
      * it updates a pressed toggle's label without being asked again.
      */
     val marks: StateFlow<PlayerMarksState?> =
-        combine(openSetId, openFsk, repository.snapshot, onKidsProfile) { setId, fsk, snapshot, kidsProfile ->
+        combine(openSetId, openFsk, repository.snapshot, repository.chosenProfile) { setId, fsk, snapshot, profile ->
             setId?.let {
                 PlayerMarksState(
                     watchlisted = it in snapshot.watchlist,
@@ -58,7 +52,8 @@ class PlayerMarksController(
                     memberOf = snapshot.collections.filter { list -> it in list.items }.mapTo(HashSet()) { list -> list.id },
                     kidsVerdict = kidsVerdictOf(fsk),
                     ageLabel = ageLabelOf(fsk),
-                    canMarkKids = !kidsProfile,
+                    // A child does not approve titles for themselves.
+                    canMarkKids = profile?.kids != true,
                 )
             }
         }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), null)
