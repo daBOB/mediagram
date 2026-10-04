@@ -131,7 +131,7 @@ internal fun Pill(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(pill.title, style = MaterialTheme.typography.labelLarge, color = ink)
             pill.count?.let {
-                Text(it.toString(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = ink.copy(alpha = 0.65f))
+                Text(it.toString(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = ink.copy(alpha = 0.4f))
             }
         }
     }

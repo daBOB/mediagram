@@ -270,4 +270,7 @@ object TvTypeScale {
 
     /** [Eyebrow], at the ten-foot floor: double the phone's 11sp, read from the couch rather than the hand. */
     val eyebrow: TextUnit = 16.sp
+
+    /** A menu count beside a rail item or department pill: kept small and faint, as the web's `.n` is. */
+    val count: TextUnit = 13.sp
 }

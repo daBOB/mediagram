@@ -135,7 +135,7 @@ internal fun TvIndexRow(
                 status?.invoke()
             }
             trailing?.let {
-                Text(text = it, style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow), color = tones.quiet)
+                Text(text = it, style = TvTypeScale.body.copy(fontSize = TvTypeScale.count), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
             }
         }
     }

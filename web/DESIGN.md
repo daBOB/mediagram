@@ -135,7 +135,7 @@ The palette flips between dark and light themes, set via radio control in Settin
 - **Sidebar** (`#09090a`): the rail background (full height)
 - **Ink** (`#f3efe7`): headings and body text
 - **Ink-2** (`#cbc5ba`): secondary text (navigation at rest, captions)
-- **Ink-3** (`#9c968b`): tertiary text (counts, labels, placeholders)
+- **Ink-3** (`#9c968b`): tertiary text (labels, placeholders). Menu counts sit fainter still: 40% ink at 0.625rem
 - **Rule** (18% white): principal dividers (under headings, between rows)
 - **Rule-soft** (8% white): soft dividers (between shelf items)
 - **Warn** (`#e6c47f`): conversion needed, age ratings

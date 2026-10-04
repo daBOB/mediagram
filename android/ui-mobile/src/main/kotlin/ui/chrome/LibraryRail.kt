@@ -171,7 +171,6 @@ private fun RailRow(
     apart: Boolean = false,
     dot: String? = null,
 ) {
-    val tones = LocalCatalogueTones.current
     val ink = if (active) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -206,7 +205,7 @@ private fun RailRow(
             modifier = Modifier.weight(1f),
         )
         if (count != null) {
-            Text(count.toString(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp), color = tones.quiet)
+            Text(count.toString(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
         }
     }
 }

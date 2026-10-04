@@ -70,8 +70,8 @@ internal fun TvPill(
             count?.let {
                 Text(
                     text = " $it",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = TvTypeScale.eyebrow),
-                    color = ink.copy(alpha = 0.65f),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = TvTypeScale.count),
+                    color = ink.copy(alpha = 0.4f),
                 )
             }
         }

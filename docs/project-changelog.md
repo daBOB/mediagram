@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.110.1 — quieter menu counts
+
+**Changed** (web player, Android phone, tablet and TV)
+
+- The counts beside the rail items and department pills are smaller and fainter, at 40% of
+  the ink: web 0.625rem, phone 10sp, TV 13sp (`TvTypeScale.count`). Over a cover they drop
+  to 40% of the bar's ink.
+
 ## 0.110.0 — household admin, PINs and each kid's own limit on Android
 
 **Added** (Android phone, tablet and TV; Rust core)
