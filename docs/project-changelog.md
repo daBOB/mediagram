@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.109.0 — high-bitrate films fetch several chunks at once
+
+**Changed** (Android)
+
+- For a film whose average bitrate is high, the player keeps up to four chunks in flight
+  ahead of the reader (N = ⌈2 × bitrate / 16 Mbit/s⌉, capped at 4; anything up to ~8 Mbit/s
+  stays sequential). The first chunk of a read is still fetched alone, so first frame and
+  seeks are as quick as before; a chunk already on its way is never fetched twice; a
+  failed fetch drops every set to one at a time for 60 s. Preloads stay sequential.
+- Measured on the TV box, cold, over Wi-Fi: about 30 Mbit/s instead of 15–17. Girl on the
+  Train (HDR10, 28 Mbit/s) now plays in real time; The Fall Guy (Dolby Vision, 41 Mbit/s)
+  keeps up for its first ~50 s and then rebuffers. 86 titles above 32 Mbit/s still need the
+  home cache server or Preload when cold.
+
 ## 0.108.1 — what the TV box walk and the final review found
 
 **Fixed** (Android)

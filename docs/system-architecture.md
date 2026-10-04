@@ -367,6 +367,23 @@ message id ever reaches Kotlin. It reads ahead 1 MiB per fetch to amortise
 Telegram's 512 KiB chunking, and media3's `CacheDataSource` wraps it over a
 `SimpleCache` on disk. A cache hit never reaches the core.
 
+**High-bitrate sets fetch several chunks at once.** Playback is latency-bound
+rather than throughput-bound: one fetch is one Telegram round trip, about
+0.5 s per 1 MiB chunk on the TV box — some 16 Mbit/s however fast the link —
+and a 4K film averages 27–31 Mbit/s with peaks of 40–65. The player's read
+session therefore keeps a window of fetches in flight ahead of its reader
+(`ChunkWindow`), as wide as twice the set's average bitrate needs —
+`ceil(2 × bitrate / 16 Mbit/s)`, capped at four (~64 Mbit/s), the worker
+count grammers itself uses. Sets up to 8 Mbit/s, or of unknown duration, stay
+at one fetch at a time. The first chunk of every session is fetched alone, so
+neither the first frame nor a seek waits for the window. Every fetch goes
+through `ChunkMemo`, which lets one fetch per chunk be in flight and shares it
+with every reader, and then the LAN-first path, so a chunk fetched ahead lands
+on the LAN server like any other. Any failed fetch — the core reports a flood
+wait grammers would not sleep through as an ordinary network error — drops
+every set to one at a time until 60 s pass without another. Preloads stay
+sequential: nobody is waiting on them.
+
 **Nothing is transcoded.** The phone decodes natively, so the whole conversion
 apparatus of §7 — ffmpeg, HLS, the bitrate ladder, the encoder registry — has
 no counterpart here, and the System screen has no Conversion block rather than
@@ -390,8 +407,7 @@ FFmpeg is **6.0.1**, under the **LGPL 2.1 or later**. It is built with no GPL,
 version-3 or nonfree components and only the `dca` (DTS, DTS-HD core),
 `truehd` and `mlp` decoders. The licence text and source pointer ship in
 `android/core/ffmpeg/licenses/`. AC-3 and E-AC-3 are left out: the devices
-tested so far decode or pass them through themselves. Playback is latency-bound rather than throughput-bound: the link
-outruns the bitrate, and what costs is the round trip per read.
+tested so far decode or pass them through themselves.
 
 ### Updates Telegram pushes
 

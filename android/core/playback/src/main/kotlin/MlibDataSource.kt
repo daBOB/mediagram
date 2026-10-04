@@ -10,6 +10,8 @@ import androidx.media3.common.C
 import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
@@ -30,8 +32,8 @@ fun setUri(setId: String): Uri =
         .build()
 
 /**
- * Reads one set's bytes through [chunks] for ExoPlayer, one [CHUNK_BYTES]
- * chunk at a time. [core] answers only a set's total size — the one thing
+ * Reads one set's bytes through [chunks] for ExoPlayer, in whole
+ * [CHUNK_BYTES] chunks. [core] answers only a set's total size — the one thing
  * a chunk fetch needs before it can ask for anything — every actual byte
  * comes back through [chunks], which may serve one from a memo rather than
  * Telegram.
@@ -41,10 +43,17 @@ fun setUri(setId: String): Uri =
  * opened then fails as an [IOException], which is a state ExoPlayer's
  * loader understands, rather than reading through whatever core happened to
  * be current when the player was built.
+ *
+ * [readAhead], when given, lets a session fetch several chunks at once
+ * ([ChunkWindow]) for a set whose bitrate one fetch at a time cannot keep
+ * up with; `null` reads one chunk at a time, on demand. [dispatcher] is
+ * where those fetches run.
  */
 class MlibDataSource(
     private val core: CoreInterface?,
     private val chunks: SetChunkSource,
+    private val readAhead: ReadAhead? = null,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : BaseDataSource(true) {
     private var setId: String? = null
     private var position = 0L
@@ -57,6 +66,7 @@ class MlibDataSource(
     // wherever this session's position falls inside it, not always zero.
     private var held = EMPTY
     private var handedOut = 0
+    private var window: ChunkWindow? = null
 
     @Suppress("DEPRECATION") // POSITION_OUT_OF_RANGE has no replacement constant; still the documented reason for this exact case.
     override fun open(dataSpec: DataSpec): Long {
@@ -82,6 +92,8 @@ class MlibDataSource(
         // here and must not be served stale bytes.
         held = EMPTY
         handedOut = 0
+        window?.cancel()
+        window = windowFor(id, setTotal, lastIndex = (minOf(position + remaining, setTotal) - 1) / CHUNK_BYTES)
         transferStarted(dataSpec)
         return remaining
     }
@@ -133,7 +145,22 @@ class MlibDataSource(
     // ends. This and open() are the only places in :core:playback
     // runBlocking is allowed — everywhere else it would risk landing on
     // main.
-    private fun fetch(index: Long): ByteArray = runBlocking { chunks.chunk(setId!!, index, total) }
+    private fun fetch(index: Long): ByteArray = runBlocking { window!!.take(index) }
+
+    private fun windowFor(
+        id: String,
+        setTotal: Long,
+        lastIndex: Long,
+    ): ChunkWindow =
+        ChunkWindow(
+            setId = id,
+            totalSize = setTotal,
+            lastIndex = lastIndex,
+            chunks = chunks,
+            width = { readAhead?.width(id, setTotal) ?: 1 },
+            failed = { readAhead?.failed() },
+            dispatcher = dispatcher,
+        )
 
     override fun getUri(): Uri? = uri
 
@@ -144,6 +171,10 @@ class MlibDataSource(
             remaining = 0L
             held = EMPTY
             handedOut = 0
+            // A seek closes before it re-opens: fetches for where the
+            // reader was going are no longer wanted.
+            window?.cancel()
+            window = null
             transferEnded()
         }
     }

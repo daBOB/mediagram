@@ -32,7 +32,7 @@ suspend fun cacheDataSourceFactory(
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
     currentCore: () -> CoreInterface?,
-): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)
+): CacheDataSource.Factory = cacheDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore = currentCore)
 
 /**
  * What the player reads through: [cacheDataSourceFactory] that treats a
@@ -44,6 +44,8 @@ suspend fun cacheDataSourceFactory(
  * Only the player. Preload keeps the strict factory: a preload into a
  * cache that cannot hold anything would download whole episodes and keep
  * none of them, again on every trigger, so there a failure has to stop it.
+ *
+ * Only the player reads ahead, too — see [MlibDataSourceFactory].
  */
 internal fun playbackDataSourceFactory(
     cache: Cache,
@@ -51,7 +53,7 @@ internal fun playbackDataSourceFactory(
     lan: LanCacheRuntime? = null,
     currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
-    cacheDataSourceFactory(cache, counters, lan, currentCore)
+    cacheDataSourceFactory(cache, counters, lan, readAhead = true, currentCore = currentCore)
         // setFlags replaces rather than adds; the base factory sets none.
         .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
@@ -59,12 +61,13 @@ internal fun cacheDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
+    readAhead: Boolean = false,
     currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
     CacheDataSource
         .Factory()
         .setCache(cache)
-        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, currentCore))
+        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, readAhead, currentCore))
         // media3 offers this and nothing has ever attached one. Without it there
         // is no way to tell a cache that is carrying playback from one that is
         // being bypassed, which is the first thing worth knowing about a read.
