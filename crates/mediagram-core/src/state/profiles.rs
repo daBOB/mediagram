@@ -1,5 +1,6 @@
-//! Who's watching: list, create, choose, and delete — a port of the profile
-//! half of `web/src/state/store.ts`.
+//! Who's watching: list, create, choose, and delete — a port of the web's
+//! `web/src/state/profiles.ts`. Adding to and removing from a household,
+//! behind a grown-up's PIN, is `manage`.
 //!
 //! Rename stays deferred: a sync can only ever add a profile from another
 //! device's document, never carry a rename, and offering one here would let
@@ -28,27 +29,53 @@ const CHOSEN_KEY: &str = "chosen_profile";
 /// — the same cap `store.ts`'s `MAX_NAME` uses.
 const MAX_NAME: usize = 120;
 
+/// A profile as the app sees it. Says whether there is a PIN, never what.
+/// Every field after `name` is defaulted in the generated Kotlin (uniffi
+/// 0.32 supports field defaults), so `Profile(id, name)` call sites keep
+/// compiling.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct Profile {
     pub id: String,
     pub name: String,
-    /// Sees only titles rated FSK 12 or under, or marked for Kids by hand.
-    /// Defaulted in the generated Kotlin (uniffi 0.32 supports field
-    /// defaults), so existing `Profile(id, name)` call sites keep compiling.
+    /// Sees only what its own limit allows, and manages nothing.
     #[uniffi(default = false)]
     pub kids: bool,
+    /// FSK 6 or 12 on a kid; `None` on a grown-up.
+    #[uniffi(default = None)]
+    pub kids_age: Option<u8>,
+    /// The grown-up who made this kid. `None`, or one not here, is the admin's.
+    #[uniffi(default = None)]
+    pub parent_id: Option<String>,
+    /// The household's admin: a grown-up, and at most one.
+    #[uniffi(default = false)]
+    pub admin: bool,
+    /// Whether a PIN is set — never the PIN, its hash or its salt.
+    #[uniffi(default = false)]
+    pub has_pin: bool,
 }
 
+/// The profile the app sees. A kid always has a limit, whatever the column
+/// holds — 12 is what every kid saw before there was a choice — and is never
+/// the admin and never has a PIN: it manages nothing and opens freely. A
+/// grown-up another device later calls a kid keeps its old claim and PIN in
+/// their columns; they must not make it an admin, or a profile with a PIN.
+impl From<role_rows::Stored> for Profile {
+    fn from(row: role_rows::Stored) -> Self {
+        Profile {
+            kids_age: row.kids.then_some(if row.kids_age == Some(6) { 6 } else { 12 }),
+            admin: row.is_admin(),
+            has_pin: !row.kids && row.pin_hash.is_some(),
+            id: row.id,
+            name: row.name,
+            kids: row.kids,
+            parent_id: row.parent_id,
+        }
+    }
+}
+
+/// Who watches this library, oldest first. Empty until someone says.
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
-    let mut stmt = conn.prepare("SELECT id, name, kids FROM profiles ORDER BY created_at")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(Profile {
-            id: row.get(0)?,
-            name: row.get(1)?,
-            kids: row.get::<_, i64>(2)? != 0,
-        })
-    })?;
-    rows.collect()
+    Ok(role_rows::load(conn)?.into_iter().map(Profile::from).collect())
 }
 
 /// A profile with no role beside `kids` — the way sync makes a viewer it has

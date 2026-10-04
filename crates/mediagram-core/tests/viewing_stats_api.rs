@@ -9,6 +9,8 @@ use std::time::Duration;
 use mediagram_core::api::Core;
 use mediagram_core::state::stats::summary::HistoryKind;
 
+mod state_seed;
+
 const TODAY: &str = "2026-10-03";
 
 fn core(dir: &std::path::Path) -> Arc<Core> {
@@ -38,11 +40,7 @@ async fn play(core: &Arc<Core>, profile: &str, at: f64) {
 async fn watching_finishing_and_starting_over_read_back_as_history() {
     let dir = tempfile::tempdir().unwrap();
     let core = core(dir.path());
-    let viewer = core
-        .clone()
-        .create_profile("André".into(), false)
-        .await
-        .unwrap();
+    let viewer = state_seed::household(&core, &["André"], &[]).await.remove(0);
 
     play(&core, &viewer.id, 0.0).await;
     play(&core, &viewer.id, 10.0).await;
@@ -98,11 +96,7 @@ async fn a_profile_with_nothing_watched_reads_as_thirty_empty_days() {
 async fn the_write_after_finishing_counts_nothing_however_long_the_gap() {
     let dir = tempfile::tempdir().unwrap();
     let core = core(dir.path());
-    let viewer = core
-        .clone()
-        .create_profile("André".into(), false)
-        .await
-        .unwrap();
+    let viewer = state_seed::household(&core, &["André"], &[]).await.remove(0);
 
     play(&core, &viewer.id, 100.0).await;
     core.clone()

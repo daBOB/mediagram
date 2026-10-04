@@ -5,7 +5,12 @@
 
 use std::path::Path;
 
+use mediagram_core::state::profiles::ProfileOutcome::{
+    Done, Invalid, NameTaken, NotAllowed, NotFound, Wait, WrongPin,
+};
 use rusqlite::Connection;
+
+mod state_seed;
 
 fn core(dir: &Path) -> std::sync::Arc<mediagram_core::api::Core> {
     mediagram_core::api::Core::new(
@@ -139,16 +144,8 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
     let player = core(dir.path());
     assert!(player.clone().profiles().await.is_empty());
     assert_eq!(player.clone().chosen_profile().await, None);
-    let andre = player
-        .clone()
-        .create_profile("André".into(), false)
-        .await
-        .unwrap();
-    let bea = player
-        .clone()
-        .create_profile("Bea".into(), false)
-        .await
-        .unwrap();
+    let made = state_seed::household(&player, &["André", "Bea"], &[]).await;
+    let (andre, bea) = (made[0].clone(), made[1].clone());
     assert!(player.clone().choose_profile(andre.id.clone()).await);
     assert!(!player.clone().choose_profile("missing".into()).await);
 
@@ -204,7 +201,7 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
         .clone()
         .set_watchlisted(bea.id.clone(), "later-b".into(), true)
         .await;
-    player.clone().set_kids("family".into(), true).await;
+    player.clone().set_kids("family".into(), Some(12)).await;
     let collection = player
         .clone()
         .create_collection(andre.id.clone(), "Weekend".into())
@@ -275,7 +272,7 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
         .clone()
         .set_watchlisted(andre.id.clone(), "later-a".into(), false)
         .await;
-    reopened.clone().set_kids("family".into(), false).await;
+    reopened.clone().set_kids("family".into(), None).await;
     let cleared = reopened.clone().snapshot(andre.id).await;
     assert!(
         cleared.progress.is_empty() && cleared.watched.is_empty() && cleared.watchlist.is_empty()
@@ -290,18 +287,8 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
 async fn a_collection_can_only_be_changed_by_its_owner() {
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
-    let owner = player
-        .clone()
-        .create_profile("Owner".into(), false)
-        .await
-        .unwrap()
-        .id;
-    let other = player
-        .clone()
-        .create_profile("Other".into(), false)
-        .await
-        .unwrap()
-        .id;
+    let made = state_seed::household(&player, &["Owner", "Other"], &[]).await;
+    let (owner, other) = (made[0].id.clone(), made[1].id.clone());
     let collection = player
         .clone()
         .create_collection(owner.clone(), "Original".into())
@@ -388,10 +375,19 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     let player = core(dir.path());
     assert!(player.clone().profiles().await.is_empty());
     assert_eq!(player.clone().chosen_profile().await, None);
-    assert_eq!(
-        player.clone().create_profile("Viewer".into(), false).await,
-        None
-    );
+    // Every profile call answers `Invalid`, the outcome that means nothing
+    // happened, rather than throwing.
+    let p = || player.clone();
+    let pin = || String::from("1234");
+    let id = || String::from("viewer");
+    assert_eq!(p().create_first_admin("Viewer".into(), pin()).await, Invalid);
+    assert_eq!(p().create_grown_up(id(), pin(), "Bea".into(), pin()).await, Invalid);
+    assert_eq!(p().create_kid(id(), pin(), "Mia".into(), 6).await, Invalid);
+    assert_eq!(p().delete_profile(id(), pin(), id()).await, Invalid);
+    assert_eq!(p().unlock_profile(id(), pin()).await, Invalid);
+    assert_eq!(p().claim_admin(id(), pin()).await, Invalid);
+    assert_eq!(p().set_pin(id(), pin(), id(), pin()).await, Invalid);
+    assert_eq!(p().set_kids_age(id(), pin(), id(), 6).await, Invalid);
     assert!(!player.clone().choose_profile("viewer".into()).await);
     assert_eq!(
         player.clone().snapshot("viewer".into()).await,
@@ -444,21 +440,128 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
         .clone()
         .set_watchlisted("viewer".into(), "set".into(), true)
         .await;
-    player.clone().set_kids("set".into(), true).await;
+    player.clone().set_kids("set".into(), Some(12)).await;
     assert_eq!(
         player.clone().snapshot("viewer".into()).await,
         Default::default()
     );
 
     std::fs::remove_dir(obstruction).unwrap();
-    let viewer = player
-        .clone()
-        .create_profile("Viewer".into(), false)
-        .await
-        .unwrap();
+    let viewer = state_seed::household(&player, &["Viewer"], &[]).await.remove(0);
     assert_eq!(
         player.clone().profiles().await,
         std::slice::from_ref(&viewer)
     );
     assert_eq!(player.snapshot(viewer.id).await, Default::default());
+}
+
+async fn named(
+    player: &std::sync::Arc<mediagram_core::api::Core>,
+    name: &str,
+) -> mediagram_core::state::profiles::Profile {
+    let listed = player.clone().profiles().await;
+    listed.into_iter().find(|p| p.name == name).unwrap()
+}
+
+#[tokio::test]
+async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    let p = || player.clone();
+
+    assert_eq!(p().create_first_admin("  ".into(), "1234".into()).await, Invalid);
+    assert_eq!(p().create_first_admin("André".into(), "1234".into()).await, Done);
+    assert_eq!(p().create_first_admin("Bea".into(), "1111".into()).await, NotAllowed);
+    let andre = named(&player, "André").await;
+    assert!(andre.admin && andre.has_pin && !andre.kids);
+    assert_eq!((andre.kids_age, andre.parent_id.as_deref()), (None, None));
+    let andre = andre.id;
+    let pin = || String::from("1234");
+
+    assert_eq!(p().claim_admin(andre.clone(), "0000".into()).await, NotAllowed);
+    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 7).await, Invalid);
+    assert_eq!(p().create_kid(andre.clone(), pin(), " andré".into(), 6).await, NameTaken);
+    assert_eq!(p().create_kid(andre.clone(), "0000".into(), "Mia".into(), 6).await, WrongPin);
+    assert_eq!(p().create_kid(andre.clone(), pin(), "Mia".into(), 6).await, Done);
+    assert_eq!(p().delete_profile(andre.clone(), pin(), andre.clone()).await, NotAllowed);
+    assert_eq!(p().delete_profile(andre.clone(), pin(), "nobody".into()).await, NotFound);
+
+    let mia = named(&player, "Mia").await;
+    assert_eq!(
+        (mia.kids, mia.kids_age, mia.parent_id.as_deref()),
+        (true, Some(6), Some(andre.as_str()))
+    );
+    assert!(!mia.admin && !mia.has_pin);
+    assert_eq!(p().create_kid(mia.id.clone(), String::new(), "Ben".into(), 6).await, NotAllowed);
+    assert_eq!(p().set_kids_age(andre.clone(), pin(), mia.id.clone(), 12).await, Done);
+    assert_eq!(named(&player, "Mia").await.kids_age, Some(12));
+    assert_eq!(p().unlock_profile(mia.id.clone(), String::new()).await, Done);
+
+    let bea = ("Bea".to_string(), "1111".to_string());
+    assert_eq!(p().create_grown_up(andre.clone(), pin(), bea.0, bea.1).await, Done);
+    let bea = named(&player, "Bea").await;
+    assert!(bea.has_pin && !bea.admin && !bea.kids);
+    assert_eq!(p().set_pin(andre.clone(), pin(), bea.id.clone(), "2222".into()).await, Done);
+    assert_eq!(p().unlock_profile(bea.id.clone(), "1111".into()).await, WrongPin);
+    assert_eq!(p().unlock_profile(bea.id.clone(), "2222".into()).await, Done);
+    assert_eq!(p().create_kid(bea.id.clone(), "2222".into(), "Leo".into(), 12).await, Done);
+
+    // A grown-up leaves with the kids it is the parent of; the admin's stay.
+    assert_eq!(p().delete_profile(andre.clone(), pin(), bea.id).await, Done);
+    let names: Vec<String> = p().profiles().await.into_iter().map(|x| x.name).collect();
+    assert_eq!(names, ["André", "Mia"]);
+}
+
+#[tokio::test]
+async fn five_wrong_pins_make_that_profile_wait_across_calls() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    let made = state_seed::household(&player, &["André", "Bea"], &[]).await;
+    let (andre, bea) = (made[0].id.clone(), made[1].id.clone());
+    for _ in 0..5 {
+        assert_eq!(player.clone().unlock_profile(andre.clone(), "0000".into()).await, WrongPin);
+    }
+    let Wait { seconds } = player.clone().unlock_profile(andre, state_seed::PIN.into()).await else {
+        panic!("the right PIN still waits");
+    };
+    assert!((59..=60).contains(&seconds), "{seconds}");
+    let bea_opens = player.unlock_profile(bea, state_seed::PIN.into()).await;
+    assert_eq!(bea_opens, Done, "another profile's PIN is still compared");
+}
+
+/// A grown-up that another device later calls a kid keeps its claim and PIN
+/// in their columns; the profile the surface hands out never says a kid is
+/// the admin or has a PIN, since a kid opens freely.
+#[tokio::test]
+async fn a_kid_is_never_said_to_be_the_admin_or_to_hold_a_pin() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    state_seed::household(&player, &["André"], &[]).await;
+    Connection::open(dir.path().join("state.db"))
+        .unwrap()
+        .execute("UPDATE profiles SET kids = 1", [])
+        .unwrap();
+    let andre = named(&player, "André").await;
+    assert_eq!(
+        (andre.kids, andre.admin, andre.has_pin, andre.kids_age),
+        (true, false, false, Some(12))
+    );
+}
+
+#[tokio::test]
+async fn a_kids_mark_says_from_six_or_from_twelve_in_the_snapshot() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    let viewer = state_seed::household(&player, &["Viewer"], &[]).await.remove(0).id;
+    player.clone().set_kids("six".into(), Some(6)).await;
+    player.clone().set_kids("twelve".into(), Some(12)).await;
+    let snapshot = player.clone().snapshot(viewer.clone()).await;
+    let mut kids = snapshot.kids.clone();
+    kids.sort();
+    assert_eq!(kids, ["six", "twelve"]);
+    assert_eq!(snapshot.kids_from_six, ["six"]);
+    player.clone().set_kids("six".into(), Some(12)).await;
+    assert!(player.clone().snapshot(viewer.clone()).await.kids_from_six.is_empty());
+    player.clone().set_kids("six".into(), None).await;
+    assert_eq!(player.snapshot(viewer).await.kids, ["twelve"]);
 }

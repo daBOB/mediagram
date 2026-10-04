@@ -4,7 +4,7 @@
 /// One variant per reason the web answers a refusal with — `invalid`,
 /// `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed` —
 /// so both surfaces can say exactly what went wrong.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
 pub enum ProfileOutcome {
     Done,
     /// A blank name, a new PIN that is not four digits, a limit not 6 or 12.

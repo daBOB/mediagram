@@ -15,6 +15,7 @@ pub(crate) struct Stored {
     pub(crate) id: String,
     pub(crate) name: String,
     pub(crate) kids: bool,
+    pub(crate) kids_age: Option<i64>,
     pub(crate) parent_id: Option<String>,
     pub(crate) admin_claimed_at: Option<i64>,
     pub(crate) pin_hash: Option<String>,
@@ -43,7 +44,7 @@ impl Stored {
 /// Every profile's row, oldest first.
 pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, kids, parent_id, admin_claimed_at, pin_hash, pin_salt
+        "SELECT id, name, kids, kids_age, parent_id, admin_claimed_at, pin_hash, pin_salt
            FROM profiles ORDER BY created_at",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -51,10 +52,11 @@ pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
             id: row.get(0)?,
             name: row.get(1)?,
             kids: row.get::<_, i64>(2)? != 0,
-            parent_id: row.get(3)?,
-            admin_claimed_at: row.get(4)?,
-            pin_hash: row.get(5)?,
-            pin_salt: row.get(6)?,
+            kids_age: row.get(3)?,
+            parent_id: row.get(4)?,
+            admin_claimed_at: row.get(5)?,
+            pin_hash: row.get(6)?,
+            pin_salt: row.get(7)?,
         })
     })?;
     rows.collect()
@@ -89,35 +91,45 @@ pub(crate) fn insert(
         return Ok(None);
     };
     let kids = role.kids;
-    let pin = role.pin.filter(|_| !kids).map(|pin| {
-        let salt = pin::new_salt();
-        (pin::hash(&salt, pin), salt)
-    });
-    let profile = Profile {
+    let (pin_hash, pin_salt) = role
+        .pin
+        .filter(|_| !kids)
+        .map(|pin| {
+            let salt = pin::new_salt();
+            (pin::hash(&salt, pin), salt)
+        })
+        .unzip();
+    let row = Stored {
         id: ulid::Ulid::new().to_string(),
         name: clean,
         kids,
+        kids_age: kids.then(|| i64::from(role.kids_age.unwrap_or(12))),
+        parent_id: role.parent_id.filter(|_| kids).map(str::to_string),
+        admin_claimed_at: (!kids && role.admin).then_some(now),
+        pin_hash,
+        pin_salt,
     };
     let limit_at = if kids && role.kids_age.is_some() { now } else { 0 };
+    let pin_at = if row.pin_hash.is_some() { now } else { 0 };
     conn.execute(
         "INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
                               admin_claimed_at, pin_hash, pin_salt, pin_updated_at)
            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         params![
-            profile.id,
-            profile.name,
+            row.id,
+            row.name,
             now,
             i64::from(kids),
-            kids.then(|| role.kids_age.unwrap_or(12)),
+            row.kids_age,
             limit_at,
-            role.parent_id.filter(|_| kids),
-            (!kids && role.admin).then_some(now),
-            pin.as_ref().map(|(hash, _)| hash),
-            pin.as_ref().map(|(_, salt)| salt),
-            if pin.is_some() { now } else { 0 },
+            row.parent_id,
+            row.admin_claimed_at,
+            row.pin_hash,
+            row.pin_salt,
+            pin_at,
         ],
     )?;
-    Ok(Some(profile))
+    Ok(Some(Profile::from(row)))
 }
 
 /// The latest stamp an own write of a PIN or a limit takes. Each is dated at

@@ -47,14 +47,6 @@ private class DelayedStateCore(
         return true
     }
 
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile {
-        write()
-        return Profile("created", name, kids)
-    }
-
     override suspend fun snapshot(profileId: String): StateSnapshot {
         val answer = StateSnapshot(emptyList(), emptyList(), listOf("$prefix-$profileId"), emptyList(), emptyList(), null)
         if (profileId == "a" && delaySnapshot) {
@@ -231,32 +223,26 @@ class WatchStateOwnershipTest {
         }
 
     @Test
-    fun resetPreventsPendingReadsAndProfileCreationFromRestoringState() =
+    fun resetPreventsPendingReadsFromRestoringState() =
         runTest {
-            for (creating in listOf(false, true)) {
-                val core = DelayedStateCore()
-                val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
-                repository.reload()
-                core.delaySnapshot = !creating
-                core.delayWrite = creating
-                val old =
-                    async(start = CoroutineStart.UNDISPATCHED) {
-                        if (creating) repository.createProfile("Chris") else repository.reload()
-                    }
-                try {
-                    core.started.await()
-                    repository.invalidate()
-                    assertNull(repository.chosenProfileId.value)
-                    assertEquals(emptyList(), repository.profiles.value)
-                    assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
-                } finally {
-                    core.finish.complete(Unit)
-                    old.await()
-                }
+            val core = DelayedStateCore()
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            repository.reload()
+            core.delaySnapshot = true
+            val old = async(start = CoroutineStart.UNDISPATCHED) { repository.reload() }
+            try {
+                core.started.await()
+                repository.invalidate()
                 assertNull(repository.chosenProfileId.value)
                 assertEquals(emptyList(), repository.profiles.value)
                 assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
+            } finally {
+                core.finish.complete(Unit)
+                old.await()
             }
+            assertNull(repository.chosenProfileId.value)
+            assertEquals(emptyList(), repository.profiles.value)
+            assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
         }
 
     @Test
