@@ -13,6 +13,16 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::record::normal_name;
 
+pub mod manage;
+mod outcome;
+pub mod pin;
+pub mod pin_wait;
+pub(crate) mod role_rows;
+pub mod rules;
+
+pub use manage::ProfileManager;
+pub use outcome::{Answer, ProfileOutcome};
+
 const CHOSEN_KEY: &str = "chosen_profile";
 /// How long a name may be. Long enough for a sentence, short enough to show
 /// — the same cap `store.ts`'s `MAX_NAME` uses.
@@ -41,22 +51,16 @@ pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
     rows.collect()
 }
 
-/// `None` for a name with nothing left after trimming — never a stored
-/// profile with no way to show it.
+/// A profile with no role beside `kids` — the way sync makes a viewer it has
+/// not met. A kid starts at FSK 12 dated 0, so any limit a parent chose
+/// outdates it. `None` for a name with nothing left after trimming — never
+/// a stored profile with no way to show it.
 pub fn create(conn: &Connection, name: &str, kids: bool) -> rusqlite::Result<Option<Profile>> {
-    let Some(clean) = clean_name(name) else {
-        return Ok(None);
-    };
-    let profile = Profile {
-        id: ulid::Ulid::new().to_string(),
-        name: clean,
+    let role = role_rows::NewProfile {
         kids,
+        ..Default::default()
     };
-    conn.execute(
-        "INSERT INTO profiles(id, name, created_at, kids) VALUES (?1, ?2, ?3, ?4)",
-        params![profile.id, profile.name, now_ms(), i64::from(kids)],
-    )?;
-    Ok(Some(profile))
+    role_rows::insert(conn, name, &role, now_ms())
 }
 
 pub fn exists(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
