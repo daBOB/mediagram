@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -26,7 +27,6 @@ import catalog.MoviesDepartment
 import catalog.moviesLineOf
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first as firstOf
-import ui.tv.TvTextRow
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
 
@@ -40,7 +40,7 @@ internal const val TvMoviesDepartmentPageTestTag = "tv-movies-department-page"
  * The Movies department's own front page — the television twin of the
  * phone's department screen and the web's `department-pages.js#renderMoviesDept`:
  * [TvDepartmentHero], then Featured, Genres, Acclaimed and Recently added,
- * and a link down to every film the shelf holds. `null` [dept] (an empty
+ * and a pill down to every film the shelf holds. `null` [dept] (an empty
  * Movies shelf) is the caller's own concern — [DepartmentOrShelfWall] never
  * reaches this composable for one.
  *
@@ -89,7 +89,7 @@ internal fun TvMoviesDepartmentPage(
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.firstOf { info -> info.any { it.index == itemIndex } }
         sectionInView = true
     }
-    // The "all films" link is not a row of its own with a scroll to wait on
+    // The "all films" pill is not a row of its own with a scroll to wait on
     // — once the outer list above has it on screen, its own `focusRequester`
     // is already attached and ready.
     LaunchedEffect(sectionInView, target) { if (sectionInView && target.first == "all") focus.requestFocus() }
@@ -169,12 +169,15 @@ internal fun TvMoviesDepartmentPage(
                 }
             }
             item(key = "all") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvTextRow(
+                // The web's `.dept-all` and the phone's `PagePill`: a round
+                // outline link at the page's foot, 56dp under the last row.
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val own = remember { FocusRequester() }
+                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.dp, bottom = Spacing.medium)) {
+                    TvPagePill(
                         text = "All ${dept.filmCount} films →",
                         onClick = onOpenAllFilms,
-                        focusRequester = focus.takeIf { target.first == "all" },
-                        modifier = Modifier.padding(top = Spacing.large, bottom = Spacing.medium),
+                        modifier = Modifier.focusRequester(if (target.first == "all") focus else own),
                     )
                 }
             }

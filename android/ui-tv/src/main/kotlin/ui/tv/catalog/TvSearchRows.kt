@@ -30,11 +30,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import catalog.Entry
-import catalog.SearchDestination
 import catalog.SearchRow
 import catalog.VisiblePerson
-import catalog.extentOf
 import catalog.initialsOf
 import catalog.searchWhy
 import catalog.spelledCountOf
@@ -47,13 +44,12 @@ import ui.catalog.locationOf
 import ui.catalog.rememberPortrait
 import ui.catalog.searchMetaLineOf
 import ui.tv.TvFocus
-import ui.tv.TvTextRow
 
 /** How wide a person's own portrait sits on their search row. */
 private val SearchPortraitWidth = 56.dp
 
 /**
- * One hit, as the phone's `SearchResultRow` draws it: the title, where it
+ * One episode, documentary or lesson hit, as the phone's `SearchResultRow` draws it: the title, where it
  * sits, the summary line that matched, why it matched, what the file is,
  * and this viewer's progress. A press plays it straight away, as a tap does
  * on the phone — a search hit is a set, not a way to somewhere else.
@@ -106,21 +102,6 @@ internal fun TvSearchRow(
         searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
         TvItemMarks(progress, row.held)
     }
-}
-
-/** A matched show, rolled up from its episodes rather than listed once per one — [catalog.searchGroupsOf]'s own rule. */
-@Composable
-internal fun TvShowSearchRow(
-    entry: Entry.Collection,
-    onOpenCollection: (key: String) -> Unit,
-    focus: FocusRequester?,
-) {
-    TvTextRow(
-        text = "${entry.name} · ${extentOf(entry)}",
-        onClick = { onOpenCollection(entry.key) },
-        modifier = Modifier.fillMaxWidth(),
-        focusRequester = focus,
-    )
 }
 
 /**
@@ -184,24 +165,4 @@ internal fun TvPortraitCircle(
             Text(text = initialsOf(name), style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-}
-
-/**
- * A franchise or the viewer's own list, matched by name — [catalog.SearchDestination]'s
- * own two sources. A franchise counts its films and a list its titles, as
- * `search-view.js`'s cards do.
- */
-@Composable
-internal fun TvDestinationSearchRow(
-    destination: SearchDestination,
-    onOpenDestination: (SearchDestination) -> Unit,
-    focus: FocusRequester?,
-) {
-    val noun = if (destination.franchiseId != null) "film" else "title"
-    TvTextRow(
-        text = "${destination.name} · ${spelledCountOf(destination.itemCount, noun)}",
-        onClick = { onOpenDestination(destination) },
-        modifier = Modifier.fillMaxWidth(),
-        focusRequester = focus,
-    )
 }

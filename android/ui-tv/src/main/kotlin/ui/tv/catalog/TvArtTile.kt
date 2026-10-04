@@ -102,7 +102,8 @@ internal fun TvArtTile(
 
 /**
  * A round outline link set on the page itself — the web's `.dept-row
- * .make` ("＋ New list" under Your lists), the phone's `PagePill`: the rule
+ * .make` ("＋ New list" under Your lists) and `.dept-all` ("All N films →"
+ * at the foot of Movies), the phone's `PagePill`: the rule
  * colour at rest, this surface's accent ring and scale once the remote is
  * on it. [modifier] carries the caller's own `focusRequester`.
  */

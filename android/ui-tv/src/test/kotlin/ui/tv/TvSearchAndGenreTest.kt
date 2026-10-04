@@ -99,7 +99,7 @@ class TvSearchAndGenreTest {
     }
 
     @Test
-    fun theSearchKeyHandsTheRemoteToTheFirstRowAndUpGoesBackToTheField() {
+    fun theSearchKeyHandsTheRemoteToTheFirstPosterAndUpGoesBackToTheField() {
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
         compose.onNodeWithText("2 results").assertExists()
@@ -116,9 +116,12 @@ class TvSearchAndGenreTest {
      * Down leaves the field for the results by itself, the keyboard put
      * away or never shown: the text field only moves focus for a D-pad on
      * a physical device, and a remote's keys may arrive as a virtual one.
+     * It lands on the first poster, not on whichever one sits under the
+     * middle of the full-width field; Right walks the line, Up from any
+     * poster on it goes back to the field.
      */
     @Test
-    fun downFromTheFieldReachesTheFirstRow() {
+    fun downFromTheFieldReachesTheFirstPosterAndRightWalksTheLine() {
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
         compose.onNodeWithText("2 results").assertExists()
@@ -126,22 +129,50 @@ class TvSearchAndGenreTest {
 
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         row("Film 0").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        row("Film 1").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        field().assertIsFocused()
     }
 
-    /** The second row, so landing back on it is the row that played rather than simply the first. */
+    /**
+     * Films are posters, as on the web and the phone, and a poster opens
+     * the film's own page rather than playing it; the second poster, so
+     * landing back on it is the one pressed rather than simply the first.
+     */
     @Test
-    fun aRowPlaysAndBackFromThePlayerLandsOnThatRow() {
+    fun aFilmsPosterOpensItsPageAndBackLandsOnThatPoster() {
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
 
         press(row("Film 1"))
-        compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
+        compose.onNodeWithText("▶ Play").assertExists()
+        compose.onNodeWithTag(TvPlayerScreenTag).assertDoesNotExist()
 
-        back()
         back()
         awaitNode(hasText("Film 1") and hasClickAction())
         row("Film 1").assertIsFocused()
         compose.onNodeWithText("film").assertExists()
+    }
+
+    /** A matched episode is a row under its show's poster, and still plays at once; Back from the player lands on that row. */
+    @Test
+    fun anEpisodeRowPlaysAndBackFromThePlayerLandsOnThatRow() {
+        press(compose.onNodeWithContentDescription("Search"))
+        type("pilot")
+        compose.onNodeWithText("Series").assertExists()
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        plate("A Show").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        row("Pilot").assertIsFocused()
+
+        press(row("Pilot"))
+        compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
+
+        back()
+        back()
+        awaitNode(hasText("Pilot") and hasClickAction())
+        row("Pilot").assertIsFocused()
     }
 
     @Test
@@ -178,15 +209,13 @@ class TvSearchAndGenreTest {
     }
 
     @Test
-    fun aNewQueryAfterComingBackFromThePlayerKeepsTheRemoteInTheField() {
+    fun aNewQueryAfterComingBackFromATitleKeepsTheRemoteInTheField() {
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
         press(row("Film 1"))
         back()
-        back()
         awaitNode(hasText("Film 1") and hasClickAction())
         row("Film 1").assertIsFocused()
-        key(KeyEvent.KEYCODE_DPAD_UP)
         key(KeyEvent.KEYCODE_DPAD_UP)
         field().assertIsFocused()
 
@@ -261,9 +290,16 @@ class TvSearchAndGenreTest {
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
 
-        compose.onNodeWithText("Ada Actor").assertExists()
         compose.onNodeWithText("●  All · 3").assertExists()
         compose.onNodeWithText("○  Movies · 2").assertExists()
+        // Down from the field reaches the chips, Down from a chip enters the
+        // results at their first poster, and Down from the posters reaches
+        // the person's row below them.
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        row("Film 0").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        compose.onNodeWithText("Ada Actor").assertIsFocused()
         press(compose.onNodeWithText("○  People · 1"))
 
         compose.onNodeWithText("Film 0").assertDoesNotExist()
@@ -285,6 +321,10 @@ class TvSearchAndGenreTest {
 
         press(compose.onNodeWithContentDescription("Search"))
         type("film")
+        // Below the posters, past the fold: walked to, as a remote would.
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
         press(compose.onNodeWithText("Ada Actor"))
         back()
         settle()

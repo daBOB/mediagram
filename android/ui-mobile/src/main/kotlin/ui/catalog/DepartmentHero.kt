@@ -83,7 +83,8 @@ internal fun DepartmentHero(
     // against a 900dp breakpoint, once) went compact in a band where the
     // bar had already decided it was wide, and bled `LocalTopChrome` into a
     // layout that never asked for it.
-    val compact = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.EXPANDED
+    val widthClass = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val compact = widthClass != WindowWidthSizeClass.EXPANDED
     val width = LocalConfiguration.current.screenWidthDp.dp
     val topChrome = LocalTopChrome.current
     val heroMinHeight = fluid(420f, 0.58f, 600f, LocalConfiguration.current.screenHeightDp.toFloat()).dp
@@ -96,7 +97,7 @@ internal fun DepartmentHero(
                 .let { if (!compact && art != null) it.heightIn(min = heroMinHeight) else it },
     ) {
         if (compact) {
-            CompactDeptHero(title, line, art, width, franchiseTitle, overview)
+            CompactDeptHero(title, line, art, width, franchiseTitle, overview, overlap = widthClass == WindowWidthSizeClass.COMPACT)
         } else {
             // The web hides `.dept-quote` below 900px (`departments.css:91`)
             // — the quote is a wide-only concern, so only this branch ever

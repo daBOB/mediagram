@@ -1,25 +1,29 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
-import catalog.watchedFractionOf
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -35,14 +39,21 @@ import ui.tv.TvTextRow
  * and an answer with nothing in it.
  *
  * [sections] is [groups][catalog.SearchGroups] already narrowed to whichever
- * [SearchFilter] is chosen — films, matched shows, episodes, lessons, people
- * and collections, in that order, each its own heading over its own rows;
+ * [SearchFilter] is chosen, each its own heading over its own entries, laid
+ * out the way the web lays that kind out ([SearchLayout]): films and shows
+ * as poster lines, collections as card lines, everything else one row each.
  * [filters] is the chip row above them, offered only once there is more than
  * one kind to choose between (`SearchGroups.filters`'s own gate). [ask] is
  * the flat entry (across every section, in the same order they render) the
- * screen wants the remote on — scrolled to first, since a row below the fold
- * has nothing to focus until it is laid out — and [onAnswered] tells the
- * screen it is done, so the request is never answered twice.
+ * screen wants the remote on — its line scrolled to first, since an entry
+ * below the fold has nothing to focus until it is laid out — and
+ * [onAnswered] tells the screen it is done, so the request is never answered
+ * twice.
+ *
+ * Down from the field or the chips above enters the results at their first
+ * entry, the one the keyboard's Search key hands the remote to as well. Left
+ * to geometry, Down from the full-width field would land on whichever poster
+ * sits under its middle.
  */
 @Composable
 internal fun TvSearchResults(
@@ -56,6 +67,7 @@ internal fun TvSearchResults(
     ask: RowAsk?,
     onAnswered: () -> Unit,
     onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onOpenPerson: (personId: Long) -> Unit,
     onOpenDestination: (SearchDestination) -> Unit,
@@ -72,55 +84,80 @@ internal fun TvSearchResults(
         SearchResultsView.LOADING -> Said("Loading your library…")
         SearchResultsView.EMPTY -> Said("No title, folder or summary in the library mentions that.")
         SearchResultsView.ROWS -> {
-            val (positions, watchedIds) = rememberWatchMarks(watch)
+            val marks = rememberWatchMarks(watch)
+            val lines = remember(sections) { searchLinesOf(sections) }
             val listState = rememberLazyListState()
+            // The first entry always carries [first], so Down from above can
+            // always find it; [focus] is whichever other entry was asked for.
+            val first = remember { FocusRequester() }
             val focus = remember { FocusRequester() }
             LaunchedEffect(ask) {
                 val index = ask?.index ?: return@LaunchedEffect
                 if (index in entries.indices) {
-                    listState.scrollToItem(displayIndexOf(sections, index))
-                    focus.requestFocus()
+                    // Laid out by the time this returns: a jump remeasures the list at once.
+                    listState.scrollToItem(lineOf(lines, index))
+                    (if (index == 0) first else focus).requestFocus()
                 }
                 onAnswered()
             }
             Said(countOf(entries.size, "result"))
             if (filters.size >= 2) TvSearchFilterChips(filters, filter, onFilterChange)
-            val starts = remember(sections) { sectionStartsOf(sections) }
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .focusProperties {
+                            onEnter = {
+                                val firstLine = lineOf(lines, 0)
+                                val shown = listState.layoutInfo.visibleItemsInfo.any { it.index == firstLine }
+                                if (requestedFocusDirection == FocusDirection.Down && shown) first.requestFocus()
+                            }
+                        }.focusGroup(),
                 contentPadding = PaddingValues(bottom = Overscan.vertical),
                 verticalArrangement = Arrangement.spacedBy(Spacing.medium),
             ) {
-                for ((sectionIndex, section) in sections.withIndex()) {
-                    item(key = "heading-${section.title}") { TvSectionHeading(section.title, modifier = Modifier.padding(top = Spacing.small)) }
-                    val start = starts[sectionIndex]
-                    itemsIndexed(section.entries, key = { _, entry -> keyOf(entry) }) { localIndex, entry ->
-                        // The entry's real, fixed position — [start] plus its
-                        // own place in this section — not a shared counter:
-                        // a lazy item's content composes again whenever it
-                        // scrolls into view or something it reads changes,
-                        // in whatever order that happens to be, never
-                        // guaranteed to be section order.
-                        val at = start + localIndex
-                        val itemFocus = focus.takeIf { at == ask?.index }
-                        when (entry) {
-                            is SearchEntry.Title ->
-                                TvSearchRow(
-                                    row = entry.row,
-                                    progress = watchedFractionOf(positions[entry.row.set.setId]),
-                                    watched = entry.row.set.setId in watchedIds,
-                                    onPlay = onPlay,
-                                    focus = itemFocus,
-                                )
-
-                            is SearchEntry.Show -> TvShowSearchRow(entry.entry, onOpenCollection, itemFocus)
-
-                            is SearchEntry.Person ->
-                                TvPersonSearchRow(entry.person, onOpenPerson, shouldRequestPortrait, fetchPortrait, itemFocus)
-
-                            is SearchEntry.Destination -> TvDestinationSearchRow(entry.destination, onOpenDestination, itemFocus)
+                items(
+                    items = lines,
+                    key = { line ->
+                        when (line) {
+                            is SearchLine.Heading -> "heading-${line.title}"
+                            is SearchLine.Entries -> "line-${keyOf(entries[line.indices.first])}"
                         }
+                    },
+                    contentType = { line -> if (line is SearchLine.Entries) line.layout else SearchLine.Heading::class },
+                ) { line ->
+                    when (line) {
+                        is SearchLine.Heading -> TvSectionHeading(line.title, modifier = Modifier.padding(top = Spacing.small))
+                        is SearchLine.Entries ->
+                            SearchEntryLine(line) { at, modifier ->
+                                val entry = entries[at]
+                                // Keyed by the entry, not its slot, so a new answer never
+                                // leaves the remote on whichever entry moved into it.
+                                key(keyOf(entry)) {
+                                    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                                    val own = remember { FocusRequester() }
+                                    TvSearchCell(
+                                        entry = entry,
+                                        layout = line.layout,
+                                        requester =
+                                            when (at) {
+                                                0 -> first
+                                                ask?.index -> focus
+                                                else -> own
+                                            },
+                                        marks = marks,
+                                        modifier = modifier,
+                                        onPlay = onPlay,
+                                        onOpenTitle = onOpenTitle,
+                                        onOpenCollection = onOpenCollection,
+                                        onOpenPerson = onOpenPerson,
+                                        onOpenDestination = onOpenDestination,
+                                        shouldRequestPortrait = shouldRequestPortrait,
+                                        fetchPortrait = fetchPortrait,
+                                    )
+                                }
+                            }
                     }
                 }
             }
@@ -128,23 +165,24 @@ internal fun TvSearchResults(
     }
 }
 
-/** Where each [SearchSection] starts in the flat, cross-section entry list [RowAsk.index] and [displayIndexOf] both count against. */
-internal fun sectionStartsOf(sections: List<SearchSection>): List<Int> {
-    var seen = 0
-    return sections.map { section -> seen.also { seen += section.entries.size } }
-}
-
-/** The flat [entryIndex]'s own position once section headings are counted in, for [rememberLazyListState.scrollToItem]. */
-private fun displayIndexOf(sections: List<SearchSection>, entryIndex: Int): Int {
-    var seen = 0
-    var display = 0
-    for (section in sections) {
-        display++ // the heading
-        if (entryIndex < seen + section.entries.size) return display + (entryIndex - seen)
-        seen += section.entries.size
-        display += section.entries.size
+/**
+ * One line of entries: a row on its own across the width, or up to its
+ * layout's [SearchLayout.columns] posters or cards side by side — a short
+ * last line keeps the others' widths, as the web's grid tracks do.
+ */
+@Composable
+private fun SearchEntryLine(
+    line: SearchLine.Entries,
+    cell: @Composable (at: Int, modifier: Modifier) -> Unit,
+) {
+    if (line.layout == SearchLayout.ROWS) {
+        cell(line.indices.first, Modifier)
+        return
     }
-    return display
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+        for (at in line.indices) cell(at, Modifier.weight(1f))
+        repeat(line.layout.columns - line.indices.count()) { Spacer(Modifier.weight(1f)) }
+    }
 }
 
 /** The filter chips over the results — pressed, not focused-into, the masthead's own reason: focus walking the row must not swap the list under it. */

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.width
 import catalog.Franchise
 import catalog.FranchisePage
 import model.WatchSnapshot
@@ -46,6 +47,24 @@ class FranchiseScreenTest : BrowsePageTest() {
     @Test fun theHeroCountsItsFilmsInWordsWithTheirYears() {
         render()
         compose.onNodeWithText("two films · 1999–2003").assertExists()
+    }
+
+    /**
+     * The films keep the page's 16dp side gutter, where "In release order"
+     * already sits — no poster against the screen's edge — every plate one
+     * width, while the hero still runs edge to edge.
+     */
+    @Test fun theFilmsKeepThePagesSideGutterWhileTheHeroRunsEdgeToEdge() {
+        val films = listOf(film("one", 1999, backdrop = "one.jpg", collectionId = 5), film("two", 2001, collectionId = 5), film("three", 2003, collectionId = 5))
+        show { FranchiseScreen(FranchisePage(Franchise(id = 5, name = "Franchise 5", films = films, art = "art.jpg"), overview = null), WatchSnapshot.Empty, columns = 3) {} }
+
+        val plates = films.map { compose.onNode(hasText(it.title) and hasClickAction()).getUnclippedBoundsInRoot() }
+        assertEquals(16f, plates.first().left.value, 0.5f)
+        assertEquals(384f, plates.last().right.value, 0.5f)
+        assertTrue(plates.all { kotlin.math.abs((it.width - plates.first().width).value) <= 1f }, "expected one plate width, got ${plates.map { it.width }}")
+        val hero = compose.onNodeWithTag(DEPARTMENT_HERO_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(0f, hero.left.value, 0.5f)
+        assertEquals(400f, hero.right.value, 0.5f)
     }
 
     @Test fun theFilmsFollowInReleaseOrderUnderTheirHeading() {

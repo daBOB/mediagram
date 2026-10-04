@@ -129,7 +129,16 @@ internal fun BoxScope.WideDeptHero(
     }
 }
 
-/** The compact layout (`departments.css:86-93`): art strip on top, title/line overlapping its own lower edge, in flow — no quote, no bar term, matching the web's own static masthead at this width. */
+/**
+ * The compact layout (`departments.css:86-93`): art strip on top, title and
+ * line in flow beneath — no quote, no bar term, matching the web's own
+ * static masthead at this width.
+ *
+ * [overlap] sets the words onto the strip's own faded foot, as the web does
+ * below 900px: `padding-top: 48vw` over a `64vw` strip placed behind it.
+ * A phone takes it; a portrait tablet (Medium) keeps its words under the
+ * strip, the hero it already had.
+ */
 @Composable
 internal fun CompactDeptHero(
     title: String,
@@ -138,13 +147,15 @@ internal fun CompactDeptHero(
     width: Dp,
     franchiseTitle: Boolean,
     overview: String?,
+    overlap: Boolean,
 ) {
-    Column(Modifier.fillMaxWidth()) {
+    val artHeight = width * 0.64f
+    Box(Modifier.fillMaxWidth()) {
         if (art != null) {
             // Same `ui.pageGround`, the window's own ground, as the wide
             // layout's own scrim above.
             val paper = MaterialTheme.colorScheme.pageGround
-            Box(Modifier.fillMaxWidth().height((width.value * 0.64f).dp)) {
+            Box(Modifier.fillMaxWidth().height(artHeight)) {
                 HeroArtwork(path = art, modifier = Modifier.matchParentSize())
                 Box(
                     Modifier.matchParentSize().background(
@@ -156,14 +167,16 @@ internal fun CompactDeptHero(
         Column(
             modifier =
                 Modifier.padding(
-                    // `padding-top: 48vw` over a `64vw` art strip
-                    // (`departments.css:86`) — the copy overlaps the art's
-                    // own fade by design, not a gap beneath it; `40px` with
-                    // nothing to overlap. Never `LocalTopChrome` here: the
-                    // web's compact masthead never bleeds under the hero at
-                    // this width, so there is nothing above the strip to
-                    // clear.
-                    top = if (art != null) (width.value * 0.48f).dp else 40.dp,
+                    // `40px` with nothing to overlap. Never `LocalTopChrome`
+                    // here: the web's compact masthead never bleeds under the
+                    // hero at this width, so there is nothing above the strip
+                    // to clear.
+                    top =
+                        when {
+                            art == null -> 40.dp
+                            overlap -> width * 0.48f
+                            else -> artHeight + width * 0.48f
+                        },
                     start = gutterFor(width),
                     end = gutterFor(width),
                     bottom = 28.dp,

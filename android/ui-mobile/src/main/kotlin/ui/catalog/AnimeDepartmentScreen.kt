@@ -1,18 +1,18 @@
 package ui.catalog
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.foundation.layout.Arrangement
 import catalog.AnimeDepartment
 import catalog.AnimeLibrary
 import catalog.CatalogUiState
@@ -90,7 +90,7 @@ internal fun AnimeDepartmentScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GutteredCells(columns, Spacing.medium),
         state = state,
         modifier = Modifier.fillMaxSize().testTag(ANIME_DEPT_TEST_TAG),
         contentPadding = PaddingValues(bottom = Spacing.large),
@@ -117,16 +117,20 @@ internal fun AnimeDepartmentScreen(
             item(key = "series-heading", span = { GridItemSpan(maxLineSpan) }) {
                 DeptRowHeading(title = "Series")
             }
-            items(items = department.shows, key = { "series/${it.key}" }) { entry ->
-                EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+            itemsIndexed(items = department.shows, key = { _, entry -> "series/${entry.key}" }) { index, entry ->
+                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                    EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+                }
             }
         }
         if (department.films.isNotEmpty()) {
             item(key = "films-heading", span = { GridItemSpan(maxLineSpan) }) {
                 DeptRowHeading(title = "Films")
             }
-            items(items = department.films, key = { "film/${it.setId}" }) { set ->
-                EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+            itemsIndexed(items = department.films, key = { _, set -> "film/${set.setId}" }) { index, set ->
+                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                    EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+                }
             }
         }
     }

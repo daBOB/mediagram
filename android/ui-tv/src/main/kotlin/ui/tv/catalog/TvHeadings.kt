@@ -35,7 +35,7 @@ import ui.tv.TvSafeArea
  * sets it (`catalog.css`), the phone's `ShelfHead`: the title in the display
  * face at the web's 4.4vw (42sp at television's fixed 960dp), how much is
  * there in small tracked capitals flush right, and a rule under both.
- * Genres, one genre, Latest and a person open with this, as on the web;
+ * Genres, one genre, Latest, a person and a list open with this, as on the web;
  * [leading] goes before the title — a person's round portrait, which the
  * web prepends to the same header.
  */

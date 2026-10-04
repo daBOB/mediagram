@@ -5,6 +5,23 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.105.1 — the last browse gaps on Android close
+
+**Changed** (Android)
+
+- TV search shows films and shows as posters and collections as cards, as the web does;
+  a film poster opens its page rather than playing; Down from the field lands on the first
+  result.
+- TV Movies department ends on the "All N films →" pill; a list's own TV page opens with
+  the web's page heading.
+- Phone: a department hero overlaps its words onto the art as the web does at narrow
+  widths; franchise and department grids keep the page's side gutter.
+
+**Removed**
+
+- The television's old list-of-lists screen, which nothing could reach once Collections
+  showed lists as cards.
+
 ## 0.105.0 — profiles carry a role, a PIN and a kid's own age limit (web data layer)
 
 **Added** (web player state; the screens and rules follow)

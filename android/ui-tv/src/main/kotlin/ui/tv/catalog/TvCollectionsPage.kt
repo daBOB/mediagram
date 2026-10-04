@@ -48,9 +48,11 @@ import ui.tv.chrome.LocalTvPagePadding
 /**
  * Three cards across — the web's `.destinations` (`repeat(auto-fill,
  * minmax(16rem, 1fr))`, `departments.css`) worked out once for the width
- * this page has beside the rail on television's one fixed 960dp.
+ * this page has beside the rail on television's one fixed 960dp. Search's
+ * Collections part takes the same three: its full-width pushed frame
+ * (864dp inside the overscan) still fits three 16rem tracks and not four.
  */
-private const val DestinationColumns = 3
+internal const val DestinationColumns = 3
 
 /** `.destinations{gap:16px}`. */
 private val DestinationGap = 16.dp
@@ -93,8 +95,8 @@ internal fun TvCollectionsPage(
     restoreKey: String? = null,
     listState: LazyListState = rememberLazyListState(),
 ) {
-    // Saveable like `TvLists`' own flag: a rotation or a process death
-    // mid-name comes back to the question rather than to the page under it.
+    // Saveable, so a rotation or a process death mid-name comes back to the
+    // question rather than to the page under it.
     var naming by rememberSaveable { mutableStateOf(false) }
     if (naming) {
         TvListNameQuestion(

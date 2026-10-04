@@ -19,10 +19,11 @@ import ui.tv.catalog.TvSearch
 import ui.tv.setup.TvLoadingIndicator
 
 /**
- * Search, over whatever it was opened from. A hit plays straight away, as
- * on the phone, and Back from the player lands on the row that played. A
- * matched show, a person or a collection destination each open their own
- * page instead, over search, the same way a title's genre link does.
+ * Search, over whatever it was opened from. A film's poster opens its page
+ * and a matched show, a person or a collection destination each open their
+ * own, over search, the same way a title's genre link does; an episode or
+ * lesson row plays straight away, as on the phone and the web. Back lands
+ * on whichever entry was pressed.
  */
 @Composable
 internal fun TvSearchBranch(
@@ -44,6 +45,10 @@ internal fun TvSearchBranch(
         onPlay = { setId ->
             restore.opened(here, setId)
             at.openPlayer(setId)
+        },
+        onOpenTitle = { setId ->
+            restore.opened(here, setId)
+            at.openTitle(setId)
         },
         // Recorded under the results' own row keys (`keyOf` in TvSearchGroups.kt), so Back
         // finds the show, person or collection that was opened rather than the first result.

@@ -1,21 +1,29 @@
 package ui.tv.catalog
 
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.pressKey
+import androidx.test.platform.app.InstrumentationRegistry
 import model.ListOfSets
 import model.MediaSet
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
 
@@ -35,10 +43,50 @@ class TvListStateTest : TvScreenStateTest() {
         var played: String? = null
         showList(films(2), onPlay = { played = it })
 
-        compose.onNodeWithText("Sunday · 2").assertExists()
         compose.onNodeWithText("Film 0").assertIsFocused()
         compose.onNodeWithText("Film 1").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("film-1", played)
+    }
+
+    /**
+     * The web's shelf head over a list (`renderList`'s `heading()`): the name
+     * as the page's heading, what the list names counted in words beside it —
+     * every title it names, as its Collections card counts them, not only the
+     * ones this library still holds.
+     */
+    @Test
+    fun theListIsHeadedByItsNameWithEveryTitleItNamesCountedInWords() {
+        showList(films(1))
+
+        compose.onNode(hasText("Sunday") and isHeading()).assertExists()
+        compose.onNodeWithText("TWO TITLES").assertExists()
+        compose.onNodeWithText("Sunday · 2").assertDoesNotExist()
+    }
+
+    /**
+     * The wall under the new head still walks as before: Down from the
+     * first title reaches its Remove, Up comes back, Up again reaches the
+     * list's actions under the head, and Down returns to the title. Out of
+     * touch mode, where a remote always is — a plain clickable row takes no
+     * focus in it — and with real text measurement, since Robolectric's
+     * fallback lays "▶ Play all" out a few pixels wide and so moves which
+     * action sits over the first title.
+     */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun theRemoteWalksFromTheFirstTitleToItsRemoveAndUpToTheListsActions() {
+        InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+        showList(films(2))
+        compose.onNodeWithText("Film 0").assertIsFocused()
+
+        press(Key.DirectionDown)
+        compose.onAllNodesWithText("Remove")[0].assertIsFocused()
+        press(Key.DirectionUp)
+        compose.onNodeWithText("Film 0").assertIsFocused()
+        press(Key.DirectionUp)
+        compose.onNodeWithText("▶ Play all").assertIsFocused()
+        press(Key.DirectionDown)
+        compose.onNodeWithText("Film 0").assertIsFocused()
     }
 
     @Test
@@ -148,6 +196,11 @@ class TvListStateTest : TvScreenStateTest() {
 
         compose.onNodeWithText("Delete \"Sunday\"?").assertExists()
         compose.onNodeWithText("The titles stay in the library.").assertExists()
+    }
+
+    private fun press(key: Key) {
+        compose.onNode(isFocused()).performKeyInput { pressKey(key) }
+        compose.waitForIdle()
     }
 
     /** A list whose Remove really takes the title off, as the ViewModel's next snapshot would. */

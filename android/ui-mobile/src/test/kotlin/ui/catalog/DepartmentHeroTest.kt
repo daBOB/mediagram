@@ -113,6 +113,32 @@ class DepartmentHeroTest {
         compose.onNodeWithText("“a quotable line”", useUnmergedTree = true).assertDoesNotExist()
     }
 
+    /**
+     * Below 900px the web sets the words onto the art strip's faded foot —
+     * `padding-top: 48vw` over a `64vw` strip placed behind them — rather
+     * than under it; a phone does the same, its title 48vw down.
+     */
+    @Test
+    @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
+    fun onAPhoneTheWordsOverlapTheArtStripsFadedFoot() {
+        show()
+        val art = compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val title = compose.onNodeWithTag(DEPT_HERO_TITLE_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(256f, art.bottom.value, 1f)
+        assertEquals(192f, title.top.value, 1f)
+        assertTrue(title.top < art.bottom, "the title should start on the strip's own foot, not under it")
+    }
+
+    /** A portrait tablet (Medium) keeps the hero it had: its words under the strip. */
+    @Test
+    @Config(sdk = [35], qualifiers = "w700dp-h1200dp")
+    fun onAPortraitTabletTheWordsStayUnderTheArtStrip() {
+        show()
+        val art = compose.onNodeWithTag(HERO_ARTWORK_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val title = compose.onNodeWithTag(DEPT_HERO_TITLE_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertTrue(title.top >= art.bottom, "a portrait tablet's title should sit under the strip, at ${title.top} against ${art.bottom}")
+    }
+
     @Test
     @Config(sdk = [35], qualifiers = "w880dp-h900dp")
     fun aWindowInTheOldGapBandDrawsTheWideLayoutNotCompact() {

@@ -1,9 +1,15 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.pressKey
 import catalog.DOCUMENTARIES
 import catalog.Entry
 import catalog.Shelf
@@ -18,6 +24,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.TvMoviesPageEntryKey
+import kotlin.test.assertEquals
 
 /**
  * [TvShowsDepartmentPage] and [TvMoviesDepartmentPage] over real
@@ -155,6 +163,38 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         }
 
         compose.onNodeWithText("Show 2").assertIsFocused()
+    }
+
+    /**
+     * "All N films →" is the web's `.dept-all` pill at the page's foot: coming
+     * back from the wall it opened lands on it, Up reaches the last row of
+     * films above it, Down comes back, and a press opens the wall.
+     */
+    @Test
+    fun theAllFilmsPillIsWhereTheWallReturnsToAndOpensIt() {
+        val films = (0 until 3).map { i -> set("f$i", Kind.MOVIE, "Film $i", addedAt = i.toLong()) }
+        val dept = moviesDepartmentOf(films) { true }!!
+        var opened = 0
+
+        show {
+            TvMoviesDepartmentPage(
+                dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = { opened++ },
+                restoreKey = TvMoviesPageEntryKey,
+            )
+        }
+
+        compose.onNodeWithText("All 3 films →").assertIsFocused()
+        press(Key.DirectionUp)
+        compose.onNodeWithText("Film 2").assertIsFocused()
+        press(Key.DirectionDown)
+        compose.onNodeWithText("All 3 films →").assertIsFocused()
+        compose.onNodeWithText("All 3 films →").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(1, opened)
+    }
+
+    private fun press(key: Key) {
+        compose.onNode(isFocused()).performKeyInput { pressKey(key) }
+        compose.waitForIdle()
     }
 
     private fun seriesEntriesOf(sets: List<MediaSet>): List<Entry.Collection> =

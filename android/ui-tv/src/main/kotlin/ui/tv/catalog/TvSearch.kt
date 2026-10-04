@@ -45,6 +45,7 @@ internal fun TvSearch(
     restoreKey: String?,
     onQueryChange: (String) -> Unit,
     onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit = {},
     onOpenCollection: (key: String) -> Unit = {},
     onOpenPerson: (personId: Long) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
@@ -64,6 +65,7 @@ internal fun TvSearch(
             viewModel.setQuery(text)
         },
         onPlay = onPlay,
+        onOpenTitle = onOpenTitle,
         onOpenCollection = onOpenCollection,
         onOpenPerson = onOpenPerson,
         onOpenFranchise = onOpenFranchise,
@@ -76,17 +78,19 @@ internal fun TvSearch(
 /**
  * Search on a television — the phone's `SearchScreen` and the web's
  * `search-view.js`: a field, typed through the system keyboard, over the
- * query grouped the way [catalog.searchGroupsOf] groups it — films, matched
- * shows, episodes, lessons, people (only those this profile can see) and
- * collections — each its own section, with a filter chip row over them once
- * there is more than one kind to narrow to.
+ * query grouped the way [catalog.searchGroupsOf] groups it — films and
+ * matched shows as posters; episodes, lessons and people (only those this
+ * profile can see) as rows; collections as the cards Collections draws —
+ * each its own section, with a filter chip row over them once there is more
+ * than one kind to narrow to.
  *
  * The remote lands in the field when nothing has been typed, so the
  * keyboard is up the moment search opens. Coming back with a query —
- * from the title a row played — it waits for the answer and lands on that
- * row ([restoreKey]), or the first, rather than reopening the keyboard over
- * an answer already found. The keyboard's Search key hands the remote to
- * the first row; Up from the top row goes back to the field.
+ * from a film's page, a show, or the title a row played — it waits for the
+ * answer and lands on that entry ([restoreKey]), or the first, rather than
+ * reopening the keyboard over an answer already found. The keyboard's
+ * Search key, or Down, hands the remote to the first entry; Up from the top
+ * line goes back to the field.
  *
  * [query] seeds the field from the saved position; every keystroke after
  * that is [onQueryChange]'s to save.
@@ -100,6 +104,7 @@ internal fun TvSearchScreen(
     restoreKey: String?,
     onQueryChange: (String) -> Unit,
     onPlay: (setId: String) -> Unit,
+    onOpenTitle: (setId: String) -> Unit = {},
     onOpenCollection: (key: String) -> Unit = {},
     onOpenPerson: (personId: Long) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
@@ -179,6 +184,7 @@ internal fun TvSearchScreen(
             ask = ask,
             onAnswered = { ask = null },
             onPlay = onPlay,
+            onOpenTitle = onOpenTitle,
             onOpenCollection = onOpenCollection,
             onOpenPerson = onOpenPerson,
             onOpenDestination = onOpenDestination,

@@ -7,11 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items as lazyRowItems
@@ -65,7 +64,7 @@ internal fun ShowsDepartmentScreen(
     val leadKey = department.lead?.key
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GutteredCells(columns, Spacing.medium),
         state = state,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.large),
@@ -123,8 +122,10 @@ internal fun ShowsDepartmentScreen(
             DeptRowHeading(title = if (label == "Series") "All shows" else "All courses")
         }
         if (label == "Series") {
-            items(items = department.all, key = { "all/${it.key}" }) { entry ->
-                EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+            itemsIndexed(items = department.all, key = { _, entry -> "all/${entry.key}" }) { index, entry ->
+                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                    EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
+                }
             }
         } else {
             // Courses as a list, the web's `{mode: LIST}` here: a course

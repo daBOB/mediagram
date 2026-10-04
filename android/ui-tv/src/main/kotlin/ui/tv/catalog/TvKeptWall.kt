@@ -45,7 +45,7 @@ import ui.tv.chrome.LocalTvPagePadding
  * the one beside it, or up to the tab when it was the last.
  *
  * Collections is not one of these: its shelf is a list of lists, not of
- * titles, and lives in [TvLists].
+ * titles, and lives in [TvCollectionsPage].
  */
 @Composable
 internal fun TvKeptWall(

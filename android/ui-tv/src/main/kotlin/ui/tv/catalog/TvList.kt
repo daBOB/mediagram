@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.SetCard
+import catalog.spelledCountOf
 import designsystem.Overscan
 import designsystem.Spacing
 import model.ListOfSets
@@ -23,9 +24,10 @@ import ui.tv.TvTextRow
 import ui.tv.setup.TvConfirmDialog
 
 /**
- * One list's titles, in the order they were filed — `listView` in
- * collections-view.js and the phone's `ListScreen`: Rename and Delete list
- * above, and each title with a way to take it back off the list.
+ * One list's titles, in the order they were filed — `renderList` in
+ * collections-view.js and the phone's `ListScreen`: the list's name in the
+ * shelf head the web gives it, Rename and Delete list under that, and each
+ * title with a way to take it back off the list.
  *
  * A wall of plates where the phone has rows, because a title is a plate
  * everywhere else on this surface; each plate carries its own "Remove"
@@ -87,7 +89,10 @@ fun TvList(
 
     val header: @Composable () -> Unit = {
         Column {
-            TvCountedHeading(list.name, sets.size)
+            // The web's `heading()` over a list (`renderList`), counting what
+            // the list names — the number its Collections card shows too —
+            // rather than only the titles this library could still resolve.
+            TvShelfHead(list.name, spelledCountOf(list.items.size, "title"))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
                 if (sets.isNotEmpty()) {
                     TvTextRow(text = "▶ Play all", onClick = onPlayAll, focusRequester = playAllFocus)

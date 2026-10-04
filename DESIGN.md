@@ -567,7 +567,8 @@ title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
 0.24em tracking in quiet, dropping under the title when it needs the width;
 a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
 Fraunces SemiBold 24sp (`.shelf-sub`). Television's `TvShelfHead` opens the
-same four pages at the web's 4.4vw for its fixed 960dp (42sp), the extent at
+same four pages, and a list's own page (the web's `renderList` heads it the
+same way), at the web's 4.4vw for its fixed 960dp (42sp), the extent at
 the 16sp ten-foot floor; a person's round portrait (120dp) stands before the
 title, as the web prepends it.
 
@@ -594,14 +595,14 @@ says what it is.
   at ten-foot sizes — a 24sp genre name, a 28sp destination name, the count
   at 16sp. Genres four across on the Genres page; 240dp wide in the Movies
   row, where the web's 12rem would leave a two-line name no room; franchises
-  and lists three across on Collections. The scrim and proportions are the
-  phone's own, shared (`ArtTileScrim`).
+  and lists three across on Collections and in Search's Collections part.
+  The scrim and proportions are the phone's own, shared (`ArtTileScrim`).
 
 **Page pill** (`PagePill`): a fully round outline link in ink on the page
 itself — "All N films →" at the foot of Movies (52dp) and "＋ New list"
 under Your lists (44dp) — the web's `.dept-all` and `.make`. Television
-draws "＋ New list" as `TvPagePill`: the rule outline at rest, the accent
-ring once the remote is on it, 52dp tall.
+draws both as `TvPagePill`: the rule outline at rest, the accent ring once
+the remote is on it, 52dp tall.
 
 ### Settings index row
 

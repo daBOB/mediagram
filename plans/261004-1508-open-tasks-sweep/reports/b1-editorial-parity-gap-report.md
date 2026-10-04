@@ -65,4 +65,7 @@ Each ruling is reversible by the user; none reverses a user decision.
 - TV Cast: crew names are still plain text (phone and web link them to the person page) — group C report.
 - TV courses keep their pre-magazine layout (the course page; phone lists lessons in the web's index) — group C report.
 - TV title pill now reads "+ My List" / "✓ My List" like the web's title page and the phone (lead, at merge); the players keep "My List" / "On My List".
+- Tablet in portrait (MEDIUM, ~777 dp): the department hero still puts its words under the art; the web overlaps them up to 900 px — parity says overlap (group E report).
+- Phone: a list's own page has no page heading; the web (and now TV) have one (group E report).
+- TV search shows people as rows; the web shows person cards (group E report).
 

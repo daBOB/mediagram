@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import catalog.CategoryRow
 import catalog.CollectionKind
@@ -28,6 +29,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -124,6 +126,24 @@ class ShowsDepartmentScreenTest {
     @Test fun noCategoryHeadingDrawsWhenNothingIsFiled() {
         render("Tutorials", department(Underway(emptyList(), emptyList(), 0, 0)))
         compose.onAllNodes(hasText("Other")).assertCountEquals(0)
+    }
+
+    /**
+     * "All shows" keeps the page's 16dp side gutter, where its heading and
+     * rows already sit — no plate against the screen's edge — every plate
+     * one width, while the hero above still runs edge to edge.
+     */
+    @Test fun allShowsKeepsThePagesSideGutterWithEveryPlateOneWidth() {
+        val shows = listOf("A", "B", "C").map { name -> course(name, null).copy(key = "SHOW/$name", kind = CollectionKind.SHOW) }
+        render("Series", department(Underway(emptyList(), emptyList(), 0, 0)).copy(all = shows))
+
+        val plates = shows.map { compose.onNode(hasText(it.name) and hasClickAction()).getUnclippedBoundsInRoot() }
+        assertEquals(16f, plates.first().left.value, 0.5f)
+        assertEquals(384f, plates.last().right.value, 0.5f)
+        assertTrue(plates.all { kotlin.math.abs((it.width - plates.first().width).value) <= 1f }, "expected one plate width, got ${plates.map { it.width }}")
+        val hero = compose.onNodeWithTag(DEPARTMENT_HERO_TEST_TAG, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(0f, hero.left.value, 0.5f)
+        assertEquals(400f, hero.right.value, 0.5f)
     }
 
     /** `renderShowsDept` asks for `{mode: LIST}` under Tutorials: a course row spans the page and says lessons and chapters. */

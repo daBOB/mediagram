@@ -1,12 +1,12 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,7 +37,7 @@ internal fun FranchiseScreen(
     val lead = franchise.films.find { it.backdropPath != null }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GutteredCells(columns, Spacing.medium),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.large),
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -54,8 +54,10 @@ internal fun FranchiseScreen(
             )
         }
         item(key = "heading", span = { GridItemSpan(maxLineSpan) }) { DeptRowHeading(title = "In release order") }
-        items(items = franchise.films, key = { it.setId }) { set ->
-            EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, {})
+        itemsIndexed(items = franchise.films, key = { _, set -> set.setId }) { index, set ->
+            Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, {})
+            }
         }
     }
 }
