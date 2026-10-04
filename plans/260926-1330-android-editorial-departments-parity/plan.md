@@ -1,7 +1,7 @@
 # Android — editorial departments parity
 
-Status: planned 2026-09-26; **build waits for `feat/android-tv-ui` to merge** (user
-decision). Owed under CLAUDE.md § Surface Parity. The web player (0.62.x) is the
+Status: in progress — phases 1–6 and 8 shipped in 0.66.0 (`280235b3`, TV fixes `cf142d28`,
+`906fdc41`); the follow-ups the 2026-10-04 gap check found are phase 9, then phase 7. Owed under CLAUDE.md § Surface Parity. The web player (0.62.x) is the
 reference: before each screen, read its web module (named per phase) and match its
 decisions. Any deliberate difference is written into the phase that makes it.
 
@@ -14,10 +14,11 @@ Scout: A = `android/`, C = `crates/mediagram-core/src/` (report in session, 2026
 | 1 | [Core read API: franchise/type on rows, credits, person, franchises, people search, device portraits](phase-01-core-read-api.md) | Rust core + UniFFI | done |
 | 2 | [Kotlin data + pure rules: Similar, SeriesResume, GenreIndex, Franchises, VisiblePeople](phase-02-kotlin-data-and-rules.md) | feature/catalog, core/data | done |
 | 3 | [Navigation: departments in the masthead, new frames](phase-03-navigation.md) | ui-common, feature/catalog | done |
-| 4 | [Phone title pages: film spread + tabs, series page](phase-04-phone-title-pages.md) | ui-mobile | pending |
-| 5 | [Phone departments, collections/franchises, person, search, Latest, Genres](phase-05-phone-departments-and-browse.md) | ui-mobile | pending |
-| 6 | [TV: the same screens on the television surface](phase-06-tv-surface.md) | ui-tv | pending |
-| 8 | [Settings › Appearance: theme + accent](phase-08-appearance.md) | ui-mobile, ui-tv, designsystem | pending |
+| 4 | [Phone title pages: film spread + tabs, series page](phase-04-phone-title-pages.md) | ui-mobile | done 0.66.0 |
+| 5 | [Phone departments, collections/franchises, person, search, Latest, Genres](phase-05-phone-departments-and-browse.md) | ui-mobile | done 0.66.0 |
+| 6 | [TV: the same screens on the television surface](phase-06-tv-surface.md) | ui-tv | done 0.66.0 (title/browse pages kept their pre-magazine look) |
+| 8 | [Settings › Appearance: theme + accent](phase-08-appearance.md) | ui-mobile, ui-tv, designsystem | done 0.66.0 (+ Artwork 0.69.1) |
+| 9 | Follow-ups: the visual and wording gaps against today's web — [gap report](../261004-1508-open-tasks-sweep/reports/b1-editorial-parity-gap-report.md), groups A (phone browse), B (title pages + core totals), C (TV title/series), D (TV browse) | all | in progress |
 | 7 | [Verify on devices, docs, version](phase-07-verify-and-ship.md) | all | pending |
 
 Phases 1–2 are surface-free and can start as soon as the TV branch lands. 4–5 and 6 share
