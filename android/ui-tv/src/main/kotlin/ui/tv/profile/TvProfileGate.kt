@@ -39,16 +39,14 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
 
     if (chosen == null) {
         // Back on a reopened picker is "Stay as I am" — the phone's gate
-        // says why; the add-profile flow's own handlers, composed after this
-        // one, still take Back first while it is open.
+        // says why; a flow composed after this one, with Back handlers of its
+        // own, still takes Back first while it is open.
         BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
         TvProfilePicker(
             state = state,
             onChoose = viewModel::choose,
-            onAdd = viewModel::add,
             onStay = viewModel::stay,
             onRetry = viewModel::retry,
-            onRemove = viewModel::remove,
         )
         return
     }

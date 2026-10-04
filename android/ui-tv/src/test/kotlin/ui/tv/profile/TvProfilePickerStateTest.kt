@@ -3,7 +3,6 @@ package ui.tv.profile
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onNodeWithTag
@@ -13,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import designsystem.Overscan
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import androidx.compose.ui.test.performSemanticsAction
 import catalog.profile.ProfileUiState
 import model.Profile
 import org.junit.After
@@ -28,8 +26,8 @@ import ui.tv.TvTheme
 
 /**
  * What Robolectric can check about [TvProfilePicker] without a real window
- * manager: which state draws what text, and that clicking through to Add
- * lands on the right screens — the same appearance-only split every other
+ * manager: which state draws what text and how wide the tiles are — the
+ * same appearance-only split every other
  * TV screen in this module follows (`TvSetupStepTest`, `TvConfirmDialogStateTest`).
  * Initial focus and D-pad traversal are real window-manager behaviour and
  * live in `ui-tv/src/androidTest/kotlin/ui/tv/profile/TvProfilePickerTest.kt`
@@ -38,8 +36,8 @@ import ui.tv.TvTheme
 // A television-sized window, not Robolectric's own narrow default: the tile
 // row is a LazyRow now (see TvProfilePicker), which only composes semantics
 // nodes for tiles that actually land inside the measured viewport — a
-// narrower window would drop the trailing "New profile" tile from the tree
-// these tests query, not just fail to show it.
+// narrower window would drop the trailing tile from the tree these tests
+// query, not just fail to show it.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w1280dp-h720dp")
 class TvProfilePickerStateTest {
@@ -68,7 +66,6 @@ class TvProfilePickerStateTest {
         compose.onNodeWithText("Who's watching?").assertExists()
         compose.onNodeWithText("Ada").assertExists()
         compose.onNodeWithText("Bea").assertExists()
-        compose.onNodeWithText("New profile").assertExists()
     }
 
     /** The phone's own tile label, unabridged — see `ui.profile.ProfilePickerScreen.ProfileTile`. */
@@ -99,25 +96,21 @@ class TvProfilePickerStateTest {
         compose.onNodeWithText("Stay as I am").assertExists()
     }
 
+    /** With nobody to choose — no load error — looking again is still offered: it is the only thing to press. */
     @Test
-    fun theAddTileOpensTheNameQuestion() {
-        show(ProfileUiState.Picking(profiles = listOf(Profile(id = "ada", name = "Ada")), canStay = false))
-
-        compose.onNodeWithText("New profile").performSemanticsAction(SemanticsActions.OnClick)
-
-        compose.onNodeWithText("Name for this profile").assertExists()
-        compose.onNodeWithText("Name").assertExists()
+    fun nobodyToChooseStillOffersTryAgain() {
+        show(ProfileUiState.Picking(profiles = emptyList(), canStay = false))
+        compose.onNodeWithText("Try again").assertExists()
     }
 
     /**
-     * Four profiles and "New profile" on a 960dp television — the box this
-     * was seen on — all fit inside the overscan-safe width, the way the
-     * phone's picker shows every profile at once. At their full width the
-     * fifth tile ran past the right edge, its label cut to "New profil…".
+     * Four profiles on a 960dp television — the box this was seen on — all
+     * fit inside the overscan-safe width, the way the phone's picker shows
+     * every profile at once.
      */
     @Test
     @Config(qualifiers = "w960dp-h540dp")
-    fun fourProfilesAndNewProfileFitInsideTheSafeWidthOfA960dpTelevision() {
+    fun fourProfilesFitInsideTheSafeWidthOfA960dpTelevision() {
         show(
             ProfileUiState.Picking(
                 profiles = listOf("andre", "test", "TV test", "TV kids").map { Profile(id = it, name = it, kids = it == "TV kids") },
@@ -127,10 +120,9 @@ class TvProfilePickerStateTest {
         val screen = compose.onRoot().getBoundsInRoot()
 
         val first = compose.onNodeWithTag(TvProfilePickerFirstTileTag).getBoundsInRoot()
-        val add = compose.onNodeWithTag(TvProfilePickerAddTileTag).getBoundsInRoot()
+        val last = compose.onNodeWithTag("tv-profile-tile-TV kids").getBoundsInRoot()
         assertTrue(first.left >= screen.left + Overscan.horizontal - Slack, "first tile starts at ${first.left}")
-        assertTrue(add.right <= screen.right - Overscan.horizontal + Slack, "New profile ends at ${add.right}")
-        compose.onNodeWithText("New profile").assertExists()
+        assertTrue(last.right <= screen.right - Overscan.horizontal + Slack, "last tile ends at ${last.right}")
     }
 
     @Test
@@ -151,7 +143,7 @@ class TvProfilePickerStateTest {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 TvTheme {
-                    TvProfilePicker(state = state, onChoose = {}, onAdd = { _, _ -> }, onStay = {}, onRetry = {})
+                    TvProfilePicker(state = state, onChoose = {}, onStay = {}, onRetry = {})
                 }
             }
         }

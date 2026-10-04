@@ -1,5 +1,8 @@
 package testing
 
+import data.toModel
+import model.RoleAction
+import model.allowed
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.ProfileOutcome
 import java.text.Normalizer
@@ -16,8 +19,6 @@ private const val PIN_LENGTH = 4
 
 /** The two limits a kid may have. */
 private val KIDS_AGES = setOf<UByte>(6u, 12u)
-
-private enum class Action { CREATE_GROWN_UP, CREATE_KID, REMOVE, SET_PIN, SET_KIDS_AGE }
 
 /**
  * [FakeCore]'s household: who may add, remove, enter and re-PIN whom,
@@ -84,7 +85,7 @@ class FakeProfiles(
         first(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
             { unusable(name) },
-            { check(actorId, pin, Action.CREATE_GROWN_UP, null) },
+            { check(actorId, pin, RoleAction.CREATE_GROWN_UP, null) },
         ) ?: add(name, newPin = newPin)
 
     fun createKid(
@@ -96,7 +97,7 @@ class FakeProfiles(
         first(
             { ProfileOutcome.Invalid.takeUnless { kidsAge in KIDS_AGES } },
             { unusable(name) },
-            { check(actorId, pin, Action.CREATE_KID, null) },
+            { check(actorId, pin, RoleAction.CREATE_KID, null) },
         ) ?: add(name, kidsAge = kidsAge, parentId = actorId)
 
     /** A grown-up takes the kids it is the parent of with it; a kid takes only itself. */
@@ -105,7 +106,7 @@ class FakeProfiles(
         pin: String,
         id: String,
     ): ProfileOutcome =
-        check(actorId, pin, Action.REMOVE, id) ?: run {
+        check(actorId, pin, RoleAction.REMOVE, id) ?: run {
             val grownUp = read().any { it.id == id && !it.kids }
             val gone = read().filter { it.id == id || (grownUp && it.kids && it.parentId == id) }.map { it.id }.toSet()
             write(read().filterNot { it.id in gone })
@@ -125,7 +126,7 @@ class FakeProfiles(
     ): ProfileOutcome =
         first(
             { ProfileOutcome.Invalid.takeUnless { kidsAge in KIDS_AGES } },
-            { check(actorId, pin, Action.SET_KIDS_AGE, id) },
+            { check(actorId, pin, RoleAction.SET_KIDS_AGE, id) },
         ) ?: update(id) { it.copy(kidsAge = kidsAge) }
 
     /** A kid's opens freely; a grown-up's with its PIN. */
@@ -167,7 +168,7 @@ class FakeProfiles(
         val firstPin = actorId == id && id !in pins && read().any { it.id == id && !it.kids }
         return first(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
-            { check(actorId, pin, Action.SET_PIN, id, unproven = firstPin) },
+            { check(actorId, pin, RoleAction.SET_PIN, id, unproven = firstPin) },
         ) ?: run {
             pins[id] = newPin
             ProfileOutcome.Done
@@ -211,7 +212,7 @@ class FakeProfiles(
     private fun check(
         actorId: String,
         pin: String,
-        action: Action,
+        action: RoleAction,
         targetId: String?,
         unproven: Boolean = false,
     ): ProfileOutcome? {
@@ -222,7 +223,9 @@ class FakeProfiles(
             // A kid manages nothing, and has no PIN to prove otherwise with.
             { ProfileOutcome.NotAllowed.takeIf { actor?.kids == true } },
             { if (unproven) null else prove(actorId, pin) },
-            { ProfileOutcome.NotAllowed.takeUnless { profiles.allowed(actorId, action, targetId.orEmpty()) } },
+            // The app's own rule, the one Manage offers from: `profile-rules.json`
+            // holds it to the web's, and `CoreContract` holds this fake to the core.
+            { ProfileOutcome.NotAllowed.takeUnless { profiles.map { it.toModel() }.allowed(actorId, action, targetId) } },
         )
     }
 
@@ -260,28 +263,6 @@ class FakeProfiles(
         val TWELVE: UByte = 12u
     }
 }
-
-/** `rules::allowed`, over profiles as [FakeProfiles.shown] reads them. */
-private fun List<Profile>.allowed(
-    actorId: String,
-    action: Action,
-    targetId: String,
-): Boolean {
-    val actor = find { it.id == actorId }?.takeUnless { it.kids } ?: return false
-    val target = find { it.id == targetId }
-    val owns = { kid: Profile -> ownerOf(kid) == actor.id }
-    return when (action) {
-        Action.CREATE_GROWN_UP -> actor.admin
-        Action.CREATE_KID -> true
-        Action.REMOVE -> target != null && !target.admin && if (target.kids) owns(target) else actor.admin && target.id != actor.id
-        Action.SET_PIN -> target != null && !target.kids && (target.id == actor.id || actor.admin)
-        Action.SET_KIDS_AGE -> target != null && target.kids && owns(target)
-    }
-}
-
-/** Its parent while that is a grown-up here, else the admin, else nobody. */
-private fun List<Profile>.ownerOf(kid: Profile): String? =
-    (find { it.id == kid.parentId && !it.kids } ?: find { it.admin && !it.kids })?.id
 
 /** Four ASCII digits, nothing else. */
 private fun validPin(pin: String): Boolean = pin.length == PIN_LENGTH && pin.all { it in '0'..'9' }

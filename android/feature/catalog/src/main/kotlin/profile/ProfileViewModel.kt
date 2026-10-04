@@ -46,8 +46,9 @@ sealed interface ProfileUiState {
 /**
  * Drives "Who's watching?" — [WatchStateRepository] is the source of truth
  * for who exists and who is chosen; this only decides which of that to show
- * and when. Ports the web's picker (`profile-picker.js`): choose, add and
- * remove. The web has no rename either, so neither does this.
+ * and when. Ports the web's picker (`profile-picker.js`): choose; adding and
+ * removing live in Manage, behind a grown-up's PIN. The web has no rename
+ * either, so neither does this.
  */
 @HiltViewModel
 class ProfileViewModel
@@ -74,14 +75,15 @@ class ProfileViewModel
 
         // Each profile-owner entry re-reads the repository, even if setup completed immediately.
         val state: StateFlow<ProfileUiState> =
-            combine(mode, repository.profiles) { current, profiles ->
+            combine(mode, repository.profiles, repository.chosenProfileId) { current, profiles, chosenId ->
                 when (current) {
                     Mode.Loading -> {
                         ProfileUiState.Loading
                     }
 
+                    // Someone to stay as: a profile removed in Manage takes the offer with it.
                     is Mode.Picking -> {
-                        ProfileUiState.Picking(profiles, current.canStay, current.error)
+                        ProfileUiState.Picking(profiles, current.canStay && chosenId != null, current.error)
                     }
 
                     is Mode.Chosen -> {
@@ -156,62 +158,6 @@ class ProfileViewModel
                 } else {
                     failed("Could not choose that profile. Please try again.", previousId)
                 }
-            }
-        }
-
-        fun add(
-            name: String,
-            kids: Boolean,
-        ) {
-            val started = ++operation
-            viewModelScope.launch {
-                val previousId = repository.chosenProfileId.value
-                val created =
-                    try {
-                        repository.createProfile(name, kids) != null
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (
-                        @Suppress("TooGenericExceptionCaught") e: Exception,
-                    ) {
-                        false
-                    }
-                if (operation != started) return@launch
-                if (created) {
-                    (mode.value as? Mode.Picking)?.let { mode.value = it.copy(error = null) }
-                } else {
-                    failed("Could not create the profile. Please try again.", previousId)
-                }
-            }
-        }
-
-        /**
-         * Removes a profile and everything of theirs. Removing the one this
-         * device was watching as leaves nobody to "Stay as", so the picker
-         * stops offering it.
-         */
-        fun remove(id: String) {
-            val started = ++operation
-            viewModelScope.launch {
-                val previousId = repository.chosenProfileId.value
-                val removed =
-                    try {
-                        repository.deleteProfile(id)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (
-                        @Suppress("TooGenericExceptionCaught") e: Exception,
-                    ) {
-                        false
-                    }
-                if (operation != started) return@launch
-                if (!removed) {
-                    failed("Could not remove the profile. Please try again.", previousId)
-                    return@launch
-                }
-                val picking = mode.value as? Mode.Picking ?: return@launch
-                val stillChosen = repository.chosenProfileId.value != null
-                mode.value = picking.copy(canStay = picking.canStay && stillChosen, error = null)
             }
         }
 

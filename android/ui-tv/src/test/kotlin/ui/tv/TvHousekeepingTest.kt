@@ -4,15 +4,12 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
@@ -32,10 +29,9 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import kotlin.test.assertFalse
 import ui.tv.catalog.films
-import ui.tv.setup.TvConfirmDialogCancelTag
 
 /**
- * The offline badge, Continue's "Mark finished" and "Remove a profile…",
+ * The offline badge, Continue's "Mark finished" and Back on the picker,
  * walked through the whole app over the real `CatalogViewModel` and
  * `ProfileViewModel` [TvAppFixture] builds — so what is proved is that each
  * reaches the model and comes back as the screen the viewer sees.
@@ -123,18 +119,6 @@ class TvHousekeepingTest {
         press(compose.onNodeWithContentDescription("Continue"))
     }
 
-    @Test
-    fun cancellingTheQuestionRemovesNobody() {
-        launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = null)
-        press(compose.onNodeWithText("Remove a profile…"))
-        press(nameInDialog("Bo"))
-
-        press(compose.onNodeWithTag(TvConfirmDialogCancelTag))
-
-        compose.onAllNodesWithText("Remove which profile?").assertCountEquals(0)
-        compose.onNodeWithText("Bo").assertExists()
-    }
-
     /** Back on the reopened picker is "Stay as I am", as on the phone — not a way out of the app. */
     @Test
     fun backOnTheReopenedPickerStaysAsTheViewer() {
@@ -177,9 +161,6 @@ class TvHousekeepingTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-
-    /** A name in the dialog's list, not the picker's tile of the same name behind it. */
-    private fun nameInDialog(name: String) = compose.onNode(hasText(name) and hasClickAction() and hasAnyAncestor(isDialog()))
 
     private fun press(node: SemanticsNodeInteraction) {
         node.performSemanticsAction(SemanticsActions.OnClick)

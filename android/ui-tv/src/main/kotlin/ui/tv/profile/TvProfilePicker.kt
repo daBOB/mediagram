@@ -12,10 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -36,7 +33,6 @@ private const val NOTE =
         "anyone who can reach this app can pick any of them."
 private const val TRY_AGAIN = "Try again"
 private const val STAY = "Stay as I am"
-private const val REMOVE = "Remove a profile…"
 
 // The web reference (`style.css` `.who-card { max-width: 40rem; text-align:
 // center }`) keeps the whole picker — heading, tiles and note alike — from
@@ -47,15 +43,12 @@ private val NoteMaxWidth = 640.dp
 /** The first tile's own tag — the one always focused when the picker appears. */
 internal const val TvProfilePickerFirstTileTag = "tv-profile-picker-first-tile"
 
-/** The Add tile's own tag, used whenever it is not also the first tile. */
-internal const val TvProfilePickerAddTileTag = "tv-profile-picker-add-tile"
-
 /**
  * The television counterpart to `ui.profile.ProfilePickerScreen`: the same
- * [ProfileUiState] switch, the same "Who's watching?" wording and the same
- * add-a-profile fields — drawn as tiles in a single row a D-pad moves
- * across instead of a phone grid a finger taps. Remove, as on the phone,
- * lists every profile and asks before it takes one. Renders nothing for
+ * [ProfileUiState] switch and the same "Who's watching?" wording, drawn as
+ * tiles in a single row a D-pad moves across instead of a phone grid a
+ * finger taps. Adding and removing happen in Manage profiles, behind a
+ * grown-up's PIN, as on the phone. Renders nothing for
  * [ProfileUiState.Chosen], exactly as the phone's own picker does — the
  * caller only shows this while there is something left to decide.
  */
@@ -63,14 +56,12 @@ internal const val TvProfilePickerAddTileTag = "tv-profile-picker-add-tile"
 fun TvProfilePicker(
     state: ProfileUiState,
     onChoose: (String) -> Unit,
-    onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
-    onRemove: (String) -> Unit = {},
 ) {
     when (state) {
         ProfileUiState.Loading -> TvLoadingIndicator()
-        is ProfileUiState.Picking -> TvPickerBody(state, onChoose, onAdd, onStay, onRetry, onRemove)
+        is ProfileUiState.Picking -> TvPickerBody(state, onChoose, onStay, onRetry)
         is ProfileUiState.Chosen -> Unit
     }
 }
@@ -79,40 +70,19 @@ fun TvProfilePicker(
 private fun TvPickerBody(
     state: ProfileUiState.Picking,
     onChoose: (String) -> Unit,
-    onAdd: (String, Boolean) -> Unit,
     onStay: () -> Unit,
     onRetry: () -> Unit,
-    onRemove: (String) -> Unit,
 ) {
-    var adding by remember { mutableStateOf(false) }
-    var removing by remember { mutableStateOf(false) }
-
-    // Composing the add flow in place of the tile row, not over it: the two
-    // never need to be visible together, and a `naming` overlay would still
-    // have to answer what the tiles behind it do with the remote while it
-    // is up. Cancelling out of it below re-enters this branch, which is
-    // also what re-seeds first-tile focus for free.
-    if (adding) {
-        TvAddProfileFlow(
-            onAdd = { name, kids ->
-                adding = false
-                onAdd(name, kids)
-            },
-            onCancel = { adding = false },
-        )
-        return
-    }
-
     val firstFocusRequester = remember { FocusRequester() }
-    // Again when the last profile is removed: "Remove a profile…" goes
-    // with it, and the remote that was on it would rest on nothing.
+    // Again when the last profile goes: the remote that was on a tile would
+    // rest on nothing, so it moves to "Try again".
     LaunchedEffect(state.profiles.isEmpty()) { firstFocusRequester.requestFocus() }
 
     val error = state.error
-    // With nothing loaded and a reason why, "Try again" is the only useful
-    // thing on screen — the Add tile still opens, but starting an account's
-    // very first profile is not the answer to a load that just failed.
-    val focusTryAgainFirst = error != null && state.profiles.isEmpty()
+    // With nobody to choose, "Try again" is the only thing on screen to
+    // press — and the focus requester must be attached to something, or
+    // `requestFocus()` throws.
+    val focusTryAgainFirst = state.profiles.isEmpty()
 
     Column(
         modifier = Modifier.fillMaxSize().padding(vertical = Overscan.vertical),
@@ -126,6 +96,8 @@ private fun TvPickerBody(
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
             )
+        }
+        if (error != null || focusTryAgainFirst) {
             TvTextRow(
                 text = TRY_AGAIN,
                 onClick = onRetry,
@@ -145,11 +117,10 @@ private fun TvPickerBody(
         // The tiles are narrowed to fit that safe width first, so the
         // profiles a household actually has are all in view at once, the
         // way the phone's picker shows every one of them: at their full
-        // width five tiles ran past the right edge of a 960dp television,
-        // "New profile" cut off mid-word in the overscan. Only past what
-        // fits at the narrowest tile does the row scroll.
+        // width five tiles ran past the right edge of a 960dp television.
+        // Only past what fits at the narrowest tile does the row scroll.
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().padding(top = Spacing.large)) {
-            val tileWidth = profileTileWidth(state.profiles.size + 1, maxWidth - Overscan.horizontal * 2, Spacing.medium)
+            val tileWidth = profileTileWidth(state.profiles.size, maxWidth - Overscan.horizontal * 2, Spacing.medium)
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = Overscan.horizontal),
@@ -164,16 +135,8 @@ private fun TvPickerBody(
                     TvProfileTile(
                         profile = profile,
                         onClick = { onChoose(profile.id) },
-                        focusRequester = if (!focusTryAgainFirst && index == 0) firstFocusRequester else null,
+                        focusRequester = if (index == 0) firstFocusRequester else null,
                         tag = if (index == 0) TvProfilePickerFirstTileTag else "tv-profile-tile-${profile.id}",
-                        width = tileWidth,
-                    )
-                }
-                item {
-                    TvAddTile(
-                        onClick = { adding = true },
-                        focusRequester = if (!focusTryAgainFirst && state.profiles.isEmpty()) firstFocusRequester else null,
-                        tag = if (state.profiles.isEmpty()) TvProfilePickerFirstTileTag else TvProfilePickerAddTileTag,
                         width = tileWidth,
                     )
                 }
@@ -185,15 +148,6 @@ private fun TvPickerBody(
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = NoteMaxWidth).padding(horizontal = Overscan.horizontal).padding(top = Spacing.large),
         )
-        // Below the note and above "Stay as I am", where the phone lists
-        // it, and only while there is someone to remove.
-        if (state.profiles.isNotEmpty()) {
-            TvTextRow(
-                text = REMOVE,
-                onClick = { removing = true },
-                modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
-            )
-        }
         if (state.canStay) {
             TvTextRow(
                 text = STAY,
@@ -201,9 +155,5 @@ private fun TvPickerBody(
                 modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small),
             )
         }
-    }
-
-    if (removing) {
-        TvRemoveProfileDialog(state.profiles, onRemove = onRemove, onDismiss = { removing = false })
     }
 }

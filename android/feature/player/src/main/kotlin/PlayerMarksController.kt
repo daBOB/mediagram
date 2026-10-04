@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import model.KIDS_LIMITS
 import model.KidsVerdict
 import model.ageLabelOf
 import model.kidsVerdictOf
@@ -86,7 +87,8 @@ class PlayerMarksController(
         if (kidsVerdictOf(openFsk.value) != KidsVerdict.UNRATED) return
         val marked = setId in repository.snapshot.value.kids
         write("Kids update") {
-            repository.setKids(setId, !marked)
+            // The single-button form marks from 12, the one age a mark had before there were two.
+            repository.setKids(setId, if (marked) null else KIDS_LIMITS.max())
             true
         }
     }

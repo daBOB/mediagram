@@ -171,6 +171,77 @@ abstract class CoreContract {
     }
 
     @Test
+    fun aFreshCoreHasNobodyToChoose() {
+        runBlocking {
+            val core = core()
+            assertEquals(emptyList(), core.profiles())
+            assertFalse(core.chooseProfile("nobody"))
+            assertEquals(null, core.chosenProfile())
+        }
+    }
+
+    /** A PIN that is not four digits is compared, fails and counts — it is never `Invalid`, which would say what shape the right one has. */
+    @Test
+    fun aMalformedPinIsWrongNotInvalid() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.WrongPin, core.unlockProfile(admin.id, "12a4"))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "", "Kim", 6u))
+            assertEquals(ProfileOutcome.Done, core.unlockProfile(admin.id, PIN))
+        }
+    }
+
+    /** A grown-up changes its own PIN, the admin anyone's; nobody else touches the admin's. */
+    @Test
+    fun aChangedPinIsTheOneThatOpens() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            val other = core.freshProfile("Bo")
+            assertEquals(ProfileOutcome.NotAllowed, core.setPin(other.id, PIN, admin.id, "0000"))
+            assertEquals(ProfileOutcome.Done, core.setPin(other.id, PIN, other.id, "5678"))
+            assertEquals(ProfileOutcome.WrongPin, core.unlockProfile(other.id, PIN))
+            assertEquals(ProfileOutcome.Done, core.setPin(admin.id, PIN, other.id, "2468"))
+            assertEquals(ProfileOutcome.Done, core.unlockProfile(other.id, "2468"))
+            assertEquals(ProfileOutcome.Invalid, core.setPin(admin.id, PIN, admin.id, "123"))
+        }
+    }
+
+    /** Only a kid's own grown-up sets its limit or removes it — not even the admin, while that grown-up is here. */
+    @Test
+    fun aKidIsManagedByItsOwnGrownUpOnly() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            val parent = core.freshProfile("Bo")
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u))
+            val kid = core.profiles().single { it.name == "Kim" }
+            assertEquals(ProfileOutcome.NotAllowed, core.setKidsAge(admin.id, PIN, kid.id, 6u))
+            assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, kid.id))
+            assertEquals(ProfileOutcome.NotAllowed, core.createKid(kid.id, "", "Lou", 6u))
+            assertEquals(ProfileOutcome.Done, core.setKidsAge(parent.id, PIN, kid.id, 6u))
+            assertEquals(ProfileOutcome.Done, core.deleteProfile(parent.id, PIN, kid.id))
+            assertEquals(listOf("Ada", "Bo"), core.profiles().map { it.name })
+        }
+    }
+
+    /** There is one admin; a second claim is refused before any PIN is compared. */
+    @Test
+    fun aClaimWhileThereIsAnAdminIsRefused() {
+        runBlocking {
+            val core = core()
+            core.freshProfile("Ada")
+            val other = core.freshProfile("Bo")
+            assertEquals(ProfileOutcome.NotAllowed, core.claimAdmin(other.id, PIN))
+            assertEquals(ProfileOutcome.NotFound, core.claimAdmin("nobody", PIN))
+            assertEquals(ProfileOutcome.NotFound, core.unlockProfile("nobody", PIN))
+            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp(other.id, PIN, "bo", PIN))
+            assertEquals(listOf("Ada"), core.profiles().filter { it.admin }.map { it.name })
+        }
+    }
+
+    @Test
     fun aProfileThisCoreDoesNotHoldHasEarnedNothing() {
         runBlocking {
             assertEquals(Achievements(earned = emptyList(), next = emptyList()), core().achievements("no-such-profile", "2026-10-03", 120))

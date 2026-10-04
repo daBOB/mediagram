@@ -33,10 +33,8 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
         ProfilePickerScreen(
             state = state,
             onChoose = viewModel::choose,
-            onAdd = viewModel::add,
             onStay = viewModel::stay,
             onRetry = viewModel::retry,
-            onRemove = viewModel::remove,
         )
         return
     }

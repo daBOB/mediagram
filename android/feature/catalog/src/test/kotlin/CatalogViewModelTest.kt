@@ -644,7 +644,7 @@ class CatalogViewModelTest {
                             fakeSet(Kind.MOVIE, "Marked"),
                         ),
                 )
-            val watch = WatchStateFixture(listOf(MIA, ANA), seed = { setKids("Marked", true) })
+            val watch = WatchStateFixture(listOf(MIA, ANA), seed = { setKids("Marked", 12) })
             val vm = catalogViewModel(repository, watch.repository)
             vm.state.test {
                 awaitItem()

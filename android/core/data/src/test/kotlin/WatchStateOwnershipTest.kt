@@ -6,18 +6,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import model.ProfileRequest
 import model.WatchSnapshot
 import testing.FakeCore
 import testing.ResolvedCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.ProfileOutcome
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import model.ProfileOutcome as ModelOutcome
 
 private class DelayedStateCore(
     var chosen: String = "a",
@@ -86,6 +89,16 @@ private class DelayedStateCore(
     ): ListRow {
         write()
         return ListRow("list", name, emptyList())
+    }
+
+    override suspend fun createKid(
+        actorId: String,
+        pin: String,
+        name: String,
+        kidsAge: UByte,
+    ): ProfileOutcome {
+        write()
+        return ProfileOutcome.Done
     }
 }
 
@@ -240,6 +253,27 @@ class WatchStateOwnershipTest {
                 core.finish.complete(Unit)
                 old.await()
             }
+            assertNull(repository.chosenProfileId.value)
+            assertEquals(emptyList(), repository.profiles.value)
+            assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
+        }
+
+    /** A profile change still in the core when the account is reset answers, but re-reads nothing into the reset state. */
+    @Test
+    fun resetPreventsAPendingProfileChangeFromRestoringState() =
+        runTest {
+            val core = DelayedStateCore()
+            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            repository.reload()
+            core.delayWrite = true
+            val change = async(start = CoroutineStart.UNDISPATCHED) { repository.manage(ProfileRequest.CreateKid("a", "1234", "Chris", 12)) }
+            try {
+                core.started.await()
+                repository.invalidate()
+            } finally {
+                core.finish.complete(Unit)
+            }
+            assertEquals(ModelOutcome.Done, change.await())
             assertNull(repository.chosenProfileId.value)
             assertEquals(emptyList(), repository.profiles.value)
             assertEquals(WatchSnapshot.Empty, repository.snapshot.value)

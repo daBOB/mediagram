@@ -12,6 +12,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import model.Profile
+import model.ProfileOutcome
+import model.ProfileRequest
 import org.junit.After
 import testing.WatchStateFixture
 import kotlin.test.Test
@@ -95,23 +97,6 @@ class ProfileViewModelTest {
         }
 
     @Test
-    fun aFailedAddKeepsThePickerAndDoesNotInventAProfile() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = WatchStateFixture(listOf(ALICE), chosen = null)
-            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
-            vm.state.test {
-                awaitItem()
-                awaitItem()
-                watch.provider.beforeCore = { error("private path") }
-                vm.add("Bea", kids = false)
-                assertEquals(ProfileUiState.Picking(listOf(ALICE), false, "Could not create the profile. Please try again."), awaitItem())
-                assertEquals(listOf("Alice"), watch.core.profiles.map { it.name })
-                assertEquals(null, watch.repository.chosenProfileId.value)
-            }
-        }
-
-    @Test
     fun aFailedChoiceKeepsTheExistingProfileAndPicker() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -150,9 +135,9 @@ class ProfileViewModelTest {
             }
         }
 
-    /** The core refuses a name that is only whitespace, and a profile it does not have. */
+    /** The core refuses a profile it does not have. */
     @Test
-    fun refusedProfileWritesAreShownAsFailures() =
+    fun aRefusedChoiceIsShownAsAFailure() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val watch = WatchStateFixture(emptyList())
@@ -160,15 +145,13 @@ class ProfileViewModelTest {
             vm.state.test {
                 awaitItem()
                 awaitItem()
-                vm.add("   ", kids = false)
-                assertEquals("Could not create the profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
                 vm.choose("p1")
                 assertEquals("Could not choose that profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
             }
         }
 
     @Test
-    fun cancelledProfileWritesLeaveThePickerUnchanged() =
+    fun aCancelledChoiceLeavesThePickerUnchanged() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val watch = WatchStateFixture(emptyList())
@@ -177,7 +160,6 @@ class ProfileViewModelTest {
                 awaitItem()
                 val before = awaitItem()
                 watch.provider.beforeCore = { throw CancellationException("cancelled") }
-                vm.add("Bea", kids = false)
                 vm.choose("p1")
                 runCurrent()
                 expectNoEvents()
@@ -269,6 +251,33 @@ class ProfileViewModelTest {
 
                 vm.stay()
                 assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
+            }
+        }
+
+    /** Manage removes from elsewhere; the picker follows the repository rather than being told. */
+    @Test
+    fun aChosenProfileRemovedElsewhereTakesAwayStayAsIAm() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val admin = Profile("a", "Ann", admin = true)
+            val watch = WatchStateFixture(listOf(ALICE, admin))
+            watch.core.roles.pins["a"] = "1234"
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
+            vm.state.test {
+                awaitItem()
+                awaitItem() as ProfileUiState.Chosen
+                vm.reopen()
+                assertEquals(true, (awaitItem() as ProfileUiState.Picking).canStay)
+
+                assertEquals(ProfileOutcome.Done, watch.repository.manage(ProfileRequest.Remove("a", "1234", ALICE.id)))
+                runCurrent()
+
+                val picking = expectMostRecentItem() as ProfileUiState.Picking
+                assertEquals(listOf("a"), picking.profiles.map { it.id })
+                assertEquals(false, picking.canStay)
+                vm.stay()
+                runCurrent()
+                expectNoEvents()
             }
         }
 }

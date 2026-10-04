@@ -20,13 +20,13 @@ class WatchStateChosenProfileTest {
     private val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
     @Test
-    fun reloadPublishesTheChosenProfileWithItsKidsFlag() =
+    fun reloadPublishesTheChosenProfileWithItsKidsFlagAndLimit() =
         runTest {
             core.chosen = "k"
 
             repository.reload()
 
-            assertEquals(Profile("k", "Mia", kids = true), repository.chosenProfile.value)
+            assertEquals(Profile("k", "Mia", kids = true, kidsAge = 12), repository.chosenProfile.value)
         }
 
     @Test

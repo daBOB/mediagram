@@ -12,6 +12,9 @@ package model
  */
 const val KIDS_AGE_LIMIT = 12
 
+/** The limits a kids profile can have — FSK 6 or FSK 12, chosen by the grown-up it belongs to. */
+val KIDS_LIMITS = listOf(6, 12)
+
 /** Which of the three rules applies to a title. */
 enum class KidsVerdict { SAFE, UNSAFE, UNRATED }
 
