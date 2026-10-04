@@ -35,7 +35,7 @@ import player.chooseFraming
 import player.createListAndAdd
 import player.retry
 import player.setInList
-import player.toggleKids
+import player.setKidsMark
 import player.toggleSubtitles
 import player.toggleWatchlist
 
@@ -152,7 +152,7 @@ fun PlayerScreen(
                         notice = actionNotice,
                         actions = PlayerMarksActions(
                             onToggleWatchlist = viewModel::toggleWatchlist,
-                            onToggleKids = viewModel::toggleKids,
+                            onKidsMark = viewModel::setKidsMark,
                             onSetInList = viewModel::setInList,
                             onCreateList = viewModel::createListAndAdd,
                         ),

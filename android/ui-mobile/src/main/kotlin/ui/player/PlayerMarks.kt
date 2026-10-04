@@ -1,8 +1,11 @@
 package ui.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
 import model.KidsVerdict
+import player.KIDS_CHOICES
 import player.PlayerMarksState
 import player.kidsLabel
 import player.listLabel
@@ -41,14 +45,7 @@ internal fun PlayerMarks(
             label = listLabel(marks),
             onClick = actions.onToggleWatchlist,
         )
-        if (marks.canMarkKids) {
-            MarkButton(
-                label = kidsLabel(marks),
-                onClick = actions.onToggleKids,
-                // A rated title's rating decided; there is nothing to press.
-                enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
-            )
-        }
+        if (marks.canMarkKids) KidsMark(marks, onChoose = actions.onKidsMark)
         MarkButton(label = "Add to list", onClick = { addingToList = true })
     }
 
@@ -67,10 +64,38 @@ internal fun PlayerMarks(
 /** The four writes [PlayerMarks] makes, kept as one bundle so its call site hands over one thing rather than four. */
 internal data class PlayerMarksActions(
     val onToggleWatchlist: () -> Unit,
-    val onToggleKids: () -> Unit,
+    /** The age an unrated title is for kids from — 6 or 12 — or null for not for kids. */
+    val onKidsMark: (age: Int?) -> Unit,
     val onSetInList: (id: String, included: Boolean) -> Unit,
     val onCreateList: (name: String) -> Unit,
 )
+
+/**
+ * The Kids control: on an unrated title the web's select — "Not for kids",
+ * "From 6", "From 12" — as a menu under the button, which names the current
+ * choice; on a rated title its verdict, dimmed, with nothing to press.
+ */
+@Composable
+private fun KidsMark(
+    marks: PlayerMarksState,
+    onChoose: (Int?) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        MarkButton(label = kidsLabel(marks), onClick = { open = true }, enabled = marks.kidsVerdict == KidsVerdict.UNRATED)
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            KIDS_CHOICES.forEach { choice ->
+                DropdownMenuItem(
+                    text = { Text(choice.label) },
+                    onClick = {
+                        open = false
+                        if (choice.age != marks.kidsMark) onChoose(choice.age)
+                    },
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun MarkButton(
