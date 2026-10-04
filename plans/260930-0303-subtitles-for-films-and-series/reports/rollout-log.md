@@ -53,3 +53,11 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 ## 2026-10-02 00:21 — tablet on 0.92.2
 
 - Tablet `caad49da`: native core rebuilt, `installDebug` 0.81.0 → 0.92.2 (pinned serial), launches on the v13 index (no crash, library loads). Installed for an Android row fix (0.92.2); the phase 04/05 tablet checks (CC button, captions, Profile setting) are still to do.
+
+## 2026-10-04 20:00 — channel backfill resumed (user: "now, the other machine is idle")
+
+- The 2026-10-01 22:05 run had stopped unlogged at the 2026-10-02 21:35 reboot (last activity 21:15): 671 of 2,482 MP4 sets bundled, last publish message 16298, 87 bundles in the local index only.
+- Uploader reinstalled 0.92.1 → 0.100.1 (main). `pull-index`: +1,629 sets, 274 shows, 3,397 credits, 54 franchises, 282 subtitle files taken.
+- `subtitles backfill --channel --dry-run`: **1,828** MP4 sets left.
+- 20:00 started detached (`setsid nohup`), log `~/.local/share/mediagram/backfill-channel-261004-2000.log` (outside the repo). The local-only bundles ride along with its first publish. After it: `--mkv` (1,051 sets) and the 62-set local-folder pass, paced — the user approved both on 2026-10-04.
+- Phase 06's "real title end to end" closes on the other machine's The Deuce S3E1–8 upload (2026-10-01) and the bundles uploads have attached since (user, 2026-10-04); the device half (forced lines while Off, picker lists regular tracks only, CC) is checked on the tablet.

@@ -25,6 +25,13 @@ in, in what order, what was decided, and where each item stands.
 4. **Player list button:** **"My List" / "On My List"** (was "Watchlist" / "On the
    list") on the web, phone and TV players.
 
+5. **Subtitles (2026-10-04):** count The Deuce S3 upload as phase 06's end-to-end proof; may
+   flip the "test" profile's Subtitles to English and back for the cross-device check; may
+   remove the inline read path on/after 2026-10-08 when the follower copy shows 0 inline rows
+   and the other machine reads ≥ 0.91.0; after the MP4 backfill, run `--mkv` and the local
+   folders, paced. **Backfill: resume now — the user confirmed the other machine is idle.**
+   Started 2026-10-04 20:00 (1,828 sets, log `~/.local/share/mediagram/backfill-channel-261004-2000.log`).
+
 Outward actions still need their own word each time: publishing to the TV channel,
 pushing to origin. Earlier rewatch-date default stands (watched keeps the latest finish).
 
@@ -49,7 +56,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 | # | Plan | Status |
 |---|------|--------|
 | B1 | `260926-1330-android-editorial-departments-parity` — 4–6, 8 shipped 0.66.0; phase 9 groups A+B building, C+D after, then phase 7 | in progress |
-| B2 | `260930-0303-subtitles-for-films-and-series` leftovers + `260928-0130-android-one-watch-state-fake` 02–04 | pending |
+| B2 | subtitles leftovers + watch-state 02–04 — backfill running; watch-state 02 built (merge pending); tablet walk, 08 check, 03, 09 (≥ 10-08) to go | in progress |
 | B3 | `260928-0047-profile-roles-pins-kids-age-limits` 01–08 | pending |
 
 Each plan was written in late September; before building, re-check it against `main`
