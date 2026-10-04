@@ -54,3 +54,12 @@ owed): lists as rows / tutorials grid on phone; TV hiding empty Cast/Similar.
 3. Provider totals + air dates → **do it in B1** (task 8; core `TitleInfo` change).
 
 Each ruling is reversible by the user; none reverses a user decision.
+
+## Follow-ups found while building (2026-10-04)
+
+- TV search shows films, shows and collections as text rows; the web uses posters and cards — never written down as deliberate (group D report).
+- TV Movies' "All N films →" is a text row where the web (and phone) have a pill.
+- A list's own TV page keeps the old "Name · n" heading.
+- The old TV list-of-lists screen looks unreachable — confirm and delete.
+- Phone: the department hero puts its words below the art strip, where the web overlaps them onto the art; franchise and department grids have no side padding (group A report).
+
