@@ -94,10 +94,11 @@ describe("player library marks", () => {
       marks.open({ setId: "first-mark" });
       env.node("watchlist").fire("click");
       expect(state.isWatchlisted("first-mark")).toBe(true);
-      expect(env.node("watchlist").textContent).toBe("On the list");
+      expect(env.node("watchlist").textContent).toBe("On My List");
       expect(changed).toBe(1);
       marks.open({ setId: "second-mark" });
       expect(env.node("watchlist").getAttribute("aria-pressed")).toBe("false");
+      expect(env.node("watchlist").textContent).toBe("My List");
       env.node("watchlist").fire("click");
       expect(state.isWatchlisted("second-mark")).toBe(true);
       expect(changed).toBe(2);

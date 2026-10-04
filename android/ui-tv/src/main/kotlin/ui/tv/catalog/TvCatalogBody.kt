@@ -112,7 +112,7 @@ internal fun TvCatalogBody(
                 onOpenTitle = onOpenTitle,
                 onOpenList = onOpenList,
                 onCreateList = onCreateList,
-                // My List and Continue watching have no pill of their own
+                // My List and Continue have no pill of their own
                 // (the rail chooses either directly), so a wall that
                 // empties under the viewer falls back to its own rail row
                 // rather than to a pill that was never selected in the

@@ -61,6 +61,8 @@ sealed interface StatsUiState {
         val history: List<StatsLine>,
         /** What was earned and what is next; [AchievementsUi.None] draws no section. */
         val achievements: AchievementsUi = AchievementsUi.None,
+        /** "Counting since 3 Oct", the line under the totals while nothing is counted yet; `null` draws none. */
+        val countingSince: String? = null,
     ) : StatsUiState
 }
 
@@ -121,13 +123,14 @@ private fun pageOf(
                 )
             },
         history = summary.history.map { entry -> StatsLine(key = "${entry.kind}:${entry.setId}", text = historyLine(entry, sets[entry.setId], now)) },
+        countingSince = countingSinceText(summary, now),
     )
 }
 
 /**
  * One history line: "Started · Der Pate · Sat 21:14 · 42 min". No duration
  * when nothing was counted: a finish from before stats existed was not
- * watched in under a minute.
+ * watched in 0 min.
  */
 fun historyLine(
     entry: HistoryEntry,

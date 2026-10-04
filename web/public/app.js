@@ -50,6 +50,7 @@ import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
+import { markCurrent } from "./lib/nav-current.js";
 import { playsNext, requestPreload } from "./lib/playback/plays-next.js";
 import { loadPlayer } from "./lib/playback/player-loader.js";
 
@@ -541,12 +542,7 @@ function drawRoute() {
   document.body.dataset.page = known;
   // Set again by the home view only when it draws a cover.
   delete document.body.dataset.cover;
-  for (const link of document.querySelectorAll("nav a")) {
-    const active = link.dataset.section === known;
-    link.classList.toggle("active", active);
-    if (active) link.setAttribute("aria-current", "page");
-    else link.removeAttribute("aria-current");
-  }
+  markCurrent(document.querySelectorAll("nav a"), known);
 
   main.textContent = "";
   refreshShelfCounts();

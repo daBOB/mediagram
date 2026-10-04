@@ -59,6 +59,29 @@ test("asks for this profile's own stats and draws totals, thirty bars and the hi
   expect(lines[1]).toMatch(/^Started · No longer in the library · today \d\d:\d\d · 2 min$/);
 });
 
+test("while nothing is counted yet, a line under the totals says since when it has been", async () => {
+  answer({
+    ...SUMMARY, weekSeconds: 0, monthSeconds: 0, allSeconds: 30,
+    history: [{ kind: "started", setId: "01A", at: 0, seconds: 30 }],
+  });
+  const main = env.node("main");
+  await renderStats(main, { byId: new Map() }, () => true);
+  expect(textOf(main)).toContain("All time0 min");
+  const classes = main.children.map((node) => node.className);
+  expect(classes.indexOf("stats-since")).toBe(classes.indexOf("stats-totals") + 1);
+  const since = main.children.find((node) => node.className === "stats-since")!;
+  // The page's clock is the test environment's, which stands at 0: the start's own day.
+  expect(textOf(since)).toMatch(/^Counting since \d{1,2} [A-Z][a-z]{2}$/);
+});
+
+test("a minute counted draws no counting-since line", async () => {
+  answer({ ...SUMMARY, allSeconds: 60 });
+  const main = env.node("main");
+  await renderStats(main, { byId: new Map() }, () => true);
+  expect(textOf(main)).not.toContain("Counting since");
+  expect(main.children.some((node) => node.className === "stats-since")).toBe(false);
+});
+
 test("nothing watched yet says so under the heading, and nothing else", async () => {
   answer({ ...SUMMARY, weekSeconds: 0, monthSeconds: 0, allSeconds: 0, history: [] });
   const main = env.node("main");

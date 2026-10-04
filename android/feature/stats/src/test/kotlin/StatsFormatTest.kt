@@ -1,16 +1,18 @@
 package stats
 
+import uniffi.mediagram_core.HistoryKind
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class StatsFormatTest {
     @Test
     fun durationsCountWholeMinutes() {
-        assertEquals("under a minute", durationText(0.0))
-        assertEquals("under a minute", durationText(59.9))
+        assertEquals("0 min", durationText(0.0))
+        assertEquals("0 min", durationText(59.9))
         assertEquals("1 min", durationText(60.0))
         assertEquals("42 min", durationText(42 * 60 + 59.0))
         assertEquals("59 min", durationText(3_599.0))
@@ -49,5 +51,31 @@ class StatsFormatTest {
         assertEquals("Could not read your stats: database is locked", failureLine("database is locked"))
         assertEquals("Could not read your stats.", failureLine(null))
         assertEquals("Could not read your stats.", failureLine(" "))
+    }
+
+    @Test
+    fun whileUnderAMinuteIsCountedTheFirstStartDatesIt() {
+        val history =
+            listOf(
+                entry(HistoryKind.STARTED, "f1", ms(2026, 9, 26, 20, 0), 30.0),
+                entry(HistoryKind.AGAIN, "f1", ms(2026, 9, 25, 20, 0), 30.0),
+                entry(HistoryKind.STARTED, "e1", ms(2026, 9, 21, 20, 0), 0.0),
+            )
+        assertEquals("Counting since 21 Sep", countingSinceText(summary(all = 59.9, history = history), Now), "a date, never a weekday or today")
+    }
+
+    @Test
+    fun aFinishFromBeforeStatsExistedDoesNotDateIt() {
+        val old = entry(HistoryKind.FINISHED, "f1", ms(2026, 6, 1, 20, 0), 0.0)
+        val start = entry(HistoryKind.STARTED, "e1", ms(2026, 9, 26, 20, 0), 0.0)
+        assertEquals("Counting since 26 Sep", countingSinceText(summary(history = listOf(start, old)), Now))
+        assertNull(countingSinceText(summary(history = listOf(old)), Now), "nothing started under counting yet")
+    }
+
+    @Test
+    fun aStartInAnotherYearCarriesItsYearAndAMinuteCountedEndsTheLine() {
+        val start = entry(HistoryKind.STARTED, "f1", ms(2025, 12, 30, 20, 0), 0.0)
+        assertEquals("Counting since 30 Dec 2025", countingSinceText(summary(history = listOf(start)), Now))
+        assertNull(countingSinceText(summary(all = 60.0, history = listOf(start)), Now))
     }
 }

@@ -759,7 +759,7 @@ state and control mechanics) moved into `ui-common` so both surfaces call one co
 The TV surface's own responsibility is navigation and focus: a D-pad and remote
 buttons (center/play-pause/left/right/back) steer every screen. Its chrome mirrors the
 web player's own: a left rail (collapsed to icons until the remote reaches it, then
-opening to My List, Continue watching, Latest, Genres, Settings, System and the
+opening to My List, Continue, Latest, Genres, Settings, System and the
 library's own tally) beside a departments bar across the top (Home, the shelves,
 Collections, search, the viewer's avatar, ⋮) — see § Television differs, above, for
 where the two surfaces deliberately part. Home draws the web's own magazine layout
@@ -803,7 +803,7 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   spend 30% of a 960dp screen on it if it stayed that wide over every cover and hero, so
   it opens to the web's own width only while focused and stays icons-only (no counts, no
   tally) the rest of the time, matching the box's own launcher.
-- **Continue watching, My List, Latest, Genres, Settings and System live on the rail,
+- **Continue, My List, Latest, Genres, Settings and System live on the rail,
   not the departments bar.** The web's own side rail carries the same six as utilities;
   the bar mirrors only its `nav.departments` row (Home, the shelves, Collections). The
   ⋮ menu keeps just the phone's three Android-only actions (Update library, TMDB key…,

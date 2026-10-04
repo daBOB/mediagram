@@ -350,7 +350,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/settings` | Settings (Appearance/Profile/admin Library & Telegram) |
 | `#/stats` | Stats: minutes watched, the last 30 days, achievements, history |
 | `#/system` | Player status, own-network viewers only |
-| `#/continue` | Continue Watching |
+| `#/continue` | Continue |
 | `#/watchlist` | My List |
 
 An address `parse` does not recognise falls back to `#/movies`, trailing

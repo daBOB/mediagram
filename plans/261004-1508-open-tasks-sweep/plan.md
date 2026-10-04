@@ -32,7 +32,7 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 
 | # | Item | Who | Status |
 |---|------|-----|--------|
-| A1 | Decisions 2–4 on web + Android, plus the web's stale department pill on rail pages | subagent, worktree | pending |
+| A1 | Decisions 2–4 on web + Android, plus the web's stale department pill | subagent, worktree | done 0.100.0 — pill was stale focus |
 | A2 | `watched` finish-stamp overflow, core + web | subagent, worktree | done 0.99.12 — other row types share the hole (follow-up) |
 | A3 | Episode label parity, Android `core/model/EpisodeLabel.kt` vs web `lib/format.js` (episode 0, ranges) | subagent, worktree | done 0.99.10 — web printed ranges as JSON |
 | A4 | TV box mDNS finds no cache server within the 10 s window | lead, device | pending |

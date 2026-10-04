@@ -41,7 +41,7 @@ const NOMINAL_FRAME = 1 / 24;
  * `onButton` is narrower. A focused button already answers space and Enter by
  * pressing itself, and handling those here as well would pause the film *and*
  * press whatever the viewer had tabbed to. Every other key still works there,
- * because a viewer who has tabbed to Watchlist has not given up the arrows.
+ * because a viewer who has tabbed to My List has not given up the arrows.
  *
  * `Escape` is deliberately absent. The dialog closes on it by itself, and a
  * player that intercepted it would have to remember to do that.

@@ -187,6 +187,14 @@ interface HistoryEntry {
   `index.html` rail `<a href="#/stats" data-section="stats" class="kept">`;
   Android `RailItem.STATS` declared between `GENRES` and `SETTINGS`.
 - **Totals row:** "This week", "This month", "All time".
+- **Counting since** (amended 2026-10-04, user decision): while `allSeconds`
+  is under one minute and the page is not empty, one quiet line sits directly
+  under the totals: "Counting since 3 Oct" — the local day of the earliest
+  `started` history entry, in the Times' date form ("3 Oct", "21 Sep 2025" in
+  another year). Only a start dates it: a start is written by the same
+  position write that counts the minutes, while a `finished` entry may be a
+  finish from before stats existed. No `started` entry → no line. A minute
+  counted → no line. The empty page is unchanged. Nothing new is stored.
 - **Last 30 days:** one bar per day, height ∝ seconds, today rightmost,
   weekday initial under each bar on wide screens only.
 - **History:** newest first, one line per entry:
@@ -207,8 +215,8 @@ interface HistoryEntry {
   "Geldhochschule 3".
 - **Rail icon:** `<path d="M4.5 20.5h15M7 17v-4.5M12 17V7M17 17v-7.5">` in a
   24×24 box, stroked like its siblings (Android vector drawable, same path).
-- **Durations:** `< 1 min` → "under a minute" (also a total of 0 s);
-  `< 60 min` → "42 min"; otherwise "3 h 12 min" (minutes floored; "3 h" when
+- **Durations:** `< 1 min` → "0 min" (also a total of 0 s; was "under a
+  minute" until amended 2026-10-04, user decision); `< 60 min` → "42 min"; otherwise "3 h 12 min" (minutes floored; "3 h" when
   minutes are 0). A history line whose title has 0 s (a finish from before
   stats existed) shows no duration at all.
 - **Times:** today → "today 21:14"; 1–6 calendar days back → weekday + 24 h

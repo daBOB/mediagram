@@ -34,7 +34,7 @@ private val KEPT_TITLES: List<String> = KeptKind.entries.map(KeptKind::label)
  * narrow to print `index.html`'s two navigations side by side: the
  * departments (`nav.departments` — Home, Movies, Series, Documentaries,
  * Tutorials, Collections) as the visible tabs, and the rail's own utilities
- * (My List, Continue watching, Latest, Genres, Settings) reachable once each
+ * (My List, Continue, Latest, Genres, Settings) reachable once each
  * from the overflow menu that already carries System, Settings, TMDB key and
  * Start over — see [android.ui.OverflowMenu]. `catalogTabsOf` above is
  * untouched: both phone and TV screens still read it, and this is additive
@@ -45,7 +45,7 @@ data class MastheadSplit(val departments: List<String>, val utilities: List<Util
 /** A utility destination, web 0.62.1's own order — `index.html`'s rail-nav, minus Settings' spot before System. */
 enum class UtilityDestination(val label: String) {
     MY_LIST("My List"),
-    CONTINUE_WATCHING("Continue watching"),
+    CONTINUE_WATCHING("Continue"),
     LATEST("Latest"),
     GENRES("Genres"),
     SETTINGS("Settings"),

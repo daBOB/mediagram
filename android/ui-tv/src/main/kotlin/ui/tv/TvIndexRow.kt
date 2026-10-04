@@ -126,7 +126,7 @@ internal fun TvIndexRow(
             // Weighted, not left to its own intrinsic width: an unweighted
             // `Column` in a `Row` measures against the *row's* own max width
             // rather than what is actually left after the icon, so a long
-            // label ("Continue watching") could size wide enough to push
+            // label could size wide enough to push
             // `trailing`'s own count past this row's `.clip()` bounds —
             // invisible, not merely uncounted. Weighted, the label always
             // ellipsizes into whatever room remains instead.

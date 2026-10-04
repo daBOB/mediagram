@@ -1,4 +1,4 @@
-/** Watchlist, kids and collection controls for the title currently open. */
+/** My List, kids and collection controls for the title currently open. */
 import * as state from "../watch-state.js";
 import { ageLabel, kidsVerdict } from "../age-rating.js";
 
@@ -11,7 +11,7 @@ export function mountPlayerLibraryMarks() {
   function refreshWatchlist() {
     const listed = title !== null && state.isWatchlisted(title.setId);
     watchlist.setAttribute("aria-pressed", String(listed));
-    watchlist.textContent = listed ? "On the list" : "Watchlist";
+    watchlist.textContent = listed ? "On My List" : "My List";
   }
 
   function refreshKids() {

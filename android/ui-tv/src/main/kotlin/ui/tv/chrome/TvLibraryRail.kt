@@ -66,7 +66,7 @@ internal val LocalNewAchievement = compositionLocalOf { false }
  * and deriving it here rather than in [TvLibraryChrome] keeps whichever row
  * gaining focus in step with the width animating with it in the same frame.
  *
- * [active] rings the current kept row (My List/Continue watching) when a
+ * [active] rings the current kept row (My List/Continue) when a
  * kept wall is showing and no departments pill is the current one; every
  * other row is never "selected", only ever focused or not.
  *

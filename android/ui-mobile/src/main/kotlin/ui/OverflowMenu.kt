@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.semantics
 
 /**
  * The browsing utilities the web keeps in its own rail-nav — My List,
- * Continue watching, Latest, Genres and Stats — moved into this menu by
+ * Continue, Latest, Genres and Stats — moved into this menu by
  * [ui.catalog.mastheadSplitOf]'s own split (Settings was already here).
  * Reachable from anywhere, the same as the web's rail: a viewer does not
  * first have to be on the shelves to ask for Latest.
@@ -39,7 +39,7 @@ data class BrowseActions(
  * Only compact/medium pushed frames render this now: EXPANDED ones use
  * [AndroidOnlyMenu] instead, the same trimmed menu the root chrome does,
  * since [ui.chrome.LibraryRail] beside them already carries System,
- * Settings, My List, Continue watching, Latest, Genres and Stats. Narrower
+ * Settings, My List, Continue, Latest, Genres and Stats. Narrower
  * than EXPANDED there is no rail beside a pushed frame to carry those, so
  * this keeps them. [onAskStartOver] is separate from the rest of [menu] because
  * the item it is bound to does not act immediately: the caller owns the
@@ -73,7 +73,7 @@ internal fun OverflowMenu(
             },
         )
         DropdownMenuItem(text = { Text("My List") }, onClick = { menuExpanded = false; browse.onMyList() })
-        DropdownMenuItem(text = { Text("Continue watching") }, onClick = { menuExpanded = false; browse.onContinueWatching() })
+        DropdownMenuItem(text = { Text("Continue") }, onClick = { menuExpanded = false; browse.onContinueWatching() })
         DropdownMenuItem(text = { Text("Latest") }, onClick = { menuExpanded = false; browse.onLatest() })
         DropdownMenuItem(text = { Text("Genres") }, onClick = { menuExpanded = false; browse.onGenres() })
         DropdownMenuItem(text = { Text("Stats") }, onClick = { menuExpanded = false; browse.onStats() })
@@ -86,7 +86,7 @@ internal fun OverflowMenu(
  * on EXPANDED — the three actions that have no web counterpart at all,
  * because the web server does them itself: Update library, TMDB key…,
  * Start over. Every other item [OverflowMenu] carries — System, Settings,
- * My List, Continue watching, Latest, Genres, Stats — has its own dedicated
+ * My List, Continue, Latest, Genres, Stats — has its own dedicated
  * control right beside this one there: [ui.chrome.LibraryRail] on EXPANDED,
  * [ui.chrome.CompactLibraryHeader]'s icon row on the root's own compact
  * width. Shares [AndroidOnlyItems] with [OverflowMenu] rather than keeping

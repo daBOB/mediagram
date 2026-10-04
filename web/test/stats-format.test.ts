@@ -1,12 +1,12 @@
 /** The Stats page's words: durations, times, names and history lines. */
 
 import { describe, expect, test } from "bun:test";
-import { historyLine, historyTitle, shortDate, watchTime, weekdayInitial, whenLabel } from "../public/lib/catalog/stats-format.js";
+import { countingSince, historyLine, historyTitle, shortDate, watchTime, weekdayInitial, whenLabel } from "../public/lib/catalog/stats-format.js";
 
 describe("watchTime", () => {
   test.each([
-    [0, "under a minute"],
-    [59.9, "under a minute"],
+    [0, "0 min"],
+    [59.9, "0 min"],
     [60, "1 min"],
     [42 * 60 + 59, "42 min"],
     [59 * 60, "59 min"],
@@ -73,10 +73,40 @@ describe("historyLine", () => {
   test.each([
     [{ kind: "started", at: friday, seconds: 42 * 60 }, "Started · Der Pate · Fri 20:00 · 42 min"],
     [{ kind: "again", at: saturday, seconds: 3 * 3600 }, "Watched again · Der Pate · today 21:14 · 3 h"],
-    [{ kind: "finished", at: saturday, seconds: 30 }, "Finished · Der Pate · today 21:14 · under a minute"],
+    [{ kind: "finished", at: saturday, seconds: 30 }, "Finished · Der Pate · today 21:14 · 0 min"],
     // Finished before stats existed: nothing was counted, so no duration is claimed.
     [{ kind: "finished", at: friday, seconds: 0 }, "Finished · Der Pate · Fri 20:00"],
   ] as const)("%j", (entry, line) => {
     expect(historyLine(entry, film, now)).toBe(line);
+  });
+});
+
+describe("countingSince", () => {
+  // Saturday 3 October 2026, 21:30 on this machine's clock.
+  const now = new Date(2026, 9, 3, 21, 30).getTime();
+  const at = (month: number, day: number) => new Date(2026, month, day, 20, 0).getTime();
+
+  test("while under a minute is counted, dates the first start", () => {
+    const history = [
+      { kind: "started", at: at(9, 3) },
+      { kind: "started", at: at(8, 28) },
+      { kind: "again", at: at(9, 2) },
+    ];
+    expect(countingSince({ allSeconds: 59.9, history }, now)).toBe("Counting since 28 Sep");
+  });
+
+  test("a finish from before stats existed does not date it", () => {
+    const history = [{ kind: "started", at: at(9, 3) }, { kind: "finished", at: at(5, 1) }];
+    expect(countingSince({ allSeconds: 0, history }, now)).toBe("Counting since 3 Oct");
+    expect(countingSince({ allSeconds: 0, history: [{ kind: "finished", at: at(5, 1) }] }, now)).toBeNull();
+  });
+
+  test("a start in another year carries its year", () => {
+    const history = [{ kind: "started", at: new Date(2025, 11, 30, 20, 0).getTime() }];
+    expect(countingSince({ allSeconds: 0, history }, now)).toBe("Counting since 30 Dec 2025");
+  });
+
+  test("a minute counted is no longer news", () => {
+    expect(countingSince({ allSeconds: 60, history: [{ kind: "started", at: at(9, 3) }] }, now)).toBeNull();
   });
 });

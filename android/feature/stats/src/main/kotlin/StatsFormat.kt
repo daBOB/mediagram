@@ -1,5 +1,7 @@
 package stats
 
+import uniffi.mediagram_core.HistoryKind
+import uniffi.mediagram_core.StatsSummary
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -15,11 +17,11 @@ import java.time.temporal.ChronoUnit
 private val WEEKDAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 private val MONTHS = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
-/** Watch time in whole minutes, floored: "under a minute" (0 s included), "42 min", "3 h 12 min", "3 h". */
+/** Watch time in whole minutes, floored: "0 min" (under a minute, 0 s included), "42 min", "3 h 12 min", "3 h". */
 fun durationText(seconds: Double): String {
     val minutes = (seconds / 60).toLong()
     return when {
-        minutes < 1 -> "under a minute"
+        minutes < 1 -> "0 min"
         minutes < 60 -> "$minutes min"
         minutes % 60 == 0L -> "${minutes / 60} h"
         else -> "${minutes / 60} h ${minutes % 60} min"
@@ -42,8 +44,32 @@ fun whenText(
     return when (ChronoUnit.DAYS.between(at.toLocalDate(), now.toLocalDate())) {
         0L -> "today $clock"
         in 1L..6L -> "${WEEKDAYS[at.dayOfWeek.value - 1]} $clock"
-        else -> if (at.year == now.year) shortDate(at.toLocalDate()) else "${shortDate(at.toLocalDate())} ${at.year}"
+        else -> dateText(at, now)
     }
+}
+
+/** "21 Sep", or "21 Sep 2025" in a year other than [now]'s. */
+private fun dateText(
+    at: ZonedDateTime,
+    now: ZonedDateTime,
+): String = if (at.year == now.year) shortDate(at.toLocalDate()) else "${shortDate(at.toLocalDate())} ${at.year}"
+
+/**
+ * "Counting since 3 Oct" while the counted total is still under a minute, so
+ * "0 min" reads as not yet rather than as broken — the web's `countingSince`.
+ * Dated by the first start: a start is written by the same position write
+ * that counts the minutes, while a finish from before stats existed is
+ * history that was never counted, and dating by it would claim counting
+ * began before it did. `null` once a minute is counted, or while nothing has
+ * started since.
+ */
+fun countingSinceText(
+    summary: StatsSummary,
+    now: ZonedDateTime,
+): String? {
+    if (summary.allSeconds >= 60) return null
+    val first = summary.history.filter { it.kind == HistoryKind.STARTED }.minOfOrNull { it.at } ?: return null
+    return "Counting since ${dateText(Instant.ofEpochMilli(first).atZone(now.zone), now)}"
 }
 
 /** "3 Oct": the day unpadded, no year — a bar's label, and the start of an older history time. */

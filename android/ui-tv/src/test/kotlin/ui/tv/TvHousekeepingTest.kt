@@ -102,7 +102,7 @@ class TvHousekeepingTest {
 
     /**
      * Continue has no pill of its own — the rail chooses it directly — so
-     * the remote it lands on instead is the rail's own Continue watching
+     * the remote it lands on instead is the rail's own Continue
      * row, which is where a wall that empties under the viewer always
      * falls back to (see [ui.tv.catalog.TvKeptWall]'s own doc).
      */
@@ -117,12 +117,12 @@ class TvHousekeepingTest {
         // The rail is open now that the remote actually landed on it, so
         // its row reads by its visible label rather than by the
         // content description a collapsed row falls back to.
-        compose.onNodeWithText("Continue watching").assertIsFocused()
+        compose.onNodeWithText("Continue").assertIsFocused()
     }
 
-    /** Continue watching is a rail row now, not a masthead tab — see `mastheadSplitOf`. */
+    /** Continue is a rail row now, not a masthead tab — see `mastheadSplitOf`. */
     private fun openContinueWatching() {
-        press(compose.onNodeWithContentDescription("Continue watching"))
+        press(compose.onNodeWithContentDescription("Continue"))
     }
 
     @Test

@@ -489,7 +489,7 @@ is the reference for every entry here; where Android differs, the reason is
 written beside it.
 
 - **Rail (expanded width, tablet landscape):** the wordmark, then My List and
-  Continue watching with their counts, Latest, Genres, Stats, Settings, System,
+  Continue with their counts, Latest, Genres, Stats, Settings, System,
   and the library's tally in tracked caps at the foot. 184dp wide below 1180dp,
   224dp above it — the web's two widths. The rail stays beside every library
   frame, pushed pages included.

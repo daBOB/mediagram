@@ -14,9 +14,10 @@ import designsystem.TvTypeScale
 import model.KidsVerdict
 import player.PlayerMarksState
 import player.kidsLabel
+import player.listLabel
 
 /**
- * The phone's three kept controls — Watchlist, Kids, Add to list — as a row
+ * The phone's three kept controls — My List, Kids, Add to list — as a row
  * under the transport, where Down from the transport lands and Up goes back
  * to it ([up]). The web keeps these in the player because "this is where a
  * viewer is when they find out what a film actually is" (`player.js`), and
@@ -30,7 +31,7 @@ import player.kidsLabel
  * always here. The Kids mark is absent on a kids profile — a child does not
  * approve titles for itself — and dimmed but still focusable on a rated
  * title, whose rating decided and is still worth reading. [first] is
- * Watchlist, the one mark always here while there are any.
+ * My List, the one mark always here while there are any.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -52,7 +53,7 @@ internal fun TvMarksRail(
     ) {
         if (marks != null) {
             MarkButton(
-                label = if (marks.watchlisted) "On the list" else "Watchlist",
+                label = listLabel(marks),
                 onClick = actions.onToggleWatchlist,
                 modifier = toTransport.focusRequester(first),
             )

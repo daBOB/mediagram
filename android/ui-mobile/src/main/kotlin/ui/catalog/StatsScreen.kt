@@ -54,6 +54,7 @@ internal fun StatsScreen(state: StatsUiState) {
                         }
                     }
                 }
+                state.countingSince?.let { since -> item(key = "since") { Text(text = since, style = MaterialTheme.typography.bodyMedium, color = quiet) } }
                 item(key = "chart") {
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
                         Text(text = LAST_30_DAYS_HEADING, style = MaterialTheme.typography.titleMedium)

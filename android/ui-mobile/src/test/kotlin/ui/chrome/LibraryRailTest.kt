@@ -62,13 +62,13 @@ class LibraryRailTest {
     }
 
     @Test fun everyRowItsCountsAndTheTallyAreOnScreenAtOnce() {
-        val labels = listOf("My List", "Continue watching", "Latest", "Genres", "Stats", "Settings", "System")
+        val labels = listOf("My List", "Continue", "Latest", "Genres", "Stats", "Settings", "System")
         for (label in labels) {
             compose.onNodeWithText(label).assertIsDisplayed()
         }
         val tops = labels.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals(tops.sorted(), tops, "the rail lists its rows in the web's order")
-        // My List and Continue watching are both empty in this fixture, and
+        // My List and Continue are both empty in this fixture, and
         // so is Documentaries — the one department pill that still prints
         // its count at zero rather than dropping out — so all three read "0".
         compose.onAllNodesWithText("0").assertCountEquals(3)
@@ -109,7 +109,7 @@ class LibraryRailTest {
         compose.onNodeWithText("My List").performClick()
         compose.onNodeWithText("Nothing on your list.").assertIsDisplayed()
         compose.onNodeWithContentDescription("mediagram — home").performClick()
-        compose.onNodeWithText("Continue watching").performClick()
+        compose.onNodeWithText("Continue").performClick()
         compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
     }
 

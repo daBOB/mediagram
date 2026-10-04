@@ -20,6 +20,7 @@ import org.robolectric.annotation.Config
 import stats.StatsBar
 import stats.StatsLine
 import stats.StatsUiState
+import kotlin.test.assertTrue
 
 /** [StatsScreen] rendered straight from a state; the strings themselves are `feature:stats`' and tested there. */
 @RunWith(RobolectricTestRunner::class)
@@ -59,6 +60,7 @@ class StatsScreenTest {
         compose.onNodeWithText("Nothing watched yet.").assertIsDisplayed()
         compose.onNodeWithText("This week").assertDoesNotExist()
         compose.onNodeWithText("History").assertDoesNotExist()
+        compose.onNodeWithText("Counting since", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -69,6 +71,16 @@ class StatsScreenTest {
         compose.onNodeWithText("Last 30 days").assertIsDisplayed()
         compose.onNodeWithContentDescription("day 29").assertExists()
         compose.onNodeWithText("Finished · No longer in the library · 19 Sep").assertExists()
+        compose.onNodeWithText("Counting since", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun whileNothingIsCountedTheLineSitsBetweenTheTotalsAndTheChart() {
+        show(ready.copy(totals = ready.totals.map { (label, _) -> label to "0 min" }, countingSince = "Counting since 3 Oct"))
+        compose.onNodeWithText("Counting since 3 Oct").assertIsDisplayed()
+        val top = { text: String -> compose.onNodeWithText(text).fetchSemanticsNode().boundsInRoot.top }
+        assertTrue(top("This week") < top("Counting since 3 Oct"), "under the totals")
+        assertTrue(top("Counting since 3 Oct") < top("Last 30 days"), "above the chart")
     }
 
     @Test

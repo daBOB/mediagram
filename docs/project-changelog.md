@@ -5,6 +5,29 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.100.0 — "0 min", "Continue", "My List": the wording the user chose, everywhere
+
+**Changed** (the user's decisions, 2026-10-04 — web, phone/tablet and TV alike)
+
+- Stats: watch time below one minute reads "0 min" instead of "under a minute".
+  While nothing has been counted yet, a line "Counting since <date>" sits under the
+  three totals, dated from the first play stats saw. Finishes recorded before stats
+  existed don't count. Contract §6 says so.
+- The rail's resume row reads "Continue" instead of "Continue watching", which no
+  longer fit beside a two-digit count at tablet width. Android's narrow-screen overflow
+  menu says the same. The home's "Continue Watching" band and the departments'
+  "Continue watching" rows keep their names, as on the web.
+- The player's list button reads "My List" / "On My List" instead of "Watchlist" / "On
+  the list", like every other place the list is named. Android defines the text once,
+  for the phone and TV players.
+
+**Fixed**
+
+- Web: a department pill clicked earlier no longer looks lit on a rail page such as
+  My List or Stats. The pill kept keyboard focus across Back and Forward, and the next
+  key press drew a focus ring around it. A nav link that doesn't name the current page
+  now lets go of focus.
+
 ## 0.99.12 — a corrupt "watched" time from another device can no longer win or stop sync
 
 **Fixed**

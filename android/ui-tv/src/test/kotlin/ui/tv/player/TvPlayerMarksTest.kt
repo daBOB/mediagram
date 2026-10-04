@@ -39,7 +39,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     @Test
     fun downFromTheTransportReachesTheRailAndUpComesBack() {
         press(Key.DirectionDown)
-        compose.onNodeWithText("Watchlist").assertIsFocused()
+        compose.onNodeWithText("My List").assertIsFocused()
 
         press(Key.DirectionUp)
         compose.onNodeWithContentDescription("Pause").assertIsFocused()
@@ -125,12 +125,29 @@ class TvPlayerKidsProfileMarksTest : TvPlayerScreenHarness() {
 
     @Test
     fun aKidsProfileHasNoKidsMark() {
-        compose.onNodeWithText("Watchlist").assertExists()
+        compose.onNodeWithText("My List").assertExists()
         compose.onNodeWithText("Add to list").assertExists()
         compose.onNodeWithText("Kids").assertDoesNotExist()
 
         press(Key.DirectionDown)
         press(Key.DirectionRight)
         compose.onNodeWithText("Add to list").assertIsFocused()
+    }
+}
+
+/** A title already on the list: the button says so, in the web player's words. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w960dp-h540dp")
+class TvPlayerListedMarksTest : TvPlayerScreenHarness() {
+    override fun makeFixture() =
+        TvPlayerFixture(
+            snapshot = WatchSnapshot.Empty.copy(watchlist = listOf("set-one")),
+            profile = Profile("p1", "andre"),
+        )
+
+    @Test
+    fun aListedTitleSaysItIsOnMyList() {
+        compose.onNodeWithText("On My List").assertExists()
+        compose.onNodeWithText("My List").assertDoesNotExist()
     }
 }

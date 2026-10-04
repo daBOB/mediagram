@@ -46,10 +46,11 @@ const ROOT = join(import.meta.dir, "..");
  * Lowered again for `src/state/routes.ts`, once the stats route moved to
  * `src/routes.ts`, the one router that holds the catalog its achievements
  * are counted against, and for `app.js`, once the player's lazy loader moved
- * out to `lib/playback/player-loader.js`.
+ * out to `lib/playback/player-loader.js`. Lowered 2026-10-04 for `app.js`,
+ * once marking the current nav link moved out to `lib/nav-current.js`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 699,
+  "public/app.js": 695,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

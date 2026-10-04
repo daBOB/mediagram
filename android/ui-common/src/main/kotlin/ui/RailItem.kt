@@ -11,7 +11,7 @@ import com.mediagram.android.core.designsystem.R
  */
 enum class RailItem(val label: String, val icon: Int) {
     MY_LIST("My List", R.drawable.core_designsystem_ic_rail_my_list),
-    CONTINUE_WATCHING("Continue watching", R.drawable.core_designsystem_ic_rail_continue),
+    CONTINUE_WATCHING("Continue", R.drawable.core_designsystem_ic_rail_continue),
     LATEST("Latest", R.drawable.core_designsystem_ic_rail_latest),
     GENRES("Genres", R.drawable.core_designsystem_ic_rail_genres),
     STATS("Stats", R.drawable.core_designsystem_ic_rail_stats),

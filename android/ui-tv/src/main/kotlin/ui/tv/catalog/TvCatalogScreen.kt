@@ -44,7 +44,7 @@ import ui.tv.profile.TvChosenProfile
  * The catalogue on a television: [TvLibraryChrome] — the rail and the
  * departments bar — around whichever entry is selected: Home, a shelf's
  * wall, or one of the two kept walls the rail chooses directly (My List,
- * Continue watching). The television twin of the phone's `CatalogScreen`
+ * Continue). The television twin of the phone's `CatalogScreen`
  * and, through the same web-parity chrome, the tablet's own `LibraryHome`.
  *
  * The chrome stays even while there are no shelves to show — loading, an

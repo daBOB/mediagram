@@ -5,6 +5,7 @@ import uniffi.mediagram_core.StatsSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class StatsUiStateTest {
     private fun page(summary: StatsSummary) = statsUiStateOf(StatsRead.Done(summary, Now), Catalogue)
@@ -42,9 +43,23 @@ class StatsUiStateTest {
                 ),
             )
         assertEquals(
-            listOf("This week" to "under a minute", "This month" to "3 h 12 min", "All time" to "12 h"),
+            listOf("This week" to "0 min", "This month" to "3 h 12 min", "All time" to "12 h"),
             assertIs<StatsUiState.Ready>(state).totals,
         )
+        assertNull(assertIs<StatsUiState.Ready>(state).countingSince, "a minute counted, so nothing to explain under the totals")
+    }
+
+    @Test
+    fun whileNothingIsCountedALineUnderTheTotalsSaysSinceWhen() {
+        val history =
+            listOf(
+                entry(HistoryKind.STARTED, "f1", ms(2026, 9, 26, 21, 0), 40.0),
+                entry(HistoryKind.FINISHED, "e1", ms(2026, 3, 1, 20, 0), 0.0),
+                entry(HistoryKind.STARTED, "l3", ms(2026, 9, 24, 10, 0), 0.0),
+            )
+        val state = assertIs<StatsUiState.Ready>(page(summary(week = 40.0, month = 40.0, all = 40.0, history = history)))
+        assertEquals(listOf("This week" to "0 min", "This month" to "0 min", "All time" to "0 min"), state.totals)
+        assertEquals("Counting since 24 Sep", state.countingSince)
     }
 
     @Test
@@ -61,7 +76,7 @@ class StatsUiStateTest {
             listOf(
                 "Watched again · Der Pate · today 21:14 · 42 min",
                 "Finished · Crime 101 S1E4 · Fri 20:05 · 3 h 12 min",
-                "Started · Geldhochschule 3 · 19 Sep · under a minute",
+                "Started · Geldhochschule 3 · 19 Sep · 0 min",
                 "Started · No longer in the library · 21 Sep 2025 · 10 min",
             ),
             state.history.map { it.text },
@@ -78,7 +93,7 @@ class StatsUiStateTest {
         assertEquals("S", state.bars.last().initial, "today, a Saturday, is the rightmost bar")
         assertEquals("F", state.bars[28].initial)
         assertEquals("26 Sep · 1 h", state.bars.last().description)
-        assertEquals("28 Aug · under a minute", state.bars.first().description)
+        assertEquals("28 Aug · 0 min", state.bars.first().description)
     }
 
     @Test

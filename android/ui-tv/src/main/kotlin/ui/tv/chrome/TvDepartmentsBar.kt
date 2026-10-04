@@ -42,7 +42,7 @@ private val TvOverCoverInk = Color(0xFFF6F2EA)
  * the parameter stays so whoever draws that cover only has to pass a real
  * value here rather than add one.
  *
- * [selected] is `-1` on a kept wall (My List/Continue watching): the rail
+ * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
  *
  * [downTarget] is where Down from any control on this row leads —

@@ -17,11 +17,12 @@ import designsystem.Spacing
 import model.KidsVerdict
 import player.PlayerMarksState
 import player.kidsLabel
+import player.listLabel
 
 /**
  * The three controls the web keeps in the player — "this is where a viewer
  * is when they find out what a film actually is" (`player.js:928-929`) —
- * Watchlist, Kids, and Add to list, over [PlayerMarksState]. Absent
+ * My List, Kids, and Add to list, over [PlayerMarksState]. Absent
  * entirely with nothing open, the same as the web's three buttons before
  * `playing` is set.
  */
@@ -37,7 +38,7 @@ internal fun PlayerMarks(
 
     Row(modifier = modifier.background(Color.Black.copy(alpha = SCRIM_ALPHA)).padding(Spacing.small)) {
         MarkButton(
-            label = if (marks.watchlisted) "On the list" else "Watchlist",
+            label = listLabel(marks),
             onClick = actions.onToggleWatchlist,
         )
         if (marks.canMarkKids) {

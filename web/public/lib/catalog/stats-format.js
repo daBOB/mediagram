@@ -20,13 +20,13 @@ const two = (n) => String(n).padStart(2, "0");
 const midnight = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 
 /**
- * How long, in words: "under a minute", "42 min", "3 h 12 min", "3 h".
+ * How long, in words: "0 min", "42 min", "3 h 12 min", "3 h".
  * Minutes are floored — a bar never claims a minute nobody finished.
  * @param {number} seconds
  */
 export function watchTime(seconds) {
   const minutes = Math.floor(seconds / 60);
-  if (!(minutes >= 1)) return "under a minute";
+  if (!(minutes >= 1)) return "0 min";
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -48,8 +48,30 @@ export function whenLabel(at, now) {
   const clock = `${two(then.getHours())}:${two(then.getMinutes())}`;
   if (daysAgo === 0) return `today ${clock}`;
   if (daysAgo > 0 && daysAgo <= 6) return `${WEEKDAYS[then.getDay()]} ${clock}`;
+  return dateLabel(then, today);
+}
+
+/** "21 Sep", or "21 Sep 2025" in a year other than `today`'s. */
+function dateLabel(then, today) {
   const date = `${then.getDate()} ${MONTHS[then.getMonth()]}`;
   return then.getFullYear() === today.getFullYear() ? date : `${date} ${then.getFullYear()}`;
+}
+
+/**
+ * "Counting since 3 Oct" while the counted total is still under a minute, so
+ * "0 min" reads as not yet rather than as broken. Dated by the first start:
+ * a start is written by the same position write that counts the minutes,
+ * while a finish from before stats existed is history that was never
+ * counted, and dating by it would claim counting began before it did.
+ * `null` once a minute is counted, or while nothing has started since.
+ * @param {{ allSeconds: number, history: { kind: string, at: number }[] }} summary
+ * @param {number} now epoch ms
+ */
+export function countingSince(summary, now) {
+  if (summary.allSeconds >= 60) return null;
+  let first = Infinity;
+  for (const entry of summary.history) if (entry.kind === "started" && entry.at < first) first = entry.at;
+  return first === Infinity ? null : `Counting since ${dateLabel(new Date(first), new Date(now))}`;
 }
 
 /** "3 Oct", for a `YYYY-MM-DD` day. @param {string} day */
@@ -77,7 +99,7 @@ export function historyTitle(set) {
 /**
  * One history line: "Started · Der Pate · Sat 21:14 · 42 min". No duration
  * when nothing was counted — a finish from before stats existed was not
- * watched in under a minute.
+ * watched in 0 min.
  * @param {{ kind: "started"|"finished"|"again", at: number, seconds: number }} entry
  * @param {any} set the catalog set, or `null`
  * @param {number} now

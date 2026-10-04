@@ -192,7 +192,7 @@ Cover story, title spreads, and department heroes carry their own light-on-image
 
 ### Departments (new in 0.62.0)
 
-Five departments in the top bar: Home, Movies, Series, Tutorials, Collections (plus Search). The side rail holds only the viewer's shelves and utilities — My List, Continue watching, Latest, Genres, Settings, System — so no link appears twice. Movies shelf pages (`#/movies`, `#/movies/page/N`) show 48 films per page with sequential pager links.
+Five departments in the top bar: Home, Movies, Series, Tutorials, Collections (plus Search). The side rail holds only the viewer's shelves and utilities — My List, Continue, Latest, Genres, Settings, System — so no link appears twice. Movies shelf pages (`#/movies`, `#/movies/page/N`) show 48 films per page with sequential pager links.
 
 ### Home page (magazine)
 
@@ -220,7 +220,7 @@ Three tabs: **Appearance** (theme Dark/Light/Auto + 7-swatch accent picker), **P
 
 ### Rail (sidebar)
 
-Full height. Top: Utilities (My List, Continue Watching, Latest, Genres, Settings). Below: Departments (Home, Movies, Series, Tutorials, Collections). On phone, departments move to the header row below the masthead (no bottom tab bar).
+Full height. Top: Utilities (My List, Continue, Latest, Genres, Settings). Below: Departments (Home, Movies, Series, Tutorials, Collections). On phone, departments move to the header row below the masthead (no bottom tab bar).
 
 ## Motion and easing
 

@@ -70,7 +70,7 @@ internal fun LibraryBranches(
 
     // Which of catalogTabsOf's full index space the shelves screen shows —
     // lifted up here (rather than kept inside CatalogScreen) so the rail's
-    // own My List/Continue watching rows can land on it from anywhere, the
+    // own My List/Continue rows can land on it from anywhere, the
     // same way the web's rail-nav can. See [BrowseActions].
     //
     // Persisted by title, not by the plain index a tab sits at: a shelf list
@@ -83,7 +83,7 @@ internal fun LibraryBranches(
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
     // firstKept, not a hand-counted offset: a shelf list gaining or losing a
-    // department must not silently point My List and Continue watching at
+    // department must not silently point My List and Continue at
     // the wrong tab.
     val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
     val visible = remember(fullTabs) { visibleTabIndices(fullTabs) }

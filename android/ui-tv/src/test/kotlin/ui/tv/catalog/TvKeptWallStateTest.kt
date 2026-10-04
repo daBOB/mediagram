@@ -31,7 +31,7 @@ import kotlin.test.assertEquals
  * the shared wording shows up as a change to what both surfaces say rather
  * than passing silently.
  *
- * My List and Continue watching have no pill of their own — pressing their
+ * My List and Continue have no pill of their own — pressing their
  * rail row (found by its content description, since the rail draws icons
  * alone until the remote reaches it) is how these tests reach them, the
  * same as a real remote pressing OK on either row; `TvMenuTest` covers the
@@ -44,7 +44,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
     @Test
     fun eachEmptyKeptTabSaysThePhonesWords() {
         showCatalog(ready(films(1)))
-        pressRailRow("Continue watching")
+        pressRailRow("Continue")
         compose.onNodeWithText("Nothing started yet.").assertExists()
         close()
 
@@ -63,7 +63,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         val stopped = Progress(setId = "film-1", at = 1_200.0, duration = 6_000.0, updatedAt = 2)
         var opened: String? = null
         showCatalog(withWatch(films(3), WatchSnapshot.Empty.copy(progress = listOf(stopped))), onOpenTitle = { opened = it })
-        pressRailRow("Continue watching")
+        pressRailRow("Continue")
 
         compose.onNodeWithText("Continue · 1").assertExists()
         compose.onNodeWithText(resumeLine(stopped)).assertExists()

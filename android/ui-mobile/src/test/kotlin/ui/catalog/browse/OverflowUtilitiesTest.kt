@@ -26,7 +26,7 @@ import ui.LibraryFlowTestActivity
 
 /**
  * The departments bar's own pill row and the chrome's own reach for what
- * used to be overflow-only utilities — My List, Continue watching, Latest,
+ * used to be overflow-only utilities — My List, Continue, Latest,
  * Genres are now icon buttons in the compact header's row 1 (or rows in
  * [ui.chrome.LibraryRail] on EXPANDED), each with its own name for a content
  * description rather than a `DropdownMenuItem`'s visible text. The ⋮ this
@@ -79,7 +79,7 @@ class OverflowUtilitiesTest {
         compose.onNodeWithText("TMDB key…").assertIsDisplayed()
         compose.onNodeWithText("Start over").assertIsDisplayed()
         compose.onNodeWithText("My List").assertDoesNotExist()
-        compose.onNodeWithText("Continue watching").assertDoesNotExist()
+        compose.onNodeWithText("Continue").assertDoesNotExist()
         compose.onNodeWithText("Latest").assertDoesNotExist()
         compose.onNodeWithText("Genres").assertDoesNotExist()
     }
@@ -88,7 +88,7 @@ class OverflowUtilitiesTest {
         tapIcon("My List")
         compose.onNodeWithText("Nothing on your list.").assertIsDisplayed()
         compose.onNodeWithText("Series").performClick()
-        tapIcon("Continue watching")
+        tapIcon("Continue")
         compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
     }
 

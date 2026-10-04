@@ -12,7 +12,7 @@ class CatalogTabsTest {
 
         assertEquals(listOf("Home", "Movies", "Series", "Tutorials", "Collections"), split.departments)
         assertEquals(
-            listOf("My List", "Continue watching", "Latest", "Genres", "Settings"),
+            listOf("My List", "Continue", "Latest", "Genres", "Settings"),
             split.utilities.map(UtilityDestination::label),
         )
     }

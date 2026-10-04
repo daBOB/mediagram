@@ -2,6 +2,7 @@
 .stats-totals { display: flex; flex-wrap: wrap; gap: 24px 56px; margin: 0 0 8px; }
 .stats-total dt { color: var(--ink-3); font-size: 0.6875rem; letter-spacing: 0.24em; text-transform: uppercase; }
 .stats-total dd { margin: 6px 0 0; font: 600 clamp(1.6rem, 3vw, 2.4rem)/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stats-since { margin: 8px 0 0; color: var(--ink-3); font-size: 0.875rem; }
 
 .stats-bars { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 4px; align-items: end; height: 160px; }
 .stats-day { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; }

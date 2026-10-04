@@ -65,13 +65,17 @@ internal fun TvStatsPage(state: StatsUiState) {
             is StatsUiState.Ready -> {
                 item(key = "totals") {
                     TvStatsStop(Modifier.focusRequester(arrival)) { focused ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
-                            for ((label, value) in state.totals) {
-                                Column {
-                                    Text(text = label, style = TvFocus.textStyle(TvTypeScale.body, focused))
-                                    Text(text = value, style = TvTypeScale.title)
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
+                                for ((label, value) in state.totals) {
+                                    Column {
+                                        Text(text = label, style = TvFocus.textStyle(TvTypeScale.body, focused))
+                                        Text(text = value, style = TvTypeScale.title)
+                                    }
                                 }
                             }
+                            // Inside the totals' stop, so it is read with the figures it explains.
+                            state.countingSince?.let { TvQuietLine(it) }
                         }
                     }
                 }

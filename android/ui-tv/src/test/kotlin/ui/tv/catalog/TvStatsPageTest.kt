@@ -37,6 +37,7 @@ class TvStatsPageTest : TvScreenStateTest() {
         compose.onNodeWithText("Nothing watched yet.").assertExists()
         compose.onNodeWithText("This week").assertDoesNotExist()
         compose.onNodeWithText("History").assertDoesNotExist()
+        compose.onNodeWithText("Counting since", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -52,6 +53,15 @@ class TvStatsPageTest : TvScreenStateTest() {
         compose.onNode(hasText("This week")).assertIsFocused()
         compose.onNodeWithText("3 h 12 min").assertExists()
         compose.onNodeWithContentDescription("day 29").assertExists()
+        compose.onNodeWithText("Counting since", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun whileNothingIsCountedTheLineIsReadWithTheTotals() {
+        val zero = ready(lines = 1).let { it.copy(totals = it.totals.map { (label, _) -> label to "0 min" }, countingSince = "Counting since 3 Oct") }
+        show { TvStatsPage(zero) }
+        // One stop for the remote: the line sits in the totals' own, focused on arrival.
+        compose.onNode(hasText("This week") and hasText("Counting since 3 Oct")).assertIsFocused()
     }
 
     @Test

@@ -10,7 +10,7 @@
 import { el } from "../dom.js";
 import { profileId } from "../watch-state.js";
 import { heading } from "./shelf-view.js";
-import { historyLine, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
+import { countingSince, historyLine, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
 import { achievementsSection } from "./stats-achievements.js";
 import { markSeen } from "./stats-dot.js";
 
@@ -38,7 +38,10 @@ export async function renderStats(main, { byId }, stillHere) {
   if (!stillHere()) return;
   if (watchedNothing) return main.append(el("p", "empty", "Nothing watched yet."));
   const now = Date.now();
-  main.append(totals(summary), lastThirty(summary.last30));
+  main.append(totals(summary));
+  const since = countingSince(summary, now);
+  if (since) main.append(el("p", "stats-since", since));
+  main.append(lastThirty(summary.last30));
   // Before the history, which has no end; nothing at all while there is nothing in it.
   if (earned.length + next.length > 0) main.append(achievementsSection(summary.achievements, (at) => whenLabel(at, now)));
   main.append(history(summary.history, byId, now));

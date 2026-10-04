@@ -47,7 +47,7 @@ data class ProfileBarState(val name: String, val onChoose: () -> Unit)
  * A pushed frame's own bar: a title, a way back where the destination has
  * one, who is watching, and an overflow menu — trimmed to the three
  * Android-only actions (Update library, TMDB key…, Start over) on EXPANDED,
- * where [LibraryRail] beside it already carries My List, Continue watching,
+ * where [LibraryRail] beside it already carries My List, Continue,
  * Latest, Genres, Stats, Settings and System; the full menu everywhere narrower,
  * where there is no rail to carry them. Every pushed frame renders through
  * this except Settings and System, which have their own index pane instead
