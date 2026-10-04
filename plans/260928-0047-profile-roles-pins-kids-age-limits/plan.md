@@ -60,7 +60,7 @@ uniffi 0.32 (core); Kotlin, Compose, Hilt (Android).
 | 03 | [Web: picker, PIN prompt, manage panel, filter, marks](phase-03-web-browser-picker-manage-filter.md) | `web/public/**` | done (0.108.0) |
 | 04 | [Core: schema, record, merge, exchange](phase-04-core-schema-sync-merge.md) | `crates/mediagram-core/src/state/**` (data half) | done (0.107.0) |
 | 05 | [Core: rules, PIN, wait, uniffi API](phase-05-core-rules-pin-api.md) | `crates/mediagram-core/src/{state/profiles*,api/state*}` | done (pending merge) |
-| 06 | [Android: model, repository, view models, marks](phase-06-android-data-viewmodels.md) | `android/core/**`, `android/feature/**` | pending |
+| 06 | [Android: model, repository, view models, marks](phase-06-android-data-viewmodels.md) | `android/core/**`, `android/feature/**` | done (pending merge) |
 | 07 | [Android: phone and TV screens](phase-07-android-phone-tv-screens.md) | `android/ui-mobile/**`, `android/ui-tv/**` | pending |
 | 08 | [Verify, docs, version](phase-08-verify-docs-version.md) | `docs/**`, manifests | pending |
 

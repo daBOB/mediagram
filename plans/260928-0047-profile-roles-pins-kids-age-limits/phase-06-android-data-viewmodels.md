@@ -11,7 +11,7 @@
 
 ## Overview
 
-Priority P1 (07 draws everything from here). Status: pending.
+Priority P1 (07 draws everything from here). Status: done (pending merge) — built 2026-10-04 in seven commits on top of phase 05; see `plans/261004-1508-open-tasks-sweep/reports/b3-phase-06-android-data-report.md` for where it follows the web on main rather than the steps below (words, a refused new PIN, Manage's wrong-PIN return), what the interim pickers do, and what phase 07 must draw.
 Android learns the roles: the model carries admin / parent / limit / has-PIN; one repository call
 sends every profile request to the core and re-reads on success; `FakeCore` enforces the
 contract's rule, order and wait so view-model tests meet the answers the tablet gives; the picker
@@ -2411,13 +2411,13 @@ Every `CoreContract` case passes on the tablet. A failure is the fake and the co
 
 ## Todo list
 
-- [ ] Task 1 — bindings in; model roles; `FakeProfiles`; contract; repository `manage`/`setKids(age)`; fakes; pickers lose add/remove (one commit, right after phase 05's)
-- [ ] Task 2 — per-kid limit in the catalog, `KidsEmpty(limit)` (commit)
-- [ ] Task 3 — `PinAsk`, `PinPrompt`, the web's words (commit)
-- [ ] Task 4 — `pick` / `claim` / `createFirst` (commit)
-- [ ] Task 5 — `ManageProfilesViewModel` (commit)
-- [ ] Task 6 — player `setKidsMark` (commit)
-- [ ] Task 7 — every module green; `RealCoreContractTest` on caad49da
+- [x] Task 1 — bindings in; model roles; `FakeProfiles`; contract; repository `manage`/`setKids(age)`; fakes; pickers lose add/remove (one commit, right after phase 05's)
+- [x] Task 2 — per-kid limit in the catalog, `KidsEmpty(limit)` (commit)
+- [x] Task 3 — `PinAsk`, `PinPrompt`, the web's words (commit)
+- [x] Task 4 — `pick` / `claim` / `createFirst` (commit)
+- [x] Task 5 — `ManageProfilesViewModel` (commit)
+- [x] Task 6 — player `setKidsMark` (commit)
+- [x] Task 7 — every module green (unit tests, lint, androidTest compile); `RealCoreContractTest` on caad49da still to run (no adb in this session)
 
 ## Success criteria
 
