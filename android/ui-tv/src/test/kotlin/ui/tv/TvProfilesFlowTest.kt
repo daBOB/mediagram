@@ -170,6 +170,43 @@ class TvProfilesFlowTest {
         assertFalse(controller.get().isFinishing, "Back left the app")
     }
 
+    /**
+     * Manage opened from the masthead, then the box left — Home, a remote
+     * left alone. Back in the library, the next one to choose who is
+     * watching meets the picker, not that grown-up's Manage, and the PIN
+     * Manage held changes nothing any more.
+     */
+    @Test
+    fun leavingTheAppClosesManageAndForgetsItsPin() {
+        launch(listOf(andre, bo, cy), chosen = "a")
+        reopenPicker()
+        openManageAs(rowOf("Bo"), "5678")
+
+        leaveAndReturn()
+        awaitLibrary()
+        reopenPicker()
+
+        compose.onNodeWithText("Who's watching?").assertExists()
+        compose.onAllNodesWithText("As Bo").assertCountEquals(0)
+        compose.runOnUiThread { fixture.manage.setKidsAge("c", 12) }
+        compose.waitForIdle()
+        assertEquals(6, fixture.core.profiles.single { it.id == "c" }.kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
+    }
+
+    /** A first entry of a new PIN is not kept for whoever opens the app next. */
+    @Test
+    fun leavingTheAppDropsAHalfTypedNewPin() {
+        launch(listOf(andre, bo, cy), chosen = null, pins = mapOf("a" to "1234"))
+        walkTo(hasText("Bo") and hasClickAction(), Key.DirectionRight)
+        press(Key.DirectionCenter)
+        pin("5678")
+        compose.onNodeWithText("The new PIN again").assertExists()
+
+        leaveAndReturn()
+        compose.onAllNodesWithText("The new PIN again").assertCountEquals(0)
+        compose.onNodeWithText("Who's watching?").assertExists()
+    }
+
     @Test
     fun theAdminResetsAPinAndRemovesAGrownUpWithItsKid() {
         launch(listOf(andre, bo, cy), chosen = null)
@@ -286,6 +323,20 @@ class TvProfilesFlowTest {
     }
 
     private fun rowOf(text: String) = hasText(text) and hasClickAction()
+
+    /** The masthead's "who is watching" entry, as selecting it does. */
+    private fun reopenPicker() {
+        compose.onNode(hasContentDescription("Who's watching: andre")).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+    }
+
+    /** The app left and opened again, the view models kept. */
+    private fun leaveAndReturn() {
+        compose.runOnUiThread { controller.pause().stop() }
+        compose.waitForIdle()
+        compose.runOnUiThread { controller.start().resume() }
+        compose.waitForIdle()
+    }
 
     /** Back through the activity's dispatcher — whatever the screen registered last takes it. */
     private fun back() {

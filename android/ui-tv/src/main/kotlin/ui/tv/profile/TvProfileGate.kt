@@ -13,6 +13,7 @@ import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
+import ui.profile.ForgetManageWhenAway
 
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
@@ -32,7 +33,9 @@ data class TvChosenProfile(
  * a viewer has been chosen. One screen at a time — whichever PIN is asked
  * replaces what asked for it, and Manage replaces the picker — so nothing
  * behind competes for the remote. Manage cannot be reached once a profile is
- * chosen: entering a profile never hands a child the controls.
+ * chosen: entering a profile never hands a child the controls, and Manage
+ * closes, forgetting its PIN, when the library shows again or the app is
+ * left (`ui.profile.ForgetManageWhenAway`).
  *
  * Once a viewer is chosen, [content] is handed it the way the phone's gate
  * hands its bar a `ProfileBarState`: the name, and [ProfileViewModel.reopen]
@@ -48,6 +51,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val managePin by manage.pin.collectAsStateWithLifecycle()
 
     val chosen = state as? ProfileUiState.Chosen
+    ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
     if (chosen != null) {
         content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
         return
