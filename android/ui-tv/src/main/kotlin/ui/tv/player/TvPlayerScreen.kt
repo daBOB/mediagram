@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -103,12 +104,17 @@ fun TvPlayerScreen(
     // over the web's is.
     var presses by remember { mutableIntStateOf(0) }
     // Saved, as on the phone: a configuration change is not a viewer asking
-    // for the numbers to go, nor for the list they were filing into to close.
+    // for the numbers to go, nor for the list or the Kids choice they were in to close.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
+    var choosingKids by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = { choosingList = false }, closePanel = { settingsOpen = false })
-    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || settingsOpen || upNextShown, onHide = { controlsShown = false })
+    val closeMarkDialogs = {
+        choosingList = false
+        choosingKids = false
+    }
+    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = { settingsOpen = false })
+    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || settingsOpen || upNextShown, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
     // remote lands on it rather than on a picture it is being taken from.
@@ -131,7 +137,7 @@ fun TvPlayerScreen(
                 onPrevious = { steps.previous() }, onToggleSubtitles = { viewModel.toggleSubtitles() },
             )
         }
-    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || onSeekBar })
+    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
     TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen }, failed = { failed })
     TvPlayerBack(
         barShown = barShown,
@@ -183,6 +189,7 @@ fun TvPlayerScreen(
                         TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },
                             onAddToList = { choosingList = true },
+                            onKids = { choosingKids = true },
                             onOpenSettings = { settingsOpen = true },
                             onPlayNext = steps.next,
                             onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
@@ -192,17 +199,13 @@ fun TvPlayerScreen(
                     bands = bands,
                 )
             }
+            // A dialog window's own keys: the remote's media keys still reach
+            // the film through it, as through the settings panel.
+            val dialogKeys = { event: KeyEvent -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) }
             if (choosingList) {
-                TvAddToListOverPlayer(
-                    marks = marks,
-                    notice = actionNotice,
-                    viewModel = viewModel,
-                    onDismiss = { choosingList = false },
-                    // Its window's own keys: the remote's media keys still reach
-                    // the film through it, as through the settings panel.
-                    keys = { event -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) },
-                )
+                TvAddToListOverPlayer(marks = marks, notice = actionNotice, viewModel = viewModel, onDismiss = { choosingList = false }, keys = dialogKeys)
             }
+            if (choosingKids) TvKidsChoiceOverPlayer(marks = marks, viewModel = viewModel, onDismiss = { choosingKids = false }, keys = dialogKeys)
             TvActionNotice(
                 notice = actionNotice,
                 onGone = viewModel::dismissActionNotice,

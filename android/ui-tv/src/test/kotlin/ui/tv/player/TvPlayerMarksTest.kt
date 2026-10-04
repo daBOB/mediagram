@@ -2,8 +2,9 @@ package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -17,6 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import player.CONTROLS_LINGER_MS
+import player.KIDS_CHOICES
 import testing.WatchStateFixture
 import kotlin.test.assertEquals
 
@@ -49,6 +51,43 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
         press(Key.DirectionCenter)
 
         assertEquals(listOf("set-one"), fixture.repository.snapshot.value.watchlist)
+    }
+
+    /** The web's select as a dialog: the three answers, the current one holding the remote; choosing closes it onto the mark. */
+    @Test
+    fun theKidsMarkOpensTheChoiceAndFromSixMarksFromSix() {
+        press(Key.DirectionDown)
+        press(Key.DirectionRight)
+        compose.onNodeWithText("Not for kids").assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNodeWithText("For kids").assertExists()
+        compose.onNode(hasText("Not for kids") and hasAnyAncestor(isDialog())).assertIsFocused()
+        compose.onNode(hasText("From 12") and hasAnyAncestor(isDialog())).assertExists()
+
+        pressInDialog(Key.DirectionDown)
+        pressInDialog(Key.DirectionCenter)
+
+        assertEquals(mapOf("set-one" to 6), fixture.repository.snapshot.value.kidsMarks)
+        compose.onNodeWithText("For kids").assertDoesNotExist()
+        compose.onNodeWithText("From 6").assertIsFocused()
+    }
+
+    /** Open, it holds the controls as the list dialog does; Cancel leaves the mark as it was. */
+    @Test
+    fun theKidsChoiceHoldsTheControlsAndCancelChangesNothing() {
+        press(Key.DirectionDown)
+        press(Key.DirectionRight)
+        press(Key.DirectionCenter)
+
+        compose.mainClock.advanceTimeBy(CONTROLS_LINGER_MS + 500)
+        compose.waitForIdle()
+        compose.onNodeWithTag(TvSeekBarTag).assertExists()
+
+        repeat(KIDS_CHOICES.size) { pressInDialog(Key.DirectionDown) }
+        compose.onNode(hasText("Cancel") and hasAnyAncestor(isDialog())).assertIsFocused()
+        pressInDialog(Key.DirectionCenter)
+        assertEquals(emptyMap(), fixture.repository.snapshot.value.kidsMarks)
+        compose.onNodeWithText("Not for kids").assertIsFocused()
     }
 
     @Test
