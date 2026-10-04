@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.8 — a cache-server address without a port finds the server
+
+**Fixed**
+
+- Android: a home cache server address entered as just a host
+  (`http://192.168.0.240`) is now tried on `mediagram_cache`'s own port,
+  7788, instead of HTTP's 80. On the home server port 80 belongs to another
+  web server, which answered 404, so Settings showed "Not found" while the
+  cache ran. The port is added when probing, so an address already saved
+  without one heals on its own. An address with its own port is unchanged.
+
 ## 0.99.7 — the player's own controls hover on the shared token
 
 **Changed**

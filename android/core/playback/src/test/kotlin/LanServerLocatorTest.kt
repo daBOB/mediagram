@@ -72,6 +72,32 @@ class LanServerLocatorTest {
         }
 
     @Test
+    fun aManualOverrideWithoutAPortIsTriedOnTheServersDefaultPort() =
+        runTest {
+            val picked =
+                pickLanServer(
+                    emptyList(),
+                    manualOverride = "http://192.168.0.240",
+                    probe = probeThatVerifies("http://192.168.0.240:7788"),
+                )
+
+            assertEquals(LanServer("http://192.168.0.240:7788", "192.168.0.240:7788"), picked)
+        }
+
+    @Test
+    fun aManualOverrideWithItsOwnPortKeepsIt() =
+        runTest {
+            val picked =
+                pickLanServer(
+                    emptyList(),
+                    manualOverride = "http://10.0.0.9:8080",
+                    probe = probeThatVerifies("http://10.0.0.9:8080", "http://10.0.0.9:7788"),
+                )
+
+            assertEquals(LanServer("http://10.0.0.9:8080", "10.0.0.9:8080"), picked)
+        }
+
+    @Test
     fun nothingVerifyingMeansNoServer() =
         runTest {
             val discovered = listOf(LanServer("http://10.0.0.2:7788", "10.0.0.2:7788"))
