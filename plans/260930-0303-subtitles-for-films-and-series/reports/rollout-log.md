@@ -61,3 +61,10 @@ Film/series backfill **extracts from the uploaded copies through the channel**: 
 - `subtitles backfill --channel --dry-run`: **1,828** MP4 sets left.
 - 20:00 started detached (`setsid nohup`), log `~/.local/share/mediagram/backfill-channel-261004-2000.log` (outside the repo). The local-only bundles ride along with its first publish. After it: `--mkv` (1,051 sets) and the 62-set local-folder pass, paced — the user approved both on 2026-10-04.
 - Phase 06's "real title end to end" closes on the other machine's The Deuce S3E1–8 upload (2026-10-01) and the bundles uploads have attached since (user, 2026-10-04); the device half (forced lines while Off, picker lists regular tracks only, CC) is checked on the tablet.
+
+## 2026-10-04 20:05 — tablet checks (0.102.1, "test" profile)
+
+- Phase 04/05: Geldhochschule 4 opens with subtitles off; CC → "Subtitles on" and German cues show; "Play next" names lesson 5. CC set back off afterwards.
+- Phase 06 device half: Alien: Covenant (only a "German (Forced)" track) — at 06:07–06:20 the forced lines ("BESATZUNG: 15", "FLUGZIEL: ORIGAE-6") show with subtitles off; no CC button, since there is no regular track to pick.
+- Phase 08: Settings › Profile Subtitles = English → web `/api/profiles/<test>/state` shows `profile subtitle = en` ~20 s later; back to Off → `off` ~15 s later. TV leg waits for adb on the box.
+- Plays landed on the "test" profile (Alien: Covenant ~6 min, Geldhochschule 4 a few seconds). The tablet is back on "andre".
