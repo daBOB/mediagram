@@ -121,6 +121,24 @@ internal fun TvHome(
             )
         }
     val included = remember(sections) { sections.filter { (_, keys) -> keys.isNotEmpty() }.map { it.first } }
+    // Every section the list below draws an item for, in its order — the
+    // one place that decides which items exist, so the arrival below scrolls
+    // to, and waits for, the item that really holds its stop. Not `included`:
+    // Continue drawn for its quote alone, or Recently added for This month
+    // alone, is an item with no stop in it, and indexing past it by
+    // `included` scrolled one item short of every band below.
+    val hasCover = editorial.cover.isNotEmpty()
+    val drawn =
+        remember(editorial, magazine, series, courses) {
+            buildList {
+                if (hasCover) add(TvHomeSection.COVER)
+                if (editorial.features.isNotEmpty()) add(TvHomeSection.FEATURES)
+                if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) add(TvHomeSection.CONTINUE)
+                if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) add(TvHomeSection.RECENT)
+                if (series.isNotEmpty()) add(TvHomeSection.SERIES)
+                if (courses.isNotEmpty()) add(TvHomeSection.COURSES)
+            }
+        }
     // The band the remote was last in, saved with the catalog like the
     // list's own scroll: a title two bands carry at once — a new upload
     // that is also trending — comes back to the band it was opened from.
@@ -176,7 +194,7 @@ internal fun TvHome(
     var arrived by remember { mutableStateOf(false) }
     LaunchedEffect(target) {
         if (target == null || !takesFocus || arrived) return@LaunchedEffect
-        val itemIndex = included.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
+        val itemIndex = drawn.indexOf(target.section).takeIf { it >= 0 } ?: return@LaunchedEffect
         // Scrolled into place — and its own composition confirmed present,
         // via the same item turning up in `visibleItemsInfo` — before the
         // request, always, for every section: a request fired the instant
@@ -195,8 +213,25 @@ internal fun TvHome(
         arrived = true
     }
 
+    // What the list's own `focusRestorer` falls back to when focus enters it
+    // with no remembered child — which is always: the chrome's own `onExit`
+    // around bar and page replaces the restorer's, so the restorer never
+    // saves one. The arrival's own request above enters this list too (from
+    // the bar's Home pill, where Android puts the remote the moment the
+    // pushed frame's focused button is removed, or from nothing at all), so
+    // a fallback naming the first section redirected that request whenever
+    // the first section was still composed — a lead feature card leaves the
+    // cover half in view, so Back from it restores a scroll that composes
+    // the cover again: the remote went to the cover's Watch now, which the
+    // arrival had just scrolled out of view, and once the list let that item
+    // go, to the bar's first pill. Pointing at the arrival's own stop until
+    // it has landed makes the redirect land where the request was going;
+    // afterwards, an entry from the bar (Down onto the page) still lands on
+    // the first section, as it always has.
+    val firstStop = included.firstOrNull()?.let(entryFocus::getValue) ?: coverFocus
+    val enterFallback = target?.takeUnless { arrived }?.let { entryFocus.getValue(it.section) } ?: firstStop
+
     val pagePadding = LocalTvPagePadding.current
-    val hasCover = editorial.cover.isNotEmpty()
     val gutter = Modifier.padding(start = pagePadding.start, end = pagePadding.end)
     fun stopAt(section: TvHomeSection): Int? = target?.stop.takeIf { target?.section == section }
 
@@ -221,10 +256,10 @@ internal fun TvHome(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .focusRestorer(fallback = included.firstOrNull()?.let(entryFocus::getValue) ?: coverFocus),
+                    .focusRestorer(fallback = enterFallback),
             contentPadding = PaddingValues(top = if (hasCover) 0.dp else pagePadding.top, bottom = pagePadding.bottom + Overscan.horizontal),
         ) {
-            if (hasCover) {
+            if (TvHomeSection.COVER in drawn) {
                 item(key = "cover") {
                     // Entering the cover from the rows below scrolls only far
                     // enough to show the stop Up landed on, leaving the cover's
@@ -249,7 +284,7 @@ internal fun TvHome(
                     }
                 }
             }
-            if (editorial.features.isNotEmpty()) {
+            if (TvHomeSection.FEATURES in drawn) {
                 item(key = "features") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.FEATURES)) {
                         // No `takesFocus` of its own to gate: this row has no
@@ -260,7 +295,7 @@ internal fun TvHome(
                     }
                 }
             }
-            if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) {
+            if (TvHomeSection.CONTINUE in drawn) {
                 item(key = "continue") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.CONTINUE)) {
                         // Reset to the platform's own default for this band's
@@ -280,7 +315,7 @@ internal fun TvHome(
                     }
                 }
             }
-            if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) {
+            if (TvHomeSection.RECENT in drawn) {
                 item(key = "recent") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.RECENT)) {
                         CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
@@ -297,7 +332,7 @@ internal fun TvHome(
                     }
                 }
             }
-            if (series.isNotEmpty()) {
+            if (TvHomeSection.SERIES in drawn) {
                 item(key = "series") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.SERIES)) {
                         Column {
@@ -314,7 +349,7 @@ internal fun TvHome(
                     }
                 }
             }
-            if (courses.isNotEmpty()) {
+            if (TvHomeSection.COURSES in drawn) {
                 item(key = "courses") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.COURSES)) {
                         Column {

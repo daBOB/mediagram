@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.109.1 — Back from Home's lead card returns to it on the television
+
+**Fixed** (Android TV)
+
+- Back from a film opened from Home's Editor's choice card landed on the bar's Home pill.
+  The pushed page's removal hands focus to the bar; Home's arrival then asked its list for
+  the card, and the list's restorer — which never remembers a card, because the chrome's
+  exit handler replaces its own — redirected the request to the cover's Watch now, which
+  the arrival had just scrolled away. Until the arrival lands, the list now falls back to
+  the arrival's own card; the arrival also scrolls to the item that really holds a band.
+  Verified on the box; a walk per Home band guards it.
+
 ## 0.109.0 — high-bitrate films fetch several chunks at once
 
 **Changed** (Android)
