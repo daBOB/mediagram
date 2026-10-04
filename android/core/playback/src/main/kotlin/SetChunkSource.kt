@@ -13,9 +13,10 @@ import java.io.IOException
  * pays for. Bigger is tempting and was tried: four megabytes took a 5.8 GB
  * film from a first frame in three seconds to one in seven, because the
  * first fetch of a set blocks for the whole of it and nothing can be
- * decoded until it lands. It bought no throughput in return: a player
- * buffers ahead and then reads at the speed the film plays, so the
- * transfer was never what was short.
+ * decoded until it lands. Nor would it have bought throughput: a fetch is
+ * bound by its round trip, not its size. A set that plays faster than one
+ * fetch at a time delivers — 4K, mostly — gets several chunks in flight at
+ * once instead ([ChunkWindow]), which keeps this size and its first frame.
  */
 const val CHUNK_BYTES = 1 shl 20
 

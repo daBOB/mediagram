@@ -60,6 +60,7 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 | A7 | Reconcile stale plan status tables | subagent | done `18b57905` (+ 260925-2046) — 4 left unverified, see reports/a7 |
 | A8 | The same far-future stamp hole in every other synced row type, core + web | subagent, worktree | done 0.100.1 |
 | A9 | DTS and TrueHD sat at 0:00 on the box (passthrough stalls) | lead | done 0.106.2 — FFmpeg decodes them to PCM; verified Magnolia + Rocketman on the box |
+| A10 | 4K stutter: parallel chunk downloads | subagent + lead (box) | done 0.109.0 — box cold ~30 Mbit/s (was 15–17): ≤ 28 Mbit/s titles play; 86 titles > 32 Mbit/s still rebuffer — next step is core (separate connections / file-DC routing) |
 
 Version: subagents commit without bumping; the lead bumps by pattern when merging each
 into `main` (memory: bump versions by pattern; another session commits to main).
@@ -68,9 +69,9 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 
 | # | Plan | Status |
 |---|------|--------|
-| B1 | `260926-1330` — all groups merged (A–G), check.sh green, final review + TV box walk done 2026-10-04; H (their findings) building; box build 0.106.1+audio fix installed by adb (not published) | in progress |
+| B1 | `260926-1330` — A–H merged; box re-walk on 0.109.0: Left from Search ✓, franchise hero in view ✓, Back to franchise card ✓; Home feature-card Back → bar pill reproduces (not first-launch) → fix building | in progress |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01 0.105.0, 04 0.107.0, 02+03 0.108.0 merged (live; admin unclaimed — user asked to claim); 05 (core rules, matching name-taken + per-profile wait) building; 06/07 Android after 05 | in progress |
+| B3 | `260928-0047` — 01, 02+03 (web, live), 04 merged; 05 + 06 built on branch `worktree-agent-ac2ce5e3f3a3e5567` (merge together with 07 — until 07 a grown-up opens without a PIN); 07a phone + 07b TV building on that branch; then merge 05–07, rebuild .so, tablet contract run + device walks, 08, publish (with the user's word) | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.

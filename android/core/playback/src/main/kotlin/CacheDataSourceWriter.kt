@@ -103,7 +103,7 @@ class CacheDataSourceWriter internal constructor(
         // title has no route to, or none at all, must not fail the byte
         // preload this call otherwise exists for.
         runCatching { currentCore()?.holdSubtitles(item.setId) }
-        val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore).also { factory = it }
+        val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore = currentCore).also { factory = it }
         val writer =
             CacheWriter(built.createDataSource(), DataSpec(setUri(item.setId)), null) { _, bytesCached, _ ->
                 onProgress(bytesCached)
