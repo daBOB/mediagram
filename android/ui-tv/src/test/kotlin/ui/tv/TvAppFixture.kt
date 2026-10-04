@@ -15,6 +15,8 @@ import data.InMemoryCoreStorage
 import data.LibraryUpdateCoordinator
 import data.PortraitRequestLog
 import data.StoredCoreProvider
+import data.WatchStateRepository
+import data.WatchSync
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
@@ -25,7 +27,6 @@ import kotlinx.coroutines.runBlocking
 import model.MediaSet
 import model.Profile
 import model.TitleCredits
-import model.WatchSnapshot
 import playback.CacheOccupancy
 import playback.CacheVolume
 import playback.HeldSetsQuery
@@ -58,6 +59,7 @@ import system.SystemUiState
 import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.WatchStateFixture
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.LibraryChoice
@@ -83,17 +85,18 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * on, and only [TvSetupStage.READY] also picks a library — the three
  * remaining questions [SetupViewModel] asks before it reports `Ready`.
  *
- * [profiles] and [chosenProfileId] back a real [ProfileViewModel] the same
- * way — `TvApp` resolves one through `TvProfileGate` the moment `Ready` is
- * reached, so any test that reaches `READY` needs one ready to resolve too,
- * over [FakeWatchStateRepository] rather than the fake core the
- * setup plumbing above uses: that fake is configured only for the calls
- * `SetupViewModel` itself makes. A real [CatalogViewModel] over a mocked
+ * [profiles] and [chosenProfileId] are seeded into that same fake core, and
+ * back a real [ProfileViewModel] — `TvApp` resolves one through
+ * `TvProfileGate` the moment `Ready` is reached, so any test that reaches
+ * `READY` needs one ready to resolve too — over the real watch-state
+ * repository ([WatchStateFixture]) that the catalogue and the player share,
+ * as they do in the app. A real [CatalogViewModel] over a mocked
  * [CatalogRepository] holding [sets] stands behind the catalogue the gate
  * opens onto, the way ui-mobile's `LibraryFlowFixture` builds its own. A
  * real [SearchViewModel] asks the same repository, whose search stands in
  * for the core's ranking with a plain match on each set's title. [watch]
- * is where the viewer already stands, and [heldIds] the titles this device
+ * is where the viewer already stands — writes made through the repository
+ * before the app opens, stamped by the core — and [heldIds] the titles this device
  * is taken to hold in full.
  */
 internal class TvAppFixture(
@@ -101,7 +104,7 @@ internal class TvAppFixture(
     profiles: List<Profile> = emptyList(),
     chosenProfileId: String? = null,
     sets: List<MediaSet> = emptyList(),
-    watch: WatchSnapshot = WatchSnapshot.Empty,
+    watch: suspend WatchStateRepository.() -> Unit = {},
     heldIds: Set<String> = emptySet(),
     achievements: Achievements = NO_ACHIEVEMENTS,
 ) : ViewModelStoreOwner, AutoCloseable {
@@ -185,8 +188,8 @@ internal class TvAppFixture(
         // ViewModelProvider's default factory, which cannot construct one
         // with no Hilt entry point to supply its arguments.
         login = LoginViewModel(provider, dispatcher)
-        val viewer = FakeWatchStateRepository(profiles, chosenProfileId, watch)
-        profile = ProfileViewModel(viewer, NoopWatchSync)
+        val viewer = WatchStateFixture(profiles, chosenProfileId, core, watch)
+        profile = ProfileViewModel(viewer.repository, NoopWatchSync)
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -210,7 +213,7 @@ internal class TvAppFixture(
         catalog =
             CatalogViewModel(
                 repository,
-                viewer,
+                viewer.repository,
                 LibraryUpdateCoordinator(repository, enrichment),
                 heldSets = HeldIds(heldIds),
             )
@@ -305,7 +308,7 @@ internal class TvAppFixture(
                 StatsViewModel::class.java to stats,
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(), the
                 // same reason every entry here exists — and every library test reaches it.
-                AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer, achievementsSeen),
+                AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),
             )
         val held =
             ViewModelProvider(
@@ -321,6 +324,17 @@ internal class TvAppFixture(
         viewModelStore.clear()
         playback.close()
     }
+}
+
+/** A [WatchSync] that never talks to a core — `ProfileViewModel.settle()` only needs [awaitFirstRound] to return promptly. */
+private object NoopWatchSync : WatchSync {
+    override fun onForeground() = Unit
+
+    override fun onBackground() = Unit
+
+    override fun soon() = Unit
+
+    override suspend fun awaitFirstRound() = Unit
 }
 
 /** Exactly [held] is held, whatever its size — the cache itself is not what these tests are about. */

@@ -62,7 +62,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 | # | Plan | Status |
 |---|------|--------|
 | B1 | `260926-1330` — A 0.102.0, B 0.101.0, D 0.103.0, C 0.104.0, E 0.105.1 merged; F (last gaps: TV crew links, TV course page, portrait hero, phone list heading, TV person cards) building; then phase 7 close (TV box walk needs adb) | in progress |
-| B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 building; 04 after 03 | in progress |
+| B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 (docs + version; contract unchanged, re-run optional) next | in progress |
 | B3 | `260928-0047` — 01 merged 0.105.0 (live web migrated to v12, backup `~/.local/share/mediagram-player/state.before-roles-v12-261004.db`); 02 (+03 next, same worktree) and 04 (core) building; 05 after 02+04; Android 06/07 after watch-state 03/04 | in progress |
 
 Each plan was written in late September; before building, re-check it against `main`

@@ -35,6 +35,7 @@ dependencies {
     // :app; not a new one to the project.
     implementation(libs.findLibrary("androidx.core").get())
 
+    testImplementation(project(":core:testing"))
     testImplementation(libs.findLibrary("mockk").get())
     // DefaultPlayerHandle.open() builds a real android.net.Uri (via
     // playback.setUri); the plain unit-test android.jar stub throws for

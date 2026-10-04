@@ -1,6 +1,7 @@
 package player
 
 import app.cash.turbine.test
+import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -12,6 +13,7 @@ import model.Profile
 import model.WatchSnapshot
 import org.junit.After
 import playback.PlaybackCounters
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -45,7 +47,7 @@ class PlayerMarksTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(repository: FakeWatchStateRepository = FakeWatchStateRepository()) = PlayerViewModel(
+    private fun viewModel(repository: WatchStateRepository = WatchStateFixture().repository) = PlayerViewModel(
         FakePlayerHandle(),
         PlaybackCounters(),
         repository,
@@ -111,7 +113,7 @@ class PlayerMarksTest {
     fun aRatedTitleIsDecidedByItsRatingAndCannotBeMarked() =
         runTest {
             installMainDispatcher()
-            val repository = FakeWatchStateRepository()
+            val repository = WatchStateFixture().repository
             val vm = viewModel(repository)
 
             vm.marks.test {
@@ -153,8 +155,7 @@ class PlayerMarksTest {
     fun aKidsProfileCannotMarkTitlesForKids() =
         runTest {
             installMainDispatcher()
-            val repository = FakeWatchStateRepository()
-            repository.chosenProfile.value = Profile("p1", "Mia", kids = true)
+            val repository = WatchStateFixture(listOf(Profile("p1", "Mia", kids = true))).repository
             val vm = viewModel(repository)
 
             vm.marks.test {
@@ -177,23 +178,21 @@ class PlayerMarksTest {
     fun toggleWatchlistWithNothingOpenWritesNothing() =
         runTest {
             installMainDispatcher()
-            val repository = FakeWatchStateRepository()
+            val repository = WatchStateFixture().repository
             val vm = viewModel(repository)
 
             vm.toggleWatchlist()
             advanceUntilIdle()
 
-            assertTrue(repository.calls.isEmpty())
+            assertEquals(WatchSnapshot.Empty, repository.snapshot.value)
         }
 
     @Test
     fun setInListFilesTheOpenTitleAndMarksItThere() =
         runTest {
             installMainDispatcher()
-            val repository =
-                FakeWatchStateRepository(
-                    initialSnapshot = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("l1", "Favourites", emptyList()))),
-                )
+            val repository = WatchStateFixture(seed = { createList("Favourites") }).repository
+            val favourites = repository.snapshot.value.collections.single().id
             val vm = viewModel(repository)
 
             vm.marks.test {
@@ -201,9 +200,9 @@ class PlayerMarksTest {
                 vm.open("s1")
                 assertEquals(emptySet<String>(), awaitItem()?.memberOf)
 
-                vm.setInList("l1", true)
+                vm.setInList(favourites, true)
                 advanceUntilIdle()
-                assertEquals(setOf("l1"), expectMostRecentItem()?.memberOf)
+                assertEquals(setOf(favourites), expectMostRecentItem()?.memberOf)
             }
         }
 

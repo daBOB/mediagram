@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.105.2 — Android's tests run the real watch-state repository
+
+**Changed** (internal, Android tests)
+
+- The four hand-written watch-state fakes, their mocks and failure wrappers are gone. Player,
+  catalogue, profile, phone and TV tests now run the real `WatchStateRepository` over the
+  contract-checked fake core through one fixture, `testing.WatchStateFixture`; failures are
+  injected at the core provider. Only `WatchSyncTest`'s recording double remains — it tests
+  WatchSync's own calls. A finish's effect (position cleared, watched stamp newer, a second
+  finish moves it) is now asserted on real state rather than on a call log.
+
 ## 0.105.1 — the last browse gaps on Android close
 
 **Changed** (Android)

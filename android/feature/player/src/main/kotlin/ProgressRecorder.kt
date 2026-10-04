@@ -12,7 +12,7 @@ import javax.inject.Inject
  * in the credits is dropped and the title stamped watched instead.
  *
  * Pure aside from the repository call it makes — no clock, no ExoPlayer —
- * so [PlayerViewModelTest] exercises this against a fake repository rather
+ * so its tests run it against the real repository over a fake core rather
  * than a real player. [WatchStateRepository] already writes off the main
  * thread and does nothing with no profile chosen, so this has neither
  * concern of its own; what it adds is the judgement of which write to make.

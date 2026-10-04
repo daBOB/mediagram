@@ -2,6 +2,7 @@ package player
 
 import data.WatchSync
 import playback.PlaybackCounters
+import testing.WatchStateFixture
 
 /**
  * A [PlayerViewModel] wired with fakes that record and sync nothing worth
@@ -11,7 +12,7 @@ import playback.PlaybackCounters
  * with fakes it inspects.
  */
 internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
-    val repository = FakeWatchStateRepository()
+    val repository = WatchStateFixture().repository
     return PlayerViewModel(
         handle,
         PlaybackCounters(),

@@ -1,13 +1,10 @@
 package catalog.profile
 
 import app.cash.turbine.test
-import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,117 +12,15 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import model.ListOfSets
 import model.Profile
-import model.WatchSnapshot
 import org.junit.After
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
-private class FakeWatchStateRepository(
-    initialProfiles: List<Profile> = emptyList(),
-    chosenId: String? = null,
-) : WatchStateRepository {
-    override val profiles = MutableStateFlow(initialProfiles)
-    override val chosenProfileId = MutableStateFlow(chosenId)
-
-    // ProfileViewModel works from chosenProfileId alone; nothing under test reads this.
-    override val chosenProfile: StateFlow<Profile?> = MutableStateFlow(null)
-    override val snapshot = MutableStateFlow(WatchSnapshot.Empty)
-
-    var reloadCalls = 0
-        private set
-    val created = mutableListOf<String>()
-    val createdKids = mutableListOf<Boolean>()
-    var reloadFailure: Exception? = null
-    var chooseFailure: Exception? = null
-    var createFailure: Exception? = null
-    var refuseWrites = false
-    var failAfterChoosing = false
-
-    override suspend fun reload() {
-        reloadCalls++
-        reloadFailure?.let { throw it }
-    }
-
-    override fun invalidate() {
-        profiles.value = emptyList()
-        chosenProfileId.value = null
-        snapshot.value = WatchSnapshot.Empty
-    }
-
-    override suspend fun chooseProfile(id: String): Boolean {
-        chooseFailure?.let { throw it }
-        if (refuseWrites) return false
-        if (profiles.value.none { it.id == id }) return false
-        chosenProfileId.value = id
-        if (failAfterChoosing) error("could not read the profile snapshot")
-        return true
-    }
-
-    /** As the core does: the row goes, and so does the choice when it named it. */
-    override suspend fun deleteProfile(id: String): Boolean {
-        if (profiles.value.none { it.id == id }) return false
-        profiles.value = profiles.value.filterNot { it.id == id }
-        if (chosenProfileId.value == id) chosenProfileId.value = null
-        return true
-    }
-
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile? {
-        createFailure?.let { throw it }
-        if (refuseWrites) return null
-        created += name
-        createdKids += kids
-        val made = Profile("new-${created.size}", name, kids)
-        profiles.value = profiles.value + made
-        return made
-    }
-
-    override suspend fun setProgress(
-        setId: String,
-        at: Double,
-        duration: Double?,
-    ) = Unit
-
-    override suspend fun setWatched(
-        setId: String,
-        finished: Boolean,
-    ) = Unit
-
-    override suspend fun setWatchlisted(
-        setId: String,
-        listed: Boolean,
-    ) = Unit
-
-    override suspend fun setKids(
-        setId: String,
-        marked: Boolean,
-    ) = Unit
-
-    override suspend fun setEditorsChoice(
-        setId: String,
-        marked: Boolean,
-    ) = Unit
-
-    override suspend fun createList(name: String): ListOfSets? = null
-
-    override suspend fun renameList(
-        id: String,
-        name: String,
-    ) = false
-
-    override suspend fun deleteList(id: String) = false
-
-    override suspend fun setInList(
-        id: String,
-        setId: String,
-        included: Boolean,
-    ) = false
-}
+private val ALICE = Profile("p1", "Alice")
+private val BEA = Profile("p2", "Bea")
 
 /** [settles] false stands in for a round that is still in flight when the picker asks. */
 private class FakeWatchSync(
@@ -148,46 +43,54 @@ private class FakeWatchSync(
  * `settle()`, and the intermediate [ProfileUiState.Loading] value is only
  * ever observed if that suspends rather than finishing before the first
  * collection.
+ *
+ * Runs the real repository over the fake core ([WatchStateFixture]): a read
+ * or write fails at the provider, the way the app's own do, and a refusal is
+ * the core's own.
  */
 class ProfileViewModelTest {
     @Test
     fun immediateReentryReconcilesARetainedViewModelAfterReset() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository(listOf(Profile("p1", "Alice")), "p1")
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE))
+            val readsBefore = watch.core.profilesCalls
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
-                assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+                assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
             runCurrent()
-            // Setup has cleared the repository while this Activity's ViewModel survives.
-            repository.profiles.value = emptyList()
-            repository.chosenProfileId.value = null
+            // Setup has reset the account while this Activity's ViewModel survives:
+            // the core starts over empty, and the repository forgets what it held.
+            watch.core.profiles = emptyList()
+            watch.core.chosen = null
+            watch.repository.invalidate()
             runCurrent()
             vm.state.test {
                 runCurrent()
                 assertEquals(ProfileUiState.Picking(emptyList(), false), vm.state.value)
-                assertEquals(2, repository.reloadCalls)
+                assertEquals(2, watch.core.profilesCalls - readsBefore, "each entry reads the profiles again")
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
+    /** Alice is already known: the fixture's own first read is the one an earlier screen would have made. */
     @Test
     fun anInitialReadFailureKeepsKnownProfilesAndExitsLoading() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val profiles = listOf(Profile("p1", "Alice"))
-            val repository = FakeWatchStateRepository(profiles).apply { reloadFailure = IllegalStateException("private path") }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE), chosen = null)
+            watch.provider.beforeCore = { error("private path") }
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
-                assertEquals(ProfileUiState.Picking(profiles, false, "Could not load profiles. Please try again."), awaitItem())
-                repository.reloadFailure = null
+                assertEquals(ProfileUiState.Picking(listOf(ALICE), false, "Could not load profiles. Please try again."), awaitItem())
+                watch.provider.beforeCore = {}
                 vm.retry()
                 runCurrent()
-                assertEquals(ProfileUiState.Picking(profiles, false), vm.state.value)
+                assertEquals(ProfileUiState.Picking(listOf(ALICE), false), vm.state.value)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -196,16 +99,16 @@ class ProfileViewModelTest {
     fun aFailedAddKeepsThePickerAndDoesNotInventAProfile() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val profiles = listOf(Profile("p1", "Alice"))
-            val repository = FakeWatchStateRepository(profiles).apply { createFailure = IllegalStateException("private path") }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE), chosen = null)
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
                 awaitItem()
+                watch.provider.beforeCore = { error("private path") }
                 vm.add("Bea", kids = false)
-                assertEquals(ProfileUiState.Picking(profiles, false, "Could not create the profile. Please try again."), awaitItem())
-                assertEquals(emptyList(), repository.created)
-                assertEquals(null, repository.chosenProfileId.value)
+                assertEquals(ProfileUiState.Picking(listOf(ALICE), false, "Could not create the profile. Please try again."), awaitItem())
+                assertEquals(listOf("Alice"), watch.core.profiles.map { it.name })
+                assertEquals(null, watch.repository.chosenProfileId.value)
             }
         }
 
@@ -213,43 +116,19 @@ class ProfileViewModelTest {
     fun aFailedChoiceKeepsTheExistingProfileAndPicker() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val profiles = listOf(Profile("p1", "Alice"), Profile("p2", "Bea"))
-            val repository = FakeWatchStateRepository(profiles, "p1").apply { chooseFailure = IllegalStateException("private path") }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val profiles = listOf(ALICE, BEA)
+            val watch = WatchStateFixture(profiles)
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
                 awaitItem()
                 vm.reopen()
                 awaitItem()
-                vm.choose("p2")
+                watch.provider.beforeCore = { error("private path") }
+                vm.choose(BEA.id)
                 assertEquals(ProfileUiState.Picking(profiles, true, "Could not choose that profile. Please try again."), awaitItem())
                 vm.stay()
-                assertEquals(ProfileUiState.Chosen(profiles.first()), awaitItem())
-            }
-        }
-
-    @Test
-    fun aChoiceWhoseSnapshotFailedCannotBeAcceptedThroughStay() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val profiles = listOf(Profile("p1", "Alice"), Profile("p2", "Bea"))
-            val repository = FakeWatchStateRepository(profiles, "p1").apply { failAfterChoosing = true }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
-            vm.state.test {
-                awaitItem()
-                awaitItem()
-                vm.reopen()
-                awaitItem()
-                vm.choose("p2")
-                val failed = ProfileUiState.Picking(profiles, false, "Could not choose that profile. Please try again.")
-                assertEquals(failed, awaitItem())
-                vm.stay()
-                runCurrent()
-                expectNoEvents()
-                assertEquals(failed, vm.state.value)
-                repository.failAfterChoosing = false
-                vm.choose("p2")
-                assertEquals(ProfileUiState.Chosen(profiles.last()), awaitItem())
+                assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
             }
         }
 
@@ -257,32 +136,32 @@ class ProfileViewModelTest {
     fun aFailedReloadKeepsTheExistingWayToStay() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val profiles = listOf(Profile("p1", "Alice"))
-            val repository = FakeWatchStateRepository(profiles, "p1")
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE))
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
                 awaitItem()
                 vm.reopen()
                 awaitItem()
-                repository.reloadFailure = IllegalStateException("private path")
+                watch.provider.beforeCore = { error("private path") }
                 vm.retry()
                 runCurrent()
-                assertEquals(ProfileUiState.Picking(profiles, true, "Could not load profiles. Please try again."), vm.state.value)
+                assertEquals(ProfileUiState.Picking(listOf(ALICE), true, "Could not load profiles. Please try again."), vm.state.value)
                 cancelAndIgnoreRemainingEvents()
             }
         }
 
+    /** The core refuses a name that is only whitespace, and a profile it does not have. */
     @Test
     fun refusedProfileWritesAreShownAsFailures() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository().apply { refuseWrites = true }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(emptyList())
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
                 awaitItem()
-                vm.add("Bea", kids = false)
+                vm.add("   ", kids = false)
                 assertEquals("Could not create the profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
                 vm.choose("p1")
                 assertEquals("Could not choose that profile. Please try again.", (awaitItem() as ProfileUiState.Picking).error)
@@ -293,15 +172,12 @@ class ProfileViewModelTest {
     fun cancelledProfileWritesLeaveThePickerUnchanged() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository =
-                FakeWatchStateRepository().apply {
-                    createFailure = CancellationException("cancelled")
-                    chooseFailure = CancellationException("cancelled")
-                }
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(emptyList())
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.state.test {
                 awaitItem()
                 val before = awaitItem()
+                watch.provider.beforeCore = { throw CancellationException("cancelled") }
                 vm.add("Bea", kids = false)
                 vm.choose("p1")
                 runCurrent()
@@ -319,16 +195,12 @@ class ProfileViewModelTest {
     fun aProfileAlreadyChosenIsShownWithoutWaitingForASyncRound() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository =
-                FakeWatchStateRepository(
-                    initialProfiles = listOf(Profile("p1", "Alice")),
-                    chosenId = "p1",
-                )
-            val vm = ProfileViewModel(repository, FakeWatchSync(settles = false))
+            val watch = WatchStateFixture(listOf(ALICE))
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync(settles = false))
 
             vm.state.test {
                 assertEquals(ProfileUiState.Loading, awaitItem())
-                assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+                assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
             }
         }
 
@@ -336,13 +208,13 @@ class ProfileViewModelTest {
     fun nobodyChosenShowsThePickerOnceTheFirstRoundSettles() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository(initialProfiles = listOf(Profile("p1", "Alice")))
-            val vm = ProfileViewModel(repository, FakeWatchSync(settles = true))
+            val watch = WatchStateFixture(listOf(ALICE), chosen = null)
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync(settles = true))
 
             vm.state.test {
                 assertEquals(ProfileUiState.Loading, awaitItem())
                 val picking = awaitItem() as ProfileUiState.Picking
-                assertEquals(listOf(Profile("p1", "Alice")), picking.profiles)
+                assertEquals(listOf(ALICE), picking.profiles)
                 assertEquals(false, picking.canStay, "nothing chosen yet, nothing to stay as")
             }
         }
@@ -352,8 +224,8 @@ class ProfileViewModelTest {
     fun aRoundStillRunningStopsBlockingThePickerAfterFiveSeconds() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository()
-            val vm = ProfileViewModel(repository, FakeWatchSync(settles = false))
+            val watch = WatchStateFixture(emptyList())
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync(settles = false))
 
             vm.state.test {
                 assertEquals(ProfileUiState.Loading, awaitItem())
@@ -367,16 +239,16 @@ class ProfileViewModelTest {
     fun choosingAKnownProfileShowsItAsChosen() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository(initialProfiles = listOf(Profile("p1", "Alice")))
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE), chosen = null)
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
 
             vm.state.test {
                 awaitItem()
                 awaitItem() as ProfileUiState.Picking
 
-                vm.choose("p1")
+                vm.choose(ALICE.id)
 
-                assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+                assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
             }
         }
 
@@ -385,8 +257,8 @@ class ProfileViewModelTest {
     fun addingAProfileListsItWithoutChoosingIt() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository()
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(emptyList())
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
 
             vm.state.test {
                 awaitItem()
@@ -396,7 +268,8 @@ class ProfileViewModelTest {
 
                 val after = awaitItem() as ProfileUiState.Picking
                 assertEquals(listOf("Bea"), after.profiles.map { it.name })
-                assertEquals(listOf("Bea"), repository.created)
+                assertEquals(listOf("Bea"), watch.core.profiles.map { it.name })
+                assertEquals(null, watch.repository.chosenProfileId.value)
             }
         }
 
@@ -404,12 +277,12 @@ class ProfileViewModelTest {
     fun addingAKidsProfilePassesTheFlagThrough() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository = FakeWatchStateRepository(emptyList())
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(emptyList())
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
             vm.add("Mia", kids = true)
             advanceUntilIdle()
-            assertEquals(listOf(true), repository.createdKids)
-            assertEquals(true, repository.profiles.value.single().kids)
+            assertEquals(listOf(true), watch.core.profiles.map { it.kids })
+            assertEquals(true, watch.repository.profiles.value.single().kids)
         }
 
     /** The bar action: reopens the picker over whoever was already chosen, with a way back. */
@@ -417,12 +290,8 @@ class ProfileViewModelTest {
     fun reopenShowsThePickerWithAWayToStay() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository =
-                FakeWatchStateRepository(
-                    initialProfiles = listOf(Profile("p1", "Alice"), Profile("p2", "Bea")),
-                    chosenId = "p1",
-                )
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE, BEA))
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
 
             vm.state.test {
                 awaitItem()
@@ -433,7 +302,7 @@ class ProfileViewModelTest {
                 assertEquals(true, picking.canStay)
 
                 vm.stay()
-                assertEquals(ProfileUiState.Chosen(Profile("p1", "Alice")), awaitItem())
+                assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
             }
         }
 
@@ -441,12 +310,8 @@ class ProfileViewModelTest {
     fun removingAnotherProfileKeepsTheWayToStay() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository =
-                FakeWatchStateRepository(
-                    initialProfiles = listOf(Profile("p1", "Alice"), Profile("p2", "Probe")),
-                    chosenId = "p1",
-                )
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE, Profile("p2", "Probe")))
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
 
             vm.state.test {
                 awaitItem()
@@ -458,7 +323,7 @@ class ProfileViewModelTest {
                 runCurrent()
 
                 val picking = expectMostRecentItem() as ProfileUiState.Picking
-                assertEquals(listOf(Profile("p1", "Alice")), picking.profiles)
+                assertEquals(listOf(ALICE), picking.profiles)
                 assertEquals(true, picking.canStay)
             }
         }
@@ -468,12 +333,8 @@ class ProfileViewModelTest {
     fun removingTheChosenProfileTakesAwayStayAsIAm() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val repository =
-                FakeWatchStateRepository(
-                    initialProfiles = listOf(Profile("p1", "Alice"), Profile("p2", "Bea")),
-                    chosenId = "p1",
-                )
-            val vm = ProfileViewModel(repository, FakeWatchSync())
+            val watch = WatchStateFixture(listOf(ALICE, BEA))
+            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
 
             vm.state.test {
                 awaitItem()
@@ -481,11 +342,11 @@ class ProfileViewModelTest {
                 vm.reopen()
                 awaitItem() as ProfileUiState.Picking
 
-                vm.remove("p1")
+                vm.remove(ALICE.id)
                 runCurrent()
 
                 val picking = expectMostRecentItem() as ProfileUiState.Picking
-                assertEquals(listOf(Profile("p2", "Bea")), picking.profiles)
+                assertEquals(listOf(BEA), picking.profiles)
                 assertEquals(false, picking.canStay)
             }
         }

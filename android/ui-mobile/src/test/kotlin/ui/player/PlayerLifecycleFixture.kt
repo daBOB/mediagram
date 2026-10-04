@@ -11,7 +11,6 @@ import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
-import data.WatchStateRepository
 import data.WatchSync
 import io.mockk.every
 import io.mockk.mockk
@@ -20,8 +19,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import model.WatchSnapshot
 import playback.PlaybackCounters
 import player.DefaultPlayerHandle
 import player.PlayerViewModel
@@ -32,21 +29,25 @@ import playback.SubtitleTrackSource
 import playback.SeriesPreloading
 import playback.HeldSetsQuery
 import player.PlaybackServiceController
+import testing.WatchStateFixture
 
-/** Real handle, ViewModel and recorder; only media decoding and persistent storage are replaced. */
-internal class PlayerLifecycleFixture : AutoCloseable {
+/**
+ * Real handle, ViewModel, recorder and watch-state repository; only media
+ * decoding and the core behind the repository are replaced. [watchState]
+ * is whose state the player reads and writes — the default viewer unless a
+ * test needs someone else, or nobody.
+ */
+internal class PlayerLifecycleFixture(
+    val watchState: WatchStateFixture = WatchStateFixture(),
+) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
-    val repository = mockk<WatchStateRepository>(relaxed = true)
+    val repository = watchState.repository
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val listeners = mutableListOf<Player.Listener>()
     private var playbackState = Player.STATE_IDLE
     var positionMs = 42_000L
 
     init {
-        every { repository.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
-        every { repository.profiles } returns MutableStateFlow(emptyList())
-        every { repository.chosenProfileId } returns MutableStateFlow(null)
-        every { repository.chosenProfile } returns MutableStateFlow(null)
         every { media.applicationLooper } returns Looper.getMainLooper()
         every { media.videoSize } returns VideoSize.UNKNOWN
         every { media.currentTracks } returns Tracks.EMPTY

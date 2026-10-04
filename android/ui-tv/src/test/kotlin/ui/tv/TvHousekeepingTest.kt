@@ -16,12 +16,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import data.WatchStateRepository
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import model.Profile
-import model.Progress
-import model.WatchSnapshot
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -202,7 +201,7 @@ class TvHousekeepingTest {
         profiles: List<Profile> = listOf(Profile("ada", "Ada")),
         chosen: String? = "ada",
         films: Int = 0,
-        watch: WatchSnapshot = WatchSnapshot.Empty,
+        watch: suspend WatchStateRepository.() -> Unit = {},
         heldIds: Set<String> = emptySet(),
     ) {
         compose.runOnUiThread {
@@ -214,10 +213,9 @@ class TvHousekeepingTest {
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(ready)).fetchSemanticsNodes().isNotEmpty() }
     }
 
-    private fun started(vararg ids: String) =
-        WatchSnapshot.Empty.copy(
-            progress = ids.mapIndexed { index, id -> Progress(setId = id, at = 600.0, duration = 6_000.0, updatedAt = index + 1L) },
-        )
+    /** Each title ten minutes in, the first started longest ago. */
+    private fun started(vararg ids: String): suspend WatchStateRepository.() -> Unit =
+        { ids.forEach { setProgress(it, 600.0, 6_000.0) } }
 
     /** Which of the two films' plates the remote is on. */
     private fun focusedPlateTitle(): String =

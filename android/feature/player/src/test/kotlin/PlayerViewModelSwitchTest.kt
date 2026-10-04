@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -57,9 +58,9 @@ class PlayerViewModelSwitchTest {
     fun playNowMidTitleDoesNotLeaveTheNextTitleOnContinueAtZero() = runTest {
         installMainDispatcher()
         val handle = FakePlayerHandle().apply { fakePositionMs = 0L }
-        val repository = FakeWatchStateRepository()
+        val watch = WatchStateFixture()
         val catalogRepository = FakeCatalogRepository(mapOf("s2" to fakeMediaSet("s2", durationSecs = 100)))
-        val vm = buildViewModel(handle, repository, catalogRepository = catalogRepository)
+        val vm = buildViewModel(handle, watch.repository, catalogRepository = catalogRepository)
         vm.open("s1", listOf("s1", "s2"))
         runCurrent()
         handle.emitPlaying(true) // actively playing when "Play now" is pressed
@@ -69,6 +70,6 @@ class PlayerViewModelSwitchTest {
         vm.open(switch.setId, switch.run) // the real `setMediaItem`'s own synchronous stop fires inside this call
         runCurrent()
 
-        assertTrue(repository.calls.none { it.startsWith("setProgress s2") })
+        assertTrue(watch.repository.snapshot.value.progress.none { it.setId == "s2" })
     }
 }

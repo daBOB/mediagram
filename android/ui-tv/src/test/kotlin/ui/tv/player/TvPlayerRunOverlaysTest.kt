@@ -12,14 +12,12 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import android.os.Looper
 import io.mockk.verify
-import model.ListOfSets
-import model.Profile
-import model.WatchSnapshot
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import testing.WatchStateFixture
 import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -36,10 +34,7 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
     override val run = THREE_TITLE_RUN
 
     override fun makeFixture() =
-        runFixture(
-            snapshot = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("fav", "Favourites", emptyList()))),
-            profile = Profile("p1", "andre"),
-        )
+        runFixture(WatchStateFixture(seed = { createList("Favourites") }))
 
     /** Previous from inside the dialog is the player's step back, not the session's restart. */
     @Test

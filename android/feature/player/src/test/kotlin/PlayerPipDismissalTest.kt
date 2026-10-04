@@ -4,7 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import model.Progress
 import org.junit.After
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -49,13 +51,14 @@ class PlayerPipDismissalTest {
             fakePositionMs = 20_000L
             fakeDurationMs = 100_000L
         }
-        val repository = FakeWatchStateRepository()
-        val vm = buildViewModel(handle, repository)
+        val watch = WatchStateFixture()
+        val vm = buildViewModel(handle, watch.repository)
         vm.open("s1")
 
         vm.pauseForPipDismissal()
         advanceUntilIdle()
 
-        assertEquals(listOf("setProgress s1 20.0 100.0"), repository.calls)
+        val saved = watch.repository.snapshot.value.progress
+        assertEquals(listOf(Progress("s1", 20.0, 100.0, saved.single().updatedAt)), saved)
     }
 }

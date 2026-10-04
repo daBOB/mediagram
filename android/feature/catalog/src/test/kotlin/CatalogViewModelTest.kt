@@ -24,7 +24,6 @@ import kotlinx.coroutines.test.setMain
 import model.Kind
 import model.ListOfSets
 import model.Profile
-import model.Progress
 import model.WatchSnapshot
 import org.junit.After
 import playback.ActivePreload
@@ -33,6 +32,7 @@ import playback.FilmPreloading
 import settings.InMemoryTmdbSettings
 import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.WatchStateFixture
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.LibraryEvent
@@ -80,128 +80,8 @@ private class FakeFilmPreloading : FilmPreloading {
     fun emitUnheld(setId: String) = _unheldEvents.tryEmit(setId)
 }
 
-/**
- * A snapshot this test can hold still — [CatalogViewModel] reads [snapshot]
- * for [CatalogUiState.Ready.watch] and writes the four list operations
- * through the rest; everything else here is an unused stub, [chooseProfile] and
- * [createProfile] included. Named apart from [catalog.profile.ProfileViewModelTest]'s own fake for
- * the same interface: Kotlin does not let two private top-level classes in
- * the same package share a name, file scope or not.
- *
- * The four writes land in [snapshot] itself, the same way the real
- * repository's own write lands in its snapshot before [CatalogViewModel]
- * ever asks again — a test asserting on [CatalogUiState.Ready.watch] after
- * one of them needs nothing more than that flow to already read the answer.
- */
-private class FakeCatalogWatchState(
-    watch: WatchSnapshot = WatchSnapshot.Empty,
-) : WatchStateRepository {
-    override val profiles = MutableStateFlow(emptyList<Profile>())
-    override val chosenProfileId = MutableStateFlow<String?>(null)
-    override val chosenProfile = MutableStateFlow<Profile?>(null)
-    override val snapshot = MutableStateFlow(watch)
-
-    /** Every list write this fake was asked for, in order, e.g. `"createList Favourites"`. */
-    val calls = mutableListOf<String>()
-    var writeFailure: Exception? = null
-    var refuseWrites: Boolean = false
-
-    override suspend fun reload() = Unit
-
-    override fun invalidate() {
-        profiles.value = emptyList()
-        chosenProfileId.value = null
-        chosenProfile.value = null
-        snapshot.value = WatchSnapshot.Empty
-    }
-
-    override suspend fun chooseProfile(id: String) = false
-
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile? = null
-
-    override suspend fun setProgress(
-        setId: String,
-        at: Double,
-        duration: Double?,
-    ) = Unit
-
-    override suspend fun setWatched(
-        setId: String,
-        finished: Boolean,
-    ) = Unit
-
-    override suspend fun setWatchlisted(
-        setId: String,
-        listed: Boolean,
-    ) = Unit
-
-    override suspend fun setKids(
-        setId: String,
-        marked: Boolean,
-    ) = Unit
-
-    override suspend fun setEditorsChoice(
-        setId: String,
-        marked: Boolean,
-    ) = Unit
-
-    override suspend fun createList(name: String): ListOfSets? {
-        writeFailure?.let { throw it }
-        if (refuseWrites) return null
-        calls += "createList $name"
-        val made = ListOfSets(id = "list-${snapshot.value.collections.size + 1}", name = name, items = emptyList())
-        snapshot.value = snapshot.value.copy(collections = snapshot.value.collections + made)
-        return made
-    }
-
-    override suspend fun renameList(
-        id: String,
-        name: String,
-    ): Boolean {
-        writeFailure?.let { throw it }
-        if (refuseWrites) return false
-        calls += "renameList $id $name"
-        if (snapshot.value.collections.none { it.id == id }) return false
-        snapshot.value =
-            snapshot.value.copy(
-                collections = snapshot.value.collections.map { if (it.id == id) it.copy(name = name) else it },
-            )
-        return true
-    }
-
-    override suspend fun deleteList(id: String): Boolean {
-        writeFailure?.let { throw it }
-        if (refuseWrites) return false
-        calls += "deleteList $id"
-        if (snapshot.value.collections.none { it.id == id }) return false
-        snapshot.value = snapshot.value.copy(collections = snapshot.value.collections.filterNot { it.id == id })
-        return true
-    }
-
-    override suspend fun setInList(
-        id: String,
-        setId: String,
-        included: Boolean,
-    ): Boolean {
-        writeFailure?.let { throw it }
-        if (refuseWrites) return false
-        calls += "setInList $id $setId $included"
-        if (snapshot.value.collections.none { it.id == id }) return false
-        snapshot.value =
-            snapshot.value.copy(
-                collections =
-                    snapshot.value.collections.map { list ->
-                        if (list.id != id) return@map list
-                        list.copy(items = if (included) list.items + setId else list.items - setId)
-                    },
-            )
-        return true
-    }
-}
-
+private val ANA = Profile("a", "Ana")
+private val MIA = Profile("k", "Mia", kids = true)
 
 /**
  * Uses a standard (queued, not eager) test dispatcher tied to the same
@@ -217,7 +97,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 1)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
@@ -240,7 +120,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository().apply { readFailure = IllegalStateException("catalog unreadable") }
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 assertEquals(CatalogUiState.Failed("Could not read the library. Try again."), awaitItem())
@@ -252,7 +132,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 1)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 awaitItem()
@@ -287,7 +167,7 @@ class CatalogViewModelTest {
                     }
                 }
             val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
-            val vm = catalogViewModel(repository, FakeCatalogWatchState(), enrichment)
+            val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             vm.update()
             runCurrent()
             assertEquals(1, repository.refreshes)
@@ -327,7 +207,7 @@ class CatalogViewModelTest {
                     }
                 }
             val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
-            val vm = catalogViewModel(repository, FakeCatalogWatchState(), enrichment)
+            val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             val gate = CompletableDeferred<Unit>()
             vm.state.test {
                 awaitItem()
@@ -350,8 +230,9 @@ class CatalogViewModelTest {
     fun failedCollectionWritesKeepTheShelvesAndReportAnActionableNotice() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = FakeCatalogWatchState().apply { writeFailure = IllegalStateException("private-storage-detail") }
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch)
+            val watch = WatchStateFixture()
+            watch.provider.beforeCore = { throw IllegalStateException("private-storage-detail") }
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
             val actions: List<Pair<String, () -> Unit>> =
                 listOf(
                     "create" to { vm.createList("Favourite") },
@@ -377,8 +258,8 @@ class CatalogViewModelTest {
     fun refusedCollectionWritesAreNotReportedAsSuccess() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = FakeCatalogWatchState().apply { refuseWrites = true }
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch)
+            // With nobody chosen the repository refuses every list write.
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), WatchStateFixture(chosen = null).repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
@@ -394,14 +275,15 @@ class CatalogViewModelTest {
     fun retryingACollectionWriteClearsOnlyItsOwnFailureNotice() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = FakeCatalogWatchState().apply { writeFailure = IllegalStateException("cannot write") }
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch)
+            val watch = WatchStateFixture()
+            watch.provider.beforeCore = { throw IllegalStateException("cannot write") }
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
             vm.state.test {
                 awaitItem()
                 awaitItem()
                 vm.createList("Favourite")
                 assertEquals("Could not create the collection. Please try again.", (awaitItem() as CatalogUiState.Ready).notice)
-                watch.writeFailure = null
+                watch.provider.beforeCore = {}
                 vm.createList("Favourite")
                 runCurrent()
                 val after = vm.state.value as CatalogUiState.Ready
@@ -415,7 +297,7 @@ class CatalogViewModelTest {
     fun aSuccessfulCollectionWritePreservesAnUnrelatedRefreshNotice() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), FakeCatalogWatchState())
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
@@ -431,8 +313,9 @@ class CatalogViewModelTest {
     fun aCancelledCollectionWriteDoesNotBecomeAnErrorNotice() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = FakeCatalogWatchState().apply { writeFailure = CancellationException("cancelled") }
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch)
+            val watch = WatchStateFixture()
+            watch.provider.beforeCore = { throw CancellationException("cancelled") }
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
@@ -440,7 +323,7 @@ class CatalogViewModelTest {
                 runCurrent()
                 expectNoEvents()
                 assertEquals(before, vm.state.value)
-                watch.writeFailure = null
+                watch.provider.beforeCore = {}
                 vm.createList("Favourite")
                 assertEquals(listOf("Favourite"), (awaitItem() as CatalogUiState.Ready).watch.collections.map { it.name })
             }
@@ -455,7 +338,7 @@ class CatalogViewModelTest {
     fun shelvesAreGroupedByKind() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 2, episodes = 1, tutorials = 0), FakeCatalogWatchState())
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 2, episodes = 1, tutorials = 0), WatchStateFixture().repository)
             vm.state.test {
                 assertEquals(CatalogUiState.Loading, awaitItem())
                 val ready = awaitItem() as CatalogUiState.Ready
@@ -473,7 +356,7 @@ class CatalogViewModelTest {
     fun aFailedRefreshKeepsTheLibraryAlreadyOnThisDevice() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 2, refreshFails = true), FakeCatalogWatchState())
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 2, refreshFails = true), WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 val ready = awaitItem() as CatalogUiState.Ready
@@ -486,7 +369,7 @@ class CatalogViewModelTest {
     fun aRefreshThatFailedIsSaidRatherThanSwallowed() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), FakeCatalogWatchState())
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1, refreshFails = true), WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 assertEquals("Could not refresh the library", (awaitItem() as CatalogUiState.Ready).notice)
@@ -504,7 +387,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 2)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 awaitItem() as CatalogUiState.Ready
@@ -529,7 +412,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 2)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 assertEquals(CatalogUiState.Loading, awaitItem())
                 val before = awaitItem() as CatalogUiState.Ready
@@ -549,7 +432,7 @@ class CatalogViewModelTest {
     fun aFailedRefreshWithNothingOnDiskSurfacesAsFailed() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val vm = catalogViewModel(FakeCatalogRepository(refreshFails = true, onDisk = false), FakeCatalogWatchState())
+            val vm = catalogViewModel(FakeCatalogRepository(refreshFails = true, onDisk = false), WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 assertTrue(awaitItem() is CatalogUiState.Failed)
@@ -567,7 +450,7 @@ class CatalogViewModelTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val pushed = MutableSharedFlow<LibraryEvent>()
             val repository = FakeCatalogRepository(movies = 2)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState()) { pushed }
+            val vm = catalogViewModel(repository, WatchStateFixture().repository) { pushed }
             vm.state.test {
                 assertEquals(CatalogUiState.Loading, awaitItem())
                 awaitItem() as CatalogUiState.Ready
@@ -609,7 +492,7 @@ class CatalogViewModelTest {
                 val vm =
                     catalogViewModel(
                         FakeCatalogRepository(movies = 1, refreshFails = fails),
-                        FakeCatalogWatchState(),
+                        WatchStateFixture().repository,
                         enrichment,
                     ) { pushed }
                 vm.state.test {
@@ -638,7 +521,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 1)
-            val vm = catalogViewModel(repository, FakeCatalogWatchState())
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
@@ -664,18 +547,17 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(movies = 1)
-            val watchState = FakeCatalogWatchState()
-            val vm = catalogViewModel(repository, watchState)
+            val watchState = WatchStateFixture()
+            val vm = catalogViewModel(repository, watchState.repository)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready
                 assertEquals(WatchSnapshot.Empty, before.watch)
 
-                val progress = Progress(setId = "movie-0", at = 30.0, duration = 3_600.0, updatedAt = 1)
-                watchState.snapshot.value = WatchSnapshot(listOf(progress), emptyList(), emptyList(), emptyList(), emptyList())
+                watchState.repository.setProgress("movie-0", 30.0, 3_600.0)
 
                 val after = awaitItem() as CatalogUiState.Ready
-                assertEquals(listOf(progress), after.watch.progress)
+                assertEquals(listOf("movie-0" to 30.0), after.watch.progress.map { it.setId to it.at })
                 assertEquals(1, repository.refreshes, "a changed snapshot is not a reason to read the channel again")
             }
         }
@@ -685,8 +567,8 @@ class CatalogViewModelTest {
     fun createListReachesTheRepositoryAndTheNextSnapshot() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watchState = FakeCatalogWatchState()
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+            val watchState = WatchStateFixture()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState.repository)
             vm.state.test {
                 awaitItem()
                 awaitItem()
@@ -695,7 +577,7 @@ class CatalogViewModelTest {
                 val after = awaitItem() as CatalogUiState.Ready
 
                 assertEquals(listOf("Favourites"), after.watch.collections.map(ListOfSets::name))
-                assertEquals(listOf("createList Favourites"), watchState.calls)
+                assertEquals(listOf("Favourites"), watchState.core.snapshot(WatchStateFixture.VIEWER.id).collections.map { it.name })
             }
         }
 
@@ -703,19 +585,17 @@ class CatalogViewModelTest {
     fun renameAndDeleteListReachTheRepository() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watchState =
-                FakeCatalogWatchState(
-                    watch = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("l1", "Old name", emptyList()))),
-                )
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+            val watchState = WatchStateFixture(seed = { createList("Old name") })
+            val list = watchState.repository.snapshot.value.collections.single().id
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState.repository)
             vm.state.test {
                 awaitItem()
                 awaitItem()
 
-                vm.renameList("l1", "New name")
+                vm.renameList(list, "New name")
                 assertEquals(listOf("New name"), (awaitItem() as CatalogUiState.Ready).watch.collections.map(ListOfSets::name))
 
-                vm.deleteList("l1")
+                vm.deleteList(list)
                 assertTrue((awaitItem() as CatalogUiState.Ready).watch.collections.isEmpty())
             }
         }
@@ -724,16 +604,14 @@ class CatalogViewModelTest {
     fun setInListFilesAndRemovesATitle() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watchState =
-                FakeCatalogWatchState(
-                    watch = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("l1", "Favourites", emptyList()))),
-                )
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState)
+            val watchState = WatchStateFixture(seed = { createList("Favourites") })
+            val list = watchState.repository.snapshot.value.collections.single().id
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watchState.repository)
             vm.state.test {
                 awaitItem()
                 awaitItem()
 
-                vm.setInList("l1", "movie-0", true)
+                vm.setInList(list, "movie-0", true)
                 assertEquals(
                     listOf("movie-0"),
                     (awaitItem() as CatalogUiState.Ready)
@@ -742,7 +620,7 @@ class CatalogViewModelTest {
                         .items,
                 )
 
-                vm.setInList("l1", "movie-0", false)
+                vm.setInList(list, "movie-0", false)
                 assertTrue(
                     (awaitItem() as CatalogUiState.Ready)
                         .watch.collections
@@ -766,9 +644,8 @@ class CatalogViewModelTest {
                             fakeSet(Kind.MOVIE, "Marked"),
                         ),
                 )
-            val watch = FakeCatalogWatchState(WatchSnapshot.Empty.copy(kids = listOf("Marked")))
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val watch = WatchStateFixture(listOf(MIA, ANA), seed = { setKids("Marked", true) })
+            val vm = catalogViewModel(repository, watch.repository)
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
@@ -776,7 +653,7 @@ class CatalogViewModelTest {
                 assertEquals(setOf("Family", "Marked"), ids.toSet())
                 val readsBefore = repository.reads
 
-                watch.chosenProfile.value = Profile("a", "Ana")
+                watch.repository.chooseProfile(ANA.id)
                 val adultView = awaitItem() as CatalogUiState.Ready
                 val all = adultView.shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }
                 assertEquals(setOf("Family", "Grown", "Marked"), all.toSet())
@@ -801,9 +678,7 @@ class CatalogViewModelTest {
             val repository = FakeCatalogRepository(
                 given = listOf(fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"), fakeSet(Kind.DOCUMENTARY, "Baraka")),
             )
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val vm = catalogViewModel(repository, WatchStateFixture(listOf(MIA)).repository)
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
@@ -829,9 +704,7 @@ class CatalogViewModelTest {
                     fakeSet(Kind.MOVIE, "Grown Up Anime").copy(fsk = "16", anime = true),
                 ),
             )
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val vm = catalogViewModel(repository, WatchStateFixture(listOf(MIA)).repository)
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
@@ -850,9 +723,7 @@ class CatalogViewModelTest {
                     fakeSet(Kind.MOVIE, "Kids Anime").copy(fsk = "6", anime = true),
                 ),
             )
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val vm = catalogViewModel(repository, WatchStateFixture(listOf(MIA)).repository)
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
@@ -866,9 +737,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val vm = catalogViewModel(repository, WatchStateFixture(listOf(MIA)).repository)
             vm.state.test {
                 awaitItem()
                 assertEquals(CatalogUiState.KidsEmpty, awaitItem())
@@ -886,17 +755,15 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val repository = FakeCatalogRepository(given = listOf(fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16")))
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
-            val vm = catalogViewModel(repository, watch)
+            val watch = WatchStateFixture(listOf(MIA))
+            val vm = catalogViewModel(repository, watch.repository)
             vm.state.test {
                 awaitItem()
                 assertEquals(CatalogUiState.KidsEmpty, awaitItem())
 
                 // Changes the catalog's watch payload, not which titles are kids-marked —
                 // the projection stays KidsEmpty, so this must not re-emit it.
-                val progress = Progress(setId = "movie-0", at = 30.0, duration = 3_600.0, updatedAt = 1)
-                watch.snapshot.value = WatchSnapshot(listOf(progress), emptyList(), emptyList(), emptyList(), emptyList())
+                watch.repository.setProgress("movie-0", 30.0, 3_600.0)
                 advanceUntilIdle()
 
                 expectNoEvents()
@@ -921,9 +788,8 @@ class CatalogViewModelTest {
                             fakeSet(Kind.MOVIE, "Grown").copy(fsk = "16"),
                         ),
                 )
-            val watch = FakeCatalogWatchState()
-            watch.chosenProfile.value = Profile("a", "Ana")
-            val vm = catalogViewModel(repository, watch)
+            val watch = WatchStateFixture(listOf(ANA, MIA))
+            val vm = catalogViewModel(repository, watch.repository)
 
             vm.state.test {
                 awaitItem()
@@ -936,7 +802,7 @@ class CatalogViewModelTest {
             advanceTimeBy(6_000)
             runCurrent()
 
-            watch.chosenProfile.value = Profile("k", "Mia", kids = true)
+            watch.repository.chooseProfile(MIA.id)
 
             vm.state.test {
                 val first = awaitItem()
@@ -963,7 +829,7 @@ class CatalogViewModelTest {
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val filmPreloader = FakeFilmPreloading()
-            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), FakeCatalogWatchState(), filmPreloader = filmPreloader)
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), WatchStateFixture().repository, filmPreloader = filmPreloader)
             vm.state.test {
                 awaitItem()
                 val before = awaitItem() as CatalogUiState.Ready

@@ -119,7 +119,8 @@ class LibraryFlowTest {
         compose.onNodeWithText("←").assertIsDisplayed()
         assertEquals(PlayerUiState.Playing, fixture.player.state.value)
         compose.onNodeWithText("←").performClick()
-        compose.onNodeWithText("▶ Play").assertIsDisplayed()
+        // Leaving saved where the player stood, so the title now offers to resume there.
+        compose.onNodeWithText("▶ Resume from 0:42").assertIsDisplayed()
         verify(exactly = 1) { fixture.playback.media.stop() }
         systemBack()
         assertAtTheShelves()

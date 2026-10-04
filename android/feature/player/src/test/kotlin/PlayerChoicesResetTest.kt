@@ -1,5 +1,6 @@
 package player
 
+import data.WatchStateRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -7,6 +8,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import playback.PlaybackCounters
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -29,7 +31,7 @@ class PlayerChoicesResetTest {
     private fun viewModel(
         handle: FakePlayerHandle,
         preferences: FakePlayerPreferences,
-        watchState: FakeWatchStateRepository = FakeWatchStateRepository(),
+        watchState: WatchStateRepository = WatchStateFixture().repository,
     ) = PlayerViewModel(
         handle,
         PlaybackCounters(),
@@ -94,7 +96,7 @@ class PlayerChoicesResetTest {
         installMainDispatcher()
         val handle = FakePlayerHandle()
         val preferences = FakePlayerPreferences()
-        val vm = viewModel(handle, preferences, watchState = FakeWatchStateRepository(profileChosen = false))
+        val vm = viewModel(handle, preferences, watchState = WatchStateFixture(chosen = null).repository)
         vm.open(episode.setId)
         advanceUntilIdle()
 
@@ -145,7 +147,7 @@ class PlayerChoicesResetTest {
         val handle = FakePlayerHandle()
         val gate = CompletableDeferred<Unit>()
         val preferences = FakePlayerPreferences(mapOf(("p1" to "key:show-x") to mapOf("speed" to "1.25")))
-        val repository = FakeWatchStateRepository()
+        val repository = WatchStateFixture().repository
         val vm = PlayerViewModel(
             handle,
             PlaybackCounters(),

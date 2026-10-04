@@ -259,7 +259,8 @@ class TvSearchAndGenreTest {
         press(compose.onNodeWithText("▶ Play"))
         back()
         back()
-        compose.onNodeWithText("▶ Play").assertIsFocused()
+        // Leaving saved where the player stood, so the pill now resumes there.
+        compose.onNodeWithText("▶ Resume from 0:42").assertIsFocused()
     }
 
     @Test

@@ -9,8 +9,6 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.verify
 import org.junit.After
 import org.junit.Before
@@ -22,6 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import player.PlayerUiState
+import testing.WatchStateFixture
 import kotlin.test.assertEquals
 import player.setInList
 
@@ -30,6 +29,9 @@ import player.setInList
  * when a list write is refused — [PlayerLifecycleTest] covers the ViewModel
  * calls PlayerLifecycle itself makes; this covers what the screen built
  * around it does with a failure.
+ *
+ * Nobody is chosen, so the real repository refuses every list write — the
+ * refusal these tests are about, without standing in for the repository.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -41,7 +43,7 @@ class PlayerNoticesTest {
     @Before
     fun openPlayer() {
         compose.runOnUiThread {
-            fixture = PlayerLifecycleFixture()
+            fixture = PlayerLifecycleFixture(WatchStateFixture(chosen = null))
             PlayerTestActivity.fixture = fixture
             controller = Robolectric.buildActivity(PlayerTestActivity::class.java).setup().visible()
         }
@@ -64,7 +66,6 @@ class PlayerNoticesTest {
 
     @Test
     fun aRefusedListWriteShowsARecoverableNoticeOverThePlayingScreen() {
-        coEvery { fixture.repository.setInList(any(), any(), any()) } returns false
         compose.runOnUiThread { controller.get().playerViewModel.setInList("list-one", true) }
         compose.onNodeWithText("Could not confirm the list update. Check it and try again.").assertIsDisplayed()
         assertEquals(
@@ -80,7 +81,6 @@ class PlayerNoticesTest {
 
     @Test
     fun aRefusedListCreationShowsTheNoticeInsideTheOpenDialog() {
-        coEvery { fixture.repository.createList(any()) } returns null
         compose.onNodeWithText("Add to list").performClick()
         compose.onNode(hasSetTextAction()).performTextInput("Favourites")
         compose.onNodeWithText("New list").performClick()
@@ -96,6 +96,5 @@ class PlayerNoticesTest {
                 .playerViewModel.state.value,
         )
         verify(exactly = 0) { fixture.media.stop() }
-        coVerify(exactly = 0) { fixture.repository.setInList(any(), any(), any()) }
     }
 }

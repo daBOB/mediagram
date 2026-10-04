@@ -48,7 +48,7 @@ re-implement the core's rules differently (player, TV, catalogue, `WatchStateRep
 |---|-------|------|------|--------|
 | 01 | [Stateful FakeCore watch state + contract cases](phase-01-stateful-fake-core-and-contract.md) | core/testing, core/data tests | now | done |
 | 02 | [Repository: `chosenProfile`, drop `clearProgress`](phase-02-chosen-profile-and-no-clear-progress.md) — the only guard against 40a43589's two-call shape once phase 03 deletes `ProgressRecorderTest`'s call-log fake, so this must land first — provider failure injection | core/data, feature view models | after merges | done (pending merge) |
-| 03 | Migrate feature/TV/mobile tests to the real repository; delete the four fakes | test sources across modules | after merges | pending |
+| 03 | [Migrate feature/TV/mobile tests to the real repository; delete the four fakes](phase-03-feature-tests-on-the-real-repository.md) | test sources across modules | after merges | done (pending merge) |
 | 04 | Device contract run (tablet), docs, version | core/rust androidTest, docs | after 03 | pending |
 
 Phases 03-04 get their own files when their turn comes (their inputs depend on what the

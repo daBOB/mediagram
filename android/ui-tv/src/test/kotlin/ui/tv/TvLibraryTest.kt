@@ -4,7 +4,9 @@ import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -119,9 +121,12 @@ class TvLibraryTest {
         compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
 
         back()
-        compose.onNodeWithText("▶ Play").assertIsFocused()
+        // Leaving saved where the player stood, so the pill now resumes there.
+        compose.onNodeWithText("▶ Resume from 0:42").assertIsFocused()
         back()
-        plate("Film 1").assertIsFocused()
+        // Film 1 is on Continue now too; the remote is back on the plate that opened it.
+        compose.onNode(hasText("Film 1") and hasClickAction() and isFocused()).assertExists()
+        compose.onNode(hasText("Film 1") and hasContentDescription("0:42", substring = true)).assertIsNotFocused()
     }
 
     /**

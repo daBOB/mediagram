@@ -3,9 +3,8 @@ package player
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import model.Progress
-import model.WatchSnapshot
 import org.junit.After
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -19,10 +18,8 @@ class PlayerResumePositionTest {
     fun openingAMidTitlePositionResumesTherePastTheGlanceThreshold() = runTest {
         installMainDispatcher()
         val handle = FakePlayerHandle()
-        val repository = FakeWatchStateRepository(
-            initialSnapshot = WatchSnapshot.Empty.copy(progress = listOf(Progress("s1", 1200.0, 2400.0, 0))),
-        )
-        val vm = buildViewModel(handle, repository)
+        val watch = WatchStateFixture(seed = { setProgress("s1", 1200.0, 2400.0) })
+        val vm = buildViewModel(handle, watch.repository)
 
         vm.open("s1")
 
@@ -33,10 +30,8 @@ class PlayerResumePositionTest {
     fun openingAGlancePositionStartsFromTheTop() = runTest {
         installMainDispatcher()
         val handle = FakePlayerHandle()
-        val repository = FakeWatchStateRepository(
-            initialSnapshot = WatchSnapshot.Empty.copy(progress = listOf(Progress("s1", 12.0, 2400.0, 0))),
-        )
-        val vm = buildViewModel(handle, repository)
+        val watch = WatchStateFixture(seed = { setProgress("s1", 12.0, 2400.0) })
+        val vm = buildViewModel(handle, watch.repository)
 
         vm.open("s1")
 

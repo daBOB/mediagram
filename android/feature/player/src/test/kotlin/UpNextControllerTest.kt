@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.MediaSet
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -117,7 +118,7 @@ internal fun buildController(
     catalogRepository: FakeCatalogRepository = FakeCatalogRepository(),
     openSet: MutableStateFlow<MediaSet?> = MutableStateFlow(null),
 ): Pair<UpNextController, PlayerSession> {
-    val session = PlayerSession(scope, handle, ProgressRecorder(FakeWatchStateRepository()))
+    val session = PlayerSession(scope, handle, ProgressRecorder(WatchStateFixture().repository))
     val controller = UpNextController(scope, handle, session, catalogRepository, openSet)
     return controller to session
 }

@@ -7,21 +7,17 @@ import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
 import data.CoreProvider
 import data.LibraryUpdateCoordinator
-import data.WatchStateRepository
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import model.WatchSnapshot
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -35,6 +31,7 @@ import setup.login.LoginUiState
 import setup.login.LoginViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.WatchStateFixture
 import uniffi.mediagram_core.AuthOutcome
 import java.io.IOException
 import kotlin.test.assertEquals
@@ -194,10 +191,7 @@ class FailureDiagnosticsTest {
         }
 
     private fun catalogModel(repository: CatalogRepository): CatalogViewModel {
-        val watch = mockk<WatchStateRepository>()
-        every { watch.snapshot } returns MutableStateFlow(WatchSnapshot.Empty)
-        every { watch.chosenProfile } returns MutableStateFlow(null)
         val enrichment = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment))
+        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment))
     }
 }

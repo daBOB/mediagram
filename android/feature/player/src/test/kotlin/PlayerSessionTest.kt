@@ -2,6 +2,7 @@ package player
 
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -19,27 +20,27 @@ class PlayerSessionTest {
     @Test
     fun aSaveUnderOneSecondInIsDropped() = runTest {
         val handle = FakePlayerHandle().apply { fakePositionMs = 500L; fakeDurationMs = 100_000L }
-        val repository = FakeWatchStateRepository()
-        val session = PlayerSession(this, handle, ProgressRecorder(repository))
+        val watch = WatchStateFixture()
+        val session = PlayerSession(this, handle, ProgressRecorder(watch.repository))
         session.open("s1")
 
         session.save()
         runCurrent()
 
-        assertTrue(repository.calls.isEmpty())
+        assertTrue(watch.repository.snapshot.value.progress.isEmpty())
     }
 
     @Test
     fun aSaveAtOrPastOneSecondInIsKept() = runTest {
         val handle = FakePlayerHandle().apply { fakePositionMs = 1_000L; fakeDurationMs = 100_000L }
-        val repository = FakeWatchStateRepository()
-        val session = PlayerSession(this, handle, ProgressRecorder(repository))
+        val watch = WatchStateFixture()
+        val session = PlayerSession(this, handle, ProgressRecorder(watch.repository))
         session.open("s1")
 
         session.save()
         runCurrent()
 
-        assertEquals(listOf("setProgress s1 1.0 100.0"), repository.calls)
+        assertEquals(listOf("s1" to 1.0), watch.repository.snapshot.value.progress.map { it.setId to it.at })
     }
 
     /**
@@ -51,13 +52,13 @@ class PlayerSessionTest {
     @Test
     fun aSwitchsSynchronousStopEventDoesNotLandOnContinueAtZero() = runTest {
         val handle = FakePlayerHandle().apply { fakePositionMs = 0L; fakeDurationMs = null }
-        val repository = FakeWatchStateRepository()
-        val session = PlayerSession(this, handle, ProgressRecorder(repository))
+        val watch = WatchStateFixture()
+        val session = PlayerSession(this, handle, ProgressRecorder(watch.repository))
         session.open("s2")
 
         session.onPlayingChanged(false) // the synchronous event, arriving early
         runCurrent()
 
-        assertTrue(repository.calls.isEmpty())
+        assertTrue(watch.repository.snapshot.value.progress.isEmpty())
     }
 }

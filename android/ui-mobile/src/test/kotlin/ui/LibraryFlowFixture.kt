@@ -20,11 +20,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import model.Kind
-import model.ListOfSets
 import model.MediaSet
 import model.Profile
 import model.TitleCredits
-import model.WatchSnapshot
 import playback.CacheOccupancy
 import playback.InMemoryLanCacheSettings
 import playback.LanServer
@@ -46,6 +44,7 @@ import system.SystemUiState
 import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.WatchStateFixture
 import ui.player.PlayerLifecycleFixture
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.StatsSummary
@@ -64,7 +63,15 @@ internal class LibraryFlowFixture(
 ) : ViewModelStoreOwner,
     AutoCloseable {
     override val viewModelStore = ViewModelStore()
-    val playback = PlayerLifecycleFixture()
+    private val viewer = Profile("viewer", "Viewer")
+
+    /** The viewer is chosen, with one list, Favourites, holding the first episode. */
+    val playback =
+        PlayerLifecycleFixture(
+            WatchStateFixture(listOf(viewer)) {
+                createList("Favourites")?.let { setInList(it.id, "episode-1", true) }
+            },
+        )
     val catalogReady = CompletableDeferred<Unit>()
     var refreshes = 0
     var startOvers = 0
@@ -78,7 +85,6 @@ internal class LibraryFlowFixture(
     val stats = mockk<StatsViewModel>(relaxed = true)
 
     val repository = mockk<CatalogRepository>()
-    val watch = MutableStateFlow(WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("list", "Favourites", listOf("episode-1")))))
     val catalog: CatalogViewModel
     val player: PlayerViewModel
 
@@ -90,11 +96,6 @@ internal class LibraryFlowFixture(
     init {
         if (!loading) catalogReady.complete(Unit)
         val stored = playback.repository
-        val viewer = Profile("viewer", "Viewer")
-        every { stored.profiles } returns MutableStateFlow(listOf(viewer))
-        every { stored.chosenProfileId } returns MutableStateFlow(viewer.id)
-        every { stored.chosenProfile } returns MutableStateFlow(viewer)
-        every { stored.snapshot } returns watch
         coEvery { repository.refresh() } coAnswers {
             refreshes++
             Result.success(sets.size)
@@ -148,9 +149,8 @@ internal class LibraryFlowFixture(
             MutableStateFlow<StatsRead>(
                 StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
             )
-        // The rail's dot reads the chosen profile's achievements from a core of its own; the
-        // fixture's viewer is "viewer".
-        val achievementsCore = FakeCore().apply { achievementsByProfile = mapOf("viewer" to achievements) }
+        // The rail's dot reads the chosen profile's achievements from a core of its own.
+        val achievementsCore = FakeCore().apply { achievementsByProfile = mapOf(viewer.id to achievements) }
         val models =
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,

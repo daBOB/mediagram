@@ -11,15 +11,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
-import io.mockk.coVerify
-import model.ListOfSets
 import model.Profile
-import model.WatchSnapshot
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import player.CONTROLS_LINGER_MS
+import testing.WatchStateFixture
+import kotlin.test.assertEquals
 
 /**
  * The player's marks rail, list dialog, statistics and notices, driven by
@@ -30,11 +29,7 @@ import player.CONTROLS_LINGER_MS
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerMarksTest : TvPlayerScreenHarness() {
-    override fun makeFixture() =
-        TvPlayerFixture(
-            snapshot = WatchSnapshot.Empty.copy(collections = listOf(ListOfSets("fav", "Favourites", emptyList()))),
-            profile = Profile("p1", "andre"),
-        )
+    override fun makeFixture() = TvPlayerFixture(WatchStateFixture(seed = { createList("Favourites") }))
 
     @Test
     fun downFromTheTransportReachesTheRailAndUpComesBack() {
@@ -53,7 +48,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
 
-        coVerify { fixture.repository.setWatchlisted("set-one", true) }
+        assertEquals(listOf("set-one"), fixture.repository.snapshot.value.watchlist)
     }
 
     @Test
@@ -80,7 +75,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
         press(Key.DirectionCenter)
         compose.onNodeWithText("☐ Favourites").assertIsFocused()
         pressInDialog(Key.DirectionCenter)
-        coVerify { fixture.repository.setInList("fav", "set-one", true) }
+        assertEquals(listOf("set-one"), fixture.repository.snapshot.value.collections.single().items)
 
         compose.mainClock.advanceTimeBy(CONTROLS_LINGER_MS + 500)
         compose.waitForIdle()
@@ -97,7 +92,8 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
 
     @Test
     fun aWriteThatCannotBeConfirmedIsSaidAndThenGoesByItself() {
-        // The stubbed repository confirms no list write, as a refused one would.
+        // The provider cannot hand the core out, so no list write is confirmed.
+        fixture.watchState.provider.beforeCore = { error("keystore unavailable") }
         press(Key.DirectionDown)
         press(Key.DirectionRight)
         press(Key.DirectionRight)
@@ -121,7 +117,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerKidsProfileMarksTest : TvPlayerScreenHarness() {
-    override fun makeFixture() = TvPlayerFixture(profile = Profile("k1", "TV kids", kids = true))
+    override fun makeFixture() = TvPlayerFixture(WatchStateFixture(listOf(Profile("k1", "TV kids", kids = true))))
 
     @Test
     fun aKidsProfileHasNoKidsMark() {
@@ -139,11 +135,7 @@ class TvPlayerKidsProfileMarksTest : TvPlayerScreenHarness() {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerListedMarksTest : TvPlayerScreenHarness() {
-    override fun makeFixture() =
-        TvPlayerFixture(
-            snapshot = WatchSnapshot.Empty.copy(watchlist = listOf("set-one")),
-            profile = Profile("p1", "andre"),
-        )
+    override fun makeFixture() = TvPlayerFixture(WatchStateFixture(seed = { setWatchlisted("set-one", true) }))
 
     @Test
     fun aListedTitleSaysItIsOnMyList() {

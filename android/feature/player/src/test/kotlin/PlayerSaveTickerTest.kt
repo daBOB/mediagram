@@ -5,13 +5,23 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import model.Progress
 import org.junit.After
+import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** The ten-second save ticker [PlayerSession] runs while playing. */
 class PlayerSaveTickerTest {
+    private val watch = WatchStateFixture()
+
+    /** Every write the repository takes to the core — each save is one. */
+    private var writes = 0
+
+    init {
+        watch.provider.beforeCore = { writes++ }
+    }
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -23,15 +33,16 @@ class PlayerSaveTickerTest {
             fakePositionMs = 20_000L
             fakeDurationMs = 100_000L
         }
-        val repository = FakeWatchStateRepository()
-        val vm = buildViewModel(handle, repository)
+        val vm = buildViewModel(handle, watch.repository)
         vm.open("s1")
 
         handle.emitPlaying(true)
         handle.emitPlaying(false)
         advanceUntilIdle()
 
-        assertEquals(listOf("setProgress s1 20.0 100.0"), repository.calls)
+        val saved = watch.repository.snapshot.value.progress
+        assertEquals(listOf(Progress("s1", 20.0, 100.0, saved.single().updatedAt)), saved)
+        assertEquals(1, writes)
     }
 
     @Test
@@ -41,8 +52,7 @@ class PlayerSaveTickerTest {
             fakePositionMs = 5_000L
             fakeDurationMs = 100_000L
         }
-        val repository = FakeWatchStateRepository()
-        val vm = buildViewModel(handle, repository)
+        val vm = buildViewModel(handle, watch.repository)
         vm.open("s1")
 
         handle.emitPlaying(true)
@@ -53,7 +63,7 @@ class PlayerSaveTickerTest {
 
         // Two ticks land in 25s of playing: at 10s and 20s: the third is
         // due at 30s, past the window this test advances.
-        assertEquals(2, repository.calls.count { it.startsWith("setProgress") })
+        assertEquals(2, writes)
 
         handle.emitPlaying(false) // stop the ticker so the test ends cleanly
     }
@@ -65,20 +75,19 @@ class PlayerSaveTickerTest {
             fakePositionMs = 5_000L
             fakeDurationMs = 100_000L
         }
-        val repository = FakeWatchStateRepository()
-        val vm = buildViewModel(handle, repository)
+        val vm = buildViewModel(handle, watch.repository)
         vm.open("s1")
 
         handle.emitPlaying(true)
         advanceTimeBy(5_000)
         handle.emitPlaying(false) // the pause's own save
         advanceUntilIdle()
-        val afterPause = repository.calls.size
+        val afterPause = writes
 
         advanceTimeBy(30_000)
         advanceUntilIdle()
 
-        assertEquals(afterPause, repository.calls.size, "no ticker save should land once paused")
+        assertEquals(afterPause, writes, "no ticker save should land once paused")
     }
 
     @Test
@@ -88,14 +97,14 @@ class PlayerSaveTickerTest {
             fakePositionMs = 20_000L
             fakeDurationMs = 100_000L
         }
-        val repository = FakeWatchStateRepository(profileChosen = false)
-        val vm = buildViewModel(handle, repository)
+        val nobody = WatchStateFixture(chosen = null)
+        val vm = buildViewModel(handle, nobody.repository)
         vm.open("s1")
 
         handle.emitPlaying(true)
         handle.emitPlaying(false)
         advanceUntilIdle()
 
-        assertTrue(repository.calls.isEmpty())
+        assertTrue(nobody.core.snapshot(WatchStateFixture.VIEWER.id).progress.isEmpty())
     }
 }

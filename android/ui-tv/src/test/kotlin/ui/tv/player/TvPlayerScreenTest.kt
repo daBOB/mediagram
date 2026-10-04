@@ -6,7 +6,6 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import io.mockk.coVerify
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -139,7 +138,8 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
     fun goingHomeSavesThePositionWithoutStopping() {
         compose.runOnUiThread { controller.pause().stop() }
         compose.waitForIdle()
-        coVerify { fixture.repository.setProgress("set-one", 42.0, 600.0) }
+        val saved = fixture.repository.snapshot.value.progress.single()
+        assertEquals(Triple("set-one", 42.0, 600.0), Triple(saved.setId, saved.at, saved.duration))
         verify(exactly = 0) { fixture.media.stop() }
         compose.runOnUiThread { controller.restart().start().resume() }
         compose.waitForIdle()

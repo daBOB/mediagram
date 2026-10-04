@@ -1,8 +1,10 @@
 package player
 
+import data.WatchStateRepository
 import data.WatchSync
 import playback.PlaybackCounters
 import playback.SummarySource
+import testing.WatchStateFixture
 
 /** Records `soon()` calls rather than doing anything with them — shared by every [PlayerViewModel] test that does not care about sync itself. */
 internal class FakeWatchSync : WatchSync {
@@ -20,7 +22,7 @@ internal class FakeWatchSync : WatchSync {
 /** A [PlayerViewModel] wired with fakes a test can inspect — shared across `PlayerViewModelTest`, `PlayerResumePositionTest` and `PlayerSaveTickerTest`, split apart to keep each file under the project's line guideline. */
 internal fun buildViewModel(
     handle: FakePlayerHandle = FakePlayerHandle(),
-    repository: FakeWatchStateRepository = FakeWatchStateRepository(),
+    repository: WatchStateRepository = WatchStateFixture().repository,
     watchSync: FakeWatchSync = FakeWatchSync(),
     catalogRepository: FakeCatalogRepository = FakeCatalogRepository(),
     preferences: FakePlayerPreferences = FakePlayerPreferences(),

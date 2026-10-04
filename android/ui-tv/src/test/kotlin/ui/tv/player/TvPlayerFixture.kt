@@ -16,7 +16,6 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import data.CatalogRepository
 import data.PlayerPreferences
-import data.WatchStateRepository
 import data.WatchSync
 import io.mockk.every
 import io.mockk.mockk
@@ -25,9 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import model.Profile
-import model.WatchSnapshot
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
 import playback.SeriesPreloading
@@ -37,6 +33,7 @@ import player.DefaultPlayerHandle
 import player.PlaybackServiceController
 import player.PlayerViewModel
 import player.ProgressRecorder
+import testing.WatchStateFixture
 
 /**
  * The phone's player fixture, for the television: a real handle, ViewModel
@@ -46,9 +43,10 @@ import player.ProgressRecorder
  * both see a press land, and it offers the commands a playing film offers,
  * so the transport is enabled as it would be.
  *
- * [snapshot] and [profile] are what the stubbed repository holds when no
- * [repository] is given: whose lists the player files into, and who is
- * watching — a kids profile hides the Kids mark. [catalog] and
+ * [watchState] is the real watch-state repository the player reads and
+ * writes, over a fake core: who is watching — a kids profile hides the Kids
+ * mark — and the lists it files into, by default the plain viewer with
+ * nothing saved. [catalog] and
  * [subtitles] are what the player resolves the open title and its cues
  * through; left out, the title has no subtitles at all, and [summary]
  * the same for its notes. [playerReady]
@@ -56,16 +54,14 @@ import player.ProgressRecorder
  * it is ready sees it.
  */
 internal class TvPlayerFixture(
-    repository: WatchStateRepository? = null,
-    snapshot: WatchSnapshot = WatchSnapshot.Empty,
-    profile: Profile? = null,
+    val watchState: WatchStateFixture = WatchStateFixture(),
     private val catalog: CatalogRepository = mockk(relaxed = true),
     private val subtitles: SubtitleTrackSource = mockk(relaxed = true),
     playerReady: Boolean = true,
     private val summary: SummarySource = SummarySource.None,
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
-    val repository: WatchStateRepository = repository ?: mockk(relaxed = true)
+    val repository = watchState.repository
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val listeners = mutableListOf<Player.Listener>()
     private var playbackState = Player.STATE_IDLE
@@ -74,12 +70,6 @@ internal class TvPlayerFixture(
     val durationMs = 600_000L
 
     init {
-        if (repository == null) {
-            every { this@TvPlayerFixture.repository.snapshot } returns MutableStateFlow(snapshot)
-            every { this@TvPlayerFixture.repository.profiles } returns MutableStateFlow(listOfNotNull(profile))
-            every { this@TvPlayerFixture.repository.chosenProfileId } returns MutableStateFlow(profile?.id)
-            every { this@TvPlayerFixture.repository.chosenProfile } returns MutableStateFlow(profile)
-        }
         every { media.applicationLooper } returns Looper.getMainLooper()
         every { media.videoSize } returns VideoSize.UNKNOWN
         every { media.currentTracks } returns Tracks.EMPTY

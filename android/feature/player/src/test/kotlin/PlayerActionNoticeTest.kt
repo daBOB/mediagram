@@ -1,41 +1,39 @@
 package player
 
 import androidx.lifecycle.viewModelScope
-import data.WatchStateRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import model.ListOfSets
 import org.junit.After
 import org.junit.Test
+import testing.WatchStateFixture
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * What the player says about a mark write it could not confirm, over the
+ * real repository: failures are injected where the app's own come from —
+ * the provider that hands the core out — and refusals are the core's own.
+ */
 class PlayerActionNoticeTest {
+    private val watch = WatchStateFixture()
+
+    /** How many writes reached the provider, failed ones included. */
+    private var writes = 0
+
     @After fun reset() = Dispatchers.resetMain()
 
     @Test fun retryUsesTheAcknowledgedSnapshotAndClearsOnlyItsOwnNotice() =
         runTest {
             installMainDispatcher()
-            val acknowledged = FakeWatchStateRepository()
-            var failing = true
-            val repository =
-                object : WatchStateRepository by acknowledged {
-                    override suspend fun setWatchlisted(
-                        setId: String,
-                        listed: Boolean,
-                    ) {
-                        if (failing) error("unreadable snapshot")
-                        acknowledged.setWatchlisted(setId, listed)
-                    }
-                }
-            val vm = actionViewModel(FakePlayerHandle(), repository)
+            watch.provider.beforeCore = { if (++writes == 1) error("unreadable snapshot") }
+            val vm = actionViewModel(FakePlayerHandle(), watch.repository)
             try {
                 vm.open("s1")
                 vm.toggleWatchlist()
@@ -44,38 +42,33 @@ class PlayerActionNoticeTest {
                 vm.toggleKids()
                 runCurrent()
                 assertEquals(notice, vm.actionNotice.value)
-                failing = false
                 vm.toggleWatchlist()
                 runCurrent()
-                assertEquals(listOf("s1"), repository.snapshot.value.watchlist)
+                assertEquals(listOf("s1"), watch.repository.snapshot.value.watchlist)
                 assertNull(vm.actionNotice.value)
             } finally {
                 vm.viewModelScope.cancel()
             }
         }
 
+    /** The core refuses a list whose name is only whitespace; the dialog never sends one, but the refusal path is the same. */
     @Test fun refusedCreationDoesNotAttemptMembershipAndCanBeRetried() =
         runTest {
             installMainDispatcher()
-            val acknowledged = FakeWatchStateRepository()
-            var refused = true
-            val repository =
-                object : WatchStateRepository by acknowledged {
-                    override suspend fun createList(name: String): ListOfSets? = if (refused) null else acknowledged.createList(name)
-                }
-            val vm = actionViewModel(FakePlayerHandle(), repository)
+            watch.provider.beforeCore = { writes++ }
+            val vm = actionViewModel(FakePlayerHandle(), watch.repository)
             try {
                 vm.open("s1")
-                vm.createListAndAdd("Favourites")
+                vm.createListAndAdd("   ")
                 runCurrent()
                 assertNotNull(vm.actionNotice.value)
-                assertTrue(acknowledged.calls.isEmpty())
-                refused = false
+                assertEquals(1, writes, "a refused creation is not followed by a membership write")
+                assertTrue(watch.repository.snapshot.value.collections.isEmpty())
                 vm.createListAndAdd("Favourites")
                 runCurrent()
                 assertEquals(
                     listOf("s1"),
-                    repository.snapshot.value.collections
+                    watch.repository.snapshot.value.collections
                         .single()
                         .items,
                 )
@@ -85,57 +78,50 @@ class PlayerActionNoticeTest {
             }
         }
 
+    /**
+     * The new list is removed elsewhere — another screen, or a sync round —
+     * between its creation and the title being filed on it, so the core
+     * refuses the membership.
+     */
     @Test fun refusedMembershipKeepsTheSuccessfullyCreatedListWithoutClaimingItsItemWasSaved() =
         runTest {
             installMainDispatcher()
-            val acknowledged = FakeWatchStateRepository()
-            val repository =
-                object : WatchStateRepository by acknowledged {
-                    override suspend fun setInList(
-                        id: String,
-                        setId: String,
-                        included: Boolean,
-                    ) = false
+            watch.provider.beforeCore = {
+                if (++writes == 2) {
+                    val created = watch.core.snapshot(WatchStateFixture.VIEWER.id).collections.single()
+                    watch.core.deleteCollection(WatchStateFixture.VIEWER.id, created.id)
                 }
-            val vm = actionViewModel(FakePlayerHandle(), repository)
+            }
+            val vm = actionViewModel(FakePlayerHandle(), watch.repository)
             try {
                 vm.open("s1")
                 vm.createListAndAdd("Favourites")
                 runCurrent()
-                assertEquals(
-                    ListOfSets("list-1", "Favourites", emptyList()),
-                    repository.snapshot.value.collections
-                        .single(),
-                )
+                val list =
+                    watch.repository.snapshot.value.collections
+                        .single()
+                assertEquals("Favourites" to emptyList(), list.name to list.items)
                 assertNotNull(vm.actionNotice.value)
             } finally {
                 vm.viewModelScope.cancel()
             }
         }
 
-    @Test fun aCommittedWriteWhoseReloadFailsDoesNotInventASnapshotOrRetryAutomatically() =
+    @Test fun aFailedWriteIsTriedOnceAndInventsNoSnapshot() =
         runTest {
             installMainDispatcher()
-            val acknowledged = FakeWatchStateRepository()
-            var commits = 0
-            val repository =
-                object : WatchStateRepository by acknowledged {
-                    override suspend fun setWatchlisted(
-                        setId: String,
-                        listed: Boolean,
-                    ) {
-                        commits++
-                        error("snapshot reload failed after commit")
-                    }
-                }
-            val vm = actionViewModel(FakePlayerHandle(), repository)
+            watch.provider.beforeCore = {
+                writes++
+                error("keystore unavailable")
+            }
+            val vm = actionViewModel(FakePlayerHandle(), watch.repository)
             try {
                 vm.open("s1")
                 vm.toggleWatchlist()
                 runCurrent()
-                assertEquals(1, commits)
+                assertEquals(1, writes, "a failed write is not retried behind the viewer's back")
                 assertTrue(
-                    repository.snapshot.value.watchlist
+                    watch.repository.snapshot.value.watchlist
                         .isEmpty(),
                 )
                 assertTrue(assertNotNull(vm.actionNotice.value).contains("confirm"))
@@ -148,18 +134,14 @@ class PlayerActionNoticeTest {
         runTest {
             installMainDispatcher()
             val finish = CompletableDeferred<Unit>()
-            val repository =
-                object : WatchStateRepository by FakeWatchStateRepository() {
-                    override suspend fun setKids(
-                        setId: String,
-                        marked: Boolean,
-                    ) {
-                        finish.await()
-                        error("old title's write")
-                    }
+            watch.provider.beforeCore = {
+                if (++writes == 1) {
+                    finish.await()
+                    error("old title's write")
                 }
+            }
             val handle = FakePlayerHandle()
-            val vm = actionViewModel(handle, repository)
+            val vm = actionViewModel(handle, watch.repository)
             try {
                 vm.open("s1")
                 vm.toggleKids()
