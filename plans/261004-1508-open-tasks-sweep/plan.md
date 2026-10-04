@@ -60,6 +60,7 @@ pushing to origin. Earlier rewatch-date default stands (watched keeps the latest
 | A7 | Reconcile stale plan status tables | subagent | done `18b57905` (+ 260925-2046) — 4 left unverified, see reports/a7 |
 | A8 | The same far-future stamp hole in every other synced row type, core + web | subagent, worktree | done 0.100.1 |
 | A9 | DTS and TrueHD sat at 0:00 on the box (passthrough stalls) | lead | done 0.106.2 — FFmpeg decodes them to PCM; verified Magnolia + Rocketman on the box |
+| A10 | 4K stutter: parallel chunk downloads | subagent + lead (box) | done 0.109.0 — box cold ~30 Mbit/s (was 15–17): ≤ 28 Mbit/s titles play; 86 titles > 32 Mbit/s still rebuffer — next step is core (separate connections / file-DC routing) |
 
 Version: subagents commit without bumping; the lead bumps by pattern when merging each
 into `main` (memory: bump versions by pattern; another session commits to main).

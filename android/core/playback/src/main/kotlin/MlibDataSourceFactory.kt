@@ -41,13 +41,32 @@ import uniffi.mediagram_core.CoreInterface
  * below), which is how a series preload fills the LAN server for free: it
  * is not a separate path that happens to agree with playback's, it is the
  * same one.
+ *
+ * [readAhead] lets a high-bitrate set fetch several chunks at once (see
+ * [ReadAhead] for how many). Only the player asks for it: a preload has no
+ * viewer waiting on it, and a whole film fetched four chunks at a time is
+ * a long stretch of parallel requests for Telegram to push back on.
  */
 class MlibDataSourceFactory(
     private val counters: PlaybackCounters,
     private val lan: LanCacheRuntime? = null,
+    readAhead: Boolean = false,
     private val currentCore: () -> CoreInterface?,
 ) : DataSource.Factory {
     private val chunks: SetChunkSource = ChunkMemo(upstream = buildUpstream())
+
+    // A set's duration never changes under its id, so the core is asked
+    // once per set — whichever core is current then, like every fetch. No
+    // core is a failed lookup, asked again next time, not a set without one.
+    private val widths: ReadAhead? =
+        if (readAhead) {
+            ReadAhead(durationSecs = { id ->
+                val core = currentCore() ?: throw IOException("this device is not set up to read the library")
+                core.mediaSet(id)?.duration?.toLong()
+            })
+        } else {
+            null
+        }
 
     private fun buildUpstream(): SetChunkSource {
         val telegram =
@@ -66,5 +85,5 @@ class MlibDataSourceFactory(
         )
     }
 
-    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), chunks)
+    override fun createDataSource(): DataSource = MlibDataSource(currentCore(), chunks, widths)
 }

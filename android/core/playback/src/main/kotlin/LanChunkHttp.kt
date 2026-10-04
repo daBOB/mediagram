@@ -11,7 +11,7 @@ import java.net.HttpURLConnection
  * real thread and does not notice coroutine cancellation on its own — left
  * alone, a server that stops answering mid-response would keep an
  * ExoPlayer cancel or seek, or [LanChunkClient.get]'s own deadline, stuck
- * behind whichever call still holds [ChunkMemo]'s mutex waiting for it.
+ * behind it — and every reader [ChunkMemo] has waiting on the same chunk.
  *
  * `invokeOnCompletion(onCancelling = true, ...)` — [InternalCoroutinesApi],
  * used deliberately — is what makes this actually work: the public,
