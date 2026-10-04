@@ -21,18 +21,18 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import java.io.File
 import model.Credit
 import model.TitleCredits
-import ui.catalog.rememberPortrait
 import ui.tv.TvTextRow
 
-/** How wide a cast member's own plate is — narrower than a poster, since a portrait is closer to square. */
-private val CastPlateWidth = 130.dp
+/** How wide a cast member's card is, its round portrait spanning it — narrower than a poster, since a face is square. */
+private val CastCardWidth = 130.dp
 
 /**
  * A title's cast, a horizontal row of people rather than a wall — the
- * television twin of the phone's Cast tab and the web's `cast.js`. Nothing
+ * television twin of the phone's Cast tab and the web's `cast.js`, each
+ * person the round card the web's `personCard` draws (a portrait, the name,
+ * the character), the same [TvPersonCard] search shows its people as. Nothing
  * is drawn while [credits] carries no cast: gating the Cast tab itself on
  * that is the caller's job, matching `credits.cast.isNotEmpty()` everywhere
  * else this rule is applied.
@@ -43,20 +43,20 @@ private val CastPlateWidth = 130.dp
  * phone's `CastPanel`. Each name is a stop that opens that person's page,
  * as the web's and the phone's links do: a director is as likely to be
  * what a viewer came for as an actor. The line sits between the tab row
- * and the plates, so Up from a plate reaches it and Up again the tab row,
+ * and the cards, so Up from a card reaches it and Up again the tab row,
  * whose own routing lands on the Cast tab.
  *
  * A `LazyRow` rather than a plain one, for two reasons together: the full
  * cast (up to a dozen) is reachable by scrolling instead of being squeezed
  * to nothing past the sixth on a row sized for the screen, and a portrait is
- * only fetched once its own plate actually composes — a title nobody
+ * only fetched once its own card actually composes — a title nobody
  * scrolls this far into never asks for the rest of its cast's faces.
  *
  * A press opens the person's own page through [onOpenPerson]. [restoreKey]
  * names the person whose page was just left, if any, so the remote comes
- * back to their own plate — or to their name on the crew line, for someone
+ * back to their own card — or to their name on the crew line, for someone
  * credited only there; with none, or none still in [credits], the first
- * plate takes focus instead, so this row is never left with nothing focused.
+ * card takes focus instead, so this row is never left with nothing focused.
  */
 @Composable
 internal fun TvCastRow(
@@ -70,7 +70,7 @@ internal fun TvCastRow(
     Column {
         val crewFocus = remember { FocusRequester() }
         // Only someone not also in the cast: a director who acts comes back
-        // to their plate, the larger of the two stops.
+        // to their card, the larger of the two stops.
         val restoredCrew =
             remember(credits, restoreKey) {
                 restoreKey
@@ -105,34 +105,19 @@ internal fun TvCastRow(
             itemsIndexed(credits.cast, key = { _, credit -> credit.personId }) { index, credit ->
                 // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
                 val ownRequester = remember { FocusRequester() }
-                TvCastPlate(
-                    credit = credit,
-                    onOpen = { onOpenPerson(credit.personId) },
+                TvPersonCard(
+                    personId = credit.personId,
+                    name = credit.name,
+                    portraitPath = credit.portraitPath,
+                    sub = credit.role,
+                    onOpenPerson = onOpenPerson,
                     shouldRequestPortrait = shouldRequestPortrait,
                     fetchPortrait = fetchPortrait,
-                    modifier = Modifier.width(CastPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    modifier = Modifier.width(CastCardWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
                 )
             }
         }
     }
-}
-
-@Composable
-private fun TvCastPlate(
-    credit: Credit,
-    onOpen: () -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
-    fetchPortrait: suspend (Long) -> String?,
-    modifier: Modifier = Modifier,
-) {
-    val portrait = rememberPortrait(credit.personId, credit.portraitPath, shouldRequestPortrait, fetchPortrait)
-    TvPlate(
-        title = credit.name,
-        posterPath = portrait?.let(::File),
-        onOpen = onOpen,
-        modifier = modifier,
-        meta = credit.role,
-    )
 }
 
 /**

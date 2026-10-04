@@ -71,8 +71,19 @@ internal fun TvSearchCell(
                 modifier = modifier.focusRequester(requester),
             )
 
-        is SearchEntry.Person ->
-            TvPersonCard(entry.person, onOpenPerson, shouldRequestPortrait, fetchPortrait, modifier.focusRequester(requester))
+        is SearchEntry.Person -> {
+            val person = entry.person
+            TvPersonCard(
+                personId = person.personId,
+                name = person.name,
+                portraitPath = person.portraitPath,
+                sub = spelledCountOf(person.titles, "title"),
+                onOpenPerson = onOpenPerson,
+                shouldRequestPortrait = shouldRequestPortrait,
+                fetchPortrait = fetchPortrait,
+                modifier = modifier.focusRequester(requester),
+            )
+        }
 
         is SearchEntry.Destination -> {
             val destination = entry.destination

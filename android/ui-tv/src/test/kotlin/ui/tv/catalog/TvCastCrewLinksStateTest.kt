@@ -27,7 +27,7 @@ import kotlin.test.assertEquals
  * The Cast tab's crew line on television — "Directed by" a film's crew,
  * "Created by" a show's — with each name a stop that opens that person's
  * page, as `cast.js` links them, and the remote finding its way between
- * the names, the plates under them and the tab row above.
+ * the names, the cards under them and the tab row above.
  *
  * The walks leave touch mode, where a remote always is: a plain clickable
  * text row takes no focus in it.
@@ -71,10 +71,10 @@ class TvCastCrewLinksStateTest : TvScreenStateTest() {
         assertEquals(9L, opened)
     }
 
-    /** Up from a plate reaches the names, Right walks them, Up again the Cast tab — not the tab nearest — and Down comes back through them. */
+    /** Up from a card reaches the names, Right walks them, Up again the Cast tab — not the tab nearest — and Down comes back through them. */
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun theRemoteWalksFromThePlatesThroughTheNamesToTheCastTab() {
+    fun theRemoteWalksFromTheCardsThroughTheNamesToTheCastTab() {
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = credits, restoreKey = "7") }
         compose.onNodeWithText("Ada Actor").assertIsFocused()
@@ -102,10 +102,10 @@ class TvCastCrewLinksStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Eve Director").assertIsFocused()
     }
 
-    /** A director who also acts comes back to their plate, the larger stop. */
+    /** A director who also acts comes back to their card, the larger stop. */
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun aDirectorInTheCastComesBackToTheirPlate() {
+    fun aDirectorInTheCastComesBackToTheirCard() {
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
         val both = TitleCredits(cast = listOf(ada, dee.copy(role = "Himself")), crew = listOf(dee))
         show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = both, restoreKey = "3") }

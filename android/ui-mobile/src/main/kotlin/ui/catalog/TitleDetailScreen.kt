@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.Shelf
@@ -23,7 +20,6 @@ import catalog.filmDetailFacts
 import catalog.filmOverviewFacts
 import catalog.everyFilm
 import catalog.franchisesIn
-import catalog.ratingLabel
 import catalog.similarTo
 import data.ProgressPoint
 import data.ResumePoint
@@ -182,48 +178,4 @@ private fun FilmSimilarTab(
             )
         },
     )
-}
-
-/**
- * The block that describes something: its artwork beside its facts, then
- * what a provider said about it.
- *
- * Shared by a course's own screen (the one collection kind this phase does
- * not give a feature-article page) — a course and a film's overview are
- * described the same way and only differ in what they can say: [facts] is a
- * file's year and runtime, and a course has neither, so it is null there.
- */
-@Composable
-internal fun TitleHeader(
-    posterPath: String?,
-    title: String,
-    facts: String?,
-    info: TitleInfo?,
-    modifier: Modifier = Modifier,
-    genres: List<String> = emptyList(),
-    onOpenGenre: (String) -> Unit = {},
-) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            PosterArt(posterPath = posterPath, title = title, modifier = Modifier.width(POSTER_WIDTH))
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
-                facts?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
-                ratingLabel(info?.rating)?.let { rating ->
-                    Text(text = rating, style = MaterialTheme.typography.bodyMedium)
-                }
-                GenreLinks(genres, onOpenGenre)
-            }
-        }
-        info?.tagline?.takeIf(String::isNotBlank)?.let { tagline ->
-            Text(
-                text = "“$tagline”",
-                style = MaterialTheme.typography.bodyMedium,
-                fontStyle = FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        info?.overview?.takeIf(String::isNotBlank)?.let { overview ->
-            Text(text = overview, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
 }

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -15,6 +13,7 @@ import catalog.Division
 import catalog.Entry
 import catalog.ResumeVerb
 import catalog.Shelf
+import catalog.courseExtentOf
 import catalog.episodeShort
 import catalog.extentOf
 import catalog.firstItemOf
@@ -29,15 +28,14 @@ import catalog.walk
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
-import model.ageLabel
 import uniffi.mediagram_core.TitleInfo
 
 /**
  * What is inside one show or course: a show's own feature-article page
- * ([SeriesPage]) when [collection] is one, else what a course has always
- * been — its chapters and lessons, flattened once and shown as one
- * indented list, the same list a season screen shows for the one division
- * a search result may still open on its own.
+ * ([SeriesPage]) when [collection] is one, else a course's index
+ * ([CoursePage]) — its chapters and lessons, flattened once and shown as
+ * one indented list, the same list a season screen shows for the one
+ * division a search result may still open on its own.
  *
  * Every parameter beyond the first seven defaults to something inert, so
  * a caller not yet wired for credits, similar shows or a person page keeps
@@ -74,11 +72,30 @@ fun CollectionScreen(
         )
         return
     }
+    CoursePage(collection, watch, heldIds, onPlay)
+}
 
+/**
+ * A course's own page, as the web's `course-view.js` draws one: the page's
+ * shelf head — the course's name, how many lessons and documents it holds,
+ * a rule — over its lessons, each folder headed and indented as deep as it
+ * sits. The television's course page is the same index.
+ *
+ * No art, rating, genres or overview above the lessons: the web's course
+ * page has none, and a course carries no provider entry to draw them from.
+ */
+@Composable
+private fun CoursePage(
+    collection: Entry.Collection,
+    watch: WatchSnapshot,
+    heldIds: Set<String>,
+    onPlay: (setId: String) -> Unit,
+) {
     // Flattened once per collection, not on every recomposition: the depth
     // becomes an indent here because a lazy list cannot nest, and a viewer
     // still has to see which folder holds what.
     val rows = remember(collection) { rowsOf(collection.divisions) }
+    val extent = remember(collection) { courseExtentOf(collection.divisions) }
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     LazyColumn(
@@ -86,31 +103,7 @@ fun CollectionScreen(
         contentPadding = PaddingValues(Spacing.large),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        item {
-            Text(
-                text = collection.name,
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = Spacing.medium),
-            )
-        }
-        // A course is rated as a course, so any lesson speaks for it — the
-        // first, as `series-header.js` asks. A course has no rating of its own.
-        val firstEpisode = firstItemOf(collection.divisions)
-        val age = firstEpisode?.ageLabel()
-        val genres = firstEpisode?.genres ?: emptyList()
-        if (info != null || collection.posterPath != null || age != null || genres.isNotEmpty()) {
-            item(key = "header") {
-                TitleHeader(
-                    posterPath = collection.posterPath,
-                    title = collection.name,
-                    facts = age,
-                    info = info,
-                    genres = genres,
-                    onOpenGenre = onOpenGenre,
-                    modifier = Modifier.padding(bottom = Spacing.medium),
-                )
-            }
-        }
+        item(key = "head") { ShelfHead(title = collection.name, sub = extent) }
         items(rows, positions, watchedIds, heldIds, onPlay)
     }
 }

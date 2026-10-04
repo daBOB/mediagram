@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.106.1 — courses read as an index on the phone; TV cast as person cards
+
+**Changed** (Android)
+
+- Phone and tablet: a course page opens like the web's — the name, the extent in small
+  caps ("two lessons · one document") and a rule over its lessons — rather than a film-style
+  header of art and overview a course has nothing for.
+- TV: Cast shows round person cards (portrait, name, character) instead of poster plates,
+  the same card TV search uses for people; crew-name links and Up-to-the-tab are unchanged.
+
 ## 0.106.0 — the last editorial gaps on Android close
 
 **Changed** (Android)

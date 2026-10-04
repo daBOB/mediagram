@@ -34,10 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.SearchRow
-import catalog.VisiblePerson
 import catalog.initialsOf
 import catalog.searchWhy
-import catalog.spelledCountOf
 import coil3.compose.AsyncImage
 import designsystem.Palette
 import designsystem.Spacing
@@ -106,11 +104,13 @@ internal fun TvSearchRow(
 }
 
 /**
- * A person the query matched, already narrowed to titles *this profile* can
- * see ([catalog.visiblePeople]'s own rule — never shown otherwise), as the
- * web's `personCard` draws one: a round portrait, the name under it, and how
- * many titles they are in. The portrait is fetched lazily and at most once
- * per session, the rule every cast row on this surface follows.
+ * A person, as the web's `personCard` draws one: a round portrait, the name
+ * under it, and one quiet line under that — [sub], how many titles a search
+ * match is in, or the character a cast member plays. Search's people are
+ * already narrowed to titles *this profile* can see
+ * ([catalog.visiblePeople]'s own rule — never shown otherwise). The
+ * portrait is fetched lazily and at most once per session, the rule every
+ * cast row on this surface follows.
  *
  * Focus wears the one treatment every card here does — the accent ring and
  * [TvFocus.Scale] — drawn on the round face by hand, since a tv-material
@@ -121,13 +121,16 @@ internal fun TvSearchRow(
  */
 @Composable
 internal fun TvPersonCard(
-    person: VisiblePerson,
+    personId: Long,
+    name: String,
+    portraitPath: String?,
+    sub: String?,
     onOpenPerson: (personId: Long) -> Unit,
     shouldRequestPortrait: (Long) -> Boolean,
     fetchPortrait: suspend (Long) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    val portrait = rememberPortrait(person.personId, person.portraitPath, shouldRequestPortrait, fetchPortrait)
+    val portrait = rememberPortrait(personId, portraitPath, shouldRequestPortrait, fetchPortrait)
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) TvFocus.Scale else 1f, label = "person-card-scale")
     Column(
@@ -135,15 +138,15 @@ internal fun TvPersonCard(
             modifier
                 .onFocusChanged { focused = it.isFocused }
                 // Merged, the same reason `TvPlate`'s own Card is: the name
-                // and title count are this card's one announcement, and a
-                // press anywhere on it is the same one press.
+                // and the line under it are this card's one announcement,
+                // and a press anywhere on it is the same one press.
                 .semantics(mergeDescendants = true) {}
-                .clickable(indication = null, interactionSource = null) { onOpenPerson(person.personId) },
+                .clickable(indication = null, interactionSource = null) { onOpenPerson(personId) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TvPortraitCircle(
             portrait?.let(::File),
-            person.name,
+            name,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -153,14 +156,14 @@ internal fun TvPersonCard(
                     }.border(TvFocus.BorderWidth, if (focused) Palette.Imprint else Color.Transparent, CircleShape),
         )
         Text(
-            text = person.name,
+            text = name,
             style = TvTypeScale.body,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = Spacing.small),
         )
-        TvQuietLine(spelledCountOf(person.titles, "title"), textAlign = TextAlign.Center)
+        sub?.let { TvQuietLine(it, textAlign = TextAlign.Center) }
     }
 }
 
