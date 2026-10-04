@@ -62,4 +62,7 @@ Each ruling is reversible by the user; none reverses a user decision.
 - A list's own TV page keeps the old "Name · n" heading.
 - The old TV list-of-lists screen looks unreachable — confirm and delete.
 - Phone: the department hero puts its words below the art strip, where the web overlaps them onto the art; franchise and department grids have no side padding (group A report).
+- TV Cast: crew names are still plain text (phone and web link them to the person page) — group C report.
+- TV courses keep their pre-magazine layout (the course page; phone lists lessons in the web's index) — group C report.
+- TV title pill now reads "+ My List" / "✓ My List" like the web's title page and the phone (lead, at merge); the players keep "My List" / "On My List".
 
