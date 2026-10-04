@@ -71,7 +71,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 |---|------|--------|
 | B1 | `260926-1330` — complete: A–H merged, check.sh green, final review fixed, TV box walk fixed and re-walked on 0.109.1 (Left from Search, franchise hero, Back to franchise card, Back to Editor's choice card) | done |
 | B2 | subtitles: 03–06 + 08 (tablet↔web) verified 2026-10-04; MP4 backfill running since 20:00 → then `--mkv` + folders; 09 on/after 2026-10-08; 08 TV leg needs adb · watch-state: 02 merged 0.102.1; 03 merged 0.105.2; 04 docs done — tablet contract re-run needs someone to accept the install on the tablet | in progress |
-| B3 | `260928-0047` — 01–07 merged (0.110.0); security fixes on branch `worktree-agent-aecc271f05e5665ba` (e22bd863 core: wait persisted, NotSynced; e0f54f35 gates drop Manage + PIN on leave; dd876244 shared ManageActions) — NOT merged: #3's Android half needs a fresh `generate-android-bindings.sh` run, which the user paused (NDK compile) 2026-10-05 00:50; resume only on the user's word; until then main 0.110.0 must not go on any device | blocked (user pause) |
+| B3 | `260928-0047` — 01–07 merged (0.110.0); security fixes on branch `worktree-agent-aecc271f05e5665ba` (e22bd863 core: wait persisted, NotSynced; e0f54f35 gates drop Manage + PIN on leave; dd876244 shared ManageActions) — NOT merged: #3's Android half needs a fresh `generate-android-bindings.sh` run, which the user paused (NDK compile) 2026-10-05 00:50; resume only on the user's word; until then main 0.110.0 must not go on any device | in progress — NDK resumed by the user 2026-10-05 |
 
 Each plan was written in late September; before building, re-check it against `main`
 (the code moved a lot since) and rule on conflicts in that plan's own ledger.
