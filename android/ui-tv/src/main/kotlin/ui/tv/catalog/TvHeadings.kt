@@ -5,23 +5,77 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.tv.TvSafeArea
+
+/**
+ * A reference page's own head — the web's `heading()` as `.shelf-head`
+ * sets it (`catalog.css`), the phone's `ShelfHead`: the title in the display
+ * face at the web's 4.4vw (42sp at television's fixed 960dp), how much is
+ * there in small tracked capitals flush right, and a rule under both.
+ * Genres, one genre, Latest and a person open with this, as on the web;
+ * [leading] goes before the title — a person's round portrait, which the
+ * web prepends to the same header.
+ */
+@Composable
+internal fun TvShelfHead(
+    title: String,
+    sub: String?,
+    leading: (@Composable () -> Unit)? = null,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            leading?.let {
+                it()
+                Spacer(Modifier.width(Spacing.medium))
+            }
+            Text(
+                text = title,
+                style = TvTypeScale.title.copy(fontWeight = FontWeight.SemiBold, fontSize = 42.sp, lineHeight = 1.em, letterSpacing = (-0.03).em),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(end = 24.dp).semantics { heading() },
+            )
+            sub?.let {
+                Text(
+                    text = it.uppercase(),
+                    style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, letterSpacing = 0.24.em),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Box(
+            modifier =
+                Modifier
+                    .padding(top = 20.dp, bottom = Spacing.medium)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.borderVariant),
+        )
+    }
+}
 
 /**
  * The same "Title · n" the web's and the phone's row and kept-wall headings

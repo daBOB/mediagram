@@ -44,9 +44,10 @@ internal fun labelFor(filter: SearchFilter): String =
     }
 
 /**
- * [groups] as the sections [filter] asks to see, in the web's own order —
- * films, matched shows, episodes, documentaries, lessons, people,
- * collections — with
+ * [groups] as the sections [filter] asks to see, in the web's own order and
+ * under its own headings (`search-view.js`'s `part` calls: Movies, as its
+ * chip says, and Lessons under the Tutorials chip) — films, matched shows,
+ * episodes, documentaries, lessons, people, collections — with
  * [SearchFilter.ALL] showing every one that has something in it and every
  * other filter narrowing to its own single kind (also only when it has
  * something — a filter with a count of zero is never offered as a chip in
@@ -56,7 +57,7 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
     fun wants(kind: SearchFilter) = filter == SearchFilter.ALL || filter == kind
     return buildList {
         if (wants(SearchFilter.MOVIES) && groups.films.isNotEmpty()) {
-            add(SearchSection("Films", groups.films.map(SearchEntry::Title)))
+            add(SearchSection("Movies", groups.films.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.SERIES) && groups.matchedShows.isNotEmpty()) {
             add(SearchSection("Series", groups.matchedShows.map(SearchEntry::Show)))
@@ -77,7 +78,7 @@ internal fun sectionsFor(groups: SearchGroups, filter: SearchFilter): List<Searc
             add(SearchSection("Documentaries", groups.documentaries.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.TUTORIALS) && groups.lessons.isNotEmpty()) {
-            add(SearchSection("Tutorials", groups.lessons.map(SearchEntry::Title)))
+            add(SearchSection("Lessons", groups.lessons.map(SearchEntry::Title)))
         }
         if (wants(SearchFilter.PEOPLE) && groups.people.isNotEmpty()) {
             add(SearchSection("People", groups.people.map(SearchEntry::Person)))

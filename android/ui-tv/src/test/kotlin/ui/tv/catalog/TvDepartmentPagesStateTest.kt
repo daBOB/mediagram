@@ -68,6 +68,8 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}) }
 
         compose.onNodeWithText("Action").assertIsFocused()
+        // The tile names its count across the art, spelled as the web's `countOf` does.
+        compose.onNodeWithText("three titles").assertExists()
     }
 
     /**

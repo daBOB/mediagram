@@ -4,9 +4,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.KeptKind
@@ -93,13 +94,15 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
 
         compose.onNodeWithText("Collections").assertIsFocused()
-        compose.onNodeWithText("Sunday · 1 title").assertExists()
         // Collections' own hero (`TvDepartmentHero`'s fixed 360dp) leaves
         // this list little of the 540dp screen — a real remote's Down
         // scrolls it same as any lazy list; this test does the same before
-        // reaching a row two allotted screens' worth of scrolling away.
-        compose.onNode(hasTestTag(TvCollectionsPageTestTag)).performScrollToIndex(3)
-        compose.onNodeWithText("Later · 0 titles").performSemanticsAction(SemanticsActions.OnClick)
+        // reaching the line of list cards below it.
+        compose.onNode(hasTestTag(TvCollectionsPageTestTag)).performScrollToNode(hasText("LATER"))
+        compose.onNodeWithText("SUNDAY").assertExists()
+        compose.onNodeWithText("one title").assertExists()
+        compose.onNodeWithText("zero titles").assertExists()
+        compose.onNodeWithText("LATER").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals("b", opened)
     }
 

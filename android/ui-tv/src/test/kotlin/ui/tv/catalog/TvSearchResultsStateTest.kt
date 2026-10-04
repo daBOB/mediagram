@@ -2,9 +2,12 @@ package ui.tv.catalog
 
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
+import catalog.SearchDestination
 import catalog.SearchFilter
+import catalog.SearchGroups
 import catalog.SearchRow
 import catalog.SearchUiState
+import catalog.VisiblePerson
 import model.Kind
 import model.WatchSnapshot
 import org.junit.Test
@@ -46,6 +49,59 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 SearchSection("Series", listOf(SearchEntry.Title(titleRow("s0")))),
             )
 
+        showResults(sections, ask = RowAsk(3))
+
+        compose.onNodeWithText("s0").assertIsFocused()
+    }
+
+    /** `search-view.js`'s own headings: films under "Movies", as their chip says, and lessons under "Lessons". */
+    @Test
+    fun filmsAreHeadedMoviesAsTheirChipSaysAndLessonsAreHeadedLessons() {
+        val groups =
+            SearchGroups(
+                films = listOf(titleRow("f")),
+                matchedShows = emptyList(),
+                episodes = emptyList(),
+                animeFilms = emptyList(),
+                matchedAnimeShows = emptyList(),
+                animeEpisodes = emptyList(),
+                documentaries = emptyList(),
+                lessons = listOf(titleRow("l")),
+                people = emptyList(),
+                collections = emptyList(),
+                filters = emptyList(),
+            )
+
+        assertEquals(listOf("Movies", "Lessons"), sectionsFor(groups, SearchFilter.ALL).map { it.title })
+        assertEquals(listOf(labelFor(SearchFilter.MOVIES)), sectionsFor(groups, SearchFilter.MOVIES).map { it.title })
+    }
+
+    /** A franchise counts its films and a list its titles, as the web's cards do; a person counts theirs — all spelled up to twenty. */
+    @Test
+    fun collectionsAndPeopleSayTheirCountsInWords() {
+        val sections =
+            listOf(
+                SearchSection("People", listOf(SearchEntry.Person(VisiblePerson(personId = 1L, name = "Ada Actor", portraitPath = null, titles = 1)))),
+                SearchSection(
+                    "Collections",
+                    listOf(
+                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Saga", 3, null, "tmdb-9")),
+                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Sunday", 1, null, "list-a")),
+                    ),
+                ),
+            )
+
+        showResults(sections, ask = null)
+
+        compose.onNodeWithText("one title").assertExists()
+        compose.onNodeWithText("Saga · three films").assertExists()
+        compose.onNodeWithText("Sunday · one title").assertExists()
+    }
+
+    private fun showResults(
+        sections: List<SearchSection>,
+        ask: RowAsk?,
+    ) {
         show {
             TvSearchResults(
                 state = SearchUiState.Ready(hits = emptyList()),
@@ -55,7 +111,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 onFilterChange = {},
                 catalogReady = true,
                 watch = WatchSnapshot.Empty,
-                ask = RowAsk(3),
+                ask = ask,
                 onAnswered = {},
                 onPlay = {},
                 onOpenCollection = {},
@@ -65,8 +121,6 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 fetchPortrait = { null },
             )
         }
-
-        compose.onNodeWithText("s0").assertIsFocused()
     }
 
     private fun titleRow(id: String) = SearchRow(set = set(id, Kind.MOVIE, id, addedAt = 0), matched = "title", excerpt = null)

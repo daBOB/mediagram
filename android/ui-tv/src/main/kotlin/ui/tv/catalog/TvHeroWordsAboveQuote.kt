@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -32,6 +33,7 @@ internal fun TvHeroWordsAboveQuote(
     gap: Dp,
     words: @Composable () -> Unit,
     quote: (@Composable () -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     // Whether the trial below ever found room, remembered rather than
     // decided fresh every pass: a slot [SubcomposeLayout] does not
@@ -45,10 +47,14 @@ internal fun TvHeroWordsAboveQuote(
     // fixed for its own lifetime, not a value this same instance ever
     // recomputes a verdict for differently later.
     var quoteFits by remember { mutableStateOf(true) }
-    SubcomposeLayout { constraints ->
+    SubcomposeLayout(modifier) { constraints ->
         val loose = Constraints(maxWidth = constraints.maxWidth, maxHeight = Constraints.Infinity)
         val wordsPlaceable = subcompose(HeroLayoutSlot.Words, words).first().measure(loose)
-        val wordsTop = constraints.maxHeight - wordsPlaceable.height
+        // The whole height it is given — a department's fixed hero — unless
+        // it is given no ceiling at all: a franchise's hero, holding its
+        // introduction in a lazy list, grows to fit its words above its floor.
+        val height = if (constraints.hasBoundedHeight) constraints.maxHeight else maxOf(constraints.minHeight, wordsPlaceable.height)
+        val wordsTop = height - wordsPlaceable.height
         val floorPx = quoteTopFloor.roundToPx()
         val gapPx = gap.roundToPx()
         val fitted =
@@ -59,7 +65,7 @@ internal fun TvHeroWordsAboveQuote(
                 null
             }
         if (quote != null && quoteFits && fitted == null) quoteFits = false
-        layout(constraints.maxWidth, constraints.maxHeight) {
+        layout(constraints.maxWidth, height) {
             wordsPlaceable.place(0, wordsTop)
             fitted?.let { (placeable, top) -> placeable.place(constraints.maxWidth - placeable.width, top) }
         }

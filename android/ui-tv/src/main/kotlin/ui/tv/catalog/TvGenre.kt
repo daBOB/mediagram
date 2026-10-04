@@ -11,6 +11,7 @@ import catalog.Entry
 import catalog.GenreShelf
 import catalog.genreShelf
 import catalog.keyOf
+import catalog.spelledCountOf
 import model.WatchSnapshot
 import ui.tv.TvSafeArea
 
@@ -44,7 +45,8 @@ internal fun TvGenre(
 
 /**
  * The wall itself: a plate per film and per show, as every other wall
- * draws them, under the web's "Name · n" heading. Movies and Series are
+ * draws them, under the web's shelf head — the name, then "twelve titles".
+ * Movies and Series are
  * labelled only when both are there — a wall of one kind already says what
  * it is by what is on it. Coming back lands on the plate [restoreKey] names.
  */
@@ -73,7 +75,7 @@ internal fun TvGenreWall(
             key = ::keyOf,
             restoreKey = restoreKey,
             onOpen = { entry -> openEntry(entry, onOpenTitle, onOpenCollection) },
-            header = { TvCountedHeading(name, entries.size) },
+            header = { TvShelfHead(name, spelledCountOf(entries.size, "title")) },
             headings = headings,
             plate = { entry, modifier, onOpen ->
                 TvEntryPlate(entry = entry, positions = positions, watchedIds = watchedIds, onOpen = onOpen, modifier = modifier)
@@ -84,12 +86,12 @@ internal fun TvGenreWall(
 
 /**
  * The phone's centred sentence, as a stop the remote rests on: a genre page
- * with nothing to open would otherwise leave the remote on nothing at all,
- * with only Back — which still leaves to the title — to tell it apart from
- * a frozen screen.
+ * (or the Genres page itself) with nothing to open would otherwise leave
+ * the remote on nothing at all, with only Back to tell it apart from a
+ * frozen screen.
  */
 @Composable
-private fun GenreMessage(text: String) {
+internal fun GenreMessage(text: String) {
     val focus = remember { FocusRequester() }
     TvSafeArea {
         TvReadableParagraph(text, modifier = Modifier.focusRequester(focus))

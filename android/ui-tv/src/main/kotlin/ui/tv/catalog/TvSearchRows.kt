@@ -37,6 +37,7 @@ import catalog.VisiblePerson
 import catalog.extentOf
 import catalog.initialsOf
 import catalog.searchWhy
+import catalog.spelledCountOf
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -157,14 +158,14 @@ internal fun TvPersonSearchRow(
         TvPortraitCircle(portrait?.let(::File), person.name, modifier = Modifier.width(SearchPortraitWidth))
         Column {
             Text(text = person.name, style = TvFocus.textStyle(TvTypeScale.body, focused))
-            TvQuietLine("${person.titles} ${if (person.titles == 1) "title" else "titles"}")
+            TvQuietLine(spelledCountOf(person.titles, "title"))
         }
     }
 }
 
 /** A person's portrait, round rather than a poster's rectangle, matching the web's own people avatars; [initialsOf] stands in for a missing one. */
 @Composable
-private fun TvPortraitCircle(
+internal fun TvPortraitCircle(
     path: File?,
     name: String,
     modifier: Modifier = Modifier,
@@ -185,15 +186,20 @@ private fun TvPortraitCircle(
     }
 }
 
-/** A franchise or the viewer's own list, matched by name — [catalog.SearchDestination]'s own two sources. */
+/**
+ * A franchise or the viewer's own list, matched by name — [catalog.SearchDestination]'s
+ * own two sources. A franchise counts its films and a list its titles, as
+ * `search-view.js`'s cards do.
+ */
 @Composable
 internal fun TvDestinationSearchRow(
     destination: SearchDestination,
     onOpenDestination: (SearchDestination) -> Unit,
     focus: FocusRequester?,
 ) {
+    val noun = if (destination.franchiseId != null) "film" else "title"
     TvTextRow(
-        text = "${destination.name} · ${destination.itemCount} ${if (destination.itemCount == 1) "title" else "titles"}",
+        text = "${destination.name} · ${spelledCountOf(destination.itemCount, noun)}",
         onClick = { onOpenDestination(destination) },
         modifier = Modifier.fillMaxWidth(),
         focusRequester = focus,

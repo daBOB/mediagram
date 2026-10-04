@@ -566,7 +566,10 @@ title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
 3.6rem)`), not uppercased; the extent flush right in Geist 11sp caps at
 0.24em tracking in quiet, dropping under the title when it needs the width;
 a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
-Fraunces SemiBold 24sp (`.shelf-sub`).
+Fraunces SemiBold 24sp (`.shelf-sub`). Television's `TvShelfHead` opens the
+same four pages at the web's 4.4vw for its fixed 960dp (42sp), the extent at
+the 16sp ten-foot floor; a person's round portrait (120dp) stands before the
+title, as the web prepends it.
 
 ### Art tile
 
@@ -586,10 +589,19 @@ says what it is.
   and Search's Collections part. A list is pictured by its first pictured
   title.
 - **Target:** the whole tile, merged into one node.
+- **Television** (`TvArtTile`): the same tile as a focusable card with the
+  one TV focus treatment (accent ring, 1.08 scale) on the same 12dp corner,
+  at ten-foot sizes — a 24sp genre name, a 28sp destination name, the count
+  at 16sp. Genres four across on the Genres page; 240dp wide in the Movies
+  row, where the web's 12rem would leave a two-line name no room; franchises
+  and lists three across on Collections. The scrim and proportions are the
+  phone's own, shared (`ArtTileScrim`).
 
 **Page pill** (`PagePill`): a fully round outline link in ink on the page
 itself — "All N films →" at the foot of Movies (52dp) and "＋ New list"
-under Your lists (44dp) — the web's `.dept-all` and `.make`.
+under Your lists (44dp) — the web's `.dept-all` and `.make`. Television
+draws "＋ New list" as `TvPagePill`: the rule outline at rest, the accent
+ring once the remote is on it, 52dp tall.
 
 ### Settings index row
 

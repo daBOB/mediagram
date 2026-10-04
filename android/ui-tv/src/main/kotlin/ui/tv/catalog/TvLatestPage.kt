@@ -15,7 +15,8 @@ private const val LatestLimit = 48
  * Films, shows and courses, newest arrival first — the television twin of
  * the web's `utility-pages.js#renderLatest`: one wall, not the home page's
  * six-wide rail, so nothing here is cut past a rail's first six the way
- * [PlateRow] on Home cuts a longer row. Headed "Latest", with each kind's
+ * [PlateRow] on Home cuts a longer row. Headed "Latest" over the web's own
+ * "Newest arrivals first", with each kind's
  * own heading before its plates — "Movies"/"Series"/"Tutorials", the same
  * label [catalog.HomeRow.seeAll] carries for that shelf and the web's own
  * `SECTIONS` table gives it, rather than the "Latest films" wording Home's
@@ -64,7 +65,7 @@ internal fun TvLatestPage(
             key = ::keyOf,
             restoreKey = restoreKey,
             onOpen = { entry -> openEntry(entry, onOpenTitle, onOpenCollection) },
-            header = { TvCountedHeading("Latest", entries.size) },
+            header = { TvShelfHead("Latest", "Newest arrivals first") },
             headings = headings,
             plate = { entry, modifier, onOpen -> TvEntryPlate(entry, positions, watchedIds, onOpen, modifier, heldIds) },
         )

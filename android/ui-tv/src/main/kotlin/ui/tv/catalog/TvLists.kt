@@ -105,15 +105,9 @@ internal fun TvLists(
     }
 }
 
-/**
- * One saved list, its own row — shared with [TvCollectionsPage], which
- * inlines this same row into its own single outer list rather than nesting
- * [TvLists]' own scrollable one under a hero tall enough to need the room a
- * nested scroll can't measure (Compose refuses two vertical scrollables,
- * one inside the other).
- */
+/** One saved list, its own row of [TvLists]. */
 @Composable
-internal fun TvListRow(
+private fun TvListRow(
     list: ListOfSets,
     onOpen: (id: String) -> Unit,
     focusRequester: FocusRequester? = null,
@@ -128,4 +122,4 @@ internal fun TvListRow(
 }
 
 /** `1 title` / `12 titles` — the phone's own count beside each list. */
-internal fun countLabel(count: Int): String = "$count ${if (count == 1) "title" else "titles"}"
+private fun countLabel(count: Int): String = "$count ${if (count == 1) "title" else "titles"}"

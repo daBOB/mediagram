@@ -6,18 +6,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,44 +35,58 @@ import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.KeptKind
 import catalog.collectionsLineOf
+import catalog.listArtOf
+import catalog.spelledCountOf
 import designsystem.Spacing
-import java.io.File
 import kotlinx.coroutines.flow.first
 import model.ListOfSets
-import ui.tv.TvTextRow
+import model.MediaSet
+import ui.catalog.DESTINATION_ASPECT
+import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
 
-/** How wide a franchise card is on the Collections page's own row. */
-private val FranchiseTileWidth = 140.dp
+/**
+ * Three cards across — the web's `.destinations` (`repeat(auto-fill,
+ * minmax(16rem, 1fr))`, `departments.css`) worked out once for the width
+ * this page has beside the rail on television's one fixed 960dp.
+ */
+private const val DestinationColumns = 3
+
+/** `.destinations{gap:16px}`. */
+private val DestinationGap = 16.dp
 
 /** Lets a test scroll this page's own list directly, the same reason [TvMoviesDepartmentPageTestTag] exists. */
 internal const val TvCollectionsPageTestTag = "tv-collections-page"
 
 /**
  * The Collections department — the television twin of the web's
- * `collections-page.js`: [TvDepartmentHero], the franchises the library
- * holds largest first, each a card into [TvFranchisePage], then the
- * household's own hand-built lists — [TvListRow], the row [TvLists] itself
- * also draws for the two kept tabs.
+ * `collections-page.js#renderCollectionsPage`: [TvDepartmentHero], the
+ * franchises the library holds largest first, then the household's own
+ * lists, both as the web's large 4:3 cards ([TvArtTile]) wrapping three to a
+ * line — a list pictured by its first pictured title ([listArtOf], via
+ * [setsById]) — and "＋ New list" as a round pill under them.
  *
- * One `LazyColumn` end to end, not the hero and franchise row over
- * [TvLists]' own separate scrollable: a hero tall enough to need the room a
- * nested scroll can't measure (Compose refuses two vertical scrollables,
- * one inside the other) left the franchise row itself below the fold with
- * nothing able to scroll it into view. Every list is this same list's own
- * item now, the same restructuring the tablet's own `CollectionsScreen`
- * already made for the same reason.
+ * One `LazyColumn` end to end, each line of cards its own item: a hero tall
+ * enough to need the room a nested scroll can't measure (Compose refuses
+ * two vertical scrollables, one inside the other) once left a section below
+ * the fold with nothing able to scroll it into view, and a library's worth
+ * of franchises composed all at once is more than a weak box draws in one
+ * frame.
  *
- * [restoreKey] finds its plate on whichever half it names: a franchise's id
- * takes the remote back to that card (scrolling its own row, [scrollThenFocus]'s
- * rule); a list's id, or nothing at all, takes it to a list row instead —
- * the first franchise only when there is no restore key and no list claims
- * it, [DepartmentOrShelfWall]'s own default-arrival reading of this page.
+ * Arrival lands on the card [restoreKey] names — a franchise's id or a
+ * list's — else the first franchise, else the first list, else "＋ New
+ * list"; a card on its section's first line brings that section's heading
+ * into view with it.
+ *
+ * With no lists at all, a line says so above the pill, where the web leaves
+ * an empty grid — the phone's own reason: an empty band under a heading
+ * reads as something that failed to load.
  */
 @Composable
 internal fun TvCollectionsPage(
     franchises: List<Franchise>,
     lists: List<ListOfSets>,
+    setsById: Map<String, MediaSet>,
     onOpenFranchise: (id: Long) -> Unit,
     onOpenList: (id: String) -> Unit,
     onCreateList: (name: String) -> Unit,
@@ -95,141 +111,175 @@ internal fun TvCollectionsPage(
     // hero links its quote to this film's page too (`collections-page.js:74`),
     // not to a franchise or a list; television never links its hero at all.
     val lead = remember(franchises) { franchises.firstOrNull()?.films?.find { it.backdropPath != null } }
-    val franchiseFocus = remember { FocusRequester() }
-    val listFocus = remember { FocusRequester() }
-    val franchiseRowState = rememberLazyListState()
+    val focus = remember { FocusRequester() }
+    val franchiseRows = remember(franchises) { franchises.chunked(DestinationColumns) }
+    val listRows = remember(lists) { lists.chunked(DestinationColumns) }
+    val target = remember(franchises, lists, restoreKey) { arrivalOf(franchises, lists, restoreKey) }
 
-    // A franchise named by [restoreKey] takes the remote back to its card;
-    // with nothing named (or a key no list carries either) the first
-    // franchise does, the page's own default arrival stop.
-    val franchiseIndex =
-        remember(franchises, lists, restoreKey) {
-            restoreKey?.let { wanted -> franchises.indexOfFirst { it.id.toString() == wanted }.takeIf { it >= 0 } }
-                ?: 0.takeIf { franchises.isNotEmpty() && lists.none { it.id == restoreKey } }
-        }
-    val listIsNew = lists.isEmpty()
-    val listIndex = remember(lists, restoreKey) { lists.indexOfFirst { it.id == restoreKey }.coerceAtLeast(0) }
-
-    val included =
-        remember(franchises, lists) {
-            buildList {
-                add("hero")
-                if (franchises.isNotEmpty()) add("franchises")
-                add("lists-heading")
-                if (lists.isEmpty()) add("new") else { addAll(lists.indices.map { "list:$it" }); add("new") }
-            }
-        }
-    val targetKey = if (franchiseIndex != null) "franchises" else if (listIsNew) "new" else "list:$listIndex"
     val takesFocus = LocalTakesArrivalFocus.current
-    var sectionInView by remember { mutableStateOf(false) }
     val density = LocalDensity.current
-    LaunchedEffect(targetKey, takesFocus) {
-        sectionInView = false
+    LaunchedEffect(target, takesFocus) {
         if (!takesFocus) return@LaunchedEffect
-        val itemIndex = included.indexOf(targetKey)
-        // `scrollToItem` alone lands the target flush against this list's
-        // own top — every arrival target here is past "hero" (never "hero"
-        // itself, which the fixed [CompositionLocalProvider] below never
-        // touches either, since it is allowed to bleed under the bar at
-        // scroll 0) — so a `scrollBy` right after it, backing off by the
-        // bar's own clearance, is what actually keeps the target clear:
-        // `scrollToItem` never reads [LocalBringIntoViewSpec] at all, the
-        // focus-triggered mechanism that spec exists for.
-        listState.scrollToItem(itemIndex)
+        val items = itemKeysOf(franchiseRows.size, listRows.size)
+        val itemIndex = items.indexOf(target.row)
+        // `scrollToItem` alone lands the item flush against this list's own
+        // top, behind the bar — it never reads [LocalBringIntoViewSpec] — so
+        // a `scrollBy` right after it backs off by the bar's own clearance.
+        listState.scrollToItem(items.indexOf(target.scrollTo))
         listState.scrollBy(-with(density) { TvBarClearance.toPx() })
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.first { info -> info.any { it.index == itemIndex } }
-        sectionInView = true
-    }
-    // The franchise row's own inner scroll, once its own outer item is on
-    // screen — [scrollThenFocus]'s rule, the same a department row's own
-    // `LaunchedEffect` already applies for exactly this reason.
-    LaunchedEffect(sectionInView, franchiseIndex, takesFocus) {
-        scrollThenFocus(franchiseRowState, franchiseIndex.takeIf { sectionInView }, franchiseFocus, takesFocus)
-    }
-    // A list row or "＋ New list" is not nested in a row of its own — once
-    // its own outer item is on screen its `focusRequester` is already
-    // attached and ready.
-    LaunchedEffect(sectionInView, targetKey, takesFocus) {
-        if (sectionInView && takesFocus && franchiseIndex == null) listFocus.requestFocus()
+        focus.requestFocus()
     }
 
     val pagePadding = LocalTvPagePadding.current
     // [TvWall]'s own doc on why this wraps the whole scrollable rather than
-    // each item inside it — this list's own "Franchises · N" heading landed
-    // half behind the bar after Down scrolled it to the top the same way a
-    // plate once did. The franchise row resets to the ambient default for
-    // the same reason [TvWall]'s own header does: a sideways row reading
-    // the vertical clearance as a horizontal offset otherwise.
-    val defaultBringIntoView = LocalBringIntoViewSpec.current
+    // each item inside it: a heading Down scrolled to the top landed half
+    // behind the bar the same way a plate once did.
     val barClearance = rememberTvBarClearanceBringIntoView()
     CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
         LazyColumn(
             state = listState,
             // Scoped to this list alone — [TvMoviesDepartmentPage]'s own doc on
-            // why this coexists with the explicit requests above.
-            modifier =
-                Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag)
-                    .focusRestorer(fallback = if (franchiseIndex != null) franchiseFocus else listFocus),
-            contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
+            // why this coexists with the explicit request above.
+            modifier = Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag).focusRestorer(fallback = focus),
+            contentPadding = PaddingValues(start = pagePadding.start, top = pagePadding.top, end = pagePadding.end, bottom = pagePadding.bottom),
         ) {
-            item(key = "hero") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvDepartmentHero(title = "Collections", line = collectionsLineOf(franchises.size, lists.size), lead = lead)
-                }
+            item(key = HERO) {
+                TvDepartmentHero(title = "Collections", line = collectionsLineOf(franchises.size, lists.size), lead = lead)
             }
             if (franchises.isNotEmpty()) {
-                item(key = "franchises") {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        TvCountedHeading("Franchises", franchises.size)
-                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
-                            LazyRow(
-                                state = franchiseRowState,
-                                modifier = Modifier.padding(top = Spacing.small),
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-                            ) {
-                                itemsIndexed(franchises, key = { _, franchise -> franchise.id }) { index, franchise ->
-                                    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                                    val ownRequester = remember { FocusRequester() }
-                                    TvPlate(
-                                        title = franchise.name,
-                                        posterPath = franchise.art?.let(::File),
-                                        onOpen = { onOpenFranchise(franchise.id) },
-                                        modifier = Modifier.width(FranchiseTileWidth).focusRequester(if (index == franchiseIndex) franchiseFocus else ownRequester),
-                                        caption = "${franchise.films.size} films",
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            item(key = "lists-heading") {
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.large)) {
-                    TvSectionHeading("Your lists")
-                }
-            }
-            if (lists.isEmpty()) {
-                item(key = "empty") {
-                    Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                        TvQuietLine(KeptKind.COLLECTIONS.empty)
-                    }
-                }
-            } else {
-                itemsIndexed(lists, key = { _, list -> list.id }) { index, list ->
-                    Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                        TvListRow(list, onOpen = onOpenList, focusRequester = listFocus.takeIf { index == listIndex && franchiseIndex == null })
-                    }
-                }
-            }
-            item(key = "new") {
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = Spacing.small)) {
-                    TvTextRow(
-                        text = "＋ New list",
-                        onClick = { naming = true },
-                        focusRequester = listFocus.takeIf { listIsNew && franchiseIndex == null },
+                item(key = FRANCHISES_HEADING) { SectionHeading("Franchises") }
+                destinationRows(FRANCHISES, franchiseRows, Franchise::id, focus, target) { franchise, modifier ->
+                    TvArtTile(
+                        name = franchise.name,
+                        meta = spelledCountOf(franchise.films.size, "film"),
+                        art = franchise.art,
+                        aspectRatio = DESTINATION_ASPECT,
+                        onOpen = { onOpenFranchise(franchise.id) },
+                        modifier = modifier,
+                        destination = true,
                     )
+                }
+            }
+            item(key = LISTS_HEADING) { SectionHeading("Your lists") }
+            if (lists.isEmpty()) {
+                item(key = EMPTY) { TvQuietLine(KeptKind.COLLECTIONS.empty, Modifier.padding(top = Spacing.small)) }
+            } else {
+                destinationRows(LISTS, listRows, ListOfSets::id, focus, target) { list, modifier ->
+                    TvArtTile(
+                        name = list.name,
+                        meta = spelledCountOf(list.items.size, "title"),
+                        art = listArtOf(list, setsById),
+                        aspectRatio = DESTINATION_ASPECT,
+                        onOpen = { onOpenList(list.id) },
+                        modifier = modifier,
+                        destination = true,
+                    )
+                }
+            }
+            item(key = NEW) {
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val own = remember { FocusRequester() }
+                Box(modifier = Modifier.padding(top = 20.dp)) {
+                    TvPagePill(text = "＋ New list", onClick = { naming = true }, modifier = Modifier.focusRequester(if (target.item == NEW) focus else own))
                 }
             }
         }
     }
 }
+
+/**
+ * One section's cards, a line of [DestinationColumns] per item; a short last
+ * line keeps the others' widths, as the web's `auto-fill` tracks do.
+ *
+ * [card]'s modifier carries [focus] on the one card [arrival] names and a
+ * requester of the card's own on every other — never
+ * omitted, see the same doc on `TvResumeCard`'s own `ownRequester` — so a
+ * card's modifier chain is the same shape whichever card the target moves to.
+ */
+private fun <T> LazyListScope.destinationRows(
+    section: String,
+    rows: List<List<T>>,
+    id: (T) -> Any,
+    focus: FocusRequester,
+    arrival: Arrival,
+    card: @Composable (item: T, modifier: Modifier) -> Unit,
+) {
+    rows.forEachIndexed { index, row ->
+        item(key = "$section-row:$index") {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = if (index == 0) Spacing.small else DestinationGap),
+                horizontalArrangement = Arrangement.spacedBy(DestinationGap),
+            ) {
+                // Keyed by the card's own identity, not its slot, so a
+                // reorder never leaves focus on whichever card moved into it.
+                for (item in row) {
+                    key(id(item)) {
+                        val own = remember { FocusRequester() }
+                        card(item, Modifier.weight(1f).focusRequester(if (arrival.item == "$section:${id(item)}") focus else own))
+                    }
+                }
+                repeat(DestinationColumns - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeading(title: String) {
+    Column(modifier = Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
+}
+
+/**
+ * Where arrival lands: [item] names the card (or the pill), [row] the list
+ * item holding it, and [scrollTo] the item brought to the top to show it —
+ * the section's heading while the card is on its section's first line.
+ */
+private data class Arrival(val item: String, val row: String, val scrollTo: String)
+
+private fun arrivalOf(
+    franchises: List<Franchise>,
+    lists: List<ListOfSets>,
+    restoreKey: String?,
+): Arrival {
+    fun at(
+        section: String,
+        heading: String,
+        id: Any,
+        index: Int,
+    ): Arrival {
+        val row = "$section-row:${index / DestinationColumns}"
+        return Arrival("$section:$id", row, if (index < DestinationColumns) heading else row)
+    }
+    franchises.indexOfFirst { it.id.toString() == restoreKey }.takeIf { it >= 0 }?.let { return at(FRANCHISES, FRANCHISES_HEADING, franchises[it].id, it) }
+    lists.indexOfFirst { it.id == restoreKey }.takeIf { it >= 0 }?.let { return at(LISTS, LISTS_HEADING, lists[it].id, it) }
+    return when {
+        franchises.isNotEmpty() -> at(FRANCHISES, FRANCHISES_HEADING, franchises[0].id, 0)
+        lists.isNotEmpty() -> at(LISTS, LISTS_HEADING, lists[0].id, 0)
+        else -> Arrival(NEW, NEW, LISTS_HEADING)
+    }
+}
+
+/** The page's own item keys in order — what [arrivalOf]'s names resolve to as list indices. */
+private fun itemKeysOf(
+    franchiseRows: Int,
+    listRows: Int,
+): List<String> =
+    buildList {
+        add(HERO)
+        if (franchiseRows > 0) {
+            add(FRANCHISES_HEADING)
+            repeat(franchiseRows) { add("$FRANCHISES-row:$it") }
+        }
+        add(LISTS_HEADING)
+        if (listRows == 0) add(EMPTY) else repeat(listRows) { add("$LISTS-row:$it") }
+        add(NEW)
+    }
+
+private const val HERO = "hero"
+private const val FRANCHISES = "franchise"
+private const val FRANCHISES_HEADING = "franchises-heading"
+private const val LISTS = "list"
+private const val LISTS_HEADING = "lists-heading"
+private const val EMPTY = "empty"
+private const val NEW = "new"

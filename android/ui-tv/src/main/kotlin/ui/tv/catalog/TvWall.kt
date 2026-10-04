@@ -84,6 +84,9 @@ private val CacheBehind = 320.dp
  * kept wall's "Title · n", a show's name and facts. [headings] start a new
  * line of plates under a label of its own before the item at each index — a
  * genre page's Movies, then its Series.
+ *
+ * [columns] is [Columns] for a wall of posters; a wall of wider art tiles
+ * (the Genres page's) asks for fewer.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -94,6 +97,7 @@ fun <T> TvWall(
     onOpen: (T) -> Unit,
     header: (@Composable () -> Unit)? = null,
     headings: Map<Int, String> = emptyMap(),
+    columns: Int = Columns,
     // Hoisted by a caller that also needs this wall's own scroll position —
     // a department page's own bar blend, read live through the same
     // instance rather than a second, disagreeing one this wall kept to
@@ -124,7 +128,7 @@ fun <T> TvWall(
     val defaultBringIntoView = LocalBringIntoViewSpec.current
     val barClearance = rememberTvBarClearanceBringIntoView()
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }
-    val crossings = remember(items.size, headings) { sectionCrossingsOf(items.size, headings) }
+    val crossings = remember(items.size, headings, columns) { sectionCrossingsOf(items.size, headings, columns) }
     val crossingFocusRequesters = remember(crossings) { (crossings.up.keys + crossings.up.values).associateWith { FocusRequester() } }
     val focusIndex =
         remember(items, restoreKey) {
@@ -150,7 +154,7 @@ fun <T> TvWall(
     LaunchedEffect(focusIndex, restoreKey) {
         if (focusIndex != null && takesFocus) {
             val cell = cells.indexOf(WallCell.Plate(focusIndex))
-            if (focusIndex < Columns) {
+            if (focusIndex < columns) {
                 gridState.scrollToItem(0)
                 val shown = snapshotFlow { gridState.layoutInfo.visibleItemsInfo }.first { it.isNotEmpty() }
                 if (shown.none { it.index == cell }) gridState.scrollToItem(cell)
@@ -163,7 +167,7 @@ fun <T> TvWall(
 
     CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(Columns),
+            columns = GridCells.Fixed(columns),
             state = gridState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = LocalTvPagePadding.current.asPaddingValues(),

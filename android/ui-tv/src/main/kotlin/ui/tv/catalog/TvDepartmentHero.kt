@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicText
@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -52,6 +54,16 @@ import ui.tv.chrome.LocalTvPagePadding
  * remote happened to be. [leadName] is the quote's own credit; defaults to
  * [lead]'s title, the same fallback the tablet's hero uses for a show or a
  * course crediting its own name instead of whichever episode led.
+ *
+ * A franchise's page opens with this hero too (`renderFranchise`'s
+ * `.franchise-hero`). [franchiseTitle] sets its name the way the web does
+ * there — up to three lines at a smaller ceiling, since a franchise's name,
+ * unlike "Movies", is never chosen to fit one. [overview] is its
+ * introduction, set under the line inside the hero's copy where the web
+ * appends `.franchise-overview`; the hero then grows past its fixed height
+ * to hold it rather than cutting it short. A slot rather than a string: the
+ * franchise page makes it a stop the remote can rest on to read it, which
+ * only that page knows how to route.
  */
 @Composable
 internal fun TvDepartmentHero(
@@ -60,6 +72,8 @@ internal fun TvDepartmentHero(
     lead: MediaSet?,
     leadName: String? = lead?.title,
     modifier: Modifier = Modifier,
+    franchiseTitle: Boolean = false,
+    overview: (@Composable () -> Unit)? = null,
 ) {
     // Solid hides a department's own art, the same as the tablet's hero —
     // `DepartmentHero.kt`'s own note on why the cover never does the same.
@@ -69,7 +83,8 @@ internal fun TvDepartmentHero(
     val tones = LocalCatalogueTones.current
     val paper = MaterialTheme.colorScheme.background
 
-    Box(modifier = modifier.testTag(TvDepartmentHeroTestTag).fillMaxWidth().height(TvDepartmentHeroHeight)) {
+    val tallest = if (overview == null) TvDepartmentHeroHeight else Dp.Unspecified
+    Box(modifier = modifier.testTag(TvDepartmentHeroTestTag).fillMaxWidth().heightIn(min = TvDepartmentHeroHeight, max = tallest)) {
         if (art != null) {
             Box(Modifier.matchParentSize()) {
                 val artModifier = Modifier.fillMaxHeight().fillMaxWidth(artFraction).align(Alignment.CenterEnd)
@@ -88,18 +103,31 @@ internal fun TvDepartmentHero(
         TvHeroWordsAboveQuote(
             quoteTopFloor = pagePadding.top + Spacing.large,
             gap = Spacing.large,
+            modifier = Modifier.heightIn(min = TvDepartmentHeroHeight),
             words = {
                 Column(
                     modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.large).widthIn(max = HeroCopyMaxWidth),
                 ) {
-                    BasicText(
-                        text = title.uppercase(),
-                        style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
-                        autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
-                        maxLines = 1,
-                        modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
-                    )
+                    if (franchiseTitle) {
+                        Text(
+                            text = title.uppercase(),
+                            style = TvTypeScale.title.copy(fontSize = FranchiseTitleSize, lineHeight = 0.92.em),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
+                        )
+                    } else {
+                        BasicText(
+                            text = title.uppercase(),
+                            style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
+                            autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
+                            maxLines = 1,
+                            modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
+                        )
+                    }
                     Text(text = line, style = TvTypeScale.body, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
+                    overview?.let { Box(modifier = Modifier.padding(top = Spacing.medium)) { it() } }
                 }
             },
             quote =
@@ -159,6 +187,9 @@ internal val TvDepartmentHeroHeight = 360.dp
 
 /** [DeptHeroText]'s own ceiling (`fluid(56f,0.085f,120f,width)`) evaluated at the department bar's fixed 960dp width, never read from a window television has no reason to resize. */
 private val HeroTitleSize = 81.6f.sp
+
+/** `.franchise-hero .dept-title`'s own `5.5vw` (`departments.css:108`) at television's fixed 960dp. */
+private val FranchiseTitleSize = 52.8.sp
 
 /**
  * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap

@@ -1,20 +1,44 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.FranchisePage
-import designsystem.Spacing
+import catalog.spelledCountOf
 import model.MediaSet
 import model.WatchSnapshot
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.TvPagePadding
 
 /**
  * One franchise's own page — the television twin of the web's
- * `collections-page.js#renderFranchise`: its films in release order, as a
- * plain wall, with TMDB's own introduction to it (when there is one) as the
- * wall's header.
+ * `collections-page.js#renderFranchise`: a hero naming it, how many films
+ * and the years they span, its lead's art, and TMDB's own introduction to it
+ * (when there is one) inside the hero's copy; then its films in release
+ * order, under that heading, as a plain wall.
+ *
+ * Opened fresh with an introduction, the remote rests on the introduction
+ * itself, so the page shows from its top the way the web's does: TMDB's
+ * introductions run to several lines, and landing on the first film instead
+ * would scroll the franchise's own name off the screen before anyone had
+ * read it. Down from it is the first film. Coming back from a film lands on
+ * that film, as every wall does; with no introduction the first film takes
+ * the remote and the hero's words, at its foot, stay in view.
+ *
+ * The hero sits inside the wall's own page margins, its words flush with
+ * the plates below rather than inset a second time — a pushed frame has no
+ * bar for its art to bleed under.
  */
 @Composable
 internal fun TvFranchisePage(
@@ -24,24 +48,59 @@ internal fun TvFranchisePage(
     restoreKey: String? = null,
     heldIds: Set<String> = emptySet(),
 ) {
+    val franchise = page.franchise
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    TvPage {
+    val line =
+        remember(franchise) {
+            val years = franchise.films.mapNotNull { it.year?.takeIf { year -> year > 0 } }
+            val span = years.minOrNull()?.let { first -> "$first–${years.max()}" }
+            listOfNotNull(spelledCountOf(franchise.films.size, "film"), span).joinToString(" · ")
+        }
+    val overview = page.overview?.takeIf(String::isNotBlank)
+    // Once per visit, not on every return of the hero into composition: a
+    // lazy header scrolled away and back would otherwise pull the remote up
+    // to it again from wherever the viewer had got to.
+    var arrived by rememberSaveable { mutableStateOf(false) }
+    val readsFirst = overview != null && restoreKey == null && !arrived
+    val overviewFocus = remember { FocusRequester() }
+    val firstFilm = remember { FocusRequester() }
+    TvPage(takesArrivalFocus = !readsFirst) {
         TvWall(
-            items = page.franchise.films,
+            items = franchise.films,
             key = MediaSet::setId,
             restoreKey = restoreKey,
             onOpen = { set -> onOpenTitle(set.setId) },
             header = {
-                Column {
-                    TvCountedHeading(page.franchise.name, page.franchise.films.size)
-                    page.overview?.takeIf(String::isNotBlank)?.let { overview ->
-                        TvReadableParagraph(overview, modifier = Modifier.padding(top = Spacing.small))
-                    }
+                CompositionLocalProvider(LocalTvPagePadding provides NoInset) {
+                    TvDepartmentHero(
+                        title = franchise.name,
+                        line = line,
+                        lead = franchise.films.find { it.backdropPath != null },
+                        franchiseTitle = true,
+                        overview =
+                            overview?.let { text ->
+                                {
+                                    TvReadableParagraph(text, modifier = Modifier.focusRequester(overviewFocus).focusProperties { down = firstFilm })
+                                    if (readsFirst) {
+                                        LaunchedEffect(Unit) {
+                                            overviewFocus.requestFocus()
+                                            arrived = true
+                                        }
+                                    }
+                                }
+                            },
+                    )
                 }
             },
+            headings = mapOf(0 to "In release order"),
             plate = { set, modifier, onOpen ->
-                TvEntryPlate(Entry.Film(set), positions, watchedIds, onOpen, modifier, heldIds)
+                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
+                val own = remember { FocusRequester() }
+                val stop = modifier.focusRequester(if (set.setId == franchise.films.first().setId) firstFilm else own)
+                TvEntryPlate(Entry.Film(set), positions, watchedIds, onOpen, stop, heldIds)
             },
         )
     }
 }
+
+private val NoInset = TvPagePadding(0.dp, 0.dp, 0.dp, 0.dp)

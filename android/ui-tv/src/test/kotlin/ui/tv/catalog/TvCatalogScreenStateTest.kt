@@ -150,7 +150,8 @@ class TvCatalogScreenStateTest {
         show(ready(listOf(a1, a2)))
 
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("Adventure Saga").assertExists()
+        // A destination card sets its name in capitals, as `.destination-name` does.
+        compose.onNodeWithText("ADVENTURE SAGA").assertExists()
         // Arrival focuses the franchise row, same as a real remote's Down
         // from the pill; "Your lists" sits below it, off the first screen at
         // this fixed TV height, so a real remote's own Down scrolls it into

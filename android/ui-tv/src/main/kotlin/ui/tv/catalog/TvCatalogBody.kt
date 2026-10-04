@@ -98,6 +98,7 @@ internal fun TvCatalogBody(
             TvCollectionsPage(
                 franchises = remember(movies) { franchisesIn(movies) },
                 lists = ready.watch.collections,
+                setsById = byId,
                 onOpenFranchise = onOpenFranchise,
                 onOpenList = onOpenList,
                 onCreateList = onCreateList,

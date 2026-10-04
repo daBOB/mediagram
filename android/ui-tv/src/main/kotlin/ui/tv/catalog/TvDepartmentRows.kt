@@ -24,16 +24,26 @@ import catalog.Entry
 import catalog.GenreIndexEntry
 import catalog.factsLine
 import catalog.keyOf
+import catalog.spelledCountOf
 import designsystem.Spacing
 import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
 import model.Progress
+import ui.catalog.GENRE_ROW_TILE_ASPECT
 import ui.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 
-/** How wide a tile is on a department page's film, entry and genre rows. */
+/** How wide a poster is on a department page's film and entry rows. */
 internal val DeptTileWidth = 160.dp
+
+/**
+ * How wide a genre tile is on the Movies department's own row: the web's
+ * 12rem floor would leave a 16:8 tile 96dp tall, short of a two-line genre
+ * name at television's 24sp, so the row takes the same ten-foot step up its
+ * name does.
+ */
+private val GenreRowTileWidth = 240.dp
 
 /** How far past a department row's own edge it keeps plates composed — [TvWall]'s own reasoning, at a single row's smaller scale. */
 private val DeptCacheAhead = 320.dp
@@ -140,7 +150,12 @@ internal fun DeptEntryRow(
     }
 }
 
-/** The Movies department's Genres row — up to a dozen tiles, [DeptRow]'s own twin over a genre's cover rather than a film's. */
+/**
+ * The Movies department's Genres row — up to a dozen 16:8 tiles with the
+ * genre's name across its cover (`.dept-row .genre-tile`,
+ * `departments.css`), [DeptRow]'s own twin over [TvArtTile] rather than a
+ * plate.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun GenreTileRow(
@@ -164,12 +179,13 @@ internal fun GenreTileRow(
         itemsIndexed(genres, key = { _, genre -> genre.name }) { index, genre ->
             // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
             val ownRequester = remember { FocusRequester() }
-            TvPlate(
-                title = genre.name,
-                posterPath = genre.art?.let(::File),
+            TvArtTile(
+                name = genre.name,
+                meta = spelledCountOf(genre.count, "title"),
+                art = genre.art,
+                aspectRatio = GENRE_ROW_TILE_ASPECT,
                 onOpen = { onOpenGenre(genre.name) },
-                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
-                caption = titleCountLabel(genre.count),
+                modifier = Modifier.width(GenreRowTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
             )
         }
     }
@@ -194,6 +210,3 @@ internal suspend fun scrollThenFocus(
     snapshotFlow { state.layoutInfo.visibleItemsInfo }.first { info -> info.any { it.index == focusAt } }
     focus.requestFocus()
 }
-
-/** `1 title` / `12 titles` — the same count line `TvLists`' own rows use for a list. */
-private fun titleCountLabel(count: Int): String = "$count ${if (count == 1) "title" else "titles"}"

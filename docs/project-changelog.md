@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.103.0 — the television's browse pages read like the web's
+
+**Changed** (Android TV)
+
+- One focusable art tile, name and spelled count over the picture: the Genres page (16:9,
+  four across) and the Movies department's genre row (16:8).
+- Collections: franchises and lists as 4:3 cards, three to a line; a list is pictured by
+  its first title with art; "＋ New list" is a pill.
+- A franchise page opens with a hero — the name, "two films · 1999–2003" and TMDB's
+  introduction — then "In release order". A person page has a round portrait, "N in your
+  library", and separate Films and Series sections.
+- Genres, a genre, Latest and a person open with the web's page heading. Search's
+  headings read "Movies" and "Lessons" like its chips, counts up to twenty are spelled,
+  and a franchise counts films.
+- Written under "Television differs": a fresh franchise visit lands on the introduction
+  rather than the first film (it runs to seven lines on a television, and landing below it
+  would scroll the name away), and "No lists yet." shows under Your lists, as on the phone.
+
 ## 0.102.1 — Android's watch state says who is watching; no position clear without a finish
 
 **Changed** (internal, Android)

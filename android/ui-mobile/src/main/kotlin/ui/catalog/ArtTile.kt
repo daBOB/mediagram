@@ -18,8 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -35,15 +33,6 @@ import designsystem.Radius
 import ui.catalog.home.OnImage
 import ui.catalog.home.fluid
 import java.io.File
-
-/** A genre tile's proportions on the Genres page (`.genre-tile`, `catalog.css`). */
-internal const val GENRE_TILE_ASPECT = 16f / 9f
-
-/** A genre tile's proportions in the Movies department's own row (`.dept-row .genre-tile`, `departments.css`). */
-internal const val GENRE_ROW_TILE_ASPECT = 16f / 8f
-
-/** A franchise's or a list's card on Collections and in Search (`.destination`, `departments.css`). */
-internal const val DESTINATION_ASPECT = 4f / 3f
 
 /** `.destinations{grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))}`. */
 internal val DESTINATION_MIN_WIDTH = 256.dp
@@ -86,14 +75,7 @@ internal fun ArtTile(
     ) {
         if (art != null) {
             AsyncImage(model = File(art), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-            // `linear-gradient(0deg, dark, light <stop>)`: dark at the foot,
-            // easing to the light tone part-way up and holding it to the top.
-            val (clear, deep, reach) = if (destination) Triple(0x1A, 0xDB, 0.65f) else Triple(0x1F, 0xD1, 0.7f)
-            Box(
-                Modifier.matchParentSize().background(
-                    Brush.verticalGradient(0f to scrim(clear), (1f - reach) to scrim(clear), 1f to scrim(deep)),
-                ),
-            )
+            ArtTileScrim(destination, Modifier.matchParentSize())
         }
         Column(
             modifier =
@@ -129,8 +111,6 @@ internal fun ArtTile(
         }
     }
 }
-
-private fun scrim(alpha: Int) = Color(alpha shl 24 or 0x080809)
 
 /**
  * Tiles wrapped into as many equal columns of at least [minWidth] as fit —

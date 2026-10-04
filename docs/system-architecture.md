@@ -854,6 +854,17 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   plain plate row before this surface's own magazine layout, and that row's plates always
   showed it — kept on the new card rather than silently dropped, since a viewer relied on
   it to know a title would play from local storage before pressing Watch now.
+- **A franchise's introduction is a stop, and a fresh visit lands on it.** The web
+  sets TMDB's introduction inside the franchise hero and opens the page at its top with
+  nothing focused; a remote has to rest somewhere, and these introductions average about
+  350 characters — seven lines at the ten-foot reading size — so landing on the first
+  film would scroll the franchise's own name off the screen before anyone had read it.
+  The television keeps the introduction inside the hero (which grows to hold it rather
+  than cutting it short) and puts the remote on it; Down is the first film, Up from a
+  film reads it again, and coming back from a film lands on that film as every wall does.
+- **"No lists yet." under Your lists.** With no lists, the web leaves an empty grid above
+  "＋ New list"; television, like the phone, says so in one quiet line, because an empty
+  band under a heading reads as something that failed to load.
 - **Home unmounts under a pushed frame and rebuilds on return, not kept alive.** Tried
   (2026-09-30): keep the root library composed and laid out under every pushed frame —
   hidden, inert, its catalogue state frozen — so Back would be a focus restore rather than
