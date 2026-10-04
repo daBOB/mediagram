@@ -58,11 +58,15 @@ interface WatchStateRepository {
     /** Chooses and reloads a profile; false means refused or superseded before acknowledgement. */
     suspend fun chooseProfile(id: String): Boolean
 
-    /** Creates without choosing; null means refused or the owning account was reset/replaced. */
+    /**
+     * Refused: always null. The core makes a profile only behind a
+     * grown-up's PIN — `createFirstAdmin`, `createGrownUp`, `createKid` —
+     * and this call, the picker's from before there were PINs, carries none.
+     */
     suspend fun createProfile(
         name: String,
         kids: Boolean = false,
-    ): Profile?
+    ): Profile? = null
 
     /**
      * Saves progress for the chosen profile, the watch time since this
@@ -130,12 +134,9 @@ interface WatchStateRepository {
     suspend fun reload()
 
     /**
-     * Removes a profile and everything it has watched, then re-reads who
-     * exists and who is chosen — the core forgets the choice itself when it
-     * named the one removed. False when nothing was removed.
-     *
-     * Local, as on the web: a profile another device's sync document still
-     * names is created again by the next round that pulls it.
+     * Refused: always false. The core removes a profile only for a grown-up
+     * who gives its PIN (`deleteProfile(actorId, pin, id)`), and this call,
+     * the picker's from before there were PINs, carries none.
      */
     suspend fun deleteProfile(id: String): Boolean = false
 
@@ -273,34 +274,6 @@ class DefaultWatchStateRepository(
         return true
     }
 
-    override suspend fun deleteProfile(id: String): Boolean {
-        val started = synchronized(publicationLock) { resetRevision }
-        val core = coreProvider.awaitCore()
-        if (!withContext(dispatcher) { core.deleteProfile(id) }) return false
-        synchronized(publicationLock) {
-            if (resetRevision != started || coreProvider.core.value !== core) return false
-        }
-        // The core forgets the choice itself when it named the one removed;
-        // a reload is what publishes that, along with the shorter list.
-        reload()
-        return true
-    }
-
-    override suspend fun createProfile(
-        name: String,
-        kids: Boolean,
-    ): Profile? {
-        val started = synchronized(publicationLock) { resetRevision }
-        val core = coreProvider.awaitCore()
-        val created = withContext(dispatcher) { core.createProfile(name, kids) } ?: return null
-        synchronized(publicationLock) {
-            if (resetRevision != started || coreProvider.core.value !== core) return null
-            _profiles.value = _profiles.value + toProfile(created)
-            publishChosenProfile()
-        }
-        return toProfile(created)
-    }
-
     override suspend fun setProgress(
         setId: String,
         at: Double,
@@ -323,10 +296,12 @@ class DefaultWatchStateRepository(
         core.setWatchlisted(id, setId, listed)
     }
 
+    // A mark made here says "from 12", the one age a mark had before there
+    // were two.
     override suspend fun setKids(
         setId: String,
         marked: Boolean,
-    ) = writing { core, _ -> core.setKids(setId, marked) }
+    ) = writing { core, _ -> core.setKids(setId, if (marked) KIDS_MARK_AGE else null) }
 
     override suspend fun setEditorsChoice(
         setId: String,
@@ -415,6 +390,8 @@ class DefaultWatchStateRepository(
 }
 
 private fun toProfile(profile: uniffi.mediagram_core.Profile): Profile = Profile(profile.id, profile.name, profile.kids)
+
+private val KIDS_MARK_AGE: UByte = 12u
 
 private fun ProgressRow.toModel(): Progress = Progress(setId, at, duration, updatedAt)
 

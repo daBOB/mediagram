@@ -7,6 +7,8 @@ import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.PreferenceRow
+import uniffi.mediagram_core.Profile
+import uniffi.mediagram_core.ProfileOutcome
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -33,14 +35,16 @@ import kotlin.test.assertTrue
  *   list of stored libraries before `api::state_sync::sync_state` opens a
  *   connection — as a failed outcome, not a throw, since a round never throws.
  * - the profile cases are `state_db` reads/writes only
- *   (`api::state::{profiles,create_profile,choose_profile,delete_profile}`);
+ *   (`api::state::{profiles,choose_profile}` and `api::state::profile_roles`),
+ *   each household made the way the surface makes one: the first grown-up
+ *   by `createFirstAdmin`, every later one by that admin ([freshProfile]);
  *   [aBlankProfileNameIsRefused] pins `clean_name`'s own rule
  *   (`state/profiles.rs`), also checked before any row is written.
  * - the watch-state cases below are `state_db` reads/writes too
  *   (`state::rows`, `state::editors_choice`, `state::lists`,
  *   `state::preferences`) — progress, watched marks, the watchlist, Kids,
  *   the editor's choice, collections and preferences, each against a
- *   profile [createProfile] made moments earlier,
+ *   profile [freshProfile] made moments earlier,
  *   since every one of those tables but Kids and the editor's
  *   choice has a foreign key to `profiles(id)` — [aWriteForAProfileNobodyCreatedIsDropped]
  *   and [removingAProfileTakesItsWatchStateWithIt] pin that foreign key and
@@ -58,6 +62,11 @@ import kotlin.test.assertTrue
  */
 abstract class CoreContract {
     abstract fun core(): CoreInterface
+
+    private companion object {
+        /** Every grown-up's PIN in these cases. */
+        const val PIN = "1234"
+    }
 
     @Test
     fun aFreshCatalogListsNoSets() {
@@ -95,11 +104,69 @@ abstract class CoreContract {
     }
 
     @Test
-    fun aCreatedProfileIsListed() {
+    fun theFirstProfileRunsTheHouseholdAndASecondFirstIsRefused() {
         runBlocking {
             val core = core()
-            val created = core.createProfile("Alice", false)
-            assertTrue(created != null && core.profiles().any { it.id == created.id && it.name == "Alice" })
+            val first = core.freshProfile("Alice")
+            assertTrue(first.admin && first.hasPin && !first.kids && first.kidsAge == null)
+            assertEquals(ProfileOutcome.NotAllowed, core.createFirstAdmin("Bert", PIN))
+            assertEquals(listOf("Alice"), core.profiles().map { it.name })
+        }
+    }
+
+    @Test
+    fun aKidBelongsToTheGrownUpWhoMadeItAndOpensWithoutAPin() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u))
+            val kid = core.profiles().single { it.name == "Kim" }
+            assertEquals(Profile(kid.id, "Kim", kids = true, kidsAge = 6u, parentId = admin.id), kid)
+            assertEquals(ProfileOutcome.Done, core.unlockProfile(kid.id, ""))
+            assertEquals(ProfileOutcome.Done, core.setKidsAge(admin.id, PIN, kid.id, 12u))
+            assertEquals(12.toUByte(), core.profiles().single { it.id == kid.id }.kidsAge)
+        }
+    }
+
+    /** Refused for the reasons, and in the order, the web refuses: input, name, somebody there, the PIN, the rule. */
+    @Test
+    fun aRefusalSaysWhyInTheWebsOrder() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Kim", 7u))
+            assertEquals(ProfileOutcome.NameTaken, core.createKid("nobody", PIN, " ADA ", 6u))
+            assertEquals(ProfileOutcome.NotFound, core.createKid("nobody", PIN, "Kim", 6u))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "12a4", "Kim", 6u))
+            assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, admin.id))
+        }
+    }
+
+    @Test
+    fun fiveWrongPinsMakeThatProfileWaitAndNoOtherOne() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            val other = core.freshProfile("Bo")
+            repeat(5) { assertEquals(ProfileOutcome.WrongPin, core.unlockProfile(admin.id, "0000")) }
+            val waiting = core.unlockProfile(admin.id, PIN)
+            assertTrue(waiting is ProfileOutcome.Wait && waiting.seconds in 1u..60u, "$waiting")
+            assertEquals(ProfileOutcome.Done, core.unlockProfile(other.id, PIN))
+        }
+    }
+
+    @Test
+    fun removingAGrownUpTakesTheKidsItIsTheParentOf() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            val parent = core.freshProfile("Bo")
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Lou", 12u))
+
+            assertEquals(ProfileOutcome.Done, core.deleteProfile(admin.id, PIN, parent.id))
+
+            assertEquals(listOf("Ada", "Lou"), core.profiles().map { it.name })
         }
     }
 
@@ -114,29 +181,40 @@ abstract class CoreContract {
     fun choosingACreatedProfileIsRememberedLocally() {
         runBlocking {
             val core = core()
-            val created = core.createProfile("Bea", false) ?: error("a local profile must be creatable offline")
+            val created = core.freshProfile("Bea")
             assertTrue(core.chooseProfile(created.id))
             assertEquals(created.id, core.chosenProfile())
         }
     }
 
     @Test
-    fun removingAProfileTakesItOffTheList() {
+    fun removingAProfileTakesItOffTheListAndForgetsTheChoice() {
         runBlocking {
             val core = core()
-            val created = core.createProfile("Chris", false) ?: error("a local profile must be creatable offline")
-            assertTrue(core.deleteProfile(created.id))
+            val admin = core.freshProfile("Ada")
+            val created = core.freshProfile("Chris")
+            assertTrue(core.chooseProfile(created.id))
+            assertEquals(ProfileOutcome.Done, core.deleteProfile(admin.id, PIN, created.id))
             assertTrue(core.profiles().none { it.id == created.id })
+            assertEquals(null, core.chosenProfile())
         }
     }
 
     @Test
     fun aBlankProfileNameIsRefused() {
-        runBlocking { assertEquals(null, core().createProfile("  ", false)) }
+        runBlocking { assertEquals(ProfileOutcome.Invalid, core().createFirstAdmin("  ", PIN)) }
     }
 
-    private suspend fun CoreInterface.freshProfile(name: String) =
-        createProfile(name, false) ?: error("a local profile must be creatable offline")
+    /**
+     * A grown-up made the way the surface makes one: a household's first by
+     * `createFirstAdmin`, every later one by that admin — all with [PIN].
+     */
+    private suspend fun CoreInterface.freshProfile(name: String): Profile {
+        val admin = profiles().firstOrNull { it.admin }
+        val made = if (admin == null) createFirstAdmin(name, PIN) else createGrownUp(admin.id, PIN, name, PIN)
+        assertEquals(ProfileOutcome.Done, made, "a local profile must be creatable offline")
+        return profiles().single { it.name == name }
+    }
 
     @Test
     fun settingProgressTwiceKeepsOneRowWithTheNewestValue() {
@@ -280,8 +358,8 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Mira")
-            core.setKids("01A", true)
-            core.setKids("01A", true)
+            core.setKids("01A", 12u)
+            core.setKids("01A", 12u)
             assertEquals(listOf("01A"), core.snapshot(profile.id).kids)
         }
     }
@@ -291,12 +369,30 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val profile = core.freshProfile("Noor")
-            core.setKids("01A", true)
-            core.setKids("01A", false)
+            core.setKids("01A", 12u)
+            core.setKids("01A", null)
             assertEquals(emptyList(), core.snapshot(profile.id).kids)
 
-            core.setKids("01A", true)
+            core.setKids("01A", 12u)
             assertEquals(listOf("01A"), core.snapshot(profile.id).kids)
+        }
+    }
+
+    /** `kidsFromSix` is the part of `kids` marked "from 6"; a mark moved to 12 leaves it. */
+    @Test
+    fun aKidsMarkSaysFromSixOrFromTwelve() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Nell")
+            core.setKids("01A", 6u)
+            core.setKids("01B", 12u)
+            val marked = core.snapshot(profile.id)
+            assertEquals(setOf("01A", "01B"), marked.kids.toSet())
+            assertEquals(listOf("01A"), marked.kidsFromSix)
+
+            core.setKids("01A", 12u)
+            assertEquals(emptyList(), core.snapshot(profile.id).kidsFromSix)
+            assertEquals(setOf("01A", "01B"), core.snapshot(profile.id).kids.toSet())
         }
     }
 
@@ -307,7 +403,7 @@ abstract class CoreContract {
             val parent = core.freshProfile("Omar")
             val child = core.freshProfile("Pia")
 
-            core.setKids("01A", true)
+            core.setKids("01A", 12u)
 
             assertEquals(listOf("01A"), core.snapshot(parent.id).kids)
             assertEquals(listOf("01A"), core.snapshot(child.id).kids)
@@ -384,12 +480,13 @@ abstract class CoreContract {
     fun removingAProfileTakesItsWatchStateWithIt() {
         runBlocking {
             val core = core()
+            val admin = core.freshProfile("Ada")
             val profile = core.freshProfile("Wren")
             core.setProgress(profile.id, "01A", 300.0, null, "2026-10-03")
             core.setWatchlisted(profile.id, "01B", true)
             assertTrue(core.setPreference(profile.id, "show:Dark", "audio", "de"))
 
-            assertTrue(core.deleteProfile(profile.id))
+            assertEquals(ProfileOutcome.Done, core.deleteProfile(admin.id, PIN, profile.id))
 
             val snapshot = core.snapshot(profile.id)
             assertEquals(emptyList(), snapshot.progress)

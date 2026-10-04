@@ -5,7 +5,8 @@
 //!
 //! **Nothing here throws.** A write that could not be made is logged inside
 //! `StateDb::with` and reported back as the value that means "nothing
-//! happened" — `false`, `None`, or an unmodified read — never a `CoreError`:
+//! happened" — `false`, `None`, `ProfileOutcome::Invalid`, or an unmodified
+//! read — never a `CoreError`:
 //! a position that failed to save is a bad afternoon, and a player that
 //! stops because of it is a broken one.
 
@@ -17,6 +18,7 @@ use super::Core;
 
 mod achievements;
 mod collections;
+mod profile_roles;
 mod stats;
 
 /// One profile's everything, in one read. The page asks once and holds it.
@@ -32,6 +34,11 @@ pub struct StateSnapshot {
     /// the home page's picks arrive in the same round trip as everything
     /// else it draws.
     pub editors_choice: Option<String>,
+    /// The live Kids marks that say "from 6" — a subset of `kids`, whose
+    /// other marks say "from 12". Last and defaulted, so positional
+    /// `StateSnapshot(…)` calls in Kotlin keep compiling.
+    #[uniffi(default = [])]
+    pub kids_from_six: Vec<String>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -51,19 +58,6 @@ impl Core {
             .await
     }
 
-    pub async fn create_profile(
-        self: Arc<Self>,
-        name: String,
-        kids: bool,
-    ) -> Option<profiles::Profile> {
-        self.blocking(move |core| {
-            core.state_db
-                .with(|conn| profiles::create(conn, &name, kids))
-                .flatten()
-        })
-        .await
-    }
-
     /// This install's remembered "who's watching".
     pub async fn chosen_profile(self: Arc<Self>) -> Option<String> {
         self.blocking(|core| core.state_db.with(profiles::chosen).flatten())
@@ -76,19 +70,6 @@ impl Core {
         self.blocking(move |core| {
             core.state_db
                 .with(|conn| profiles::choose(conn, &id))
-                .unwrap_or(false)
-        })
-        .await
-    }
-
-    /// Takes everything that was theirs with it — every table cascades.
-    /// `chosen_profile` clears itself the moment this was the profile it
-    /// named: see `profiles::chosen`, which checks a profile still exists on
-    /// every read rather than trusting what was last written.
-    pub async fn delete_profile(self: Arc<Self>, id: String) -> bool {
-        self.blocking(move |core| {
-            core.state_db
-                .with(|conn| profiles::delete(conn, &id))
                 .unwrap_or(false)
         })
         .await
@@ -107,6 +88,7 @@ impl Core {
                         kids: rows::kids(conn)?,
                         collections: lists::collections_for(conn, &profile_id)?,
                         editors_choice: editors_choice::editors_choice(conn)?,
+                        kids_from_six: rows::kids_from_six(conn)?,
                     })
                 })
                 .unwrap_or_default()
@@ -169,12 +151,13 @@ impl Core {
         .await;
     }
 
-    /// Marks (or unmarks) a title as a child's. Not scoped to a profile —
+    /// Marks a title as a child's — `Some(6)` "from 6", `Some(12)` "from
+    /// 12" — or takes the mark off with `None`. Not scoped to a profile —
     /// see `state::schema` on why.
-    pub async fn set_kids(self: Arc<Self>, set_id: String, marked: bool) {
+    pub async fn set_kids(self: Arc<Self>, set_id: String, age: Option<u8>) {
         self.blocking(move |core| {
             core.state_db
-                .with(|conn| rows::set_kids(conn, &set_id, marked.then_some(12)))
+                .with(|conn| rows::set_kids(conn, &set_id, age))
         })
         .await;
     }

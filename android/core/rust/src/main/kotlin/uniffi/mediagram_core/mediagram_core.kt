@@ -748,10 +748,6 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_clear_progress(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_create_profile(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_editors_choice(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_profiles(
@@ -779,6 +775,22 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_rename_collection(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_claim_admin(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_first_admin(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_grown_up(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_kid(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_kids_age(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_pin(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_unlock_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_stats(
     ): Int
@@ -886,10 +898,6 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_clear_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_profile(`ptr`: Long,`name`: RustBuffer.ByValue,`kids`: Byte,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`id`: RustBuffer.ByValue,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_editors_choice(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_profiles(`ptr`: Long,
@@ -898,7 +906,7 @@ internal object UniffiLib {
     ): Unit
     external fun uniffi_mediagram_core_fn_method_core_set_editors_choice(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`marked`: Byte,
+    external fun uniffi_mediagram_core_fn_method_core_set_kids(`ptr`: Long,`setId`: RustBuffer.ByValue,`age`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_progress(`ptr`: Long,`profileId`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`at`: Double,`duration`: RustBuffer.ByValue,`localDay`: RustBuffer.ByValue,
     ): Long
@@ -917,6 +925,22 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_rename_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_claim_admin(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_first_admin(`ptr`: Long,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_kids_age(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`kidsAge`: Byte,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_pin(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_unlock_profile(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_stats(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,
     ): Long
@@ -1151,12 +1175,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_clear_progress() and 0xFFFF) != 16322) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_profile() and 0xFFFF) != 6077) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 46619) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1169,7 +1187,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_editors_choice() and 0xFFFF) != 32210) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54511) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids() and 0xFFFF) != 54896) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_progress() and 0xFFFF) != 63989) {
@@ -1197,6 +1215,30 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 28898) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_claim_admin() and 0xFFFF) != 31626) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 18473) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 18879) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 36307) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 32539) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids_age() and 0xFFFF) != 63867) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_pin() and 0xFFFF) != 52452) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_unlock_profile() and 0xFFFF) != 54973) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_stats() and 0xFFFF) != 57714) {
@@ -1415,6 +1457,33 @@ private class JavaLangRefCleanable(
     val cleanable: java.lang.ref.Cleaner.Cleanable
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterUByte: FfiConverter<UByte, Byte> {
+    override fun lift(value: Byte): UByte {
+        return value.toUByte()
+    }
+
+    fun lift(value: Int): UByte {
+        return value.toUByte()
+    }
+
+    override fun read(buf: ByteBuffer): UByte {
+        return lift(buf.get())
+    }
+
+    override fun lower(value: UByte): Byte {
+        return value.toByte()
+    }
+
+    override fun allocationSize(value: UByte) = 1UL
+
+    override fun write(value: UByte, buf: ByteBuffer) {
+        buf.put(value.toByte())
+    }
 }
 
 /**
@@ -1951,16 +2020,6 @@ public interface CoreInterface {
      */
     suspend fun `clearProgress`(`profileId`: kotlin.String, `setId`: kotlin.String)
 
-    suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean): Profile?
-
-    /**
-     * Takes everything that was theirs with it — every table cascades.
-     * `chosen_profile` clears itself the moment this was the profile it
-     * named: see `profiles::chosen`, which checks a profile still exists on
-     * every read rather than trusting what was last written.
-     */
-    suspend fun `deleteProfile`(`id`: kotlin.String): kotlin.Boolean
-
     /**
      * The household's editor's choice, or `None` for no pick.
      */
@@ -1988,10 +2047,11 @@ public interface CoreInterface {
     suspend fun `setEditorsChoice`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
 
     /**
-     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
+     * Marks a title as a child's — `Some(6)` "from 6", `Some(12)` "from
+     * 12" — or takes the mark off with `None`. Not scoped to a profile —
      * see `state::schema` on why.
      */
-    suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean)
+    suspend fun `setKids`(`setId`: kotlin.String, `age`: kotlin.UByte?)
 
     /**
      * This device's own position write, and the watch time it adds to the
@@ -2034,6 +2094,56 @@ public interface CoreInterface {
      * not this profile's.
      */
     suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
+
+    /**
+     * Makes `id` the household's admin while there is none. A grown-up
+     * with a PIN gives it; one without takes `pin` as its first.
+     */
+    suspend fun `claimAdmin`(`id`: kotlin.String, `pin`: kotlin.String): ProfileOutcome
+
+    /**
+     * The household's first profile, while this device knows no grown-up
+     * (kids alone do not count): a grown-up with `new_pin`, the admin from
+     * now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
+     * a household with grown-ups but no admin.
+     */
+    suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
+
+    /**
+     * The admin adds a grown-up, with its first PIN.
+     */
+    suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
+
+    /**
+     * A grown-up adds a kid of its own, from 6 or from 12.
+     */
+    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte): ProfileOutcome
+
+    /**
+     * Removes a profile and everything that was theirs — a grown-up with
+     * the kids it is the parent of. The admin is never removed.
+     * `chosen_profile` clears itself when it named one removed: see
+     * `profiles::chosen`.
+     */
+    suspend fun `deleteProfile`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String): ProfileOutcome
+
+    /**
+     * A parent sets its kid's limit: 6 or 12.
+     */
+    suspend fun `setKidsAge`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `kidsAge`: kotlin.UByte): ProfileOutcome
+
+    /**
+     * A grown-up's own PIN, or — for the admin — another grown-up's. A
+     * grown-up from before PINs sets its first with any `pin`, `""`
+     * included.
+     */
+    suspend fun `setPin`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
+
+    /**
+     * Entering a profile from the picker: a kid's opens freely, a
+     * grown-up's with its PIN.
+     */
+    suspend fun `unlockProfile`(`id`: kotlin.String, `pin`: kotlin.String): ProfileOutcome
 
     /**
      * `profile_id`'s watch time and history, summed over every device, as
@@ -3086,55 +3196,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createProfile`(`name`: kotlin.String, `kids`: kotlin.Boolean) : Profile? {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_create_profile(
-                uniffiHandle,
-
-        FfiConverterString.lower(`name`),
-        FfiConverterBoolean.lower(`kids`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeProfile.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
-    /**
-     * Takes everything that was theirs with it — every table cascades.
-     * `chosen_profile` clears itself the moment this was the profile it
-     * named: see `profiles::chosen`, which checks a profile still exists on
-     * every read rather than trusting what was last written.
-     */
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteProfile`(`id`: kotlin.String) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_profile(
-                uniffiHandle,
-
-        FfiConverterString.lower(`id`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
-        // Error FFI converter
-        UniffiNullRustCallStatusErrorHandler,
-    )
-    }
-
-
     /**
      * The household's editor's choice, or `None` for no pick.
      */
@@ -3229,18 +3290,19 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Marks (or unmarks) a title as a child's. Not scoped to a profile —
+     * Marks a title as a child's — `Some(6)` "from 6", `Some(12)` "from
+     * 12" — or takes the mark off with `None`. Not scoped to a profile —
      * see `state::schema` on why.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setKids`(`setId`: kotlin.String, `marked`: kotlin.Boolean) {
+    override suspend fun `setKids`(`setId`: kotlin.String, `age`: kotlin.UByte?) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_set_kids(
                 uniffiHandle,
 
         FfiConverterString.lower(`setId`),
-        FfiConverterBoolean.lower(`marked`),
+        FfiConverterOptionalUByte.lower(`age`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
@@ -3482,6 +3544,225 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
         // lift function
         { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Makes `id` the household's admin while there is none. A grown-up
+     * with a PIN gives it; one without takes `pin` as its first.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `claimAdmin`(`id`: kotlin.String, `pin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_claim_admin(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`pin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The household's first profile, while this device knows no grown-up
+     * (kids alone do not count): a grown-up with `new_pin`, the admin from
+     * now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
+     * a household with grown-ups but no admin.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_first_admin(
+                uniffiHandle,
+
+        FfiConverterString.lower(`name`),
+        FfiConverterString.lower(`newPin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The admin adds a grown-up, with its first PIN.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_grown_up(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`name`),
+        FfiConverterString.lower(`newPin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * A grown-up adds a kid of its own, from 6 or from 12.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_kid(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`name`),
+        FfiConverterUByte.lower(`kidsAge`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Removes a profile and everything that was theirs — a grown-up with
+     * the kids it is the parent of. The admin is never removed.
+     * `chosen_profile` clears itself when it named one removed: see
+     * `profiles::chosen`.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteProfile`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_profile(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * A parent sets its kid's limit: 6 or 12.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setKidsAge`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `kidsAge`: kotlin.UByte) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_kids_age(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterUByte.lower(`kidsAge`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * A grown-up's own PIN, or — for the admin — another grown-up's. A
+     * grown-up from before PINs sets its first with any `pin`, `""`
+     * included.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setPin`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_pin(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`newPin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Entering a profile from the picker: a kid's opens freely, a
+     * grown-up's with its PIN.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `unlockProfile`(`id`: kotlin.String, `pin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_unlock_profile(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`pin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -4530,17 +4811,41 @@ public object FfiConverterTypePreferenceRow: FfiConverterRustBuffer<PreferenceRo
 
 
 
+/**
+ * A profile as the app sees it. Says whether there is a PIN, never what.
+ * Every field after `name` is defaulted in the generated Kotlin (uniffi
+ * 0.32 supports field defaults), so `Profile(id, name)` call sites keep
+ * compiling.
+ */
 data class Profile (
     var `id`: kotlin.String
     ,
     var `name`: kotlin.String
     ,
     /**
-     * Sees only titles rated FSK 12 or under, or marked for Kids by hand.
-     * Defaulted in the generated Kotlin (uniffi 0.32 supports field
-     * defaults), so existing `Profile(id, name)` call sites keep compiling.
+     * Sees only what its own limit allows, and manages nothing.
      */
     var `kids`: kotlin.Boolean = false
+    ,
+    /**
+     * FSK 6 or 12 on a kid; `None` on a grown-up.
+     */
+    var `kidsAge`: kotlin.UByte? = null
+    ,
+    /**
+     * The grown-up who made this kid. `None`, or one not here, is the admin's.
+     */
+    var `parentId`: kotlin.String? = null
+    ,
+    /**
+     * The household's admin: a grown-up, and at most one.
+     */
+    var `admin`: kotlin.Boolean = false
+    ,
+    /**
+     * Whether a PIN is set — never the PIN, its hash or its salt.
+     */
+    var `hasPin`: kotlin.Boolean = false
 
 ){
 
@@ -4560,19 +4865,31 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalUByte.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
     override fun allocationSize(value: Profile) = (
             FfiConverterString.allocationSize(value.`id`) +
             FfiConverterString.allocationSize(value.`name`) +
-            FfiConverterBoolean.allocationSize(value.`kids`)
+            FfiConverterBoolean.allocationSize(value.`kids`) +
+            FfiConverterOptionalUByte.allocationSize(value.`kidsAge`) +
+            FfiConverterOptionalString.allocationSize(value.`parentId`) +
+            FfiConverterBoolean.allocationSize(value.`admin`) +
+            FfiConverterBoolean.allocationSize(value.`hasPin`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterBoolean.write(value.`kids`, buf)
+            FfiConverterOptionalUByte.write(value.`kidsAge`, buf)
+            FfiConverterOptionalString.write(value.`parentId`, buf)
+            FfiConverterBoolean.write(value.`admin`, buf)
+            FfiConverterBoolean.write(value.`hasPin`, buf)
     }
 }
 
@@ -5111,6 +5428,13 @@ data class StateSnapshot (
      * else it draws.
      */
     var `editorsChoice`: kotlin.String?
+    ,
+    /**
+     * The live Kids marks that say "from 6" — a subset of `kids`, whose
+     * other marks say "from 12". Last and defaulted, so positional
+     * `StateSnapshot(…)` calls in Kotlin keep compiling.
+     */
+    var `kidsFromSix`: List<kotlin.String> = listOf()
 
 ){
 
@@ -5133,6 +5457,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.read(buf),
             FfiConverterSequenceTypeListRow.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
         )
     }
 
@@ -5142,7 +5467,8 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.allocationSize(value.`watchlist`) +
             FfiConverterSequenceString.allocationSize(value.`kids`) +
             FfiConverterSequenceTypeListRow.allocationSize(value.`collections`) +
-            FfiConverterOptionalString.allocationSize(value.`editorsChoice`)
+            FfiConverterOptionalString.allocationSize(value.`editorsChoice`) +
+            FfiConverterSequenceString.allocationSize(value.`kidsFromSix`)
     )
 
     override fun write(value: StateSnapshot, buf: ByteBuffer) {
@@ -5152,6 +5478,7 @@ public object FfiConverterTypeStateSnapshot: FfiConverterRustBuffer<StateSnapsho
             FfiConverterSequenceString.write(value.`kids`, buf)
             FfiConverterSequenceTypeListRow.write(value.`collections`, buf)
             FfiConverterOptionalString.write(value.`editorsChoice`, buf)
+            FfiConverterSequenceString.write(value.`kidsFromSix`, buf)
     }
 }
 
@@ -5797,6 +6124,218 @@ public object FfiConverterTypeLibraryEvent: FfiConverterRustBuffer<LibraryEvent>
 
 
 
+/**
+ * One variant per reason the web answers a refusal with — `invalid`,
+ * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed` —
+ * so both surfaces can say exactly what went wrong.
+ */
+sealed class ProfileOutcome {
+
+    object Done : ProfileOutcome()
+
+
+    /**
+     * A blank name, a new PIN that is not four digits, a limit not 6 or 12.
+     */
+    object Invalid : ProfileOutcome()
+
+
+    /**
+     * A new profile's name is one a profile here already answers to.
+     */
+    object NameTaken : ProfileOutcome()
+
+
+    /**
+     * The actor or the target names nobody here.
+     */
+    object NotFound : ProfileOutcome()
+
+
+    /**
+     * That profile's PIN is not compared for `seconds` more.
+     */
+    data class Wait(
+        val `seconds`: kotlin.UInt) : ProfileOutcome()
+
+    {
+
+
+        companion object
+    }
+
+    /**
+     * A grown-up from before PINs, who has to set one first.
+     */
+    object NoPin : ProfileOutcome()
+
+
+    object WrongPin : ProfileOutcome()
+
+
+    /**
+     * The rule says no.
+     */
+    object NotAllowed : ProfileOutcome()
+
+
+
+
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOutcome>{
+    override fun read(buf: ByteBuffer): ProfileOutcome {
+        return when(buf.getInt()) {
+            1 -> ProfileOutcome.Done
+            2 -> ProfileOutcome.Invalid
+            3 -> ProfileOutcome.NameTaken
+            4 -> ProfileOutcome.NotFound
+            5 -> ProfileOutcome.Wait(
+                FfiConverterUInt.read(buf),
+                )
+            6 -> ProfileOutcome.NoPin
+            7 -> ProfileOutcome.WrongPin
+            8 -> ProfileOutcome.NotAllowed
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: ProfileOutcome): ULong = when(value) {
+        is ProfileOutcome.Done -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.Invalid -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.NameTaken -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.NotFound -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.Wait -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`seconds`)
+            )
+        }
+        is ProfileOutcome.NoPin -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.WrongPin -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is ProfileOutcome.NotAllowed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: ProfileOutcome, buf: ByteBuffer) {
+        when(value) {
+            is ProfileOutcome.Done -> {
+                buf.putInt(1)
+                Unit
+            }
+            is ProfileOutcome.Invalid -> {
+                buf.putInt(2)
+                Unit
+            }
+            is ProfileOutcome.NameTaken -> {
+                buf.putInt(3)
+                Unit
+            }
+            is ProfileOutcome.NotFound -> {
+                buf.putInt(4)
+                Unit
+            }
+            is ProfileOutcome.Wait -> {
+                buf.putInt(5)
+                FfiConverterUInt.write(value.`seconds`, buf)
+                Unit
+            }
+            is ProfileOutcome.NoPin -> {
+                buf.putInt(6)
+                Unit
+            }
+            is ProfileOutcome.WrongPin -> {
+                buf.putInt(7)
+                Unit
+            }
+            is ProfileOutcome.NotAllowed -> {
+                buf.putInt(8)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalUByte: FfiConverterRustBuffer<kotlin.UByte?> {
+    override fun read(buf: ByteBuffer): kotlin.UByte? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUByte.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UByte?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUByte.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.UByte?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUByte.write(value, buf)
+        }
+    }
+}
+
+
+
 
 /**
  * @suppress
@@ -6079,38 +6618,6 @@ public object FfiConverterOptionalTypePersonRecord: FfiConverterRustBuffer<Perso
         } else {
             buf.put(1)
             FfiConverterTypePersonRecord.write(value, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterOptionalTypeProfile: FfiConverterRustBuffer<Profile?> {
-    override fun read(buf: ByteBuffer): Profile? {
-        if (buf.get().toInt() == 0) {
-            return null
-        }
-        return FfiConverterTypeProfile.read(buf)
-    }
-
-    override fun allocationSize(value: Profile?): ULong {
-        if (value == null) {
-            return 1UL
-        } else {
-            return 1UL + FfiConverterTypeProfile.allocationSize(value)
-        }
-    }
-
-    override fun write(value: Profile?, buf: ByteBuffer) {
-        if (value == null) {
-            buf.put(0)
-        } else {
-            buf.put(1)
-            FfiConverterTypeProfile.write(value, buf)
         }
     }
 }

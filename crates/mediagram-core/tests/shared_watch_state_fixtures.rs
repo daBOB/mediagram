@@ -8,7 +8,9 @@
 //! web is authoritative, and this file exists to agree with it, not to
 //! redefine it.
 //!
-//! The achievement rules run here too, against `achievements.json`.
+//! The achievement rules run here too, against `achievements.json`, and the
+//! profile rules: the PIN hash, who may manage whom, the names a new profile
+//! may not take and the wait after wrong PINs.
 //!
 //! Next up and resume-point are Kotlin-only ports (05/06); this crate has no
 //! play-order or shelf logic to hold `next-up.json`/`resume-point.json`
@@ -17,6 +19,9 @@
 use std::path::{Path, PathBuf};
 
 use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
+use mediagram_core::state::profiles::pin;
+use mediagram_core::state::profiles::pin_wait::PinWait;
+use mediagram_core::state::profiles::rules::{Action, RoleView, allowed, name_taken};
 use mediagram_core::state::record::{SyncRecord, parse_record};
 use mediagram_core::state::stats::achievements::{AchievementInput, Achievements, achievements};
 use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
@@ -314,5 +319,121 @@ fn achievement_fixtures_match_the_web() {
             "case: {}",
             case.name
         );
+    }
+}
+
+#[derive(Deserialize)]
+struct PinHashCase {
+    salt: String,
+    pin: String,
+    hash: String,
+}
+
+/// The same salt and PIN make the same string on both surfaces — what lets
+/// a PIN set on the television open the profile on the laptop.
+#[test]
+fn pin_hash_fixtures_match_the_web() {
+    let Some(cases) = load::<PinHashCase>("pin-hash.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "pin-hash.json holds no cases");
+    for case in cases {
+        assert_eq!(pin::hash(&case.salt, &case.pin), case.hash, "salt {}", case.salt);
+        assert!(pin::matches(&case.hash, &case.salt, &case.pin), "salt {}", case.salt);
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RuleCase {
+    name: String,
+    profiles: Vec<RoleView>,
+    actor_id: String,
+    action: Action,
+    target_id: String,
+    expect: bool,
+}
+
+/// Who may do what to whom — one rule, on both surfaces.
+#[test]
+fn profile_rule_fixtures_match_the_web() {
+    let Some(cases) = load::<RuleCase>("profile-rules.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "profile-rules.json holds no cases");
+    for case in cases {
+        assert_eq!(
+            allowed(&case.profiles, &case.actor_id, case.action, &case.target_id),
+            case.expect,
+            "case: {}",
+            case.name
+        );
+    }
+}
+
+#[derive(Deserialize)]
+struct NameCase {
+    name: String,
+    existing: Vec<String>,
+    candidate: String,
+    expect: bool,
+}
+
+/// Which new names a profile here already answers to — the names sync would
+/// read as the same viewer.
+#[test]
+fn profile_name_fixtures_match_the_web() {
+    let Some(cases) = load::<NameCase>("profile-names.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "profile-names.json holds no cases");
+    for case in cases {
+        assert_eq!(
+            name_taken(&case.existing, &case.candidate),
+            case.expect,
+            "case: {}",
+            case.name
+        );
+    }
+}
+
+#[derive(Deserialize)]
+struct WaitCase {
+    name: String,
+    steps: Vec<WaitStep>,
+}
+
+/// One step on the wait's clock, `at` milliseconds after the case began.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WaitStep {
+    at: i64,
+    failed: Option<String>,
+    succeeded: Option<String>,
+    seconds_left: Option<String>,
+    expect: Option<u32>,
+}
+
+/// The wait after wrong PINs, per profile, on a clock each case moves.
+#[test]
+fn pin_wait_fixtures_match_the_web() {
+    let Some(cases) = load::<WaitCase>("pin-wait.json") else {
+        return;
+    };
+    assert!(!cases.is_empty(), "pin-wait.json holds no cases");
+    for case in cases {
+        let mut wait = PinWait::default();
+        for (index, step) in case.steps.iter().enumerate() {
+            let now = 1_000_000 + step.at;
+            if let Some(id) = &step.failed {
+                wait.failed(id, now);
+            } else if let Some(id) = &step.succeeded {
+                wait.succeeded(id);
+            } else {
+                let id = step.seconds_left.as_deref().expect("a step says what it does");
+                let expect = step.expect.expect("a secondsLeft step says what to expect");
+                assert_eq!(wait.seconds_left(id, now), expect, "case: {}, step {index}", case.name);
+            }
+        }
     }
 }

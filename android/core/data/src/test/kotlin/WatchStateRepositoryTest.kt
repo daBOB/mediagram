@@ -79,29 +79,20 @@ class WatchStateRepositoryTest {
             assertNull(repository.chosenProfileId.value)
         }
 
+    /** The core makes and removes profiles only behind a grown-up's PIN, which these two carry none of. */
     @Test
-    fun creatingAProfileAddsItWithoutChoosingIt() =
+    fun aProfileAskedForOrRemovedWithoutAPinIsRefused() =
         runTest {
-            val core = FakeCore()
+            val core = FakeCore().apply { profiles = listOf(CoreProfile("p1", "Alice")) }
             val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
 
-            val created = repository.createProfile("Bea")
+            assertNull(repository.createProfile("Bea"))
+            assertNull(repository.createProfile("Mia", kids = true))
+            assertFalse(repository.deleteProfile("p1"))
 
-            assertEquals("Bea", created?.name)
-            assertEquals(listOf(Profile(created!!.id, "Bea")), repository.profiles.value)
-            assertNull(repository.chosenProfileId.value)
-        }
-
-    @Test
-    fun aKidsProfileIsCreatedAndListedAsOne() =
-        runTest {
-            val core = FakeCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
-
-            val created = repository.createProfile("Mia", kids = true)
-
-            assertEquals(true, created?.kids)
-            assertEquals(listOf(Profile(created!!.id, "Mia", kids = true)), repository.profiles.value)
+            assertEquals(listOf(Profile("p1", "Alice")), repository.profiles.value)
+            assertEquals(listOf("p1"), core.profiles().map { it.id })
         }
 
     @Test

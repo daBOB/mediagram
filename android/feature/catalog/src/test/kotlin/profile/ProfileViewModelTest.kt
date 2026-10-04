@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -252,39 +251,6 @@ class ProfileViewModelTest {
             }
         }
 
-    /** Matches the web: creating a profile lists it, and does not choose it. */
-    @Test
-    fun addingAProfileListsItWithoutChoosingIt() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = WatchStateFixture(emptyList())
-            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
-
-            vm.state.test {
-                awaitItem()
-                awaitItem() as ProfileUiState.Picking
-
-                vm.add("Bea", kids = false)
-
-                val after = awaitItem() as ProfileUiState.Picking
-                assertEquals(listOf("Bea"), after.profiles.map { it.name })
-                assertEquals(listOf("Bea"), watch.core.profiles.map { it.name })
-                assertEquals(null, watch.repository.chosenProfileId.value)
-            }
-        }
-
-    @Test
-    fun addingAKidsProfilePassesTheFlagThrough() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = WatchStateFixture(emptyList())
-            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
-            vm.add("Mia", kids = true)
-            advanceUntilIdle()
-            assertEquals(listOf(true), watch.core.profiles.map { it.kids })
-            assertEquals(true, watch.repository.profiles.value.single().kids)
-        }
-
     /** The bar action: reopens the picker over whoever was already chosen, with a way back. */
     @Test
     fun reopenShowsThePickerWithAWayToStay() =
@@ -303,51 +269,6 @@ class ProfileViewModelTest {
 
                 vm.stay()
                 assertEquals(ProfileUiState.Chosen(ALICE), awaitItem())
-            }
-        }
-
-    @Test
-    fun removingAnotherProfileKeepsTheWayToStay() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = WatchStateFixture(listOf(ALICE, Profile("p2", "Probe")))
-            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
-
-            vm.state.test {
-                awaitItem()
-                awaitItem() as ProfileUiState.Chosen
-                vm.reopen()
-                awaitItem() as ProfileUiState.Picking
-
-                vm.remove("p2")
-                runCurrent()
-
-                val picking = expectMostRecentItem() as ProfileUiState.Picking
-                assertEquals(listOf(ALICE), picking.profiles)
-                assertEquals(true, picking.canStay)
-            }
-        }
-
-    /** Nobody is left to stay as, so the picker has to be answered. */
-    @Test
-    fun removingTheChosenProfileTakesAwayStayAsIAm() =
-        runTest {
-            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-            val watch = WatchStateFixture(listOf(ALICE, BEA))
-            val vm = ProfileViewModel(watch.repository, FakeWatchSync())
-
-            vm.state.test {
-                awaitItem()
-                awaitItem() as ProfileUiState.Chosen
-                vm.reopen()
-                awaitItem() as ProfileUiState.Picking
-
-                vm.remove(ALICE.id)
-                runCurrent()
-
-                val picking = expectMostRecentItem() as ProfileUiState.Picking
-                assertEquals(listOf(BEA), picking.profiles)
-                assertEquals(false, picking.canStay)
             }
         }
 }

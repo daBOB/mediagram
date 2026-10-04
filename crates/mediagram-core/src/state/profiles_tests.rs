@@ -88,3 +88,25 @@ fn deleting_the_chosen_profile_clears_it() {
 
     assert_eq!(db.with(chosen).unwrap(), None);
 }
+
+/// A kid made by sync, or from before limits, starts at FSK 12 dated 0 —
+/// older than any limit a parent chooses, so the first real choice, made
+/// here or synced in, wins. A grown-up has no limit at all.
+#[test]
+fn a_kid_made_without_a_chosen_limit_stores_twelve_dated_zero() {
+    let (_dir, db) = db();
+    let mia = db.with(|c| create(c, "Mia", true)).unwrap().unwrap().id;
+    let bea = db.with(|c| create(c, "Bea", false)).unwrap().unwrap().id;
+    let limit = |id: &str| -> (Option<i64>, i64) {
+        db.with(|c| {
+            c.query_row(
+                "SELECT kids_age, kids_age_updated_at FROM profiles WHERE id = ?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+        })
+        .unwrap()
+    };
+    assert_eq!(limit(&mia), (Some(12), 0));
+    assert_eq!(limit(&bea), (None, 0));
+}

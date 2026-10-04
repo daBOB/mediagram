@@ -7,6 +7,9 @@ use std::sync::{Arc, mpsc};
 use std::task::{Context, Waker};
 
 use mediagram_core::api::Core;
+use mediagram_core::state::profiles::ProfileOutcome;
+
+mod state_seed;
 
 fn core(path: &Path) -> Arc<Core> {
     Core::new(
@@ -27,12 +30,7 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
     runtime.block_on(async {
         let old = core(&path);
         if opened {
-            assert!(
-                old.clone()
-                    .create_profile("Before reset".into(), false)
-                    .await
-                    .is_some()
-            );
+            state_seed::household(&old, &["Before reset"], &[]).await;
         }
         let (entered, running) = mpsc::channel();
         let (release, blocked) = mpsc::channel();
@@ -48,7 +46,7 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
         // the held slot. That queued job owns its own Arc to the old Core.
         let mut late = Box::pin(
             old.clone()
-                .create_profile("Late old-owner write".into(), false),
+                .create_first_admin("Late old-owner write".into(), state_seed::PIN.into()),
         );
         assert!(
             late.as_mut()
@@ -64,7 +62,9 @@ fn queued_create_cannot_reopen_retired_state(opened: bool) {
         assert!(!path.exists());
         release.send(()).unwrap();
         blocker.await.unwrap();
-        assert_eq!(late.await, None);
+        // Retired answers `Invalid`, where a live store would have made the
+        // profile (`Done`) or refused a second first one (`NotAllowed`).
+        assert_eq!(late.await, ProfileOutcome::Invalid);
         assert!(
             !path.exists(),
             "a queued old-owner write recreated removed storage"
@@ -86,16 +86,13 @@ fn retired_open_core_cannot_restore_deleted_storage_from_a_queued_write() {
 async fn replacing_a_retired_core_preserves_profiles_without_reviving_its_owner() {
     let dir = tempfile::tempdir().unwrap();
     let old = core(dir.path());
-    let retained = old
-        .clone()
-        .create_profile("Retained".into(), false)
-        .await
-        .unwrap();
+    let retained = state_seed::household(&old, &["Retained"], &[]).await.remove(0);
     old.retire_local_state();
 
     let replacement = core(dir.path());
     assert_eq!(replacement.clone().profiles().await, vec![retained.clone()]);
-    assert_eq!(old.clone().create_profile("Late".into(), false).await, None);
+    let late = old.clone().create_first_admin("Late".into(), state_seed::PIN.into());
+    assert_eq!(late.await, ProfileOutcome::Invalid);
     assert_eq!(old.profiles().await, vec![]);
     assert_eq!(replacement.profiles().await, vec![retained]);
 }
