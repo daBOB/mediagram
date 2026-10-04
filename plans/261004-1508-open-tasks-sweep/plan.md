@@ -48,7 +48,7 @@ into `main` (memory: bump versions by pattern; another session commits to main).
 
 | # | Plan | Status |
 |---|------|--------|
-| B1 | `260926-1330-android-editorial-departments-parity` phases 4–8 | pending |
+| B1 | `260926-1330-android-editorial-departments-parity` — 4–6, 8 shipped 0.66.0; phase 9 groups A+B building, C+D after, then phase 7 | in progress |
 | B2 | `260930-0303-subtitles-for-films-and-series` leftovers + `260928-0130-android-one-watch-state-fake` 02–04 | pending |
 | B3 | `260928-0047-profile-roles-pins-kids-age-limits` 01–08 | pending |
 
