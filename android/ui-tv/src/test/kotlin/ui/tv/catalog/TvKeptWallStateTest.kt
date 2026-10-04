@@ -50,7 +50,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
 
         showCatalog(ready(films(1)))
         pressRailRow("My List")
-        compose.onNodeWithText("Nothing on the list.").assertExists()
+        compose.onNodeWithText("Nothing on your list.").assertExists()
         close()
 
         showCatalog(ready(films(1)))
@@ -77,7 +77,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         showCatalog(withWatch(films(3), WatchSnapshot.Empty.copy(watchlist = listOf("film-2", "film-0"))))
         pressRailRow("My List")
 
-        compose.onNodeWithText("Watchlist · 2").assertExists()
+        compose.onNodeWithText("My List · 2").assertExists()
         compose.onNodeWithText("Film 2").assertIsFocused()
         compose.onNodeWithText("Film 1").assertDoesNotExist()
     }
@@ -129,7 +129,7 @@ class TvKeptWallStateTest : TvScreenStateTest() {
         compose.runOnUiThread { state.value = withWatch(sets, WatchSnapshot.Empty) }
         compose.waitForIdle()
 
-        compose.onNodeWithText("Nothing on the list.").assertExists()
+        compose.onNodeWithText("Nothing on your list.").assertExists()
         // The rail is open now that the remote actually landed on it, so
         // its row reads by its visible label rather than by the content
         // description a collapsed row falls back to.

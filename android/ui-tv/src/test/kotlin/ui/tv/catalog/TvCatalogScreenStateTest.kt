@@ -75,7 +75,7 @@ class TvCatalogScreenStateTest {
         }
         compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
         compose.onNodeWithText("Continue").assertDoesNotExist()
-        compose.onNodeWithText("Watchlist").assertDoesNotExist()
+        compose.onNodeWithText("My List").assertDoesNotExist()
     }
 
     @Test

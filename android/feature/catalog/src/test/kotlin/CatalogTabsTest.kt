@@ -23,7 +23,7 @@ class CatalogTabsTest {
         val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf(DOCUMENTARIES, emptyList()), Shelf("Tutorials", emptyList()))
 
         val tabs = catalogTabsOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", DOCUMENTARIES, "Tutorials", "Continue", "Watchlist", "Collections"), tabs.titles)
+        assertEquals(listOf("Home", "Movies", "Series", DOCUMENTARIES, "Tutorials", "Continue", "My List", "Collections"), tabs.titles)
         assertEquals(5, tabs.firstKept)
 
         val split = mastheadSplitOf(shelves)
@@ -36,7 +36,7 @@ class CatalogTabsTest {
         val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf(ANIME, emptyList()), Shelf(DOCUMENTARIES, emptyList()))
 
         val tabs = catalogTabsOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Continue", "Watchlist", "Collections"), tabs.titles)
+        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Continue", "My List", "Collections"), tabs.titles)
 
         val split = mastheadSplitOf(shelves)
         assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Collections"), split.departments)

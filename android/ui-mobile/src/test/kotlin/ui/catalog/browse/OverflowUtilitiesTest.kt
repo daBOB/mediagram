@@ -70,7 +70,7 @@ class OverflowUtilitiesTest {
         compose.onNodeWithText("Series").assertIsDisplayed()
         compose.onNodeWithText("Collections").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Continue").assertDoesNotExist()
-        compose.onNodeWithText("Watchlist").assertDoesNotExist()
+        compose.onNodeWithText("My List").assertDoesNotExist()
     }
 
     @Test fun theTrimmedMenuOffersOnlyTheAndroidOnlyActions() {
@@ -86,7 +86,7 @@ class OverflowUtilitiesTest {
 
     @Test fun everyFormerOverflowUtilityIsNowItsOwnIconInTheHeader() {
         tapIcon("My List")
-        compose.onNodeWithText("Nothing on the list.").assertIsDisplayed()
+        compose.onNodeWithText("Nothing on your list.").assertIsDisplayed()
         compose.onNodeWithText("Series").performClick()
         tapIcon("Continue watching")
         compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()

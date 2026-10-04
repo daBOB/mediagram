@@ -24,7 +24,7 @@ enum class KeptKind(
     val empty: String,
 ) {
     CONTINUE("Continue", "Nothing started yet."),
-    WATCHLIST("Watchlist", "Nothing on the list."),
+    WATCHLIST("My List", "Nothing on your list."),
     COLLECTIONS("Collections", "No lists yet."),
 }
 

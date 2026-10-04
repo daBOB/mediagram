@@ -15,7 +15,7 @@
 
 ## Overview
 
-Priority P2 · status pending. Replace the root library's Material top app bar and serif
+Priority P2 · status completed (0.71.0, `a0ab730f`). Replace the root library's Material top app bar and serif
 tab row with the web player's chrome: a left rail on EXPANDED and a Geist departments
 pill bar laid over the content; on compact/medium the web's ≤900px header.
 

@@ -31,6 +31,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import kotlin.test.assertFalse
 import ui.tv.catalog.films
 import ui.tv.setup.TvConfirmDialogCancelTag
 import ui.tv.setup.TvConfirmDialogConfirmTag
@@ -168,6 +169,21 @@ class TvHousekeepingTest {
 
         compose.onAllNodesWithText("Ada").assertCountEquals(0)
         compose.onAllNodesWithText("Stay as I am").assertCountEquals(0)
+    }
+
+    /** Back on the reopened picker is "Stay as I am", as on the phone — not a way out of the app. */
+    @Test
+    fun backOnTheReopenedPickerStaysAsTheViewer() {
+        launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = "ada", films = 1)
+        press(compose.onNodeWithContentDescription("Who's watching: Ada"))
+        compose.onNodeWithText("Stay as I am").assertExists()
+
+        compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+
+        compose.onAllNodesWithText("Who's watching?").assertCountEquals(0)
+        compose.onNodeWithText("Film 0").assertExists()
+        assertFalse(controller.get().isFinishing, "Back left the app")
     }
 
     /** With the last profile gone, "Remove a profile…" goes too, and the remote lands on New profile. */

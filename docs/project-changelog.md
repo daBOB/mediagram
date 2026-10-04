@@ -5,6 +5,29 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.9 — the Android home checked against the web; Back on the profile chooser stays
+
+**Fixed**
+
+- Android (phone, tablet, TV): Back on a reopened "Who's watching?" chooser now
+  means "Stay as I am", as Escape does on the web. The chooser stands in for the
+  library, so Back used to close the app. On a first run, with nobody to stay
+  as, Back still leaves.
+- Android: the My List page and its empty state now read "My List" and
+  "Nothing on your list.", like the web. They still said "Watchlist" from
+  before the web renamed the shelf.
+
+**Docs**
+
+- The Android home and chrome were walked on the tablet against the live web
+  player, landscape and portrait. The home's section order, the rail, the
+  departments bar and all six departments match. The remaining differences
+  are recorded as deliberate or as owned by later plans, in
+  `plans/260927-2050-android-home-web-parity/reports/home-web-parity-tablet-report.md`.
+- `DESIGN.md` now describes the chrome and home that shipped in 0.71: the
+  rail, the departments bar and the compact header, and the home's section
+  order. It no longer describes the serif tab row they replaced.
+
 ## 0.99.8 — a cache-server address without a port finds the server
 
 **Fixed**

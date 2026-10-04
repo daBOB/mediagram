@@ -83,6 +83,7 @@ rounded:
   control: "6dp"
   card: "12dp"
   plate: "0dp"
+  full: "999dp"
 spacing:
   extraSmall: "4dp"
   small: "8dp"
@@ -106,19 +107,21 @@ components:
     backgroundColor: "{colors.sunk}"
     textColor: "{colors.figures}"
     typography: "{typography.title}"
-  shelf-tab:
-    backgroundColor: "transparent"
-    textColor: "{colors.figures}"
-    typography: "{typography.title}"
-    padding: "4dp 0"
-  shelf-tab-selected:
+  department-pill:
     backgroundColor: "transparent"
     textColor: "{colors.text}"
-    typography: "{typography.title}"
-    padding: "4dp 0"
-  masthead:
-    backgroundColor: "transparent"
-    width: "560dp"
+    rounded: "{rounded.full}"
+    padding: "10dp 16dp"
+    height: "44dp"
+  department-pill-selected:
+    backgroundColor: "rgba(243, 239, 231, 0.12)"
+    textColor: "{colors.text}"
+    rounded: "{rounded.full}"
+  departments-bar:
+    height: "76dp"
+  rail:
+    backgroundColor: "{colors.sidebar}"
+    width: "184dp below 1180dp, 224dp above"
   app-bar:
     backgroundColor: "{colors.ground}"
     textColor: "{colors.text}"
@@ -240,9 +243,8 @@ existing catalogue already used.
 
 ### Primary
 
-- **Imprint** (`{colors.imprint}`): the one accent. It marks the shelf
-  currently in view — drawn as the rule under the selected masthead label —
-  and, on a settings screen, a focus ring, a selected row's ring, and an
+- **Imprint** (`{colors.imprint}`): the one accent. It marks, on a
+  settings screen, a focus ring, a selected row's ring, and an
   outline pill's border and text. It is never a filled background behind a
   whole control or surface: that is what the *rest* of the One Accent Rule
   (below) still holds the line on, even as where the accent is allowed to
@@ -339,10 +341,10 @@ either of the others' jobs.
 ### Hierarchy
 
 - **Display** (Fraunces Medium, 26sp, −0.1sp): section headings.
-- **Headline** (Fraunces Medium, 23sp, −0.1sp): the top app bar title — the
-  wordmark on the catalogue, the name of a collection or title elsewhere.
-- **Title** (Fraunces Medium, 18sp): shelf names in the masthead; standing-in
-  initials on a plate with no artwork.
+- **Headline** (Fraunces Medium, 23sp, −0.1sp): the top app bar title on a
+  pushed page — the name of a collection, a title, Latest, Genres.
+- **Title** (Fraunces Medium, 18sp): standing-in initials on a plate with no
+  artwork.
 - **Title Small** (Fraunces Medium, 16sp): the name under a plate, to two lines
   then ellipsis; a settings index row's own label.
 - **Page Title** (Fraunces Medium, uppercase, −0.03em, 0.86 line height,
@@ -401,27 +403,21 @@ The spacing scale is five steps — 4 / 8 / 16 / 24 / 32dp — shared with the
 television surface. 16dp is the working rhythm; 32dp is the margin an empty-state
 message is held inside.
 
-Vertical order on the catalogue is fixed: app bar on ground, then a full-width
-progress line while the library is being worked on, then the masthead, then any
-notice, then the wall. The progress line and the masthead are pinned above the
-wall and do not scroll with it, because they report on the whole library rather
-than on a row of it.
-
-The masthead is held to 560dp and centred, not stretched. Three labels spread
-across a tablet's twelve hundred points read as three unrelated buttons rather
-than as one masthead.
+The catalogue's frame is the web player's: on a tablet in landscape the rail
+down the left and the departments bar across the top of the content, laid over
+the cover or a department's hero; on a phone or a tablet in portrait the compact
+header instead (see Components › Navigation). Under the bar, the home follows
+the web's home from top to bottom (Components › Home), and a department opens
+on its own hero.
 
 ### Named Rules
 
-**The Wall Rule.** A shelf is a wall: everything it holds, on the page, in one
-direction of travel. No horizontally-scrolling rail, ever. A rail hides how much
-is on a shelf and ranks what it shows first, which is a storefront's job and not
-this one's.
-
-**The One Shelf Rule.** Exactly one shelf is on the wall at a time, chosen from
-the masthead. Stacked shelves and the wall cannot both be had: the film shelf
-alone is three hundred plates deep, so stacking would put the courses fifty
-screens below the fold with nothing on screen to say they existed.
+**The Wall Rule.** A kept shelf — My List, Continue, a department's "all" page —
+is a wall: everything it holds, on the page, in one direction of travel. The
+home and a department's front carry rows instead, because the web's do (the
+magazine layout, 2026-09-25, and the home's web layout, 2026-09-27, both the
+user's decisions); every row ends in "See all", which opens the wall that says
+how much is there.
 
 ## Elevation & Depth
 
@@ -438,10 +434,10 @@ raised container. On a plate the hairline is painted as an overlay on top of
 the artwork, not as a border on the same box — a border modifier paints
 beneath the content, and a poster cropped to fill would cover it.
 
-**The No Floating Container Rule.** The masthead's container is transparent so it
-reads as type on the page. Given a colour of its own it becomes a filled band
-floating between the bar and the wall, which is the one thing this world does not
-do.
+**The No Floating Container Rule.** The departments bar is either translucent
+over art or the page's own colour — never a colour of its own. A tinted bar
+becomes a band floating between the art and the page, which is the one thing
+this world does not do.
 
 ## Shapes
 
@@ -457,7 +453,9 @@ yet.
 The 2:3 plate remains the one recurring square silhouette, on every surface
 that shows artwork. A picture card takes `{rounded.card}` (12dp), the web's own
 `--radius-card`: home's feature cards, and Appearance's swatch cards, which are
-pictures of a theme rather than controls that act on one.
+pictures of a theme rather than controls that act on one. The chrome's
+department pills, search and avatar circles are fully round
+(`{rounded.full}`), as the web's `.departments a` are.
 
 ## Components
 
@@ -484,24 +482,60 @@ that in Geist 13sp tabular.
   the same artwork, and the pinned channel index carries no artwork at all, so
   the face is the least reliable place to say what something is.
 
-### Navigation — the masthead
+### Navigation — rail and departments bar
 
-- **Style:** a tab row with a transparent container, centred, held to 560dp.
-- **Typography:** shelf names in Fraunces Medium 18sp. Text only.
-- **Selected:** label at full paper weight (`{colors.text}`), with the imprint
-  red rule beneath it. The rule is the mark; the label is simply not dimmed.
-- **Unselected:** figures grey (`{colors.figures}`).
-- **Target:** each label carries 4dp of vertical padding so a short word like
-  "Series" still clears Material's 48dp.
-- **No icons.** There are no icons in the masthead, and a drawn one would be
-  inventing a mark for a shelf that already has a name.
+The web player's chrome, ported rather than re-decided (`ui/chrome/*`). The web
+is the reference for every entry here; where Android differs, the reason is
+written beside it.
+
+- **Rail (expanded width, tablet landscape):** the wordmark, then My List and
+  Continue watching with their counts, Latest, Genres, Stats, Settings, System,
+  and the library's tally in tracked caps at the foot. 184dp wide below 1180dp,
+  224dp above it — the web's two widths. The rail stays beside every library
+  frame, pushed pages included.
+- **Departments bar:** Geist pills with counts — Home, Movies, Series, Anime,
+  Documentaries, Tutorials, Collections — then search, the viewer's avatar and
+  the ⋮ menu, 76dp tall (the web's `--masthead-height`). Over a cover or a
+  department hero it starts as translucent black with light type and settles
+  to the page colour as the art scrolls away. **Deliberate difference:** no
+  blur behind it — Compose cannot blur what lies behind a node without a new
+  dependency — so the art shows through sharper than on the web until the bar
+  settles.
+- **Compact (phone, tablet portrait):** the web's ≤900px header — wordmark and
+  an icon row, a scrolling row of department pills, then a search field and the
+  avatar. **Deliberate difference:** it hides on scroll down and returns on
+  scroll up; the web's scrolls away with the page, and a fixed three-row header
+  would eat a phone screen.
+- **The ⋮ menu** holds only what the web has no counterpart for: Update library,
+  TMDB key… and Start over. The web server does these itself.
+- **Back** pops a pushed page, then leaves the app from the root. On a reopened
+  profile picker it is "Stay as I am", as Escape is on the web.
+
+### Home — cover, features, bands
+
+The web's home (`home-view.js`) in its own order, so the two read the same
+from top to bottom (`ui/catalog/home/*`):
+
+1. **Cover** — five cover stories under the departments bar, each with its
+   kicker, title, tagline, facts and Watch now / + My List / Details, turning
+   every nine seconds with a pause control.
+2. **Features** — Editor's choice full width, then Trending on TMDB and
+   Best-rated in the library side by side.
+3. **Continue Watching** beside a pull quote, one band sharing a baseline;
+   either half spans the band when the other is absent.
+4. **Recently Added** — posters alone, the poster standing for the card.
+5. **Latest series** — one row of up to eight captioned posters.
+6. **Latest courses** — an index of initials tiles, not plates: a course
+   carries no artwork.
 
 ### Top app bar
 
+Pushed pages only (a title, Latest, Genres, Search…); the library's root wears
+the departments bar instead.
+
 - **Container:** ground (`{colors.ground}`) — darker than the page below it.
-- **Title:** Fraunces Medium 23sp in paper. The wordmark at the root; the name of
-  whatever is open elsewhere, read from the destination so no two screens can
-  spell it differently.
+- **Title:** Fraunces Medium 23sp in paper — the name of whatever is open, read
+  from the destination so no two screens can spell it differently.
 - **Icons:** the platform's own vector back and overflow marks, in figures grey,
   each carrying a content description.
 - **Exception:** Settings and System draw no top app bar at all. `PageHead`
@@ -533,8 +567,8 @@ Medium 16sp, and a one-line status underneath in quiet Geist 12sp.
 - **Corner style:** `{rounded.control}` (6dp).
 - **Rest:** figures (`{colors.figures}`) label, quiet sub-label.
 - **Selected:** text (`{colors.text}`) label, a tinted background reading as
-  the row a viewer is on — the one place besides the masthead's rule this
-  catalogue tints a whole row rather than drawing an accent border.
+  the row a viewer is on — with the selected department pill and rail row,
+  the places this catalogue tints a whole control rather than drawing an accent border.
 - **Target:** 64dp minimum height, 12dp/14dp padding, the whole row.
 
 ### Ledger

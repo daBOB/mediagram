@@ -70,7 +70,7 @@ class KeptShelvesTest {
     @Test
     fun labelsAndEmptyTextMatchTheWebsKept() {
         assertEquals("Continue" to "Nothing started yet.", KeptKind.CONTINUE.label to KeptKind.CONTINUE.empty)
-        assertEquals("Watchlist" to "Nothing on the list.", KeptKind.WATCHLIST.label to KeptKind.WATCHLIST.empty)
+        assertEquals("My List" to "Nothing on your list.", KeptKind.WATCHLIST.label to KeptKind.WATCHLIST.empty)
         assertEquals("Collections" to "No lists yet.", KeptKind.COLLECTIONS.label to KeptKind.COLLECTIONS.empty)
     }
 }

@@ -24,6 +24,7 @@ import org.robolectric.annotation.Config
 import ui.LibraryFlowFixture
 import ui.LibraryFlowTestActivity
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 /**
  * The rail at a tablet's own EXPANDED width: every row the web's rail-nav
@@ -106,10 +107,21 @@ class LibraryRailTest {
 
     @Test fun myListAndContinueWatchingLandOnTheSameHiddenTabTheOldMenuDid() {
         compose.onNodeWithText("My List").performClick()
-        compose.onNodeWithText("Nothing on the list.").assertIsDisplayed()
+        compose.onNodeWithText("Nothing on your list.").assertIsDisplayed()
         compose.onNodeWithContentDescription("mediagram — home").performClick()
         compose.onNodeWithText("Continue watching").performClick()
         compose.onNodeWithText("Nothing started yet.").assertIsDisplayed()
+    }
+
+    @Test fun backOnTheReopenedPickerStaysAsTheViewerRatherThanLeavingTheApp() {
+        compose.onNodeWithContentDescription("Who's watching: Viewer").performClick()
+        compose.onNodeWithText("Stay as I am").assertIsDisplayed()
+
+        compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
+
+        compose.onAllNodesWithText("Who's watching?").assertCountEquals(0)
+        compose.onNodeWithText("Genres").assertIsDisplayed()
+        assertFalse(controller.get().isFinishing, "Back left the app")
     }
 
     @Test fun theWordmarkReturnsHomeFromWhereverTheRailOpenedSomethingElse() {

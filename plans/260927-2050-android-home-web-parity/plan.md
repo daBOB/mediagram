@@ -1,7 +1,7 @@
 ---
 title: "Android home on the web player's layout: rail, departments bar, cover, features, bands"
 description: "Rebuild the phone/tablet library chrome and home screen to match the web player's home; add the Documentaries department."
-status: pending
+status: completed
 priority: P2
 effort: 20h
 branch: feat/android-home-web-parity
@@ -44,11 +44,11 @@ tablet, 1164×777 dp; web at 412 dp): scratchpad `home-web-{1,2,3}.png`,
 
 | # | Phase | Owns | Status |
 |---|-------|------|--------|
-| 01 | [Library chrome: rail + departments bar](phase-01-library-chrome-rail-departments-bar.md) | ui-mobile `ui/` shell, catalog tabs, new `ui/chrome/*`, rail icons | pending |
+| 01 | [Library chrome: rail + departments bar](phase-01-library-chrome-rail-departments-bar.md) | ui-mobile `ui/` shell, catalog tabs, new `ui/chrome/*`, rail icons | completed (0.71.0, `a0ab730f`) |
 | 02 | [Home body: cover, features, bands, shelves](phase-02-home-cover-features-bands-shelves.md) | ui-mobile `catalog/Home*`, `CoverStory`, `FeatureStrip`, `ResumeStrip`, `PullQuote`, new `catalog/home/*` | completed |
 | 03 | [Documentaries department](phase-03-documentaries-department.md) | core/model `Kind`, core/data kind mapping, feature/catalog shelves/tabs, ui-mobile department page | completed |
 | 03b | [Department hero in the web's look](phase-03b-department-hero-web-look.md) | ui-mobile `DepartmentHero`, department tabs' top chrome | completed |
-| 04 | [Verify on tablet, docs, version](phase-04-verify-docs-version.md) | tests sweep, docs/, DESIGN.md, manifests | pending |
+| 04 | [Verify on tablet, docs, version](phase-04-verify-docs-version.md) | tests sweep, docs/, DESIGN.md, manifests | completed (0.99.9) |
 
 ## Dependencies
 
@@ -69,3 +69,14 @@ feature (03 does → `0.71.0`).
 
 `git revert` per phase. No persisted-data change; Documentaries only re-files sets
 the index already calls `docu`.
+
+## Result (2026-10-04)
+
+Verified on the tablet against the live web player, landscape and portrait:
+[reports/home-web-parity-tablet-report.md](reports/home-web-parity-tablet-report.md).
+The home's section order, the chrome and all six departments match. Two defects
+the walk found were fixed in 0.99.9 (Back on a reopened profile chooser closed the
+app; My List was titled "Watchlist"). Remaining differences are listed there as
+deliberate or owned by `260926-1330` (Genres, Latest, Franchises) and `260928-0047`
+(profile chooser).
+

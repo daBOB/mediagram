@@ -1,5 +1,6 @@
 package ui.tv.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,6 +38,10 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val chosen = state as? ProfileUiState.Chosen
 
     if (chosen == null) {
+        // Back on a reopened picker is "Stay as I am" — the phone's gate
+        // says why; the add-profile flow's own handlers, composed after this
+        // one, still take Back first while it is open.
+        BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
         TvProfilePicker(
             state = state,
             onChoose = viewModel::choose,

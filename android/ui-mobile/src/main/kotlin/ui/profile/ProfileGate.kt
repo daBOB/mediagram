@@ -1,5 +1,6 @@
 package ui.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -24,6 +25,11 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     val chosen = state as? ProfileUiState.Chosen
 
     if (chosen == null) {
+        // Back on a reopened picker is "Stay as I am", as Escape is on the
+        // web: the picker stands in for the library, so without this Back
+        // would leave the app instead of returning to it. A first run has
+        // nobody to return to, and Back there leaves as it always did.
+        BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
         ProfilePickerScreen(
             state = state,
             onChoose = viewModel::choose,

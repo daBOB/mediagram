@@ -2,7 +2,7 @@
 
 ## Overview
 
-Priority P2 · pending. Close the plan: full test sweep, tablet walk-through against the
+Priority P2 · completed 2026-10-04 — see `reports/home-web-parity-tablet-report.md`. Close the plan: full test sweep, tablet walk-through against the
 web, docs, follow-up list.
 
 ## Steps
@@ -25,12 +25,12 @@ web, docs, follow-up list.
 
 ## Todo
 
-- [ ] test sweep
-- [ ] tablet walk-through + side-by-side report
-- [ ] compact check
-- [ ] docs
-- [ ] follow-ups listed
-- [ ] version + commit
+- [x] test sweep
+- [x] tablet walk-through + side-by-side report
+- [x] compact check
+- [x] docs
+- [x] follow-ups listed
+- [x] version + commit
 
 ## Success criteria
 
