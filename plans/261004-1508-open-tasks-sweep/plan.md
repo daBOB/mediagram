@@ -38,6 +38,12 @@ in, in what order, what was decided, and where each item stands.
    `reports/b3-profile-roles-preflight-report.md` override the phase files where they differ
    (state schema web v12 / core v8, file splits, stamp bounds, keep Back = "Stay as I am").
 
+7. **Box and 4K (2026-10-04, evening):** fix 4K HDR/DV stutter with **parallel downloads**
+   for high-bitrate files (cold Telegram ~15–17 Mbit/s vs 27–60 Mbit/s); the mDNS test may
+   clear the box's manual cache address for about a minute and restore
+   `http://192.168.0.240:7788`; **publish to the channel after the Android profile work
+   lands** and is walked (the box runs 0.106.1 + the DTS fix by adb meanwhile).
+
 Outward actions still need their own word each time: publishing to the TV channel,
 pushing to origin. Earlier rewatch-date default stands (watched keeps the latest finish).
 
