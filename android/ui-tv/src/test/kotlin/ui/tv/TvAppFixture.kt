@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.SearchViewModel
+import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
@@ -85,7 +86,7 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * on, and only [TvSetupStage.READY] also picks a library — the three
  * remaining questions [SetupViewModel] asks before it reports `Ready`.
  *
- * [profiles] and [chosenProfileId] are seeded into that same fake core, and
+ * [profiles], their [pins] and [chosenProfileId] are seeded into that same fake core, and
  * back a real [ProfileViewModel] — `TvApp` resolves one through
  * `TvProfileGate` the moment `Ready` is reached, so any test that reaches
  * `READY` needs one ready to resolve too — over the real watch-state
@@ -107,11 +108,16 @@ internal class TvAppFixture(
     watch: suspend WatchStateRepository.() -> Unit = {},
     heldIds: Set<String> = emptySet(),
     achievements: Achievements = NO_ACHIEVEMENTS,
+    pins: Map<String, String> = emptyMap(),
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
     private val login: LoginViewModel
     private val profile: ProfileViewModel
+    private val manage: ManageProfilesViewModel
+
+    /** The core behind everything, the household's rules with it: what a profile change left, and each grown-up's PIN. */
+    val core: FakeCore
     val catalog: CatalogViewModel
     private val search: SearchViewModel
     private val fetch: FetchViewModel
@@ -157,11 +163,12 @@ internal class TvAppFixture(
         )
 
     init {
-        val core =
+        core =
             FakeCore(
                 authorized = stage == TvSetupStage.LIBRARY || stage == TvSetupStage.READY,
                 libraries = listOf(LibraryChoice("films", "Family films")),
             )
+        core.roles.pins.putAll(pins)
         val telegram = InMemoryTelegramSettings()
         val library = InMemoryLibrarySettings()
         val dispatcher = Dispatchers.Main.immediate
@@ -190,6 +197,7 @@ internal class TvAppFixture(
         login = LoginViewModel(provider, dispatcher)
         val viewer = WatchStateFixture(profiles, chosenProfileId, core, watch)
         profile = ProfileViewModel(viewer.repository, NoopWatchSync)
+        manage = ManageProfilesViewModel(viewer.repository, NoopWatchSync)
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -284,6 +292,8 @@ internal class TvAppFixture(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
                 ProfileViewModel::class.java to profile,
+                // Beside the picker's in TvProfileGate, for Manage profiles.
+                ManageProfilesViewModel::class.java to manage,
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,

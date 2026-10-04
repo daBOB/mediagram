@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -85,6 +86,14 @@ class TvProfilePickerTest {
         compose.onNodeWithTag(TvProfilePickerFirstTileTag).performKeyInput { pressKey(Key.Enter) }
 
         assertEquals(ada.id, chosen)
+    }
+
+    /** With no grown-up there is nobody to pick a PIN for: making the first profile is what the remote lands on. */
+    @Test
+    fun theFirstProfileRowTakesTheRemoteOnADeviceWithNoGrownUp() {
+        show(profiles = listOf(Profile(id = "k", name = "TV kids", kids = true)))
+
+        compose.onNodeWithText("Create the first profile — it runs this household").assertIsFocused()
     }
 
     private fun show(

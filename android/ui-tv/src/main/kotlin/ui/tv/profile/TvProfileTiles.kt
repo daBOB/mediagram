@@ -27,17 +27,16 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.initialsOf
+import catalog.profile.kidsTag
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Profile
 import ui.tv.TvFocus
 
-private const val NEW_PROFILE = "New profile"
-
 /** A tile's width when there is room for it; [profileTileWidth] narrows it towards [MinTileWidth] to fit more. */
 private val TileWidth = 180.dp
 
-/** As narrow as a tile goes — "New profile" still reads in full on one line. */
+/** As narrow as a tile goes: a short name still reads on one line, and a kid's "Kids · FSK 12" within the tile. */
 private val MinTileWidth = 140.dp
 
 /**
@@ -57,7 +56,7 @@ internal fun profileTileWidth(
     return fit.coerceIn(MinTileWidth, TileWidth)
 }
 
-// Fixed, not derived from content: a kids tile carries one more line ("KIDS")
+// Fixed, not derived from content: a kids tile carries one more line (its limit)
 // than a plain one, and a row of `Card`s sized only by their own content
 // grows that one tile taller than its neighbours — a ragged row a fixed
 // height (both tiles centring their content inside it) closes off for good.
@@ -79,36 +78,14 @@ internal fun TvProfileTile(
         // covers. The two only ever visibly differ on a two-word name.
         TvProfileAvatar(letters = initialsOf(profile.name))
         Text(profile.name, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
-        if (profile.kids) {
-            Text(
-                // The phone's own tile label, unabridged — see
-                // `ui.profile.ProfilePickerScreen.ProfileTile`.
-                "KIDS",
-                style = TvTypeScale.body,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = Spacing.extraSmall),
-            )
+        // The web's tile line: a kid's own limit, never a fixed one.
+        profile.kidsTag?.let {
+            Text(it, style = TvTypeScale.body, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = Spacing.extraSmall))
         }
     }
 }
 
-@Composable
-internal fun TvAddTile(
-    onClick: () -> Unit,
-    focusRequester: FocusRequester?,
-    tag: String,
-    width: Dp = TileWidth,
-) {
-    TileCard(onClick, focusRequester, tag, width) {
-        // A literal glyph, not a title to derive letters from — `initialsOf`
-        // drops anything that is not a letter or digit, which would turn
-        // this into "?" instead of the "+" the phone itself draws.
-        TvProfileAvatar(letters = "+")
-        Text(NEW_PROFILE, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
-    }
-}
-
-/** The focusable, fixed-height card both tiles share; only what sits centred inside it differs. */
+/** The focusable, fixed-height card a tile is drawn on. */
 @Composable
 private fun TileCard(
     onClick: () -> Unit,
