@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import model.Profile
 import model.ProfileOutcome
 import model.ProfileRequest
 
@@ -117,6 +118,16 @@ internal suspend fun attempt(block: suspend () -> ProfileOutcome): ProfileOutcom
     ) {
         null
     }
+
+/**
+ * A grown-up saying who they are — the web's `prove`: their PIN, or, for one
+ * from before PINs, the one they choose now, which becomes theirs.
+ */
+internal fun proving(
+    profile: Profile,
+    pin: String,
+): ProfileRequest =
+    if (profile.hasPin) ProfileRequest.Unlock(profile.id, pin) else ProfileRequest.SetPin(profile.id, "", profile.id, pin)
 
 /**
  * [request] sent through the repository; a change that took is pushed to the
