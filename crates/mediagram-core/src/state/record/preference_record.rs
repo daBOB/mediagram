@@ -8,6 +8,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::MAX_STAMP;
 use super::hostile_json::{js_number, text_};
 
 /// The names that travel, in every scope (`key:`, `show:`, `set:`, `profile`).
@@ -32,8 +33,6 @@ fn capped(value: Option<&Value>) -> Option<String> {
     Some(text_(value)?.chars().take(MAX_PREFERENCE).collect())
 }
 
-const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
-
 pub(super) fn preference_row(raw: &Value) -> Option<SyncPreference> {
     let row = raw.as_object()?;
     let name = capped(row.get("name"))?;
@@ -43,7 +42,7 @@ pub(super) fn preference_row(raw: &Value) -> Option<SyncPreference> {
     let updated_at = js_number(row.get("updatedAt"));
     // Whole milliseconds a JS peer can hold exactly: past 2^53 a local write's
     // `stored + 1` stamp no longer advances, and the peer would win every tie.
-    if updated_at.fract() != 0.0 || !(1.0..=MAX_SAFE_INTEGER).contains(&updated_at) {
+    if updated_at.fract() != 0.0 || !(1.0..=MAX_STAMP).contains(&updated_at) {
         return None;
     }
     Some(SyncPreference {

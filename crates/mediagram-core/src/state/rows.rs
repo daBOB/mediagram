@@ -6,7 +6,7 @@
 
 use rusqlite::{Connection, params};
 
-use super::profiles::now_ms;
+use super::{profiles::now_ms, record::MAX_STAMP};
 
 /// Where a profile is in one title. `at`/`duration` are seconds, never a
 /// percentage — a set's runtime can be unknown, and a percentage recorded
@@ -75,9 +75,10 @@ pub fn clear_progress(conn: &Connection, profile_id: &str, set_id: &str) -> rusq
     Ok(())
 }
 
+/// `CAST`: a real an older build's overflowing `+ 1` left reads saturated, not as an error.
 pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<WatchedRow>> {
     let mut stmt = conn.prepare(
-        "SELECT set_id, finished_at FROM watched
+        "SELECT set_id, CAST(finished_at AS INTEGER) FROM watched
            WHERE profile_id = ?1 AND removed_at IS NULL ORDER BY finished_at DESC",
     )?;
     let rows = stmt.query_map([profile_id], |row| {
@@ -101,7 +102,8 @@ pub fn watched_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<
 /// past whichever clock last touched this row: a value this device
 /// imported can carry another device's clock, and this device's own clock
 /// running behind would otherwise let a stale import win the next merge
-/// back.
+/// back. Neither steps past `MAX_STAMP`: no peer keeps a later stamp, and
+/// `+ 1` at the top of the integer range would store a real.
 pub fn set_watched(
     conn: &Connection,
     profile_id: &str,
@@ -115,15 +117,15 @@ pub fn set_watched(
         tx.execute(
             "INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
                ON CONFLICT(profile_id, set_id) DO UPDATE SET
-                 finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL",
-            params![profile_id, set_id, now_ms()],
+                 finished_at = MAX(excluded.finished_at, MIN(COALESCE(removed_at, 0), ?4) + 1), removed_at = NULL",
+            params![profile_id, set_id, now_ms(), MAX_STAMP as i64 - 1],
         )?;
         clear_progress(&tx, profile_id, set_id)?;
         tx.commit()?;
     } else {
         conn.execute(
-            "UPDATE watched SET removed_at = MAX(?3, finished_at + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
-            params![profile_id, set_id, now_ms()],
+            "UPDATE watched SET removed_at = MAX(?3, MIN(finished_at, ?4) + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
+            params![profile_id, set_id, now_ms(), MAX_STAMP as i64 - 1],
         )?;
     }
     Ok(())

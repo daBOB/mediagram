@@ -16,12 +16,15 @@ struct Standing {
     removed: bool,
 }
 
+/// The stamps here and in [`export_watched`] are read as `f64`, which takes
+/// an integer and a real alike: a real an older build's overflowing `+ 1`
+/// left in the table must not fail every sync round on an integer read.
 fn standing_for(
     conn: &Connection,
     profile_id: &str,
     set_id: &str,
 ) -> rusqlite::Result<Option<Standing>> {
-    let row: Option<(i64, Option<i64>)> = conn
+    let row: Option<(f64, Option<f64>)> = conn
         .query_row(
             "SELECT finished_at, removed_at FROM watched WHERE profile_id = ?1 AND set_id = ?2",
             params![profile_id, set_id],
@@ -29,7 +32,7 @@ fn standing_for(
         )
         .optional()?;
     Ok(row.map(|(finished_at, removed_at)| Standing {
-        updated_at: removed_at.unwrap_or(finished_at) as f64,
+        updated_at: removed_at.unwrap_or(finished_at),
         removed: removed_at.is_some(),
     }))
 }
@@ -42,7 +45,7 @@ pub fn export_watched(
     let mut stmt = conn.prepare(
         "SELECT set_id, finished_at, removed_at FROM watched WHERE profile_id = ?1",
     )?;
-    let rows: Vec<(String, i64, Option<i64>)> = stmt
+    let rows: Vec<(String, f64, Option<f64>)> = stmt
         .query_map([profile_id], |row| {
             Ok((row.get(0)?, row.get(1)?, row.get(2)?))
         })?
@@ -54,12 +57,12 @@ pub fn export_watched(
         match removed_at {
             Some(removed_at) => unwatched.push(UnwatchedRow {
                 set_id,
-                updated_at: removed_at as f64,
-                last_finished_at: finished_at as f64,
+                updated_at: removed_at,
+                last_finished_at: finished_at,
             }),
             None => watched.push(WatchedRow {
                 set_id,
-                updated_at: finished_at as f64,
+                updated_at: finished_at,
             }),
         }
     }

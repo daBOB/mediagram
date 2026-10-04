@@ -546,5 +546,22 @@
         }
       ]
     }
+  },
+  {
+    "name": "a watched or unwatched time beyond 2^53 - 1 drops the row; 2^53 - 1 itself is kept",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[{\"setId\":\"01A\",\"updatedAt\":9007199254740991},{\"setId\":\"01B\",\"updatedAt\":9007199254740992},{\"setId\":\"01C\",\"updatedAt\":9007199254740993},{\"setId\":\"01D\",\"updatedAt\":9223372036854775807},{\"setId\":\"01E\",\"updatedAt\":\"9007199254740992\"},{\"setId\":\"01F\",\"updatedAt\":1e19}],\"unwatched\":[{\"setId\":\"02A\",\"updatedAt\":9007199254740991,\"lastFinishedAt\":9007199254740991},{\"setId\":\"02B\",\"updatedAt\":9007199254740992,\"lastFinishedAt\":1789000000000},{\"setId\":\"02C\",\"updatedAt\":1789000000000,\"lastFinishedAt\":9223372036854775807}]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [{ "setId": "01A", "updatedAt": 9007199254740991 }],
+          "unwatched": [{ "setId": "02A", "updatedAt": 9007199254740991, "lastFinishedAt": 9007199254740991 }]
+        }
+      ]
+    }
   }
 ]

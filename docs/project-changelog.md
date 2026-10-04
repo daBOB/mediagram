@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.99.12 — a corrupt "watched" time from another device can no longer win or stop sync
+
+**Fixed**
+
+- Core and web: a synced "watched" or "un-watched" time above 2^53 − 1 is dropped
+  when parsed, as stats times already were. Before, a peer's far-future mark beat
+  this device's real un-mark, and the same import deleted a saved position on another
+  title. A mark at the very top of the integer range made the next un-mark store a
+  real number, after which every export failed and the device stopped publishing its
+  state. Marking and un-marking now step at most to 2^53 − 1, and the core's export
+  reads a value an older build already saturated instead of failing on it. Android
+  takes the fix with its next native core build.
+
 ## 0.99.11 — a department's Continue row keeps its own titles
 
 **Fixed**

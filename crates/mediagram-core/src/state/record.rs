@@ -41,6 +41,12 @@ pub use stats_record::{DayStatRow, TitleStatRow};
 /// Bumped when a reader could no longer make sense of an older document.
 pub const SYNC_FORMAT: i64 = 1;
 
+/// The latest time a synced row may carry: 2^53 − 1, the largest integer
+/// every engine holds exactly (the web's `Number.MAX_SAFE_INTEGER`). A stamp
+/// past it is no clock's, and one near the top of the integer range would
+/// overflow the next own write's `+ 1`.
+pub(crate) const MAX_STAMP: f64 = 9_007_199_254_740_991.0;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProgressRow {

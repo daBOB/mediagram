@@ -271,7 +271,8 @@ export class WatchState {
    * to at least one millisecond past whichever clock last touched this row:
    * a value this device imported can carry another device's clock, and this
    * device's own clock running behind would otherwise let a stale import
-   * win the next merge back — see `watched-reconcile.ts`.
+   * win the next merge back — see `watched-reconcile.ts`. Neither steps past
+   * `Number.MAX_SAFE_INTEGER`: no peer keeps a later time (`sync-record.ts`).
    */
   setWatched(profileId: string, setId: string, finished: boolean): void {
     if (finished) {
@@ -279,17 +280,17 @@ export class WatchState {
       if (db) tolerate(() => db.transaction(() => {
         db.query(`INSERT INTO watched(profile_id, set_id, finished_at, removed_at) VALUES (?1, ?2, ?3, NULL)
              ON CONFLICT(profile_id, set_id) DO UPDATE SET
-               finished_at = MAX(excluded.finished_at, COALESCE(removed_at, 0) + 1), removed_at = NULL`)
-          .run(profileId, setId, Date.now());
+               finished_at = MAX(excluded.finished_at, MIN(COALESCE(removed_at, 0), ?4) + 1), removed_at = NULL`)
+          .run(profileId, setId, Date.now(), Number.MAX_SAFE_INTEGER - 1);
         db.query("DELETE FROM progress WHERE profile_id = ?1 AND set_id = ?2").run(profileId, setId);
       })());
       this.ticks.delete(tickKey(profileId, setId));
     } else {
       this.db
         ?.query(
-          "UPDATE watched SET removed_at = MAX(?3, finished_at + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
+          "UPDATE watched SET removed_at = MAX(?3, MIN(finished_at, ?4) + 1) WHERE profile_id = ?1 AND set_id = ?2 AND removed_at IS NULL",
         )
-        .run(profileId, setId, Date.now());
+        .run(profileId, setId, Date.now(), Number.MAX_SAFE_INTEGER - 1);
     }
   }
 

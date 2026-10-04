@@ -7,6 +7,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::MAX_STAMP;
 use super::hostile_json::text_;
 
 /// The most one device can watch in one day; a row claiming more is not one
@@ -59,11 +60,6 @@ pub(crate) fn is_day(day: &str) -> bool {
 fn amount(value: Option<&Value>) -> Option<f64> {
     value?.as_f64().filter(|n| n.is_finite() && *n >= 0.0)
 }
-
-/// The largest integer every engine holds exactly (2^53 − 1, the web's
-/// `Number.MAX_SAFE_INTEGER`). A stamp past it is no clock's, and one near
-/// the top of the integer range would overflow the next own write's `+ 1`.
-const MAX_STAMP: f64 = 9_007_199_254_740_991.0;
 
 /// A time a row carries: an [`amount`] no later than [`MAX_STAMP`].
 fn stamp(value: Option<&Value>) -> Option<f64> {
