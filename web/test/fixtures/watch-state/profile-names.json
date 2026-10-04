@@ -1,0 +1,11 @@
+[
+  { "name": "a name nobody here has is free", "existing": ["andre", "Maja", "TV kids"], "candidate": "Tim", "expect": false },
+  { "name": "a household with nobody has every name free", "existing": [], "candidate": "andre", "expect": false },
+  { "name": "the same name is taken", "existing": ["andre", "Maja"], "candidate": "Maja", "expect": true },
+  { "name": "case does not make a new name", "existing": ["andre"], "candidate": "ANDRE", "expect": true },
+  { "name": "edges and runs of space do not make a new name", "existing": ["TV kids"], "candidate": "  tv   KIDS ", "expect": true },
+  { "name": "a kid's name is as taken as a grown-up's", "existing": ["andre", "Mia"], "candidate": "mia", "expect": true },
+  { "name": "composed and decomposed accents are one name", "existing": ["Amélie"], "candidate": "Amélie", "expect": true },
+  { "name": "an accent does make a different name", "existing": ["Andre"], "candidate": "André", "expect": false },
+  { "name": "a longer name is a different one", "existing": ["Mia"], "candidate": "Mia B", "expect": false }
+]

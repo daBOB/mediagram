@@ -157,9 +157,9 @@ export function startServer(options: RouterOptions & {
     }
     const running = (async () => {
     const described = describe(request, trustProxy);
-    // Read only for the methods that carry one, so a GET is never held up
-    // waiting on a stream that will not produce anything.
-    const carriesBody = !["GET", "HEAD", "DELETE"].includes(described.method);
+    // Read for every method that may carry one, a DELETE included: it may say
+    // who is asking. A GET or HEAD never waits on a stream that produces nothing.
+    const carriesBody = !["GET", "HEAD"].includes(described.method);
     const planned = await route(
       carriesBody ? { ...described, body: await readBody(request) } : described,
     );

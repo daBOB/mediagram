@@ -49,9 +49,14 @@ const ROOT = join(import.meta.dir, "..");
  * out to `lib/playback/player-loader.js`. Lowered 2026-10-04 for `app.js`,
  * once marking the current nav link moved out to `lib/nav-current.js`.
  * Raised 2026-10-04 for `src/state/schema.ts`, by 2, to list the profile-roles migration group.
+ * Lowered the same day for `app.js`, once a kid's own age limit replaced the one-flag kids check,
+ * and for `watch-state.js`, once profile management moved to `lib/profile-api.js`.
+ * Lowered the same day for `src/state/store.ts`, `src/state/routes.ts` and
+ * `src/state/sync-record.ts`, once profile rows, the profile routes and the
+ * record's scalar readers moved out to `profiles*.ts` and `record-scalars.ts`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 695,
+  "public/app.js": 694,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
@@ -62,7 +67,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 388,
-  "public/lib/watch-state.js": 502,
+  "public/lib/watch-state.js": 478,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 752,
   "public/styles/shell.css": 257,
@@ -74,10 +79,10 @@ const CEILINGS: Record<string, number> = {
   "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
-  "src/state/routes.ts": 243,
+  "src/state/routes.ts": 223,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 800,
-  "src/state/sync-record.ts": 328,
+  "src/state/store.ts": 760,
+  "src/state/sync-record.ts": 301,
   "src/transcode/registry.ts": 338,
 };
 

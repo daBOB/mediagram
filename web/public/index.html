@@ -140,6 +140,13 @@
           <button id="play-next" class="ghost" hidden>Play next</button>
           <button id="watchlist" class="ghost" aria-pressed="false">My List</button>
           <button id="kids" class="ghost" aria-pressed="false">Kids</button>
+          <!-- An unrated title is for kids only from the age a grown-up picks
+               here; a rated one is decided by its rating, shown on the button above. -->
+          <select id="kids-age" class="ghost" aria-label="For kids" hidden>
+            <option value="">Not for kids</option>
+            <option value="6">From 6</option>
+            <option value="12">From 12</option>
+          </select>
           <button id="add-to" class="ghost">Add to…</button>
           <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
         </div>

@@ -111,25 +111,33 @@ describe("player library marks", () => {
     }
   });
 
-  test("ratings decide kids membership while unrated titles remain editable", () => {
+  test("a rating decides and is shown locked; an unrated title is for kids from an age, or not at all", () => {
     const marks = mountPlayerLibraryMarks();
+    const kids = env.node("kids");
+    const age = env.node("kids-age");
     marks.open({ setId: "rated-safe", fsk: "6" });
-    expect(env.node("kids").textContent).toBe("For kids · FSK 6");
-    expect(env.node("kids").disabled).toBe(true);
-    env.node("kids").fire("click");
-    expect(state.isKids("rated-safe")).toBe(false);
+    expect(kids.hidden).toBe(false);
+    expect(kids.textContent).toBe("For kids · FSK 6");
+    expect(kids.disabled).toBe(true);
+    expect(age.hidden).toBe(true);
+    marks.open({ setId: "rated-twelve", fsk: "12" });
+    expect(kids.textContent).toBe("For kids from 12 · FSK 12");
     marks.open({ setId: "rated-adult", fsk: "18" });
-    expect(env.node("kids").textContent).toBe("FSK 18 · not for kids");
-    env.node("kids").fire("click");
-    expect(state.isKids("rated-adult")).toBe(false);
+    expect(kids.textContent).toBe("FSK 18 · not for kids");
+
     marks.open({ setId: "unrated-editable" });
-    expect(env.node("kids").disabled).toBe(false);
-    env.node("kids").fire("click");
-    expect(state.isKids("unrated-editable")).toBe(true);
+    expect(kids.hidden).toBe(true);
+    expect(age.hidden).toBe(false);
+    expect(age.value).toBe("");
+    for (const [chosen, held] of [["6", 6], ["12", 12], ["", null]] as const) {
+      age.value = chosen;
+      age.fire("change");
+      expect(state.kidsAge("unrated-editable")).toBe(held);
+    }
     marks.clear();
-    env.node("kids").fire("click");
-    expect(state.isKids("unrated-editable")).toBe(true);
-    state.setKids("unrated-editable", false);
+    age.value = "6";
+    age.fire("change");
+    expect(state.kidsAge("unrated-editable")).toBeNull();
   });
 
   test("adding to a chosen collection uses the currently open title", async () => {

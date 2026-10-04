@@ -2,11 +2,23 @@
 import * as state from "../watch-state.js";
 import { ageLabel, kidsVerdict } from "../age-rating.js";
 
+/**
+ * The two limits a kid can have. A rating at or under the younger is for every
+ * kid; one above it but at or under the older only for a kid at 12; above
+ * that, for none — which is what the locked button says.
+ */
+const YOUNGEST_KIDS_LIMIT = 6;
+const OLDEST_KIDS_LIMIT = 12;
+
 export function mountPlayerLibraryMarks() {
   const watchlist = document.getElementById("watchlist");
   const kids = document.getElementById("kids");
+  const kidsAge = document.getElementById("kids-age");
   const addTo = document.getElementById("add-to");
   let title = null;
+  // Only ever shows what a rating decided; the choice itself is `kidsAge`.
+  kids.disabled = true;
+  kids.title = "Decided by the title's age rating, not by a mark";
 
   function refreshWatchlist() {
     const listed = title !== null && state.isWatchlisted(title.setId);
@@ -16,23 +28,18 @@ export function mountPlayerLibraryMarks() {
 
   function refreshKids() {
     // A child does not approve titles for themselves; marking is for the
-    // grown-ups' profiles.
-    kids.hidden = state.profile()?.kids === true;
-    const verdict = title === null ? "unrated" : kidsVerdict(title);
+    // grown-ups' profiles. A rated title shows its verdict, locked; an
+    // unrated one offers the age it is for kids from, or none.
+    const child = state.profile()?.kids === true;
+    const verdict = title === null ? "unrated" : kidsVerdict(title, OLDEST_KIDS_LIMIT);
+    kids.hidden = child || verdict === "unrated";
+    kidsAge.hidden = child || verdict !== "unrated";
+    kidsAge.value = title === null ? "" : String(state.kidsAge(title.setId) ?? "");
     const rating = title === null ? null : ageLabel(title);
-    const forKids =
-      verdict === "safe" || (verdict === "unrated" && title !== null && state.isKids(title.setId));
-    kids.setAttribute("aria-pressed", String(forKids));
-    kids.disabled = verdict !== "unrated";
-    kids.textContent =
-      verdict === "safe"
-        ? `For kids · ${rating}`
-        : verdict === "unsafe"
-          ? `${rating} · not for kids`
-          : forKids
-            ? "For kids"
-            : "Kids";
-    kids.title = verdict === "unrated" ? "" : "Decided by the title's age rating, not by a mark";
+    kids.setAttribute("aria-pressed", String(verdict === "safe"));
+    const everyKid = verdict === "safe" && kidsVerdict(title, YOUNGEST_KIDS_LIMIT) === "safe";
+    kids.textContent = verdict !== "safe" ? `${rating} · not for kids`
+      : everyKid ? `For kids · ${rating}` : `For kids from ${OLDEST_KIDS_LIMIT} · ${rating}`;
   }
 
   function open(set) {
@@ -46,10 +53,9 @@ export function mountPlayerLibraryMarks() {
     state.setWatchlisted(title.setId, !state.isWatchlisted(title.setId));
     refreshWatchlist();
   });
-  kids.addEventListener("click", () => {
-    if (!title || kids.hidden || kidsVerdict(title) !== "unrated") return;
-    state.setKids(title.setId, !state.isKids(title.setId));
-    refreshKids();
+  kidsAge.addEventListener("change", () => {
+    if (!title || kidsAge.hidden) return;
+    state.setKids(title.setId, kidsAge.value === "" ? null : Number(kidsAge.value));
   });
   addTo.addEventListener("click", () => {
     if (!title) return;

@@ -12,7 +12,7 @@
 
 ## Overview
 
-Priority P1. Status: pending. The pure rule (`allowed`, contract §2), the PIN format and
+Priority P1. Status: done (pending merge) — see `../261004-1508-open-tasks-sweep/reports/b3-phase-02-web-rules-pin-routes-report.md` for what differs from the steps below. The pure rule (`allowed`, contract §2), the PIN format and
 hash (§5), the wrong-PIN wait (§4), the PIN-checked management operations answering in the
 amended §3 order — including `create-first`, the bootstrap that gives a player with no
 grown-up its first profile and admin — and the §8 HTTP routes — `PATCH /api/profiles/:id` (rename) and
@@ -1949,14 +1949,14 @@ under their (now lowered) ceilings.
 
 ## Todo list
 
-- [ ] Task 1 — `profiles-pin.ts`, `pin-hash.json`, runner
-- [ ] Task 2 — `profiles-wait.ts` with an injectable clock
-- [ ] Task 3 — `profiles-rules.ts`, `profile-rules.json` (39 cases), runner
-- [ ] Task 4 — `ProfileManager`: create-first, unlock, claim-admin, set-pin; `NewProfile` role fields; `WatchState.manage()`
-- [ ] Task 5 — create grown-up / kid, remove (cascade), set-kids-age; order and wait tests
-- [ ] Task 6 — `route-json.ts`, `profiles-routes.ts`; rename gone; `DELETE` body read; unlock not synced
-- [ ] Task 7 — `/api/kids` age; ceilings lowered
-- [ ] Task 8 — phase gate green; held for phase 03
+- [x] Task 1 — `profiles-pin.ts`, `pin-hash.json`, runner
+- [x] Task 2 — `profiles-wait.ts` with an injectable clock
+- [x] Task 3 — `profiles-rules.ts`, `profile-rules.json` (42 cases), runner
+- [x] Task 4 — `ProfileManager`: create-first, unlock, claim-admin, set-pin; `NewProfile` role fields; `WatchState.manage()`
+- [x] Task 5 — create grown-up / kid, remove (cascade), set-kids-age; order and wait tests
+- [x] Task 6 — `profiles-routes.ts` (helpers from the existing `route-shared.ts`); rename gone; `DELETE` body read; unlock not synced
+- [x] Task 7 — `/api/kids` age; ceilings lowered
+- [x] Task 8 — phase gate green; held for phase 03
 
 ## Success criteria
 

@@ -56,9 +56,9 @@ uniffi 0.32 (core); Kotlin, Compose, Hilt (Android).
 | # | Phase | Owns | Status |
 |---|---|---|---|
 | 01 | [Web: schema, sync keys, merge, export/import](phase-01-web-schema-sync-merge.md) | `web/src/state/{schema,sync-record,merge,store,lists-exchange}.ts`, new `profiles.ts`, `roles-{record,merge,exchange}.ts`, fixture, `code-standards.test.ts` | done (pending merge) |
-| 02 | [Web: rules, PIN, wait, routes](phase-02-web-rules-pin-routes.md) | new `profiles-manage.ts`, `profiles-routes.ts`, `route-json.ts`; `profiles.ts`, `routes.ts`, `store.ts`, `server.ts`, `http/browser-write.ts`, `src/routes.ts`, fixtures | pending |
-| 03 | [Web: picker, PIN prompt, manage panel, filter, marks](phase-03-web-browser-picker-manage-filter.md) | `web/public/**` | pending |
-| 04 | [Core: schema, record, merge, exchange](phase-04-core-schema-sync-merge.md) | `crates/mediagram-core/src/state/**` (data half) | done (pending merge) |
+| 02 | [Web: rules, PIN, wait, routes](phase-02-web-rules-pin-routes.md) | new `profiles-{pin,wait,rules,manage,routes}.ts`; `profiles.ts`, `routes.ts`, `store.ts`, `server.ts`, `http/browser-write.ts`, `src/routes.ts`, fixtures | done (pending merge) |
+| 03 | [Web: picker, PIN prompt, manage panel, filter, marks](phase-03-web-browser-picker-manage-filter.md) | `web/public/**` | done (0.108.0) |
+| 04 | [Core: schema, record, merge, exchange](phase-04-core-schema-sync-merge.md) | `crates/mediagram-core/src/state/**` (data half) | done (0.107.0) |
 | 05 | [Core: rules, PIN, wait, uniffi API](phase-05-core-rules-pin-api.md) | `crates/mediagram-core/src/{state/profiles*,api/state*}` | pending |
 | 06 | [Android: model, repository, view models, marks](phase-06-android-data-viewmodels.md) | `android/core/**`, `android/feature/**` | pending |
 | 07 | [Android: phone and TV screens](phase-07-android-phone-tv-screens.md) | `android/ui-mobile/**`, `android/ui-tv/**` | pending |

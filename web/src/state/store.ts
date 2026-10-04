@@ -25,6 +25,8 @@ import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merge";
 import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
 import { exportRoles, importRoles } from "./roles-exchange";
+import { ProfileManager } from "./profiles-manage";
+import { PinWait } from "./profiles-wait";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
 import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
@@ -91,6 +93,7 @@ const MAX_PREFERENCE = 200;
 export class WatchState {
   private readonly db: Database | null;
   private readonly ticks: Ticks = new Map(); // each title's last position write, this process only
+  private readonly pins = new PinWait(); // the wrong-PIN count: one per store, so one per server process
 
   /**
    * Opens, creating the file and its directory if they are not there.
@@ -114,13 +117,6 @@ export class WatchState {
 
   createProfile(name: unknown, kids = false): Profile | null {
     return insertProfile(this.db, name, { kids });
-  }
-
-  renameProfile(id: string, name: unknown): boolean {
-    if (!this.db) return false;
-    const clean = cleanName(name);
-    if (clean === null) return false;
-    return this.db.query("UPDATE profiles SET name = ?2 WHERE id = ?1").run(id, clean).changes > 0;
   }
 
   /** Takes everything that was theirs with it — every table cascades. */
@@ -646,6 +642,11 @@ export class WatchState {
   /** Values a viewer set from the Settings page, over this same database. */
   settings(): Settings {
     return new Settings(this.db);
+  }
+
+  /** Adding, removing and entering profiles, PIN and rule checked. */
+  manage(): ProfileManager {
+    return new ProfileManager(this.db, this.pins);
   }
 }
 

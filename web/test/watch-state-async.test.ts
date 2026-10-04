@@ -97,7 +97,6 @@ describe("profile selection responses", () => {
 });
 
 const creations = [
-  ["profile", state.createProfile, state.profiles, "/api/profiles"],
   ["collection", state.createCollection, state.collections, "/api/profiles/base/collections"],
 ] as const;
 
@@ -185,7 +184,7 @@ describe.each(creations)("creating a %s", (_kind, create, records, path) => {
     // collection row always sees collection-shaped ones — so it is asserted
     // back to what `records()` itself returns.
     expect(records()).toEqual([...before, made] as typeof before);
-    const body = _kind === "profile" ? { name: "New", kids: false } : { name: "New" };
+    const body = { name: "New" };
     expect(writes).toEqual([{ url: path, method: "POST", body: JSON.stringify(body) }]);
   });
 });

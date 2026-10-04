@@ -13,6 +13,7 @@ import { el } from "../dom.js";
 import { tabbed } from "./tabs.js";
 import { href } from "../address.js";
 import { preferenceOf, setPreference } from "../watch-state.js";
+import { kidsLimitOf } from "../age-rating.js";
 
 const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
 
@@ -42,7 +43,7 @@ function write(name, value) {
 
 /**
  * @param {HTMLElement} main
- * @param {{ profile: {name: string, kids?: boolean}|null,
+ * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null}|null,
  *   switchProfile: () => void, systemVisible: boolean,
  *   admin: ((container: HTMLElement) => () => void)|null }} on
  * @returns {() => void} stops the admin panel's work, if it was opened
@@ -103,7 +104,7 @@ function profilePanel(profile, switchProfile, systemVisible) {
   const box = el("div", "settings-panel");
   const set = el("div", "setting");
   set.append(el("h2", "setting-title", "Who is watching"));
-  set.append(el("p", "setting-value", profile ? `${profile.name}${profile.kids ? " · Kids" : ""}` : "Nobody chosen"));
+  set.append(el("p", "setting-value", profile ? `${profile.name}${profile.kids ? ` · Kids · FSK ${kidsLimitOf(profile)}` : ""}` : "Nobody chosen"));
   const change = el("button", "pill pill-line", "Switch profile");
   change.type = "button";
   change.addEventListener("click", switchProfile);

@@ -16,11 +16,14 @@ import { deferred, settle } from "./support/player-environment";
 const film = (setId: string, over: Record<string, unknown> = {}) => catalogSet({ setId, ...over });
 
 /** The two calls the session reads from `watch-state.js`, held by a test. */
-function fakeState(profile: { kids?: boolean } | null = null, kidsMarked: string[] = []): LibrarySessionState & { set(next: typeof profile): void } {
+function fakeState(
+  profile: { kids?: boolean; kidsAge?: number | null } | null = null,
+  marks: Record<string, number> = {},
+): LibrarySessionState & { set(next: typeof profile): void } {
   let current = profile;
   return {
     profile: () => current,
-    kids: () => kidsMarked,
+    kidsMarks: () => new Map(Object.entries(marks)),
     set(next) { current = next; },
   };
 }
@@ -187,6 +190,17 @@ describe("a kids profile", () => {
     lib.reapply();
     expect(lib.current().library.movies.map((set) => set.setId)).toEqual(["Family"]);
     expect(fake.fetches).toBe(before);
+  });
+
+  test("each kid sees up to its own limit, hand marks included", async () => {
+    const fake = fakeLibraryPort(JSON.stringify([rated("Six", "6"), rated("Twelve", "12"), rated("FromSix", null), rated("FromTwelve", null)]));
+    const state = fakeState({ kids: true, kidsAge: 6 }, { FromSix: 6, FromTwelve: 12 });
+    const lib = createLibrarySession({ port: fake.port, state, remoteState: () => {} });
+    await lib.start();
+    expect(lib.current().library.movies.map((set) => set.setId).sort()).toEqual(["FromSix", "Six"]);
+    state.set({ kids: true, kidsAge: 12 });
+    lib.reapply();
+    expect(lib.current().library.movies.map((set) => set.setId).sort()).toEqual(["FromSix", "FromTwelve", "Six", "Twelve"]);
   });
 });
 

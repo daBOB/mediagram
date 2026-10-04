@@ -7,13 +7,11 @@
 .who-initial { display: grid; place-items: center; width: 96px; height: 96px; border-radius: var(--radius); background: var(--paper-sunk); color: var(--ink); font-size: 2rem; font-weight: 500; transition: background-color var(--hover), color var(--hover); }
 .who-name { font-size: 0.875rem; }
 .who-tile:hover .who-initial { background: var(--accent-tint); color: var(--accent); }
-.who-add .who-initial { border: 1px dashed var(--rule); background: none; }
 .who-kids { color: var(--held); font-size: 0.75rem; }
 .who-new { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin: 24px 0 8px; }
 .who-new input:not([type]), .add-search { min-height: 44px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 1rem; }
 .who-new input:not([type]) { min-width: 0; max-width: 100%; }
 .who-new input::placeholder, .add-search::placeholder { color: var(--ink-3); }
-.who-kids-choice { display: inline-flex; align-items: center; min-height: 44px; gap: 8px; color: var(--ink-2); font-size: 0.875rem; }
 .who-create { min-height: 44px; padding: 10px 20px; border: none; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-size: 0.875rem; font-weight: 600; }
 .who-create:hover { filter: brightness(1.1); }
 .who-note { margin: 24px auto 0; max-width: 48ch; color: var(--ink-3); font-size: 0.875rem; }
@@ -67,6 +65,19 @@
 .settings-session { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .settings-session p { margin: 0; }
 .settings-session .sub { color: var(--ink-3); font-size: 0.8125rem; }
+/* The PIN prompt rides the settings dialog; Manage profiles is a second full-screen paper layer. */
+.pin-prompt form { display: flex; flex-direction: column; gap: 12px; }
+.pin-prompt h2 { margin: 0 0 4px; font: 500 1.22rem/1.25 var(--display); }
+.pin-prompt input { min-height: 48px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 1.5rem/1 var(--text); letter-spacing: 0.5em; text-indent: 0.5em; text-align: center; }
+.pin-message { min-height: 1.4em; margin: 0; color: var(--warn); font-size: 0.875rem; }
+.who-ask { margin: 0 0 32px; }
+.who-ask h2, .manage-section h2 { margin: 0 0 12px; font: 500 1.35rem/1.1 var(--display); color: var(--ink); }
+.who-ask .pill { margin: 4px; }
+.manage-section { margin: 0 0 32px; text-align: left; }
+.manage-section .who-new { justify-content: flex-start; margin: 16px 0 0; }
+.manage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
+.manage-row > span { flex: 1; min-width: 0; color: var(--ink); }
+.manage-row select, .who-new select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 0.875rem; }
 
 @media (max-width: 767px) {
   .who-tiles { gap: 20px; }

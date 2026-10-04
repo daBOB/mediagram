@@ -12,10 +12,9 @@
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import type { WatchState } from "./store";
+import { profileRoute } from "./profiles-routes";
 import { json, P, parse, status } from "./route-shared";
 
-const PROFILES = /^\/api\/profiles$/;
-const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
 const PROGRESS = new RegExp(`^/api/profiles/${P}/progress/([A-Za-z0-9]{1,64})$`);
 const WATCHLIST = new RegExp(`^/api/profiles/${P}/watchlist/([A-Za-z0-9]{1,64})$`);
@@ -70,7 +69,9 @@ export function createStateRouter(options: StateRouterOptions) {
     // Answered before the profile routes, and outside them: a mark on a title
     // belongs to the library, and there is no profile in its path to read.
     if (KIDS.test(path)) {
-      if (reading) return json(JSON.stringify({ kids: state.kids() }), method === "HEAD");
+      // Every live mark, and which of them are "from 6": a subset, so a page
+      // that reads `kids` alone still sees every mark.
+      if (reading) return json(JSON.stringify({ kids: state.kids(), fromSix: state.kidsFromSix() }), method === "HEAD");
       return status(405);
     }
     if (EDITORS_CHOICE.test(path)) {
@@ -80,34 +81,9 @@ export function createStateRouter(options: StateRouterOptions) {
       return json(JSON.stringify({ setId: pick }), method === "HEAD");
     }
 
-
-    // Who watches this library, which is the one question askable before
-    // anyone has said who they are.
-    if (PROFILES.test(path)) {
-      if (reading) {
-        return json(
-          JSON.stringify({ remembers: state.remembers, profiles: state.profiles() }),
-          method === "HEAD",
-        );
-      }
-      if (method !== "POST") return status(405);
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
-      const body = parse(request.body) as { name?: unknown; kids?: unknown } | null;
-      // Only a literal true: a restricting flag is not switched on by accident.
-      const made = state.createProfile(body?.name, body?.kids === true);
-      return made === null ? status(400) : json(JSON.stringify(made), false, 201);
-    }
-
-    const named = PROFILE.exec(path);
-    if (named) {
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
-      if (method === "DELETE") return status(state.deleteProfile(named[1]!) ? 204 : 404);
-      if (method !== "PATCH") return status(405);
-      const name = (parse(request.body) as { name?: unknown })?.name;
-      return status(state.renameProfile(named[1]!, name) ? 204 : 404);
-    }
+    // Who watches this library, and managing them, PIN and rule checked.
+    const profile = profileRoute(request, state);
+    if (profile) return profile;
 
     const snapshot = STATE.exec(path);
     if (snapshot && reading) {
@@ -160,7 +136,11 @@ export function createStateRouter(options: StateRouterOptions) {
     if (kid) {
       if (!isPlayable(kid[1]!)) return status(404);
       if (method !== "PUT" && method !== "DELETE") return status(405);
-      state.setKids(kid[1]!, method === "PUT");
+      // No age is from 12, which is what every mark meant before there were
+      // two; anything but 6 or 12 is not an age.
+      const age = (parse(request.body) as { age?: unknown } | null)?.age;
+      if (method === "PUT" && age !== undefined && age !== 6 && age !== 12) return status(400);
+      state.setKids(kid[1]!, method === "PUT", age === 6 ? 6 : 12);
       return status(204);
     }
 

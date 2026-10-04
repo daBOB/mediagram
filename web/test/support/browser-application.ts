@@ -85,3 +85,25 @@ export function applicationEnvironment() {
     async visibility(value: string) { document.visibilityState = value; document.dispatchEvent(new Event("visibilitychange")); await settle(); },
   };
 }
+
+/** The first node under `root` whose class list has `className`. */
+export function byClass(root: Node, className: string): Node {
+  const found = descendants(root).find((node) => node.className.split(" ").includes(className));
+  if (!found) throw new Error(`Missing .${className}`);
+  return found;
+}
+
+/** The button under `root` that says `label`. */
+export function buttonNamed(root: Node, label: string): Node {
+  const found = descendants(root).find((node) => node.tagName === "BUTTON" && node.textContent === label);
+  if (!found) throw new Error(`Missing button: ${label}`);
+  return found;
+}
+
+/** Types `pins` into the open PIN prompt's fields in order (the first again for any left over) and submits. */
+export async function answerPin(root: Node, ...pins: string[]) {
+  const prompt = byClass(root, "pin-prompt");
+  descendants(prompt).filter((node) => node.tagName === "INPUT").forEach((field, at) => { field.value = pins[at] ?? pins[0] ?? ""; });
+  descendants(prompt).find((node) => node.tagName === "FORM")!.fire("submit");
+  await settle();
+}

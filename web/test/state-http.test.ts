@@ -230,19 +230,114 @@ describe("a player that remembers nothing", () => {
 });
 
 describe("profiles", () => {
-  test("are made, listed, renamed and deleted", async () => {
-    const made = await send("/api/profiles", "POST", { name: "Maja" });
-    expect(made.status).toBe(201);
-    const { id } = JSON.parse(new TextDecoder().decode(made.body));
+  const read = (response: { body: Uint8Array }) => JSON.parse(new TextDecoder().decode(response.body));
+  const listed = async () =>
+    read(await rawRequest(server.port, "/api/profiles")).profiles as Array<Record<string, unknown>>;
+  const idOf = async (name: string) => (await listed()).find((profile) => profile.name === name)!.id as string;
 
-    const listed = JSON.parse(
-      new TextDecoder().decode((await rawRequest(server.port, "/api/profiles")).body),
-    );
-    expect(listed.profiles.map((p: { name: string }) => p.name)).toContain("Maja");
+  test("are listed with their role, and never a PIN", async () => {
+    expect((await listed()).find((profile) => profile.id === me)).toEqual({
+      id: me, name: "André", createdAt: expect.any(Number),
+      kids: false, kidsAge: null, parentId: null, admin: false, hasPin: false,
+    });
+  });
 
-    expect((await send(`/api/profiles/${id}`, "PATCH", { name: "Maja B" })).status).toBe(204);
-    expect((await send(`/api/profiles/${id}`, "DELETE")).status).toBe(204);
-    expect((await send(`/api/profiles/${id}`, "DELETE")).status).toBe(404);
+  test("the first admin is claimed once, and the PIN given becomes theirs", async () => {
+    expect((await send(`/api/profiles/${me}/claim-admin`, "POST", { pin: "1111" })).status).toBe(204);
+    expect((await listed()).find((profile) => profile.id === me)).toMatchObject({ admin: true, hasPin: true });
+    const again = await send(`/api/profiles/${me}/claim-admin`, "POST", { pin: "1111" });
+    expect(again.status).toBe(403);
+    expect(read(again)).toEqual({ reason: "not-allowed" });
+    // Neither the hash nor the salt, under any spelling, nor any long hex.
+    const text = new TextDecoder().decode((await rawRequest(server.port, "/api/profiles")).body);
+    expect(text).not.toMatch(/pin_?hash|pin_?salt|[0-9a-f]{32}/i);
+  });
+
+  test("the admin adds a grown-up with a first PIN, and a grown-up adds its own kid", async () => {
+    const maja = await send("/api/profiles", "POST", { actorId: me, pin: "1111", name: "Maja", kids: false, newPin: "2222" });
+    expect(maja.status).toBe(201);
+    const majaId = read(maja).id as string;
+    expect(read(maja)).toMatchObject({ name: "Maja", kids: false, kidsAge: null, admin: false, hasPin: true });
+    const mia = await send("/api/profiles", "POST", { actorId: majaId, pin: "2222", name: "Mia", kids: true, kidsAge: 6 });
+    expect(mia.status).toBe(201);
+    expect(read(mia)).toMatchObject({ name: "Mia", kids: true, kidsAge: 6, parentId: majaId, hasPin: false });
+  });
+
+  test("a refusal says why, with its own status", async () => {
+    const majaId = await idOf("Maja");
+    const cases: [Record<string, unknown>, number, string][] = [
+      [{ actorId: me, pin: "1111", name: "Ben", kids: false }, 400, "invalid"],
+      [{ actorId: me, pin: "1111", name: "Zoe", kids: true, kidsAge: 9 }, 400, "invalid"],
+      [{ actorId: "nobody", pin: "1111", name: "Zoe", kids: true, kidsAge: 12 }, 404, "not-found"],
+      [{ actorId: me, pin: "9999", name: "Zoe", kids: true, kidsAge: 12 }, 403, "wrong-pin"],
+      [{ actorId: majaId, pin: "2222", name: "Ben", kids: false, newPin: "3333" }, 403, "not-allowed"],
+      // Nobody asking is a first profile, and this player has grown-ups.
+      [{ name: "Zoe", newPin: "3333" }, 403, "not-allowed"],
+      // A name another profile already answers to, whoever asks.
+      [{ actorId: me, pin: "1111", name: "maja", kids: true, kidsAge: 6 }, 409, "name-taken"],
+    ];
+    for (const [body, code, reason] of cases) {
+      const answer = await send("/api/profiles", "POST", body);
+      expect(answer.status).toBe(code);
+      expect(read(answer)).toEqual({ reason });
+    }
+  });
+
+  test("a grown-up from before PINs is told so, and sets its first with nothing to prove", async () => {
+    const sam = state.createProfile("Sam")!.id;
+    const locked = await send(`/api/profiles/${sam}/unlock`, "POST", { pin: "1234" });
+    expect(locked.status).toBe(409);
+    expect(read(locked)).toEqual({ reason: "no-pin" });
+    expect((await send(`/api/profiles/${sam}/pin`, "PUT", { actorId: sam, pin: "", newPin: "4444" })).status).toBe(204);
+    expect((await send(`/api/profiles/${sam}/unlock`, "POST", { pin: "4444" })).status).toBe(204);
+    state.deleteProfile(sam);
+  });
+
+  test("a kid's profile opens without a PIN, a grown-up's with its own", async () => {
+    expect((await send(`/api/profiles/${await idOf("Mia")}/unlock`, "POST", {})).status).toBe(204);
+    expect((await send(`/api/profiles/${me}/unlock`, "POST", { pin: "1112" })).status).toBe(403);
+    expect((await send(`/api/profiles/${me}/unlock`, "POST", { pin: "1111" })).status).toBe(204);
+  });
+
+  test("a parent changes its kid's limit", async () => {
+    const [majaId, miaId] = [await idOf("Maja"), await idOf("Mia")];
+    const changed = await send(`/api/profiles/${miaId}/kids-age`, "PUT", { actorId: majaId, pin: "2222", age: 12 });
+    expect(changed.status).toBe(204);
+    expect((await listed()).find((profile) => profile.id === miaId)).toMatchObject({ kidsAge: 12 });
+  });
+
+  test("an action a profile does not have, or the wrong method for one, is a 405", async () => {
+    expect((await send(`/api/profiles/${me}/unlock`, "PUT", { pin: "1111" })).status).toBe(405);
+    expect((await send("/api/profiles", "PUT", {})).status).toBe(405);
+    expect((await rawRequest(server.port, `/api/profiles/${me}/pin`)).status).toBe(405);
+  });
+
+  test("the admin removes a grown-up — its kids go too — but never itself", async () => {
+    const [majaId, miaId] = [await idOf("Maja"), await idOf("Mia")];
+    expect((await send(`/api/profiles/${me}`, "DELETE", { actorId: me, pin: "1111" })).status).toBe(403);
+    expect((await send(`/api/profiles/${majaId}`, "DELETE", { actorId: me, pin: "1111" })).status).toBe(204);
+    const ids = (await listed()).map((profile) => profile.id);
+    expect(ids).not.toContain(majaId);
+    expect(ids).not.toContain(miaId);
+  });
+
+  test("a removal that does not say who is asking is refused", async () => {
+    const removal = await send(`/api/profiles/${me}`, "DELETE");
+    expect(removal.status).toBe(404);
+    expect(read(removal)).toEqual({ reason: "not-found" });
+  });
+
+  test("a removal from another origin is refused, body and all", async () => {
+    const response = await send(`/api/profiles/${me}`, "DELETE", { actorId: me, pin: "1111" }, {
+      Origin: "https://elsewhere.example",
+    });
+    expect(response.status).toBe(403);
+    expect((await listed()).some((profile) => profile.id === me)).toBe(true);
+  });
+
+  test("renaming is not a route", async () => {
+    expect((await send(`/api/profiles/${me}`, "PATCH", { name: "Someone" })).status).toBe(405);
+    expect((await listed()).find((profile) => profile.id === me)!.name).toBe("André");
   });
 
   /**
@@ -251,8 +346,7 @@ describe("profiles", () => {
    * rather than a write that lands somewhere plausible.
    */
   test("one profile's state is not another's", async () => {
-    const made = await send("/api/profiles", "POST", { name: "Maja" });
-    const { id: you } = JSON.parse(new TextDecoder().decode(made.body));
+    const you = state.createProfile("Maja")!.id;
 
     await send(mine(`/progress/${SET}`), "PUT", { at: 1234, duration: 2400 });
     await send(mine(`/watchlist/${SET}`), "PUT", {});
@@ -265,7 +359,7 @@ describe("profiles", () => {
     const ours = await snapshot();
     expect(ours.progress[0]).toMatchObject({ setId: SET, at: 1234 });
 
-    await send(`/api/profiles/${you}`, "DELETE");
+    state.deleteProfile(you);
   });
 
   test("state for a profile that is not there is a 404, not an empty shelf", async () => {
@@ -273,25 +367,46 @@ describe("profiles", () => {
     expect((await send("/api/profiles/nobody/progress/" + SET, "PUT", { at: 5 })).status).toBe(404);
   });
 
-  test("a profile can be created as a kids profile and is listed as one", async () => {
-    const made = await rawRequest(server.port, "/api/profiles", {
-      method: "POST",
-      headers: JSON_HEAD,
-      body: JSON.stringify({ name: "Mia", kids: true }),
+  test("a player with no grown-up makes its first profile, which runs the household", async () => {
+    const fresh = new WatchState(join(dir, "fresh.db"));
+    const other = await startServer({ db: index(), source: new NoSource(), state: fresh });
+    const first = (name: string, newPin: string) => rawRequest(other.port, "/api/profiles", {
+      method: "POST", headers: JSON_HEAD, body: JSON.stringify({ name, newPin }),
     });
-    expect(made.status).toBe(201);
-    expect(JSON.parse(new TextDecoder().decode(made.body))).toMatchObject({ name: "Mia", kids: true });
+    try {
+      const made = await first("André", "1111");
+      expect(made.status).toBe(201);
+      expect(read(made)).toMatchObject({ name: "André", kids: false, admin: true, hasPin: true });
+      const second = await first("Maja", "2222");
+      expect(second.status).toBe(403);
+      expect(read(second)).toEqual({ reason: "not-allowed" });
+    } finally {
+      await other.close();
+      fresh.close();
+    }
+  });
 
-    // Anything but a literal true makes an ordinary profile.
-    const loose = await rawRequest(server.port, "/api/profiles", {
-      method: "POST",
-      headers: JSON_HEAD,
-      body: JSON.stringify({ name: "Ben", kids: "yes" }),
-    });
-    expect(JSON.parse(new TextDecoder().decode(loose.body))).toMatchObject({ name: "Ben", kids: false });
-
-    const listed = JSON.parse(new TextDecoder().decode((await rawRequest(server.port, "/api/profiles")).body));
-    expect(listed.profiles.find((p: { name: string }) => p.name === "Mia").kids).toBe(true);
+  test("five wrong PINs for a profile make its PIN wait, answered 429 with Retry-After", async () => {
+    // Its own store: the count is one per store, and this one must not
+    // leave the shared server waiting for every test after it.
+    const waiting = new WatchState(join(dir, "waiting.db"));
+    const other = await startServer({ db: index(), source: new NoSource(), state: waiting });
+    try {
+      const andre = waiting.createProfile("André")!.id;
+      waiting.manage().claimAdmin(andre, "1111");
+      const unlock = (pin: string) => rawRequest(other.port, `/api/profiles/${andre}/unlock`, {
+        method: "POST", headers: JSON_HEAD, body: JSON.stringify({ pin }),
+      });
+      for (let wrong = 0; wrong < 5; wrong++) expect((await unlock("0000")).status).toBe(403);
+      const right = await unlock("1111");
+      expect(right.status).toBe(429);
+      const seconds = Number(right.headers.get("retry-after"));
+      expect(seconds).toBeGreaterThan(0);
+      expect(read(right)).toEqual({ reason: "wait", retryAfter: seconds });
+    } finally {
+      await other.close();
+      waiting.close();
+    }
   });
 });
 
@@ -320,6 +435,28 @@ describe("marking a title as a child's", () => {
   test("is not under a profile, because the mark is not one", async () => {
     expect((await send(`/api/kids/${SET}`, "PUT", {})).status).toBe(204);
     expect((await read()).kids).toContain(SET);
+    expect((await send(`/api/kids/${SET}`, "DELETE")).status).toBe(204);
+    expect((await read()).kids).not.toContain(SET);
+  });
+
+  test("a mark is from 12 unless it says 6, and saying so again moves it", async () => {
+    expect((await send(`/api/kids/${SET}`, "PUT", { age: 6 })).status).toBe(204);
+    let marks = await read();
+    expect(marks.kids).toContain(SET);
+    expect(marks.fromSix).toContain(SET);
+
+    expect((await send(`/api/kids/${SET}`, "PUT", {})).status).toBe(204);
+    marks = await read();
+    expect(marks.kids).toContain(SET);
+    expect(marks.fromSix).not.toContain(SET);
+
+    expect((await send(`/api/kids/${SET}`, "PUT", { age: 6 })).status).toBe(204);
+    expect((await send(`/api/kids/${SET}`, "PUT", { age: 12 })).status).toBe(204);
+    expect((await read()).fromSix).not.toContain(SET);
+
+    for (const age of [7, "6", null]) {
+      expect((await send(`/api/kids/${SET}`, "PUT", { age })).status).toBe(400);
+    }
     expect((await send(`/api/kids/${SET}`, "DELETE")).status).toBe(204);
     expect((await read()).kids).not.toContain(SET);
   });

@@ -39,7 +39,7 @@ beforeEach(async () => {
     alert: (message: string) => alerts.push(message),
   });
   env.respondWith(async (url) => Response.json(url === "/api/profiles"
-    ? { remembers: true, profiles: [{ id: "alice", name: "Alice" }] }
+    ? { remembers: true, profiles: [{ id: "alice", name: "Alice", kids: true, kidsAge: 12 }] }
     : { collections: [{ id: "list", name: "Old list", items: [] }] }));
   await state.loadProfiles();
   await state.useProfile("alice");
@@ -70,14 +70,15 @@ test("failed profile state keeps the chooser open and permits a successful retry
 });
 
 test("canceling pending profile selection leaves the prior choice and state intact", async () => {
-  env.respondWith(async () => Response.json({ profiles: [{ id: "bob", name: "Bob" }] }));
+  const profiles = [{ id: "alice", name: "Alice", kids: true, kidsAge: 12 }, { id: "bob", name: "Bob", kids: true, kidsAge: 12 }];
+  env.respondWith(async () => Response.json({ remembers: true, profiles }));
   await state.loadProfiles();
   const root = new Node();
   const pending = deferred<Response>();
   let requests = 0;
-  env.respondWith(() => { requests++; return pending.promise; });
+  env.respondWith((url) => url === "/api/profiles" ? Promise.resolve(Response.json({ remembers: true, profiles })) : (requests++, pending.promise));
   const choosing = chooseProfile(root, { canCancel: true });
-  const tile = byClass(root, "who-tile");
+  const tile = descendants(root).find((node) => node.className === "who-tile" && node.children.some((child) => child.textContent === "Bob"))!;
   tile.fire("click");
   tile.fire("click");
   expect(requests).toBe(1);
@@ -88,45 +89,6 @@ test("canceling pending profile selection leaves the prior choice and state inta
   expect(state.profileId()).toBe("alice");
   expect(state.watchlist()).toEqual([]);
   expect(state.collections()[0]?.name).toBe("Old list");
-});
-
-test("a rejected new profile remains retryable and reports the failure", async () => {
-  const root = new Node();
-  void chooseProfile(root, { canCancel: true });
-  byClass(root, "who-add").fire("click");
-  await settle();
-  const nameField = () => descendants(root).find((node) => node.tagName === "INPUT")!;
-
-  nameField().value = "New name";
-  env.respondWith(async () => new Response(null, { status: 503 }));
-  byClass(root, "who-new").fire("submit");
-  await settle();
-  expect(byClass(root, "error").textContent).toBe("Could not create the profile. Please try again.");
-  expect(state.profiles().map((profile) => profile.name)).toEqual(["Alice"]);
-
-  nameField().value = "New name";
-  env.respondWith(async () => Response.json({ id: "new", name: "New name" }));
-  byClass(root, "who-new").fire("submit");
-  await settle();
-  expect(state.profiles().map((profile) => profile.name)).toEqual(["Alice", "New name"]);
-});
-
-test("profile deletion failure keeps the chooser and the profile", async () => {
-  const root = new Node();
-  void chooseProfile(root, { canCancel: true });
-  answer = "Alice";
-  env.respondWith(async () => { throw new Error("offline"); });
-  button(root, "Rename or remove…").fire("click");
-  await settle();
-  expect(alerts).toEqual(["Could not remove the profile. Please try again."]);
-  expect(state.profiles()).toHaveLength(1);
-  expect(root.children).toHaveLength(1);
-
-  env.respondWith(async () => new Response(null, { status: 204 }));
-  button(root, "Rename or remove…").fire("click");
-  await settle();
-  expect(state.profiles()).toHaveLength(0);
-  expect(alerts).toHaveLength(1);
 });
 
 test("an unreadable list creation reply reports failure and leaves the shelf usable", async () => {
@@ -194,7 +156,7 @@ test("profile discovery retry admits one request and redraws recovered managemen
   expect(retry.disabled).toBe(true);
   pending.resolve(Response.json({ remembers: true, profiles: [{ id: "alice", name: "Alice", createdAt: 1 }] }));
   await settle();
-  expect(button(root, "Rename or remove…")).toBeDefined();
+  expect(button(root, "Manage profiles")).toBeDefined();
   expect(byClass(root, "who-note").textContent).toContain("Profiles keep your places");
   expect(state.profileId()).toBe("alice");
   button(root, "Stay as I am").fire("click");

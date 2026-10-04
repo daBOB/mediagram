@@ -44,8 +44,9 @@ describe.each(grids)("%s shelf layout", (_name, render) => {
 });
 
 describe("emptyState", () => {
-  test("a kids profile is told to wait for a rating, not to upload", () => {
-    expect(emptyState("anime", { kids: true }).textContent).toBe("Nothing rated FSK 12 or under yet.");
+  test("a kid is told to wait for a rating at its own limit, not to upload", () => {
+    expect(emptyState("anime", { kidsLimit: 12 }).textContent).toBe("Nothing rated FSK 12 or under yet.");
+    expect(emptyState("movies", { kidsLimit: 6 }).textContent).toBe("Nothing rated FSK 6 or under yet.");
   });
 
   test("anime points at the edit command, not an upload one — there is nothing to upload", () => {

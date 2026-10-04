@@ -5,6 +5,28 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.108.0 — the web player: household admin, PINs and each kid's own limit
+
+**Added** (web player)
+
+- The first profile created runs the household and may set a PIN; grown-ups enter with
+  their PIN, kids open freely. The admin adds and removes grown-ups and resets PINs; a
+  parent manages its own kids. "Manage profiles" adds a grown-up or a kid — a new kid
+  starts at **FSK 6** (the user's choice), 12 still selectable — sets a kid's limit and
+  removes profiles; removing a grown-up also removes that grown-up's kids.
+- Each kid sees titles up to its own limit; a Kids mark says "from 6" or "from 12", set from
+  the player. Settings › Profile reads "Name · Kids · FSK N".
+- PINs are salted and hashed and never leave through any route but the sync record. Five
+  wrong PINs for one profile make that profile wait 60 s; only its own right PIN clears its
+  count. A name another profile already answers to is refused ("A profile with that name
+  already exists") — sync keys profiles by name, so a duplicate could otherwise turn the
+  admin into a kid. The household-admin PIN is separate from the Settings admin token.
+- A reopened picker still offers "Stay as I am", and Escape now means it; inside Manage
+  profiles, Escape closes the panel first.
+
+Claim admin on the web straight after this reaches the live player: until someone does,
+anyone can.
+
 ## 0.107.0 — the core carries profile roles, PINs and kid limits (data layer)
 
 **Added** (Rust core, for Android; the rules and screens follow)

@@ -22,7 +22,8 @@ export function refuseUnsafeBrowserWrite(request: PlayerRequest): PlayerResponse
     }
     if (!sameHost) return bodiless(403);
   }
-  // `DELETE` carries no body, so nothing to declare a type for.
+  // `DELETE` is exempt: no form can send one, and a cross-origin script needs
+  // a preflight this server never answers. The Origin check above still holds.
   if (request.method !== "DELETE" && request.contentType !== "application/json") {
     return bodiless(415);
   }

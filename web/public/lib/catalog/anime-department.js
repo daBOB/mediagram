@@ -23,7 +23,7 @@ const popular = (a, b) => (b.popularity ?? 0) - (a.popularity ?? 0);
 /** @param {HTMLElement} main @param {import("./department-pages.js").Context} cx */
 export function renderAnimeDept(main, cx) {
   const { collections: shows, singles: films } = cx.library.anime;
-  if (shows.length === 0 && films.length === 0) return main.append(emptyState("anime", { kids: cx.kids }));
+  if (shows.length === 0 && films.length === 0) return main.append(emptyState("anime", { kidsLimit: cx.kidsLimit }));
 
   const showLeads = shows.map((show) => firstItemOf(show.divisions)).filter(Boolean);
   const unwatched = [...films, ...showLeads].filter((set) => !cx.isWatched(set.setId));

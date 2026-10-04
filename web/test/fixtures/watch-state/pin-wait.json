@@ -1,0 +1,74 @@
+[
+  {
+    "name": "four wrong PINs for a profile cost nothing; the fifth makes it wait a minute",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "secondsLeft": "andre", "expect": 0 },
+      { "at": 0, "failed": "andre" },
+      { "at": 0, "secondsLeft": "andre", "expect": 60 }
+    ]
+  },
+  {
+    "name": "the wait is that profile's: another one is not held up",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "secondsLeft": "andre", "expect": 60 },
+      { "at": 0, "secondsLeft": "maja", "expect": 0 }
+    ]
+  },
+  {
+    "name": "wrong PINs for different profiles do not add up",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "failed": "maja" }, { "at": 0, "failed": "maja" }, { "at": 0, "failed": "maja" }, { "at": 0, "failed": "maja" },
+      { "at": 0, "secondsLeft": "andre", "expect": 0 },
+      { "at": 0, "secondsLeft": "maja", "expect": 0 }
+    ]
+  },
+  {
+    "name": "a right PIN for another profile does not wipe the count",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "succeeded": "maja" },
+      { "at": 0, "failed": "andre" },
+      { "at": 0, "secondsLeft": "andre", "expect": 60 }
+    ]
+  },
+  {
+    "name": "a right PIN for the same profile wipes its count",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "succeeded": "andre" },
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 0, "secondsLeft": "andre", "expect": 0 }
+    ]
+  },
+  {
+    "name": "the seconds left round up, so a wait is never said to be over early",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 1, "secondsLeft": "andre", "expect": 60 },
+      { "at": 59001, "secondsLeft": "andre", "expect": 1 },
+      { "at": 59999, "secondsLeft": "andre", "expect": 1 }
+    ]
+  },
+  {
+    "name": "when the wait runs out, that profile's count starts again from nothing",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 60000, "secondsLeft": "andre", "expect": 0 },
+      { "at": 60000, "failed": "andre" }, { "at": 60000, "failed": "andre" }, { "at": 60000, "failed": "andre" }, { "at": 60000, "failed": "andre" },
+      { "at": 60000, "secondsLeft": "andre", "expect": 0 },
+      { "at": 60000, "failed": "andre" },
+      { "at": 60000, "secondsLeft": "andre", "expect": 60 }
+    ]
+  },
+  {
+    "name": "a wait that ran out unasked still starts the count again",
+    "steps": [
+      { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" }, { "at": 0, "failed": "andre" },
+      { "at": 60000, "failed": "andre" },
+      { "at": 60000, "secondsLeft": "andre", "expect": 0 }
+    ]
+  }
+]

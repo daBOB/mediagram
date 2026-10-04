@@ -17,7 +17,7 @@
  */
 
 import { groupDepartments } from "./departments.js";
-import { forKidsProfile } from "./age-rating.js";
+import { forKidsProfile, kidsLimitOf } from "./age-rating.js";
 
 /**
  * @param {{ port: import("./library-session.js").LibraryPort,
@@ -52,10 +52,9 @@ export function createLibrarySession({ port, state, remoteState }) {
   let askedAgain = false;
   let stopStream = null;
 
-  const kidsProfile = () => state.profile()?.kids === true;
-
-  /** What the given profile may see of a catalog; a kids profile is a filter, nothing else. */
-  const filtered = (sets) => (kidsProfile() ? forKidsProfile(sets, new Set(state.kids())) : sets);
+  /** What the chosen profile may see of a catalog; a kids profile is a filter at its own limit, nothing else. */
+  const filtered = (sets, limit = kidsLimitOf(state.profile())) =>
+    (limit === null ? sets : forKidsProfile(sets, state.kidsMarks(), limit));
 
   function notify(listeners, what, change) {
     for (const listener of listeners) {

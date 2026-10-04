@@ -80,6 +80,8 @@ function writeWorthSyncing(request: PlayerRequest): boolean {
   if (request.path.includes("/progress/")) {
     return request.method === "DELETE" || request.final === "1";
   }
+  // Entering a profile checks a PIN and changes nothing a document says.
+  if (request.path.endsWith("/unlock")) return false;
   return true;
 }
 

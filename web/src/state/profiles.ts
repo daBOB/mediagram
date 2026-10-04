@@ -13,6 +13,7 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { newPin } from "./profiles-pin";
 import { normalName } from "./sync-record";
 
 /** A profile as the page sees it. Says whether there is a PIN, never what. */
@@ -48,6 +49,14 @@ export interface ProfileRow {
 /** What a new profile is, beside its name. */
 export interface NewProfile {
   kids?: boolean;
+  /** A kid's limit, chosen now. Absent is FSK 12, dated 0. */
+  kidsAge?: 6 | 12;
+  /** The grown-up adding this kid. */
+  parentId?: string;
+  /** A grown-up's first PIN, already salted and hashed. */
+  pin?: { hash: string; salt: string };
+  /** The first grown-up on a player, which runs the household from the start. */
+  admin?: boolean;
 }
 
 /** How long a name may be. Long enough for a sentence, short enough to show. */
@@ -101,25 +110,27 @@ export function listProfiles(db: Database | null): Profile[] {
 /**
  * Makes a profile. A kid nobody chose a limit for starts at FSK 12 dated 0 —
  * older than any limit a parent chooses, so the first real choice, made here
- * or synced in, wins. A kid made by sync takes its merged limit right after.
+ * or synced in, wins; a chosen limit, a first PIN and a first admin's claim
+ * are dated now. A kid made by sync takes its merged limit right after.
  */
 export function insertProfile(db: Database | null, name: unknown, role: NewProfile = {}): Profile | null {
   if (!db) return null;
   const clean = cleanName(name);
   if (clean === null) return null;
   const kids = role.kids === true;
+  const createdAt = Date.now();
   const row: ProfileRow = {
     id: crypto.randomUUID(),
     name: clean,
-    createdAt: Date.now(),
+    createdAt,
     kids: kids ? 1 : 0,
-    kidsAge: kids ? 12 : null,
-    kidsAgeUpdatedAt: 0,
-    parentId: null,
-    adminClaimedAt: null,
-    pinHash: null,
-    pinSalt: null,
-    pinUpdatedAt: 0,
+    kidsAge: kids ? role.kidsAge ?? 12 : null,
+    kidsAgeUpdatedAt: kids && role.kidsAge !== undefined ? createdAt : 0,
+    parentId: kids ? role.parentId ?? null : null,
+    adminClaimedAt: !kids && role.admin === true ? createdAt : null,
+    pinHash: kids ? null : role.pin?.hash ?? null,
+    pinSalt: kids ? null : role.pin?.salt ?? null,
+    pinUpdatedAt: !kids && role.pin !== undefined ? createdAt : 0,
   };
   db.query(
     `INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
@@ -163,4 +174,26 @@ export function findOrCreateProfile(
   if (found) return { id: found.id, created: false, kids: found.kids };
   const created = insertProfile(db, displayName ?? name, { kids });
   return created ? { id: created.id, created: true, kids } : null;
+}
+
+/**
+ * Own writes of a PIN or a limit are dated at least a millisecond past the
+ * last change: an imported one can carry another device's clock, and this
+ * one running behind must not write a change that loses to the value it
+ * replaced. Clamped below the largest time a peer keeps, as `setWatched` is.
+ */
+const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
+
+/** A fresh salt and hash for `pin`. */
+export function writePin(db: Database, id: string, pin: string): void {
+  const { hash, salt } = newPin(pin);
+  db.query(`UPDATE profiles SET pin_hash = ?2, pin_salt = ?3,
+              pin_updated_at = MAX(?4, MIN(pin_updated_at, ?5) + 1) WHERE id = ?1`)
+    .run(id, hash, salt, Date.now(), LAST_STAMP);
+}
+
+export function writeKidsAge(db: Database, id: string, age: 6 | 12): void {
+  db.query(`UPDATE profiles SET kids_age = ?2,
+              kids_age_updated_at = MAX(?3, MIN(kids_age_updated_at, ?4) + 1) WHERE id = ?1`)
+    .run(id, age, Date.now(), LAST_STAMP);
 }

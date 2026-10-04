@@ -157,8 +157,25 @@ describe("onWrite", () => {
     const route = router();
     expect((await route(request(`/api/profiles/${me}/watchlist/${SET}`, "PUT", {}))).status).toBe(204);
     expect((await route(request(`/api/kids/${SET}`, "PUT", {}))).status).toBe(204);
-    expect((await route(request(`/api/profiles/${me}`, "PATCH", { name: "Renamed" }))).status).toBe(204);
+    expect((await route(request(`/api/profiles/${me}/claim-admin`, "POST", { pin: "1111" }))).status).toBe(204);
     expect(writes).toBe(3);
+  });
+
+  test("never fires for entering a profile, which changes nothing a document says", async () => {
+    const route = router();
+    await route(request(`/api/profiles/${me}/claim-admin`, "POST", { pin: "1111" }));
+    writes = 0;
+    expect((await route(request(`/api/profiles/${me}/unlock`, "POST", { pin: "1111" }))).status).toBe(204);
+    expect(writes).toBe(0);
+  });
+
+  test("never fires for a refused PIN", async () => {
+    const route = router();
+    await route(request(`/api/profiles/${me}/claim-admin`, "POST", { pin: "1111" }));
+    writes = 0;
+    const refused = await route(request(`/api/profiles/${me}/pin`, "PUT", { actorId: me, pin: "0000", newPin: "2222" }));
+    expect(refused.status).toBe(403);
+    expect(writes).toBe(0);
   });
 
   test("is optional: a router built without one never throws on a write", async () => {

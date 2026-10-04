@@ -31,7 +31,17 @@ Pure. `profiles` is every local profile as a `RoleView`
 | `set-kids-age` | target is a kid and `ownerOf(target) == actor` |
 
 Removing a grown-up also removes every kid whose `parent_id` is that
-grown-up (explicit `DELETE … WHERE parent_id = ?`, not a foreign key).
+grown-up (explicit `DELETE … WHERE parent_id = ? AND kids = 1`, not a
+foreign key). Removing a kid removes only that kid, even when another kid's
+`parent_id` names it (sync sets a parent by name, so it can).
+
+**Admin means a grown-up (amended 2026-10-04).** In the rule, a view counts
+as the admin only when `admin && !kids`: `ownerOf` never picks a kid, and
+`remove` refuses only a grown-up admin. A view built per §8 never says a kid
+is admin, but the rule is total over its input, and `profile-rules.json`
+pins it (the three "a kid said to be the admin" cases). Likewise `claim-admin`'s
+"an admin already exists" counts only a grown-up's claim (§8), so a claim
+left on a kid's row never blocks one.
 
 ## 3. Outcomes and the order they are checked
 
@@ -40,6 +50,7 @@ Reasons, as strings on the web and `ProfileOutcome` variants in the core:
 | reason | HTTP | core |
 |---|---|---|
 | `invalid` — malformed input (name, PIN format, age not 6/12) | 400 | `Invalid` |
+| `name-taken` — a new profile's name is one a profile here already answers to (amended 2026-10-04) | 409 | `NameTaken` |
 | `not-found` — actor or target id names nobody | 404 | `NotFound` |
 | `wait` — lockout active; body carries `retryAfter` seconds | 429 + `Retry-After` | `Wait { seconds }` |
 | `no-pin` — actor (or unlock target) is a grown-up with no PIN yet | 409 | `NoPin` |
@@ -54,6 +65,15 @@ Order (amended 2026-09-28 after the core plan's questions):
 1. `invalid` — `name`, `newPin`, `age`/`kidsAge` malformed. A malformed
    *current* `pin` is **not** `invalid`: it is compared, fails, and counts
    as `wrong-pin` (a PIN-less self set-pin may send `""`).
+1a. `name-taken` (amended 2026-10-04) — `create-first`, `create-grown-up`
+   and `create-kid` only: the new name collides with any existing profile,
+   kid or grown-up, compared as `normalName(cleanName(name))` on both sides
+   (`profile-names.json`). Why: sync keys a viewer by its normalised name and
+   `kids` only ever turns on, so a kid named after the admin made the admin a
+   powerless kid on every device — after which anyone could claim admin and
+   the old admin could not be removed. Checked before `not-found`, so a name
+   is refused whoever asks; names are already public through
+   `GET /api/profiles`. There is no rename, so nothing else can collide.
 2. `not-found` — actor or target id names nobody.
 3. `not-allowed` (structural) — actor is a kid; for `claim-admin`, an admin
    exists or the target is a kid; for `create-first`, a grown-up exists.
@@ -84,12 +104,20 @@ Exceptions:
 
 ## 4. Wrong-PIN wait
 
-`MAX_WRONG_PINS = 5`, `WAIT_MS = 60_000`. Every failed PIN comparison
-(any profile, any action) adds one. The 5th failure starts a 60 s wait
-during which every PIN-checking call answers `wait` with the seconds left
-(rounded up), without comparing. When the wait ends the count is 0. A
-successful comparison resets the count. In memory only (web: one per
-server process; core: one per `Core`). The clock is injectable for tests.
+`MAX_WRONG_PINS = 5`, `WAIT_MS = 60_000`. **Counted per profile whose PIN
+is compared (amended 2026-10-04)** — the actor's, or the unlock or
+claim-admin target's. Every failed comparison of profile X's PIN (any
+action) adds one to X's count. X's 5th failure starts a 60 s wait during
+which every call that would compare X's PIN answers `wait` with the seconds
+left (rounded up), without comparing; other profiles' PINs are compared as
+usual. When X's wait ends, X's count is 0. A successful comparison of X's
+PIN resets X's count only. In memory only (web: one per server process;
+core: one per `Core`). The clock is injectable for tests. Pinned by
+`pin-wait.json`.
+
+Why per profile: one count for the whole player was reset by any right
+PIN, so four guesses at the admin, then one's own known PIN, repeated,
+never waited (a review cracked the admin's PIN in 7392 guesses, 0 waits).
 
 ## 5. PIN format and hash
 
@@ -207,8 +235,9 @@ its columns hold: a grown-up with a claim or a PIN that another device later
 calls a kid keeps both columns after the sticky `kids` upgrade, and a kid
 opens without a PIN — read as admin, it could manage everyone. Enforced in
 `toProfile` (`admin: !kids && admin_claimed_at IS NOT NULL`,
-`hasPin: !kids && pin_hash IS NOT NULL`) and, in the merge, by `earliest()`
-skipping kids (§7 `admin`). The core's `Profile` (§9) applies the same rule.
+`hasPin: !kids && pin_hash IS NOT NULL`), in the merge by `earliest()`
+skipping kids (§7 `admin`), and in the rule (§2). The core's `Profile` (§9)
+applies the same rule.
 Export still writes `admin`/`pin` whenever the columns are set (§7); the
 merge drops them on a kid.
 
@@ -241,7 +270,7 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
-pub enum ProfileOutcome { Done, Invalid, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed }
+pub enum ProfileOutcome { Done, Invalid, NameTaken, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed }
 
 // on Core, async like the rest of api/state.rs:
 create_first_admin(name, new_pin) -> ProfileOutcome     // create-first, §3
@@ -268,6 +297,8 @@ the file's "nothing here throws" rule.
 | `pin-hash.json` | §5 | web phase 02, core phase 05 |
 | `profile-rules.json` | `[{ name, profiles: RoleView[], actorId, action, targetId, expect: boolean }]` | web phase 02, core phase 05 |
 | `profile-roles-merge.json` | `[{ name, records: SyncRecord[], expect: { profiles: [{ name, displayName, admin?, kids?, kidsAge?, parent?, pin? }], kids: ListRow[] } }]`, compared on those fields only | web phase 01, core phase 04 |
+| `profile-names.json` (2026-10-04) | `[{ name, existing: string[], candidate: string, expect: boolean }]` — whether `candidate` is taken (§3 item 1a) | web phase 02, core phase 05 |
+| `pin-wait.json` (2026-10-04) | `[{ name, steps: [{ at: ms, failed?: id, succeeded?: id, secondsLeft?: id, expect?: seconds }] }]` — one fresh wait per case, its clock at a fixed start + `at` | web phase 02, core phase 05 |
 | `profile-roles-record-parse.json` | `[{ name, input: string, expect: SyncRecord \| null }]`, the shape of `record-parse.json`; run through the real `parseRecord`, compared whole | web phase 01, core phase 04 |
 
 Amended 2026-10-04:

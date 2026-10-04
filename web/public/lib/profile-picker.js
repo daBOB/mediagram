@@ -1,17 +1,28 @@
 /**
  * Who is watching.
  *
- * The player has no authentication and is not pretending to have any: this
- * asks who you are, it does not check. What it buys is that two people
- * sharing a library do not share a half-watched film or each other's lists —
- * which is a convenience, and is worth being clear is only a convenience.
+ * Profiles keep a household's places and lists apart. A kid's tile opens at
+ * once; a grown-up's asks their PIN — or, for one from before PINs, has them
+ * set one first — so a child cannot tap into a parent's profile. That is all
+ * a PIN does here. It is not a login: the kids filter runs in this browser and
+ * the state API has no sessions, so developer tools or `curl` get past it.
+ * What the server does check is every change to who there is, made through
+ * Manage profiles (`profile-manage.js`).
  *
  * The answer is kept on the device rather than on the server, so a television
- * stays on the television's profile and a shared laptop asks again.
+ * stays on the television's profile and a shared laptop asks again; a
+ * profile remembered at start-up is not asked for its PIN.
  */
 
 import { el } from "./dom.js";
 import * as state from "./watch-state.js";
+import * as api from "./profile-api.js";
+import { kidsLimitOf } from "./age-rating.js";
+import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
+import { addForm, openManage } from "./profile-manage.js";
+
+/** Said plainly, so nobody takes a PIN for a login. */
+const NOTE = "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; it is not a login, and someone who knows their way around a browser can get past it.";
 
 /** The letter on a profile's tile. */
 export const initialOf = (name) => (name ?? "?").trim().charAt(0).toUpperCase() || "?";
@@ -33,11 +44,109 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
     card.append(choices);
     let closed = false;
     let selecting = false;
-    let naming = false;
-    let createFailed = false;
+    /** A refusal to say above the tiles, until the viewer tries something else. */
+    let notice = null;
     const selection = new AbortController();
+    const back = canCancel ? el("button", "quiet", "Stay as I am") : null;
+
+    function close(id) {
+      closed = true;
+      document.removeEventListener("keydown", onKey);
+      screen.remove();
+      resolve(id);
+    }
+
+    const stay = () => { selection.abort(); close(state.profileId()); };
+
+    // Escape on a reopened picker is "Stay as I am", as Back is on Android —
+    // unless a PIN prompt or Manage profiles over it (a second child of the
+    // screen) takes that Escape; and never with nobody to stay as.
+    function onKey(event) {
+      if (event.key === "Escape" && back && !back.hidden && !closed && screen.childElementCount === 1) stay();
+    }
+
+    /** Who is here, read again — after a refusal, which is usually news from another player. */
+    function reread() {
+      void state.loadProfiles().then((read) => { if (read && !closed && !selecting) draw(); });
+    }
+
+    /** A new PIN refused ends its dialog; what went wrong is said here, over who is here now. */
+    const tell = (outcome) => { notice = refusalText(outcome); reread(); };
+
+    /** A grown-up proves who they are first; a kid goes straight in. */
+    async function enter(entry) {
+      if (closed || selecting) return;
+      notice = null;
+      if (!entry.kids && (await askGrownUp(screen, entry, (pin) => api.prove(entry, pin), tell)) === null) return;
+      if (closed) return;
+      selecting = true;
+      stateFailed = false;
+      draw();
+      const applied = await state.useProfile(entry.id, selection.signal);
+      if (closed) return;
+      selecting = false;
+      if (!applied) {
+        stateFailed = true;
+        draw();
+        return;
+      }
+      close(entry.id);
+    }
+
+    /**
+     * No grown-up here yet — a new player, or one that only knows kids: the
+     * first grown-up made runs the household. Whether it was made or refused
+     * (one arrived from another player meanwhile), draw who is here now.
+     */
+    function firstProfile() {
+      const box = el("div", "who-ask");
+      box.append(el("h2", null, "Create the first profile — it runs this household"),
+        addForm("Create", [], async (name) => {
+          notice = null;
+          const made = await askPin(screen, { title: `A PIN for ${name}`, confirm: true, refused: tell,
+            send: (pin) => api.createFirst(name, pin) });
+          if (made !== null && !closed) draw();
+        }));
+      return box;
+    }
+
+    /** Asked while grown-ups exist but nobody runs this household. Only a grown-up can; one with no PIN sets it here. */
+    function householdQuestion(grownUps) {
+      const ask = el("div", "who-ask");
+      ask.append(el("h2", null, "Who runs this household?"));
+      for (const entry of grownUps) {
+        const pick = el("button", "pill pill-line", entry.name);
+        pick.type = "button";
+        pick.disabled = selecting;
+        pick.addEventListener("click", async () => {
+          if (closed || selecting) return;
+          notice = null;
+          const pin = await askGrownUp(screen, entry, (given) => api.claimAdmin(entry.id, given), tell);
+          if (pin !== null && !closed) draw();
+        });
+        ask.append(pick);
+      }
+      return ask;
+    }
+
+    function tiles() {
+      const row = el("div", "who-tiles");
+      for (const entry of state.profiles()) {
+        const tile = el("button", "who-tile");
+        tile.append(el("span", "who-initial", initialOf(entry.name)));
+        tile.append(el("span", "who-name", entry.name));
+        if (entry.kids) tile.append(el("span", "who-kids", `Kids · FSK ${kidsLimitOf(entry)}`));
+        tile.disabled = selecting;
+        tile.addEventListener("click", () => void enter(entry));
+        row.append(tile);
+      }
+      return row;
+    }
+
     const draw = () => {
       choices.textContent = "";
+      // Nothing to stay as once this device's own profile is gone.
+      if (back) back.hidden = state.profile() === null;
       if (discoveryFailed) {
         choices.append(el("p", "error", "Could not load profiles. Please try again."));
         const retry = el("button", "quiet", "Retry profiles");
@@ -51,126 +160,33 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
         return;
       }
       if (stateFailed) choices.append(el("p", "error", "Could not load this profile. Choose it again to retry."));
-      const tiles = el("div", "who-tiles");
-      for (const entry of state.profiles()) {
-        const tile = el("button", "who-tile");
-        tile.append(el("span", "who-initial", initialOf(entry.name)));
-        tile.append(el("span", "who-name", entry.name));
-        if (entry.kids) tile.append(el("span", "who-kids", "Kids"));
-        tile.disabled = selecting;
-        tile.addEventListener("click", async () => {
-          if (closed || selecting) return;
-          selecting = true;
-          stateFailed = false;
-          draw();
-          const applied = await state.useProfile(entry.id, selection.signal);
-          if (closed) return;
-          selecting = false;
-          if (!applied) {
-            stateFailed = true;
-            draw();
-            return;
-          }
-          closed = true;
-          screen.remove();
-          resolve(entry.id);
-        });
-        tiles.append(tile);
-      }
-
-      const add = el("button", "who-tile who-add");
-      add.disabled = selecting;
-      add.append(el("span", "who-initial", "＋"));
-      add.append(el("span", "who-name", "New profile"));
-      add.addEventListener("click", () => {
-        if (closed || selecting) return;
-        naming = true;
-        createFailed = false;
-        draw();
-      });
-      tiles.append(add);
-      choices.append(tiles);
-
-      if (naming) {
-        const form = el("form", "who-new");
-        const name = el("input");
-        name.required = true;
-        name.maxLength = 120;
-        name.placeholder = "Name";
-        name.setAttribute("aria-label", "Name for this profile");
-        const kidsChoice = el("label", "who-kids-choice");
-        const kids = el("input");
-        kids.type = "checkbox";
-        kidsChoice.append(kids, " Kids profile — only FSK 12 and under");
-        const create = el("button", "who-create", "Create");
-        create.type = "submit";
-        const cancel = el("button", "quiet", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => {
-          naming = false;
-          draw();
-        });
-        form.addEventListener("submit", (event) => {
-          event.preventDefault();
-          void state.createProfile(name.value, kids.checked).then((made) => {
-            if (closed) return;
-            naming = made === null;
-            createFailed = made === null;
-            draw();
-          });
-        });
-        form.append(name, kidsChoice, create, cancel);
-        if (createFailed) form.append(el("p", "error", "Could not create the profile. Please try again."));
-        choices.append(form);
-        name.focus();
-      }
-
-      if (state.profiles().length > 0) {
-        const manage = el("button", "quiet", "Rename or remove…");
+      if (notice) choices.append(el("p", "error", notice));
+      // The three ways a household can stand: nobody grown-up yet, grown-ups
+      // with nobody running things, or an admin — and only once there is a
+      // grown-up is there anyone who could manage.
+      const grownUps = state.profiles().filter((entry) => !entry.kids);
+      if (grownUps.length === 0) choices.append(firstProfile());
+      else if (!grownUps.some((entry) => entry.admin)) choices.append(householdQuestion(grownUps));
+      choices.append(tiles());
+      if (grownUps.length > 0) {
+        const manage = el("button", "quiet", "Manage profiles");
         manage.disabled = selecting;
         manage.addEventListener("click", () => {
-          if (closed || selecting) return;
-          const name = window.prompt(
-            "Name of the profile to remove, exactly. Everything of theirs goes with it.",
-          );
-          if (name === null) return;
-          const found = state.profiles().find((entry) => entry.name === name);
-          if (!found) {
-            window.alert("No profile by that name.");
-            return;
-          }
-          if (!window.confirm(`Remove "${found.name}" and everything they have watched?`)) return;
-          void state.deleteProfile(found.id).then((ok) => {
-            if (ok) draw();
-            else window.alert("Could not remove the profile. Please try again.");
-          });
+          if (!closed && !selecting) openManage(screen, () => { if (!closed) draw(); });
         });
         choices.append(manage);
       }
-
-      // Said plainly rather than implied: somebody will otherwise assume a
-      // profile is a login, and it is not one.
-      choices.append(
-        el(
-          "p",
-          "who-note",
-          state.remembers()
-            ? "Profiles keep your places and lists apart. They are not a login — anyone who can reach this player can pick any of them."
-            : "This player cannot save anything, so nothing here will be kept.",
-        ),
-      );
+      choices.append(el("p", "who-note", state.remembers() ? NOTE : "This player cannot save anything, so nothing here will be kept."));
     };
     draw();
+    // Opened on a page that has been up a while: another player may have added
+    // a kid, set a PIN or named the admin since, and the tiles should say so.
+    if (canCancel && !discoveryFailed) reread();
 
-    if (canCancel) {
-      const back = el("button", "quiet", "Stay as I am");
-      back.addEventListener("click", () => {
-        closed = true;
-        selection.abort();
-        screen.remove();
-        resolve(state.profileId());
-      });
+    if (back) {
+      back.addEventListener("click", stay);
       card.append(back);
+      document.addEventListener("keydown", onKey);
     }
 
     screen.append(card);

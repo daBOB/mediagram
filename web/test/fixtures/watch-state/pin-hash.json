@@ -1,0 +1,6 @@
+[
+  { "salt": "00112233445566778899aabbccddeeff", "pin": "1234",
+    "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924" },
+  { "salt": "ffeeddccbbaa99887766554433221100", "pin": "0000",
+    "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8" }
+]

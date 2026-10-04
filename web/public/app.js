@@ -26,6 +26,7 @@ import { pageOf, pager } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
 import { openFeatured } from "./lib/catalog/featured-reel.js";
 import * as state from "./lib/watch-state.js";
+import { kidsLimitOf } from "./lib/age-rating.js";
 import { resumeAt } from "./lib/resume-point.js";
 import { renderList } from "./lib/catalog/collections-view.js";
 import { franchisesIn, renderCollectionsPage, renderFranchise } from "./lib/catalog/collections-page.js";
@@ -74,8 +75,6 @@ document.getElementById("skip-library")?.addEventListener("click", () => main.fo
  */
 let library = groupDepartments([]);
 let byId = new Map();
-
-const kidsProfile = () => state.profile()?.kids === true;
 
 /**
  * The catalog this profile sees, kept current — fetch, diff, filter, the
@@ -149,7 +148,7 @@ function viewHome() {
   const empty = Object.values(shelves).every((row) => !Array.isArray(row) || row.length === 0);
   if (empty) {
     heading(main, SECTIONS.movies.label, countOf(0, SECTIONS.movies.extent));
-    return main.append(emptyState("movies", { kids: kidsProfile() }));
+    return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()) }));
   }
 
   const editorial = homeEditorial({
@@ -191,7 +190,7 @@ function viewMovies(requested) {
     // and offering the choice would be offering it about nothing.
     library.movies.length > 0 ? movieControls() : null,
   );
-  if (library.movies.length === 0) return main.append(emptyState("movies", { kids: kidsProfile() }));
+  if (library.movies.length === 0) return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()) }));
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager(page, pages);
   if (links) main.append(links);
@@ -222,7 +221,7 @@ function reelButton() {
 /** What a department's front page draws from. */
 const deptContext = () => ({
   library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
-  kids: kidsProfile(), play: (set) => play(set), openFilm, reel: reelButton(),
+  kidsLimit: kidsLimitOf(state.profile()), play: (set) => play(set), openFilm, reel: reelButton(),
   openShow,
 });
 
@@ -384,12 +383,12 @@ function showProfile() {
   button.hidden = false;
 }
 
-// The name in the header is also the way to become somebody else. A kids
-// profile is a filter, not a lock, so anyone can switch back from here.
+// The header's name opens the picker: to become somebody else (a grown-up's PIN
+// is asked there) or to manage profiles — which can change this very profile too.
 async function switchProfile() {
-  const before = state.profileId();
-  const chosen = await chooseProfile(document.body, { canCancel: true });
-  if (chosen === before) return;
+  const before = JSON.stringify(state.profile());
+  await chooseProfile(document.body, { canCancel: true });
+  if (JSON.stringify(state.profile()) === before) return;
   showProfile();
   // Counts follow from the reapply itself, through `onData`.
   librarySession.reapply();

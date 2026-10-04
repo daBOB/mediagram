@@ -3,20 +3,18 @@
  *
  * The rating is TMDB's for the library's country — an FSK in Germany — carried
  * on every catalog row as `fsk` (`"12"`), or `null` when the title has none.
- * The rules, as the household chose them:
+ * Every kids profile has its own limit, 6 or 12, set by the grown-up it
+ * belongs to. The rules for a kid with limit N, as the household chose them:
  *
- *  - Rated at or below `KIDS_AGE_LIMIT`: for kids by itself. Nobody has to
- *    mark it, and a mark cannot take it off — the rating decides.
- *  - Rated above it: never for kids. Marking it is refused, and a mark made
- *    before ratings were recorded no longer counts.
- *  - Unrated: only what someone marked by hand, exactly as before ratings.
+ *  - Rated N or under: for that kid by itself. Nobody has to mark it, and a
+ *    mark cannot take it off — the rating decides.
+ *  - Rated above N: not for that kid. A hand mark does not bring it back.
+ *  - Unrated: only what someone marked by hand, and only from an age at or
+ *    under N — "from 6" is for every kid, "from 12" for a 12 only.
  *
  * Pure, so the rules are tested without a browser; the catalog filter and the
- * player's Kids button only ask.
+ * player's Kids control only ask.
  */
-
-/** The oldest rating that is still for kids. FSK 12 and younger. */
-export const KIDS_AGE_LIMIT = 12;
 
 /**
  * The rating as an age, or `null` when there is none that reads as one.
@@ -34,24 +32,31 @@ export function ageLabel(set) {
   return age === null ? null : `FSK ${age}`;
 }
 
-/** `"safe"`, `"unsafe"`, or `"unrated"` — which of the three rules applies. */
-export function kidsVerdict(set) {
+/**
+ * The limit a profile sees up to: 6 or 12 on a kids profile, `null` for a
+ * grown-up or for nobody. Anything but 6 reads as 12 — the limit every kid
+ * had before each had its own — so a kid is never taken for a grown-up.
+ */
+export const kidsLimitOf = (profile) => (profile?.kids === true ? (profile.kidsAge === 6 ? 6 : 12) : null);
+
+/** `"safe"`, `"unsafe"`, or `"unrated"` — which of the three rules applies at `limit`. */
+export function kidsVerdict(set, limit) {
   const age = ageOf(set);
   if (age === null) return "unrated";
-  return age <= KIDS_AGE_LIMIT ? "safe" : "unsafe";
+  return age <= limit ? "safe" : "unsafe";
 }
 
 /**
- * The catalog a kids profile sees: rated for kids, or unrated and marked by
- * hand. Applied once to the whole catalog, so every shelf, search and reel
- * built from it agrees. A rating decides on its own — a hand mark on a title
- * rated too old does not let it through.
+ * The catalog a kid with this limit sees: rated at or under it, or unrated and
+ * marked by hand from an age at or under it. Applied once to the whole
+ * catalog, so every shelf, search and reel built from it agrees.
  * @param {import("./library.js").CatalogSet[]} sets
- * @param {Set<string>} marked set ids marked for Kids by hand
+ * @param {Map<string, number>} marks set id -> the age it is for kids from, 6 or 12
+ * @param {number} limit the kid's own, 6 or 12
  */
-export function forKidsProfile(sets, marked) {
+export function forKidsProfile(sets, marks, limit) {
   return sets.filter((set) => {
-    const verdict = kidsVerdict(set);
-    return verdict === "safe" || (verdict === "unrated" && marked.has(set.setId));
+    const verdict = kidsVerdict(set, limit);
+    return verdict === "safe" || (verdict === "unrated" && (marks.get(set.setId) ?? Infinity) <= limit);
   });
 }

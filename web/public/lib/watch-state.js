@@ -10,10 +10,10 @@
  * Position, mark, membership and preference setters update local state
  * immediately and persist best-effort; their void return does not acknowledge
  * persistence, and failed writes do not roll back that local update.
- * Shelf-affecting setters notify subscribers immediately. Profile and
- * collection management waits for the server:
- * creation returns a record or null, and rename/delete returns a boolean.
- * Those callers report a failed acknowledgement so the viewer can retry.
+ * Shelf-affecting setters notify subscribers immediately. Collection
+ * management waits for the server: creation returns a record or null, and
+ * rename/delete a boolean, so a caller can report a failure. Profile
+ * management is `profile-api.js`'s, which reads the list here again after.
  */
 
 /** Where this device's answer to "who is watching" is kept. */
@@ -37,10 +37,10 @@ function changed() {
 }
 
 /**
- * @type {{remembers: boolean, profiles: import("../../src/state/store.ts").Profile[], profileId: string|null,
+ * @type {{remembers: boolean, profiles: import("../../src/state/profiles.ts").Profile[], profileId: string|null,
  *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
  *   watchlist: Set<string>, collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
- *   kids: Set<string>, preferences: Map<string, string>}}
+ *   kids: Map<string, number>, preferences: Map<string, string>}}
  */
 const held = {
   remembers: false,
@@ -54,9 +54,9 @@ const held = {
    *  completed — and for a show watched to the end of an episode, the only
    *  thing that says when the show was last touched. */
   watched: new Map(),
-  /** Marked as a child's. Shared by everyone on this player, not held per
-   *  profile — a mark is about the title, not about who is watching. */
-  kids: new Set(),
+  /** Marked as a child's, as set id -> the age it is for kids from, 6 or 12.
+   *  Shared by everyone on this player — a mark is about the title. */
+  kids: new Map(),
   /** What this viewer chose, as `scope\u0000name` -> value. Held whole because
    *  a title needs one the instant it opens, which is when there is no time
    *  to ask for it. */
@@ -148,30 +148,6 @@ export const profile = () => held.profiles.find((entry) => entry.id === held.pro
 export function rememberedProfile() {
   const id = remembered();
   return id && held.profiles.some((entry) => entry.id === id) ? id : null;
-}
-
-/** @returns {Promise<import("../../src/state/store.ts").Profile|null>} The acknowledged profile, or null on failure. */
-export async function createProfile(name, kids = false) {
-  const made = await createRecord("/api/profiles", { name, kids });
-  if (!made) return null;
-  held.profiles.push(made);
-  return made;
-}
-
-/** @returns {Promise<boolean>} Whether the server acknowledged the rename. */
-export async function renameProfile(id, name) {
-  if (!(await write(`/api/profiles/${encodeURIComponent(id)}`, "PATCH", { name }))) return false;
-  const found = held.profiles.find((entry) => entry.id === id);
-  if (found) found.name = name;
-  return true;
-}
-
-/** @returns {Promise<boolean>} Whether the server acknowledged deletion. */
-export async function deleteProfile(id) {
-  if (!(await write(`/api/profiles/${encodeURIComponent(id)}`, "DELETE"))) return false;
-  held.profiles = held.profiles.filter((entry) => entry.id !== id);
-  if (held.profileId === id) held.profileId = null;
-  return true;
 }
 
 /**
@@ -387,18 +363,18 @@ export function markFinished(setId) {
 }
 
 /**
- * The titles marked as a child's.
- *
- * Read once at startup and not per profile, because the mark belongs to the
- * library: switching to another profile must not change which films are a
- * child's. The path has no profile in it for the same reason.
+ * The titles marked as a child's, as set id -> the age each is for kids from:
+ * 6 for the answer's `fromSix`, 12 for every other mark. Read once at startup
+ * and not per profile — the mark belongs to the library, not to whoever is
+ * watching, which is why its path has no profile in it either.
  */
 export async function loadKids() {
   try {
     const response = await fetch("/api/kids");
     if (!response.ok) return;
     const said = await response.json();
-    held.kids = new Set(Array.isArray(said.kids) ? said.kids : []);
+    const fromSix = new Set(Array.isArray(said.fromSix) ? said.fromSix : []);
+    held.kids = new Map((Array.isArray(said.kids) ? said.kids : []).map((id) => [id, fromSix.has(id) ? 6 : 12]));
     changed();
   } catch {
     // A player that cannot ask simply has an empty shelf, which is the same
@@ -406,14 +382,14 @@ export async function loadKids() {
   }
 }
 
-export const isKids = (setId) => held.kids.has(setId);
-export const kids = () => [...held.kids];
+export const kidsAge = (setId) => held.kids.get(setId) ?? null;
+export const kidsMarks = () => held.kids;
 
-/** Updates the shared local Kids mark and persists best-effort. @returns {void} */
-export function setKids(setId, marked) {
-  if (marked) held.kids.add(setId);
-  else held.kids.delete(setId);
-  void write(`/api/kids/${encodeURIComponent(setId)}`, marked ? "PUT" : "DELETE", marked ? {} : undefined);
+/** Marks a title for kids from `age` (6 or 12), or unmarks it with `null`; persists best-effort. @returns {void} */
+export function setKids(setId, age) {
+  if (age === null) held.kids.delete(setId);
+  else held.kids.set(setId, age);
+  void write(`/api/kids/${encodeURIComponent(setId)}`, age === null ? "DELETE" : "PUT", age === null ? undefined : { age });
   changed();
 }
 

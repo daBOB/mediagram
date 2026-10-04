@@ -29,8 +29,9 @@ export interface LibraryPort {
 
 /** The slice of `watch-state.js` the session reads to filter for a profile. */
 export interface LibrarySessionState {
-  profile(): { kids?: boolean } | null;
-  kids(): string[];
+  profile(): { kids?: boolean; kidsAge?: number | null } | null;
+  /** Every Kids mark, set id -> the age it is for kids from (6 or 12). */
+  kidsMarks(): Map<string, number>;
 }
 
 export interface LibrarySessionSnapshot {

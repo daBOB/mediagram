@@ -11,8 +11,23 @@
 
 ## Overview
 
-Priority P1 (the web half of the feature is unusable without it). Status: pending.
+Priority P1 (the web half of the feature is unusable without it). Status: done (pending merge).
 Depends on phases 01 and 02 (schema, routes, `profile-rules.json`).
+
+**As built (2026-10-04), where it differs from the steps below:**
+- A new kid starts at **FSK 6** (user decision). The "Add a kid" select defaults to 6, and 12 can still be picked. The test asserts both.
+- **Escape on a reopened picker means "Stay as I am"**, matching Back on Android since 0.99.9. The web had no Escape handler before. Escape is ignored in three cases: while a PIN prompt or Manage profiles covers the picker, on a first run, and once this device's profile is gone.
+- `profile-api.js`'s `ownerOf` counts only a grown-up as the admin, following contract §2 as amended. The panel's view is checked against all 42 `profile-rules.json` cases.
+- `anime-department.js` (newer than this plan) also takes `kidsLimit`. The shared household fixture moved to `test/support/household-fixture.ts`.
+- Ceilings: `app.js` 695 → 694, `watch-state.js` 502 → 478. `library-session.js` is at 197 and `shelf-view.js` stays at 287.
+- CSS: `.manage-row` has its own flex rule. The panel's add forms align left, and the PIN dots are centred (`text-indent`).
+- Screenshots: `../261004-1508-open-tasks-sweep/reports/b3-phase-03-shots/` (11 JPEGs, stub preview only).
+- Still open (plan Open #4): a limit changed on another device reaches an open tab only on reload or the next picker open.
+- Review follow-up (2026-10-04):
+  - A PIN being set (any two-field dialog) is sent once. A refusal ends the dialog and the caller says why: the panel says "Your PIN is no longer valid. Choose who you are again." on a stale held PIN, and the picker shows the reason over the tiles and re-reads them.
+  - `name-taken` reads "A profile with that name already exists."
+  - Escape closes Manage profiles, as Done does.
+  - The locked Kids button says "For kids from 12 · FSK 12" for a title only a 12 may see.
 
 The browser side of profile roles:
 
@@ -1969,14 +1984,14 @@ const LEA = { id: "lea", name: "Lea", createdAt: 4, kids: true, kidsAge: 12, par
 
 ## Todo list
 
-- [ ] Task 0 — rebase, phase 02 present, baseline green
-- [ ] Task 1 — per-kid filter, marks with an age, Kids select (commit)
-- [ ] Task 2 — empty shelf / Settings / tiles name the limit; app.js ceiling 741 (commit)
-- [ ] Task 3 — `profile-api.js` + fixture-driven view test (commit)
-- [ ] Task 4 — `pin-prompt.js` + CSS + test helpers (commit)
-- [ ] Task 5 — `profile-manage.js` + CSS (commit)
-- [ ] Task 6 — picker rewrite, profile writers leave watch-state, tests updated, ceiling lowered (commit; push with phase 02)
-- [ ] Task 7 — preview walkthrough (household copy + empty player), 9 screenshots
+- [x] Task 0 — rebase, phase 02 present, baseline green
+- [x] Task 1 — per-kid filter, marks with an age, Kids select (commit)
+- [x] Task 2 — empty shelf / Settings / tiles name the limit; app.js ceiling 694 (commit)
+- [x] Task 3 — `profile-api.js` + fixture-driven view test (commit)
+- [x] Task 4 — `pin-prompt.js` + CSS + test helpers (commit)
+- [x] Task 5 — `profile-manage.js` + CSS (commit)
+- [x] Task 6 — picker rewrite, profile writers leave watch-state, tests updated, ceiling lowered (commit; push with phase 02)
+- [x] Task 7 — preview walkthrough (household copy + empty player), 11 screenshots
 
 ## Success criteria
 

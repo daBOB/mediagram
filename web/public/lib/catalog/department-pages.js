@@ -33,7 +33,7 @@ const popular = (a, b) => (b.popularity ?? 0) - (a.popularity ?? 0);
 
 /**
  * @typedef {{ library: any, byId: Map<string, any>, progress: any[], watchedAt: (id: string) => number|null,
- *   isWatched: (id: string) => boolean, kids: boolean, play: (set: any) => void,
+ *   isWatched: (id: string) => boolean, kidsLimit: number|null, play: (set: any) => void,
  *   openFilm: (set: any) => void, openShow: (section: string, name: string) => void,
  *   reel: HTMLElement|null }} Context
  */
@@ -41,7 +41,7 @@ const popular = (a, b) => (b.popularity ?? 0) - (a.popularity ?? 0);
 /** @param {HTMLElement} main @param {Context} cx */
 export function renderMoviesDept(main, cx) {
   const films = cx.library.movies;
-  if (films.length === 0) return main.append(emptyState("movies", { kids: cx.kids }));
+  if (films.length === 0) return main.append(emptyState("movies", { kidsLimit: cx.kidsLimit }));
   const unwatched = films.filter((set) => !cx.isWatched(set.setId));
   const byPopularity = [...unwatched].sort(popular);
   const lead = byPopularity.find((set) => set.backdrop) ?? null;
@@ -85,7 +85,7 @@ export function renderMoviesDept(main, cx) {
 export function renderDocumentariesDept(main, cx) {
   const { collections: groups, singles } = cx.library.documentaries;
   const items = [...singles, ...groups.flatMap((group) => flattenCollection(group))];
-  if (items.length === 0) return main.append(emptyState("documentaries", { kids: cx.kids }));
+  if (items.length === 0) return main.append(emptyState("documentaries", { kidsLimit: cx.kidsLimit }));
 
   const byRecent = [...items].sort((a, b) => (Number(b.addedAt) || 0) - (Number(a.addedAt) || 0));
   const lead = byRecent.find((set) => set.backdrop) ?? null;
@@ -133,7 +133,7 @@ export function renderDocumentariesDept(main, cx) {
 /** @param {HTMLElement} main @param {"series"|"tutorials"} section @param {Context} cx */
 export function renderShowsDept(main, section, cx) {
   const shows = cx.library[section];
-  if (shows.length === 0) return main.append(emptyState(section, { kids: cx.kids }));
+  if (shows.length === 0) return main.append(emptyState(section, { kidsLimit: cx.kidsLimit }));
   const series = section === "series";
   const leads = shows.map((show) => firstItemOf(show.divisions)).filter(Boolean);
   const lead = [...leads].filter((set) => set.backdrop).sort(popular)[0] ?? null;

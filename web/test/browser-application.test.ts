@@ -2,8 +2,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } fr
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applicationEnvironment, descendants, textOf } from "./support/browser-application";
-import { deferred, settle } from "./support/player-environment";
+import { answerPin, applicationEnvironment, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
+import { deferred, settle, type Node } from "./support/player-environment";
 
 let bundleDir: string;
 let serial = 0;
@@ -14,6 +14,8 @@ let snapshot: object;
 let intercept: (url: string, init?: RequestInit) => Promise<Response> | Response | null;
 const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration: 600, addedAt: 1, total: 1000, container: "mp4", vcodec: "h264", acodec: "aac" });
 const page = () => textOf(env.node("main"));
+/** The household's one grown-up, its admin, with a PIN the stub server always accepts. */
+const VIEWER = { id: "viewer", name: "Viewer", kids: false, kidsAge: null, parentId: null, admin: true, hasPin: true };
 const stream = () => env.streams.at(-1)!;
 
 beforeAll(async () => {
@@ -38,7 +40,7 @@ beforeEach(() => {
     if (intercepted) return intercepted;
     if (url === "/api/sets") return new Response(catalog);
     if (url === "/api/player") return Response.json({ remote: false });
-    if (url === "/api/profiles") return Response.json({ remembers: true, profiles: [{ id: "viewer", name: "Viewer" }] });
+    if (url === "/api/profiles") return Response.json({ remembers: true, profiles: [VIEWER] });
     if (url.endsWith("/state")) return Response.json(snapshot);
     if (url === "/api/kids") return Response.json({ kids: [] });
     if (init?.method && init.method !== "HEAD") return new Response(null, { status: 204 });
@@ -494,26 +496,33 @@ async function waitForProfilePicker() {
   expect(descendants(env.document.body).some((node) => node.className === "who")).toBe(true);
 }
 
+/** Chooses `tile` the way a viewer does: a grown-up's asks its PIN, which the stub server accepts. */
+async function choose(tile: Node) {
+  tile.fire("click");
+  await settle();
+  if (descendants(env.document.body).some((node) => node.className.split(" ").includes("pin-prompt"))) {
+    await answerPin(env.document.body, "1234", "1234");
+  }
+}
+
 async function finishProfilePicker(starting: Promise<void>) {
-  // Also release startup when a pre-fix assertion fails: use the real creation
-  // and selection callbacks if the old picker has no discovery retry button.
+  // Also releases startup when an assertion above failed: with nothing
+  // intercepted the stub server knows Viewer, the admin, and takes any PIN.
   if (descendants(env.document.body).some((node) => node.className === "who")) {
-    intercept = (url, init) => url === "/api/profiles" && init?.method === "POST"
-      ? Promise.resolve(Response.json({ id: "viewer", name: "Viewer", createdAt: 1 })) : null;
+    intercept = () => null;
     const retry = descendants(env.document.body).find((node) => node.textContent === "Retry profiles");
+    const first = descendants(env.document.body).find((node) => node.tagName === "FORM" && node.className === "who-new");
     if (retry) retry.fire("click");
-    else if (!descendants(env.document.body).some((node) => node.className === "who-name" && node.textContent === "Viewer")) {
-      descendants(env.document.body).find((node) => node.className === "who-tile who-add")!.fire("click");
+    else if (first) {
+      descendants(first).find((node) => node.tagName === "INPUT")!.value = "Viewer";
+      first.fire("submit");
       await settle();
-      const form = descendants(env.document.body).find((node) => node.className === "who-new")!;
-      const name = descendants(form).find((node) => node.tagName === "INPUT") as unknown as { value: string };
-      name.value = "Viewer";
-      form.fire("submit");
+      await answerPin(env.document.body, "1234", "1234");
     }
     await settle();
     const tile = descendants(env.document.body).find((node) => node.className === "who-tile" && textOf(node).includes("Viewer"));
     if (!tile) throw new Error("Recovered profile tile missing");
-    tile.fire("click");
+    await choose(tile);
   }
   await starting;
 }
@@ -533,8 +542,7 @@ for (const failure of ["HTTP", "network", "JSON"] as const) {
       expect(textOf(env.document.body)).toContain("Could not load this profile");
       expect(page()).not.toContain("Nothing started yet");
       const tile = descendants(env.document.body).find((node) => node.className === "who-tile")!;
-      tile.fire("click");
-      await settle();
+      await choose(tile);
       expect(textOf(env.document.body)).toContain("Could not load this profile");
       expect(page()).not.toContain("Nothing started yet");
     } finally {
@@ -574,12 +582,12 @@ for (const failure of ["HTTP", "network", "JSON"] as const) {
   });
 }
 
-test.each([true, false])("successful empty profile discovery (remembers=%s) offers creation without a retry error", async (remembers) => {
+test.each([true, false])("successful empty profile discovery (remembers=%s) offers the first profile without a retry error", async (remembers) => {
   intercept = (url) => url === "/api/profiles" ? Promise.resolve(Response.json({ remembers, profiles: [] })) : null;
   const starting = start();
   await waitForProfilePicker();
   try {
-    expect(textOf(env.document.body)).toContain("New profile");
+    expect(textOf(env.document.body)).toContain("Create the first profile — it runs this household");
     expect(textOf(env.document.body)).not.toContain("Could not load profiles.");
     expect(textOf(env.document.body)).not.toContain("Retry profiles");
     expect(textOf(env.document.body).includes("cannot save anything")).toBe(!remembers);
@@ -620,7 +628,7 @@ describe("kids profiles", () => {
   const rated = (setId: string, fsk: string | null) => ({ ...film(setId), fsk });
   const profiles = [
     { id: "viewer", name: "Viewer", createdAt: 1, kids: true },
-    { id: "adult", name: "Adult", createdAt: 2, kids: false },
+    { id: "adult", name: "Adult", createdAt: 2, kids: false, admin: true, hasPin: true },
   ];
   beforeEach(() => {
     catalog = JSON.stringify([rated("Family", "6"), rated("Grown", "16"), rated("Unknown", null), rated("Marked", null)]);
@@ -632,6 +640,30 @@ describe("kids profiles", () => {
       }
       return null;
     };
+  });
+
+  /** The same household with its kid at `kidsAge`, and the Kids marks the server holds. */
+  function kidAt(kidsAge: number, kids: object = { kids: ["Marked"], fromSix: [] }) {
+    const base = intercept;
+    intercept = (url, init) => {
+      if (url === "/api/profiles" && !init?.method) {
+        return Promise.resolve(Response.json({ remembers: true, profiles: profiles.map((entry) => (entry.kids ? { ...entry, kidsAge } : entry)) }));
+      }
+      if (url === "/api/kids") return Promise.resolve(Response.json(kids));
+      return base(url, init);
+    };
+  }
+
+  test("an FSK 6 kid sees FSK 6 and what is marked from 6, nothing marked from 12", async () => {
+    catalog = JSON.stringify([rated("Family", "6"), rated("Twelve", "12"), rated("FromSix", null), rated("Marked", null)]);
+    kidAt(6, { kids: ["FromSix", "Marked"], fromSix: ["FromSix"] });
+    await start();
+    expect(env.node("n-movies").textContent).toBe("2");
+    await env.navigate("#/movies");
+    expect(page()).toContain("Family");
+    expect(page()).toContain("FromSix");
+    expect(page()).not.toContain("Twelve");
+    expect(page()).not.toContain("Marked");
   });
 
   test("a kids profile's shelves hold only what is rated for kids or marked by hand", async () => {
@@ -666,8 +698,7 @@ describe("kids profiles", () => {
     await settle();
     const adult = descendants(env.document.body)
       .find((node) => node.className === "who-tile" && textOf(node).includes("Adult"))!;
-    adult.fire("click");
-    await settle();
+    await choose(adult);
     expect(env.node("who").textContent).toBe("Adult");
     expect(env.node("n-movies").textContent).toBe("4");
     expect(env.requests.filter((request) => request.url === "/api/sets").length).toBe(fetched);
@@ -678,6 +709,22 @@ describe("kids profiles", () => {
     await start();
     await env.navigate("#/movies");
     expect(page()).toContain("Nothing rated FSK 12 or under yet.");
+  });
+
+  test("an FSK 6 kid's empty shelf names its own limit", async () => {
+    catalog = JSON.stringify([rated("Twelve", "12")]);
+    kidAt(6);
+    await start();
+    await env.navigate("#/movies");
+    expect(page()).toContain("Nothing rated FSK 6 or under yet.");
+  });
+
+  test("Settings names the kid and its own limit", async () => {
+    kidAt(6);
+    await start();
+    await env.navigate("#/settings");
+    descendants(env.node("main")).find((node) => node.className.split(" ").includes("tab") && textOf(node) === "Profile")!.fire("click");
+    expect(page()).toContain("Viewer · Kids · FSK 6");
   });
 
   test("a kids profile is offered no way to change the household's editor's choice", async () => {
@@ -694,34 +741,44 @@ describe("kids profiles", () => {
     descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
     await settle();
     expect(env.node("kids").hidden).toBe(true);
+    expect(env.node("kids-age").hidden).toBe(true);
   });
 
-  test("a new profile can be made a kids profile, and its tile says so", async () => {
-    let posted: unknown = null;
-    const base = intercept;
-    intercept = (url, init) => {
-      if (url === "/api/profiles" && init?.method === "POST") {
-        posted = JSON.parse(String(init.body));
-        return Promise.resolve(Response.json({ id: "mia", name: "Mia", createdAt: 3, kids: true }, { status: 201 }));
-      }
-      return base(url, init);
-    };
+  test("a kid's tile names its own limit", async () => {
+    kidAt(6);
     await start();
     env.node("who").fire("click");
     await settle();
-    descendants(env.document.body).find((node) => node.className.includes("who-add"))!.fire("click");
+    const tile = descendants(env.document.body).find((node) => node.className === "who-tile" && textOf(node).includes("Viewer"))!;
+    expect(textOf(tile)).toContain("Kids · FSK 6");
+  });
+
+  test("a kid whose limit changes in Manage profiles is filtered anew when the picker closes", async () => {
+    let kidsAge = 12;
+    const base = intercept;
+    intercept = (url, init) => {
+      if (url === "/api/profiles" && !init?.method) {
+        return Promise.resolve(Response.json({ remembers: true, profiles: profiles.map((entry) => (entry.kids ? { ...entry, kidsAge } : entry)) }));
+      }
+      if (url === "/api/profiles/viewer/kids-age") { kidsAge = 6; return Promise.resolve(new Response(null, { status: 204 })); }
+      return base(url, init);
+    };
+    catalog = JSON.stringify([rated("Family", "6"), rated("Twelve", "12")]);
+    await start();
+    expect(env.node("n-movies").textContent).toBe("2");
+    env.node("who").fire("click");
     await settle();
-    const form = descendants(env.document.body).find((node) => node.className === "who-new")!;
-    const [name, kids] = descendants(form).filter((node) => node.tagName === "INPUT") as unknown as
-      [{ value: string; checked: boolean }, { value: string; checked: boolean }];
-    name.value = "Mia";
-    kids.checked = true;
-    form.fire("submit");
+    buttonNamed(env.document.body, "Manage profiles").fire("click");
+    buttonNamed(byClass(env.document.body, "who-manage"), "Adult").fire("click");
+    await answerPin(env.document.body, "1234");
+    const limit = descendants(env.document.body).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === "Age limit for Viewer")!;
+    limit.value = "6";
+    limit.fire("change");
     await settle();
-    expect(posted).toEqual({ name: "Mia", kids: true });
-    const tile = descendants(env.document.body)
-      .find((node) => node.className === "who-tile" && textOf(node).includes("Mia"))!;
-    expect(textOf(tile)).toContain("Kids");
+    buttonNamed(env.document.body, "Done").fire("click");
+    buttonNamed(env.document.body, "Stay as I am").fire("click");
+    await settle();
+    expect(env.node("n-movies").textContent).toBe("1");
   });
 });
 
