@@ -72,11 +72,23 @@ class ProfilePickerScreenTest {
         assertEquals(listOf("first Ann"), calls)
     }
 
-    @Test fun aDeviceThatKnowsNobodyYetCanLookAgainForTheHouseholdsSync() {
-        show(ProfileUiState.Picking(emptyList(), canStay = false))
-        compose.onNodeWithText("Create the first profile — it runs this household").assertExists()
+    /** No sync round landed yet: the household's names may be on their way, so nothing is offered to be made. */
+    @Test fun aDeviceNotYetSyncedWaitsForTheHouseholdAndCanLookAgain() {
+        show(ProfileUiState.Picking(listOf(Profile("k", "TV kids", kids = true)), canStay = false, synced = false))
+        compose.onNodeWithText("Waiting for this household’s profiles…").assertExists()
+        compose.onNodeWithText("Create the first profile — it runs this household").assertDoesNotExist()
+        compose.onNodeWithText("Who runs this household?").assertDoesNotExist()
+        compose.onNodeWithText("TV kids").assertExists()
         compose.onNodeWithText("Try again").performClick()
         assertEquals(listOf("retry"), calls)
+    }
+
+    /** A round that found nobody: a new household, with nothing left to look for. */
+    @Test fun aNewHouseholdMakesItsFirstWithNothingToWaitFor() {
+        show(ProfileUiState.Picking(emptyList(), canStay = false))
+        compose.onNodeWithText("Create the first profile — it runs this household").assertExists()
+        compose.onNodeWithText("Waiting for this household’s profiles…").assertDoesNotExist()
+        compose.onNodeWithText("Try again").assertDoesNotExist()
     }
 
     @Test fun grownUpsWithNoAdminAreAskedWhoRunsTheHousehold() {

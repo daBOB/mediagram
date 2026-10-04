@@ -168,9 +168,17 @@ class FakeCore(
     /** Who this fake reports as chosen, read back by [chosenProfile]. */
     var chosen: String? = null
 
+    /**
+     * Whether a sync round has landed, as [hasSyncedOnce] answers and
+     * [createFirstAdmin] checks. `true` by default — a device that has
+     * synced, which almost every test stands on — where a real core on a
+     * fresh directory starts `false`; `CoreContract` holds the fake to both.
+     */
+    var syncedOnce: Boolean = true
+
     /** The household's PINs and wrong-PIN wait, and the rules every profile change is checked against. */
     val roles =
-        FakeProfiles(read = { profiles }, write = { profiles = it }) { id ->
+        FakeProfiles(read = { profiles }, write = { profiles = it }, synced = { syncedOnce }) { id ->
             if (chosen == id) chosen = null
             watchState.forget(id)
         }
@@ -557,6 +565,8 @@ class FakeCore(
      */
     override suspend fun syncState(handle: String): SyncOutcome =
         SyncOutcome(0uL, false, "this device no longer has that library stored")
+
+    override suspend fun hasSyncedOnce(): Boolean = syncedOnce
 
     /** How many times [retireLocalState] actually ran, successfully or not. */
     var retireCalls: Int = 0

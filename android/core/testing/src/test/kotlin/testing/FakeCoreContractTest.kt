@@ -6,8 +6,8 @@ package testing
  * `RealCoreContractTest`. A plain, entirely unconfigured `FakeCore()` is the
  * right fixture for it: its default already has no known set and no
  * profile, matching the real core's own fresh, empty catalog — see
- * [FakeCore.knownSetIds].
+ * [FakeCore.knownSetIds] — and has synced once unless told otherwise.
  */
 class FakeCoreContractTest : CoreContract() {
-    override fun core(): FakeCore = FakeCore()
+    override fun core(synced: Boolean): FakeCore = FakeCore().apply { syncedOnce = synced }
 }

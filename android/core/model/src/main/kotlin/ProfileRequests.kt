@@ -87,4 +87,11 @@ sealed interface ProfileOutcome {
     data object WrongPin : ProfileOutcome
 
     data object NotAllowed : ProfileOutcome
+
+    /**
+     * A first profile on a device that has not yet taken in a sync round: it
+     * has not heard who the household already is, and a profile made blind
+     * under a member's name would hand its PIN to that member everywhere.
+     */
+    data object NotSynced : ProfileOutcome
 }

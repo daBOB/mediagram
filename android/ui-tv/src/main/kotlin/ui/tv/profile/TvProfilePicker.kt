@@ -32,6 +32,7 @@ import catalog.profile.FIRST_PROFILE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.PICKER_NOTE
 import catalog.profile.ProfileUiState
+import catalog.profile.WAITING_FOR_HOUSEHOLD
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -142,9 +143,11 @@ private fun TvPickerBody(
         // neither question is asked over one.
         if (error == null && state.needsFirstProfile) {
             TvFirstProfileRow(onStart = { naming = true }, focusRequester = at(TvPickerSpot.FirstProfile))
-            // A household's first sync may still be on its way: look again
-            // rather than make a first profile that would lose the role to it.
-            if (state.profiles.isEmpty()) tryAgain()
+        }
+        // No first profile until a sync round has landed; look again meanwhile.
+        if (error == null && state.awaitingHousehold) {
+            Text(WAITING_FOR_HOUSEHOLD, style = TvTypeScale.body, modifier = side.padding(top = Spacing.medium))
+            tryAgain()
         }
         if (error == null && state.needsAdmin) TvAdminQuestion(state.grownUps, actions.onClaim, focus, requester)
         // A LazyRow, not a plain Row: in a Row, enough fixed-width tiles to

@@ -32,6 +32,7 @@ import catalog.profile.FIRST_PROFILE
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.PICKER_NOTE
 import catalog.profile.ProfileUiState
+import catalog.profile.WAITING_FOR_HOUSEHOLD
 import catalog.profile.WHO_RUNS_THIS
 import catalog.profile.kidsTag
 import designsystem.Spacing
@@ -88,10 +89,13 @@ private fun PickerBody(
                 modifier = Modifier.padding(top = Spacing.small).semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
-        // With nobody to choose, looking again is worth offering: a phone's
-        // first sync may not have brought the household's names in yet, and
-        // a first profile made meanwhile would lose the admin role to theirs.
-        if (state.error != null || state.profiles.isEmpty()) {
+        // No first profile until a sync round has landed: the household's
+        // names may still be on their way, and one made blind under a
+        // member's name would take over that member's PIN. Until then, look again.
+        if (state.error == null && state.awaitingHousehold) {
+            Text(WAITING_FOR_HOUSEHOLD, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.medium))
+        }
+        if (state.error != null || state.awaitingHousehold) {
             TextButton(onClick = actions.onRetry) { Text("Try again") }
         }
         // A load that just failed is answered by trying again, not by starting a household.
