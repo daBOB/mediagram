@@ -725,6 +725,20 @@ own title and percent when it is immediately next, otherwise how many films
 stand ahead of it. The control's own states and visual pair are
 `DESIGN.md`'s (§ Pill).
 
+### Television display: refresh rate, backdrop width, baseline profile
+
+- **Refresh-rate matching is TV-only, and deliberately so.**
+  - `TvDisplayModeMatch` (`ui-tv`) reads the selected video track's frame rate, asks `pickDisplayMode` (`core:playback`, pure and unit-tested) for a mode at the current resolution whose refresh is a whole multiple of it, and sets `preferredDisplayModeId`. It decides against the mode the screen had when the player opened, and restores the previous preference when nothing fits and when the player closes.
+  - A mode that already fits is kept, because every switch blanks the screen while HDMI re-syncs.
+  - `buildPlayer` turns Media3's own switching off on TV, so only one mechanism is in charge. Phones and tablets keep Media3's default, `ONLY_IF_SEAMLESS`. The web player cannot switch display modes at all.
+- **Backdrop width follows the screen it fills.**
+  - `DeviceBackdropWidth` asks TMDB for 1280 on a television or tablet and 780 on a phone. A TV reports 960 dp, but its hero spans 1920 px.
+  - `poster_files.rs` records the width each backdrop was fetched at in `<key>.width`, and treats one held narrower than requested as missing.
+  - Keys the artwork table holds (custom backdrops) are never fetched over.
+- **The release build carries an app baseline profile** from `:baselineprofile`, a D-pad journey through Home, the Movies wall and a title page.
+  - The journey only navigates. It never presses OK on a setting, never plays anything and never presses Back at the library root.
+  - `gradle.properties` keeps the app installed after the connected run, because AGP would otherwise uninstall it.
+
 ### Subtitles (Android)
 
 A set's tracks come from `catalog_subtitles` on the Rust side, one of two

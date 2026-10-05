@@ -33,6 +33,9 @@ pub struct FetchPlan {
     pub without_id: u32,
     /// The language to ask in, read from the same index as the titles.
     pub language: String,
+    /// Keys the library's own `artwork` table holds an image for, which a
+    /// fetch must not download over.
+    pub custom_keys: HashSet<String>,
 }
 
 /// Reads the installed catalog and works out what a fetch would do with it.
@@ -48,6 +51,10 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
     let sets =
         crate::catalog::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     let language = language_of(&conn, fallback);
+    let custom_keys = crate::artwork::keys(&conn).unwrap_or_else(|err| {
+        tracing::warn!(error = %err, "the library's own artwork could not be listed");
+        HashSet::new()
+    });
     drop(conn);
 
     let (titles, without_id) = split_titles(&sets);
@@ -56,6 +63,7 @@ pub fn plan_fetch(core: &Core, fallback: &str) -> Result<FetchPlan, CoreError> {
         titles,
         without_id,
         language,
+        custom_keys,
     })
 }
 

@@ -88,7 +88,9 @@ pub async fn run(cfg: &Config, index: Option<&Path>) -> Result<()> {
     .await?;
     term::redraw("");
 
-    let fetched = written.len().saturating_sub(held);
+    // Counted by what is held now beyond what was, so a re-fetch that failed
+    // and kept the old file is not reported as fetched.
+    let fetched = already_held(&refs, &dir).saturating_sub(held);
     let missing = refs.len() - written.len();
     println!(
         "{} image(s) in {}: {fetched} fetched, {held} already held",

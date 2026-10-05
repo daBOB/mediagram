@@ -20,8 +20,11 @@ data class Mode(
  * fits when its refresh rate is a whole multiple of [fps], within half a
  * percent, which absorbs the 1000/1001 rounding panels report. The smallest
  * multiple wins, since a 24 fps film on 24 Hz beats the same film on 48 Hz;
- * the smallest error breaks a tie. When the best is already the current mode
- * there is nothing to do.
+ * the smallest error breaks a tie.
+ *
+ * A [current] mode that already fits is kept, even when a smaller multiple is
+ * on offer: every switch blanks the screen while HDMI re-syncs, and 30 fps on
+ * 60 Hz or 24 fps on 120 Hz is already judder-free.
  */
 fun pickDisplayMode(
     current: Mode,
@@ -29,17 +32,25 @@ fun pickDisplayMode(
     fps: Float,
 ): Int? {
     if (!(fps > 0f)) return null
-    val best =
-        supported
-            .filter { it.width == current.width && it.height == current.height }
-            .mapNotNull { mode ->
-                val ratio = mode.refreshHz / fps
-                val multiple = ratio.roundToInt()
-                val error = abs(ratio - multiple) / multiple
-                if (multiple >= 1 && error <= TOLERANCE) Triple(mode, multiple, error) else null
-            }.minWithOrNull(compareBy({ it.second }, { it.third }))
-            ?.first
-    return best?.id?.takeIf { it != current.id }
+    if (fit(current, fps) != null) return null
+    return supported
+        .filter { it.width == current.width && it.height == current.height }
+        .mapNotNull { mode -> fit(mode, fps)?.let { mode to it } }
+        .minWithOrNull(compareBy({ it.second.first }, { it.second.second }))
+        ?.first
+        ?.id
+}
+
+/** `(multiple, error)` when [mode]'s refresh is a whole multiple of [fps] within tolerance, else null. */
+private fun fit(
+    mode: Mode,
+    fps: Float,
+): Pair<Int, Float>? {
+    val ratio = mode.refreshHz / fps
+    val multiple = ratio.roundToInt()
+    if (multiple < 1) return null
+    val error = abs(ratio - multiple) / multiple
+    return if (error <= TOLERANCE) multiple to error else null
 }
 
 /**

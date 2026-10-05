@@ -283,5 +283,30 @@ async fn a_backdrop_held_narrower_than_wanted_is_not_counted_held() {
     let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
 
     assert_eq!(report.backdrops_already_held, 0);
+    // The wider fetch failed and the narrow file stayed: nothing was fetched.
+    assert_eq!(report.backdrops_fetched, 0);
     assert_eq!(report.failed, 1, "only the poster, which the unreachable CDN never delivered");
+}
+
+/// A backdrop chosen by hand lives in the library's `artwork` table, not on
+/// disk until something asks for it, and a download must never stand in for
+/// it. The CDN is unreachable here, so a title whose backdrop was still
+/// requested would count as failed.
+#[tokio::test]
+async fn a_backdrop_the_library_holds_is_not_downloaded() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
+    let db = dir.path().join("catalog/current/library.db");
+    rusqlite::Connection::open(db)
+        .unwrap()
+        .execute(
+            "INSERT INTO artwork(key, mime, bytes) VALUES ('tmdb-movie-550-bg', 'image/jpeg', X'01')",
+            [],
+        )
+        .unwrap();
+
+    let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
+
+    assert_eq!(report.failed, 1, "only the poster; the backdrop was never requested");
+    assert_eq!(report.backdrops_fetched + report.backdrops_already_held, 0);
 }

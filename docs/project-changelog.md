@@ -5,6 +5,32 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.117.0 — sharper TV backdrops, a baseline profile, refresh-rate matching
+
+**Changed** (Android TV)
+
+- **Sharper backdrops.** The TV now asks TMDB for backdrops 1280 px wide, the same as the web player and tablets; it used to ask 780.
+  - The Home hero spans 1920 px of screen, so the old images were stretched about 2.5×.
+  - Backdrops already on the box are fetched again at the new width on the next library update, and the hero reloads them.
+- **Refresh-rate matching.** On a television that offers it, playback switches the display to the film's own rate (23.976, 24, 25 Hz and so on) and switches back when the player closes.
+  - A mode that already fits (30 fps on 60 Hz) is kept rather than switched, since each switch blanks the screen briefly.
+  - Phones and tablets keep Media3's own seamless-only switching. A browser cannot switch display modes at all.
+- **App baseline profile.** A `:baselineprofile` module drives the TV with the D-pad, through Home, the Movies wall and one title page. The release build now ships the resulting profile, so those screens are compiled ahead of time.
+
+**Fixed**
+
+- **Artwork records its width.** Each downloaded backdrop records the width it was fetched at, in `<key>.width` next to the `.jpg`.
+  - One held narrower than the device now wants is fetched again.
+  - A failed re-fetch keeps the old image.
+  - Images are written to a temp file and then renamed, so a half-written JPEG is never shown.
+  - Custom backdrops set with `mediagram artwork --backdrop` are never replaced by TMDB's.
+- **The fetch report counts truthfully.** A re-fetch that failed and kept the old file no longer counts as fetched.
+
+**Build**
+
+- **Uninstall guard.** `android/gradle.properties` sets `android.injected.androidTest.leaveApksInstalledAfterRun=true`, because AGP otherwise uninstalls the app after a connected run, taking a device's data with it.
+- **Regenerating the profile:** `ANDROID_SERIAL=<tv> ./gradlew :app:generateReleaseBaselineProfile`.
+
 ## 0.116.0 — the TV player's control card
 
 **Changed** (Android TV)

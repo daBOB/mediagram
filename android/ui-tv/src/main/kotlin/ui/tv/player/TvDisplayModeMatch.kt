@@ -38,6 +38,13 @@ internal fun TvDisplayModeMatch(player: Player?) {
         var start: Mode? = null
 
         fun match(tracks: Tracks) {
+            val display = window.decorView.display ?: return
+            val from = start ?: display.mode.toMode().also { start = it }
+            // The shared player reports no tracks at all before each title's
+            // real ones arrive; deciding then would restore `before` and the
+            // real tracks would switch the panel a second time. A video track
+            // of unknown rate is a real answer, and does restore it.
+            if (tracks.isEmpty()) return
             val fps =
                 tracks.groups
                     .filter { it.type == C.TRACK_TYPE_VIDEO }
@@ -46,8 +53,6 @@ internal fun TvDisplayModeMatch(player: Player?) {
                             .firstOrNull { group.isTrackSelected(it) }
                             ?.let { group.getTrackFormat(it).frameRate }
                     } ?: Format.NO_VALUE.toFloat()
-            val display = window.decorView.display ?: return
-            val from = start ?: display.mode.toMode().also { start = it }
             val id = displayModeToApply(before, from, display.supportedModes.map { it.toMode() }, fps)
             if (window.attributes.preferredDisplayModeId != id) {
                 window.attributes = window.attributes.apply { preferredDisplayModeId = id }

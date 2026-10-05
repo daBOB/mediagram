@@ -77,6 +77,22 @@ class LibraryUpdateCoordinatorTest {
         }
 
     @Test
+    fun aBackdropUpgradeAloneRereadsArtwork() =
+        runTest {
+            val fixture = UpdateFixture(report = FetchReport(0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u))
+            fixture.run()
+            assertEquals(listOf("read", "fetch", "artwork"), fixture.steps)
+        }
+
+    @Test
+    fun aRunThatFetchedNoArtworkDoesNotRereadIt() =
+        runTest {
+            val fixture = UpdateFixture(report = FetchReport(0u, 1u, 0u, 1u, 0u, 1u, 0u, 0u))
+            fixture.run()
+            assertEquals(listOf("read", "fetch"), fixture.steps)
+        }
+
+    @Test
     fun aReadWithoutAnUpdateDoesNotSpendArtwork() =
         runTest {
             val fixture = UpdateFixture()
@@ -134,8 +150,8 @@ class LibraryUpdateCoordinatorTest {
 
 private class UpdateFixture(
     val repository: FakeCatalogRepository = FakeCatalogRepository(movies = 1),
+    val report: FetchReport = FetchReport(1u, 0u, 0u, 0u, 1u, 0u, 0u, 0u),
 ) {
-    val report = FetchReport(1u, 0u, 0u, 0u, 1u, 0u, 0u, 0u)
     val steps = mutableListOf<String>()
     var fetchGate: CompletableDeferred<Unit>? = null
     var refreshFailed = false

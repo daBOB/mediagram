@@ -40,14 +40,21 @@ pub async fn fetch_into(
         titles,
         without_id,
         language,
+        custom_keys,
     } = plan;
-    let posters = resolve_posters(api, titles).await;
-    let backdrops = resolve_backdrops(api, titles, backdrop_width).await;
+    // An image the library's own `artwork` table holds was chosen by hand and
+    // is what every surface shows for its key; a downloaded one would be
+    // written over the copy materialised from the table.
+    let mut posters = resolve_posters(api, titles).await;
+    posters.retain(|poster| !custom_keys.contains(&poster.key));
+    let mut backdrops = resolve_backdrops(api, titles, backdrop_width).await;
+    backdrops.retain(|poster| !custom_keys.contains(&poster.key));
     let posters_held = already_held(&posters, artwork_dir) as u32;
     let backdrops_held = already_held(&backdrops, artwork_dir) as u32;
 
     // One list to download, so a poster and its title's backdrop share the
     // same directory walk; split back apart afterwards to report each half.
+    let posters_len = posters.len();
     let mut refs = posters;
     refs.extend(backdrops.iter().cloned());
     // A hard failure here (the artwork directory could not even be created)
@@ -59,12 +66,13 @@ pub async fn fetch_into(
             tracing::warn!(error = %err, "the artwork directory is unavailable");
             Vec::new()
         });
-    let backdrop_keys: std::collections::HashSet<&str> =
-        backdrops.iter().map(|poster| poster.key.as_str()).collect();
-    let backdrops_written = written.iter().filter(|key| backdrop_keys.contains(key.as_str())).count() as u32;
-    let posters_written = written.len() as u32 - backdrops_written;
-    let posters_fetched = posters_written.saturating_sub(posters_held);
-    let backdrops_fetched = backdrops_written.saturating_sub(backdrops_held);
+    // What the run added is what is held now beyond what was held before: a
+    // wider image that failed to download leaves the old one in place, which
+    // `download_into` still reports as landed but nothing was fetched.
+    let posters_fetched = (already_held(&refs[..posters_len], artwork_dir) as u32)
+        .saturating_sub(posters_held);
+    let backdrops_fetched = (already_held(&refs[posters_len..], artwork_dir) as u32)
+        .saturating_sub(backdrops_held);
 
     // Collected as keys rather than added up, so a title that lost both its
     // poster and its description is one failure and not two.

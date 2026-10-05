@@ -9,8 +9,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import data.isTelevision
 import dagger.hilt.components.SingletonComponent
+import data.isTelevision
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import player.PlayerHandle

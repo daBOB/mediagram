@@ -21,6 +21,12 @@ class DisplayModeMatchTest {
     }
 
     @Test
+    fun aCurrentModeThatDoesNotFitIsLeftForTheSmallestMultiple() {
+        val film = mode(2, 23.976f)
+        assertEquals(2, pickDisplayMode(at5994, listOf(at5994, film), 23.976f))
+    }
+
+    @Test
     fun exactTwentyFourBeatsItsMultiples() {
         val modes = listOf(mode(1, 60f), mode(2, 24f), mode(3, 48f))
         assertEquals(2, pickDisplayMode(modes[0], modes, 24f))
@@ -35,6 +41,15 @@ class DisplayModeMatchTest {
     @Test
     fun alreadyOnTheBestModeIsNoChange() {
         assertNull(pickDisplayMode(at5994, listOf(at5994), 29.97f))
+    }
+
+    @Test
+    fun aCurrentModeThatAlreadyFitsIsKept() {
+        val thirty = mode(2, 29.97f)
+        assertNull(pickDisplayMode(at5994, listOf(at5994, thirty), 29.97f))
+        val at120 = mode(1, 120f)
+        assertNull(pickDisplayMode(at120, listOf(at120, mode(2, 24f)), 24f))
+        assertEquals(0, displayModeToApply(0, at5994, listOf(at5994, thirty), 29.97f))
     }
 
     @Test

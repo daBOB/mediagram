@@ -11,7 +11,7 @@ import javax.inject.Singleton
 /** Initial/settings reads do not fetch; manual updates fetch even when the channel is offline. */
 enum class LibraryUpdateKind { Read, Manual, Published }
 
-/** Serializes refresh and local reads; enrichment that fetched posters triggers an artwork reread without UI collectors. */
+/** Serializes refresh and local reads; enrichment that fetched posters or backdrops triggers an artwork reread without UI collectors. */
 @Singleton
 class LibraryUpdateCoordinator
     @Inject
@@ -49,6 +49,6 @@ class LibraryUpdateCoordinator
                 }
             if (kind == LibraryUpdateKind.Read || (kind == LibraryUpdateKind.Published && refreshed.isFailure)) return@withLock
             val report = enrichment.fetch(quiet = kind == LibraryUpdateKind.Published)
-            if (report != null && report.postersFetched > 0u) showArtwork()
+            if (report != null && (report.postersFetched > 0u || report.backdropsFetched > 0u)) showArtwork()
         }
     }

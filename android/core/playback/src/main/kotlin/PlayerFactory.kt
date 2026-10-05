@@ -5,9 +5,7 @@
 
 package playback
 
-import android.app.UiModeManager
 import android.content.Context
-import android.content.res.Configuration
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.Cache
@@ -16,6 +14,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import data.isTelevision
 import uniffi.mediagram_core.CoreInterface
 
 /**
@@ -129,20 +128,14 @@ suspend fun buildPlayer(
         // On a television the player screen picks the display mode itself
         // (its frame-rate effect), so media3's switching is turned off to
         // leave one mechanism in charge. Phones and tablets keep the default,
-        // which makes the seamless switches their panels allow. Reads
-        // UiModeManager itself because the shared isTelevision helper does
-        // not reach this module; it should use that helper.
-        .apply { if (onTelevision(context)) setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF) }
+        // which makes the seamless switches their panels allow.
+        .apply { if (isTelevision(context)) setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF) }
         .build()
         .apply {
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                 .build()
         }
-
-private fun onTelevision(context: Context): Boolean =
-    (context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager)
-        .currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 
 /**
  * The device's own decoders first, FFmpeg (core:ffmpeg) behind them.
