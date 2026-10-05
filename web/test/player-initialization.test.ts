@@ -43,7 +43,7 @@ test("initialization twice mounts controls and click listeners once", async () =
   player.initializePlayer();
   player.initializePlayer();
   expect(env.node("speed-rate").children).toHaveLength(6);
-  expect(env.node(".hud-bottom").children).toHaveLength(1);
+  expect(env.node("card-dock").children).toHaveLength(1);
   player.openPlayer({
     setId: "one",
     container: "mp4",

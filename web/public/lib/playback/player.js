@@ -358,7 +358,7 @@ function mountPlayer() {
     },
   });
   document.getElementById("subs").after(cuePanel.trigger);
-  document.querySelector(".hud-bottom").prepend(cuePanel.panel);
+  document.getElementById("card-dock").append(cuePanel.panel);
 
   /** Which subtitle tracks show, and what 'c' and the picker do about it. */
   const subtitles = mountSubtitlePicker({

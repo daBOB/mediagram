@@ -267,6 +267,15 @@ Wordmark, department/utility links (Newsreader), search field, profile selector.
 
 Transparent background, 1px rule underneath (`rule` colour). Ink text, `ink-3` placeholder. Rule turns accent on focus.
 
+### Player
+
+The screening room keeps a slim top bar over the top scrim (the title, My List, Kids, Add to…, Notes, Close) and puts every control on one card over the foot of the picture. There is no bottom scrim.
+
+- **Card**: up to 880px wide, centred, 24px from the bottom (12px either side and below on a narrow window). Stage colour at 45% under `backdrop-filter: blur(24px) saturate(1.2)`, a 1px hairline at 8% white, `--radius-card`, no shadow.
+- **Blur exception**: the card and the panels it opens are the second place allowed a `backdrop-filter`; the masthead is the first. Both stay put while something moves under them, and the `shell.css` masthead comment names both. No other surface uses one.
+- **Rows**: seek (elapsed, bar, running time, "ends"); tools (subtitles, speed, audio, framing, then volume and fullscreen); transport (centred, with stats at the end).
+- **Hiding**: the card and the top bar rest together on the player's 2.6s timer, and stay up while paused.
+
 ## Do's and Don'ts
 
 ### Do:

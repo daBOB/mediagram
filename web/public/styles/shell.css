@@ -80,8 +80,8 @@
   height: var(--masthead-height);
   margin-left: var(--rail-width);
   padding: 0 var(--gutter);
-  /* Blur is allowed here and nowhere else: this is the one element that
-     stays put while the page scrolls under it. */
+  /* Blur is allowed here and on the player's card and what it opens
+     (player-card.css): both stay put while something moves under them. */
   background: color-mix(in srgb, var(--paper) 72%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(1.15); /* deslop-ignore 19: masthead only, see the note above */
   backdrop-filter: blur(18px) saturate(1.15); /* deslop-ignore 19: masthead only, see the note above */

@@ -78,7 +78,14 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.node("player").open).toBe(true);
   expect(env.video.src).toBe("/api/sets/Film/stream");
   expect(env.node("sub-track").tagName).toBe("SELECT");
-  expect(env.document.querySelector(".hud-bottom")?.contains(env.node("cue-settings"))).toBe(true);
+  // One card at the foot, its menus' panel in the same dock, and the marks in the top bar.
+  expect(env.node("control-card").contains(env.node("cue-settings"))).toBe(true);
+  expect(env.document.querySelector(".card-dock .cue-panel")).not.toBeNull();
+  for (const id of ["now", "watchlist", "kids", "add-to", "notes", "close"]) {
+    expect(env.document.querySelector(".hud-top")!.contains(env.node(id))).toBe(true);
+  }
+  expect(env.document.querySelector(".hud-bottom")).toBeNull();
+  expect(env.document.querySelector(".rail")).toBeNull();
   env.node("play-pause").fire("click");
   await settle();
   expect(env.video.paused).toBe(false);
