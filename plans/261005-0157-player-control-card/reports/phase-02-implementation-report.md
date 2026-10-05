@@ -36,3 +36,19 @@ Commit 51727868. At 768px and above, `dialog.sidebar-open .hud-top` gets `right:
 - Two selector lists in the sidebar CSS were put on one line each to stay at the 200-line limit.
 - `episode-sidebar-1440x900.png` re-shot in the preview: My List, FSK badge, Add to and the close are fully visible left of the sidebar. 3084 pass, typecheck and lint clean.
 - The earlier concern is resolved. Notes was not on this title, so its button was not seen in the shot; it sits in the same bar.
+
+## Fix round 1 (review: phase-02-review-report.md)
+Commits c99d67b5 (H1, L2) and 6e82ba87 (M1, M2, L1, L3). Each test written and seen failing first. Final: 3093 pass, typecheck and lint clean.
+
+| Item | Fix |
+|---|---|
+| H1 focus lost | `close()` returns focus to ☰ when focus was inside the panel (covers ✕, Esc, a pick; the Esc handler's own focus call is gone). `open()` moves focus to play/pause if ☰ had focus and the next title has no list. `draw()` hands focus to the other arrow (or the panel) when the pressed arrow disables itself. Tests: focus into the panel on open, ☰ after ✕/Esc/pick, play/pause when ☰ disappears, never a disabled arrow, Esc after stepping to an end closes only the sidebar. |
+| M1 notes | `dialog.sidebar-open.with-notes` offsets card and top bar by `max(var(--notes-width), var(--sidebar-width))`. Preview (with-notes class forced at 1440): card right 872 = notes edge 896 - 24, top bar right 896. |
+| M2 breakpoint | Card clearance moved from 768px to 900px. Measured in the preview: the bottom row needs a card about 482px wide, so a window of about 890px; at 888 the ☰ was 2px short of the card's padding, at 892 it fit. 900 keeps a margin. Recorded in the CSS comment. 768-899: the sidebar covers the card; the top bar still clears it from 768 (earlier ruling). Checked at 904, 880, 768. |
+| L1 weak test | Width is `--sidebar-width: 360px`, used by the sidebar's own width and every clearance; the test asserts exact values (`calc(max(...) + 24px)` etc.), so `calc(360px - 360px)` fails. |
+| L2 keys | A keydown listener on the panel stops arrows, Enter and Space from reaching the player's handler; Esc and Tab pass. Test with a spy on `stopPropagation`. |
+| L3 titles | `.sidebar-title` clamped to two lines; `title=` holds the whole name. |
+| L4 | not requested. |
+| Parked | web/Android grouping edge case, as instructed. |
+
+Deviation: the sidebar CSS moved out of `player-card.css` (at its 200-line limit) into `public/styles/episode-sidebar.css`, linked after it in `index.html`. `episode-sidebar-1440x900.png` re-shot. Focus after ✕ confirmed in Chrome via the preview (activeElement is ☰).
