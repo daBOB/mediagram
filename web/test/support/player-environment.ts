@@ -327,3 +327,19 @@ export function browserEnvironment() {
     },
   };
 }
+
+/** Opens the card menu behind `opener` and picks `value`, the way a viewer does. */
+export function chooseInMenu(node: (id: string) => Node, opener: string, value: string) {
+  node(opener).fire("click");
+  const row = node("card-menu").children.find((child) => child.dataset.value === value);
+  if (!row) throw new Error(`No ${value} in the menu behind #${opener}`);
+  row.fire("click");
+}
+
+/** What the menu behind `opener` marks as current, read by opening it; leaves it closed. */
+export function markedInMenu(node: (id: string) => Node, opener: string) {
+  node(opener).fire("click");
+  const value = node("card-menu").children.find((child) => child.getAttribute("aria-pressed") === "true")?.dataset.value ?? null;
+  node(opener).fire("click");
+  return value;
+}

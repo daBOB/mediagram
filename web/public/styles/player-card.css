@@ -57,6 +57,27 @@ dialog.resting .control-card { pointer-events: none; }
   white-space: nowrap;
 }
 
+/* A tool says what it is set to (1×, Fit) and opens a list of the rest. */
+.tool {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--stage-ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color var(--hover), background-color var(--hover);
+}
+.tool:hover,
+.tool[aria-expanded="true"] { color: var(--stage-accent); background: rgba(255, 255, 255, 0.08); }
+.tool:disabled { opacity: 0.35; cursor: default; }
+.tool:disabled:hover { color: var(--stage-ink); background: transparent; }
+
 /* What the card's buttons open: just above the card, inside its width, in
    the card's own fill. Placed by player-menus.js, which sets `left`. */
 .card-menu,

@@ -386,7 +386,7 @@ function mountPlayer() {
   });
 
   const transport = mountTransport({
-    video,
+    video, menus,
     onPlay: playManually,
     onPause: () => { manualPlayRequest++; },
     onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),

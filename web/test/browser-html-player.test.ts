@@ -90,6 +90,9 @@ test("shipped HTML mounts the actual application and its player controls respond
   await settle();
   expect(env.video.paused).toBe(false);
   expect(env.node("play-pause").getAttribute("aria-label")).toBe("Pause");
+  expect(env.node("speed").textContent).toBe("1×");
+  expect(env.node("framing").textContent).toBe("Fit");
+  expect(env.node("restart").getAttribute("aria-label")).toBe("Restart");
   expect(env.node("skip-back").getAttribute("aria-label")).toBe("Back 15 seconds");
   expect(env.node("skip-forward").getAttribute("aria-label")).toBe("Forward 15 seconds");
   env.node("skip-forward").fire("click");

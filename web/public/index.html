@@ -174,10 +174,8 @@
               <label for="audio-track">Audio</label>
               <select id="audio-track"></select>
             </span>
-            <span class="picker" id="speed">
-              <label for="speed-rate">Speed</label>
-              <select id="speed-rate"></select>
-            </span>
+            <button id="speed" class="tool" aria-label="Speed">1×</button>
+            <button id="framing" class="tool" aria-label="Framing">Fit</button>
             <span class="spacer"></span>
             <span class="volume">
               <button id="mute" class="tsp" aria-label="Mute"></button>
@@ -192,6 +190,7 @@
                it appears. -->
           <div class="card-row card-transport">
             <span class="transport">
+              <button id="restart" class="tsp" aria-label="Restart"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"></path></svg></button>
               <button id="skip-back" class="tsp"></button>
               <button id="play-pause" class="tsp big" aria-label="Play"></button>
               <button id="skip-forward" class="tsp"></button>
