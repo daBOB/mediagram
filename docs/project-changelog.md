@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.115.0 — the web player's episode list
+
+**Added** (web player)
+
+- **☰ in the control card** opens the show's episodes in a panel on the right, while the picture keeps playing:
+  - A `‹ Season N ›` switcher opens on the season you are watching.
+  - Watched episodes are greyed with ✓, a partly watched one shows a progress line, and the playing one reads "Now playing".
+  - Picking an episode plays it.
+  - Courses list their lessons the same way.
+  - A film, or anything played from a hand-built list, has no ☰.
+- **Room is made for the panel.** At 900 px and wider, the card moves left of the panel; the top bar does so from 768 px, so My List and ✕ stay reachable.
+- **Closing the panel.** ✕, Esc or a pick returns focus to ☰.
+- **Keys stay inside the panel.** Arrow keys inside the panel move through the list rather than changing the volume.
+
 ## 0.114.0 — the phone and tablet player's control card
 
 **Changed** (Android phone and tablet)

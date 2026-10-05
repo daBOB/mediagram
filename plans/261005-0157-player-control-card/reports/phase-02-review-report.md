@@ -130,3 +130,17 @@
 
 1. M2: wrap row 3 at 768–900px, or move the clearance breakpoint above 768? The breakpoint is a lead ruling.
 2. M1: when ☰ opens over a lesson with Notes up, should the card clear the wider of the two panels, or should Notes close?
+
+## Re-review (c99d67b5, 6e82ba87)
+
+- **Checks:** `bun test` 3093 pass, 0 fail; typecheck and lint clean. Worktree clean afterwards.
+- **H1 focus:** fixed. `close()` hands focus to ☰ when the panel held it (covers ✕, pick, Esc); `draw()` moves focus to the other arrow (panel if both disabled); ☰ hiding moves focus to play/pause. Esc after stepping to an end closes only the sidebar (tested).
+- **Notes + sidebar:** fixed. Card and top bar use `max(var(--notes-width), var(--sidebar-width))` (rule is more specific than `with-notes`, so it wins). Pinned by exact-string tests.
+- **Breakpoint:** fixed, coherent. Card clears from 900px (measured 890), below that the sidebar covers it as on a phone; top bar clears from 768px so My List and the player's close stay reachable. Not re-measured in a browser.
+- **`--sidebar-width`:** fixed. Tests compare the exact value, so `calc(360px - 360px)` fails.
+- **List keys:** fixed. Arrows, Enter and Space stop at the panel; Esc and Tab pass. Click activation is unaffected.
+- **Title clamp:** applied (2 lines + `title`).
+- **`episode-sidebar.css`:** linked after player-card.css and before stats.css; the moved rules were removed from player-card.css; tests read the new file; preview serves `public/` unchanged.
+- **Teeth:** focus back to ☰ removed: 3 tests fail. Handoff removed: 1 fails. List keys not stopping: 1 fails. All reverted.
+- **New findings:** none blocking. Low: the Esc-at-end test does not focus the arrow first, so it pins the outcome, not the path; the handoff test covers the path.
+- **merge-ready:** yes.
