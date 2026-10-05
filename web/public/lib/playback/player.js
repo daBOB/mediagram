@@ -353,12 +353,11 @@ function mountPlayer() {
       placeSubtitles();
     },
   });
-  document.getElementById("subs").after(cuePanel.trigger);
   document.getElementById("card-dock").append(cuePanel.panel);
 
-  /** Which subtitle tracks show, and what 'c' and the picker do about it. */
+  /** Which subtitle tracks show, and what CC, its menu and 'c' do about it. */
   const subtitles = mountSubtitlePicker({
-    video, subs: document.getElementById("subs"), picker: document.getElementById("sub-track"), styleTrigger: cuePanel.trigger,
+    video, cc: document.getElementById("cc"), more: document.getElementById("cc-menu"), menus, stylePanel: cuePanel.panel,
     recall: (name) => state.preferenceOf(scope, name),
     remember: (name, value) => state.setPreference(scope, name, value),
   });
@@ -630,6 +629,8 @@ function mountPlayer() {
     // First of all, because everything below that asks what this viewer chose
     // asks against it — a scope set later would answer for the previous title.
     scope = scopeOf(set);
+    // A list or panel left open belongs to the title it was opened on.
+    menus.close();
     // Before a track turns "showing" below, so an early cue lands at this show's offset, not the old show's.
     placement = cuePanel.recallFor();
     attachSubtitles(set);
@@ -971,9 +972,7 @@ function mountPlayer() {
   dialog.addEventListener("close", () => {
     teardown();
     for (const track of [...video.querySelectorAll("track")]) track.remove();
-    // A panel left open belongs to the title it was opened on.
-    cuePanel.panel.hidden = true;
-    cuePanel.trigger.setAttribute("aria-expanded", "false");
+    menus.close();
     seek.hidden = true;
     thumbs.hide();
     converting = false;

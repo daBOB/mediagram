@@ -307,18 +307,9 @@ dialog.resting .hud .picker { pointer-events: none; }
 }
 
 .cue-panel {
-  position: absolute;
-  left: 1.5rem;
-  bottom: 100%;
-  margin-bottom: 0.6rem;
-  z-index: 2;
   display: grid;
   gap: 0.55rem;
   padding: 0.9rem 1rem;
-  background: rgba(0, 0, 0, 0.92);
-  border: 1px solid var(--stage-rule);
-  border-radius: var(--radius);
-  pointer-events: auto;
 }
 .cue-row {
   display: flex;
@@ -354,12 +345,6 @@ dialog.resting .hud .picker { pointer-events: none; }
   color: var(--stage-ink);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-}
-
-#cue-settings {
-  font-family: var(--display);
-  font-size: 0.95rem;
-  letter-spacing: 0;
 }
 
 .note {

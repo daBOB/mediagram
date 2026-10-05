@@ -166,9 +166,11 @@
           </div>
 
           <div class="card-row card-tools">
-            <span class="picker" id="subs" hidden>
-              <label for="sub-track">Subtitles</label>
-              <select id="sub-track"></select>
+            <!-- One press for on and off; the ▾ for which language, and how
+                 the text looks. -->
+            <span class="cc">
+              <button id="cc" class="tool" aria-label="Subtitles" aria-pressed="false" disabled>CC</button>
+              <button id="cc-menu" class="tool" aria-label="Subtitle options" disabled>▾</button>
             </span>
             <span class="picker" id="audio" hidden>
               <label for="audio-track">Audio</label>

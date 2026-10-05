@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { staticResponse } from "../src/http/static-files";
 import { htmlApplicationEnvironment } from "./support/html-application";
 import { descendants } from "./support/browser-application";
-import { settle, TrackElement } from "./support/player-environment";
+import { chooseInMenu, markedInMenu, settle, TrackElement } from "./support/player-environment";
 import { catalogSet } from "./support/catalog-set";
 
 let directory: string;
@@ -21,7 +21,8 @@ const episode = (id: string, langs = ["en", "de"], converted = false) => catalog
 });
 const tracks = () => env.video.querySelectorAll("track").filter((node): node is TrackElement => node instanceof TrackElement);
 const selected = () => [...env.video.textTracks].filter((track) => track.mode === "showing").map((track) => track.language);
-const pick = (value: string) => { env.node("sub-track").value = value; env.node("sub-track").fire("change"); };
+const pick = (value: string) => chooseInMenu(env.node, "cc-menu", value);
+const marked = () => markedInMenu(env.node, "cc-menu");
 const cue = () => ({ startTime: 10, endTime: 12 });
 
 beforeAll(async () => {
@@ -77,9 +78,11 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.node("player").contains(env.node("video"))).toBe(true);
   expect(env.node("player").open).toBe(true);
   expect(env.video.src).toBe("/api/sets/Film/stream");
-  expect(env.node("sub-track").tagName).toBe("SELECT");
-  // One card at the foot, its menus' panel in the same dock, and the marks in the top bar.
-  expect(env.node("control-card").contains(env.node("cue-settings"))).toBe(true);
+  expect(env.node("cc").getAttribute("aria-label")).toBe("Subtitles");
+  expect(env.node("cc-menu").getAttribute("aria-label")).toBe("Subtitle options");
+  // One card at the foot, what it opens in the same dock, and the marks in the top bar.
+  expect(env.node("control-card").contains(env.node("cc"))).toBe(true);
+  expect(env.node("card-dock").contains(env.node("card-menu"))).toBe(true);
   expect(env.document.querySelector(".card-dock .cue-panel")).not.toBeNull();
   for (const id of ["now", "watchlist", "kids", "add-to", "notes", "close"]) {
     expect(env.document.querySelector(".hud-top")!.contains(env.node(id))).toBe(true);
@@ -99,14 +102,15 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.video.currentTime).toBe(15);
   env.node("mute").fire("click");
   expect(env.video.muted).toBe(true);
-  env.node("cue-settings").fire("click");
-  expect(env.node("cue-settings").getAttribute("aria-expanded")).toBe("true");
+  pick("style");
+  expect(env.node("cc-menu").getAttribute("aria-expanded")).toBe("true");
+  expect(env.document.querySelector(".cue-panel")!.hidden).toBe(false);
   env.node("close").fire("click");
   expect(env.node("player").open).toBe(false);
   expect(env.video.src).toBe("");
 });
 
-test.each(["play-pause", "sub-track", "close"])(
+test.each(["play-pause", "cc", "close"])(
   "renaming required HTML control %s leaves the library working and reports the player broken on Play",
   async (id) => {
     env.restore();
@@ -133,14 +137,14 @@ test("subtitle language and explicit Off survive episode track order changes", a
   const previous = tracks();
   app.player.openPlayer(episode("two", ["fr", "en", "de"]));
   expect(selected()).toEqual(["de"]);
-  // The picker's value is the language key, not a position, so it survives
-  // an episode whose tracks arrived in a different order.
-  expect(env.node("sub-track").value).toBe("de");
+  // The menu marks a language key, not a position, so it survives an
+  // episode whose tracks arrived in a different order.
+  expect(marked()).toBe("de");
   expect(previous.every((track) => track.parent === null)).toBe(true);
   expect(tracks().every((track) => !track.default)).toBe(true);
   pick("off");
   app.player.openPlayer(episode("three"));
-  expect(env.node("sub-track").value).toBe("off");
+  expect(marked()).toBe("off");
   expect(selected()).toEqual([]);
   expect(app.state.preferenceOf("show:Series", "subtitle")).toBe("off");
 });
@@ -154,7 +158,7 @@ test("subtitle shortcut restores the selected track and resets it for a new titl
   expect(selected()).toEqual([]);
   toggle();
   expect(selected()).toEqual(["de"]);
-  expect(env.node("sub-track").value).toBe("de");
+  expect(marked()).toBe("de");
   pick("off");
   toggle();
   expect(selected()).toEqual(["de"]);
@@ -213,8 +217,8 @@ test("conversion seeks retain subtitle choice and replaced episode tracks receiv
   const reloaded = cue();
   beforeSeek[1]!.loadCues([reloaded]);
   expect(reloaded).toEqual({ startTime: 9.5, endTime: 11.5 });
-  env.node("cue-settings").fire("click");
-  expect(env.node("cue-settings").getAttribute("aria-expanded")).toBe("true");
+  pick("style");
+  expect(env.node("cc-menu").getAttribute("aria-expanded")).toBe("true");
   app.player.openPlayer(episode("next-converted", ["de", "en"], true));
   await settle();
   expect(beforeSeek.every((track) => track.parent === null)).toBe(true);
@@ -222,7 +226,9 @@ test("conversion seeks retain subtitle choice and replaced episode tracks receiv
   const following = cue();
   tracks()[0]!.loadCues([following]);
   expect(following).toEqual({ startTime: 9.5, endTime: 11.5 });
-  expect(env.node("cue-settings").getAttribute("aria-expanded")).toBe("false");
+  // A panel left open belongs to the title it was opened on.
+  expect(env.node("cc-menu").getAttribute("aria-expanded")).toBe("false");
+  expect(env.document.querySelector(".cue-panel")!.hidden).toBe(true);
   env.node("close").fire("click");
   expect(env.video.textTracks).toHaveLength(0);
 });

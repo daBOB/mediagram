@@ -1,8 +1,7 @@
 /**
- * The subtitle half of the transport bar: the picker, the CC/style
- * visibility, and what 'c' does. Moved out of `transport.js`, which held
- * this before the catalog carried forced and SDH tracks — `subtitle-choice.js`
- * is the rule now, this is only the DOM around it.
+ * The subtitle half of the control card: the CC toggle, the menu behind its
+ * ▾ (the languages, Off, then Style…), and what 'c' does. `subtitle-choice.js`
+ * is the rule; this is only the DOM around it.
  *
  * `video.textTracks[i]` is always the API's `tracks[i]`: `player.js` attaches
  * one `<track>` per catalog entry, in the catalog's own order, and never
@@ -13,6 +12,9 @@ import { chooseSubtitles, toggleOn, trackKey, visibility } from "./subtitle-choi
 import { preferenceOf } from "../watch-state.js";
 
 /** @typedef {import("./subtitle-choice.js").SubtitleTrack} SubtitleTrack */
+
+/** The menu row that opens the style panel. No track key can be this word. */
+const STYLE = "style";
 
 /** `set.alang`, a JSON array string the way the index stores it, or already an array. */
 function parsedAlang(value) {
@@ -26,17 +28,20 @@ function parsedAlang(value) {
 }
 
 /**
- * @param {{video: HTMLVideoElement, subs: HTMLElement, picker: HTMLSelectElement,
- *   styleTrigger: HTMLElement, recall: (name: string) => string|null,
+ * @param {{video: HTMLVideoElement, cc: HTMLButtonElement, more: HTMLButtonElement,
+ *   menus: ReturnType<typeof import("./player-menus.js").mountPlayerMenus>,
+ *   stylePanel: HTMLElement, recall: (name: string) => string|null,
  *   remember: (name: string, value: string) => void}} deps
  */
-export function mountSubtitlePicker({ video, subs, picker, styleTrigger, recall, remember }) {
+export function mountSubtitlePicker({ video, cc, more, menus, stylePanel, recall, remember }) {
   /** @type {SubtitleTrack[]} */
   let tracks = [];
   let alang = [];
   let audioTag = null;
-  /** The last regular track chosen this session, cleared on every title open. */
+  /** The last regular track chosen or shown this title, cleared on every title open. */
   let last = null;
+  /** The regular track showing now, or `null` for none. */
+  let showing = null;
 
   function preferred() {
     return preferenceOf("profile", "subtitle");
@@ -58,19 +63,31 @@ export function mountSubtitlePicker({ video, subs, picker, styleTrigger, recall,
   function recompute() {
     const chosen = chooseSubtitles({ tracks, remembered: recall("subtitle"), preferred: preferred(), audioTag, alang });
     applyModes(chosen.regular, chosen.forced);
+    showing = chosen.regular;
 
     const vis = visibility(tracks);
-    subs.hidden = !vis.ccVisible;
-    styleTrigger.hidden = !vis.styleVisible;
-    picker.replaceChildren();
-    for (const key of vis.pickerRows) {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = key === "off" ? "Off" : labelFor(key);
-      picker.append(option);
-    }
-    if (vis.pickerRows.length > 0) picker.value = chosen.regular ?? "off";
+    // Disabled rather than hidden: a CC that is missing reads as a player
+    // without subtitles, one that is greyed out as a title without them.
+    cc.disabled = !vis.ccVisible;
+    cc.setAttribute("aria-pressed", String(showing !== null));
+    // A forced-only title has nothing to pick, but its style still matters.
+    more.disabled = !vis.styleVisible;
     return chosen;
+  }
+
+  /** The menu: each language, Off, then the way to the style panel. */
+  function items() {
+    const regular = visibility(tracks).pickerRows.filter((key) => key !== "off");
+    const rows = regular.map((key) => ({ value: key, label: labelFor(key), current: key === showing }));
+    if (regular.length > 0) rows.push({ value: "off", label: "Off", current: showing === null });
+    rows.push({ value: STYLE, label: "Style…" });
+    return rows;
+  }
+
+  function choose(key) {
+    if (key !== "off") last = key;
+    remember("subtitle", key);
+    recompute();
   }
 
   /**
@@ -92,26 +109,27 @@ export function mountSubtitlePicker({ video, subs, picker, styleTrigger, recall,
     recompute();
   }
 
-  picker.addEventListener("change", () => {
-    const key = picker.value;
-    if (key !== "off") last = key;
-    remember("subtitle", key);
-    recompute();
-  });
-
   /**
-   * `c`: off and back to whatever they were. Forced follows the audio
-   * language on its own line and is never what this switches.
+   * CC and `c`: off, and back on to the language that was showing — or, when
+   * none has shown this title, to the one `toggleOn` picks, which is what the
+   * player picks anywhere else. Forced follows the audio language on its own
+   * line and is never what this switches.
    */
   function toggle() {
-    if (subs.hidden) return;
+    if (cc.disabled) return;
     const chosen = chooseSubtitles({ tracks, remembered: recall("subtitle"), preferred: preferred(), audioTag, alang });
     const next = chosen.regular !== null ? "off" : toggleOn(tracks, { last, preferred: preferred(), audio: chosen.audio });
     if (next === null) return;
-    if (next !== "off") last = next;
+    last = next === "off" ? chosen.regular : next;
     remember("subtitle", next);
     recompute();
   }
+
+  cc.addEventListener("click", toggle);
+  menus.list(more, {
+    items,
+    pick: (value) => (value === STYLE ? menus.panel(more, stylePanel) : choose(value)),
+  });
 
   return { offer, setAudio, toggle };
 }
