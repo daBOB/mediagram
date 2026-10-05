@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -85,10 +88,14 @@ fun TvApp() {
  * the point. A screen with no layout of its own yet reaches for
  * [TvSafeArea] instead.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun TvShell(content: @Composable () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        // Exposes every testTag below as a resource id, so the Baseline
+        // Profile journey (UiAutomator, outside the app) can tell which
+        // screen it is on; it changes nothing a viewer sees.
+        modifier = Modifier.fillMaxSize().semantics { testTagsAsResourceId = true },
         colors =
             SurfaceDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.background,

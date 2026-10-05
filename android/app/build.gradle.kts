@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.app.android.application)
     alias(libs.plugins.app.android.application.compose)
     alias(libs.plugins.app.hilt)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 /**
@@ -109,4 +110,9 @@ dependencies {
     implementation(project(":feature:player"))
     // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.
     implementation(libs.findLibrary("androidx.media3.exoplayer").get())
+    // Installs the Baseline Profile packaged in the APK on first launch, so
+    // ART compiles the app's own hot paths without waiting for its own
+    // profiling; a direct dependency so the version is pinned here.
+    implementation(libs.findLibrary("androidx.profileinstaller").get())
+    baselineProfile(project(":baselineprofile"))
 }
