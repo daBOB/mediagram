@@ -20,11 +20,20 @@ import uniffi.mediagram_core.TitleInfo
 class FakeCatalogRepository(
     private val byId: Map<String, MediaSet> = emptyMap(),
     private val gate: CompletableDeferred<Unit>? = null,
+    /** Held while [sets] is answering — a window where the whole-catalogue read has not landed yet. */
+    private val setsGate: CompletableDeferred<Unit>? = null,
 ) : CatalogRepository {
+
+    /** While set, [sets] throws, as a core that is not ready or a read that failed would. */
+    var failSets = false
 
     override suspend fun refresh(): Result<Int> = Result.success(byId.size)
 
-    override suspend fun sets(): List<MediaSet> = byId.values.toList()
+    override suspend fun sets(): List<MediaSet> {
+        setsGate?.await()
+        check(!failSets) { "catalogue read failed" }
+        return byId.values.toList()
+    }
 
     override suspend fun search(query: String): List<SearchHit> = emptyList()
 

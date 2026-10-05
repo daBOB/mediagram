@@ -33,6 +33,7 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     session.open(setId)
     if (!sameTitle) marksController.reset()
     openFsk.value = fsk
+    runIsList.value = handPicked
     _openSetId.value = setId
     // Reset unconditionally, same as always: for a rotation reopening
     // an already-playing title this is corrected straight back by the
