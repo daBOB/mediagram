@@ -163,8 +163,10 @@ internal class PlaybackRenderersFactory(
 }
 
 /**
- * How far one skip moves. Ten seconds is long enough to clear a line of
- * dialogue that was missed and short enough that two of them are not a
- * scene.
+ * How far one skip moves, every way a viewer can skip: the card's −15 and
+ * +15, the phone's double tap, picture-in-picture's own buttons and the
+ * television's D-pad — the web's `SKIP_SECONDS`, so a viewer who uses more
+ * than one surface skips the same distance on each. Long enough to clear a
+ * missed line and a beat of the scene around it in one press.
  */
-private const val SKIP_MS = 10_000L
+const val SKIP_MS = 15_000L
