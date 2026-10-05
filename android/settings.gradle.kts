@@ -67,3 +67,7 @@ include(":core:ffmpeg")
 // Test-only support: one fake CoreInterface, one contract suite run against
 // it in unit tests and against the real Core in an instrumented test
 include(":core:testing")
+
+// Generates the app's Baseline Profile on a connected device; it builds no
+// shipped code and nothing depends on it at runtime
+include(":baselineprofile")
