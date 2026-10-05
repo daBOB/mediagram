@@ -2,6 +2,7 @@ package ui.player
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,8 +18,9 @@ internal enum class CardMenu { Subtitles, SubtitleStyle, Speed, Audio, Framing }
 /**
  * What the card has open and where its pieces sit — one holder, read by the
  * screen, the card, its menus and Back, so none of them keeps its own copy of
- * the answer. Lives as long as the screen's composition: a rotation closes
- * whatever was open, which is what a tap away would have done.
+ * the answer. Lives as long as the screen's composition, which a rotation
+ * outlasts (the manifest handles it); other configuration changes recreate the
+ * activity and close whatever was open, as a tap away would have.
  */
 @Stable
 internal class PlayerCardState {
@@ -32,6 +34,9 @@ internal class PlayerCardState {
 
     /** Where the stage sits in the root; the notes column can push it off the origin. */
     var origin by mutableStateOf(IntOffset.Zero)
+
+    /** The bottom of the top bar in the root, which a menu may not reach up past. */
+    var topLimit by mutableIntStateOf(0)
 
     private val anchors = mutableStateMapOf<CardMenu, IntRect>()
 

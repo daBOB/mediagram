@@ -59,10 +59,11 @@ internal fun PlayerTopChrome(
     held: Boolean = false,
     onNotes: (() -> Unit)? = null,
     marks: @Composable () -> Unit = {},
+    onBarBottom: (Int) -> Unit = {},
 ) {
     if (isInPip) return
     Column(modifier = modifier) {
-        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks)
+        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks, onBottom = onBarBottom)
         // Gated on the bar being shown as well as on the toggle, so the
         // statistics have no visibility rule of their own: a viewer who
         // leaves the numbers on gets the picture back when the card takes

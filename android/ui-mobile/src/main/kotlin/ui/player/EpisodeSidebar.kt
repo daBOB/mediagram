@@ -34,10 +34,14 @@ import player.EpisodeList
 internal const val EpisodeSidebarTag = "episode-sidebar"
 
 /** Beside the picture on anything wide enough to leave the film in view. */
-private val SIDEBAR_WIDTH = 320.dp
+internal val SIDEBAR_WIDTH = 320.dp
 
 /** Under this a 320dp column would leave a sliver of film, so the list takes the window. */
-private const val FULL_WIDTH_BELOW_DP = 600
+internal const val FULL_WIDTH_BELOW_DP = 600
+
+/** Whether an open sidebar takes the whole window, covering the card and the top bar, rather than standing beside them. */
+@Composable
+internal fun sidebarCoversScreen(): Boolean = LocalConfiguration.current.screenWidthDp < FULL_WIDTH_BELOW_DP
 
 /**
  * The run's titles, a season (or a course's section) at a time, standing
@@ -57,7 +61,7 @@ internal fun EpisodeSidebar(
 ) {
     var shown by remember(list.currentSection) { mutableIntStateOf(list.currentSection) }
     val section = list.sections.getOrNull(shown) ?: list.sections.firstOrNull() ?: return
-    val narrow = LocalConfiguration.current.screenWidthDp < FULL_WIDTH_BELOW_DP
+    val narrow = sidebarCoversScreen()
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
         Column(

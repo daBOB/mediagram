@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import playback.AudioOption
@@ -69,6 +70,8 @@ internal fun CardMenuPanel(
     actions: CardMenuActions,
     onOpen: (CardMenu) -> Unit,
     onDone: () -> Unit,
+    /** What the menu may grow to: on a short screen, the room above its button. */
+    maxHeight: Dp = MENU_MAX_HEIGHT,
     modifier: Modifier = Modifier,
 ) {
     // The sections draw in the content colour; on the card's dark fill that has to be white.
@@ -77,7 +80,7 @@ internal fun CardMenuPanel(
             modifier =
                 modifier
                     .widthIn(max = MENU_MAX_WIDTH)
-                    .heightIn(max = MENU_MAX_HEIGHT)
+                    .heightIn(max = maxHeight)
                     .testTag(CardMenuTag)
                     .playerCard()
                     .verticalScroll(rememberScrollState())
@@ -136,13 +139,17 @@ internal fun BoxScope.CardMenuOverStage(
     val anchor = card.anchorOf(open) ?: return
     val bounds = card.bounds ?: return
     var size by remember(open) { mutableStateOf(IntSize.Zero) }
-    val gap = with(LocalDensity.current) { Spacing.small.roundToPx() }
+    val density = LocalDensity.current
+    val gap = with(density) { Spacing.small.roundToPx() }
+    // Never taller than the room between the top bar and the button, so a short screen scrolls the menu instead of covering what opened it.
+    val room = with(density) { (anchor.top - gap - card.topLimit).coerceAtLeast(0).toDp() }
     CardMenuPanel(
         menu = open,
         choices = choices,
         actions = actions,
         onOpen = card::switchTo,
         onDone = card::closeMenu,
+        maxHeight = minOf(MENU_MAX_HEIGHT, room),
         modifier =
             Modifier
                 .align(Alignment.TopStart)

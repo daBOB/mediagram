@@ -22,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextOverflow
 import designsystem.Spacing
+import kotlin.math.roundToInt
 
 /** The top gradient the web keeps behind its own bar: [SCRIM_ALPHA] black at the top edge, clear by the bottom of the bar. */
 private val TOP_GRADIENT = Brush.verticalGradient(listOf(Color.Black.copy(alpha = SCRIM_ALPHA), Color.Transparent))
@@ -50,12 +53,15 @@ internal fun PlayerTopBar(
     onNotes: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     marks: @Composable () -> Unit = {},
+    /** Where the bar ends in the root, so a menu knows how far up it may reach. */
+    onBottom: (Int) -> Unit = {},
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .then(if (showTitle) Modifier.background(TOP_GRADIENT) else Modifier)
+                .onGloballyPositioned { onBottom(it.boundsInRoot().bottom.roundToInt()) }
                 .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)),
         verticalAlignment = Alignment.Top,
     ) {

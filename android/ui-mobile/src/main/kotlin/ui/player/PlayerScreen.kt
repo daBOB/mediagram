@@ -30,7 +30,6 @@ import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
 import player.createListAndAdd
-import player.playFromRun
 import player.retry
 import player.setInList
 import player.setKidsMark
@@ -109,7 +108,15 @@ fun PlayerScreen(
     LaunchedEffect(upNext.phase) { if (upNext.phase != UpNextPhase.HIDDEN) controlsShown = true }
     // A title with no run left has nothing to list.
     LaunchedEffect(episodes == null) { if (episodes == null) card.sidebarOpen = false }
-    val barTop = card.bounds?.top?.toFloat()?.takeIf { barShown }
+    // A menu cannot outlive the card it opened from: with the card gone (an
+    // error, the preparing spinner) Back must not close something unseen.
+    LaunchedEffect(barShown) { if (!barShown) card.closeMenu() }
+    // A sidebar that takes the whole window covers the card and the top bar;
+    // leaving them out keeps their buttons from sitting under it, in view or
+    // in the screen reader's reach.
+    val sidebarFull = card.sidebarOpen && sidebarCoversScreen()
+    val cardShown = barShown && !sidebarFull
+    val barTop = card.bounds?.top?.toFloat()?.takeIf { cardShown }
 
     // Root-coordinate measurements the up-next card clamps to; see UpNextCard.
     var screenBottom by remember { mutableStateOf<Float?>(null) }
@@ -131,16 +138,20 @@ fun PlayerScreen(
         ) {
             player?.let { current ->
                 VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
-                if (barShown) {
-                    PlayerControlCard(
+                if (cardShown) {
+                    PlayerCardLayer(
                         player = current,
-                        view = PlayerCardView(choices, upNext, statsShown, hasEpisodes = episodes != null, catalogedDurationSecs = openSet?.durationSecs),
-                        actions = playerCardActions(viewModel, card, onToggleStats = { statsShown = !statsShown }, onEnterPip = pip.enterPip.takeIf { pip.supported }),
+                        viewModel = viewModel,
+                        card = card,
+                        choices = choices,
+                        upNext = upNext,
+                        statsShown = statsShown,
+                        hasEpisodes = episodes != null,
+                        catalogedDurationSecs = openSet?.durationSecs,
+                        onToggleStats = { statsShown = !statsShown },
+                        onEnterPip = pip.enterPip.takeIf { pip.supported },
                         onScrubbingChanged = { scrubbing = it },
-                        onBounds = { card.bounds = it },
-                        modifier = Modifier.align(Alignment.BottomCenter),
                     )
-                    CardMenuOverStage(card, choices, viewModel.cardMenuActions())
                 }
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
@@ -156,18 +167,7 @@ fun PlayerScreen(
                     )
                 }
             }
-            // Over the picture, which keeps playing beside it.
-            episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list ->
-                EpisodeSidebar(
-                    list = list,
-                    onPick = { id ->
-                        card.sidebarOpen = false
-                        viewModel.playFromRun(id)
-                    },
-                    onClose = { card.sidebarOpen = false },
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                )
-            }
+            episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list -> PlayerEpisodeSidebar(list, card, viewModel) }
 
             when (state) {
                 PlayerUiState.Preparing -> CenteredSpinner()
@@ -178,8 +178,9 @@ fun PlayerScreen(
             PlayerTopChrome(
                 openSet = openSet,
                 barShown = barShown,
+                onBarBottom = { card.topLimit = it },
                 statsShown = statsShown,
-                isInPip = isInPip,
+                isInPip = isInPip || sidebarFull,
                 player = player,
                 totals = viewModel.totals,
                 onBack = onBack,

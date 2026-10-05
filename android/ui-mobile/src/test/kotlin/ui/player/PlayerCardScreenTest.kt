@@ -28,21 +28,13 @@ import player.UNKNOWN_TITLE
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * The card over a playing title, as the screen wires it: Back closes what
- * the card opened before it leaves anything, the card stays up while a menu
- * or the sidebar is open and only then, a menu opens above its button, and
- * ⏮ ⏭ ☰ follow the run. A tablet's width, so the sidebar stands beside the
- * card rather than over it.
- */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "w1280dp-h800dp")
-class PlayerCardScreenTest {
+/** A playing title behind the real screen, for the tests that drive the card as a viewer would. */
+abstract class PlayerCardScreenBase {
     @get:Rule val compose = createEmptyComposeRule()
-    private lateinit var fixture: PlayerLifecycleFixture
-    private lateinit var controller: ActivityController<PlayerTestActivity>
+    internal lateinit var fixture: PlayerLifecycleFixture
+    internal lateinit var controller: ActivityController<PlayerTestActivity>
 
-    private fun open(run: List<String> = emptyList()) {
+    internal fun open(run: List<String> = emptyList()) {
         compose.runOnUiThread {
             // Nothing in the catalogue: a run's rows list as unknown titles, which is all these need.
             val catalog = mockk<CatalogRepository>(relaxed = true)
@@ -67,16 +59,27 @@ class PlayerCardScreenTest {
     }
 
     /** Back through the dispatcher, as the system's own Back gesture delivers it. */
-    private fun back() {
+    internal fun back() {
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }
         compose.waitForIdle()
     }
 
-    private fun lingerPast() {
+    internal fun lingerPast() {
         compose.mainClock.advanceTimeBy(CONTROLS_LINGER_MS + 500)
         compose.waitForIdle()
     }
+}
 
+/**
+ * The card over a playing title, as the screen wires it: Back closes what
+ * the card opened before it leaves anything, the card stays up while a menu
+ * or the sidebar is open and only then, a menu opens above its button, and
+ * ⏮ ⏭ ☰ follow the run. A tablet's width, so the sidebar stands beside the
+ * card rather than over it.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w1280dp-h800dp")
+class PlayerCardScreenTest : PlayerCardScreenBase() {
     @Test
     fun backWithAMenuOpenClosesOnlyTheMenu() {
         open()
