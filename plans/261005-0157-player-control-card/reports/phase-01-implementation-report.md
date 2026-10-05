@@ -36,3 +36,20 @@ Screenshots: `plans/261005-0157-player-control-card/reports/player-card-1440x900
 
 ## Unresolved questions
 None blocking.
+
+## Fix round 1
+
+Each fix was written test-first (red seen for M1, M3, L3, M2; L1 is CSS only and was measured in the preview).
+
+| Item | Commit | Change |
+|---|---|---|
+| M1 | ca22e2cf | `close()?.focus()` before `pick(...)`; test: after choosing 1.25x `activeElement` is the speed button and `k` plays. Test DOM `focus()` now sets `document.activeElement`. |
+| M3 + L3 | f1a78370 | HUD focus rule ignores focus on the dialog itself; `clear()` resets the pointer-on-card flag. Two new HUD tests. |
+| L4 | dd5f3410 | `nextAfter` removed (js, d.ts, comment in series-preload.ts); stale `.rail` comment removed in shell.css. Its tests were not deleted but rewritten over `nextInQueue(flattenCollection(...))` so the season/folder crossing and the "no workbook" rule stay pinned. |
+| M2 + L1 | 21698654 | Top bar `#top-bar`; at <=767px the title takes its own ellipsized row, marks wrap beneath, close is absolutely positioned top-right with right padding on the bar. Stats overlay `top` is set by `player-stats.js` from the bar's real height (on open, on draw, on resize), CSS margin tucks it into the scrim padding. Test: panel top follows the bar height. Card dock is `left/right: 24px; max-width: 880px`, and with Notes open on >=768px `right: notes-width + 24px`. |
+
+Preview (390x844, "TV kids" profile with Kids, age select, Notes unhidden by script because the preview has no adult profile on a title with notes): title 302px wide and ellipsized, close hit-tests as `#close`, stats overlay at y=176 under the three-row bar. Screenshot `reports/fix1-top-bar-390x844.png`. At 1440 with Notes open the card's right edge is 24px from the notes column (872 vs 896): `reports/fix1-notes-gap-1440x900.png`.
+
+Not changed: L2 (Esc in Chrome fullscreen), as instructed.
+
+Totals: 3060 pass, typecheck and lint clean; ceilings unchanged (`player.js` 994, `transport.js` 350, `playback.css` 625).
