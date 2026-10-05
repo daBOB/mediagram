@@ -24,4 +24,8 @@
   - Three generator fixes were needed: focus asked as one query (a found node went stale), a focused node containing the label counts (bar pill labels sit in a child), and a left walk along the bar.
   - Still misses the bar on most iterations (focus sticks on a bottom-edge row, or falls into the side rail). 4 of 13 got through; ART merges iterations, so the profile covers Home 139, Movies page 68, wall 53, title page 28 rules.
   - Relaunch between Home and Movies was tried and dropped: the uncompiled cold start often outlasts the 15 s library wait.
-- [ ] **Release.** Approved by the user ("Generate on box, then release"): `scripts/release-android.sh` at 0.117.1.
+- [x] **Release.** Approved by the user ("Generate on box, then release"). `scripts/release-android.sh` published 0.117.1 (versionCode 117001, message 21906, pinned); the APK carries `assets/dexopt/baseline.prof`.
+  - The box could not self-update to it: the later generation runs happened after the bump, so they had already installed the unminified build *as* 0.117.1, and the updater needs a strictly higher versionCode. The published APK was installed over it with `adb install -r` (sha256 matches; sign-in kept).
+- [ ] **Device walk, still open.**
+  - Refresh rate: the TV was off (no EDID, fallback 1080p60 only), so the 24p switch is untested.
+  - Hero sharpness: inconclusive. The hero looked soft at 1:1, the next library update may not have run yet, and release builds can't be read with `run-as` to see the width records.
