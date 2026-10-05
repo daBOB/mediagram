@@ -36,8 +36,9 @@ fun Modifier.playerCard(): Modifier =
         .border(1.dp, Color.White.copy(alpha = CARD_EDGE_ALPHA), CardShape)
 
 /**
- * Where a card menu goes, in whatever coordinates [anchor] (the button that
- * opened it) and [card] are measured in: its bottom [gap] above the button,
+ * Where a card menu goes, with [anchor] (the button that opened it) and
+ * [card] both in window coordinates, since the top edge of the window is
+ * what it may not pass: its bottom [gap] above the button,
  * centred on it, never out past either side of the card, and never off the
  * top — a long language list scrolls inside its own height instead.
  */
