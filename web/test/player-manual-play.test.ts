@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { browserEnvironment, deferred, settle } from "./support/player-environment";
+import { browserEnvironment, chooseInMenu, deferred, settle } from "./support/player-environment";
 import * as state from "../public/lib/watch-state.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -68,8 +68,7 @@ test.each(["other title", "same title", "closed player", "audio source"] as cons
     pressPlay();
     if (replacement === "closed player") env.node("player").close();
     else if (replacement === "audio source") {
-      env.node("audio-track").value = "1";
-      env.node("audio-track").fire("change");
+      chooseInMenu(env.node, "audio", "1");
     } else {
       openPlayer(title("second"));
       if (replacement === "same title") openPlayer(title("first"));

@@ -8,6 +8,7 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  audioItems,
   channelLabel,
   defaultTrack,
   trackIndexForLanguage,
@@ -118,5 +119,15 @@ describe("matching a remembered language", () => {
   test("an ordinal is never what is matched", () => {
     // A stored `1` would be German in one release and a commentary in the next.
     expect(trackIndexForLanguage(tracks, "1")).toBeNull();
+  });
+});
+
+describe("the Audio menu", () => {
+  test("one row per stream, valued by ordinal and named for a person, the playing one marked", () => {
+    const tracks = [track({ index: 0, lang: "deu", channels: 6, codec: "ac3" }), track({ index: 3, lang: "eng" })];
+    expect(audioItems(tracks, 3)).toEqual([
+      { value: "0", label: "German · 5.1 · ac3", current: false },
+      { value: "3", label: "English · stereo · aac", current: true },
+    ]);
   });
 });

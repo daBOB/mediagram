@@ -43,8 +43,7 @@ video {
 .hud button,
 .hud select,
 .hud input,
-.hud label,
-.hud .picker { pointer-events: auto; }
+.hud label { pointer-events: auto; }
 
 .hud-top {
   top: 0;
@@ -68,8 +67,7 @@ dialog.resting .hud {
 dialog.resting .hud button,
 dialog.resting .hud select,
 dialog.resting .hud input,
-dialog.resting .hud label,
-dialog.resting .hud .picker { pointer-events: none; }
+dialog.resting .hud label { pointer-events: none; }
 
 .hud .what {
   flex: 1;
@@ -182,37 +180,10 @@ dialog.resting .hud .picker { pointer-events: none; }
   letter-spacing: 0.04em;
 }
 .hud .seek label,
-.hud .picker label,
 .ends,
 .preload { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 
 .preload { color: var(--stage-ink-2); }
-
-.picker {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.picker label {
-  color: var(--stage-ink-2);
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-}
-
-.picker select {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--stage-rule);
-  border-radius: var(--radius);
-  color: var(--stage-ink);
-  font-family: var(--text);
-  font-size: 0.85rem;
-  padding: 0.3rem 0.5rem;
-  max-width: 17rem;
-  cursor: pointer;
-}
-.picker select:hover { border-color: var(--stage-accent); }
 
 .transport {
   display: flex;
@@ -654,8 +625,6 @@ dialog.paused .featured-slide.on .featured-poster img { animation-play-state: pa
   .hud .tech { display: none; }
   .hud .what { font-size: 1rem; }
   .ghost { padding: 8px; font-size: 0.75rem; }
-  .picker select { font-size: 1rem; max-width: 7rem; }
-  .picker label { display: none; }
   :root { --notes-width: 100%; }
   dialog.with-notes video { right: 0; }
   .notes { border-left: 0; }

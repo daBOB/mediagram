@@ -104,27 +104,16 @@ export async function loadAudioTracks(setId) {
 }
 
 /**
- * Fills `select` with `tracks` and selects `chosen`.
+ * The Audio menu's rows, the playing track marked.
  *
- * Returns whether there is a choice worth showing: one track is not a menu,
- * it is a label for something nobody can change.
- * @param {HTMLSelectElement} select
+ * The value is the ordinal, which is how this file's stream is asked for; what
+ * is remembered when one is picked is its language — see
+ * `trackIndexForLanguage`. One track is not a menu, it is a label for
+ * something nobody can change, so the caller hides the button below two.
  * @param {AudioTrack[]} tracks
  * @param {number} chosen
- * @returns {boolean}
+ * @returns {{value: string, label: string, current: boolean}[]}
  */
-export function fillChooser(select, tracks, chosen) {
-  select.textContent = "";
-  for (const track of tracks) {
-    const option = document.createElement("option");
-    option.value = String(track.index);
-    // Carried on the option so the page can remember *what was chosen* rather
-    // than where it happened to sit — a preference is a language, and the
-    // ordinal is only how this file happens to number it today.
-    if (track.lang) option.dataset.lang = track.lang;
-    option.textContent = trackLabel(track);
-    select.append(option);
-  }
-  select.value = String(chosen);
-  return tracks.length > 1;
+export function audioItems(tracks, chosen) {
+  return tracks.map((track) => ({ value: String(track.index), label: trackLabel(track), current: track.index === chosen }));
 }

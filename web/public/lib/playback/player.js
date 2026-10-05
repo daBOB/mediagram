@@ -13,7 +13,7 @@ import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
 import { clockTime, endsAt, episodeLabel, technicalLine } from "../format.js";
-import { defaultTrack, fillChooser, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
+import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead, preloadReadout } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
@@ -89,7 +89,6 @@ function mountPlayer() {
   const atEnd = document.getElementById("at-end");
   const ends = document.getElementById("ends");
   const audio = document.getElementById("audio");
-  const audioTrackPicker = document.getElementById("audio-track");
   const preload = document.getElementById("preload");
   const upNext = mountPlayerNextTitle({
     showControls: () => hud.show(),
@@ -154,6 +153,7 @@ function mountPlayer() {
    * forgot it would drop the viewer back into the first language.
    */
   let audioTrack = 0;
+  let audioTracks = [];
   /** The chosen ordinal is not applied until its source actually attaches. */
   let appliedAudioTrack = null;
 
@@ -345,9 +345,11 @@ function mountPlayer() {
     seekTo.style.setProperty("--buffered", `${(bar.buffered * 100).toFixed(3)}%`);
   }
 
+  // What "this show" means is the player's question; every control only asks.
+  const recall = (name) => state.preferenceOf(scope, name);
+  const remember = (name, value) => state.setPreference(scope, name, value);
   const cuePanel = subtitlePanel({
-    recall: (name) => state.preferenceOf(scope, name),
-    remember: (name, value) => state.setPreference(scope, name, value),
+    recall, remember,
     onPlacement: (where) => {
       placement = where;
       placeSubtitles();
@@ -358,8 +360,7 @@ function mountPlayer() {
   /** Which subtitle tracks show, and what CC, its menu and 'c' do about it. */
   const subtitles = mountSubtitlePicker({
     video, cc: document.getElementById("cc"), more: document.getElementById("cc-menu"), menus, stylePanel: cuePanel.panel,
-    recall: (name) => state.preferenceOf(scope, name),
-    remember: (name, value) => state.setPreference(scope, name, value),
+    recall, remember,
   });
 
   /**
@@ -391,9 +392,7 @@ function mountPlayer() {
     onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
     filmTime,
     runtime: runtimeSeconds,
-    // What "this show" means is the player's question — the bar only asks.
-    recall: (name) => state.preferenceOf(scope, name),
-    remember: (name, value) => state.setPreference(scope, name, value),
+    recall, remember,
     toggleSubtitles: () => subtitles.toggle(),
   });
 
@@ -623,6 +622,7 @@ function mountPlayer() {
     converting = false;
     copiedOutput = false;
     audioTrack = 0;
+    audioTracks = [];
     audio.hidden = true;
     starved = false;
     held = false;
@@ -763,7 +763,8 @@ function mountPlayer() {
      */
     const remembered = trackIndexForLanguage(found, state.preferenceOf(scope, "audio"));
     audioTrack = remembered ?? defaultTrack(found);
-    audio.hidden = !fillChooser(audioTrackPicker, found, audioTrack);
+    audioTracks = found;
+    audio.hidden = found.length < 2;
     subtitles.setAudio(found.find((track) => track.index === audioTrack)?.lang ?? null);
     applyAudioTrack();
   }
@@ -783,23 +784,24 @@ function mountPlayer() {
   }
 
   /**
-   * The viewer picked a language.
+   * The viewer picked a language — remembered as one, never as the ordinal.
    *
    * Always a conversion, even for a title that was playing perfectly well on
    * its own: Chrome and Firefox do not implement `audioTracks`, so there is no
    * way to tell a `<video>` to use a different stream of the file it already
    * has. Keeps the viewer's place, exactly as a seek does.
    */
-  audioTrackPicker.addEventListener("change", () => {
-    const chosen = Number(audioTrackPicker.value);
-    if (!playing || !Number.isInteger(chosen) || chosen < 0) return;
-    audioTrack = chosen;
-    // The language, never the ordinal — see `trackIndexForLanguage`. Taken from the
-    // option's own label rather than kept in a second list beside the menu.
-    const picked = audioTrackPicker.selectedOptions[0]?.dataset.lang;
-    if (picked) state.setPreference(scope, "audio", picked);
-    subtitles.setAudio(picked ?? null);
-    applyAudioTrack();
+  menus.list(audio, {
+    items: () => audioItems(audioTracks, audioTrack),
+    pick: (value) => {
+      const chosen = Number(value);
+      if (!playing || !Number.isInteger(chosen) || chosen < 0) return;
+      audioTrack = chosen;
+      const picked = audioTracks.find((track) => track.index === chosen)?.lang;
+      if (picked) state.setPreference(scope, "audio", picked);
+      subtitles.setAudio(picked ?? null);
+      applyAudioTrack();
+    },
   });
 
   /**
