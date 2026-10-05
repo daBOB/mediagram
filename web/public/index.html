@@ -121,10 +121,6 @@
            behind it; the card below needs none. -->
       <div class="hud hud-top">
         <span class="what" id="now"></span>
-        <!-- What the file is, which the catalogue says nowhere else at this
-             length. Set quieter than the title: it answers a question a
-             viewer only sometimes has. -->
-        <span class="tech" id="tech"></span>
         <button id="watchlist" class="ghost" aria-pressed="false">My List</button>
         <button id="kids" class="ghost" aria-pressed="false">Kids</button>
         <!-- An unrated title is for kids only from the age a grown-up picks
@@ -160,9 +156,6 @@
             </div>
             <span class="at" id="at-end"></span>
             <span class="ends" id="ends"></span>
-            <!-- Preloading without playing means a still frame and no sign of
-                 life; this is the sign of life. -->
-            <span class="preload" id="preload"></span>
           </div>
 
           <div class="card-row card-tools">
@@ -198,9 +191,17 @@
                    "not automatically" must not mean "not at all". -->
               <button id="play-next" class="tsp" aria-label="Next" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg></button>
             </span>
+            <span class="card-end">
+              <button id="stats-toggle" class="tsp" aria-label="Stats" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg></button>
+            </span>
           </div>
         </div>
       </div>
+
+      <!-- What the browser can say about the picture, the sound and the
+           buffer, under the top bar. Not part of the card: it stays while
+           the card rests, for as long as ⓘ leaves it on. -->
+      <dl class="stats-overlay" id="stats-panel" hidden></dl>
 
       <!-- Appears as a title runs out. Counts down and goes on its own unless
            stopped, which is what a run of episodes wants; cancelling is

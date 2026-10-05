@@ -82,16 +82,6 @@ dialog.resting .hud label { pointer-events: none; }
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
-.hud .tech {
-  flex: none;
-  white-space: nowrap;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-  color: var(--stage-ink);
-  opacity: 0.62;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-}
-
 .ghost {
   flex: none;
   background: rgba(0, 0, 0, 0.35);
@@ -171,8 +161,7 @@ dialog.resting .hud label { pointer-events: none; }
   border-radius: 50%; /* deslop-ignore 19: seek thumb */
   background: var(--stage-accent);
 }
-.ends,
-.preload {
+.ends {
   color: var(--stage-ink-2);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -180,10 +169,7 @@ dialog.resting .hud label { pointer-events: none; }
   letter-spacing: 0.04em;
 }
 .hud .seek label,
-.ends,
-.preload { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
-
-.preload { color: var(--stage-ink-2); }
+.ends { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 
 .transport {
   display: flex;
@@ -622,7 +608,6 @@ dialog.paused .featured-slide.on .featured-poster img { animation-play-state: pa
 .notes-head { font-size: 0.8125rem; }
 @media (max-width: 767px) {
   .hud-top { padding: 16px 16px 32px; }
-  .hud .tech { display: none; }
   .hud .what { font-size: 1rem; }
   .ghost { padding: 8px; font-size: 0.75rem; }
   :root { --notes-width: 100%; }

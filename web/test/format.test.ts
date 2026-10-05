@@ -6,11 +6,11 @@ import {
   countOf,
   endsAt,
   episodeLabel,
+  hdrLabel,
   humanDuration,
   humanSize,
   resumeLine,
   spellCount,
-  technicalLine,
 } from "../public/lib/format.js";
 
 describe("sizes", () => {
@@ -174,40 +174,15 @@ describe("average bitrate", () => {
   });
 });
 
-describe("the technical line", () => {
-  const blade = {
-    quality: "1080p",
-    hdr: "HDR10",
-    container: "mkv",
-    vcodec: "hevc",
-    acodec: "eac3",
-    total: 15_247_000_000,
-    partCount: 5,
-    duration: 9_840,
-  };
-
-  test("says everything the index knows, in reading order", () => {
-    expect(technicalLine(blade)).toBe(
-      "1080p · HDR10 · mkv · hevc · eac3 · 14 GB · 5 parts · 12 Mbps",
-    );
+describe("the dynamic range", () => {
+  test("names what is worth naming and leaves SDR out: it is the absence of a fact", () => {
+    expect(hdrLabel({ hdr: "HDR10" })).toBe("HDR10");
+    expect(hdrLabel({ hdr: "SDR" })).toBeNull();
+    expect(hdrLabel({ hdr: null })).toBeNull();
   });
 
-  test("leaves SDR out: it is the absence of a fact, not a fact", () => {
-    expect(technicalLine({ ...blade, hdr: "SDR" })).not.toContain("SDR");
-    expect(technicalLine({ ...blade, hdr: null })).toBe(technicalLine({ ...blade, hdr: "SDR" }));
-  });
-
-  test("says nothing about a single part, which is the ordinary case", () => {
-    expect(technicalLine({ ...blade, partCount: 1 })).not.toContain("part");
-  });
-
-  test("drops whatever is missing rather than printing a gap", () => {
-    expect(technicalLine({ container: "mp4", vcodec: "h264" })).toBe("mp4 · h264");
-    expect(technicalLine({})).toBe("");
-  });
-
-  test("leaves codecLine alone, which the compact views still use", () => {
-    expect(codecLine(blade)).toBe("mkv · hevc · eac3");
+  test("codecLine stays the compact views' one line", () => {
+    expect(codecLine({ container: "mkv", vcodec: "hevc", acodec: "eac3" })).toBe("mkv · hevc · eac3");
   });
 });
 

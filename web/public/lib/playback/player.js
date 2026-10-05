@@ -12,9 +12,9 @@ import { playbackFor } from "../link.js";
 import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
-import { clockTime, endsAt, episodeLabel, technicalLine } from "../format.js";
+import { clockTime, endsAt, episodeLabel } from "../format.js";
 import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
-import { bufferedAhead, preloadReadout } from "./preload-readout.js";
+import { bufferedAhead } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
 import { keyAction, wantsKeys } from "./player-keys.js";
@@ -22,6 +22,7 @@ import { mountPlayerNotes } from "./notes/player-notes.js";
 import { mountPlayerLibraryMarks } from "./player-library-marks.js";
 import { mountPlayerHud } from "./player-hud.js";
 import { mountPlayerMenus } from "./player-menus.js";
+import { mountPlayerStats } from "./player-stats.js";
 import { mountPlayerNextTitle } from "./player-next-title.js";
 import { autoplayReady } from "./autoplay.js";
 import * as state from "../watch-state.js";
@@ -83,7 +84,6 @@ function mountPlayer() {
   const menus = mountPlayerMenus({ onClose: () => hud.show() });
   const hud = mountPlayerHud({ dialog, video, card: document.getElementById("control-card"), holding: () => menus.isOpen() });
   const note = document.getElementById("note");
-  const tech = document.getElementById("tech");
   const now = document.getElementById("now");
   const seek = document.getElementById("seek");
   const seekTo = document.getElementById("seek-to");
@@ -91,7 +91,7 @@ function mountPlayer() {
   const atEnd = document.getElementById("at-end");
   const ends = document.getElementById("ends");
   const audio = document.getElementById("audio");
-  const preload = document.getElementById("preload");
+  const stats = mountPlayerStats({ video });
   const upNext = mountPlayerNextTitle({
     showControls: () => hud.show(),
     openTitle: (set, options) => openPlayer(set, options),
@@ -599,7 +599,8 @@ function mountPlayer() {
 
   /** How much is held, and whether the player is waiting on any of it. */
   function refreshPreload() {
-    preload.textContent = preloadReadout(playbackFields(video, { starved, waitingToStart, held, watch }));
+    const audioNow = audioTracks.find((track) => track.index === audioTrack) ?? null;
+    stats.draw(playbackFields(video, { starved, waitingToStart, held, watch }), playing, audioNow);
   }
 
   /**
@@ -644,7 +645,6 @@ function mountPlayer() {
     void notes.open(set);
     void offerAudioTracks(set, signal);
     now.textContent = titleLine(set);
-    tech.textContent = technicalLine(set);
 
     const warning = noteFor(set);
     note.textContent = warning ?? "";
@@ -984,7 +984,6 @@ function mountPlayer() {
     held = false;
     audio.hidden = true;
     ends.textContent = "";
-    preload.textContent = "";
     playing = null;
     capBits = null;
     audioTrack = 0;

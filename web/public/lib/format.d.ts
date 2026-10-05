@@ -23,18 +23,6 @@ export function bitrateLabel(set: {
 /** What a title's dynamic range is worth saying, or `null` for SDR. */
 export function hdrLabel(set: { hdr?: string | null }): string | null;
 
-/** Everything the index knows about a file, for a card or the player HUD. */
-export function technicalLine(set: {
-  quality?: string | null;
-  hdr?: string | null;
-  container?: string | null;
-  vcodec?: string | null;
-  acodec?: string | null;
-  total?: number | null;
-  partCount?: number | null;
-  duration?: number | null;
-}): string;
-
 /** Where someone got to: `42% · 12:30`, or the position alone if unmeasured. */
 export function resumeLine(progress?: { at?: number; duration?: number | null } | null): string;
 

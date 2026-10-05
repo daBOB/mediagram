@@ -102,6 +102,15 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.video.currentTime).toBe(15);
   env.node("mute").fire("click");
   expect(env.video.muted).toBe(true);
+  // The file facts and the preload readout moved into the stats overlay.
+  expect(env.document.getElementById("tech")).toBeNull();
+  expect(env.document.getElementById("preload")).toBeNull();
+  expect(env.node("stats-toggle").getAttribute("aria-label")).toBe("Stats");
+  env.node("stats-toggle").fire("click");
+  expect(env.node("stats-toggle").getAttribute("aria-pressed")).toBe("true");
+  env.video.fire("progress");
+  expect(env.node("stats-panel").children.filter((node) => node.tagName === "DT").map((node) => node.textContent))
+    .toEqual(["video", "audio", "buffer", "cache"]);
   pick("style");
   expect(env.node("cc-menu").getAttribute("aria-expanded")).toBe("true");
   expect(env.document.querySelector(".cue-panel")!.hidden).toBe(false);

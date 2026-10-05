@@ -58,17 +58,6 @@ export function bitrateLabel(set) {
 }
 
 /**
- * Everything the index knows about a file, for the places with room to say it.
- *
- * Longer than `codecLine`, which stays as it is for a search hit and a lesson
- * row — both are one line in a list and a fuller string would wrap.
- *
- *
- * The bitrate is last because it is the one that makes the `needs transcode`
- * badge legible: a viewer who sees 13.9 Mbps beside the badge understands
- * it, and a viewer who sees only the badge does not.
- */
-/**
  * What a title's dynamic range is worth saying, or nothing.
  *
  * `SDR` is left out on purpose. It is the absence of a fact rather than a
@@ -77,35 +66,6 @@ export function bitrateLabel(set) {
  */
 export function hdrLabel(set) {
   return set.hdr && set.hdr !== "SDR" ? set.hdr : null;
-}
-
-export function technicalLine(set) {
-  const hdr = hdrLabel(set);
-  return [
-    set.quality,
-    hdr,
-    set.container,
-    set.vcodec,
-    set.acodec,
-    // `humanSize(0)` is "0 B", which is a fact about nothing. Playable sets
-    // always have a size; a row that somehow does not should stay quiet.
-    Number(set.total) > 0 ? humanSize(set.total) : "",
-    partsLabel(set.partCount),
-    bitrateLabel(set),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-/**
- * `5 parts`, or nothing for a set that is a single message.
- *
- * A one-part set is the ordinary case and saying so is noise; a set split
- * into several is the reason a download can stall halfway through one.
- */
-function partsLabel(count) {
-  const parts = Number(count);
-  return Number.isFinite(parts) && parts > 1 ? `${parts} parts` : "";
 }
 
 /**

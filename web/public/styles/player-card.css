@@ -113,6 +113,29 @@ dialog.resting .control-card { pointer-events: none; }
 .menu-item:hover { color: var(--stage-ink); background: rgba(255, 255, 255, 0.08); }
 .menu-item[aria-pressed="true"] { color: var(--stage-accent); }
 
+/* The stats overlay: under the top bar on the left, in the card's fill. */
+.stats-overlay {
+  position: absolute;
+  top: 4.5rem;
+  left: 1.5rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.2rem 1rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--stage) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.stats-overlay dt { color: var(--stage-ink-2); }
+.stats-overlay dd { margin: 0; color: var(--stage-ink); }
+#stats-toggle[aria-pressed="true"] { color: var(--stage-accent); }
+
 @media (max-width: 767px) {
   .hud-top { flex-wrap: wrap; row-gap: 8px; }
   .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); }
