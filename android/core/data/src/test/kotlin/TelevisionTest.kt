@@ -1,4 +1,4 @@
-package com.mediagram.android
+package data
 
 import android.app.UiModeManager
 import android.content.Context
@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class SurfaceSelectionTest {
+class TelevisionTest {
     @Test
     fun aTelevisionUiModeSelectsTheTvSurface() {
         val context = mockContextWithUiMode(Configuration.UI_MODE_TYPE_TELEVISION)

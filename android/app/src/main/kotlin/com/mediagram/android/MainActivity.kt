@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import data.WatchSync
+import data.isTelevision
 import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
 import ui.player.PipEntryPoint

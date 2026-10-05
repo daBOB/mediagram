@@ -4,12 +4,12 @@ import android.content.Context
 import android.os.Build
 import androidx.media3.common.Player
 import com.mediagram.android.R
-import com.mediagram.android.isTelevision
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import data.isTelevision
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
