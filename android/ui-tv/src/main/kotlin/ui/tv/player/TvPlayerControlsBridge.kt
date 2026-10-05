@@ -10,6 +10,7 @@ import player.PlayerMarksState
 import player.PlayerViewModel
 import player.UpNextUiState
 import player.createListAndAdd
+import player.playFromRun
 import player.previous
 import player.restart
 import player.setInList
@@ -45,6 +46,45 @@ internal class TvControlsActions(
     val onPickEpisode: (String) -> Unit,
     val onToggleNotes: (() -> Unit)?,
     val onSeekBarFocused: (Boolean) -> Unit,
+)
+
+/**
+ * What pressing the controls does to the overlay state ([overlays]) and to
+ * where the remote goes next. A menu or the episode list remembers the
+ * control that opened it ([TvPlayerFocus.opener]) for [closePanel] to
+ * return to; a picked episode plays and closes the list ([onPicked]
+ * sends the remote to play/pause for the title that follows).
+ */
+internal fun tvControlsActions(
+    overlays: TvPlayerOverlayState,
+    focus: TvPlayerFocus,
+    viewModel: PlayerViewModel,
+    closePanel: () -> Unit,
+    onToggleNotes: (() -> Unit)?,
+    onSeekBarFocused: (Boolean) -> Unit,
+    onPicked: () -> Unit,
+) = TvControlsActions(
+    onToggleStats = { overlays.statsShown = !overlays.statsShown },
+    onAddToList = { overlays.choosingList = true },
+    onKids = { overlays.choosingKids = true },
+    onOpenMenu = { opened ->
+        focus.opener = focus.openerOf(opened)
+        overlays.menu = opened
+    },
+    onSwitchMenu = { overlays.menu = it },
+    onCloseMenu = closePanel,
+    onOpenEpisodes = {
+        focus.opener = focus.episodes
+        overlays.sidebarOpen = true
+    },
+    onCloseEpisodes = closePanel,
+    onPickEpisode = { id ->
+        onPicked()
+        overlays.sidebarOpen = false
+        viewModel.playFromRun(id)
+    },
+    onToggleNotes = onToggleNotes,
+    onSeekBarFocused = onSeekBarFocused,
 )
 
 /**
@@ -123,4 +163,19 @@ internal fun TvAddToListOverPlayer(
             notice = notice,
         )
     }
+}
+
+/** The list and Kids dialogs over the film, while they are open; [keys] is offered each of their keys first. */
+@Composable
+internal fun TvMarkDialogs(
+    overlays: TvPlayerOverlayState,
+    marks: PlayerMarksState?,
+    notice: String?,
+    viewModel: PlayerViewModel,
+    keys: (KeyEvent) -> Boolean,
+) {
+    if (overlays.choosingList) {
+        TvAddToListOverPlayer(marks = marks, notice = notice, viewModel = viewModel, onDismiss = { overlays.choosingList = false }, keys = keys)
+    }
+    if (overlays.choosingKids) TvKidsChoiceOverPlayer(marks = marks, viewModel = viewModel, onDismiss = { overlays.choosingKids = false }, keys = keys)
 }
