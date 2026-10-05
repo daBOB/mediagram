@@ -19,9 +19,9 @@ import player.controlsShouldFade
  * [held] keeps them up whatever the film is doing. The list dialog holds
  * them the way a drag holds the phone's: its keys go to its own window, so
  * no press here restarts the fade, and the controls it returns to must
- * still be there when it closes. The settings panel holds them as the
- * phone's sheet does, for the same return: Back from it lands on the gear
- * that opened it.
+ * still be there when it closes. The settings panel and the episode list
+ * ([menuOrSidebarOpen]) hold them as the phone's sheet does, for the same
+ * return: Back from either lands on the control that opened it.
  */
 @Composable
 internal fun TvControlsAutoHide(
@@ -29,11 +29,13 @@ internal fun TvControlsAutoHide(
     state: PlayerUiState,
     presses: Int,
     held: Boolean,
+    menuOrSidebarOpen: Boolean,
     onHide: () -> Unit,
 ) {
-    LaunchedEffect(controlsShown, state, presses, held) {
+    LaunchedEffect(controlsShown, state, presses, held, menuOrSidebarOpen) {
         if (!controlsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = held)) return@LaunchedEffect
+        val fades = controlsShouldFade(isPlaying = state is PlayerUiState.Playing, isScrubbing = held, menuOrSidebarOpen = menuOrSidebarOpen)
+        if (!fades) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         onHide()
     }
@@ -42,8 +44,10 @@ internal fun TvControlsAutoHide(
 /**
  * Wherever the controls go, the remote goes with them: onto the control the
  * key that raised them asked for ([landing]), or back to the screen itself
- * ([root]) when they leave. While the settings panel is open it takes the
- * remote for itself; when it closes, [landing] says the gear.
+ * ([root]) when they leave. While the settings panel or the episode list is
+ * open ([panelOpen]) it takes the remote for itself; when it closes,
+ * [landing] says where the remote goes back to — the gear, or the control
+ * that opened the list ([TvPlayerFocus.opener]).
  *
  * The up-next card, when it appears, takes the remote onto Play now — the
  * phone's card is one tap away wherever a finger already is, and on a
@@ -65,7 +69,7 @@ internal fun TvControlsAutoHide(
 @Composable
 internal fun TvRemoteFollowsControls(
     barShown: Boolean,
-    settingsOpen: Boolean,
+    panelOpen: Boolean,
     upNextShown: Boolean,
     landing: TvControlsLanding,
     root: FocusRequester,
@@ -74,14 +78,15 @@ internal fun TvRemoteFollowsControls(
     notesOpen: () -> Boolean = { false },
     busy: () -> Boolean = { false },
 ) {
-    LaunchedEffect(barShown, settingsOpen, upNextShown, failed) {
+    LaunchedEffect(barShown, panelOpen, upNextShown, failed) {
         when {
-            settingsOpen -> Unit
+            panelOpen -> Unit
             failed -> focus.retry.requestFocus()
             !barShown -> if (notesOpen()) focus.notesRegion.requestFocus() else root.requestFocus()
             upNextShown -> if (!busy()) focus.upNext.requestFocus()
             landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
             landing == TvControlsLanding.Settings -> focus.settings.requestFocus()
+            landing == TvControlsLanding.Opener -> focus.opener.requestFocus()
             else -> focus.playPause.requestFocus()
         }
     }

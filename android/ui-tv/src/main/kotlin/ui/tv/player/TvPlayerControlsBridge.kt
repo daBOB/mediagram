@@ -26,6 +26,8 @@ internal class TvControlsView(
     val hasSubtitles: Boolean = false,
     /** Whether a regular track is showing. */
     val subtitlesOn: Boolean = false,
+    /** Whether the run has an episode list to open; ☰ is left out without one. */
+    val hasEpisodes: Boolean = false,
 )
 
 /** What pressing the controls does to the screen's own state rather than to the player. */
@@ -37,6 +39,9 @@ internal class TvControlsActions(
     val onPlayNext: () -> Unit,
     val onToggleNotes: (() -> Unit)?,
     val onSeekBarFocused: (Boolean) -> Unit,
+    val onOpenEpisodes: () -> Unit = {},
+    val onCloseEpisodes: () -> Unit = {},
+    val onPickEpisode: (String) -> Unit = {},
 )
 
 /**
@@ -83,6 +88,7 @@ internal fun TvPlayerControlsForViewModel(
                 onPlayNext = actions.onPlayNext,
                 onToggleNotes = actions.onToggleNotes,
                 upNextShown = view.upNext.phase != UpNextPhase.HIDDEN,
+                onOpenEpisodes = actions.onOpenEpisodes.takeIf { view.hasEpisodes },
             ),
         onSeekBarFocused = actions.onSeekBarFocused,
         bands = bands,

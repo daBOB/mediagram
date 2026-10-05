@@ -17,12 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import designsystem.Overscan
 import designsystem.Spacing
 import model.MediaSet
 import playback.TimedCue
+import player.EpisodeList
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.UpNextPhase
@@ -49,6 +51,8 @@ internal class TvStagePicture(
     val choices: PlayerChoices,
     val barShown: Boolean,
     val settingsOpen: Boolean,
+    /** The episode list while it is open; null while closed. */
+    val sidebar: EpisodeList? = null,
 )
 
 /**
@@ -81,7 +85,7 @@ internal fun BoxScope.TvPlayerStage(
     CompositionLocalProvider(LocalFlatControls provides true) {
         if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands)
         if (shown && view.upNext.phase != UpNextPhase.HIDDEN) {
-            TvUpNextOverStage(view.upNext, focus, actions.onPlayNext, viewModel::cancelUpNext, bands, besidePanel = picture.settingsOpen)
+            TvUpNextOverStage(view.upNext, focus, actions.onPlayNext, viewModel::cancelUpNext, bands, besideWidth = beside(picture))
         }
         if (picture.settingsOpen) {
             TvPlayerSettingsPanel(
@@ -91,8 +95,25 @@ internal fun BoxScope.TvPlayerStage(
             )
             DisposableEffect(Unit) { onDispose { bands.panelLeft = null } }
         }
+        picture.sidebar?.let { list ->
+            TvEpisodeSidebar(
+                list = list,
+                onPick = actions.onPickEpisode,
+                onClose = actions.onCloseEpisodes,
+                modifier = Modifier.align(Alignment.CenterEnd).onGloballyPositioned { bands.panelLeft = it.boundsInRoot().left },
+            )
+            DisposableEffect(Unit) { onDispose { bands.panelLeft = null } }
+        }
     }
 }
+
+/** How much of the stage's right edge a panel or the episode list takes, which what floats keeps clear of. */
+private fun beside(picture: TvStagePicture): Dp =
+    when {
+        picture.sidebar != null -> TvSidebarWidth
+        picture.settingsOpen -> TvSettingsPanelWidth
+        else -> 0.dp
+    }
 
 /**
  * The up-next card floating over the picture, as the web floats its own
@@ -110,7 +131,7 @@ private fun BoxScope.TvUpNextOverStage(
     onPlayNow: () -> Unit,
     onCancel: () -> Unit,
     bands: TvStageBands,
-    besidePanel: Boolean,
+    besideWidth: Dp,
 ) {
     var stageBottom by remember { mutableFloatStateOf(0f) }
     val lift = with(LocalDensity.current) { bands.barTop?.let { (stageBottom - it).coerceAtLeast(0f).toDp() } ?: Overscan.vertical }
@@ -119,7 +140,7 @@ private fun BoxScope.TvUpNextOverStage(
             Modifier
                 .matchParentSize()
                 .onGloballyPositioned { stageBottom = it.boundsInRoot().bottom }
-                .padding(end = if (besidePanel) TvSettingsPanelWidth else 0.dp),
+                .padding(end = besideWidth),
     ) {
         TvUpNextCard(
             state = state,

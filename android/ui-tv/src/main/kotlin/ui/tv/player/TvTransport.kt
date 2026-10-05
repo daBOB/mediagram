@@ -93,5 +93,8 @@ internal fun TvTransport(
                 modifier = toSeekBar,
             )
         }
+        extras.onOpenEpisodes?.let { open ->
+            TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toSeekBar.focusRequester(focus.episodes), padding = Spacing.medium)
+        }
     }
 }

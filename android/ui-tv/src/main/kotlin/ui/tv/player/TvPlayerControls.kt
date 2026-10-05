@@ -46,6 +46,10 @@ internal class TvPlayerFocus {
     val notes = FocusRequester()
     val retry = FocusRequester()
     val notesRegion = FocusRequester()
+    val episodes = FocusRequester()
+
+    /** The control a menu or the episode list was opened from: where the remote goes back to when it closes. */
+    var opener: FocusRequester = playPause
 }
 
 /** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the settings. */
@@ -73,6 +77,8 @@ internal class TvPlayerExtras(
     val onToggleNotes: (() -> Unit)? = null,
     /** Whether the up-next card is floating above the controls, which Up from the seek bar then reaches. */
     val upNextShown: Boolean = false,
+    /** Opens the episode list; null with no list to open (a film, or a title with no run), which leaves ☰ out. */
+    val onOpenEpisodes: (() -> Unit)? = null,
 )
 
 /** Finds the controls' two bands in a test: what is playing along the top, and the controls along the bottom. */

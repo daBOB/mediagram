@@ -29,6 +29,7 @@ import player.toggleSubtitles
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
+import player.playFromRun
 import player.retry
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
@@ -85,6 +86,7 @@ fun TvPlayerScreen(
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val upNextShown = upNext.phase != UpNextPhase.HIDDEN
     val notesOpen = notes?.open == true
     val failed = state is PlayerUiState.Failed
@@ -109,12 +111,19 @@ fun TvPlayerScreen(
     var choosingList by rememberSaveable { mutableStateOf(false) }
     var choosingKids by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    var sidebarOpen by rememberSaveable { mutableStateOf(false) }
+    // A switch to a title with no run takes its list away, and the sidebar with it.
+    val sidebarShown = sidebarOpen && episodes != null
+    val panelOpen = settingsOpen || sidebarShown
     val closeMarkDialogs = {
         choosingList = false
         choosingKids = false
     }
-    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = { settingsOpen = false })
-    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || settingsOpen || upNextShown, onHide = { controlsShown = false })
+    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = {
+        settingsOpen = false
+        sidebarOpen = false
+    })
+    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
     // remote lands on it rather than on a picture it is being taken from.
@@ -137,18 +146,23 @@ fun TvPlayerScreen(
                 onPrevious = { steps.previous() }, onToggleSubtitles = { viewModel.toggleSubtitles() },
             )
         }
-    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
-    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen }, failed = { failed })
+    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
+    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { panelOpen }, failed = { failed })
     TvPlayerBack(
         barShown = barShown,
         onSeekBar = onSeekBar,
-        settingsOpen = settingsOpen,
+        panelOpen = panelOpen,
         upNextShown = upNextShown,
         notesOpen = notesOpen,
         statsShown = statsShown,
         onClosePanel = {
-            landing = TvControlsLanding.Settings
-            settingsOpen = false
+            if (settingsOpen) {
+                landing = TvControlsLanding.Settings
+                settingsOpen = false
+            } else {
+                landing = TvControlsLanding.Opener
+                sidebarOpen = false
+            }
         },
         onCancelUpNext = viewModel::cancelUpNext,
         onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
@@ -172,7 +186,7 @@ fun TvPlayerScreen(
                         controlsShowing = barShown,
                         onSeekBar = onSeekBar,
                         canControl = controlsMayShow(state),
-                        panelOpen = settingsOpen,
+                        panelOpen = panelOpen,
                         upNextShown = upNextShown,
                         notesOpen = notesOpen,
                     )
@@ -186,7 +200,7 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown, choices.ccVisible, choices.subtitlesOn),
+                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown, choices.ccVisible, choices.subtitlesOn, hasEpisodes = episodes != null),
                     actions =
                         TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },
@@ -196,8 +210,21 @@ fun TvPlayerScreen(
                             onPlayNext = steps.next,
                             onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
                             onSeekBarFocused = { onSeekBar = it },
+                            onOpenEpisodes = {
+                                focus.opener = focus.episodes
+                                sidebarOpen = true
+                            },
+                            onCloseEpisodes = {
+                                landing = TvControlsLanding.Opener
+                                sidebarOpen = false
+                            },
+                            onPickEpisode = { id ->
+                                landing = TvControlsLanding.PlayPause
+                                sidebarOpen = false
+                                viewModel.playFromRun(id)
+                            },
                         ),
-                    picture = TvStagePicture(subtitleCues, choices, barShown, settingsOpen),
+                    picture = TvStagePicture(subtitleCues, choices, barShown, settingsOpen, episodes.takeIf { sidebarShown }),
                     bands = bands,
                 )
             }

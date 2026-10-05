@@ -90,14 +90,27 @@ abstract class TvPlayerScreenHarness {
 
     /**
      * From the controls as they open, on play/pause: Down to the row of
-     * marks and tools, then Right along it until [target] holds the remote
-     * — failing if it never does, which is a tool out of the remote's reach.
+     * marks and tools, then Right along it until [target] holds the remote.
      */
     internal fun toTool(target: SemanticsMatcher) {
         press(Key.DirectionDown)
+        along(target)
+    }
+
+    /** Along the transport from play/pause — Right, or Left for what stands before it — until [target] holds the remote. */
+    internal fun toTransport(
+        target: SemanticsMatcher,
+        key: Key = Key.DirectionRight,
+    ) = along(target, key)
+
+    /** [key] along a row until [target] holds the remote — failing if it never does, which is a control out of the remote's reach. */
+    internal fun along(
+        target: SemanticsMatcher,
+        key: Key = Key.DirectionRight,
+    ) {
         repeat(MAX_ROW) {
             if (compose.onAllNodes(target and isFocused()).fetchSemanticsNodes().isNotEmpty()) return
-            press(Key.DirectionRight)
+            press(key)
         }
         compose.onNode(target).assertIsFocused()
     }
