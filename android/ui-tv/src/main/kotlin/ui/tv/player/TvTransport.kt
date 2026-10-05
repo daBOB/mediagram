@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.media3.common.Player
@@ -48,6 +49,9 @@ internal fun TvTransport(
     val seekForward = rememberSeekForwardButtonState(player)
     val run = extras.upNext
     val toTools = Modifier.focusProperties { this.up = focus.cc }
+    // ↺ starts the row, and ☰ — or ⓘ without a list — ends it: nothing lies beyond either.
+    val atStart = Modifier.focusProperties { left = FocusRequester.Cancel }
+    val atEnd = Modifier.focusProperties { right = FocusRequester.Cancel }
 
     FlowRow(
         modifier = modifier.fillMaxWidth(),
@@ -55,7 +59,7 @@ internal fun TvTransport(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        TvGlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = extras.onRestart, modifier = toTools, padding = Spacing.small)
+        TvGlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = extras.onRestart, modifier = toTools.then(atStart), padding = Spacing.small)
         if (run.inRun) {
             TvIconButton(icon = TransportIcons.Previous, description = "Previous", enabled = run.hasPrevious, onClick = extras.onPrevious, modifier = toTools)
         }
@@ -85,9 +89,9 @@ internal fun TvTransport(
         if (run.inRun) {
             TvIconButton(icon = TransportIcons.Next, description = "Next", enabled = run.hasNext, onClick = extras.onPlayNext, modifier = toTools)
         }
-        TvGlyphButton(glyph = "ⓘ", description = "Stats", enabled = true, onClick = extras.onToggleStats, modifier = toTools, padding = Spacing.small)
+        TvGlyphButton(glyph = "ⓘ", description = "Stats", enabled = true, onClick = extras.onToggleStats, modifier = if (extras.onOpenEpisodes == null) toTools.then(atEnd) else toTools, padding = Spacing.small)
         extras.onOpenEpisodes?.let { open ->
-            TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toTools.focusRequester(focus.episodes), padding = Spacing.small)
+            TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toTools.then(atEnd).focusRequester(focus.episodes), padding = Spacing.small)
         }
     }
 }

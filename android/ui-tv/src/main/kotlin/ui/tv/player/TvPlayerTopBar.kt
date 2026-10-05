@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,14 +46,20 @@ internal fun TvPlayerTopBar(
                 }
             }
         }
-        TvMarksRail(marks = marks, actions = markActions, first = focus.marks, down = focus.seekBar)
+        TvMarksRail(marks = marks, actions = markActions, first = focus.marks, down = focus.seekBar, lastInBar = onToggleNotes == null)
         onToggleNotes?.let { toggle ->
             TvOverlayButton(
                 text = "Notes",
                 style = TvTypeScale.body,
                 enabled = true,
                 onClick = toggle,
-                modifier = Modifier.focusProperties { down = focus.seekBar }.focusRequester(focus.notes),
+                modifier =
+                    Modifier
+                        .focusProperties {
+                            down = focus.seekBar
+                            right = FocusRequester.Cancel
+                            if (marks == null) left = FocusRequester.Cancel
+                        }.focusRequester(focus.notes),
                 padding = Spacing.medium,
             )
         }

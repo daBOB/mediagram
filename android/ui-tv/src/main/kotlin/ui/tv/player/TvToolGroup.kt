@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.boundsInRoot
@@ -56,6 +57,7 @@ internal fun TvToolGroup(
  * to be read with nothing to turn on, and ▾ the same with no track at all.
  *
  * [each] is laid on every one of them: where the remote goes from the row.
+ * Left from CC and Right from Framing do nothing: they end the row.
  */
 @Composable
 internal fun TvCardTools(
@@ -71,7 +73,7 @@ internal fun TvCardTools(
         description = "Subtitles",
         enabled = choices.ccVisible,
         onClick = extras.onToggleSubtitles,
-        modifier = each.focusRequester(focus.cc).semantics { stateDescription = if (on) "On" else "Off" },
+        modifier = each.focusProperties { left = FocusRequester.Cancel }.focusRequester(focus.cc).semantics { stateDescription = if (on) "On" else "Off" },
         padding = Spacing.small,
     )
     TvGlyphButton(
@@ -86,7 +88,7 @@ internal fun TvCardTools(
     if (choices.audioOptions.isNotEmpty()) {
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }
-    TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    TvMenuTool(choices.framing.label, "Framing", each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
 }
 
 @Composable

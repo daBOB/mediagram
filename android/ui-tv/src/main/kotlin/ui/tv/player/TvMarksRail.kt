@@ -20,7 +20,8 @@ import player.listLabel
  * The phone's three kept controls — My List, Kids, Add to list — along the
  * top beside what is playing, where the web's slim top bar keeps them:
  * "this is where a viewer is when they find out what a film actually is"
- * (`player.js`). Down from any of them goes to the seek bar ([down]).
+ * (`player.js`). Down from any of them goes to the seek bar ([down]); Left
+ * from the first and, with [lastInBar], Right from the last do nothing.
  *
  * Absent with nothing open, as on the phone. The Kids mark is absent on a
  * kids profile — a child does not approve titles for itself — and dimmed
@@ -36,9 +37,13 @@ internal fun TvMarksRail(
     first: FocusRequester,
     down: FocusRequester,
     modifier: Modifier = Modifier,
+    lastInBar: Boolean = true,
 ) {
     if (marks == null) return
     val toCard = Modifier.focusProperties { this.down = down }
+    // My List starts the bar, so nothing lies to its left; Add to list ends it unless Notes follows.
+    val atStart = Modifier.focusProperties { left = FocusRequester.Cancel }
+    val atEnd = if (lastInBar) Modifier.focusProperties { right = FocusRequester.Cancel } else Modifier
 
     FlowRow(
         modifier = modifier,
@@ -46,11 +51,11 @@ internal fun TvMarksRail(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        MarkButton(label = listLabel(marks), onClick = actions.onToggleWatchlist, modifier = toCard.focusRequester(first))
+        MarkButton(label = listLabel(marks), onClick = actions.onToggleWatchlist, modifier = toCard.then(atStart).focusRequester(first))
         if (marks.canMarkKids) {
             MarkButton(label = kidsLabel(marks), onClick = actions.onKids, enabled = marks.kidsVerdict == KidsVerdict.UNRATED, modifier = toCard)
         }
-        MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toCard)
+        MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toCard.then(atEnd))
     }
 }
 
