@@ -274,7 +274,9 @@ The screening room keeps a slim top bar over the top scrim (the title, My List, 
 - **Card**: up to 880px wide, centred, 24px from the bottom (12px either side and below on a narrow window). Stage colour at 45% under `backdrop-filter: blur(24px) saturate(1.2)`, a 1px hairline at 8% white, `--radius-card`, no shadow.
 - **Blur exception**: the card and the panels it opens are the second place allowed a `backdrop-filter`; the masthead is the first. Both stay put while something moves under them, and the `shell.css` masthead comment names both. No other surface uses one.
 - **Rows**: seek (elapsed, bar, running time, "ends"); tools (subtitles, speed, audio, framing, then volume and fullscreen); transport (centred, with stats at the end).
-- **Hiding**: the card and the top bar rest together on the player's 2.6s timer, and stay up while paused.
+- **Menus**: Speed, Audio, Framing and the CC ▾ open one short list at a time just above their button, inside the card's width, in the card's fill. Choosing closes it; Esc closes only it.
+- **Stats**: ⓘ toggles an overlay under the top bar on the left, in the card's fill, under the Android player's row names (video, audio, buffer, cache, dropped). A row the browser cannot know is left out.
+- **Hiding**: the card and the top bar rest together on the player's 2.6s timer, and stay up while paused, while a menu is open, or while the pointer is on the card.
 
 ## Do's and Don'ts
 

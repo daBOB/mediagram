@@ -614,7 +614,7 @@ dialog.paused .featured-slide.on .featured-poster img { animation-play-state: pa
   dialog.with-notes video { right: 0; }
   .notes { border-left: 0; }
   .notes-body { padding: 16px 20px 32px; }
-  .up-next, dialog.with-notes .up-next { left: 16px; right: 16px; bottom: 15rem; max-width: none; }
+  .up-next, dialog.with-notes .up-next { left: 16px; right: 16px; bottom: 17rem; max-width: none; }
   .featured-title { font-size: 1.75rem; }
   .featured-nav { gap: 8px; bottom: 16px; }
   .featured-dot { width: 20px; }
