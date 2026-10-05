@@ -74,4 +74,17 @@ describe("the overlay", () => {
     expect(panel.hidden).toBe(true);
     expect(env.node("stats-toggle").getAttribute("aria-pressed")).toBe("false");
   });
+
+  test("it sits below the top bar however tall that has grown, and follows when the bar changes", () => {
+    const bar = env.node("top-bar");
+    bar.clientHeight = 150;
+    const panel = env.node("stats-panel");
+    panel.hidden = true;
+    const stats = mountPlayerStats({ video: env.video });
+    env.node("stats-toggle").fire("click");
+    expect(panel.style.top).toBe("150px");
+    bar.clientHeight = 64;
+    stats.draw(fields(), film, null);
+    expect(panel.style.top).toBe("64px");
+  });
 });

@@ -49,11 +49,22 @@ export function statsRows({ fields, set, audio, size }) {
 export function mountPlayerStats({ video }) {
   const button = document.getElementById("stats-toggle");
   const panel = document.getElementById("stats-panel");
+  const bar = document.getElementById("top-bar");
   let last = null;
+
+  /**
+   * Below the top bar as tall as it is now: at phone width its marks wrap onto
+   * a second row, and a fixed offset would put the overlay over the way out.
+   */
+  function place() {
+    const top = `${Math.round(bar.getBoundingClientRect().height)}px`;
+    if (panel.style.top !== top) panel.style.top = top;
+  }
 
   function draw(fields, set, audio) {
     last = { fields, set, audio };
     if (panel.hidden) return;
+    place();
     const size = { width: video.videoWidth || 0, height: video.videoHeight || 0 };
     panel.replaceChildren(...statsRows({ ...last, size }).flatMap(({ name, value }) => [el("dt", null, name), el("dd", null, value)]));
   }
@@ -62,6 +73,10 @@ export function mountPlayerStats({ video }) {
     panel.hidden = !panel.hidden;
     button.setAttribute("aria-pressed", String(!panel.hidden));
     if (last) draw(last.fields, last.set, last.audio);
+    else if (!panel.hidden) place();
+  });
+  window.addEventListener("resize", () => {
+    if (!panel.hidden) place();
   });
 
   return { draw };

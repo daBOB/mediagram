@@ -4,11 +4,16 @@
    moves under it. */
 
 .card-dock {
-  left: 0;
-  right: 0;
+  left: 24px;
+  right: 24px;
   bottom: 24px;
-  width: min(880px, calc(100% - 48px));
+  max-width: 880px;
   margin-inline: auto;
+}
+/* The notes column takes the right of the stage; the card keeps its own gap
+   from it, on a window wide enough to show both. */
+@media (min-width: 768px) {
+  dialog.with-notes .card-dock { right: calc(var(--notes-width) + 24px); }
 }
 
 .control-card {
@@ -116,7 +121,9 @@ dialog.resting .control-card { pointer-events: none; }
 /* The stats overlay: under the top bar on the left, in the card's fill. */
 .stats-overlay {
   position: absolute;
-  top: 4.5rem;
+  /* `top` is set by player-stats.js from the top bar's own height; the
+     negative margin tucks the overlay up into that bar's scrim padding. */
+  margin-top: -1.75rem;
   left: 1.5rem;
   z-index: 2;
   display: grid;
@@ -137,8 +144,13 @@ dialog.resting .control-card { pointer-events: none; }
 #stats-toggle[aria-pressed="true"] { color: var(--stage-accent); }
 
 @media (max-width: 767px) {
-  .hud-top { flex-wrap: wrap; row-gap: 8px; }
-  .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); }
+  /* The title takes a row of its own, ellipsized, with the marks wrapping
+     beneath; the way out stays in the corner, clear of both. */
+  .hud-top { flex-wrap: wrap; row-gap: 8px; padding-right: 72px; }
+  .hud .what { flex: 1 1 100%; }
+  #close { position: absolute; top: 16px; right: 16px; }
+  .stats-overlay { margin-top: -1.25rem; left: 16px; }
+  .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; }
   .control-card { padding: 0.6rem 0.75rem; }
   /* The transport keeps its row; stats and episodes wrap beneath it. */
   .card-transport { display: flex; flex-wrap: wrap; justify-content: center; }

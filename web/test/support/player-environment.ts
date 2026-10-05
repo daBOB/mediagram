@@ -25,6 +25,7 @@ export class Node extends EventTarget {
   className = "";
   title = "";
   clientWidth = 800;
+  clientHeight = 0;
   private text = "";
   constructor(readonly tagName = "DIV") {
     super();
@@ -90,7 +91,7 @@ export class Node extends EventTarget {
     return this.children.filter((node) => node.tagName === tag.toUpperCase());
   }
   getBoundingClientRect() {
-    return { width: this.clientWidth, left: 0 };
+    return { width: this.clientWidth, height: this.clientHeight, left: 0, bottom: this.clientHeight };
   }
   showModal() {
     this.open = true;
