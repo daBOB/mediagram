@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.114.0 — the phone and tablet player's control card
+
+**Changed** (Android phone and tablet)
+
+- **One control card.** The player's controls now sit in one frosted card at the bottom of the picture, in the web's three rows:
+  - Row 1: position, the seek bar, then length and "ends at". The length and end time go under the bar when they would squeeze it.
+  - Row 2: CC▾, speed, audio and framing on the left; picture-in-picture at the right.
+  - Row 3: ↺ ⏮ −15 ▶ +15 ⏭, with ⓘ and ☰ beside them.
+- **No blur behind the card.** The card is black at 78% because the video draws on its own surface, which keeps HDR and Dolby Vision working. `DESIGN.md` records this.
+- **The slim top bar** keeps the title, My List, Kids, Add to list and Notes.
+- **The settings sheet is gone.** CC switches subtitles on and off in one press, and ▾ opens the languages and Style…. Speed, Audio and Framing each open a short menu above their button. On a landscape phone a menu scrolls rather than cover its button. Menu rows are at least 48 dp.
+- **☰ opens the episode list** from the right:
+  - It offers a season switcher, and watched episodes are greyed with ✓. Partly watched ones show a progress line; the playing one reads "Now playing".
+  - Picking a row plays it. The card moves left of the list while the list is open.
+  - On a phone under 600 dp the list is full width.
+- **Double-tap skips 15 s.**
+- **TalkBack** hears CC and stats as on or off, hears menus as expanded or collapsed, and moves into a menu or the list when it opens.
+
 ## 0.113.0 — the web player's control card
 
 **Changed** (web player)

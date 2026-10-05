@@ -177,3 +177,33 @@ Done, pending the fix round:
 ## Unresolved questions
 
 - On the web at 390 px, does the full-width sidebar sit above or below the top bar? The answer decides M1's fix direction for parity. Web phase 02 sets the sidebar to `z-index: 3`, but the top bar's stacking was not checked; the web sidebar is not on main yet.
+
+## Re-review (commits 66ef1863, c5bc5fcd, 6a7d3888)
+
+`./gradlew -q :ui-mobile:testDebugUnitTest lint` is green. Worktree clean after the breaks (`git status` shows only the untracked reports dir).
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| H1 | Fixed | `PlayerCardMenus.kt` caps height to `anchor.top - gap - topLimit`; the top bar reports `topLimit`. `PlayerCardLandscapeTest` (800x360) asserts menu.bottom <= button.top and menu.top >= marks.bottom. |
+| M1 | Fixed | Full-width sidebar leaves card, menus and top bar out of composition (`PlayerScreen.kt` `sidebarFull`). Screen-level state (`scrubbing`, `card.menu`, `controlsShown`) lives above it, so playback is untouched. Back still closes the sidebar through the single BackHandler. Test at 360 dp. |
+| M2 | Fixed | FlowRow, bar min 160 dp. The test measures `PlayerScrubber` alone inside 28 dp padding at font scale 1.5, a faithful stand-in for the card inside. |
+| M3 | Fixed | The test taps the root at (10%, 40%), outside the card, then advances 1 s. Teeth were shown by the implementer. |
+| M4 | Fixed | On/Off for CC and ⓘ; Expanded/Collapsed for the openers; focus moves into a menu or the sidebar and back to the opener (asserted with `assertIsFocused`). The hidden card is out of the traversal under the full sidebar. |
+| L1, L2 | Fixed | Comment corrected; menu cleared when `barShown` is false, with a test. |
+| Row 2 | Fixed | Tools FlowRow (weight 1) plus PiP at the right end; test pins both edges within 24 dp. |
+| Sidebar | Fixed | Card Box padded by `SIDEBAR_WIDTH` while a narrow sidebar is open; test pins a 12 dp gap and the return after close. |
+
+### Teeth (each broken alone, class run, reverted)
+
+| Break | Result |
+|---|---|
+| H1 cap: `maxHeight = MENU_MAX_HEIGHT` | `PlayerCardLandscapeTest` FAILS |
+| Card clearance: `clearance = 0.dp` | `PlayerCardSidebarClearanceTest` FAILS |
+| M4 focus move: remove the menu's `LaunchedEffect` focus request | `PlayerCardScreenTest` FAILS (1 of 15) |
+
+### New findings (Low, non-blocking)
+
+- Focus return after the full-width sidebar (<600 dp) closes is untested. The card recomposes in the same pass as `CardFocusReturn`, and `requestFocusIfOnScreen` swallows a failure silently, so a late attach would lose the return without any signal. The focus tests run only at 1280 dp.
+- `PlayerScrubberTest` hard-codes the card's 28 dp inset rather than measuring it. A change to the card padding would not move the test.
+
+merge-ready: yes
