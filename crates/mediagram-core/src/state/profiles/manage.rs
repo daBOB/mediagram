@@ -9,8 +9,9 @@
 //! yet; then, only when a PIN is about to be compared, that profile's
 //! wrong-PIN wait; a wrong PIN; and last the rule in `rules`. So the page can
 //! say exactly what went wrong, and a guess without the PIN learns nothing
-//! about who may do what. A first profile alone also waits for a sync round,
-//! after everything else says yes; the web's server never needs to.
+//! about who may do what. A first profile alone also waits for a sync round
+//! of the library this device follows, after everything else says yes — as
+//! the web's does.
 //!
 //! Not a login, and not meant as one. A PIN keeps a child from tapping into
 //! a grown-up's profile; the catalog filter runs on this device, and anyone
@@ -44,8 +45,9 @@ impl ProfileManager<'_> {
     /// device that later hears of an older claim hands the role over by the
     /// earliest-claim rule the merge already applies.
     ///
-    /// Only once this player has taken in a sync round. Before, it has not
-    /// heard the household's names, so it cannot refuse one already taken:
+    /// Only once this player has taken in a sync round of the library it
+    /// follows. Before, it has not heard that household's names, so it
+    /// cannot refuse one already taken:
     /// sync knows a viewer by name, and the newer PIN wins — a first profile
     /// made blind as "André" would hand its PIN to André on every device.
     pub fn create_first(&mut self, name: &str, new_pin: &str) -> Answer {

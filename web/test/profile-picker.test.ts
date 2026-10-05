@@ -13,12 +13,15 @@ const MAJA = { ...MAJA_WITH_PIN, hasPin: false };
 let env: ReturnType<typeof browserEnvironment>;
 let household: object[];
 let refusal: { status: number; body: object } | null;
+/** Whether the server has heard its household; left out, as a server from before the wait says nothing. */
+let heard: boolean | undefined;
 beforeEach(async () => {
   env = browserEnvironment();
   household = [ANDRE, MAJA, TIM, LEA];
   refusal = null;
+  heard = undefined;
   env.respondWith(async (url, options) => {
-    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household });
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, heard, profiles: household });
     if (url.endsWith("/state")) return Response.json({});
     if (refusal) return Response.json(refusal.body, { status: refusal.status });
     return new Response(null, { status: 204 });
@@ -153,6 +156,39 @@ test("a first profile refused because a grown-up arrived meanwhile shows who is 
   expect(textOf(root)).toContain("That is not allowed.");
   expect(textOf(root)).not.toContain("Create the first profile");
   expect(tile(root, "andre")).toBeDefined();
+});
+
+test("before the household has been heard, no first profile is offered: the picker waits, and Try again reads again", async () => {
+  household = [LEA];
+  heard = false;
+  await state.loadProfiles();
+  const root = new Node();
+  void chooseProfile(root);
+  expect(textOf(root)).toContain("Waiting for this household’s profiles…");
+  expect(textOf(root)).not.toContain("Create the first profile");
+  expect(tile(root, "Lea")).toBeDefined();
+  heard = true;
+  buttonNamed(root, "Try again").fire("click");
+  await settle();
+  expect(textOf(root)).toContain("Create the first profile — it runs this household");
+  expect(textOf(root)).not.toContain("Waiting for");
+});
+
+test("a first profile the server holds until it has heard the household says it is waiting", async () => {
+  household = [];
+  await state.loadProfiles();
+  const root = new Node();
+  void chooseProfile(root);
+  const form = descendants(root).find((node) => node.tagName === "FORM" && node.className === "who-new")!;
+  descendants(form).find((node) => node.tagName === "INPUT")!.value = "andre";
+  form.fire("submit");
+  await settle();
+  refusal = { status: 409, body: { reason: "not-synced" } };
+  heard = false;
+  await answerPin(root, "1234", "1234");
+  await settle();
+  expect(textOf(root)).toContain("Waiting for this household’s profiles…");
+  expect(textOf(root)).not.toContain("Create the first profile");
 });
 
 test("a PIN-less grown-up whose PIN was set elsewhere is told once, and its tile then asks for it", async () => {

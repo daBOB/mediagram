@@ -67,7 +67,7 @@ class FirstProfileWaitsForASyncRoundTest {
 
             vm.makeFirst("Ann")
 
-            assertEquals(WAITING_FOR_HOUSEHOLD, vm.picking().notice)
+            assertEquals(HOUSEHOLD_NOT_HEARD, vm.picking().notice)
             assertTrue(core.profiles.isEmpty())
         }
 

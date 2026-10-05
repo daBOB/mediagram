@@ -206,7 +206,8 @@ describe("a player that remembers nothing", () => {
       const listed = JSON.parse(
         new TextDecoder().decode((await rawRequest(forgetful.port, "/api/profiles")).body),
       );
-      expect(listed).toEqual({ remembers: false, profiles: [] });
+      // `heard`: a player that syncs with nobody has no household to wait for.
+      expect(listed).toEqual({ remembers: false, heard: true, profiles: [] });
 
       // A profile cannot be made, so nothing can be written under one — which
       // is a 404 about the profile rather than a pretence that it worked.

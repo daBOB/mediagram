@@ -75,7 +75,16 @@ async fn list_libraries_with(
 
 /// Re-reads the newest index the chosen channel holds and installs it as
 /// the current catalog, returning how many sets it holds.
-pub(super) async fn refresh_library(core: &Core, handle: String) -> Result<u64, CoreError> {
+///
+/// First records `handle` as the library this device follows — every first
+/// choice and every switch installs through here. A first profile waits for
+/// a round of that library (`state::sync::first_round`); recorded before the
+/// install, so one that fails leaves the device waiting rather than trusting
+/// the last library's names.
+pub(super) async fn refresh_library(core: &std::sync::Arc<Core>, handle: String) -> Result<u64, CoreError> {
+    let followed = handle.clone();
+    core.blocking(move |core| core.state_db.with(|conn| crate::state::sync::follow_library(conn, &followed)))
+        .await;
     let entry = library::lookup(core, &handle)?;
     let peer = entry.peer().ok_or_else(|| {
         CoreError::NotFound("this device no longer has that library stored".into())

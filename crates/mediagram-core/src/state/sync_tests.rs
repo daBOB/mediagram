@@ -978,6 +978,24 @@ mod the_first_profile_waits_for_a_round {
         assert_eq!(first(&db), NotSynced);
     }
 
+    /// Choosing another library is joining another household: its names
+    /// have not been heard yet, whatever the last library's round said.
+    #[tokio::test]
+    async fn a_round_of_the_last_library_is_no_round_of_the_one_followed_now() {
+        let (_dir, db) = db();
+        let channel = FakeChannel::new(Vec::new());
+        let mut memo = SyncMemo::default();
+        once(&db, &channel, "laptop", memo.entry("films")).await;
+        db.with(|conn| follow_library(conn, "music")).unwrap();
+        assert_eq!(first(&db), NotSynced);
+
+        once(&db, &channel, "laptop", memo.entry("films")).await;
+        assert_eq!(first(&db), NotSynced, "a round still running for the old library");
+
+        once(&db, &channel, "laptop", memo.entry("music")).await;
+        assert_eq!(first(&db), Done);
+    }
+
     #[tokio::test]
     async fn an_import_that_rolled_back_is_no_round() {
         let (_dir, db) = db();

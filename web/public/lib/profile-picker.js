@@ -20,6 +20,7 @@ import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 import { addForm, openManage } from "./profile-manage.js";
+import { waitingForHousehold } from "./household-waiting.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */
 const NOTE = "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; it is not a login, and someone who knows their way around a browser can get past it.";
@@ -165,7 +166,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       // with nobody running things, or an admin — and only once there is a
       // grown-up is there anyone who could manage.
       const grownUps = state.profiles().filter((entry) => !entry.kids);
-      if (grownUps.length === 0) choices.append(firstProfile());
+      if (grownUps.length === 0) choices.append(state.heard() ? firstProfile() : waitingForHousehold(reread));
       else if (!grownUps.some((entry) => entry.admin)) choices.append(householdQuestion(grownUps));
       choices.append(tiles());
       if (grownUps.length > 0) {

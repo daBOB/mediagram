@@ -22,9 +22,10 @@ import { cleanName, insertProfile, profileRows, toProfile, writeKidsAge, writePi
 import { newPin, pinMatches, validPin } from "./profiles-pin";
 import { allowed, nameTaken, type Action } from "./profiles-rules";
 import type { PinWait } from "./profiles-wait";
+import type { Household } from "./household-heard";
 
 /** Why an operation was refused: the strings an HTTP refusal carries. */
-export type Refusal = "invalid" | "name-taken" | "not-found" | "wait" | "no-pin" | "wrong-pin" | "not-allowed";
+export type Refusal = "invalid" | "name-taken" | "not-found" | "wait" | "no-pin" | "wrong-pin" | "not-allowed" | "not-synced";
 
 export interface Refused {
   reason: Refusal;
@@ -43,19 +44,22 @@ export class ProfileManager {
   constructor(
     private readonly db: Database | null,
     private readonly wait: PinWait,
+    private readonly household: Pick<Household, "heard"> = { heard: () => true },
   ) {}
 
   /**
    * The first grown-up on a player that has none — the only way a fresh
    * install gets anyone at all. It runs the household from the start; a
    * device that later hears of an older claim hands the role over by the
-   * earliest-claim rule the merge already applies.
+   * earliest-claim rule the merge already applies. Last, once everything
+   * else says yes, it waits until the household has been heard (`household-heard.ts`).
    */
   createFirst(name: unknown, next: unknown): Refused | Profile {
     if (!validPin(next)) return refuse("invalid");
     const unusable = this.unusable(name);
     if (unusable) return unusable;
     if (profileRows(this.db).some((row) => !isKid(row))) return refuse("not-allowed");
+    if (!this.household.heard()) return refuse("not-synced");
     return insertProfile(this.db, name, { pin: newPin(next), admin: true }) ?? refuse("invalid");
   }
 

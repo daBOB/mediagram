@@ -27,6 +27,8 @@ import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listP
 import { exportRoles, importRoles } from "./roles-exchange";
 import { ProfileManager } from "./profiles-manage";
 import { PinWait } from "./profiles-wait";
+import { Household } from "./household-heard";
+import { readMeta, writeMeta } from "./state-meta";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
 import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
@@ -94,6 +96,8 @@ export class WatchState {
   private readonly db: Database | null;
   private readonly ticks: Ticks = new Map(); // each title's last position write, this process only
   private readonly pins = new PinWait(); // the wrong-PIN count: one per store, so one per server process
+  /** Whether a round of the channel followed now has come in; a first profile waits for one. */
+  readonly household: Household;
 
   /**
    * Opens, creating the file and its directory if they are not there.
@@ -103,6 +107,7 @@ export class WatchState {
    */
   constructor(path: string | null) {
     this.db = path === null ? null : open(path);
+    this.household = new Household(this.db);
   }
 
   /** Whether anything written here will actually be kept. */
@@ -318,28 +323,13 @@ export class WatchState {
    * happened to share a name would write over each other's.
    */
   deviceId(): string {
-    const held = this.meta("device_id");
+    const held = readMeta(this.db, "device_id");
     if (held !== null) return held;
     const made = crypto.randomUUID();
-    this.setMeta("device_id", made);
+    writeMeta(this.db, "device_id", made);
     // A player with nowhere to write still needs to call itself something for
     // the length of this run, or its own document looks like a stranger's.
-    return this.meta("device_id") ?? made;
-  }
-
-  private meta(key: string): string | null {
-    const row = this.db?.query("SELECT value FROM state_meta WHERE key = ?1").get(key) as
-      | { value?: string }
-      | null;
-    return typeof row?.value === "string" ? row.value : null;
-  }
-
-  private setMeta(key: string, value: string): void {
-    tolerate(() =>
-      this.db
-        ?.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES (?1, ?2)")
-        .run(key, value),
-    );
+    return readMeta(this.db, "device_id") ?? made;
   }
 
   /**
@@ -646,7 +636,7 @@ export class WatchState {
 
   /** Adding, removing and entering profiles, PIN and rule checked. */
   manage(): ProfileManager {
-    return new ProfileManager(this.db, this.pins);
+    return new ProfileManager(this.db, this.pins, this.household);
   }
 }
 

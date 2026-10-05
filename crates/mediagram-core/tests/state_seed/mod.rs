@@ -40,11 +40,18 @@ pub async fn household(player: &Arc<Core>, dir: &Path, grown_ups: &[&str], kids:
 }
 
 /// The player in `dir` has taken in one sync round, which found nobody — a
-/// new household's first. Through the import a real round commits, on a
-/// second connection to the player's own file, which `profiles` opens and
-/// migrates first.
+/// new household's first: the import a real round commits, then the mark it
+/// leaves (`state/sync/first_round.rs`), on a second connection to the
+/// player's own file, which `profiles` opens and migrates first. A round
+/// needs Telegram, which no test here reaches. No library has been installed,
+/// so the round counts for whichever one the player follows.
 pub async fn first_round_found_nobody(player: &Arc<Core>, dir: &Path) {
     player.clone().profiles().await;
     let conn = rusqlite::Connection::open(dir.join("state.db")).unwrap();
     import_merged(&conn, &MergedState::default()).unwrap();
+    conn.execute(
+        "INSERT OR REPLACE INTO state_meta(key, value) VALUES ('first_round_imported', 'household')",
+        [],
+    )
+    .unwrap();
 }

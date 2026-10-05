@@ -56,6 +56,7 @@ Reasons, as strings on the web and `ProfileOutcome` variants in the core:
 | `no-pin` — actor (or unlock target) is a grown-up with no PIN yet | 409 | `NoPin` |
 | `wrong-pin` | 403 | `WrongPin` |
 | `not-allowed` — the rule in §2 says no | 403 | `NotAllowed` |
+| `not-synced` — a first profile before a sync round of the library followed now (amended 2026-10-05, see `create-first` below) | 409 | `NotSynced` |
 | success | 201 (create, with profile JSON) / 204 | `Done` |
 
 Error body: `{ "reason": "<reason>", "retryAfter"?: <seconds> }`.
@@ -101,18 +102,32 @@ Exceptions:
   install could never get a first profile. A device that bootstraps before
   its first sync and later learns of an older claim loses admin to it by the
   earliest-claim rule (§7) — no special case.
-- **`create-first` waits for a sync round — core only (amended 2026-10-05).**
-  After every check above says yes, the core answers `NotSynced` until this
-  device has imported one sync round (a local `state_meta` marker the import
-  sets in its own transaction; a channel that could not be listed or an
-  import that rolled back sets nothing). Why: sync merges viewers by name and
-  the newer PIN wins, so a first profile made blind under a household
+- **`create-first` waits for a sync round of the library followed now — both
+  surfaces (amended 2026-10-05).** After every check above says yes, the answer
+  is `not-synced` (HTTP 409; core `NotSynced`) until this player has imported a
+  sync round of the channel it follows *now*. Why: sync merges viewers by name
+  and the newer PIN wins, so a first profile made blind under a household
   member's name handed its PIN to that member on every device. A new
-  household's first round finds nobody and sets the marker, so it can still
-  begin. `Core::has_synced_once()` tells the picker whether to offer the
-  form ("Waiting for this household's profiles…" with Try again until then).
-  The web has no such outcome: its server finishes a round at start before it
-  answers anyone.
+  household's first round finds nobody and still counts, so it can begin.
+  - **The mark** (`state_meta['first_round_imported']`, local, never exported)
+    names the library whose round was imported; it is written only after the
+    import has committed, so a channel that could not be listed, an import that
+    rolled back, or (web) a signed-out list that reads as empty never counts.
+  - **Per library:** following another library is joining another household.
+    Core: `refresh_library(handle)` — the step every first choice and every
+    switch takes — records `state_meta['followed_library']` *before* installing,
+    and the mark counts only when it names that library (a device with no
+    `followed_library` yet, installed before it existed, trusts any round).
+    Web: the channel the connection points at now (`TelegramStateChannel.library()`),
+    read before and after the round; a round whose channel changed under it
+    marks nothing.
+  - **Who waits:** a web player that syncs with nobody (`MEDIAGRAM_SYNC_STATE`
+    off, or no database) has no household to hear from and never waits.
+  - **Telling the picker:** core `has_synced_once()`; web `GET /api/profiles`
+    carries `heard: boolean`. Both pickers show "Waiting for this household's
+    profiles…" with Try again in place of the form; a refusal reads "The
+    household's profiles have not arrived yet." The web's Try again re-reads
+    the list; its next round comes from the server's own timer.
 
 ## 4. Wrong-PIN wait
 

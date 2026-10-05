@@ -1104,7 +1104,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 20015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 63677) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 57976) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6400) {
@@ -1875,7 +1875,8 @@ public interface CoreInterface {
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
-     * The first install and every later refresh are the same call.
+     * The first install and every later refresh are the same call; it also
+     * records `handle` as the library this device follows.
      */
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
 
@@ -2573,7 +2574,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
-     * The first install and every later refresh are the same call.
+     * The first install and every later refresh are the same call; it also
+     * records `handle` as the library this device follows.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -6167,9 +6169,8 @@ public object FfiConverterTypeLibraryEvent: FfiConverterRustBuffer<LibraryEvent>
 
 /**
  * One variant per reason the web answers a refusal with — `invalid`,
- * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed` —
- * so both surfaces can say exactly what went wrong; and one the web never
- * needs, `NotSynced`.
+ * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed`,
+ * `not-synced` — so both surfaces can say exactly what went wrong.
  */
 sealed class ProfileOutcome {
 
@@ -6222,9 +6223,8 @@ sealed class ProfileOutcome {
 
 
     /**
-     * A first profile on a device that has not yet taken in a sync round:
-     * it has not heard who the household already is. Core only — the web's
-     * server finishes a round before it answers anyone.
+     * A first profile on a device that has not yet taken in a sync round of
+     * the library it follows: it has not heard who that household already is.
      */
     object NotSynced : ProfileOutcome()
 

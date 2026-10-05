@@ -13,6 +13,7 @@ use crate::state::merge::{MergedProfile, MergedState};
 use crate::state::profiles::create;
 use crate::state::profiles::role_rows::{self, Stored};
 use crate::state::record::{KidsAge, MAX_STAMP, PinRecord, ProfileRoles};
+use crate::state::sync;
 
 /// The player's clock for every call that does not say otherwise.
 const T: i64 = 1_700_000_000_000;
@@ -33,8 +34,16 @@ impl Home {
     /// household, free to make its first profile.
     fn new() -> Self {
         let home = Self::unsynced();
-        home.import(Vec::new());
+        home.heard();
         home
+    }
+
+    /// What a round of the household's library leaves once its import has
+    /// committed (`state::sync::once`).
+    fn heard(&self) {
+        self.db
+            .with(|c| sync::mark_round_imported(c, "household"))
+            .unwrap();
     }
 
     /// A player that has never finished a sync round.
@@ -240,6 +249,7 @@ mod the_first_profile {
     fn a_round_that_found_nobody_lets_a_new_household_begin() {
         let home = Home::unsynced();
         home.import(Vec::new());
+        home.heard();
         assert_eq!(home.run(first("André", "1111")), Done);
         assert!(home.named("André").is_admin());
     }
@@ -248,6 +258,7 @@ mod the_first_profile {
     fn a_round_that_brought_the_households_grown_ups_makes_nobody_first() {
         let home = Home::unsynced();
         home.import(vec![viewer("André", false, pin_1234(T as f64))]);
+        home.heard();
         assert_eq!(home.run(first("André", "1111")), NameTaken);
         assert_eq!(home.run(first("Mallory", "0000")), NotAllowed);
         assert_eq!(home.rows().len(), 1);
