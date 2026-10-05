@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
@@ -24,7 +26,7 @@ import ui.player.TransportIcons
 
 /**
  * The card's bottom row: ↺, ⏮, back fifteen, play/pause, forward fifteen,
- * ⏭, then ⓘ and ☰ — the web's transport, read through the same media3
+ * ⏭, then ⓘ (dimmed while the statistics are off, as on the phone) and ☰ — the web's transport, read through the same media3
  * state holders the phone reads, so a label cannot come to say one thing
  * and do another and nothing about the player is carried through the
  * ViewModel.
@@ -89,7 +91,15 @@ internal fun TvTransport(
         if (run.inRun) {
             TvIconButton(icon = TransportIcons.Next, description = "Next", enabled = run.hasNext, onClick = extras.onPlayNext, modifier = toTools)
         }
-        TvGlyphButton(glyph = "ⓘ", description = "Stats", enabled = true, onClick = extras.onToggleStats, modifier = if (extras.onOpenEpisodes == null) toTools.then(atEnd) else toTools, padding = Spacing.small)
+        TvGlyphButton(
+            glyph = "ⓘ",
+            description = "Stats",
+            enabled = true,
+            onClick = extras.onToggleStats,
+            modifier = (if (extras.onOpenEpisodes == null) toTools.then(atEnd) else toTools).semantics { stateDescription = if (extras.statsShown) "On" else "Off" },
+            padding = Spacing.small,
+            dimmed = !extras.statsShown,
+        )
         extras.onOpenEpisodes?.let { open ->
             TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toTools.then(atEnd).focusRequester(focus.episodes), padding = Spacing.small)
         }

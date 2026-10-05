@@ -157,7 +157,8 @@ class TvPlayerEpisodesTest : TvPlayerScreenHarness() {
 
         val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
         val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
-        assertTrue(card.right <= list.left, "the card ends at ${card.right}, the list starts at ${list.left}")
+        // The 32 dp the card keeps from every edge: a zero gap would pass a plain "not overlapping" check.
+        assertTrue(kotlin.math.abs((list.left - card.right).value - 32f) < 0.5f, "the card ends at ${card.right}, the list starts at ${list.left}")
         compose.onNodeWithContentDescription("Pause").assertExists()
 
         back()

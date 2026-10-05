@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -25,7 +26,7 @@ import ui.tv.TvFocus
 /**
  * A transport control drawn as a character, named for a screen reader —
  * a glyph has no accessible text of its own. A character where one draws
- * plainly — the gear, the ⓘ — and [TvIconButton] where it would not.
+ * plainly — the CC, the ⓘ — and [TvIconButton] where it would not.
  */
 @Composable
 internal fun TvGlyphButton(
@@ -35,8 +36,10 @@ internal fun TvGlyphButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     padding: Dp = Spacing.large,
+    dimmed: Boolean = false,
 ) {
     TvOverlayButton(
+        dimmed = dimmed,
         text = glyph,
         style = TvTypeScale.title,
         enabled = enabled,
@@ -97,15 +100,20 @@ internal fun TvOverlayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     padding: Dp = Spacing.large,
+    dimmed: Boolean = false,
 ) {
     TvOverlaySurface(onClick = onClick, enabled = enabled, modifier = modifier) {
         Text(
             text = text,
             style = style,
-            modifier = Modifier.padding(horizontal = padding, vertical = Spacing.small),
+            // The label alone: fading the surface would fade its focus border with it.
+            modifier = Modifier.padding(horizontal = padding, vertical = Spacing.small).alpha(if (dimmed) DIMMED_ALPHA else 1f),
         )
     }
 }
+
+/** A control that is switched off, drawn quieter but still readable and focusable. */
+private const val DIMMED_ALPHA = 0.55f
 
 /**
  * Whether the controls drawn here hold their size under focus. The player

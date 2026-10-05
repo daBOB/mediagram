@@ -53,7 +53,7 @@ internal val TvSubtitles =
  * Where on the picture a cue has room, in root coordinates: clear above
  * the bottom controls and the up-next card while they are up ([barTop]),
  * never above what lies along the top of the stage ([ceiling]: the title
- * and statistics), and left of the settings panel while it is open
+ * and statistics), and left of the episode list while it is open
  * ([besideLeft]). Each is `null` while what it measures is not on screen.
  */
 internal class TvCueRoom(
@@ -67,8 +67,8 @@ internal class TvCueRoom(
  * settings — size, backing and sync offset — exactly as the phone draws
  * them, inside [room]: lifted clear of the controls as on the phone, kept
  * under the top band so a long cue never prints over the title, and
- * centred in what the settings panel leaves of the picture, since a panel
- * opened to judge a subtitle size would otherwise cover the subtitle.
+ * centred in what the episode list leaves of the picture, since a list
+ * down the right would otherwise cover the subtitle.
  */
 @Composable
 internal fun TvVideoWithSubtitles(

@@ -48,9 +48,10 @@ internal fun TvEpisodeRow(
     TvOverlaySurface(
         onClick = { if (!row.current) onPick(row.setId) },
         enabled = true,
-        modifier = Modifier.fillMaxWidth().focusRequester(requester).alpha(if (row.watched) WATCHED_ALPHA else 1f),
+        modifier = Modifier.fillMaxWidth().focusRequester(requester),
     ) {
-        Column(modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
+        // The content alone fades: the surface carries the focus border, which must stay full strength.
+        Column(modifier = Modifier.alpha(if (row.watched) WATCHED_ALPHA else 1f).padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small), verticalAlignment = Alignment.CenterVertically) {
                 if (row.watched) Text(text = "✓", style = TvTypeScale.body)
                 if (row.number.isNotEmpty()) Text(text = row.number, style = TvTypeScale.body)

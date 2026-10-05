@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -230,5 +231,17 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         val middle = (bar.top + bar.bottom) / 2
         assertTrue(position.top < middle && middle < position.bottom, "the position spans ${position.top}..${position.bottom}, the bar's middle is $middle")
         assertTrue(length.top < middle && middle < length.bottom, "the length spans ${length.top}..${length.bottom}, the bar's middle is $middle")
+    }
+
+    /** ⓘ says whether the numbers are showing, as the phone's does by dimming: in its state, for a screen reader too. */
+    @Test
+    fun theStatsButtonSaysWhetherTheNumbersAreShowing() {
+        val off = SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Off")
+        compose.onNodeWithContentDescription("Stats").assert(off)
+
+        toTransport(hasContentDescription("Stats"))
+        press(Key.DirectionCenter)
+
+        compose.onNodeWithContentDescription("Stats").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "On"))
     }
 }
