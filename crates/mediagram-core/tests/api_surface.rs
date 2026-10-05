@@ -6,7 +6,7 @@
 use std::path::Path;
 
 use mediagram_core::state::profiles::ProfileOutcome::{
-    Done, Invalid, NameTaken, NotAllowed, NotFound, Wait, WrongPin,
+    Done, Invalid, NameTaken, NotAllowed, NotFound, NotSynced, Wait, WrongPin,
 };
 use rusqlite::Connection;
 
@@ -144,7 +144,7 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
     let player = core(dir.path());
     assert!(player.clone().profiles().await.is_empty());
     assert_eq!(player.clone().chosen_profile().await, None);
-    let made = state_seed::household(&player, &["André", "Bea"], &[]).await;
+    let made = state_seed::household(&player, dir.path(), &["André", "Bea"], &[]).await;
     let (andre, bea) = (made[0].clone(), made[1].clone());
     assert!(player.clone().choose_profile(andre.id.clone()).await);
     assert!(!player.clone().choose_profile("missing".into()).await);
@@ -287,7 +287,7 @@ async fn watch_state_is_profile_scoped_except_kids_and_survives_reopening() {
 async fn a_collection_can_only_be_changed_by_its_owner() {
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
-    let made = state_seed::household(&player, &["Owner", "Other"], &[]).await;
+    let made = state_seed::household(&player, dir.path(), &["Owner", "Other"], &[]).await;
     let (owner, other) = (made[0].id.clone(), made[1].id.clone());
     let collection = player
         .clone()
@@ -447,7 +447,7 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     );
 
     std::fs::remove_dir(obstruction).unwrap();
-    let viewer = state_seed::household(&player, &["Viewer"], &[]).await.remove(0);
+    let viewer = state_seed::household(&player, dir.path(), &["Viewer"], &[]).await.remove(0);
     assert_eq!(
         player.clone().profiles().await,
         std::slice::from_ref(&viewer)
@@ -468,6 +468,13 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
     let p = || player.clone();
+
+    // Not one sync round taken in yet: this player has not heard who the
+    // household already is.
+    assert!(!p().has_synced_once().await);
+    assert_eq!(p().create_first_admin("André".into(), "1234".into()).await, NotSynced);
+    state_seed::first_round_found_nobody(&player, dir.path()).await;
+    assert!(p().has_synced_once().await);
 
     assert_eq!(p().create_first_admin("  ".into(), "1234".into()).await, Invalid);
     assert_eq!(p().create_first_admin("André".into(), "1234".into()).await, Done);
@@ -516,7 +523,7 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
 async fn five_wrong_pins_make_that_profile_wait_across_calls() {
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
-    let made = state_seed::household(&player, &["André", "Bea"], &[]).await;
+    let made = state_seed::household(&player, dir.path(), &["André", "Bea"], &[]).await;
     let (andre, bea) = (made[0].id.clone(), made[1].id.clone());
     for _ in 0..5 {
         assert_eq!(player.clone().unlock_profile(andre.clone(), "0000".into()).await, WrongPin);
@@ -536,7 +543,7 @@ async fn five_wrong_pins_make_that_profile_wait_across_calls() {
 async fn a_kid_is_never_said_to_be_the_admin_or_to_hold_a_pin() {
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
-    state_seed::household(&player, &["André"], &[]).await;
+    state_seed::household(&player, dir.path(), &["André"], &[]).await;
     Connection::open(dir.path().join("state.db"))
         .unwrap()
         .execute("UPDATE profiles SET kids = 1", [])
@@ -552,7 +559,7 @@ async fn a_kid_is_never_said_to_be_the_admin_or_to_hold_a_pin() {
 async fn a_kids_mark_says_from_six_or_from_twelve_in_the_snapshot() {
     let dir = tempfile::tempdir().unwrap();
     let player = core(dir.path());
-    let viewer = state_seed::household(&player, &["Viewer"], &[]).await.remove(0).id;
+    let viewer = state_seed::household(&player, dir.path(), &["Viewer"], &[]).await.remove(0).id;
     player.clone().set_kids("six".into(), Some(6)).await;
     player.clone().set_kids("twelve".into(), Some(12)).await;
     let snapshot = player.clone().snapshot(viewer.clone()).await;

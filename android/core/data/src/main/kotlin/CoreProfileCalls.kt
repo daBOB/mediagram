@@ -36,6 +36,7 @@ private fun CoreOutcome.toModel(): ProfileOutcome =
         CoreOutcome.NoPin -> ProfileOutcome.NoPin
         CoreOutcome.WrongPin -> ProfileOutcome.WrongPin
         CoreOutcome.NotAllowed -> ProfileOutcome.NotAllowed
+        CoreOutcome.NotSynced -> ProfileOutcome.NotSynced
     }
 
 /** The core's profile as this app's own — the one place the two meet, shared with `testing.FakeProfiles`. */

@@ -58,7 +58,7 @@ class ProfileViewModel
 
         // Each profile-owner entry re-reads the repository, even if setup completed immediately.
         val state: StateFlow<ProfileUiState> =
-            combine(mode, repository.profiles, repository.chosenProfileId) { current, profiles, chosenId ->
+            combine(mode, repository.profiles, repository.chosenProfileId, repository.syncedOnce) { current, profiles, chosenId, synced ->
                 when (current) {
                     Mode.Loading -> {
                         ProfileUiState.Loading
@@ -66,7 +66,7 @@ class ProfileViewModel
 
                     // Someone to stay as: a profile removed in Manage takes the offer with it.
                     is Mode.Picking -> {
-                        ProfileUiState.Picking(profiles, current.canStay && chosenId != null, current.error, current.notice)
+                        ProfileUiState.Picking(profiles, current.canStay && chosenId != null, current.error, current.notice, synced)
                     }
 
                     is Mode.Chosen -> {
@@ -154,9 +154,9 @@ class ProfileViewModel
 
         /**
          * The first grown-up on a device with none; it runs the household, and
-         * its tile then opens like anyone's. A device that does this before its
-         * first sync, in a household that already has an admin, loses the role
-         * to the older claim when the two meet — the merge's rule, not a bug.
+         * its tile then opens like anyone's. Offered only once a sync round has
+         * landed, and refused by the core before one — a profile made blind
+         * under a household member's name would take over that member's PIN.
          */
         fun createFirst(name: String) {
             val clean = name.trim().takeIf { it.isNotEmpty() } ?: return

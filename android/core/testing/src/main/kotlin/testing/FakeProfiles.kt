@@ -37,6 +37,8 @@ private val KIDS_AGES = setOf<UByte>(6u, 12u)
 class FakeProfiles(
     private val read: () -> List<Profile>,
     private val write: (List<Profile>) -> Unit,
+    /** Whether this device has taken in a sync round; a first profile waits for one. */
+    private val synced: () -> Boolean,
     /** A profile left: whatever was its goes with it, and the choice when it was the one chosen. */
     private val removed: (String) -> Unit,
 ) {
@@ -74,6 +76,8 @@ class FakeProfiles(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
             { unusable(name) },
             { ProfileOutcome.NotAllowed.takeIf { read().any { !it.kids } } },
+            // Last, once everything else says yes, as `manage.rs` asks it.
+            { ProfileOutcome.NotSynced.takeUnless { synced() } },
         ) ?: add(name, newPin = newPin, admin = true)
 
     fun createGrownUp(

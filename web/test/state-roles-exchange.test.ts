@@ -119,17 +119,19 @@ const viewer = (name: string, extra: Partial<MergedProfile> = {}): MergedProfile
   ({ name: normalName(name)!, displayName: name, progress: [], watched: [], ...extra });
 
 describe("taking in what the devices agreed on", () => {
-  test("a newer limit or PIN is applied, an older one is not", () => {
+  // Proven PINs: those go by time, as a limit does. A first PIN's order is
+  // the other way round (`state-pin-proof.test.ts`).
+  test("a newer limit or proven PIN is applied, an older one is not", () => {
     const { state } = store();
     const mia = state.createProfile("Mia", true)!;
     const me = state.createProfile("André")!;
     expect(state.importMerged({ profiles: [
       viewer("Mia", { kids: true, kidsAge: { age: 6, updatedAt: 1000 } }),
-      viewer("André", { pin: { hash: HASH, salt: SALT, updatedAt: 1000 } }),
+      viewer("André", { pin: { hash: HASH, salt: SALT, updatedAt: 1000, proven: true } }),
     ] })).toBe(2);
     expect(state.importMerged({ profiles: [
       viewer("Mia", { kids: true, kidsAge: { age: 12, updatedAt: 999 } }),
-      viewer("André", { pin: { hash: "0".repeat(64), salt: SALT, updatedAt: 999 } }),
+      viewer("André", { pin: { hash: "0".repeat(64), salt: SALT, updatedAt: 999, proven: true } }),
     ] })).toBe(0);
     const byId = new Map(state.profiles().map((profile) => [profile.id, profile]));
     expect(byId.get(mia.id)!.kidsAge).toBe(6);

@@ -65,11 +65,18 @@ describe("a kid's limit", () => {
 });
 
 describe("a grown-up's PIN", () => {
-  test("the newer one wins", () => {
+  test("between proven ones the newer wins", () => {
+    expect(merged([
+      doc("laptop", { name: "André", pin: { hash: HASH_A, salt: SALT, updatedAt: 1000, proven: true } }),
+      doc("tv", { name: "André", pin: { hash: HASH_B, salt: SALT, updatedAt: 2000, proven: true } }),
+    ], "andré").pin).toEqual({ hash: HASH_B, salt: SALT, updatedAt: 2000, proven: true });
+  });
+
+  test("between first ones the older wins: one set later never replaces it", () => {
     expect(merged([
       doc("laptop", { name: "André", pin: { hash: HASH_A, salt: SALT, updatedAt: 1000 } }),
       doc("tv", { name: "André", pin: { hash: HASH_B, salt: SALT, updatedAt: 2000 } }),
-    ], "andré").pin).toEqual({ hash: HASH_B, salt: SALT, updatedAt: 2000 });
+    ], "andré").pin).toEqual({ hash: HASH_A, salt: SALT, updatedAt: 1000 });
   });
 
   test("a tie breaks by device id", () => {

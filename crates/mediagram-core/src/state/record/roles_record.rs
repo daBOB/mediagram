@@ -41,6 +41,12 @@ pub struct PinRecord {
     pub hash: String,
     pub salt: String,
     pub updated_at: f64,
+    /// Set by someone who knew the PIN it replaced, or by the admin's reset.
+    /// Without it a PIN is a first one — set where its grown-up had none —
+    /// which never replaces a PIN set earlier elsewhere (`merge::roles`).
+    /// Written only when true; every PIN from before the flag is a first one.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub proven: bool,
 }
 
 /// Every role key a profile's entry may carry, each absent unless said.
@@ -96,6 +102,8 @@ fn pin(raw: Option<&Value>) -> Option<PinRecord> {
         hash: lowercase_hex(held.get("hash"), 64)?,
         salt: lowercase_hex(held.get("salt"), 32)?,
         updated_at: is_stamp(updated_at).then_some(updated_at)?,
+        // Only the literal true: a PIN that wins over others is not guessed at.
+        proven: held.get("proven") == Some(&Value::Bool(true)),
     })
 }
 

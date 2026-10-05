@@ -37,13 +37,13 @@ function changed() {
 }
 
 /**
- * @type {{remembers: boolean, profiles: import("../../src/state/profiles.ts").Profile[], profileId: string|null,
+ * @type {{remembers: boolean, heard: boolean, profiles: import("../../src/state/profiles.ts").Profile[], profileId: string|null,
  *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
  *   watchlist: Set<string>, collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
  *   kids: Map<string, number>, preferences: Map<string, string>}}
  */
 const held = {
-  remembers: false,
+  remembers: false, heard: true,
   profiles: [],
   profileId: null,
   progress: new Map(),
@@ -126,8 +126,7 @@ export async function loadProfiles() {
     const response = await fetch("/api/profiles");
     if (!response.ok) return false;
     const said = await response.json();
-    held.remembers = said.remembers === true;
-    held.profiles = said.profiles ?? [];
+    Object.assign(held, { remembers: said.remembers === true, heard: said.heard !== false, profiles: said.profiles ?? [] });
     return true;
   } catch {
     return false;
@@ -246,6 +245,7 @@ function adopt(said) {
 
 /** Whether anything written here is being kept. */
 export const remembers = () => held.remembers;
+export const heard = () => held.heard; // the server has heard its household; until then, no first profile
 
 /** Where the viewer got to in `setId`, or `null`. */
 export const progressOf = (setId) => held.progress.get(setId) ?? null;

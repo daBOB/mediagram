@@ -33,6 +33,14 @@ impl Core {
             .await
     }
 
+    /// Whether this device has taken in a sync round yet. Until it has, it
+    /// has not heard who the household already is: `create_first_admin`
+    /// answers `NotSynced`, and the picker offers no first profile.
+    pub async fn has_synced_once(self: Arc<Self>) -> bool {
+        self.blocking(|core| core.state_db.with(sync::round_imported).unwrap_or(false))
+            .await
+    }
+
     /// One round of watch-state sync against the library `handle` names:
     /// lists the pinned state documents there, merges in what is newer,
     /// and pushes this device's own document if anything changed.

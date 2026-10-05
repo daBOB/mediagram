@@ -26,7 +26,6 @@ import catalog.profile.DONE
 import catalog.profile.GROWN_UPS
 import catalog.profile.KIDS_SECTION
 import catalog.profile.MANAGE_PROFILES
-import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.WHO_ARE_YOU
 import catalog.profile.YOUR_PIN
@@ -35,22 +34,9 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Profile
+import ui.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvSettingsHeading
-
-/** What Manage profiles' rows do — [ManageProfilesViewModel]'s actions, or a test's record of them. */
-internal class TvManageActions(
-    val onActAs: (id: String) -> Unit,
-    val onAddKid: (name: String, age: Int) -> Unit,
-    val onSetKidsAge: (id: String, age: Int) -> Unit,
-    val onRemove: (id: String) -> Unit,
-    val onAddGrownUp: (name: String) -> Unit,
-    val onChangePin: (id: String) -> Unit,
-    val onClose: () -> Unit,
-)
-
-internal fun ManageProfilesViewModel.tvActions() =
-    TvManageActions(this::actAs, this::addKid, this::setKidsAge, this::remove, this::addGrownUp, this::changePin, this::close)
 
 /** What covers or replaces the list while it is open. */
 private sealed interface TvManageStep {
@@ -75,7 +61,7 @@ private sealed interface TvManageStep {
 @Composable
 internal fun TvManageProfiles(
     state: ManageUiState,
-    actions: TvManageActions,
+    actions: ManageActions,
 ) {
     BackHandler(onBack = actions.onClose)
     when (state) {
@@ -88,7 +74,7 @@ internal fun TvManageProfiles(
 @Composable
 private fun TvWhoAreYou(
     state: ManageUiState.ChoosingActor,
-    actions: TvManageActions,
+    actions: ManageActions,
 ) {
     val first = remember { FocusRequester() }
     LaunchedEffect(state.grownUps.isEmpty()) { first.requestFocus() }
@@ -103,7 +89,7 @@ private fun TvWhoAreYou(
 @Composable
 private fun TvManaging(
     state: ManageUiState.Managing,
-    actions: TvManageActions,
+    actions: ManageActions,
 ) {
     var step by remember { mutableStateOf<TvManageStep>(TvManageStep.List) }
     (step as? TvManageStep.Adding)?.let { adding ->

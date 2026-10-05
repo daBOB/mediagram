@@ -23,7 +23,9 @@ import ui.ProfileBarState
  *
  * Manage profiles, opened from the picker, takes the picker's place until
  * Done; once a profile is chosen it cannot be reached, so a phone left on a
- * grown-up does not hand a child the controls.
+ * grown-up does not hand a child the controls. It closes, and forgets its
+ * PIN, when the library shows again or the app is left
+ * ([ForgetManageWhenAway]).
  */
 @Composable
 internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
@@ -32,6 +34,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val managing by manage.state.collectAsStateWithLifecycle()
     val chosen = state as? ProfileUiState.Chosen
+    ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
 
     when {
         chosen != null -> content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
@@ -68,18 +71,7 @@ private fun ManageRoute(
     state: ManageUiState,
 ) {
     val pin by viewModel.pin.collectAsStateWithLifecycle()
-    val actions =
-        remember(viewModel) {
-            ManageActions(
-                viewModel::actAs,
-                viewModel::addKid,
-                viewModel::setKidsAge,
-                viewModel::remove,
-                viewModel::addGrownUp,
-                viewModel::changePin,
-                viewModel::close,
-            )
-        }
+    val actions = remember(viewModel) { viewModel.manageActions() }
     BackHandler(onBack = viewModel::close)
     ManageProfilesScreen(state, actions)
     pin?.let { PinDialog(it, onPin = viewModel::enterPin, onDismiss = viewModel::cancelPin) }

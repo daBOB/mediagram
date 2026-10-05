@@ -208,7 +208,10 @@ class DefaultWatchSync(
         if (!core.isAuthorized()) return
         val outcome = core.syncState(handle)
         outcome.failed?.let { Log.w(TAG, "$why: $it") }
-        if (outcome.pulled > 0uL) repository.reload()
+        // Read again while the repository has not seen a round land: a new
+        // household's first round takes in no rows, yet it is what lets the
+        // picker offer a first profile — even when it outlasts the picker's wait.
+        if (outcome.pulled > 0uL || !repository.syncedOnce.value) repository.reload()
     }
 
     private companion object {

@@ -16,7 +16,8 @@ import kotlin.test.assertTrue
 
 /**
  * What a fresh core with no Telegram session answers offline, on a data
- * directory nothing has written to yet. Run once against [FakeCore] in a
+ * directory nothing has written to yet but — unless a case asks otherwise —
+ * the mark one empty sync round leaves ([core]). Run once against [FakeCore] in a
  * plain unit test ([FakeCoreContractTest], this module) and once against the
  * real generated `Core` on the tablet (`RealCoreContractTest`, core:rust's
  * `androidTest`, next to `CoreLoadsTest`) — both must agree, or the fake is
@@ -61,7 +62,12 @@ import kotlin.test.assertTrue
  * since a `@Test` method must return `void`.
  */
 abstract class CoreContract {
-    abstract fun core(): CoreInterface
+    /**
+     * A fresh core. [synced]: its directory has taken in one sync round that
+     * found nobody — a new household's first, which every profile case needs,
+     * since a first profile waits for one. Called once per case.
+     */
+    abstract fun core(synced: Boolean = true): CoreInterface
 
     private companion object {
         /** Every grown-up's PIN in these cases. */
@@ -103,10 +109,23 @@ abstract class CoreContract {
         }
     }
 
+    /** Before any round this device has heard no household's names, so it makes no first profile. */
+    @Test
+    fun aFirstProfileWaitsForASyncRound() {
+        runBlocking {
+            val core = core(synced = false)
+            assertFalse(core.hasSyncedOnce())
+            assertEquals(ProfileOutcome.NotSynced, core.createFirstAdmin("Alice", PIN))
+            assertEquals(ProfileOutcome.Invalid, core.createFirstAdmin("Alice", "12"))
+            assertEquals(emptyList(), core.profiles())
+        }
+    }
+
     @Test
     fun theFirstProfileRunsTheHouseholdAndASecondFirstIsRefused() {
         runBlocking {
             val core = core()
+            assertTrue(core.hasSyncedOnce())
             val first = core.freshProfile("Alice")
             assertTrue(first.admin && first.hasPin && !first.kids && first.kidsAge == null)
             assertEquals(ProfileOutcome.NotAllowed, core.createFirstAdmin("Bert", PIN))

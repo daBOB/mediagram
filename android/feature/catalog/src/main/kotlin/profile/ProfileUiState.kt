@@ -18,24 +18,38 @@ sealed interface ProfileUiState {
      * profile being watched as is still here. [error] is a failed load or
      * choice, with a way to try again; [notice] a refusal to say above the
      * tiles until the viewer tries something else, as the web's picker says one.
+     * [synced] says a sync round has landed on this device, so [profiles] holds
+     * the household's names.
      */
     data class Picking(
         val profiles: List<Profile>,
         val canStay: Boolean,
         val error: String? = null,
         val notice: String? = null,
+        val synced: Boolean = true,
     ) : ProfileUiState {
+        private val noGrownUp: Boolean get() = profiles.none { !it.kids }
+
         /**
-         * No grown-up here at all — a fresh install, or one that knows only
-         * kids: the first profile is made, and runs the household.
+         * No grown-up here at all — a new household, or one that knows only
+         * kids — after a sync round has said so: the first profile is made,
+         * and runs the household.
          */
-        val needsFirstProfile: Boolean get() = profiles.none { !it.kids }
+        val needsFirstProfile: Boolean get() = synced && noGrownUp
+
+        /**
+         * No grown-up here, and no sync round landed yet: the household's
+         * names may still be on their way, and a first profile made blind
+         * under one of them would hand its PIN to that member. Waits, with
+         * Try again.
+         */
+        val awaitingHousehold: Boolean get() = !synced && noGrownUp
 
         /**
          * Grown-ups, none of them the admin: "Who runs this household?" until
          * one claims. The earliest claim wins when devices meet.
          */
-        val needsAdmin: Boolean get() = !needsFirstProfile && profiles.admin() == null
+        val needsAdmin: Boolean get() = !noGrownUp && profiles.admin() == null
 
         /** Who may answer that question, or open Manage profiles — which is offered once there is anyone. */
         val grownUps: List<Profile> get() = profiles.filterNot { it.kids }

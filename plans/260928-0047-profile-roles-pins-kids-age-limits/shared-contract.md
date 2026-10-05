@@ -56,6 +56,7 @@ Reasons, as strings on the web and `ProfileOutcome` variants in the core:
 | `no-pin` — actor (or unlock target) is a grown-up with no PIN yet | 409 | `NoPin` |
 | `wrong-pin` | 403 | `WrongPin` |
 | `not-allowed` — the rule in §2 says no | 403 | `NotAllowed` |
+| `not-synced` — a first profile before a sync round of the library followed now (amended 2026-10-05, see `create-first` below) | 409 | `NotSynced` |
 | success | 201 (create, with profile JSON) / 204 | `Done` |
 
 Error body: `{ "reason": "<reason>", "retryAfter"?: <seconds> }`.
@@ -101,6 +102,32 @@ Exceptions:
   install could never get a first profile. A device that bootstraps before
   its first sync and later learns of an older claim loses admin to it by the
   earliest-claim rule (§7) — no special case.
+- **`create-first` waits for a sync round of the library followed now — both
+  surfaces (amended 2026-10-05).** After every check above says yes, the answer
+  is `not-synced` (HTTP 409; core `NotSynced`) until this player has imported a
+  sync round of the channel it follows *now*. Why: sync merges viewers by name
+  and the newer PIN wins, so a first profile made blind under a household
+  member's name handed its PIN to that member on every device. A new
+  household's first round finds nobody and still counts, so it can begin.
+  - **The mark** (`state_meta['first_round_imported']`, local, never exported)
+    names the library whose round was imported; it is written only after the
+    import has committed, so a channel that could not be listed, an import that
+    rolled back, or (web) a signed-out list that reads as empty never counts.
+  - **Per library:** following another library is joining another household.
+    Core: `refresh_library(handle)` — the step every first choice and every
+    switch takes — records `state_meta['followed_library']` *before* installing,
+    and the mark counts only when it names that library (a device with no
+    `followed_library` yet, installed before it existed, trusts any round).
+    Web: the channel the connection points at now (`TelegramStateChannel.library()`),
+    read before and after the round; a round whose channel changed under it
+    marks nothing.
+  - **Who waits:** a web player that syncs with nobody (`MEDIAGRAM_SYNC_STATE`
+    off, or no database) has no household to hear from and never waits.
+  - **Telling the picker:** core `has_synced_once()`; web `GET /api/profiles`
+    carries `heard: boolean`. Both pickers show "Waiting for this household's
+    profiles…" with Try again in place of the form; a refusal reads "The
+    household's profiles have not arrived yet." The web's Try again re-reads
+    the list; its next round comes from the server's own timer.
 
 ## 4. Wrong-PIN wait
 
@@ -111,9 +138,17 @@ action) adds one to X's count. X's 5th failure starts a 60 s wait during
 which every call that would compare X's PIN answers `wait` with the seconds
 left (rounded up), without comparing; other profiles' PINs are compared as
 usual. When X's wait ends, X's count is 0. A successful comparison of X's
-PIN resets X's count only. In memory only (web: one per server process;
-core: one per `Core`). The clock is injectable for tests. Pinned by
+PIN resets X's count only. The clock is injectable for tests. Pinned by
 `pin-wait.json`.
+
+**Where the count lives differs by surface (amended 2026-10-05).** Web: in
+memory, one per server process — it restarts rarely, and only at its admin's
+hand. Core: in the local `state.db` (`state_meta`, never exported, never
+synced), read and written around every comparison — on a device a child
+holds, swiping the app away is a restart, and an in-memory count turned
+~33 h of guessing into hours. A stored wait further off than `WAIT_MS` (the
+clock went back, e.g. a box booting before its time is set) is re-anchored
+to `now + WAIT_MS`, never longer.
 
 Why per profile: one count for the whole player was reset by any right
 PIN, so four guesses at the admin, then one's own known PIN, repeated,
@@ -154,6 +189,14 @@ ALTER TABLE kids ADD COLUMN age INTEGER;
 
 `kids.age`: `NULL` = from 12, `6` = from 6.
 
+Amended 2026-10-05 (web v12 → v13, core v8 → v9), for proven PINs (§7):
+
+```sql
+ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0;
+```
+
+Every PIN stored before it is a first PIN.
+
 ## 7. Wire (sync record) — new optional keys, no `SYNC_FORMAT` bump
 
 On `ProfileState`:
@@ -163,7 +206,7 @@ admin?: { claimedAt: number };                       // > 0
 kids?: true;                                         // unchanged, still written for every kid
 kidsAge?: { age: 6 | 12; updatedAt: number };        // >= 0; only on kids
 parent?: string;                                     // parent's profile name as stored; non-empty
-pin?: { hash: string; salt: string; updatedAt: number }; // 64 hex / 32 hex / > 0; only on grown-ups
+pin?: { hash: string; salt: string; updatedAt: number; proven?: true }; // 64 hex / 32 hex / > 0; only on grown-ups
 ```
 
 On `ListRow` (Kids marks only): `age?: 6`. Only the literal `6` parses;
@@ -178,13 +221,27 @@ row is.
 
 Parsing drops a malformed sub-key on its own, never the profile.
 
+`pin.proven` (amended 2026-10-05): only the literal `true` parses; anything
+else, or nothing, is a **first PIN** and keeps the PIN. Every PIN written
+before the key existed is a first PIN. A PIN is **proven** when whoever set
+it proved the PIN before it, or when the admin reset it; it is **first** when
+set where its grown-up had none: `create-first`, `create-grown-up`, a
+`claim-admin` that takes its first PIN, and a self `set-pin` with nothing to
+prove. Pinned by `profile-roles-record-parse.json`.
+
 **Merge** (per viewer, identity = `normalName`):
 
 - `kidsAge`: newest `updatedAt` wins, ties by device id (`keep`). A viewer
   that is `kids` with no `kidsAge` anywhere merges to `{ age: 12, updatedAt: 0 }`.
   Output only on a kid.
-- `pin`: newest `updatedAt` wins, ties by device id. Output only on a
-  grown-up.
+- `pin` (amended 2026-10-05, user's rule: a first PIN never replaces a PIN
+  set earlier on another device): a proven PIN beats any first PIN; between
+  proven PINs the newest `updatedAt` wins; between first PINs the **oldest**
+  wins; ties by device id. Web `keepPin`/`pinBeats` (`tie-break.ts`), core
+  `keep_pin` (`merge/tie_break.rs`). Why: a kid's tablet that last synced
+  before a parent set a PIN offers the kid "choose a PIN" on the parent's
+  tile; under "newest wins" that PIN became the parent's on every device
+  (with the admin's, Manage as admin). Output only on a grown-up.
 - `parent`: first seen, then the device-id tie-break `displayName` uses.
   Output as `normalName(parent)`, **only on a kid**.
 - `admin`: across **all grown-up** viewers (a claim on a kid viewer is
@@ -204,8 +261,12 @@ Parsing drops a malformed sub-key on its own, never the profile.
 
 **Import** (corrective, like every other row):
 
-- `kids_age`/`pin_*`: apply when merged `updatedAt` > local, or equal with a
+- `kids_age`: apply when merged `updatedAt` > local, or equal with a
   different value.
+- `pin_*` (amended 2026-10-05): apply over no PIN, or when the merged PIN
+  ranks above the local one in the merge's order (`pinBeats`), or ranks
+  equal with a different hash/salt. A merged first PIN older than a local
+  first one is taken — that is the stale tablet getting the household's back.
 - `admin`: when the merge names an admin, set `admin_claimed_at` on that
   local profile and clear it on every other. When it names none, change
   nothing.
@@ -222,7 +283,8 @@ unclamped `stored + 1`.
 
 **Export**: `admin` when `admin_claimed_at` set; `kids` + `kidsAge`
 (`kids_age ?? 12`, `kids_age_updated_at`) on kids; `parent` = the stored
-name of `parent_id` when it resolves; `pin` when `pin_hash` set.
+name of `parent_id` when it resolves; `pin` when `pin_hash` set, with
+`proven: true` when `pin_proven = 1`.
 
 ## 8. Web HTTP
 
@@ -270,10 +332,11 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]
-pub enum ProfileOutcome { Done, Invalid, NameTaken, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed }
+pub enum ProfileOutcome { Done, Invalid, NameTaken, NotFound, Wait { seconds: u32 }, NoPin, WrongPin, NotAllowed, NotSynced }
 
 // on Core, async like the rest of api/state.rs:
-create_first_admin(name, new_pin) -> ProfileOutcome     // create-first, §3
+create_first_admin(name, new_pin) -> ProfileOutcome     // create-first, §3; NotSynced before a round
+has_synced_once() -> bool                                // a sync round imported here (2026-10-05)
 create_grown_up(actor_id, pin, name, new_pin) -> ProfileOutcome
 create_kid(actor_id, pin, name, kids_age: u8) -> ProfileOutcome
 delete_profile(actor_id, pin, id) -> ProfileOutcome      // replaces delete_profile(id) -> bool

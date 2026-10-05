@@ -17,7 +17,7 @@ pub(super) struct Held<T> {
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
 /// watchlist or Kids mark, a collection, a preference, a stats row, or a
-/// kid's limit or a PIN.
+/// kid's limit. A PIN has an order of its own: `keep_pin`.
 pub(super) trait Timestamped {
     fn updated_at(&self) -> f64;
 }
@@ -40,8 +40,7 @@ timestamped_by_own_field!(
     SyncPreference,
     TitleStatRow,
     DayStatRow,
-    KidsAge,
-    PinRecord
+    KidsAge
 );
 
 /// Keeps whichever of two rows should win.
@@ -57,6 +56,28 @@ pub(super) fn keep<T: Timestamped>(
     device: &str,
 ) {
     keep_ranked(into, key, row, device, |_| 0);
+}
+
+/// Keeps whichever of two PINs should win — the web's `keepPin`. A proven
+/// PIN (set by someone who knew the one before, or the admin's reset) beats
+/// any first PIN; between proven ones the newest wins, as `keep` would have
+/// it; between first ones the *oldest* does, so a first PIN set later on a
+/// copy that never heard of an earlier one — a kid's offline tablet — cannot
+/// replace it. Ties by device id, as `keep`'s do.
+pub(super) fn keep_pin(into: &mut HashMap<String, Held<PinRecord>>, key: String, row: PinRecord, device: &str) {
+    let replace = into.get(&key).is_none_or(|standing| {
+        let held = &standing.row;
+        if row.proven != held.proven {
+            return row.proven;
+        }
+        if row.updated_at != held.updated_at {
+            return (row.updated_at > held.updated_at) == row.proven;
+        }
+        device > standing.device.as_str()
+    });
+    if replace {
+        into.insert(key, Held { row, device: device.to_string() });
+    }
 }
 
 /// `keep`, with `rank` asked before the device id: at an equal time the

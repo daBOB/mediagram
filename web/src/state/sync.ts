@@ -39,6 +39,12 @@ export interface StateChannel {
   list(): Promise<ChannelDocument[]>;
   /** Sends, or edits `messageId` when this device has written before. */
   put(body: string, messageId: number | null): Promise<number>;
+  /**
+   * Which channel a `list` reads now, `null` while none can be reached. A
+   * channel that says makes this player wait for a round of it before a
+   * first profile (`household-heard.ts`).
+   */
+  library?(): string | null;
 }
 
 export interface SyncOutcome {
@@ -63,7 +69,10 @@ export class StateSync {
     private readonly state: WatchState,
     private readonly channel: StateChannel,
     private readonly device: string,
-  ) {}
+  ) {
+    const library = channel.library?.bind(channel);
+    if (library) state.household.syncsWith(library);
+  }
 
   /**
    * Read everyone's, merge, apply selected changes, and write back. Calls
@@ -105,8 +114,12 @@ export class StateSync {
   private async round(): Promise<SyncOutcome> {
     let pulled = 0;
     try {
+      // Read on both sides of the round: one whose channel was switched
+      // under it says nothing about the household followed now.
+      const library = this.channel.library?.() ?? null;
       const documents = await this.channel.list();
       pulled = this.mergeChannelDocuments(documents);
+      if (library !== null && this.channel.library?.() === library) this.state.household.heardFrom(library);
       const pushed = await this.pushIfChanged();
       return { pulled, pushed };
     } catch (error) {

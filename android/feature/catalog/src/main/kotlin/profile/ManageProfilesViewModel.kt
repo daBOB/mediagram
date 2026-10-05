@@ -20,7 +20,8 @@ import javax.inject.Inject
  * Manage profiles — the web's `profile-manage.js`: say who you are, prove it
  * with your PIN, then act within your role. The PIN is held here only while
  * the panel is open and sent with every change, since the core checks PIN and
- * role each time; [close] drops it. Nothing opens this but [open] — entering
+ * role each time; [close] drops it — as both gates do once the library shows
+ * again or the app is left, since this outlives the screen. Nothing opens this but [open] — entering
  * a profile never hands a child the controls. What the panel offers follows
  * the household's rule, but the core decides: something offered by mistake
  * is still refused there, and the refusal is shown as it comes.

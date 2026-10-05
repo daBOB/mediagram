@@ -53,6 +53,9 @@ private class RecordingRepository : WatchStateRepository {
     override val chosenProfile = MutableStateFlow<Profile?>(null)
     override val snapshot = MutableStateFlow(WatchSnapshot.Empty)
 
+    /** A device that has synced before, unless a test says otherwise. */
+    override val syncedOnce = MutableStateFlow(true)
+
     override fun invalidate() {
         profiles.value = emptyList()
         chosenProfileId.value = null
@@ -478,6 +481,27 @@ class WatchSyncTest {
             runCurrent()
 
             assertEquals(0, repository.reloadCalls)
+        }
+
+    /** A new household's first round pulls nothing, yet the picker waits on it to offer a first profile. */
+    @Test
+    fun aRoundThatPulledNothingStillReloadsUntilOneHasLanded() =
+        runTest {
+            val core = SyncCore(listOf(SyncOutcome(0uL, true, null)))
+            val repository = RecordingRepository().apply { syncedOnce.value = false }
+            val sync =
+                DefaultWatchSync(
+                    ResolvedCoreProvider(core),
+                    settingsWithAChosenLibrary(),
+                    repository,
+                    LibraryEvents.None,
+                    backgroundScope,
+                )
+
+            sync.onForeground()
+            runCurrent()
+
+            assertEquals(1, repository.reloadCalls)
         }
 
     @Test

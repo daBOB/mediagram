@@ -43,17 +43,18 @@ internal sealed interface TvPickerSpot {
 }
 
 /**
- * The spot that takes the remote: a failed load's Try again; else [landing]
- * while it is still drawn; else the first profile on a device with no
- * grown-up; else the first tile. Mirrors what [TvPickerBody] draws, so the
- * requester is always attached to something.
+ * The spot that takes the remote: Try again with no tile beside it — a
+ * failed load, or a household not heard from yet; else [landing] while it is
+ * still drawn; else the first profile on a device with no grown-up; else the
+ * first tile. Mirrors what [TvPickerBody] draws, so the requester is always
+ * attached to something.
  */
 internal fun focusSpot(
     state: ProfileUiState.Picking,
     landing: TvPickerSpot?,
 ): TvPickerSpot {
     val error = state.error != null
-    if (error && state.profiles.isEmpty()) return TvPickerSpot.TryAgain
+    if ((error || state.awaitingHousehold) && state.profiles.isEmpty()) return TvPickerSpot.TryAgain
     val drawn =
         when (landing) {
             is TvPickerSpot.Tile -> state.profiles.any { it.id == landing.id }

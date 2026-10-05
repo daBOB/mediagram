@@ -48,17 +48,6 @@ import designsystem.Spacing
 import model.Profile
 import ui.settings.QuietPill
 
-/** What Manage profiles can ask for, as one bundle the gate answers from its view model. */
-internal data class ManageActions(
-    val onActAs: (id: String) -> Unit,
-    val onAddKid: (name: String, age: Int) -> Unit,
-    val onSetKidsAge: (id: String, age: Int) -> Unit,
-    val onRemove: (id: String) -> Unit,
-    val onAddGrownUp: (name: String) -> Unit,
-    val onChangePin: (id: String) -> Unit,
-    val onClose: () -> Unit,
-)
-
 /**
  * Manage profiles on the phone — the web's `profile-manage.js`, section for
  * section: who you are; then, for the admin, the other grown-ups and a way to

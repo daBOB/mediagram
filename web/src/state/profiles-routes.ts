@@ -19,7 +19,7 @@ const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age)$`);
 
-/** A wrong PIN and a refused role are both 403, a taken name and a missing PIN both 409; the body says which. */
+/** A wrong PIN and a refused role are both 403; a taken name, a missing PIN and an unheard household all 409; the body says which. */
 const CODES: Record<Refusal, number> = {
   invalid: 400,
   "name-taken": 409,
@@ -28,6 +28,7 @@ const CODES: Record<Refusal, number> = {
   "no-pin": 409,
   "wrong-pin": 403,
   "not-allowed": 403,
+  "not-synced": 409,
 };
 
 /** Answers a profile route, or `null` when the path is not one. */
@@ -39,10 +40,12 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
   if (!list && named === null && acting === null) return null;
 
   // Who watches this library: the one question askable before anyone has
-  // said who they are. It says whether a profile has a PIN, never what.
+  // said who they are. It says whether a profile has a PIN, never what, and
+  // whether the household has been heard — until then no first profile is made.
   if (method === "GET" || method === "HEAD") {
     if (!list) return status(405);
-    return json(JSON.stringify({ remembers: state.remembers, profiles: state.profiles() }), method === "HEAD");
+    const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles() };
+    return json(JSON.stringify(said), method === "HEAD");
   }
 
   const refusal = refuseUnsafeBrowserWrite(request);

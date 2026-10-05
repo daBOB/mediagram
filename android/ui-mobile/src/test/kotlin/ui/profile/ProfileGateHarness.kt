@@ -59,6 +59,9 @@ abstract class ProfileGateHarness {
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var controller: ActivityController<ComponentActivity>
     lateinit var household: WatchStateFixture
+
+    /** Manage's view model, for asking it to act as the screen could. */
+    lateinit var manage: ManageProfilesViewModel
     private val store = ViewModelStore()
 
     val andre = Profile("a", "andre", admin = true)
@@ -92,7 +95,8 @@ abstract class ProfileGateHarness {
         compose.runOnUiThread {
             household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins })
             val sync = mockk<WatchSync>(relaxed = true)
-            val models = listOf(ProfileViewModel(household.repository, sync), ManageProfilesViewModel(household.repository, sync))
+            manage = ManageProfilesViewModel(household.repository, sync)
+            val models = listOf(ProfileViewModel(household.repository, sync), manage)
             val provider =
                 ViewModelProvider(
                     store,
@@ -154,4 +158,12 @@ abstract class ProfileGateHarness {
     }
 
     fun isFinishing(): Boolean = controller.get().isFinishing
+
+    /** The app left — Home, the screen timing out — and opened again, the view models kept. */
+    fun leaveAndReturn() {
+        compose.runOnUiThread { controller.pause().stop() }
+        compose.waitForIdle()
+        compose.runOnUiThread { controller.start().resume() }
+        compose.waitForIdle()
+    }
 }

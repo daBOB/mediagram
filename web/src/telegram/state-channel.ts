@@ -54,6 +54,12 @@ const MOST = 100;
 export class TelegramStateChannel implements StateChannel {
   constructor(private readonly connection: TelegramConnection) {}
 
+  /** The channel the connection points at now; `null` signed out, where `list` reads as empty. */
+  library(): string | null {
+    const telegram = this.connection.current();
+    return telegram ? String(telegram.peer.channelId) : null;
+  }
+
   async list(): Promise<ChannelDocument[]> {
     const telegram = await this.connection.ready();
     if (!telegram) return [];

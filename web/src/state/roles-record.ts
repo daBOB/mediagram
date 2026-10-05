@@ -32,8 +32,11 @@ export interface RoleKeys {
   /** The grown-up who made this kid, by the name sync knows a viewer by. */
   parent?: string;
   /** A grown-up's PIN, salted and hashed. The sync record is the only place
-   * the hash leaves the store. */
-  pin?: { hash: string; salt: string; updatedAt: number };
+   * the hash leaves the store. `proven`: set by someone who knew the PIN
+   * before it, or the admin's reset; without it the PIN is a first one, set
+   * where its grown-up had none, which never replaces one set earlier
+   * elsewhere (`roles-merge.ts`). Written only when true. */
+  pin?: { hash: string; salt: string; updatedAt: number; proven?: true };
 }
 
 const HASH = /^[0-9a-f]{64}$/;
@@ -63,7 +66,8 @@ export function parseRoleKeys(row: Record<string, unknown>): RoleKeys {
   const salt = pin?.salt;
   const pinAt = numberFromScalar(pin?.updatedAt);
   if (typeof hash === "string" && HASH.test(hash) && typeof salt === "string" && SALT.test(salt) && isStamp(pinAt)) {
-    keys.pin = { hash, salt, updatedAt: pinAt };
+    // Only the literal true: a PIN that wins over others is not guessed at.
+    keys.pin = { hash, salt, updatedAt: pinAt, ...(pin?.proven === true ? { proven: true as const } : {}) };
   }
   return keys;
 }

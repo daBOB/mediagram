@@ -22,9 +22,10 @@ import { cleanName, insertProfile, profileRows, toProfile, writeKidsAge, writePi
 import { newPin, pinMatches, validPin } from "./profiles-pin";
 import { allowed, nameTaken, type Action } from "./profiles-rules";
 import type { PinWait } from "./profiles-wait";
+import type { Household } from "./household-heard";
 
 /** Why an operation was refused: the strings an HTTP refusal carries. */
-export type Refusal = "invalid" | "name-taken" | "not-found" | "wait" | "no-pin" | "wrong-pin" | "not-allowed";
+export type Refusal = "invalid" | "name-taken" | "not-found" | "wait" | "no-pin" | "wrong-pin" | "not-allowed" | "not-synced";
 
 export interface Refused {
   reason: Refusal;
@@ -43,19 +44,22 @@ export class ProfileManager {
   constructor(
     private readonly db: Database | null,
     private readonly wait: PinWait,
+    private readonly household: Pick<Household, "heard"> = { heard: () => true },
   ) {}
 
   /**
    * The first grown-up on a player that has none — the only way a fresh
    * install gets anyone at all. It runs the household from the start; a
    * device that later hears of an older claim hands the role over by the
-   * earliest-claim rule the merge already applies.
+   * earliest-claim rule the merge already applies. Last, once everything
+   * else says yes, it waits until the household has been heard (`household-heard.ts`).
    */
   createFirst(name: unknown, next: unknown): Refused | Profile {
     if (!validPin(next)) return refuse("invalid");
     const unusable = this.unusable(name);
     if (unusable) return unusable;
     if (profileRows(this.db).some((row) => !isKid(row))) return refuse("not-allowed");
+    if (!this.household.heard()) return refuse("not-synced");
     return insertProfile(this.db, name, { pin: newPin(next), admin: true }) ?? refuse("invalid");
   }
 
@@ -124,7 +128,7 @@ export class ProfileManager {
     }
     const db = this.db!;
     db.transaction(() => {
-      if (target.pinHash === null && validPin(pin)) writePin(db, id, pin);
+      if (target.pinHash === null && validPin(pin)) writePin(db, id, pin, false);
       db.query("UPDATE profiles SET admin_claimed_at = ?2 WHERE id = ?1").run(id, Date.now());
     })();
     return null;
@@ -139,7 +143,8 @@ export class ProfileManager {
     const first = actorId === id && actor !== undefined && !isKid(actor) && actor.pinHash === null;
     const refused = this.check(actorId, pin, "set-pin", id, first);
     if (refused) return refused;
-    writePin(this.db!, id, next);
+    // Proven unless it is that first one: the actor's PIN was right, for its own or, as the admin, another's.
+    writePin(this.db!, id, next, !first);
     return null;
   }
 

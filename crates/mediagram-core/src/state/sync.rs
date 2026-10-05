@@ -9,7 +9,9 @@ use std::collections::HashMap;
 
 mod device;
 mod error;
+mod first_round;
 pub use device::device_id;
+pub(crate) use first_round::{follow_library, mark_round_imported, round_imported};
 use error::SyncError;
 
 use super::StateDb;
@@ -61,14 +63,17 @@ pub struct SyncMemo {
 
 impl SyncMemo {
     pub fn entry(&mut self, handle: &str) -> &mut Memo {
-        self.by_handle.entry(handle.to_string()).or_default()
+        let made = || Memo { handle: handle.to_string(), ..Memo::default() };
+        self.by_handle.entry(handle.to_string()).or_insert_with(made)
     }
 }
 
 /// This device's own message on one channel, once it is known, and the
-/// last body sent there so an unchanged one is not sent again.
+/// last body sent there so an unchanged one is not sent again; and which
+/// library that channel is, so a round says whose names it brought.
 #[derive(Default, Clone)]
 pub struct Memo {
+    handle: String,
     mine: Option<i32>,
     last_sent: Option<String>,
 }
@@ -145,7 +150,10 @@ fn merge_and_import_documents(
                 records.push(record);
             }
         }
-        exchange::import_merged(conn, &merge_states(&records))
+        let changed = exchange::import_merged(conn, &merge_states(&records))?;
+        // After the commit, so an import that rolled back never counts.
+        mark_round_imported(conn, &memo.handle)?;
+        Ok(changed)
     })
 }
 

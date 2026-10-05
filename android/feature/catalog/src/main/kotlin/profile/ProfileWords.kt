@@ -33,6 +33,17 @@ const val PICKER_NOTE =
     "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; " +
         "it is not a login, and someone who knows their way around Android can get past it."
 const val FIRST_PROFILE = "Create the first profile — it runs this household"
+
+/**
+ * Said, with Try again, while this device has not taken in a sync round of
+ * the library it follows and knows no grown-up: it cannot tell a new
+ * household from one whose names have not arrived yet, so it offers no first
+ * profile. The web's picker says the same (`household-waiting.js`).
+ */
+const val WAITING_FOR_HOUSEHOLD = "Waiting for this household’s profiles…"
+
+/** A first profile the core held for that reason — the web's `not-synced` wording. */
+internal const val HOUSEHOLD_NOT_HEARD = "The household’s profiles have not arrived yet."
 const val WHO_RUNS_THIS = "Who runs this household?"
 const val MANAGE_PROFILES = "Manage profiles"
 const val WHO_ARE_YOU = "Who are you?"
@@ -80,6 +91,7 @@ fun ProfileOutcome.sentence(): String? =
         // action outside the viewer's role, and a first profile when a
         // grown-up has arrived meanwhile.
         ProfileOutcome.NotAllowed -> "That is not allowed."
+        ProfileOutcome.NotSynced -> HOUSEHOLD_NOT_HEARD
     }
 
 /** The line under a kid's name on a tile or a row: its own limit, never a fixed one. */

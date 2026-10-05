@@ -114,7 +114,8 @@ internal class TvAppFixture(
     val setup: SetupViewModel
     private val login: LoginViewModel
     private val profile: ProfileViewModel
-    private val manage: ManageProfilesViewModel
+    /** Manage's view model, for asking it to act as the screen could. */
+    val manage: ManageProfilesViewModel
 
     /** The core behind everything, the household's rules with it: what a profile change left, and each grown-up's PIN. */
     val core: FakeCore

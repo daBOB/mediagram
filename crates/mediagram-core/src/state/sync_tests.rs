@@ -361,7 +361,7 @@ mod what_comes_back {
 mod a_channel_that_cannot_be_reached {
     use super::*;
 
-    fn remote_document() -> ChannelDocument {
+    pub(super) fn remote_document() -> ChannelDocument {
         ChannelDocument {
             message_id: 42,
             device: "remote".into(),
@@ -939,5 +939,76 @@ mod viewing_stats_on_two_machines {
 
         assert_eq!(day_total(&laptop, &laptop_id), 25.0);
         assert_eq!(day_total(&phone, &phone_id), 25.0);
+    }
+}
+
+/// A first profile waits for the household's names: only a round whose
+/// import committed says this device has heard them.
+mod the_first_profile_waits_for_a_round {
+    use super::a_channel_that_cannot_be_reached::remote_document;
+    use super::*;
+    use crate::state::profiles::ProfileOutcome::{self, Done, NotSynced};
+
+    fn first(db: &StateDb) -> ProfileOutcome {
+        db.manage(|m| m.create_first("Ann", "1234"))
+    }
+
+    #[tokio::test]
+    async fn a_round_over_an_empty_channel_lets_a_new_household_begin() {
+        let (_dir, db) = db();
+        let channel = FakeChannel::new(Vec::new());
+        let outcome = once(&db, &channel, "laptop", &mut Memo::default()).await;
+        assert_eq!(outcome.failed, None);
+        assert_eq!(outcome.pulled, 0, "hearing nobody is no row taken in");
+        assert_eq!(first(&db), Done);
+    }
+
+    /// The send comes after the import: a refused one leaves the names here.
+    #[tokio::test]
+    async fn a_refused_send_still_counts_the_round() {
+        let (_dir, db) = db();
+        once(&db, &RefusedPut, "laptop", &mut Memo::default()).await;
+        assert_eq!(first(&db), Done);
+    }
+
+    #[tokio::test]
+    async fn a_channel_that_could_not_be_listed_is_no_round() {
+        let (_dir, db) = db();
+        once(&db, &BrokenList, "laptop", &mut Memo::default()).await;
+        assert_eq!(first(&db), NotSynced);
+    }
+
+    /// Choosing another library is joining another household: its names
+    /// have not been heard yet, whatever the last library's round said.
+    #[tokio::test]
+    async fn a_round_of_the_last_library_is_no_round_of_the_one_followed_now() {
+        let (_dir, db) = db();
+        let channel = FakeChannel::new(Vec::new());
+        let mut memo = SyncMemo::default();
+        once(&db, &channel, "laptop", memo.entry("films")).await;
+        db.with(|conn| follow_library(conn, "music")).unwrap();
+        assert_eq!(first(&db), NotSynced);
+
+        once(&db, &channel, "laptop", memo.entry("films")).await;
+        assert_eq!(first(&db), NotSynced, "a round still running for the old library");
+
+        once(&db, &channel, "laptop", memo.entry("music")).await;
+        assert_eq!(first(&db), Done);
+    }
+
+    #[tokio::test]
+    async fn an_import_that_rolled_back_is_no_round() {
+        let (_dir, db) = db();
+        db.with(|conn| {
+            conn.execute_batch(
+                "CREATE TRIGGER reject_remote_progress BEFORE INSERT ON progress
+             WHEN NEW.set_id = '01REMOTE'
+             BEGIN SELECT RAISE(ABORT, 'storage refused the import'); END;",
+            )
+        })
+        .unwrap();
+        let channel = FakeChannel::new(vec![remote_document()]);
+        once(&db, &channel, "laptop", &mut Memo::default()).await;
+        assert_eq!(first(&db), NotSynced);
     }
 }

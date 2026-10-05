@@ -139,13 +139,14 @@ pub(crate) fn insert(
 /// peer keeps, as `set_watched`'s stamps are.
 const LAST_STAMP: i64 = MAX_STAMP as i64 - 1;
 
-/// A fresh salt, and the hash of `pin` under it.
-pub(crate) fn write_pin(conn: &Connection, id: &str, pin: &str, now: i64) -> rusqlite::Result<()> {
+/// A fresh salt, and the hash of `pin` under it. `proven`: set by someone
+/// who knew the PIN before it, or the admin's reset — not a first PIN.
+pub(crate) fn write_pin(conn: &Connection, id: &str, pin: &str, now: i64, proven: bool) -> rusqlite::Result<()> {
     let salt = pin::new_salt();
     conn.execute(
-        "UPDATE profiles SET pin_hash = ?2, pin_salt = ?3,
+        "UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_proven = ?6,
                 pin_updated_at = MAX(?4, MIN(pin_updated_at, ?5) + 1) WHERE id = ?1",
-        params![id, pin::hash(&salt, pin), salt, now, LAST_STAMP],
+        params![id, pin::hash(&salt, pin), salt, now, LAST_STAMP, proven],
     )?;
     Ok(())
 }
@@ -180,7 +181,7 @@ pub(crate) fn remove(conn: &Connection, id: &str, grown_up: bool) -> rusqlite::R
 pub(crate) fn claim_admin(conn: &Connection, id: &str, first_pin: Option<&str>, now: i64) -> rusqlite::Result<()> {
     let tx = conn.unchecked_transaction()?;
     if let Some(pin) = first_pin {
-        write_pin(&tx, id, pin, now)?;
+        write_pin(&tx, id, pin, now, false)?;
     }
     tx.execute("UPDATE profiles SET admin_claimed_at = ?2 WHERE id = ?1", params![id, now])?;
     tx.commit()

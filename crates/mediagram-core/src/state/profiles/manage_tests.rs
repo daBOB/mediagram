@@ -8,11 +8,12 @@ use rusqlite::types::FromSql;
 use super::ProfileManager;
 use crate::state::profiles::ProfileOutcome::{self, *};
 use crate::state::StateDb;
-use crate::state::exchange::import_merged;
-use crate::state::merge::{MergedProfile, MergedState};
+use crate::state::exchange::{export_record, import_merged};
+use crate::state::merge::{MergedProfile, MergedState, merge_states};
 use crate::state::profiles::create;
 use crate::state::profiles::role_rows::{self, Stored};
-use crate::state::record::{KidsAge, MAX_STAMP, PinRecord, ProfileRoles};
+use crate::state::record::{KidsAge, MAX_STAMP, PinRecord, ProfileRoles, SyncRecord};
+use crate::state::sync;
 
 /// The player's clock for every call that does not say otherwise.
 const T: i64 = 1_700_000_000_000;
@@ -29,7 +30,24 @@ struct Home {
 type Call<'c> = Box<dyn FnOnce(&mut ProfileManager<'_>) -> rusqlite::Result<ProfileOutcome> + 'c>;
 
 impl Home {
+    /// A player that has taken in one sync round, which found nobody — a new
+    /// household, free to make its first profile.
     fn new() -> Self {
+        let home = Self::unsynced();
+        home.heard();
+        home
+    }
+
+    /// What a round of the household's library leaves once its import has
+    /// committed (`state::sync::once`).
+    fn heard(&self) {
+        self.db
+            .with(|c| sync::mark_round_imported(c, "household"))
+            .unwrap();
+    }
+
+    /// A player that has never finished a sync round.
+    fn unsynced() -> Self {
         let dir = tempfile::tempdir().unwrap();
         let db = StateDb::new(dir.path().to_path_buf());
         Home { _dir: dir, db }
@@ -42,6 +60,21 @@ impl Home {
 
     fn run(&self, call: Call) -> ProfileOutcome {
         self.at(T, call)
+    }
+
+    /// The app swiped away and opened again: this store's connection closed,
+    /// a new owner over the same directory.
+    fn restart(&mut self) {
+        self.db.retire();
+        self.db = StateDb::new(self._dir.path().to_path_buf());
+    }
+
+    /// Whether `id`'s PIN goes out proven: set by someone who knew the PIN
+    /// before it, or by the admin's reset.
+    fn proven(&self, id: &str) -> bool {
+        let record = self.db.with(|c| export_record(c, "here")).unwrap();
+        let profile = record.profiles.iter().find(|p| p.local_id.as_deref() == Some(id));
+        profile.and_then(|p| p.roles.pin.as_ref()).unwrap().proven
     }
 
     /// A profile the way sync makes one: no PIN, no claim, no parent.
@@ -107,6 +140,7 @@ fn pin_1234(updated_at: f64) -> ProfileRoles {
         hash: PIN_1234_HASH.into(),
         salt: PIN_1234_SALT.into(),
         updated_at,
+        proven: false,
     };
     ProfileRoles {
         pin: Some(pin),
@@ -206,6 +240,44 @@ mod the_first_profile {
         assert_eq!(home.run(first("André", "11")), Invalid);
         assert_eq!(home.run(first("André", "")), Invalid);
         assert!(home.rows().is_empty());
+    }
+
+    /// A player that has not heard from the household cannot know whether
+    /// "André" is already somebody's name there; made blind, the newer PIN
+    /// would become that grown-up's on every device once the two met.
+    #[test]
+    fn waits_until_this_player_has_taken_in_a_sync_round() {
+        let home = Home::unsynced();
+        assert_eq!(home.run(first("André", "1111")), NotSynced);
+        assert!(home.rows().is_empty());
+        // What cannot be used is still said first.
+        assert_eq!(home.run(first("André", "11")), Invalid);
+    }
+
+    #[test]
+    fn a_round_that_found_nobody_lets_a_new_household_begin() {
+        let home = Home::unsynced();
+        home.import(Vec::new());
+        home.heard();
+        assert_eq!(home.run(first("André", "1111")), Done);
+        assert!(home.named("André").is_admin());
+    }
+
+    #[test]
+    fn a_round_that_brought_the_households_grown_ups_makes_nobody_first() {
+        let home = Home::unsynced();
+        home.import(vec![viewer("André", false, pin_1234(T as f64))]);
+        home.heard();
+        assert_eq!(home.run(first("André", "1111")), NameTaken);
+        assert_eq!(home.run(first("Mallory", "0000")), NotAllowed);
+        assert_eq!(home.rows().len(), 1);
+    }
+
+    #[test]
+    fn a_restart_remembers_the_round() {
+        let mut home = Home::new();
+        home.restart();
+        assert_eq!(home.run(first("André", "1111")), Done);
     }
 
     /// Nothing on this surface throws: a store that cannot be written answers
@@ -828,6 +900,51 @@ mod wrong_pins {
         assert_eq!(home.run(remove(&maja, "0000", &andre)), WrongPin);
     }
 
+    /// On a device a child holds, swiping the app away is a restart; a wait
+    /// that ended with the process would cost a guesser seconds, not a minute.
+    #[test]
+    fn a_restart_keeps_the_wait_and_it_still_ends_on_time() {
+        let Household {
+            mut home, andre, ..
+        } = household();
+        home.start_wait(&andre);
+        home.restart();
+        assert_eq!(
+            home.at(T + 30_500, unlock(&andre, "1111")),
+            Wait { seconds: 30 }
+        );
+        home.restart();
+        assert_eq!(home.at(T + 60_000, unlock(&andre, "1111")), Done);
+    }
+
+    /// A box that boots before its time is set reads a clock far behind the
+    /// one a stored wait began on: the profile waits a minute from then, not
+    /// until the clock catches up.
+    #[test]
+    fn a_clock_put_back_holds_the_profile_a_minute_not_until_it_catches_up() {
+        let Household { home, andre, .. } = household();
+        home.start_wait(&andre);
+        let a_day_back = T - 86_400_000;
+        assert_eq!(
+            home.at(a_day_back, unlock(&andre, "1111")),
+            Wait { seconds: 60 }
+        );
+        assert_eq!(home.at(a_day_back + 60_000, unlock(&andre, "1111")), Done);
+    }
+
+    #[test]
+    fn a_restart_keeps_the_wrong_pins_short_of_a_wait() {
+        let Household {
+            mut home, andre, ..
+        } = household();
+        for _ in 0..4 {
+            assert_eq!(home.run(unlock(&andre, "0000")), WrongPin);
+        }
+        home.restart();
+        assert_eq!(home.run(unlock(&andre, "0000")), WrongPin);
+        assert_eq!(home.run(unlock(&andre, "1111")), Wait { seconds: 60 });
+    }
+
     /// One count per player: every management call reaches the same one,
     /// however many calls apart the guesses were.
     #[test]
@@ -841,5 +958,67 @@ mod wrong_pins {
             Wait { seconds: 60 }
         );
         assert!(home.row(&maja).is_some());
+    }
+}
+
+/// A first PIN — set where its grown-up had none — never replaces a PIN set
+/// earlier on another device; only someone who knew the PIN, or the admin's
+/// reset, does.
+mod a_proven_pin {
+    use super::*;
+
+    #[test]
+    fn is_one_changed_by_someone_who_knew_it_or_reset_by_the_admin_and_nothing_else() {
+        let Household {
+            home, andre, maja, ..
+        } = household();
+        assert!(!home.proven(&andre), "the first profile's PIN is a first one");
+        assert!(!home.proven(&maja), "so is a grown-up's the admin adds");
+        let sam = home.synced("Sam", false);
+        assert_eq!(home.run(set_pin(&sam, "", &sam, "4444")), Done);
+        assert!(!home.proven(&sam), "a first PIN set with nothing to prove");
+        assert_eq!(home.run(set_pin(&maja, "2222", &maja, "3333")), Done);
+        assert!(home.proven(&maja), "changed by someone who knew it");
+        assert_eq!(home.run(set_pin(&andre, "1111", &sam, "5555")), Done);
+        assert!(home.proven(&sam), "the admin's reset");
+    }
+
+    #[test]
+    fn is_not_one_a_claim_takes_as_its_first() {
+        let home = Home::new();
+        let sam = home.synced("Sam", false);
+        assert_eq!(home.run(claim(&sam, "4444")), Done);
+        assert!(!home.proven(&sam));
+    }
+
+    /// A kid's tablet last synced before André set his PIN, so here André
+    /// has none, and it is offline. The kid taps his tile, is asked to choose
+    /// a PIN, chooses 0000 and is in. Back online, André's own PIN stands on
+    /// both devices and 0000 opens nothing.
+    #[test]
+    fn a_first_pin_on_a_copy_that_never_heard_of_his_never_replaces_it() {
+        let phone = Home::new();
+        assert_eq!(phone.run(first("André", "1111")), Done);
+        let tablet = Home::new();
+        tablet.import(vec![viewer("André", false, ProfileRoles::default())]);
+        let here = tablet.named("André").id;
+        assert_eq!(tablet.at(T + 60_000, set_pin(&here, "", &here, "0000")), Done);
+
+        let records = [phone, tablet].map(|home| {
+            let record = home.db.with(|c| export_record(c, "device")).unwrap();
+            (home, record)
+        });
+        let merged = merge_states(&[
+            SyncRecord { device: "phone".into(), ..records[0].1.clone() },
+            SyncRecord { device: "tablet".into(), ..records[1].1.clone() },
+        ]);
+        for (home, _) in &records {
+            home.db.with(|c| import_merged(c, &merged)).unwrap();
+        }
+        let [(phone, _), (tablet, _)] = records;
+        assert_eq!(tablet.run(unlock(&here, "0000")), WrongPin);
+        assert_eq!(tablet.run(unlock(&here, "1111")), Done);
+        let there = phone.named("André").id;
+        assert_eq!(phone.run(unlock(&there, "1111")), Done);
     }
 }

@@ -128,7 +128,7 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         conn.query_row(
             "SELECT kids_age, kids_age_updated_at,
                     parent_id IS NULL AND admin_claimed_at IS NULL AND pin_hash IS NULL
-                      AND pin_salt IS NULL AND pin_updated_at = 0
+                      AND pin_salt IS NULL AND pin_updated_at = 0 AND pin_proven = 0
                FROM profiles WHERE id = ?1",
             [id],
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
@@ -142,5 +142,5 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         .unwrap();
     assert_eq!(age, None);
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 8);
+    assert_eq!(version, 9);
 }

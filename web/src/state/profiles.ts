@@ -44,6 +44,7 @@ export interface ProfileRow {
   pinHash: string | null;
   pinSalt: string | null;
   pinUpdatedAt: number;
+  pinProven: number; // 1: set by someone who knew the PIN before it, or the admin's reset
 }
 
 /** What a new profile is, beside its name. */
@@ -77,7 +78,7 @@ export function profileRows(db: Database | null): ProfileRow[] {
       `SELECT id, name, created_at AS createdAt, kids, kids_age AS kidsAge,
               kids_age_updated_at AS kidsAgeUpdatedAt, parent_id AS parentId,
               admin_claimed_at AS adminClaimedAt, pin_hash AS pinHash, pin_salt AS pinSalt,
-              pin_updated_at AS pinUpdatedAt
+              pin_updated_at AS pinUpdatedAt, pin_proven AS pinProven
          FROM profiles ORDER BY created_at`,
     )
     .all() as ProfileRow[];
@@ -90,8 +91,7 @@ export function toProfile(row: ProfileRow): Profile {
     name: row.name,
     createdAt: row.createdAt,
     kids,
-    // A kid always has a limit, whatever the column holds: 12 is what every
-    // kid saw before there was a choice.
+    // A kid always has a limit, whatever the column holds: 12, as before choices.
     kidsAge: kids ? (row.kidsAge === 6 ? 6 : 12) : null,
     parentId: row.parentId,
     // A kid manages nothing and opens freely. A grown-up another device
@@ -131,6 +131,7 @@ export function insertProfile(db: Database | null, name: unknown, role: NewProfi
     pinHash: kids ? null : role.pin?.hash ?? null,
     pinSalt: kids ? null : role.pin?.salt ?? null,
     pinUpdatedAt: !kids && role.pin !== undefined ? createdAt : 0,
+    pinProven: 0,
   };
   db.query(
     `INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
@@ -184,12 +185,12 @@ export function findOrCreateProfile(
  */
 const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
 
-/** A fresh salt and hash for `pin`. */
-export function writePin(db: Database, id: string, pin: string): void {
+/** A fresh salt and hash for `pin`; `proven` unless it is a first PIN, set where there was none. */
+export function writePin(db: Database, id: string, pin: string, proven: boolean): void {
   const { hash, salt } = newPin(pin);
-  db.query(`UPDATE profiles SET pin_hash = ?2, pin_salt = ?3,
+  db.query(`UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_proven = ?6,
               pin_updated_at = MAX(?4, MIN(pin_updated_at, ?5) + 1) WHERE id = ?1`)
-    .run(id, hash, salt, Date.now(), LAST_STAMP);
+    .run(id, hash, salt, Date.now(), LAST_STAMP, proven ? 1 : 0);
 }
 
 export function writeKidsAge(db: Database, id: string, age: 6 | 12): void {

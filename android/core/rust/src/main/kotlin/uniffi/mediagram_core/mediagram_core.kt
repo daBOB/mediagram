@@ -794,6 +794,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_stats(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_has_synced_once(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_state_device_id(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_sync_state(
@@ -943,6 +945,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_unlock_profile(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_stats(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_has_synced_once(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_state_device_id(`ptr`: Long,
     ): Long
@@ -1100,7 +1104,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 20015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 63677) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 57976) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6400) {
@@ -1220,7 +1224,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_claim_admin() and 0xFFFF) != 31626) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 18473) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 20033) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 18879) {
@@ -1242,6 +1246,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_stats() and 0xFFFF) != 57714) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_has_synced_once() and 0xFFFF) != 19015) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_state_device_id() and 0xFFFF) != 19133) {
@@ -1868,7 +1875,8 @@ public interface CoreInterface {
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
-     * The first install and every later refresh are the same call.
+     * The first install and every later refresh are the same call; it also
+     * records `handle` as the library this device follows.
      */
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
 
@@ -2105,7 +2113,8 @@ public interface CoreInterface {
      * The household's first profile, while this device knows no grown-up
      * (kids alone do not count): a grown-up with `new_pin`, the admin from
      * now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
-     * a household with grown-ups but no admin.
+     * a household with grown-ups but no admin — and `NotSynced` until this
+     * device has taken in a sync round (`has_synced_once`).
      */
     suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
 
@@ -2152,6 +2161,13 @@ public interface CoreInterface {
      * summary — never an error.
      */
     suspend fun `stats`(`profileId`: kotlin.String, `today`: kotlin.String): StatsSummary
+
+    /**
+     * Whether this device has taken in a sync round yet. Until it has, it
+     * has not heard who the household already is: `create_first_admin`
+     * answers `NotSynced`, and the picker offers no first profile.
+     */
+    suspend fun `hasSyncedOnce`(): kotlin.Boolean
 
     /**
      * This install's own id in the sync channel — a random string made
@@ -2558,7 +2574,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     /**
      * Refreshes from **the channel**: installs the newest index snapshot the
      * chosen library's channel holds, and answers how many sets it holds.
-     * The first install and every later refresh are the same call.
+     * The first install and every later refresh are the same call; it also
+     * records `handle` as the library this device follows.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3580,7 +3597,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
      * The household's first profile, while this device knows no grown-up
      * (kids alone do not count): a grown-up with `new_pin`, the admin from
      * now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
-     * a household with grown-ups but no admin.
+     * a household with grown-ups but no admin — and `NotSynced` until this
+     * device has taken in a sync round (`has_synced_once`).
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `createFirstAdmin`(`name`: kotlin.String, `newPin`: kotlin.String) : ProfileOutcome {
@@ -3791,6 +3809,31 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterTypeStatsSummary.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Whether this device has taken in a sync round yet. Until it has, it
+     * has not heard who the household already is: `create_first_admin`
+     * answers `NotSynced`, and the picker offers no first profile.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `hasSyncedOnce`() : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_has_synced_once(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -6126,8 +6169,8 @@ public object FfiConverterTypeLibraryEvent: FfiConverterRustBuffer<LibraryEvent>
 
 /**
  * One variant per reason the web answers a refusal with — `invalid`,
- * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed` —
- * so both surfaces can say exactly what went wrong.
+ * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed`,
+ * `not-synced` — so both surfaces can say exactly what went wrong.
  */
 sealed class ProfileOutcome {
 
@@ -6179,6 +6222,13 @@ sealed class ProfileOutcome {
     object NotAllowed : ProfileOutcome()
 
 
+    /**
+     * A first profile on a device that has not yet taken in a sync round of
+     * the library it follows: it has not heard who that household already is.
+     */
+    object NotSynced : ProfileOutcome()
+
+
 
 
 
@@ -6205,6 +6255,7 @@ public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOut
             6 -> ProfileOutcome.NoPin
             7 -> ProfileOutcome.WrongPin
             8 -> ProfileOutcome.NotAllowed
+            9 -> ProfileOutcome.NotSynced
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
@@ -6259,6 +6310,12 @@ public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOut
                 4UL
             )
         }
+        is ProfileOutcome.NotSynced -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
     }
 
     override fun write(value: ProfileOutcome, buf: ByteBuffer) {
@@ -6294,6 +6351,10 @@ public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOut
             }
             is ProfileOutcome.NotAllowed -> {
                 buf.putInt(8)
+                Unit
+            }
+            is ProfileOutcome.NotSynced -> {
+                buf.putInt(9)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }

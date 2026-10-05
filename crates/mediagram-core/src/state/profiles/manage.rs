@@ -9,7 +9,9 @@
 //! yet; then, only when a PIN is about to be compared, that profile's
 //! wrong-PIN wait; a wrong PIN; and last the rule in `rules`. So the page can
 //! say exactly what went wrong, and a guess without the PIN learns nothing
-//! about who may do what.
+//! about who may do what. A first profile alone also waits for a sync round
+//! of the library this device follows, after everything else says yes — as
+//! the web's does.
 //!
 //! Not a login, and not meant as one. A PIN keeps a child from tapping into
 //! a grown-up's profile; the catalog filter runs on this device, and anyone
@@ -19,10 +21,10 @@
 use rusqlite::Connection;
 
 use super::Answer;
-use super::pin_wait::PinWait;
 use super::role_rows::{self, NewProfile, Stored};
 use super::rules::Action;
 use super::{ProfileOutcome::*, pin};
+use crate::state::sync;
 
 mod checks;
 
@@ -30,11 +32,10 @@ fn valid_age(age: u8) -> bool {
     age == 6 || age == 12
 }
 
-/// One management call's view of the store, the wrong-PIN counts and the
-/// time. Made by `StateDb::manage`, one per call.
+/// One management call's view of the store — the wrong-PIN counts in it —
+/// and the time. Made by `StateDb::manage`, one per call.
 pub struct ProfileManager<'a> {
     conn: &'a Connection,
-    wait: &'a mut PinWait,
     now: i64,
 }
 
@@ -43,6 +44,12 @@ impl ProfileManager<'_> {
     /// install gets anyone at all. It runs the household from the start; a
     /// device that later hears of an older claim hands the role over by the
     /// earliest-claim rule the merge already applies.
+    ///
+    /// Only once this player has taken in a sync round of the library it
+    /// follows. Before, it has not heard that household's names, so it
+    /// cannot refuse one already taken:
+    /// sync knows a viewer by name, and the newer PIN wins — a first profile
+    /// made blind as "André" would hand its PIN to André on every device.
     pub fn create_first(&mut self, name: &str, new_pin: &str) -> Answer {
         if !pin::valid(new_pin) {
             return Ok(Invalid);
@@ -52,6 +59,9 @@ impl ProfileManager<'_> {
         }
         if self.rows()?.iter().any(|row| !row.kids) {
             return Ok(NotAllowed);
+        }
+        if !sync::round_imported(self.conn)? {
+            return Ok(NotSynced);
         }
         let role = NewProfile { pin: Some(new_pin), admin: true, ..Default::default() };
         self.insert(name, &role)
@@ -117,7 +127,7 @@ impl ProfileManager<'_> {
         if target.kids {
             return Ok(Done);
         }
-        Ok(self.prove(&target, pin).unwrap_or(Done))
+        Ok(self.prove(&target, pin)?.unwrap_or(Done))
     }
 
     /// Makes `id` the household's admin — once, while this player knows of
@@ -138,7 +148,7 @@ impl ProfileManager<'_> {
         }
         let first_pin = target.pin_hash.is_none().then_some(pin);
         if first_pin.is_none() {
-            if let Some(refused) = self.prove(target, pin) {
+            if let Some(refused) = self.prove(target, pin)? {
                 return Ok(refused);
             }
         }
@@ -158,7 +168,9 @@ impl ProfileManager<'_> {
         if let Some(refused) = self.check(actor_id, pin, Action::SetPin, Some(id), first)? {
             return Ok(refused);
         }
-        role_rows::write_pin(self.conn, id, new_pin, self.now)?;
+        // Proven unless it is that first one: the actor's own PIN was right,
+        // whether it changed its own or, as the admin, reset another's.
+        role_rows::write_pin(self.conn, id, new_pin, self.now, !first)?;
         Ok(Done)
     }
 }

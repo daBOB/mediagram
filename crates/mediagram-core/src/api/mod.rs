@@ -115,9 +115,10 @@ impl Core {
 
     /// Refreshes from **the channel**: installs the newest index snapshot the
     /// chosen library's channel holds, and answers how many sets it holds.
-    /// The first install and every later refresh are the same call.
-    pub async fn refresh_library(&self, handle: String) -> Result<u64, CoreError> {
-        channel::refresh_library(self, handle).await
+    /// The first install and every later refresh are the same call; it also
+    /// records `handle` as the library this device follows.
+    pub async fn refresh_library(self: Arc<Self>, handle: String) -> Result<u64, CoreError> {
+        channel::refresh_library(&self, handle).await
     }
 
     /// Installs the encrypted package named by `pointer_url`, including its

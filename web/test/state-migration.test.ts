@@ -388,7 +388,26 @@ describe("v11 to v12", () => {
         { id: "k1", kidsAge: 12, kidsAgeUpdatedAt: 0, parentId: null, adminClaimedAt: null, pinHash: null, pinSalt: null, pinUpdatedAt: 0 },
       ]);
       expect(db.query("SELECT set_id AS setId, age FROM kids").all()).toEqual([{ setId: "01K", age: null }]);
-      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "12" });
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "13" });
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("v12 to v13", () => {
+  test("every PIN already stored is a first PIN: one proven later beats it, and it beats no PIN set earlier elsewhere", () => {
+    const path = tempPath();
+    atVersion(path, 12, () => [
+      "INSERT INTO profiles(id, name, created_at, kids, pin_hash, pin_salt, pin_updated_at) VALUES ('p1', 'André', 1, 0, 'h', 's', 5)",
+    ]);
+
+    new WatchState(path).close();
+
+    const db = new Database(path);
+    try {
+      expect(db.query("SELECT pin_proven AS pinProven FROM profiles").all()).toEqual([{ pinProven: 0 }]);
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "13" });
     } finally {
       db.close();
     }

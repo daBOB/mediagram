@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.profile.ManageActions
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
@@ -38,7 +39,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     private val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
     private val calls = mutableListOf<String>()
     private val actions =
-        TvManageActions(
+        ManageActions(
             onActAs = { calls += "actAs $it" },
             onAddKid = { name, age -> calls += "addKid $name $age" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },

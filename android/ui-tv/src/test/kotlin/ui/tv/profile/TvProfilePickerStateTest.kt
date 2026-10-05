@@ -98,15 +98,29 @@ class TvProfilePickerStateTest {
         assertEquals(listOf("first Ann"), calls)
     }
 
-    /** A first profile made before the household's first sync came in would lose the admin role to it: looking again is offered too. */
+    /**
+     * No sync round landed yet: a first profile made blind under a household
+     * member's name would take over that member's PIN, so none is offered —
+     * the waiting line, and Try again holding the remote.
+     */
     @Test
-    fun anEmptyDeviceCanLookAgainBelowTheFirstProfile() {
+    fun aDeviceNotYetSyncedWaitsForTheHouseholdWithTryAgain() {
         leaveTouchMode()
-        show(ProfileUiState.Picking(emptyList(), canStay = false))
-        press(Key.DirectionDown)
+        show(ProfileUiState.Picking(emptyList(), canStay = false, synced = false))
+        compose.onNodeWithText("Waiting for this household’s profiles…").assertExists()
+        compose.onNodeWithText("Create the first profile — it runs this household").assertDoesNotExist()
         compose.onNodeWithText("Try again").assertIsFocused()
         press(Key.DirectionCenter)
         assertEquals(listOf("retry"), calls)
+    }
+
+    /** A round that found nobody: a new household's first profile holds the remote, with nothing to wait for. */
+    @Test
+    fun aNewHouseholdOffersItsFirstProfileAndNoTryAgain() {
+        leaveTouchMode()
+        show(ProfileUiState.Picking(emptyList(), canStay = false))
+        compose.onNodeWithText("Create the first profile — it runs this household").assertIsFocused()
+        compose.onNodeWithText("Try again").assertDoesNotExist()
     }
 
     @Test

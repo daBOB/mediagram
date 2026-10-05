@@ -33,6 +33,7 @@ const REFUSALS = {
   // One wording for every refusal by the rule: a manage action outside the
   // viewer's role, and a first profile when a grown-up has arrived meanwhile.
   "not-allowed": "That is not allowed.",
+  "not-synced": "The household’s profiles have not arrived yet.",
 };
 
 /**

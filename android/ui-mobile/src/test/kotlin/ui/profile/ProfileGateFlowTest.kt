@@ -95,6 +95,43 @@ class ProfileGateFlowTest : ProfileGateHarness() {
         compose.onNodeWithText("Watching as Tom").assertExists()
     }
 
+    /**
+     * A parent opens Manage from a kid's library and the tablet times out.
+     * It comes back to the kid's library; the kid's next tap on its own name
+     * must show the picker, not the parent's Manage — and the PIN Manage held
+     * must be gone, so nothing protected can be done with it.
+     */
+    @Test fun leavingTheAppClosesManageAndForgetsTheParentsPin() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111", "b" to "2222"), chosen = "t")
+        compose.onNodeWithText("Change").performClick()
+        manageAs("Bea", "2222")
+
+        leaveAndReturn()
+        compose.onNodeWithText("Watching as Tom").assertExists()
+        compose.onNodeWithText("Change").performClick()
+
+        compose.onNodeWithText("Who's watching?").assertExists()
+        compose.onNodeWithText("As Bea").assertDoesNotExist()
+        compose.runOnUiThread { manage.setKidsAge("t", 6) }
+        compose.waitForIdle()
+        assertEquals(12, profile("t").kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
+        compose.onNodeWithText("Manage profiles").performClick()
+        compose.onNodeWithText("Who are you?").assertExists()
+    }
+
+    /** A first entry of a new PIN is not kept for whoever opens the app next. */
+    @Test fun leavingTheAppDropsAHalfTypedNewPin() {
+        open(andre, bea, pins = mapOf("a" to "1111"))
+        compose.onNodeWithText("Bea").performClick()
+        pin("2222")
+        inDialog("The new PIN again").assertExists()
+
+        leaveAndReturn()
+        inDialog("The new PIN again").assertDoesNotExist()
+        compose.onNodeWithText("Bea").performClick()
+        inDialog("Choose a PIN for Bea").assertExists()
+    }
+
     @Test fun backOnThePinCancelsItAndBackOnTheReopenedPickerStays() {
         open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"), chosen = "a")
         compose.onNodeWithText("Change").performClick()

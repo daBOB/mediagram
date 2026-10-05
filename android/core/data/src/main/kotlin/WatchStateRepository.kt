@@ -60,6 +60,13 @@ interface WatchStateRepository {
     val snapshot: StateFlow<WatchSnapshot>
 
     /**
+     * Whether this device has taken in a sync round — until it has, [profiles]
+     * may not yet hold the household's names, and the core makes no first
+     * profile. `false` until [reload] runs once.
+     */
+    val syncedOnce: StateFlow<Boolean>
+
+    /**
      * Chooses and reloads a profile; false means refused or superseded before
      * acknowledgement. The core does not ask for a PIN here: the picker
      * unlocks a grown-up first ([ProfileRequest.Unlock]), and a remembered
@@ -198,6 +205,9 @@ class DefaultWatchStateRepository(
     private val _snapshot = MutableStateFlow(WatchSnapshot.Empty)
     override val snapshot: StateFlow<WatchSnapshot> = _snapshot.asStateFlow()
 
+    private val _syncedOnce = MutableStateFlow(false)
+    override val syncedOnce: StateFlow<Boolean> = _syncedOnce.asStateFlow()
+
     private val publicationLock = Any()
     private val choices = Mutex()
     private var revision = 0L
@@ -216,6 +226,7 @@ class DefaultWatchStateRepository(
         val revision: Long,
         val profiles: List<Profile>,
         val chosen: String?,
+        val synced: Boolean,
     )
 
     override fun invalidate() {
@@ -227,6 +238,7 @@ class DefaultWatchStateRepository(
             _profiles.value = emptyList()
             publishChosenProfile()
             _snapshot.value = WatchSnapshot.Empty
+            _syncedOnce.value = false
         }
     }
 
@@ -240,7 +252,9 @@ class DefaultWatchStateRepository(
                         if (resetRevision != account || coreProvider.core.value !== core) return
                         revision
                     }
-                withContext(dispatcher) { Read(core, started, core.profiles().map { it.toModel() }, core.chosenProfile()) }
+                withContext(dispatcher) {
+                    Read(core, started, core.profiles().map { it.toModel() }, core.chosenProfile(), core.hasSyncedOnce())
+                }
             }
         val snapshot =
             read.chosen?.let { withContext(dispatcher) { core.snapshot(it) }.toModel() }
@@ -253,6 +267,7 @@ class DefaultWatchStateRepository(
             _chosenProfileId.value = read.chosen
             publishChosenProfile()
             _snapshot.value = snapshot
+            _syncedOnce.value = read.synced
         }
     }
 
