@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.roundToIntRect
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import androidx.tv.material3.Text
@@ -30,6 +31,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
 import playback.PlaybackTotals
+import player.PlayerChoices
 import player.PlayerMarksState
 import player.READOUT_TICK_MS
 import player.clockTime
@@ -40,7 +42,11 @@ import ui.player.SCRIM_ALPHA
 internal class TvPlayerFocus {
     val playPause = FocusRequester()
     val seekBar = FocusRequester()
-    val settings = FocusRequester()
+    val cc = FocusRequester()
+    val subtitleOptions = FocusRequester()
+    val speed = FocusRequester()
+    val audio = FocusRequester()
+    val framing = FocusRequester()
     val marks = FocusRequester()
     val upNext = FocusRequester()
     val notes = FocusRequester()
@@ -50,9 +56,18 @@ internal class TvPlayerFocus {
 
     /** The control a menu or the episode list was opened from: where the remote goes back to when it closes. */
     var opener: FocusRequester = playPause
+
+    /** The tool [menu] is opened from. */
+    fun openerOf(menu: TvCardMenu): FocusRequester =
+        when (menu) {
+            TvCardMenu.Subtitles, TvCardMenu.SubtitleStyle -> subtitleOptions
+            TvCardMenu.Speed -> speed
+            TvCardMenu.Audio -> audio
+            TvCardMenu.Framing -> framing
+        }
 }
 
-/** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the settings. */
+/** What the controls show beyond the transport, and what pressing it does: the marks rail, the statistics and the tools. */
 internal class TvPlayerExtras(
     val marks: PlayerMarksState?,
     val markActions: TvMarksActions,
@@ -61,14 +76,10 @@ internal class TvPlayerExtras(
     val totals: () -> PlaybackTotals,
     /** Whether this device holds the title in full, which the statistics' buffer row reports as "cached". */
     val held: Boolean = false,
-    /** The chosen playback speed, read out beside the settings gear while it is not the default. */
-    val speed: Float = 1f,
-    val onOpenSettings: () -> Unit = {},
-    /** Whether the title has a regular subtitle track; the CC button is left out without one. */
-    val hasSubtitles: Boolean = false,
-    /** Whether a regular track is showing. */
-    val subtitlesOn: Boolean = false,
+    /** What the tools read and change: subtitles, speed, audio and framing. */
+    val choices: PlayerChoices = PlayerChoices.Default,
     val onToggleSubtitles: () -> Unit = {},
+    val onOpenMenu: (TvCardMenu) -> Unit = {},
     /** Whether anything follows in the run — the standing "Play next" stays even once the up-next card is cancelled, as on the phone. */
     val hasNext: Boolean = false,
     val nextTitleLine: String = "",
@@ -152,8 +163,10 @@ internal fun TvPlayerControls(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .onGloballyPositioned { bands.barTop = it.boundsInRoot().top }
-                    .testTag(TvBottomBandTag)
+                    .onGloballyPositioned { at ->
+                        bands.barTop = at.boundsInRoot().top
+                        bands.card = at.boundsInRoot().roundToIntRect()
+                    }.testTag(TvBottomBandTag)
                     .background(scrim)
                     .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -178,11 +191,11 @@ internal fun TvPlayerControls(
                 when {
                     extras.marks != null -> focus.marks
                     extras.onToggleNotes != null -> focus.notes
-                    else -> focus.settings
+                    else -> focus.cc
                 }
             TvTransport(player = player, focus = focus, down = below, extras = extras)
             TvMarksRail(marks = extras.marks, actions = extras.markActions, first = focus.marks, up = focus.playPause) {
-                TvToolGroup(focus = focus, extras = extras)
+                TvToolGroup(focus = focus, extras = extras, bands = bands)
             }
         }
     }

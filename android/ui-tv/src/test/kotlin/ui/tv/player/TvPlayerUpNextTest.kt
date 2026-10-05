@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
  * The player opened on the middle title of a three-title run: the remote's
  * Next and Previous step through it and are never left for the playback
  * session, and the up-next card near the end puts the remote on Play now —
- * except over the settings panel, which keeps it.
+ * except over a menu, which keeps it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -93,9 +93,9 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theCardDoesNotTakeTheRemoteFromTheSettingsPanel() {
-        openSettings()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
+    fun theCardDoesNotTakeTheRemoteFromAMenu() {
+        openMenu("Speed")
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
 
         nearTheEnd()
 
@@ -104,7 +104,7 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
 
         back()
 
-        compose.onNodeWithTag(TvSettingsPanelTag).assertDoesNotExist()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
         compose.onNodeWithText("Play now").assertIsFocused()
     }
 

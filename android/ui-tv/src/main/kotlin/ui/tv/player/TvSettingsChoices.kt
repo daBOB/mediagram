@@ -26,11 +26,11 @@ import player.SubtitleOption
 import player.speedLabel
 
 /**
- * The settings panel's radio-choice sections — Speed, Audio, Subtitles and
- * Framing, with the phone sheet's own headings, rows and labels in the
- * phone sheet's own order. Each is a plain function of what it shows and
- * what choosing does, as the phone's are; whether Audio and Subtitles
- * appear at all is the panel's decision, on the phone's terms.
+ * The card menus' radio-choice sections — Speed, Audio, Subtitles and
+ * Framing, with the phone sheet's own headings, rows and labels. Each is a
+ * plain function of what it shows and what choosing does, as the phone's
+ * are, and opens with [current] on the value already chosen — or the first,
+ * before one is.
  */
 @Composable
 internal fun TvSpeedSection(
@@ -55,10 +55,12 @@ internal fun TvSpeedSection(
 internal fun TvAudioSection(
     options: List<AudioOption>,
     onChosen: (AudioOption) -> Unit,
+    current: FocusRequester? = null,
 ) {
     TvSettingsHeading("Audio")
+    val landing = options.firstOrNull { it.selected } ?: options.firstOrNull()
     for (option in options) {
-        TvChoiceRow(label = option.text, selected = option.selected, onClick = { onChosen(option) })
+        TvChoiceRow(label = option.text, selected = option.selected, onClick = { onChosen(option) }, focusRequester = current?.takeIf { option == landing })
     }
 }
 
@@ -66,10 +68,12 @@ internal fun TvAudioSection(
 internal fun TvSubtitleSection(
     options: List<SubtitleOption>,
     onChosen: (String) -> Unit,
+    current: FocusRequester? = null,
 ) {
     TvSettingsHeading("Subtitles")
+    val landing = options.firstOrNull { it.selected } ?: options.firstOrNull()
     for (option in options) {
-        TvChoiceRow(label = option.label, selected = option.selected, onClick = { onChosen(option.value) })
+        TvChoiceRow(label = option.label, selected = option.selected, onClick = { onChosen(option.value) }, focusRequester = current?.takeIf { option == landing })
     }
 }
 
@@ -77,10 +81,11 @@ internal fun TvSubtitleSection(
 internal fun TvFramingSection(
     framing: Framing,
     onChosen: (Framing) -> Unit,
+    current: FocusRequester? = null,
 ) {
     TvSettingsHeading("Framing")
     for (option in Framing.entries) {
-        TvChoiceRow(label = option.label, selected = option == framing, onClick = { onChosen(option) })
+        TvChoiceRow(label = option.label, selected = option == framing, onClick = { onChosen(option) }, focusRequester = current?.takeIf { option == framing })
     }
 }
 

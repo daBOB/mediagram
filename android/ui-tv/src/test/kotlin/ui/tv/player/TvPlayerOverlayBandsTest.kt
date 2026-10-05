@@ -1,12 +1,14 @@
 package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -16,8 +18,8 @@ import kotlin.test.assertTrue
 /**
  * The up-next card as the stage floats it: between the title along the top
  * and the controls along the bottom, never inside either; reached by Up
- * from the seek bar; to the left of the settings panel while that is open;
- * and put away by a Back key as a remote sends it, as the panel is.
+ * from the seek bar; to the left of the episode list while that is open;
+ * and put away by a Back key as a remote sends it, as a menu is.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -55,21 +57,24 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun withThePanelOpenTheCountdownStandsBesideIt() {
-        openSettings()
+    fun withTheEpisodesOpenTheCountdownStandsBesideThem() {
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
         nearTheEnd()
-        val panel = compose.onNodeWithTag(TvSettingsPanelTag).getBoundsInRoot()
+        val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
         val card = compose.onNodeWithTag(TvUpNextCardTag).getBoundsInRoot()
-        assertTrue(card.right <= panel.left, "card ends at ${card.right}, the panel starts at ${panel.left}")
+        assertTrue(card.right <= list.left, "card ends at ${card.right}, the list starts at ${list.left}")
         compose.onNodeWithText("When this ends").assertIsDisplayed()
     }
 
+    /** Back as a remote sends it — through focus first — closes the menu and only the menu. */
     @Test
-    fun aBackKeyClosesThePanelOntoTheGear() {
-        openSettings()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
+    fun aBackKeyClosesAMenuOntoItsTool() {
+        openMenu("Speed")
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
         pressBackKey()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Playback settings").assertIsFocused()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+        compose.onNodeWithTag(TvSeekBarTag).assertExists()
     }
 }

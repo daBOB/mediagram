@@ -2,21 +2,20 @@ package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performSemanticsAction
 import io.mockk.verify
 import org.junit.Test
@@ -28,103 +27,102 @@ import player.CONTROLS_LINGER_MS
 import player.setSpeed
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
- * The playback settings panel on a title with one audio track and no
- * subtitles: reached from the gear before the statistics toggle, the remote
- * on its first row, its keys its own, the controls held behind it, and Back
- * closing it before it does anything else.
+ * The Speed and Framing menus on a title with one audio track and no
+ * subtitles: each opens just above its tool, inside the controls' width,
+ * with the remote on the value already chosen; keeps its keys to itself;
+ * holds the controls up; and closes on a choice, or on Back — only itself,
+ * onto the tool that opened it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerSettingsTest : TvPlayerScreenHarness() {
     @Test
-    fun theGearSitsBeforeTheStatisticsToggleAndOpensThePanelOnTheCurrentSpeed() {
-        toTool(hasContentDescription("Playback settings"))
-        press(Key.DirectionRight)
-        compose.onNodeWithContentDescription("Show playback statistics").assertIsFocused()
-        press(Key.DirectionLeft)
+    fun theSpeedMenuOpensAboveItsToolInsideTheControlsOnTheCurrentSpeed() {
+        openMenu("Speed")
 
-        press(Key.DirectionCenter)
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
-        inPanel("1×").assertIsFocused()
-        inPanel("1×").assertIsSelected()
+        inMenu("1×").assertIsFocused()
+        inMenu("1×").assertIsSelected()
+        val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
+        val tool = compose.onNodeWithContentDescription("Speed").getBoundsInRoot()
+        val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        assertTrue(menu.bottom <= tool.top, "the menu ends at ${menu.bottom}, its tool starts at ${tool.top}")
+        assertTrue(menu.left >= card.left && menu.right <= card.right, "the menu spans ${menu.left}..${menu.right}, the controls ${card.left}..${card.right}")
     }
 
     @Test
-    fun aSpeedAlreadyChosenIsWhereThePanelOpens() {
+    fun aSpeedAlreadyChosenIsWhereTheMenuOpens() {
         compose.runOnUiThread { controller.get().playerViewModel.setSpeed(1.5f) }
         compose.waitForIdle()
-        openSettings()
-        inPanel("1.5×").assertIsFocused()
+        openMenu("Speed")
+        inMenu("1.5×").assertIsFocused()
         compose.runOnUiThread { controller.get().playerViewModel.setSpeed(1f) }
     }
 
     @Test
     fun eachChoiceIsARadioButtonWhoseMarkIsNotReadAloud() {
-        openSettings()
-        inPanel("1×").assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+        openMenu("Speed")
+        inMenu("1×").assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
         compose.onAllNodesWithText("●").assertCountEquals(0)
         compose.onAllNodesWithText("○").assertCountEquals(0)
     }
 
     @Test
-    fun theSectionsAreThePhoneSheetsForATitleWithNoExtraTracks() {
-        openSettings()
-        inPanel("Speed").assertExists()
-        inPanel("Framing").assertExists()
-        for (framing in Framing.entries) inPanel(framing.label).assertExists()
-        compose.onNodeWithText("Audio").assertDoesNotExist()
-        compose.onNodeWithText("Subtitles").assertDoesNotExist()
-        compose.onNodeWithText("Subtitle style").assertDoesNotExist()
+    fun aTitleWithNoExtraTracksOffersSpeedAndFramingButNoAudio() {
+        compose.onNodeWithContentDescription("Speed").assert(hasText("1×"))
+        compose.onNodeWithContentDescription("Framing").assert(hasText("Fit"))
+        compose.onNodeWithContentDescription("Audio").assertDoesNotExist()
+
+        openMenu("Framing")
+        for (framing in Framing.entries) inMenu(framing.label).assertExists()
+        inMenu("Fit").assertIsFocused()
     }
 
     @Test
-    fun leftAndRightInThePanelNeitherSkipNorLeaveIt() {
-        openSettings()
+    fun leftAndRightInTheMenuNeitherSkipNorLeaveIt() {
+        openMenu("Speed")
         press(Key.DirectionLeft)
         press(Key.DirectionRight)
 
         assertEquals(42_000L, fixture.positionMs)
-        inPanel("1×").assertIsFocused()
+        inMenu("1×").assertIsFocused()
     }
 
     @Test
-    fun aSpeedChosenPlaysAtItAndIsReadOutBesideTheGear() {
-        openSettings()
+    fun aSpeedChosenPlaysAtItAndClosesTheMenuOntoItsToolWhichReadsIt() {
+        openMenu("Speed")
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
 
         verify { fixture.media.setPlaybackSpeed(1.25f) }
         assertEquals(1.25f, controller.get().playerViewModel.choices.value.speed)
-        inPanel("1.25×").assertIsSelected()
-
-        back()
-        compose.onNodeWithText("1.25×").assertExists()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+        compose.onNodeWithContentDescription("Speed").assert(hasText("1.25×"))
     }
 
     @Test
-    fun atTheDefaultSpeedNothingIsReadOut() {
-        compose.onNodeWithText("1×").assertDoesNotExist()
-    }
-
-    @Test
-    fun aFramingChosenIsTheSharedChoice() {
-        openSettings()
-        inPanel("Fill").performSemanticsAction(SemanticsActions.OnClick)
+    fun aFramingChosenIsTheSharedChoiceAndTheToolReadsIt() {
+        openMenu("Framing")
+        inMenu("Fill").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
         assertEquals(Framing.FILL, controller.get().playerViewModel.choices.value.framing)
-        inPanel("Fill").assertIsSelected()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Framing").assert(hasText("Fill"))
     }
 
+    /** Back with a menu open closes that menu and nothing else: the controls, the title and the player all stay. */
     @Test
-    fun backClosesThePanelOntoTheGearThenPutsTheControlsAwayThenLeaves() {
-        openSettings()
+    fun backClosesOnlyTheMenuOntoItsToolThenPutsTheControlsAwayThenLeaves() {
+        openMenu("Speed")
 
         back()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Playback settings").assertIsFocused()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+        compose.onNodeWithTag(TvSeekBarTag).assertExists()
         verify(exactly = 0) { fixture.media.stop() }
 
         back()
@@ -135,24 +133,23 @@ class TvPlayerSettingsTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theControlsStayUpWhileThePanelIsOpen() {
-        openSettings()
+    fun theControlsStayUpWhileAMenuIsOpen() {
+        openMenu("Speed")
         compose.mainClock.advanceTimeBy(CONTROLS_LINGER_MS + 500)
         compose.waitForIdle()
 
         compose.onNodeWithTag(TvSeekBarTag).assertExists()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
     }
 
     @Test
-    fun thePlayKeyStillPausesWithThePanelOpen() {
-        openSettings()
+    fun thePlayKeyStillPausesWithAMenuOpen() {
+        openMenu("Speed")
         press(Key.MediaPlayPause)
 
         assertFalse(fixture.isPlaying)
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
     }
 
-    private fun inPanel(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(TvSettingsPanelTag)))
+    private fun inMenu(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(TvCardMenuTag)))
 }
-

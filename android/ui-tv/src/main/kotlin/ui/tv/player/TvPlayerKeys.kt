@@ -42,7 +42,7 @@ sealed interface TvKeyAction {
     /** Turns regular subtitles on or off and brings the controls up briefly, so the CC state can be read — the remote's captions key. */
     data object ToggleSubtitles : TvKeyAction
 
-    /** Closes the settings panel, and only that: the controls stay up behind it. */
+    /** Closes the open menu, or the episode list, and only that: the controls stay up behind it. */
     data object ClosePanel : TvKeyAction
 
     /** Closes the notes column beside the picture, and only that. */
@@ -64,7 +64,7 @@ sealed interface TvKeyAction {
     data object Ignore : TvKeyAction
 }
 
-/** The keys the settings panel, or a failure's Retry, takes for itself: moving focus, and choosing. */
+/** The keys a menu, the episode list, or a failure's Retry, takes for itself: moving focus, and choosing. */
 private val PANEL_KEYS =
     setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter)
 
@@ -91,15 +91,15 @@ private val SKIP_SECONDS = (SKIP_MS / 1_000).toInt()
  * and every other key but Back is ignored: a skip or a pause aimed at a
  * player with nothing loaded would be a command nobody could see land.
  *
- * [panelOpen] is the settings panel, which answers before anything else:
- * Back closes it, and the D-pad and Centre are ordinary focus movement and
- * selection inside it — a Left meant for the next row of choices must not
- * skip the film. The dedicated media keys keep their meaning,
- * as they do everywhere: a viewer can pause to look at a subtitle size
- * without closing the panel first.
+ * [panelOpen] is a menu over the controls or the episode list down the
+ * right, which answers before anything else: Back closes it, and the D-pad
+ * and Centre are ordinary focus movement and selection inside it — a Left
+ * meant for the next choice must not skip the film. The dedicated media
+ * keys keep their meaning, as they do everywhere: a viewer can pause to
+ * look at a subtitle size without closing the menu first.
  *
  * [upNextShown] is the up-next card, which Back cancels before it does
- * anything else outside the panel — the card is the thing on screen most
+ * anything else outside a menu — the card is the thing on screen most
  * recently put in front of the viewer, and a Back that left the title
  * instead would throw away the very choice the card was offering.
  *
@@ -136,7 +136,7 @@ fun tvKeyAction(
     if (key == Key.MediaNext) return TvKeyAction.Next
     if (key == Key.MediaPrevious) return TvKeyAction.Previous
     // Like Next, meaning the same in every state: a viewer who presses
-    // captions with the settings panel or the notes column open still wants
+    // captions with a menu or the notes column open still wants
     // the subtitles toggled, and nothing else on this screen uses the key.
     if (key == Key.Captions) return TvKeyAction.ToggleSubtitles
     if (panelOpen) {

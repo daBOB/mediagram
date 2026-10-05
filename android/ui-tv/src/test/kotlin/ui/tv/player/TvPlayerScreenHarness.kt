@@ -115,9 +115,9 @@ abstract class TvPlayerScreenHarness {
         compose.onNode(target).assertIsFocused()
     }
 
-    /** From the controls as they open: to the gear, and pressed. */
-    internal fun openSettings() {
-        toTool(hasContentDescription("Playback settings"))
+    /** From the controls as they open: to the tool named [description], pressed — its menu opens above it on the current value. */
+    internal fun openMenu(description: String) {
+        toTool(hasContentDescription(description))
         press(Key.DirectionCenter)
     }
 

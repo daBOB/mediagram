@@ -50,10 +50,11 @@ import ui.player.PlayerNavigationEffects
  * controls are away [TvPlayerKeyHolder] holds the remote, so no key is
  * ever lost to a focus that went with them.
  *
- * The gear among the tools opens the phone's playback settings as a panel
- * to one side ([TvPlayerSettingsPanel]); a title's notes open in a column
- * beside the picture ([TvNotesBeside]). Back closes the panel, then the
- * up-next card, then the notes, then the controls ([TvPlayerBack]). A
+ * The tools open small menus above themselves ([TvCardMenuOverlay]); ☰
+ * opens the run's episodes down the right ([TvEpisodeSidebar]); a title's
+ * notes open in a column beside the picture ([TvNotesBeside]). Back closes
+ * a menu or the episode list, then the up-next card, then the notes, then
+ * the statistics, then the controls ([TvPlayerBack]). A
  * failed title offers Retry, as on the phone ([TvPlayerStatus]).
  *
  * [set] is the catalogue's entry for [setId], for what the top bar says
@@ -110,17 +111,21 @@ fun TvPlayerScreen(
     var statsShown by rememberSaveable { mutableStateOf(false) }
     var choosingList by rememberSaveable { mutableStateOf(false) }
     var choosingKids by rememberSaveable { mutableStateOf(false) }
-    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    var menu by rememberSaveable { mutableStateOf<TvCardMenu?>(null) }
     var sidebarOpen by rememberSaveable { mutableStateOf(false) }
     // A switch to a title with no run takes its list away, and the sidebar with it.
     val sidebarShown = sidebarOpen && episodes != null
-    val panelOpen = settingsOpen || sidebarShown
+    val panelOpen = menu != null || sidebarShown
+    val closePanel = {
+        if (menu != null) menu = null else sidebarOpen = false
+        landing = TvControlsLanding.Opener
+    }
     val closeMarkDialogs = {
         choosingList = false
         choosingKids = false
     }
     TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = {
-        settingsOpen = false
+        menu = null
         sidebarOpen = false
     })
     TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
@@ -155,15 +160,7 @@ fun TvPlayerScreen(
         upNextShown = upNextShown,
         notesOpen = notesOpen,
         statsShown = statsShown,
-        onClosePanel = {
-            if (settingsOpen) {
-                landing = TvControlsLanding.Settings
-                settingsOpen = false
-            } else {
-                landing = TvControlsLanding.Opener
-                sidebarOpen = false
-            }
-        },
+        onClosePanel = closePanel,
         onCancelUpNext = viewModel::cancelUpNext,
         onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
         onHideStats = { statsShown = false },
@@ -200,36 +197,37 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown, choices.ccVisible, choices.subtitlesOn, hasEpisodes = episodes != null),
+                    view = TvControlsView(marks, held, upNext, statsShown, choices, hasEpisodes = episodes != null),
                     actions =
                         TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },
                             onAddToList = { choosingList = true },
                             onKids = { choosingKids = true },
-                            onOpenSettings = { settingsOpen = true },
-                            onPlayNext = steps.next,
+                            onOpenMenu = { opened ->
+                                focus.opener = focus.openerOf(opened)
+                                menu = opened
+                            },
+                            onSwitchMenu = { menu = it },
+                            onCloseMenu = closePanel,
                             onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
-                            onSeekBarFocused = { onSeekBar = it },
                             onOpenEpisodes = {
                                 focus.opener = focus.episodes
                                 sidebarOpen = true
                             },
-                            onCloseEpisodes = {
-                                landing = TvControlsLanding.Opener
-                                sidebarOpen = false
-                            },
+                            onCloseEpisodes = closePanel,
                             onPickEpisode = { id ->
                                 landing = TvControlsLanding.PlayPause
                                 sidebarOpen = false
                                 viewModel.playFromRun(id)
                             },
+                            onSeekBarFocused = { onSeekBar = it },
                         ),
-                    picture = TvStagePicture(subtitleCues, choices, barShown, settingsOpen, episodes.takeIf { sidebarShown }),
+                    picture = TvStagePicture(subtitleCues, choices, barShown, menu, episodes.takeIf { sidebarShown }),
                     bands = bands,
                 )
             }
             // A dialog window's own keys: the remote's media keys still reach
-            // the film through it, as through the settings panel.
+            // the film through it, as through a menu.
             val dialogKeys = { event: KeyEvent -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) }
             if (choosingList) {
                 TvAddToListOverPlayer(marks = marks, notice = actionNotice, viewModel = viewModel, onDismiss = { choosingList = false }, keys = dialogKeys)

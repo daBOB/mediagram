@@ -15,7 +15,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 
 /** Where the remote lands when a key brings the controls up. */
-internal enum class TvControlsLanding { PlayPause, SeekBar, Settings, Opener }
+internal enum class TvControlsLanding { PlayPause, SeekBar, Opener }
 
 /**
  * How far one press of a held Left/Right moves the film. A held key

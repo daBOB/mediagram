@@ -92,7 +92,7 @@ private const val NOTES_SHARE = 0.38f
  *
  * Closed, the column hands the remote back: to the screen itself with the
  * controls away, or to the Notes button when Back closed it from inside
- * with the controls up. [busy] — the settings panel — keeps the remote
+ * with the controls up. [busy] — a menu or the episode list — keeps the remote
  * where it is either way. A [failed] title keeps it on Retry, and takes it
  * back there when the column closes: Retry is then the only thing left to
  * press, and a remote left in a column that has gone is on nothing.

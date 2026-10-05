@@ -1,14 +1,17 @@
 package ui.tv.player
 
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import data.CatalogRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -31,12 +34,12 @@ private fun fixtureWith(tracks: List<SubtitleTrackInfo>): TvPlayerFixture {
     return TvPlayerFixture(catalog = catalog, subtitles = mockk<SubtitleTrackSource>(relaxed = true))
 }
 
-private fun panelText(text: String) = hasText(text) and hasAnyAncestor(hasTestTag(TvSettingsPanelTag))
+private fun menuText(text: String) = hasText(text) and hasAnyAncestor(hasTestTag(TvCardMenuTag))
 
 /**
- * A title whose only track is forced: the panel offers size and sync for
- * those lines but no language rows, and there is no CC button, since
- * nothing regular is there to turn on.
+ * A title whose only track is forced: CC is there but dimmed — nothing
+ * regular to turn on — and its ▾ opens straight onto "Style…", since size
+ * and sync still apply to the forced lines.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -45,18 +48,21 @@ class TvPlayerForcedOnlySubtitleGateTest : TvPlayerScreenHarness() {
     override fun makeFixture() = fixtureWith(listOf(SubtitleTrackInfo(track = 0, lang = "de", forced = true, sdh = false, label = "")))
 
     @Test
-    fun theStyleSectionShowsAndTheLanguageRowsDoNot() {
+    fun ccIsDimmedAndItsOptionsOpenOnStyle() {
         compose.waitUntil(timeoutMillis = 5_000) { controller.get().playerViewModel.choices.value.subtitleStyleVisible }
-        openSettings()
+        compose.onNodeWithContentDescription("Subtitles").assertIsNotEnabled()
 
-        compose.onNode(panelText("Subtitle style")).assertExists()
-        compose.onNode(panelText("Sync")).assertExists()
-        compose.onNode(panelText("Subtitles")).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Subtitles off").assertDoesNotExist()
+        openMenu("Subtitle options")
+
+        compose.onNode(menuText("Off")).assertDoesNotExist()
+        compose.onNode(menuText("Style…")).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNode(menuText("Subtitle style")).assertExists()
+        compose.onNode(menuText("Sync")).assertExists()
     }
 }
 
-/** A title with no subtitle track: neither subtitle section, no CC button. */
+/** A title with no subtitle track: CC and ▾ both dimmed, and ▾ opens nothing. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -64,21 +70,21 @@ class TvPlayerNoSubtitlesGateTest : TvPlayerScreenHarness() {
     override fun makeFixture() = fixtureWith(emptyList())
 
     @Test
-    fun neitherSectionNorButtonAppears() {
+    fun ccAndItsOptionsAreDimmedAndOpenNothing() {
         // The set has loaded once its title line is up; absence before that proves nothing.
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodesWithText("A Show · S1E4 · Pilot").fetchSemanticsNodes().isNotEmpty()
         }
-        openSettings()
+        compose.onNodeWithContentDescription("Subtitles").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Subtitle options").assertIsNotEnabled()
 
-        compose.onNode(panelText("Subtitles")).assertDoesNotExist()
-        compose.onNode(panelText("Subtitle style")).assertDoesNotExist()
-        compose.onNodeWithContentDescription("Subtitles off").assertDoesNotExist()
-        compose.onNodeWithText("CC ○").assertDoesNotExist()
+        openMenu("Subtitle options")
+
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
     }
 }
 
-/** A title with a regular track: the CC button starts off and one press turns it on. */
+/** A title with a regular track: CC starts off and one press turns it on. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -86,12 +92,13 @@ class TvPlayerCcButtonTest : TvPlayerScreenHarness() {
     override fun makeFixture() = fixtureWith(listOf(SubtitleTrackInfo(track = 0, lang = "en", forced = false, sdh = false, label = "")))
 
     @Test
-    fun pressingItTurnsTheSubtitlesOn() {
-        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithContentDescription("Subtitles off").fetchSemanticsNodes().isNotEmpty() }
+    fun onePressTurnsTheSubtitlesOn() {
+        compose.waitUntil(timeoutMillis = 5_000) { controller.get().playerViewModel.choices.value.ccVisible }
+        compose.onNodeWithText("CC ○").assertExists()
 
-        compose.onNodeWithContentDescription("Subtitles off").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Subtitles").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
-        compose.onNodeWithContentDescription("Subtitles on").assertExists()
+        compose.onNodeWithText("CC ●").assertExists()
     }
 }

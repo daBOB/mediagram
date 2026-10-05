@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.media3.common.Player
 import model.MediaSet
+import player.PlayerChoices
 import player.PlayerMarksState
 import player.PlayerViewModel
 import player.UpNextPhase
@@ -19,13 +20,10 @@ import ui.tv.setup.LocalTvDialogKeys
 internal class TvControlsView(
     val marks: PlayerMarksState?,
     val held: Boolean,
-    val speed: Float,
     val upNext: UpNextUiState,
     val statsShown: Boolean,
-    /** Whether the title has a regular subtitle track; the CC button is left out without one. */
-    val hasSubtitles: Boolean = false,
-    /** Whether a regular track is showing. */
-    val subtitlesOn: Boolean = false,
+    /** What the tools read: subtitles, speed, audio and framing. */
+    val choices: PlayerChoices,
     /** Whether the run has an episode list to open; ☰ is left out without one. */
     val hasEpisodes: Boolean = false,
 )
@@ -35,18 +33,20 @@ internal class TvControlsActions(
     val onToggleStats: () -> Unit,
     val onAddToList: () -> Unit,
     val onKids: () -> Unit,
-    val onOpenSettings: () -> Unit,
-    val onPlayNext: () -> Unit,
+    val onOpenMenu: (TvCardMenu) -> Unit,
+    /** One menu giving way to another in its place: CC ▾'s "Style…". */
+    val onSwitchMenu: (TvCardMenu) -> Unit,
+    val onCloseMenu: () -> Unit,
+    val onOpenEpisodes: () -> Unit,
+    val onCloseEpisodes: () -> Unit,
+    val onPickEpisode: (String) -> Unit,
     val onToggleNotes: (() -> Unit)?,
     val onSeekBarFocused: (Boolean) -> Unit,
-    val onOpenEpisodes: () -> Unit = {},
-    val onCloseEpisodes: () -> Unit = {},
-    val onPickEpisode: (String) -> Unit = {},
 )
 
 /**
  * [TvPlayerControls] over the shared ViewModel: the marks and statistics,
- * the settings gear and the standing "Play next". The up-next card is not
+ * the tools and the standing "Play next". The up-next card is not
  * among them but floats over the stage ([TvPlayerStage]); its Play now is
  * the same step forward as "Play next", its Cancel the ViewModel's own,
  * which leaves that standing button in place.
@@ -78,14 +78,12 @@ internal fun TvPlayerControlsForViewModel(
                 onToggleStats = actions.onToggleStats,
                 totals = viewModel.totals,
                 held = view.held,
-                speed = view.speed,
-                onOpenSettings = actions.onOpenSettings,
-                hasSubtitles = view.hasSubtitles,
-                subtitlesOn = view.subtitlesOn,
+                choices = view.choices,
                 onToggleSubtitles = viewModel::toggleSubtitles,
+                onOpenMenu = actions.onOpenMenu,
                 hasNext = view.upNext.hasNext,
                 nextTitleLine = view.upNext.titleLine,
-                onPlayNext = actions.onPlayNext,
+                onPlayNext = viewModel::playNext,
                 onToggleNotes = actions.onToggleNotes,
                 upNextShown = view.upNext.phase != UpNextPhase.HIDDEN,
                 onOpenEpisodes = actions.onOpenEpisodes.takeIf { view.hasEpisodes },
