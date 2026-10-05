@@ -82,3 +82,11 @@
     - A title twice in a run: ⏮/⏭ use the first occurrence, as ⏭ always did.
     - Two Low-risk surviving mutants on catalogue retention (the call site of `runSetsOf`, and dropping `loaded` on an empty run). Neither can be seen by a viewer.
 - **2026-10-05:** phases 04 (phone) and 05 (TV) started in parallel worktrees from `a0f5e5c5`, with no shared files. Phase 01 (web) is in progress.
+- **2026-10-05, tablet walk of the phase 04 branch** (look only; one test play of a cached Boston Legal episode moved its resume point from 28:13 to 29:11):
+  - The card, the sidebar and Back closing only the sidebar all work on the device.
+  - **Found:** row 2's tools are centred, where the spec and the web put them on the left with PiP at the right. Goes into phase 04's fix round.
+  - **Found:** the open sidebar overlaps the card.
+- **Ruling: the card clears the open sidebar on every surface.** It is laid out left of the sidebar and narrows if it has to.
+  - Added to the phase 02 plan.
+  - Sent to the phase 05 worker.
+  - Goes into phase 04's fix round.
