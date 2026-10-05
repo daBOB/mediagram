@@ -57,6 +57,38 @@ dialog.resting .control-card { pointer-events: none; }
   white-space: nowrap;
 }
 
+/* What the card's buttons open: just above the card, inside its width, in
+   the card's own fill. Placed by player-menus.js, which sets `left`. */
+.card-menu,
+.cue-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  background: color-mix(in srgb, var(--stage) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+  pointer-events: auto;
+}
+.card-menu { display: grid; min-width: 9rem; padding: 0.35rem; }
+.menu-item {
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--stage-ink-2);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--hover), background-color var(--hover);
+}
+.menu-item:hover { color: var(--stage-ink); background: rgba(255, 255, 255, 0.08); }
+.menu-item[aria-pressed="true"] { color: var(--stage-accent); }
+
 @media (max-width: 767px) {
   .hud-top { flex-wrap: wrap; row-gap: 8px; }
   .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); }
