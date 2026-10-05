@@ -96,7 +96,7 @@ class UpNextController(
     fun onPlayingChanged(isPlaying: Boolean) {
         if (isPlaying) {
             if (switcher.cancelGateOnPlay()) publish(state.value.phase)
-            ensureTicking()
+            tickerJob?.cancel(); tickerJob = scope.runTicker(::evaluate)
             evaluate()
         } else {
             tickerJob?.cancel(); tickerJob = null
@@ -115,7 +115,14 @@ class UpNextController(
     }
 
     /** The viewer asked for it now — starts as soon as the player can give it, the same as opening any title by hand. */
-    fun playNow() = switchTo(gate = false)
+    fun playNow() {
+        nextId?.let { switchTo(it, gate = false) }
+    }
+
+    /** A title of the run picked by hand — Previous, or a sidebar row — through [playNow]'s own switch; the open title, or one outside the run, is none. */
+    fun playFromRun(setId: String) {
+        if (setId != session.openSetId && setId in run) switchTo(setId, gate = false)
+    }
 
     /** Remembered for this title only, so watching the last moments again does not start the countdown a second time. */
     fun cancel() {
@@ -133,11 +140,6 @@ class UpNextController(
         _state.value = UpNextUiState()
     }
 
-    private fun ensureTicking() {
-        tickerJob?.cancel()
-        tickerJob = scope.runTicker(::evaluate)
-    }
-
     private fun evaluate() {
         val setId = session.openSetId
         val phase = if (setId == null) {
@@ -147,7 +149,7 @@ class UpNextController(
                 UpNextAt(
                     hasNext = nextId != null,
                     cancelled = setId in cancelledIds,
-                    remainingSeconds = remainingSeconds(),
+                    remainingSeconds = handle.remainingSeconds(openSet.value?.durationSecs),
                     ended = ended,
                 ),
             )
@@ -156,19 +158,12 @@ class UpNextController(
         publish(phase)
     }
 
-    private fun remainingSeconds(): Double? {
-        val runtime = openSet.value?.durationSecs?.toDouble() ?: return null
-        if (runtime <= 0) return null
-        val posMs = handle.positionMs() ?: return null
-        return runtime - posMs / 1_000.0
-    }
-
     private fun startCountdownIfNeeded() {
         if (countdownJob?.isActive == true) return
         countdownLeft = COUNTDOWN_SECONDS
         countdownJob = scope.runCountdown(
             onTick = { left -> countdownLeft = left; publish(UpNextPhase.COUNTING) },
-            onFinished = { switchTo(gate = true) },
+            onFinished = { nextId?.let { switchTo(it, gate = true) } },
         )
     }
 
@@ -176,8 +171,7 @@ class UpNextController(
         countdownJob?.cancel(); countdownJob = null; countdownLeft = null
     }
 
-    private fun switchTo(gate: Boolean) {
-        val id = nextId ?: return
+    private fun switchTo(id: String, gate: Boolean) {
         stopCountdown()
         ended = false
         // The existing save path: wherever the ending title is, saved as it
@@ -194,6 +188,8 @@ class UpNextController(
             countdownSecondsLeft = countdownLeft,
             hasNext = nextId != null,
             awaitingStart = switcher.awaitingStart,
+            run = run,
+            hasPrevious = session.openSetId?.let { previousInQueue(run, it) } != null,
         )
     }
 }

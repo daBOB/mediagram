@@ -20,7 +20,14 @@ data class UpNextUiState(
      * [phase] describes, but the screen must stay awake through both.
      */
     val awaitingStart: Boolean = false,
-)
+    /** The run the open title plays in — what ⏮, ⏭ and the episode sidebar walk; empty for a film opened on its own. */
+    val run: List<String> = emptyList(),
+    /** Whether a title comes before the open one in [run] — ⏮ is disabled on the first. */
+    val hasPrevious: Boolean = false,
+) {
+    /** Whether there is a run at all: without one, ⏮ and ⏭ are hidden rather than disabled. */
+    val inRun: Boolean get() = run.isNotEmpty()
+}
 
 /** The next title to open, and the run it belongs to — [UpNextController] asks the UI layer to navigate there; see `PlayerScreen`'s own `pendingSwitch` effect. */
 data class PendingPlayerSwitch(val setId: String, val run: List<String>)
