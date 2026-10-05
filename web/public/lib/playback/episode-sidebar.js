@@ -64,6 +64,9 @@ export function mountEpisodeSidebar({ onPick, onClose }) {
     on.hidden = model.groups.length < 2;
     back.disabled = shown === 0;
     on.disabled = shown === model.groups.length - 1;
+    // A button that has just disabled itself cannot keep focus; the other one can.
+    if (document.activeElement === back && back.disabled) (on.disabled ? panel : on).focus();
+    if (document.activeElement === on && on.disabled) (back.disabled ? panel : back).focus();
     playingRow = null;
     const block = seasonBlock(group, (set) => {
       close();
@@ -87,9 +90,12 @@ export function mountEpisodeSidebar({ onPick, onClose }) {
 
   function close() {
     if (panel.hidden) return;
+    // Focus on a hidden button falls out of the dialog to the page behind it.
+    const held = panel.contains(document.activeElement);
     panel.hidden = true;
     dialog.classList.remove("sidebar-open");
     button.setAttribute("aria-expanded", "false");
+    if (held) button.focus();
     onClose?.();
   }
 
@@ -104,7 +110,9 @@ export function mountEpisodeSidebar({ onPick, onClose }) {
     close();
     playing = set.setId;
     model = episodeGroups(collection, set.setId);
+    const focusedHere = document.activeElement === button;
     button.hidden = model === null;
+    if (focusedHere && model === null) document.getElementById("play-pause").focus();
   }
 
   button.addEventListener("click", () => (panel.hidden ? show() : close()));
@@ -122,7 +130,10 @@ export function mountEpisodeSidebar({ onPick, onClose }) {
     if (event.key !== "Escape" || event.defaultPrevented || panel.hidden) return;
     event.preventDefault();
     close();
-    button.focus();
+  });
+  // Keys the list uses for itself must not also turn the volume or skip.
+  panel.addEventListener("keydown", (event) => {
+    if (event.key.startsWith("Arrow") || event.key === "Enter" || event.key === " ") event.stopPropagation();
   });
 
   return { open, close, isOpen: () => !panel.hidden };

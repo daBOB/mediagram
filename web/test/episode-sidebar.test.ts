@@ -176,3 +176,70 @@ describe("closing", () => {
     expect(sidebar.isOpen()).toBe(false);
   });
 });
+
+describe("where focus goes", () => {
+  const focused = () => (env.document as unknown as { activeElement: Node | null }).activeElement;
+  const shown = () => {
+    const made = mount();
+    made.sidebar.open(s1[0]!, showOf([...s1, ...s2]));
+    env.node("episodes").fire("click");
+    return made;
+  };
+  const key = (name: string, target: Node = env.node("player")) => {
+    const event = Object.assign(new Event("keydown", { cancelable: true, bubbles: true }), { key: name, stopped: false });
+    event.stopPropagation = () => { event.stopped = true; };
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  test("opening moves focus into the sidebar", () => {
+    shown();
+    expect(focused()).toBe(panel());
+  });
+
+  test("✕ and Esc hand focus back to ☰", () => {
+    shown();
+    shut().focus();
+    shut().fire("click");
+    expect(focused()).toBe(env.node("episodes"));
+    env.node("episodes").fire("click");
+    key("Escape");
+    expect(focused()).toBe(env.node("episodes"));
+  });
+
+  test("a pick leaves focus on ☰, and on play/pause when the next title has no list", () => {
+    const { sidebar } = shown();
+    rows()[1]!.focus();
+    rows()[1]!.fire("click");
+    expect(focused()).toBe(env.node("episodes"));
+    sidebar.open(set({ kind: "movie" }), null);
+    expect(focused()).toBe(env.node("play-pause"));
+  });
+
+  test("stepping onto the first or last season hands focus to the other arrow, never to a disabled one", () => {
+    shown();
+    nextSeason().focus();
+    nextSeason().fire("click");
+    expect(nextSeason().disabled).toBe(true);
+    expect(focused()).toBe(prevSeason());
+    prevSeason().fire("click");
+    expect(prevSeason().disabled).toBe(true);
+    expect(focused()).toBe(nextSeason());
+  });
+
+  test("Esc after stepping to an end shuts only the sidebar", () => {
+    shown();
+    nextSeason().fire("click");
+    expect(key("Escape").defaultPrevented).toBe(true);
+    expect(panel().hidden).toBe(true);
+    expect(focused()).toBe(env.node("episodes"));
+  });
+
+  test("arrows, Enter and Space pressed in the list stay out of the player's key handler, Esc does not", () => {
+    shown();
+    for (const name of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", " "]) {
+      expect(key(name, panel()).stopped).toBe(true);
+    }
+    expect(key("Escape", panel()).stopped).toBe(false);
+  });
+});
