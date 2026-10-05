@@ -5,6 +5,26 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.113.0 — the web player's control card
+
+**Changed** (web player)
+
+- **One control card.** The player's controls now sit in one blurred card at the bottom of the picture, in three rows:
+  - the seek bar, running time and "ends at";
+  - CC▾, speed, audio and framing on the left; volume and fullscreen on the right;
+  - ↺ restart, ⏮ previous, −15, play/pause, +15, ⏭ next, and ⓘ stats.
+- **A slim top bar.** It keeps the title, My List, Kids, Add to, Notes and ✕.
+- **Small menus.**
+  - CC switches subtitles on and off in one press, bringing back the language that was showing.
+  - ▾ opens the languages and Style….
+  - Speed, audio and framing each open a short list above their button.
+- **Framing has a visible control.** Before, it was only the `z` key, with no feedback.
+- **Skip is 15 s** on the buttons and the keys.
+- **Restart and Previous are buttons.** Restart keeps play/pause. Previous is disabled on the first title, and hidden with no run.
+- **ⓘ opens a stats overlay:** video, audio, buffer, cache, and dropped frames when there are any. The one-line file facts and the preload readout moved into it.
+- **The card hides on the usual timer.** It stays up while paused, while a menu is open or while the pointer is over it. Clicking the picture no longer keeps it up for good.
+- **Blur is allowed in a second place.** The card is now the second place, after the masthead. `web/DESIGN.md` has a Player section saying so.
+
 ## 0.112.0 — skip 15 s; the player model behind the coming control card
 
 **Changed** (Android phone, tablet and TV)
