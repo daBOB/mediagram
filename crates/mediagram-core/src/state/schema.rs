@@ -176,6 +176,11 @@ const GROUPS: &[&[&str]] = &[
         "UPDATE profiles SET kids_age = 12 WHERE kids = 1",
         "ALTER TABLE kids ADD COLUMN age INTEGER",
     ],
+    // v8 -> v9: whether a PIN was proven — set by someone who knew the one
+    // before it, or the admin's reset — the web's v13, statement for
+    // statement. A first PIN never replaces one set earlier elsewhere
+    // (`merge::roles`); every PIN already stored is a first one.
+    &["ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0"],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

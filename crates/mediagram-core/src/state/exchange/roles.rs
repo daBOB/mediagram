@@ -3,10 +3,11 @@
 //! `web/src/state/roles-exchange.ts`, split out of `exchange.rs` for the
 //! reason `lists_exchange.rs` is.
 //!
-//! Corrective, like everything `import_merged` calls: newer local news is
-//! kept, and an equal time with a different value takes the winner the
-//! merge already chose by device id. SQLite failures propagate, so
-//! `import_merged` rolls the whole import back.
+//! Corrective, like everything `import_merged` calls: local news the merge
+//! ranks higher is kept — newer for a limit, by the PIN order for a PIN —
+//! and an equal rank with a different value takes the winner the merge
+//! already chose by device id. SQLite failures propagate, so `import_merged`
+//! rolls the whole import back.
 
 use std::collections::HashMap;
 
@@ -22,7 +23,8 @@ use crate::state::record::{AdminClaim, KidsAge, PinRecord, ProfileRoles, normal_
 pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<ProfileRoles> {
     conn.query_row(
         "SELECT kids, kids_age, kids_age_updated_at, admin_claimed_at, pin_hash, pin_salt,
-                pin_updated_at, (SELECT parent.name FROM profiles AS parent WHERE parent.id = profiles.parent_id)
+                pin_updated_at, (SELECT parent.name FROM profiles AS parent WHERE parent.id = profiles.parent_id),
+                pin_proven
            FROM profiles WHERE id = ?1",
         [profile_id],
         |row| {
@@ -37,13 +39,14 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
             let claimed_at: Option<i64> = row.get(3)?;
             let pin = row.get::<_, Option<String>>(4)?.zip(row.get::<_, Option<String>>(5)?);
             let pin_at = row.get::<_, i64>(6)? as f64;
+            let proven: bool = row.get(8)?;
             Ok(ProfileRoles {
                 admin: claimed_at.map(|at| AdminClaim { claimed_at: at as f64 }),
                 kids_age: kids.then_some(limit),
                 // By name, because a name is what sync knows a viewer by; a
                 // parent removed here is simply not said.
                 parent: row.get(7)?,
-                pin: pin.map(|(hash, salt)| PinRecord { hash, salt, updated_at: pin_at }),
+                pin: pin.map(|(hash, salt)| PinRecord { hash, salt, updated_at: pin_at, proven }),
             })
         },
     )
@@ -75,12 +78,17 @@ pub(super) fn import(conn: &Connection, merged: &[MergedProfile]) -> rusqlite::R
                 params![id, limit.age, limit.updated_at as i64],
             )?;
         }
+        // In the merge's own order (`merge::tie_break::keep_pin`): over no PIN
+        // at all; a proven one over a first one; between proven ones the
+        // newer, between first ones the older; as old and as proven but
+        // different, the winner the merge chose by device id.
         if let Some(pin) = &roles.pin {
             changed += conn.execute(
-                "UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_updated_at = ?4
-                   WHERE id = ?1 AND (pin_updated_at < ?4
-                     OR (pin_updated_at = ?4 AND (pin_hash IS NOT ?2 OR pin_salt IS NOT ?3)))",
-                params![id, pin.hash, pin.salt, pin.updated_at as i64],
+                "UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_updated_at = ?4, pin_proven = ?5
+                   WHERE id = ?1 AND (pin_hash IS NULL OR ?5 > pin_proven
+                     OR (?5 = pin_proven AND (CASE WHEN ?5 THEN pin_updated_at < ?4 ELSE pin_updated_at > ?4 END
+                       OR (pin_updated_at = ?4 AND (pin_hash IS NOT ?2 OR pin_salt IS NOT ?3)))))",
+                params![id, pin.hash, pin.salt, pin.updated_at as i64, pin.proven],
             )?;
         }
         // Set once and never moved: two documents disagreeing about a kid's

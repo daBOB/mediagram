@@ -8,11 +8,11 @@ use rusqlite::types::FromSql;
 use super::ProfileManager;
 use crate::state::profiles::ProfileOutcome::{self, *};
 use crate::state::StateDb;
-use crate::state::exchange::import_merged;
-use crate::state::merge::{MergedProfile, MergedState};
+use crate::state::exchange::{export_record, import_merged};
+use crate::state::merge::{MergedProfile, MergedState, merge_states};
 use crate::state::profiles::create;
 use crate::state::profiles::role_rows::{self, Stored};
-use crate::state::record::{KidsAge, MAX_STAMP, PinRecord, ProfileRoles};
+use crate::state::record::{KidsAge, MAX_STAMP, PinRecord, ProfileRoles, SyncRecord};
 use crate::state::sync;
 
 /// The player's clock for every call that does not say otherwise.
@@ -67,6 +67,14 @@ impl Home {
     fn restart(&mut self) {
         self.db.retire();
         self.db = StateDb::new(self._dir.path().to_path_buf());
+    }
+
+    /// Whether `id`'s PIN goes out proven: set by someone who knew the PIN
+    /// before it, or by the admin's reset.
+    fn proven(&self, id: &str) -> bool {
+        let record = self.db.with(|c| export_record(c, "here")).unwrap();
+        let profile = record.profiles.iter().find(|p| p.local_id.as_deref() == Some(id));
+        profile.and_then(|p| p.roles.pin.as_ref()).unwrap().proven
     }
 
     /// A profile the way sync makes one: no PIN, no claim, no parent.
@@ -132,6 +140,7 @@ fn pin_1234(updated_at: f64) -> ProfileRoles {
         hash: PIN_1234_HASH.into(),
         salt: PIN_1234_SALT.into(),
         updated_at,
+        proven: false,
     };
     ProfileRoles {
         pin: Some(pin),
@@ -949,5 +958,67 @@ mod wrong_pins {
             Wait { seconds: 60 }
         );
         assert!(home.row(&maja).is_some());
+    }
+}
+
+/// A first PIN — set where its grown-up had none — never replaces a PIN set
+/// earlier on another device; only someone who knew the PIN, or the admin's
+/// reset, does.
+mod a_proven_pin {
+    use super::*;
+
+    #[test]
+    fn is_one_changed_by_someone_who_knew_it_or_reset_by_the_admin_and_nothing_else() {
+        let Household {
+            home, andre, maja, ..
+        } = household();
+        assert!(!home.proven(&andre), "the first profile's PIN is a first one");
+        assert!(!home.proven(&maja), "so is a grown-up's the admin adds");
+        let sam = home.synced("Sam", false);
+        assert_eq!(home.run(set_pin(&sam, "", &sam, "4444")), Done);
+        assert!(!home.proven(&sam), "a first PIN set with nothing to prove");
+        assert_eq!(home.run(set_pin(&maja, "2222", &maja, "3333")), Done);
+        assert!(home.proven(&maja), "changed by someone who knew it");
+        assert_eq!(home.run(set_pin(&andre, "1111", &sam, "5555")), Done);
+        assert!(home.proven(&sam), "the admin's reset");
+    }
+
+    #[test]
+    fn is_not_one_a_claim_takes_as_its_first() {
+        let home = Home::new();
+        let sam = home.synced("Sam", false);
+        assert_eq!(home.run(claim(&sam, "4444")), Done);
+        assert!(!home.proven(&sam));
+    }
+
+    /// A kid's tablet last synced before André set his PIN, so here André
+    /// has none, and it is offline. The kid taps his tile, is asked to choose
+    /// a PIN, chooses 0000 and is in. Back online, André's own PIN stands on
+    /// both devices and 0000 opens nothing.
+    #[test]
+    fn a_first_pin_on_a_copy_that_never_heard_of_his_never_replaces_it() {
+        let phone = Home::new();
+        assert_eq!(phone.run(first("André", "1111")), Done);
+        let tablet = Home::new();
+        tablet.import(vec![viewer("André", false, ProfileRoles::default())]);
+        let here = tablet.named("André").id;
+        assert_eq!(tablet.at(T + 60_000, set_pin(&here, "", &here, "0000")), Done);
+
+        let records = [phone, tablet].map(|home| {
+            let record = home.db.with(|c| export_record(c, "device")).unwrap();
+            (home, record)
+        });
+        let merged = merge_states(&[
+            SyncRecord { device: "phone".into(), ..records[0].1.clone() },
+            SyncRecord { device: "tablet".into(), ..records[1].1.clone() },
+        ]);
+        for (home, _) in &records {
+            home.db.with(|c| import_merged(c, &merged)).unwrap();
+        }
+        let [(phone, _), (tablet, _)] = records;
+        assert_eq!(tablet.run(unlock(&here, "0000")), WrongPin);
+        assert_eq!(tablet.run(unlock(&here, "1111")), Done);
+        let there = phone.named("André").id;
+        assert_eq!(phone.run(unlock(&there, "1111")), Done);
     }
 }

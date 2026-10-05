@@ -46,11 +46,21 @@ fn import(db: &StateDb, viewers: Vec<MergedProfile>) -> u64 {
     db.with(|c| import_merged(c, &merged)).unwrap()
 }
 
+/// A first PIN: set where its grown-up had none.
 fn pin(hash: char, at: f64) -> PinRecord {
     PinRecord {
         hash: hash.to_string().repeat(64),
         salt: "b".repeat(32),
         updated_at: at,
+        proven: false,
+    }
+}
+
+/// A PIN set by someone who knew the one before, or the admin's reset.
+fn proven(hash: char, at: f64) -> PinRecord {
+    PinRecord {
+        proven: true,
+        ..pin(hash, at)
     }
 }
 
@@ -82,7 +92,8 @@ fn a_grown_up_exports_its_claim_and_pin_and_a_kid_its_limit_and_parent() {
             pin: Some(PinRecord {
                 hash,
                 salt,
-                updated_at: 9.0
+                updated_at: 9.0,
+                proven: false,
             }),
             ..Default::default()
         }
@@ -152,28 +163,49 @@ fn a_limit_is_taken_when_newer_or_as_new_but_different_and_never_when_older() {
     assert_eq!(age(&db), 6);
 }
 
+fn with_pin(p: PinRecord) -> MergedProfile {
+    viewer(
+        "Bea",
+        false,
+        ProfileRoles {
+            pin: Some(p),
+            ..Default::default()
+        },
+    )
+}
+
 #[test]
-fn a_pin_is_taken_when_newer_or_as_new_but_different_and_never_when_older() {
+fn a_proven_pin_is_taken_when_newer_or_as_new_but_different_and_never_when_older() {
     let (_dir, db) = db();
     make(&db, "Bea", false);
-    let with_pin = |p: PinRecord| {
-        viewer(
-            "Bea",
-            false,
-            ProfileRoles {
-                pin: Some(p),
-                ..Default::default()
-            },
-        )
-    };
-    assert_eq!(import(&db, vec![with_pin(pin('c', 5.0))]), 1);
-    assert_eq!(import(&db, vec![with_pin(pin('a', 4.0))]), 0);
-    assert_eq!(import(&db, vec![with_pin(pin('c', 5.0))]), 0);
-    assert_eq!(import(&db, vec![with_pin(pin('d', 5.0))]), 1);
+    assert_eq!(import(&db, vec![with_pin(proven('c', 5.0))]), 1);
+    assert_eq!(import(&db, vec![with_pin(proven('a', 4.0))]), 0);
+    assert_eq!(import(&db, vec![with_pin(proven('c', 5.0))]), 0);
+    assert_eq!(import(&db, vec![with_pin(proven('d', 5.0))]), 1);
     assert_eq!(
         value::<String>(&db, "SELECT pin_hash FROM profiles"),
         "d".repeat(64)
     );
+}
+
+/// The order the merge keeps: a first PIN set later never replaces one set
+/// earlier, and no first PIN replaces a proven one — so a kid's tablet that
+/// set one for a grown-up it thought had none takes the household's back.
+#[test]
+fn a_first_pin_is_taken_only_when_older_and_never_over_a_proven_one() {
+    let (_dir, db) = db();
+    make(&db, "Bea", false);
+    assert_eq!(import(&db, vec![with_pin(pin('c', 5.0))]), 1, "none here yet");
+    assert_eq!(import(&db, vec![with_pin(pin('a', 6.0))]), 0);
+    assert_eq!(import(&db, vec![with_pin(pin('a', 4.0))]), 1);
+    assert_eq!(import(&db, vec![with_pin(proven('d', 1.0))]), 1);
+    assert_eq!(import(&db, vec![with_pin(pin('e', 0.5))]), 0);
+    assert_eq!(
+        value::<String>(&db, "SELECT pin_hash FROM profiles"),
+        "d".repeat(64)
+    );
+    let record = db.with(|c| export_record(c, "tv")).unwrap();
+    assert!(roles_of(&record, "Bea").pin.unwrap().proven, "a proven PIN goes out proven");
 }
 
 #[test]

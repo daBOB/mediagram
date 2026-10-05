@@ -470,7 +470,7 @@
     }
   },
   {
-    "name": "a PIN reset on another device wins, and a kid never carries one",
+    "name": "a PIN reset on another device is proven, and beats the first PIN it replaced; a kid never carries one",
     "records": [
       {
         "format": 1,
@@ -510,7 +510,8 @@
             "pin": {
               "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
               "salt": "ffeeddccbbaa99887766554433221100",
-              "updatedAt": 2000
+              "updatedAt": 2000,
+              "proven": true
             },
             "progress": [],
             "watched": []
@@ -526,7 +527,8 @@
           "pin": {
             "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
             "salt": "ffeeddccbbaa99887766554433221100",
-            "updatedAt": 2000
+            "updatedAt": 2000,
+            "proven": true
           }
         },
         {
@@ -543,7 +545,7 @@
     }
   },
   {
-    "name": "a PIN changed at the same moment on two devices: the larger device id wins",
+    "name": "two proven PINs changed at the same moment on two devices: the larger device id wins",
     "records": [
       {
         "format": 1,
@@ -555,7 +557,8 @@
             "pin": {
               "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
               "salt": "ffeeddccbbaa99887766554433221100",
-              "updatedAt": 1000
+              "updatedAt": 1000,
+              "proven": true
             },
             "progress": [],
             "watched": []
@@ -572,7 +575,8 @@
             "pin": {
               "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
               "salt": "00112233445566778899aabbccddeeff",
-              "updatedAt": 1000
+              "updatedAt": 1000,
+              "proven": true
             },
             "progress": [],
             "watched": []
@@ -588,7 +592,287 @@
           "pin": {
             "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
             "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000,
+            "proven": true
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a first PIN set later on a copy that never heard of the PIN never replaces it: a kid's tablet, offline, sets one for the admin",
+    "records": [
+      {
+        "format": 1,
+        "device": "phone",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 500
+            },
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tablet",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "admin": {
+              "claimedAt": 500
+            },
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 5000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "admin": {
+            "claimedAt": 500
+          },
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
             "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "between first PINs the oldest wins, whatever the device ids",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+            "salt": "ffeeddccbbaa99887766554433221100",
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "two first PINs set at the same moment: the larger device id wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+            "salt": "ffeeddccbbaa99887766554433221100",
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a proven PIN beats a first PIN, even one set after it",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 1000,
+              "proven": true
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 5000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000,
+            "proven": true
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "between proven PINs the newest wins, whatever the device ids",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+              "salt": "00112233445566778899aabbccddeeff",
+              "updatedAt": 2000,
+              "proven": true
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "pin": {
+              "hash": "48618b45393cde1c8841b73b2ca684f9b39a2efcbf35d4bf602d7f908b5137f8",
+              "salt": "ffeeddccbbaa99887766554433221100",
+              "updatedAt": 1000,
+              "proven": true
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 2000,
+            "proven": true
           }
         }
       ],

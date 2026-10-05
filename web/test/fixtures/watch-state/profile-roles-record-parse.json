@@ -353,5 +353,67 @@
         }
       ]
     }
+  },
+  {
+    "name": "a PIN is proven only by the literal true; anything else, or nothing, is a first PIN, and the PIN stays",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1000,\"proven\":true}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1000,\"proven\":\"true\"}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1000,\"proven\":1}},{\"name\":\"D\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1000,\"proven\":false}},{\"name\":\"E\",\"progress\":[],\"watched\":[],\"pin\":{\"hash\":\"f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924\",\"salt\":\"00112233445566778899aabbccddeeff\",\"updatedAt\":1000}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000,
+            "proven": true
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000
+          }
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000
+          }
+        },
+        {
+          "name": "D",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000
+          }
+        },
+        {
+          "name": "E",
+          "progress": [],
+          "watched": [],
+          "pin": {
+            "hash": "f377124b2c2ffeb096001d94cb0e3df86fbe20ad9981335bc624b960d4d80924",
+            "salt": "00112233445566778899aabbccddeeff",
+            "updatedAt": 1000
+          }
+        }
+      ]
+    }
   }
 ]

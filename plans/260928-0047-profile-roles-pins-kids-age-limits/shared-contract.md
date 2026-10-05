@@ -189,6 +189,14 @@ ALTER TABLE kids ADD COLUMN age INTEGER;
 
 `kids.age`: `NULL` = from 12, `6` = from 6.
 
+Amended 2026-10-05 (web v12 → v13, core v8 → v9), for proven PINs (§7):
+
+```sql
+ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0;
+```
+
+Every PIN stored before it is a first PIN.
+
 ## 7. Wire (sync record) — new optional keys, no `SYNC_FORMAT` bump
 
 On `ProfileState`:
@@ -198,7 +206,7 @@ admin?: { claimedAt: number };                       // > 0
 kids?: true;                                         // unchanged, still written for every kid
 kidsAge?: { age: 6 | 12; updatedAt: number };        // >= 0; only on kids
 parent?: string;                                     // parent's profile name as stored; non-empty
-pin?: { hash: string; salt: string; updatedAt: number }; // 64 hex / 32 hex / > 0; only on grown-ups
+pin?: { hash: string; salt: string; updatedAt: number; proven?: true }; // 64 hex / 32 hex / > 0; only on grown-ups
 ```
 
 On `ListRow` (Kids marks only): `age?: 6`. Only the literal `6` parses;
@@ -213,13 +221,27 @@ row is.
 
 Parsing drops a malformed sub-key on its own, never the profile.
 
+`pin.proven` (amended 2026-10-05): only the literal `true` parses; anything
+else, or nothing, is a **first PIN** and keeps the PIN. Every PIN written
+before the key existed is a first PIN. A PIN is **proven** when whoever set
+it proved the PIN before it, or when the admin reset it; it is **first** when
+set where its grown-up had none: `create-first`, `create-grown-up`, a
+`claim-admin` that takes its first PIN, and a self `set-pin` with nothing to
+prove. Pinned by `profile-roles-record-parse.json`.
+
 **Merge** (per viewer, identity = `normalName`):
 
 - `kidsAge`: newest `updatedAt` wins, ties by device id (`keep`). A viewer
   that is `kids` with no `kidsAge` anywhere merges to `{ age: 12, updatedAt: 0 }`.
   Output only on a kid.
-- `pin`: newest `updatedAt` wins, ties by device id. Output only on a
-  grown-up.
+- `pin` (amended 2026-10-05, user's rule: a first PIN never replaces a PIN
+  set earlier on another device): a proven PIN beats any first PIN; between
+  proven PINs the newest `updatedAt` wins; between first PINs the **oldest**
+  wins; ties by device id. Web `keepPin`/`pinBeats` (`tie-break.ts`), core
+  `keep_pin` (`merge/tie_break.rs`). Why: a kid's tablet that last synced
+  before a parent set a PIN offers the kid "choose a PIN" on the parent's
+  tile; under "newest wins" that PIN became the parent's on every device
+  (with the admin's, Manage as admin). Output only on a grown-up.
 - `parent`: first seen, then the device-id tie-break `displayName` uses.
   Output as `normalName(parent)`, **only on a kid**.
 - `admin`: across **all grown-up** viewers (a claim on a kid viewer is
@@ -239,8 +261,12 @@ Parsing drops a malformed sub-key on its own, never the profile.
 
 **Import** (corrective, like every other row):
 
-- `kids_age`/`pin_*`: apply when merged `updatedAt` > local, or equal with a
+- `kids_age`: apply when merged `updatedAt` > local, or equal with a
   different value.
+- `pin_*` (amended 2026-10-05): apply over no PIN, or when the merged PIN
+  ranks above the local one in the merge's order (`pinBeats`), or ranks
+  equal with a different hash/salt. A merged first PIN older than a local
+  first one is taken — that is the stale tablet getting the household's back.
 - `admin`: when the merge names an admin, set `admin_claimed_at` on that
   local profile and clear it on every other. When it names none, change
   nothing.
@@ -257,7 +283,8 @@ unclamped `stored + 1`.
 
 **Export**: `admin` when `admin_claimed_at` set; `kids` + `kidsAge`
 (`kids_age ?? 12`, `kids_age_updated_at`) on kids; `parent` = the stored
-name of `parent_id` when it resolves; `pin` when `pin_hash` set.
+name of `parent_id` when it resolves; `pin` when `pin_hash` set, with
+`proven: true` when `pin_proven = 1`.
 
 ## 8. Web HTTP
 

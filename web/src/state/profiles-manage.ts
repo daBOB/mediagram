@@ -128,7 +128,7 @@ export class ProfileManager {
     }
     const db = this.db!;
     db.transaction(() => {
-      if (target.pinHash === null && validPin(pin)) writePin(db, id, pin);
+      if (target.pinHash === null && validPin(pin)) writePin(db, id, pin, false);
       db.query("UPDATE profiles SET admin_claimed_at = ?2 WHERE id = ?1").run(id, Date.now());
     })();
     return null;
@@ -143,7 +143,8 @@ export class ProfileManager {
     const first = actorId === id && actor !== undefined && !isKid(actor) && actor.pinHash === null;
     const refused = this.check(actorId, pin, "set-pin", id, first);
     if (refused) return refused;
-    writePin(this.db!, id, next);
+    // Proven unless it is that first one: the actor's PIN was right, for its own or, as the admin, another's.
+    writePin(this.db!, id, next, !first);
     return null;
   }
 

@@ -23,3 +23,16 @@ export const ROLES_GROUP: readonly string[] = [
   `UPDATE profiles SET kids_age = 12 WHERE kids = 1`,
   `ALTER TABLE kids ADD COLUMN age INTEGER`,
 ];
+
+/**
+ * v12 -> v13: whether a PIN was proven — set by someone who knew the one
+ * before it, or the admin's reset. A first PIN never replaces one set
+ * earlier elsewhere (`roles-merge.ts`); every PIN already stored is a first
+ * one. The core's v9, statement for statement.
+ */
+export const PIN_PROOF_GROUP: readonly string[] = [
+  `ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0`,
+];
+
+/** Both, in order, as `schema.ts` lists them. */
+export const ROLES_GROUPS: readonly (readonly string[])[] = [ROLES_GROUP, PIN_PROOF_GROUP];

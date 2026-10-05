@@ -3,9 +3,15 @@
 //! port of `web/src/state/roles-merge.ts`, pinned to it by
 //! `profile-roles-merge.json`; `merge_states` calls it beside its own pass.
 //!
-//! **A limit and a PIN: the newest wins**, ties by device id through `keep`.
-//! Not sticky the way `kids` is — a parent lowers a limit as often as it
-//! raises one, and an admin resets a PIN.
+//! **A limit: the newest wins**, ties by device id through `keep`. Not
+//! sticky the way `kids` is — a parent lowers a limit as often as it raises
+//! one.
+//!
+//! **A PIN: a proven one, then the newest; else the oldest** (`keep_pin`).
+//! A first PIN — set where its grown-up had none — never replaces one set
+//! earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
+//! lets the kid choose one, must not hand that PIN to the parent everywhere.
+//! Only someone who knew the PIN, or the admin's reset, replaces it.
 //!
 //! **A kid nobody gave a limit is FSK 12 at time 0.** That is what a
 //! document from before limits says by saying only `kids: true`, and 0 is
@@ -25,7 +31,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::tie_break::{Held, keep};
+use super::tie_break::{Held, keep, keep_pin};
 use crate::state::record::{
     AdminClaim, KidsAge, ListRow, PinRecord, ProfileRoles, SyncRecord, normal_name,
 };
@@ -72,7 +78,7 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
                 keep(&mut limits, name.clone(), limit.clone(), device);
             }
             if let Some(pin) = &roles.pin {
-                keep(&mut pins, name.clone(), pin.clone(), device);
+                keep_pin(&mut pins, name.clone(), pin.clone(), device);
             }
             if let Some(parent) = roles.parent.as_deref().and_then(normal_name) {
                 let standing = parents

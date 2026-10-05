@@ -3,16 +3,17 @@
  * claim, a kid's limit and parent, a grown-up's PIN.
  *
  * Kept out of `store.ts` for the reason `lists-exchange.ts` is. Corrective,
- * like everything `importMerged` calls: newer local news is kept, and an
- * equal time with a different value takes the winner the merge already
- * chose by device id. SQLite failures propagate, so `importMerged` rolls the
- * whole import back.
+ * like everything `importMerged` calls: local news the merge ranks higher is
+ * kept — newer for a limit, by `pinBeats` for a PIN — and an equal rank with a
+ * different value takes the winner the merge already chose by device id.
+ * SQLite failures propagate, so `importMerged` rolls the whole import back.
  */
 
 import type { Database } from "bun:sqlite";
 import type { MergedProfile } from "./merged";
 import { profileRows, type ProfileRow } from "./profiles";
 import type { RoleKeys } from "./roles-record";
+import { pinBeats, type Ranked } from "./tie-break";
 import { normalName } from "./sync-record";
 
 /** Each profile's role keys, by local id — what `exportRecord` spreads in. */
@@ -33,7 +34,7 @@ export function exportRoles(db: Database | null): Map<string, RoleKeys> {
     const parent = row.parentId === null ? undefined : names.get(row.parentId);
     if (parent !== undefined) keys.parent = parent;
     if (row.pinHash !== null && row.pinSalt !== null) {
-      keys.pin = { hash: row.pinHash, salt: row.pinSalt, updatedAt: row.pinUpdatedAt };
+      keys.pin = { hash: row.pinHash, salt: row.pinSalt, updatedAt: row.pinUpdatedAt, ...(row.pinProven ? { proven: true as const } : {}) };
     }
     return [row.id, keys];
   }));
@@ -62,9 +63,9 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
       changed += 1;
     }
     const pin = profile.pin;
-    if (pin && newer(pin.updatedAt, row.pinUpdatedAt, pin.hash !== row.pinHash || pin.salt !== row.pinSalt)) {
-      db.query("UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_updated_at = ?4 WHERE id = ?1")
-        .run(row.id, pin.hash, pin.salt, pin.updatedAt);
+    if (pin && pinTaken(pin, row)) {
+      db.query("UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_updated_at = ?4, pin_proven = ?5 WHERE id = ?1")
+        .run(row.id, pin.hash, pin.salt, pin.updatedAt, pin.proven ? 1 : 0);
       changed += 1;
     }
     // Set once and never moved: two documents disagreeing about a kid's
@@ -81,6 +82,18 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
 /** Merged news beats local when it is newer, or as new and different. */
 function newer(merged: number, local: number, different: boolean): boolean {
   return merged > local || (merged === local && different);
+}
+
+/**
+ * A merged PIN is taken over none at all, or in the merge's own order
+ * (`pinBeats`); as old and as proven, only when it differs — the winner the
+ * merge chose by device id, which the two stand-in ids here leave to that.
+ */
+function pinTaken(pin: Ranked & { hash: string; salt: string }, row: ProfileRow): boolean {
+  if (row.pinHash === null) return true;
+  const differs = pin.hash !== row.pinHash || pin.salt !== row.pinSalt;
+  const local: Ranked = { updatedAt: row.pinUpdatedAt, ...(row.pinProven ? { proven: true as const } : {}) };
+  return pinBeats(pin, differs ? "b" : "a", { row: local, device: "a" });
 }
 
 /**

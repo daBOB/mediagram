@@ -168,7 +168,9 @@ impl ProfileManager<'_> {
         if let Some(refused) = self.check(actor_id, pin, Action::SetPin, Some(id), first)? {
             return Ok(refused);
         }
-        role_rows::write_pin(self.conn, id, new_pin, self.now)?;
+        // Proven unless it is that first one: the actor's own PIN was right,
+        // whether it changed its own or, as the admin, reset another's.
+        role_rows::write_pin(self.conn, id, new_pin, self.now, !first)?;
         Ok(Done)
     }
 }

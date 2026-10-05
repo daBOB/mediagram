@@ -3,10 +3,15 @@
  * PIN, who made a kid, and which one viewer is the household's admin. Split
  * out of `merge.ts`, which `mergeStates` calls this from.
  *
- * **A limit and a PIN: the newest `updatedAt` wins.** Not sticky the way
- * `kids` is — a parent lowers a limit as often as it raises one, and an
- * admin resets a PIN. Ties break by device id through `keep`, as every
- * row's do.
+ * **A limit: the newest `updatedAt` wins.** Not sticky the way `kids` is —
+ * a parent lowers a limit as often as it raises one. Ties break by device id
+ * through `keep`, as every row's do.
+ *
+ * **A PIN: a proven one, then the newest; else the oldest** (`keepPin`). A
+ * first PIN — set where its grown-up had none — never replaces one set
+ * earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
+ * lets the kid choose one, must not hand it to the parent everywhere. Only
+ * someone who knew the PIN, or the admin's reset, replaces it.
  *
  * **A kid nobody gave a limit is FSK 12 at time 0.** That is what a document
  * from before limits says by saying only `kids: true`, and 0 is older than
@@ -28,7 +33,7 @@
 
 import { normalName, type ListRow, type SyncRecord } from "./sync-record";
 import type { RoleKeys } from "./roles-record";
-import { keep, type Held } from "./tie-break";
+import { keep, keepPin, type Held } from "./tie-break";
 
 /** The role keys a merged profile carries beside `kids`. */
 export type MergedRoles = Omit<RoleKeys, "kids">;
@@ -67,7 +72,7 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
       viewers.add(name);
       if (profile.kids === true) kids.add(name);
       if (profile.kidsAge) keep(limits, name, profile.kidsAge, device);
-      if (profile.pin) keep(pins, name, profile.pin, device);
+      if (profile.pin) keepPin(pins, name, profile.pin, device);
       const parent = normalName(profile.parent);
       const standing = parents.get(name);
       if (parent !== null && (standing === undefined || device > standing.from)) parents.set(name, { name: parent, from: device });
