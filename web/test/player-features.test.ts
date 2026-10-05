@@ -169,7 +169,7 @@ describe("player library marks", () => {
 describe("player HUD", () => {
   test("resting resumes after activity and clearing prevents a timer from surviving close", async () => {
     const dialog = env.node("player");
-    const hud = mountPlayerHud({ dialog, video: env.video });
+    const hud = mountPlayerHud({ dialog, video: env.video, card: env.node("control-card"), holding: () => false });
     hud.open();
     await env.video.play();
     env.advance(2600);
@@ -188,7 +188,7 @@ describe("player HUD", () => {
 
   test("pause and focused controls hold the HUD open but video focus does not", async () => {
     const dialog = env.node("player");
-    const hud = mountPlayerHud({ dialog, video: env.video });
+    const hud = mountPlayerHud({ dialog, video: env.video, card: env.node("control-card"), holding: () => false });
     hud.open();
     env.advance(5000);
     expect(dialog.classes.has("resting")).toBe(false);
@@ -203,6 +203,30 @@ describe("player HUD", () => {
     expect(dialog.classes.has("resting")).toBe(true);
     env.video.pause();
     expect(dialog.classes.has("resting")).toBe(false);
+    hud.clear();
+  });
+
+  test("an open menu or a pointer on the card holds it up, and letting go starts the clock again", async () => {
+    const dialog = env.node("player");
+    const card = env.node("control-card");
+    let menuOpen = false;
+    const hud = mountPlayerHud({ dialog, video: env.video, card, holding: () => menuOpen });
+    hud.open();
+    await env.video.play();
+    // Opened by the same click that started the clock; nothing told the HUD.
+    menuOpen = true;
+    env.advance(10_000);
+    expect(dialog.classes.has("resting")).toBe(false);
+    menuOpen = false;
+    hud.show();
+    card.fire("pointerenter");
+    env.advance(10_000);
+    expect(dialog.classes.has("resting")).toBe(false);
+    card.fire("pointerleave");
+    env.advance(2599);
+    expect(dialog.classes.has("resting")).toBe(false);
+    env.advance(1);
+    expect(dialog.classes.has("resting")).toBe(true);
     hud.clear();
   });
 });

@@ -21,6 +21,7 @@ import { keyAction, wantsKeys } from "./player-keys.js";
 import { mountPlayerNotes } from "./notes/player-notes.js";
 import { mountPlayerLibraryMarks } from "./player-library-marks.js";
 import { mountPlayerHud } from "./player-hud.js";
+import { mountPlayerMenus } from "./player-menus.js";
 import { mountPlayerNextTitle } from "./player-next-title.js";
 import { autoplayReady } from "./autoplay.js";
 import * as state from "../watch-state.js";
@@ -77,7 +78,8 @@ function mountPlayer() {
   const video = document.getElementById("video");
   const notes = mountPlayerNotes({ dialog });
   const marks = mountPlayerLibraryMarks();
-  const hud = mountPlayerHud({ dialog, video });
+  const menus = mountPlayerMenus({ onClose: () => hud.show() });
+  const hud = mountPlayerHud({ dialog, video, card: document.getElementById("control-card"), holding: () => menus.isOpen() });
   const note = document.getElementById("note");
   const tech = document.getElementById("tech");
   const now = document.getElementById("now");
@@ -343,12 +345,6 @@ function mountPlayer() {
     seekTo.style.setProperty("--buffered", `${(bar.buffered * 100).toFixed(3)}%`);
   }
 
-  /**
-   * The buttons the browser used to lend us. Mounted once; it holds no title.
-   *
-   * Asks rather than reaches: `filmTime` and `runtimeSeconds` are the film's
-   * answers, and a conversion's own clock is not.
-   */
   const cuePanel = subtitlePanel({
     recall: (name) => state.preferenceOf(scope, name),
     remember: (name, value) => state.setPreference(scope, name, value),
