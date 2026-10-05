@@ -737,9 +737,11 @@ art: a film's title page, a department's cover story, Movies and Shows.
 
 - **The card:** the player's controls in one card at the bottom of the
   picture, in three rows — where the film is (position, scrub bar, length ·
-  ends HH:MM), how it plays (CC, ▾, speed, Audio, framing, and
-  picture-in-picture on a phone), and what moves it (↺ ⏮ −15 ▶ +15 ⏭, then
-  ⓘ and ☰). Black at 78%, a 1dp hairline at 8% white, radius 12dp
+  ends HH:MM; the length and end time drop under the bar when it would
+  narrow below 160dp), how it plays (CC, ▾, speed, Audio, framing at the left,
+  picture-in-picture at the right end on a phone), and what moves it
+  (↺ ⏮ −15 ▶ +15 ⏭, then ⓘ and ☰ beside them, centred rather than pinned
+  right). Black at 78%, a 1dp hairline at 8% white, radius 12dp
   (`Radius.card`), 16dp inside, no shadow. Phone: the window's width less
   12dp each side, never wider than 720dp, 12dp above the bottom edge.
   Television: 760dp, centred, 32dp above the bottom edge. A row wraps rather
@@ -749,7 +751,10 @@ art: a film's title page, a department's cover story, Movies and Shows.
   a time. The sidebar stands down the right — 320dp on a phone or tablet,
   the whole width under 600dp, 360dp on a television — watched rows at 45%
   with a ✓, the catalogue's progress line under a part-watched row, and
-  "Now playing" for the open one.
+  "Now playing" for the open one. Beside the picture it never overlaps the
+  card: while it is open the card is laid out in the width left of it, ending
+  12dp short and centred in that space; under 600dp the sidebar covers the
+  window, card and top bar included.
 - **Top bar:** back, the title, My List, Kids, Add to list and Notes, over a
   gradient from 55% black (`SCRIM_ALPHA`) at the top edge to clear.
 - **Nothing lifts or grows.** A control keeps its size on press and on

@@ -1,6 +1,10 @@
 package ui.player
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -57,8 +61,8 @@ internal class CardMenuActions(
 )
 
 /**
- * One card menu's rows on the card's own fill. The rows are the retired
- * settings sheet's sections, unchanged. Choosing a value closes the menu
+ * One card menu's rows on the card's own fill. The rows are the Speed, Audio,
+ * Subtitle and Framing sections, unchanged. Choosing a value closes the menu
  * ([onDone]); the subtitle style panel is the exception — a size, a backing
  * or a sync nudge is judged against the film a step at a time, so it stays
  * until Back. "Style…" moves this same menu to the style panel ([onOpen]).
@@ -74,6 +78,9 @@ internal fun CardMenuPanel(
     maxHeight: Dp = MENU_MAX_HEIGHT,
     modifier: Modifier = Modifier,
 ) {
+    // Focus (and so a screen reader) moves into the menu as it opens.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(menu) { focus.requestFocusIfOnScreen() }
     // The sections draw in the content colour; on the card's dark fill that has to be white.
     CompositionLocalProvider(LocalContentColor provides Color.White) {
         Column(
@@ -82,6 +89,8 @@ internal fun CardMenuPanel(
                     .widthIn(max = MENU_MAX_WIDTH)
                     .heightIn(max = maxHeight)
                     .testTag(CardMenuTag)
+                    .focusRequester(focus)
+                    .focusable()
                     .playerCard()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.medium, vertical = Spacing.small),

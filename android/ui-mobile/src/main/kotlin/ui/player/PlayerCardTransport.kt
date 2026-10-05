@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
@@ -37,6 +38,7 @@ internal fun CardTransportRow(
     statsShown: Boolean,
     hasEpisodes: Boolean,
     actions: PlayerCardActions,
+    sidebarOpen: Boolean = false,
 ) {
     val playPause = rememberPlayPauseButtonState(player)
     val seekBack = rememberSeekBackButtonState(player)
@@ -65,7 +67,23 @@ internal fun CardTransportRow(
             TransportButton(icon = TransportIcons.Next, description = "Next", enabled = upNext.hasNext, onClick = actions.onNext)
         }
         // Apart from what moves the film: ⓘ only reports, ☰ only lists.
-        GlyphButton(glyph = "ⓘ", description = "Stats", enabled = true, onClick = actions.onToggleStats, dimmed = !statsShown)
-        if (hasEpisodes) GlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = actions.onEpisodes)
+        GlyphButton(
+            glyph = "ⓘ",
+            description = "Stats",
+            enabled = true,
+            onClick = actions.onToggleStats,
+            dimmed = !statsShown,
+            state = if (statsShown) "On" else "Off",
+        )
+        if (hasEpisodes) {
+            GlyphButton(
+                glyph = "☰",
+                description = "Episodes",
+                enabled = true,
+                onClick = actions.onEpisodes,
+                modifier = Modifier.focusRequester(actions.focusOf(null)),
+                state = if (sidebarOpen) "Expanded" else "Collapsed",
+            )
+        }
     }
 }

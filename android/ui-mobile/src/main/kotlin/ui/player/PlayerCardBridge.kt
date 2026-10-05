@@ -35,9 +35,10 @@ internal fun playerCardActions(
         onEpisodes = card::toggleSidebar,
         onEnterPip = onEnterPip,
         onAnchor = card::anchor,
+        focusOf = card::focusOf,
     )
 
-/** Every write a card menu makes — kept as the one place that names them, as the settings sheet's bridge was. */
+/** Every write a card menu makes — kept as the one place that names them. */
 internal fun PlayerViewModel.cardMenuActions(): CardMenuActions =
     CardMenuActions(
         onSpeed = this::setSpeed,

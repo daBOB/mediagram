@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
@@ -58,6 +59,8 @@ internal class PlayerCardActions(
     val onEnterPip: (() -> Unit)?,
     /** Where each menu's button sits, in root coordinates — what the menu is drawn above. */
     val onAnchor: (CardMenu, IntRect) -> Unit = { _, _ -> },
+    /** The focus target of [CardMenu]'s opener, or of the episodes button for null — where focus returns when what it opened closes. */
+    val focusOf: (CardMenu?) -> FocusRequester = { FocusRequester() },
 )
 
 /** What the card reads, beside the player itself. */
@@ -69,6 +72,9 @@ internal class PlayerCardView(
     val hasEpisodes: Boolean,
     /** The catalogue's own runtime in whole seconds, trusted over media3's until it has one; see [endsLine]. */
     val catalogedDurationSecs: Int?,
+    /** What a screen reader hears each opener report as expanded: the open menu, and whether the sidebar is out. */
+    val openMenu: CardMenu? = null,
+    val sidebarOpen: Boolean = false,
 )
 
 /**
@@ -136,7 +142,7 @@ internal fun PlayerControlCard(
             onScrubbingToChange = { scrubbingTo = it },
             onSeek = player::seekTo,
         )
-        CardToolsRow(choices = view.choices, actions = actions)
-        CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions)
+        CardToolsRow(choices = view.choices, actions = actions, openMenu = view.openMenu)
+        CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }
 }

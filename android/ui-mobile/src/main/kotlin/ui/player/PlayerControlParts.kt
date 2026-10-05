@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -43,11 +44,13 @@ internal fun GlyphButton(
     // A toggle's off state: drawn faint, where a row of white glyphs has no other way to show it.
     dimmed: Boolean = false,
     modifier: Modifier = Modifier,
+    /** What a screen reader says of a toggle or an opener — "On", "Expanded" — beyond its name; null for a plain button. */
+    state: String? = null,
 ) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description },
+        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
     ) {
         Text(
             text = glyph,
@@ -91,11 +94,12 @@ internal fun LabelButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    state: String? = null,
 ) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description },
+        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
     ) {
         Text(text = label, color = Color.White, style = MaterialTheme.typography.labelLarge)
     }

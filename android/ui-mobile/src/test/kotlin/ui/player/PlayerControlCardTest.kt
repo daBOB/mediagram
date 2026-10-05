@@ -3,6 +3,9 @@ package ui.player
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -112,6 +115,14 @@ class PlayerControlCardTest {
 
         compose.onNodeWithContentDescription("Subtitles").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Subtitle options").assertIsNotEnabled()
+    }
+
+    @Test
+    fun ccAndStatsSayWhetherTheyAreOn() {
+        show(PlayerChoices(subtitleOptions = listOf(SubtitleOption(SUBTITLES_OFF, "Off", false), SubtitleOption("en", "English", true))))
+
+        compose.onNodeWithContentDescription("Subtitles").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "On"))
+        compose.onNodeWithContentDescription("Stats").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Off"))
     }
 
     @Test

@@ -1,5 +1,9 @@
 package ui.player
 
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -62,6 +66,9 @@ internal fun EpisodeSidebar(
     var shown by remember(list.currentSection) { mutableIntStateOf(list.currentSection) }
     val section = list.sections.getOrNull(shown) ?: list.sections.firstOrNull() ?: return
     val narrow = sidebarCoversScreen()
+    // Focus (and so a screen reader) moves into the sidebar as it opens.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocusIfOnScreen() }
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
         Column(
@@ -70,6 +77,8 @@ internal fun EpisodeSidebar(
                     .fillMaxHeight()
                     .then(if (narrow) Modifier.fillMaxWidth() else Modifier.width(SIDEBAR_WIDTH))
                     .testTag(EpisodeSidebarTag)
+                    .focusRequester(focus)
+                    .focusable()
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .playerCard(),
         ) {

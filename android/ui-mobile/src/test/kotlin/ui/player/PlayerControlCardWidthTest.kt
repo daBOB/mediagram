@@ -125,4 +125,14 @@ class PlayerControlCardTabletTest : PlayerControlCardWidthCases() {
         val card = compose.onNodeWithTag(PlayerCardTag).getBoundsInRoot()
         assertTrue((card.right - card.left).value <= 720.5f, "the card is ${card.right - card.left} wide")
     }
+
+    @Test
+    fun theToolsSitAtTheLeftAndPictureInPictureAtTheRight() {
+        show()
+        val card = compose.onNodeWithTag(PlayerCardTag).getBoundsInRoot()
+        val cc = compose.onNodeWithContentDescription("Subtitles").getBoundsInRoot()
+        val pip = compose.onNodeWithContentDescription("Picture in picture").getBoundsInRoot()
+        assertTrue(cc.left - card.left < 24.dp, "CC starts ${cc.left - card.left} in from the card's edge")
+        assertTrue(card.right - pip.right < 24.dp, "PiP ends ${card.right - pip.right} short of the card's edge")
+    }
 }

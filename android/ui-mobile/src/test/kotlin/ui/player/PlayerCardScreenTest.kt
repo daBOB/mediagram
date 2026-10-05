@@ -1,5 +1,13 @@
 package ui.player
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getBoundsInRoot
@@ -127,9 +135,59 @@ class PlayerCardScreenTest : PlayerCardScreenBase() {
         open()
         compose.onNodeWithContentDescription("Speed").performClick()
 
-        compose.onNodeWithContentDescription("Speed").performClick()
+        // The gesture layer holds a single tap back for the double-tap timeout.
+        compose.onRoot().performTouchInput { click(Offset(width * 0.1f, height * 0.4f)) }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+
         compose.onNodeWithTag(CardMenuTag).assertDoesNotExist()
         compose.onNodeWithTag(PlayerCardTag).assertExists()
+    }
+
+    @Test
+    fun aMenuDoesNotComeBackAfterAnErrorTookTheCardAway() {
+        open()
+        compose.onNodeWithContentDescription("Speed").performClick()
+
+        compose.runOnUiThread { controller.get().playerViewModel.onError("boom") }
+        compose.waitForIdle()
+        compose.runOnUiThread { controller.get().playerViewModel.onPlayingChanged(true) }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(CardMenuTag).assertDoesNotExist()
+    }
+
+    @Test
+    fun anOpenerSaysWhetherItsMenuIsOpen() {
+        open()
+        val speed = compose.onNodeWithContentDescription("Speed")
+        speed.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Collapsed"))
+
+        speed.performClick()
+
+        speed.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Expanded"))
+    }
+
+    @Test
+    fun focusMovesIntoAMenuAndBackToItsOpener() {
+        open()
+        compose.onNodeWithContentDescription("Speed").performClick()
+        compose.onNodeWithTag(CardMenuTag).assertIsFocused()
+
+        back()
+
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+    }
+
+    @Test
+    fun focusMovesIntoTheSidebarAndBackToItsOpener() {
+        open(run = listOf("set-one", "set-two"))
+        compose.onNodeWithContentDescription("Episodes").performClick()
+        compose.onNodeWithTag(EpisodeSidebarTag).assertIsFocused()
+
+        back()
+
+        compose.onNodeWithContentDescription("Episodes").assertIsFocused()
     }
 
     @Test

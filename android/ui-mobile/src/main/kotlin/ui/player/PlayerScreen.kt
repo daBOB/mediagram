@@ -96,6 +96,7 @@ fun PlayerScreen(
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     val card = remember { PlayerCardState() }
+    CardFocusReturn(card)
     ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, menuOrSidebarOpen = card.somethingOpen, onHide = { controlsShown = false })
     // Composed after the library's own Back, so it answers first — and only
     // while the card has something open to close.

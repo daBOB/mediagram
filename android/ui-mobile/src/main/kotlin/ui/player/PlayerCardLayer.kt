@@ -46,7 +46,11 @@ internal fun BoxScope.PlayerCardLayer(
     Box(modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(end = clearance)) {
         PlayerControlCard(
             player = player,
-            view = PlayerCardView(choices, upNext, statsShown, hasEpisodes = hasEpisodes, catalogedDurationSecs = catalogedDurationSecs),
+            view =
+                PlayerCardView(
+                    choices, upNext, statsShown, hasEpisodes = hasEpisodes, catalogedDurationSecs = catalogedDurationSecs,
+                    openMenu = card.menu, sidebarOpen = card.sidebarOpen,
+                ),
             actions = playerCardActions(viewModel, card, onToggleStats = onToggleStats, onEnterPip = onEnterPip),
             onScrubbingChanged = onScrubbingChanged,
             onBounds = { card.bounds = it },

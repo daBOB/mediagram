@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 
@@ -39,6 +40,7 @@ internal class PlayerCardState {
     var topLimit by mutableIntStateOf(0)
 
     private val anchors = mutableStateMapOf<CardMenu, IntRect>()
+    private val openers = mutableMapOf<CardMenu?, FocusRequester>()
 
     /** Whether Back, and the controls' fade, have something of the card's to answer to first. */
     val somethingOpen: Boolean get() = menu != null || sidebarOpen
@@ -75,6 +77,14 @@ internal class PlayerCardState {
         menu = null
         return true
     }
+
+    /**
+     * The focus target of the button that opens [menu] — for the style panel,
+     * the ▾ that led to it — or, for null, of the episodes button. Focus
+     * returns there when what it opened closes.
+     */
+    fun focusOf(menu: CardMenu?): FocusRequester =
+        openers.getOrPut(if (menu == CardMenu.SubtitleStyle) CardMenu.Subtitles else menu) { FocusRequester() }
 
     fun anchor(menu: CardMenu, bounds: IntRect) {
         anchors[menu] = bounds
