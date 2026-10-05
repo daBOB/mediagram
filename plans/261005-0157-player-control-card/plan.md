@@ -90,3 +90,7 @@
   - Added to the phase 02 plan.
   - Sent to the phase 05 worker.
   - Goes into phase 04's fix round.
+- **2026-10-05, Continue false alarm.** Boston Legal S3E15 left the tablet's Continue during the walk. `stats_titles` showed the user watching it on another device, 02:50–03:32, finishing it at 03:33:55. It was not a player bug. On 0.114.0, Back stops playback and a stray pause key after leaving does not restart it, both checked on the tablet.
+- **2026-10-05, phase 02 review: changes needed.** One High (focus lost to `<body>` after ✕, a pick, or a season arrow at its end) and three Medium. Fix round 1 is under way.
+  - **Ruling:** the clears-the-sidebar breakpoint is set to the width where the card's bottom row fits.
+  - **Parked:** web and Android group a rare edge case of episodes differently. Nothing in today's catalogue hits it.
