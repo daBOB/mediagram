@@ -29,3 +29,10 @@ Status: DONE (with deviations). Fast-forwarded to main 5fe377e0 first. No push, 
 ## Concerns
 - While the sidebar is open it covers the right of the top bar (My List, Kids, the player's own close). The sidebar has its own close, Esc and Back close it; the top bar is not shifted. Cheap to fix later by starting the sidebar below the bar, but the bar's height varies at phone width.
 - Preview cannot play media, so the HUD hold while the sidebar is open is test-covered only.
+
+## Follow-up: top bar clears the open sidebar (lead ruling)
+Commit 51727868. At 768px and above, `dialog.sidebar-open .hud-top` gets `right: 360px`, wraps, and the title takes its own row (same as the phone layout), so My List, Kids, Add to, Notes and the player's close stay visible and clickable beside the sidebar. Below 768px the sidebar still covers it.
+- Test (red first): `web/test/episode-sidebar-clearance.test.ts` reads `player-card.css` and asserts the 768px block offsets both `.card-dock` and `.hud-top` by the sidebar's width.
+- Two selector lists in the sidebar CSS were put on one line each to stay at the 200-line limit.
+- `episode-sidebar-1440x900.png` re-shot in the preview: My List, FSK badge, Add to and the close are fully visible left of the sidebar. 3084 pass, typecheck and lint clean.
+- The earlier concern is resolved. Notes was not on this title, so its button was not seen in the shot; it sits in the same bar.
