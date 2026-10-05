@@ -9,7 +9,7 @@
 import { describe, expect, test } from "bun:test";
 import { catalogSet as set } from "./support/catalog-set";
 import { groupDepartments } from "../public/lib/departments.js";
-import { playsNext } from "../public/lib/playback/plays-next.js";
+import { collectionOf, playsNext, previousInQueue } from "../public/lib/playback/plays-next.js";
 import type { CatalogSet, Library } from "../public/lib/library.js";
 
 /** A library the way the session builds one. */
@@ -32,34 +32,70 @@ const library = libraryOf([e1, e2, e3, e4, l1, l2, d1, d2, film, a1, a2]);
 
 describe("playsNext", () => {
   test("an episode plays on through its show and preloads the next two, across seasons, and no more", () => {
-    expect(playsNext(library, e1, null)).toEqual({ next: e2, preload: [e2.setId, e3.setId] });
+    expect(playsNext(library, e1, null)).toEqual({ next: e2, previous: null, inRun: true, preload: [e2.setId, e3.setId] });
   });
 
   test("the second-to-last episode preloads the one left", () => {
-    expect(playsNext(library, e3, null)).toEqual({ next: e4, preload: [e4.setId] });
+    expect(playsNext(library, e3, null)).toEqual({ next: e4, previous: e2, inRun: true, preload: [e4.setId] });
   });
 
   test("the last episode has nothing next and preloads nothing", () => {
-    expect(playsNext(library, e4, null)).toEqual({ next: null, preload: [] });
+    expect(playsNext(library, e4, null)).toEqual({ next: null, previous: e3, inRun: true, preload: [] });
   });
 
   test("a lesson plays on through its course but preloads nothing", () => {
-    expect(playsNext(library, l1, null)).toEqual({ next: l2, preload: [] });
+    expect(playsNext(library, l1, null)).toEqual({ next: l2, previous: null, inRun: true, preload: [] });
   });
 
   test("a documentary plays on through its collection but preloads nothing", () => {
-    expect(playsNext(library, d1, null)).toEqual({ next: d2, preload: [] });
+    expect(playsNext(library, d1, null)).toEqual({ next: d2, previous: null, inRun: true, preload: [] });
   });
 
-  test("a film belongs to no collection: nothing next, nothing preloaded", () => {
-    expect(playsNext(library, film, null)).toEqual({ next: null, preload: [] });
+  test("a film belongs to no collection: no run, nothing either side, nothing preloaded", () => {
+    expect(playsNext(library, film, null)).toEqual({ next: null, previous: null, inRun: false, preload: [] });
   });
 
   test("a list plays on in its own order and preloads nothing, even when it holds episodes", () => {
-    expect(playsNext(library, e1, [e1, e4, film])).toEqual({ next: e4, preload: [] });
+    expect(playsNext(library, e1, [e1, e4, film])).toEqual({ next: e4, previous: null, inRun: true, preload: [] });
   });
 
   test("an anime episode plays the next one, and preloads the same as any other show", () => {
-    expect(playsNext(library, a1, null)).toEqual({ next: a2, preload: [a2.setId] });
+    expect(playsNext(library, a1, null)).toEqual({ next: a2, previous: null, inRun: true, preload: [a2.setId] });
+  });
+
+  test("a list steps back in its own order too, and its first title has nothing before it", () => {
+    expect(playsNext(library, film, [e1, e4, film])).toEqual({ next: null, previous: e4, inRun: true, preload: [] });
+    expect(playsNext(library, e4, [e1, e4, film]).previous).toBe(e1);
+  });
+
+  test("the step back crosses a season boundary the same way the step on does", () => {
+    expect(playsNext(library, e3, null).previous).toBe(e2);
+  });
+
+  test("a title its run does not hold is still in a run, with neither neighbour", () => {
+    const stray = set({ kind: "ep", show: "Star City", season: 9, episode: "9", title: "Not indexed" });
+    expect(playsNext(library, stray, null)).toEqual({ next: null, previous: null, inRun: true, preload: [] });
+  });
+});
+
+describe("collectionOf", () => {
+  test("finds a title's show, course or documentary collection, and nothing for a film", () => {
+    expect(collectionOf(library, e1)?.name).toBe("Star City");
+    expect(collectionOf(library, l1)?.name).toBe("Kurs");
+    expect(collectionOf(library, d1)?.name).toBe("Terra X");
+    expect(collectionOf(library, a1)?.name).toBe("Dragonball");
+    expect(collectionOf(library, film)).toBeNull();
+  });
+});
+
+describe("previousInQueue", () => {
+  const run = [{ setId: "a" }, { setId: "b" }, { setId: "c" }];
+
+  test("the one before, and nothing before the first or for an id not in the run", () => {
+    expect(previousInQueue(run, "c")?.setId).toBe("b");
+    expect(previousInQueue(run, "b")?.setId).toBe("a");
+    expect(previousInQueue(run, "a")).toBeNull();
+    expect(previousInQueue(run, "gone")).toBeNull();
+    expect(previousInQueue([], "a")).toBeNull();
   });
 });

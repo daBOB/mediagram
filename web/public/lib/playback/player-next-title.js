@@ -1,4 +1,8 @@
-/** The next-title offer owns its countdown, cancellation and speculative work. */
+/**
+ * The run around the open title: the next-title offer with its countdown,
+ * cancellation and speculative work, and the card's ⏮ and ⏭ — every way of
+ * moving along a run opens through `openInRun`.
+ */
 import { episodeLabel } from "../format.js";
 import { playbackFor } from "../link.js";
 import { resumeAt } from "../resume-point.js";
@@ -15,12 +19,15 @@ const PRELOAD_BYTES = 8 * 1024 * 1024;
  */
 export function mountPlayerNextTitle({ showControls, openTitle }) {
   const button = document.getElementById("play-next");
+  const back = document.getElementById("previous");
   const panel = document.getElementById("up-next");
   const title = document.getElementById("up-next-title");
   const timing = document.getElementById("up-next-in");
   const cancelled = new Set();
   let playing = null;
   let next = null;
+  let previous = null;
+  let inRun = false;
   let onOpenNext = null;
   let countdown = null;
   let shownPhase = null;
@@ -41,9 +48,16 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     panel.hidden = true;
   }
 
+  /**
+   * A title with no run hides both steps; in a run, the end with nothing past
+   * it is disabled instead, so the transport does not shift under a finger.
+   */
   function offer() {
-    button.hidden = next === null;
-    button.title = next === null ? "" : titleLine(next);
+    for (const [control, target] of [[back, previous], [button, next]]) {
+      control.hidden = !inRun;
+      control.disabled = target === null;
+      control.title = target === null ? "" : titleLine(target);
+    }
   }
 
   /** @param {CatalogSet} set @param {PlayerOptions} [options] */
@@ -53,6 +67,9 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     if (warm?.setId !== set.setId) dropWarm();
     playing = set;
     next = options.next ?? null;
+    previous = options.previous ?? null;
+    // Saying what is next already says there is a run.
+    inRun = options.inRun ?? (next !== null || previous !== null);
     onOpenNext = options.onOpenNext ?? null;
     preloaded = null;
     offer();
@@ -61,7 +78,8 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
   function clear() {
     hide();
     dropWarm();
-    playing = next = onOpenNext = preloaded = null;
+    playing = next = previous = onOpenNext = preloaded = null;
+    inRun = false;
     offer();
   }
 
@@ -96,11 +114,14 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     }).then((response) => response.body?.cancel()).catch(() => {});
   }
 
-  /** @param {"buffered"|"asap"} how */
-  function playNext(how) {
-    const following = next;
+  /**
+   * Opens `set` the way the run's next title opens, for ⏮, ⏭ and the
+   * countdown alike, so a step back is never a different kind of open.
+   * @param {CatalogSet|null} set @param {"buffered"|"asap"} [how]
+   */
+  function openInRun(set, how = "asap") {
     hide();
-    if (following) (onOpenNext ?? openTitle)(following, { autoplay: how });
+    if (set) (onOpenNext ?? openTitle)(set, { autoplay: how });
   }
 
   function update({ runtime, at, ended }) {
@@ -130,16 +151,17 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     countdown = setInterval(() => {
       left -= 1;
       timing.textContent = `starting in ${left}…`;
-      if (left <= 0) playNext("buffered");
+      if (left <= 0) openInRun(next, "buffered");
     }, 1000);
   }
 
-  document.getElementById("up-next-play").addEventListener("click", () => playNext("asap"));
-  button.addEventListener("click", () => playNext("asap"));
+  document.getElementById("up-next-play").addEventListener("click", () => openInRun(next));
+  button.addEventListener("click", () => openInRun(next));
+  back.addEventListener("click", () => openInRun(previous));
   document.getElementById("up-next-cancel").addEventListener("click", () => {
     if (playing) cancelled.add(playing.setId);
     hide();
     dropWarm();
   });
-  return { open, update, preload, releaseWarm, clear };
+  return { open, update, preload, releaseWarm, clear, openInRun };
 }

@@ -1,0 +1,159 @@
+/* The player's control card: one card over the foot of the picture, under a
+   slim top bar. Blurred, which the stylesheet allows in one other place (the
+   masthead, shell.css) and for the same reason: it stays put while something
+   moves under it. */
+
+.card-dock {
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  max-width: 880px;
+  margin-inline: auto;
+}
+/* The notes column takes the right of the stage; the card keeps its own gap
+   from it, on a window wide enough to show both. */
+@media (min-width: 768px) {
+  dialog.with-notes .card-dock { right: calc(var(--notes-width) + 24px); }
+}
+
+.control-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--stage) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+  /* The whole card, not only its buttons: a pointer resting in a gap between
+     two controls is still a viewer about to use one. */
+  pointer-events: auto;
+}
+dialog.resting .control-card { pointer-events: none; }
+
+.card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.card-seek .seek { flex: 1; margin: 0; }
+/* Wraps rather than shrinking a target below a finger's width. */
+.card-tools { flex-wrap: wrap; }
+.card-tools .spacer { flex: 1; }
+.card-transport {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+.card-transport .transport { grid-column: 2; }
+.card-end {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.control-card .at {
+  color: var(--stage-ink);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* A tool says what it is set to (1×, Fit) and opens a list of the rest. */
+.tool {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--stage-ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color var(--hover), background-color var(--hover);
+}
+.tool:hover,
+.tool[aria-expanded="true"] { color: var(--stage-accent); background: rgba(255, 255, 255, 0.08); }
+.tool:disabled { opacity: 0.35; cursor: default; }
+.tool:disabled:hover { color: var(--stage-ink); background: transparent; }
+.cc { display: inline-flex; }
+.cc .tool + .tool { padding: 0 0.5rem; }
+.tool[aria-pressed="true"] { color: var(--stage-accent); }
+
+/* What the card's buttons open: just above the card, inside its width, in
+   the card's own fill. Placed by player-menus.js, which sets `left`. */
+.card-menu,
+.cue-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  background: color-mix(in srgb, var(--stage) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+  pointer-events: auto;
+}
+.card-menu { display: grid; min-width: 9rem; padding: 0.35rem; }
+.menu-item {
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--stage-ink-2);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--hover), background-color var(--hover);
+}
+.menu-item:hover { color: var(--stage-ink); background: rgba(255, 255, 255, 0.08); }
+.menu-item[aria-pressed="true"] { color: var(--stage-accent); }
+
+/* The stats overlay: under the top bar on the left, in the card's fill. */
+.stats-overlay {
+  position: absolute;
+  /* `top` is set by player-stats.js from the top bar's own height; the
+     negative margin tucks the overlay up into that bar's scrim padding. */
+  margin-top: -1.75rem;
+  left: 1.5rem;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.2rem 1rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--stage) 45%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-card);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.stats-overlay dt { color: var(--stage-ink-2); }
+.stats-overlay dd { margin: 0; color: var(--stage-ink); }
+#stats-toggle[aria-pressed="true"] { color: var(--stage-accent); }
+
+@media (max-width: 767px) {
+  /* The title takes a row of its own, ellipsized, with the marks wrapping
+     beneath; the way out stays in the corner, clear of both. */
+  .hud-top { flex-wrap: wrap; row-gap: 8px; padding-right: 72px; }
+  .hud .what { flex: 1 1 100%; }
+  #close { position: absolute; top: 16px; right: 16px; }
+  .stats-overlay { margin-top: -1.25rem; left: 16px; }
+  .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; }
+  .control-card { padding: 0.6rem 0.75rem; }
+  /* The transport keeps its row; stats and episodes wrap beneath it. */
+  .card-transport { display: flex; flex-wrap: wrap; justify-content: center; }
+  .card-transport .transport { gap: 0.25rem; }
+  .volume input { display: none; }
+}

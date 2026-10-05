@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { browserEnvironment, deferred, settle } from "./support/player-environment";
+import { browserEnvironment, chooseInMenu, deferred, markedInMenu, settle } from "./support/player-environment";
 import * as state from "../public/lib/watch-state.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -128,8 +128,8 @@ test("discovered default audio is applied at the current position and not mistak
   const url = new URL(starts()[0]!.url, "http://local");
   expect(url.searchParams.get("audio")).toBe("1");
   expect(url.searchParams.get("seek")).toBe("75");
-  expect(env.node("audio-track").value).toBe("1");
-  env.node("audio-track").fire("change");
+  expect(markedInMenu(env.node, "audio")).toBe("1");
+  chooseInMenu(env.node, "audio", "1");
   expect(starts()).toHaveLength(1);
   seek(180);
   expect(new URL(starts()[1]!.url, "http://local").searchParams.get("audio")).toBe("1");
@@ -148,11 +148,10 @@ test("failed audio selection can be retried without choosing a different languag
   });
   openPlayer(set("retry"));
   await settle();
-  env.node("audio-track").value = "1";
-  env.node("audio-track").fire("change");
+  chooseInMenu(env.node, "audio", "1");
   await settle();
   expect(env.node("note").textContent).toContain("try again");
-  env.node("audio-track").fire("change");
+  chooseInMenu(env.node, "audio", "1");
   await settle();
   expect(starts()).toHaveLength(2);
   expect(env.video.src).toBe(playlist(5));
@@ -225,8 +224,7 @@ test("changing audio after the end cancels its countdown while the new source st
   env.video.currentTime = 600;
   env.video.ended = true;
   env.video.fire("ended");
-  env.node("audio-track").value = "1";
-  env.node("audio-track").fire("change");
+  chooseInMenu(env.node, "audio", "1");
   await settle();
   expect(env.node("up-next-in").textContent).toBe("when this ends");
   env.advance(15000);
@@ -305,7 +303,7 @@ test("remembered language follows stream ordinals between episodes and resumes p
     }),
   );
   await settle();
-  expect(env.node("audio-track").value).toBe("0");
+  expect(markedInMenu(env.node, "audio")).toBe("0");
   expect(env.video.src).toBe("/api/sets/episode-two/stream");
   expect(starts()).toHaveLength(1);
 });
@@ -365,8 +363,7 @@ test.each(["close", "pagehide"])("%s preserves progress after audio conversion o
   });
   openPlayer({ ...set("unknown-audio"), duration: null }, { next: set("following", true) });
   await settle();
-  env.node("audio-track").value = "1";
-  env.node("audio-track").fire("change");
+  chooseInMenu(env.node, "audio", "1");
   await settle();
   env.video.duration = 120; // Only the portion ffmpeg has encoded.
   env.video.currentTime = 115;

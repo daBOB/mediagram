@@ -54,6 +54,9 @@ const ROOT = join(import.meta.dir, "..");
  * Lowered the same day for `src/state/store.ts`, `src/state/routes.ts` and
  * `src/state/sync-record.ts`, once profile rows, the profile routes and the
  * record's scalar readers moved out to `profiles*.ts` and `record-scalars.ts`.
+ * Lowered 2026-10-05 for `player.js`, `transport.js` and `playback.css`, once the
+ * player's controls became one card with its menus, framing and stats in modules
+ * and styles of their own.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 694,
@@ -63,13 +66,13 @@ const CEILINGS: Record<string, number> = {
   "public/lib/catalog/shelf-view.js": 287,
   "public/lib/library.js": 309,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 996,
+  "public/lib/playback/player.js": 994,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
-  "public/lib/playback/transport.js": 388,
+  "public/lib/playback/transport.js": 350,
   "public/lib/watch-state.js": 478,
   "public/styles/home.css": 363,
-  "public/styles/playback.css": 752,
+  "public/styles/playback.css": 625,
   "public/styles/shell.css": 257,
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 207,

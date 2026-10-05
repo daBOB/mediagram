@@ -8,7 +8,7 @@
  * audio track ours, the subtitles theirs. So the loan is being paid back.
  *
  * The shape is the phone's, from the Android player's transport design: skip
- * ten, play/pause, skip ten, elapsed on the left and duration on the right.
+ * back, play/pause, skip on, elapsed on the left and duration on the right.
  * Two surfaces over one library should not be learnt twice.
  *
  * Kept out of `player.js`, which is over eight hundred lines against a
@@ -16,7 +16,7 @@
  */
 
 import { readVolume, writeVolume } from "./volume-store.js";
-import { DEFAULT_FRAMING, framingBox, framingLabel, framingStyle, nextFraming } from "./framing.js";
+import { mountFramingControl } from "./framing-control.js";
 import { isLooping, loopBack, loopLabel, markLoop, NO_LOOP } from "./ab-loop.js";
 import { clockTime } from "../format.js";
 
@@ -39,11 +39,11 @@ const ICONS = {
   unfull: "M9 4h2v5H6V7h3zm4 0h2v3h3v2h-5zm-7 11h5v5h-2v-3H6zm9 0h5v2h-3v3h-2z",
 };
 
-/** The speeds worth offering. Anything finer is a setting, not a choice. */
+/** The speeds the Speed menu offers. Anything finer is a setting, not a choice. */
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
-/** Ten, the same ten the phone skips and the same ten the buttons say. */
-export const SKIP_SECONDS = 10;
+/** Fifteen: the same every surface skips, and the same the buttons say. */
+export const SKIP_SECONDS = 15;
 
 /** `1×`, `1.5×` — never `1.00×`, which is a measurement, not a speed. */
 export function speedLabel(rate) {
@@ -84,15 +84,14 @@ function setIcon(button, path) {
  * A skip button: which way, and how far.
  *
  * Both, because neither alone is enough. Two arrows without a number are a
- * skip of some unstated length — the phone had to be told ten explicitly
+ * skip of some unstated length — the phone had to be told its skip explicitly
  * because media3's own defaults are five back and fifteen forward, and a
  * control that does not say is a control that can quietly disagree with its
  * twin. A number without arrows does not say which way it goes.
  */
-function skipButton(button, path, seconds) {
-  const far = document.createElement("span");
-  far.textContent = String(seconds);
-  button.replaceChildren(icon(path), far);
+function skipButton(button, path, seconds, way) {
+  button.replaceChildren(icon(path), String(seconds));
+  button.setAttribute("aria-label", `${way} ${seconds} seconds`);
 }
 
 /**
@@ -109,22 +108,30 @@ function skipButton(button, path, seconds) {
  * show" means is the player's question and not the bar's.
  *
  * `toggleSubtitles` is `subtitle-picker.js`'s: this bar only asks for it on
- * 'c' and a click, the same as every other control here asks a callback.
+ * 'c', the same as every other control here asks a callback. `menus` is the
+ * card's one set of lists, which Speed and Framing open.
  */
-export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, runtime, recall, remember, toggleSubtitles }) {
+export function mountTransport({ video, menus, onPlay, onPause, onSeekTo, filmTime, runtime, recall, remember, toggleSubtitles }) {
   const playPause = document.getElementById("play-pause");
+  const restart = document.getElementById("restart");
   const back = document.getElementById("skip-back");
   const forward = document.getElementById("skip-forward");
   const mute = document.getElementById("mute");
   const volume = document.getElementById("volume");
-  const speed = document.getElementById("speed-rate");
+  const speed = document.getElementById("speed");
   const full = document.getElementById("fullscreen");
+  const frame = mountFramingControl({ video, button: document.getElementById("framing"), menus, recall, remember });
 
-  for (const rate of SPEEDS) {
-    const option = document.createElement("option");
-    option.value = String(rate);
-    option.textContent = speedLabel(rate);
-    speed.append(option);
+  /**
+   * How this show was last framed, and where any loop from the last title went.
+   *
+   * A loop belongs to the passage it was marked in, so it is dropped: carrying
+   * one into the next episode would trap a viewer in a stretch of a film they
+   * have not started.
+   */
+  function recallFraming() {
+    loop = { ...NO_LOOP };
+    frame.recall();
   }
 
   /**
@@ -134,20 +141,6 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
    * 1.5x and a film watched at 1x are two different answers, and the bar is
    * mounted once for both.
    */
-  /**
-   * How this show was last framed, and where any loop from the last title went.
-   *
-   * A loop belongs to the passage it was marked in, so it is dropped: carrying
-   * one into the next episode would trap a viewer in a stretch of a film they
-   * have not started. A framing is a property of how a show was mastered, so
-   * it is remembered.
-   */
-  function recallFraming() {
-    loop = { ...NO_LOOP };
-    framing = recall?.("framing") ?? DEFAULT_FRAMING;
-    applyFraming();
-  }
-
   function recallSpeed() {
     const asked = Number(recall?.("speed") ?? Number.NaN);
     chosenRate = SPEEDS.includes(asked) ? asked : 1;
@@ -188,14 +181,17 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     onSeekTo(filmTime() + by);
   }
 
-  /** One rung up or down the speeds the picker already offers. */
-  function stepSpeed(by) {
-    const at = SPEEDS.indexOf(chosenRate);
-    const to = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, (at === -1 ? 1 : at) + by))];
+  /** A speed the viewer chose, from the menu or a bracket key, kept for this show. */
+  function setSpeed(to) {
     chosenRate = to;
     video.playbackRate = to;
-    speed.value = String(to);
     remember?.("speed", String(to));
+  }
+
+  /** One rung up or down the speeds the menu offers. */
+  function stepSpeed(by) {
+    const at = SPEEDS.indexOf(chosenRate);
+    setSpeed(SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, (at === -1 ? 1 : at) + by))]);
   }
 
   /**
@@ -209,34 +205,6 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     else void video.requestPictureInPicture?.().catch(() => {});
   }
 
-  /** `fit` to `fill` to `16:9` to `4:3` and round again. */
-  function cycleFraming() {
-    framing = nextFraming(framing);
-    applyFraming();
-    remember?.("framing", framing);
-    return framingLabel(framing);
-  }
-
-  /**
-   * `fit`/`fill` are left to the stylesheet's own `inset: 0; width: 100%;
-   * height: 100%` — only `objectFit` changes for them. A named ratio
-   * overrides all four with a pixel box computed against the stage this
-   * element's parent already is (`framingBox`; see there for why `object-fit`
-   * alone cannot do this): cleared back to the stylesheet's own values the
-   * moment framing moves off a named ratio, so `fit`/`fill` are never left
-   * sized to a stale window from before.
-   */
-  function applyFraming() {
-    const style = framingStyle(framing);
-    video.style.objectFit = style.objectFit;
-    video.style.aspectRatio = style.aspectRatio;
-    const box = framingBox(framing, video.parentElement?.clientWidth ?? 0, video.parentElement?.clientHeight ?? 0);
-    video.style.left = box ? `${box.left}px` : "";
-    video.style.top = box ? `${box.top}px` : "";
-    video.style.width = box ? `${box.width}px` : "";
-    video.style.height = box ? `${box.height}px` : "";
-  }
-
   function setVolume(to) {
     const level = Math.min(1, Math.max(0, Number(to)));
     if (!Number.isFinite(level)) return;
@@ -247,10 +215,12 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
   }
 
   playPause.addEventListener("click", togglePlay);
-  skipButton(back, ICONS.back, SKIP_SECONDS);
-  skipButton(forward, ICONS.forward, SKIP_SECONDS);
+  skipButton(back, ICONS.back, SKIP_SECONDS, "Back");
+  skipButton(forward, ICONS.forward, SKIP_SECONDS, "Forward");
   back.addEventListener("click", () => onSeekTo(filmTime() - SKIP_SECONDS));
   forward.addEventListener("click", () => onSeekTo(filmTime() + SKIP_SECONDS));
+  // The start of this title, playing or paused as it was: a seek keeps both.
+  restart.addEventListener("click", () => onSeekTo(0));
 
   mute.addEventListener("click", () => {
     video.muted = !video.muted;
@@ -269,14 +239,11 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
    * speed. Re-applied per source instead.
    */
   let chosenRate = 1;
-  /** How the picture sits in the window. Per title, not per player. */
-  let framing = DEFAULT_FRAMING;
   /** The stretch being repeated, if any. */
   let loop = { ...NO_LOOP };
-  speed.addEventListener("change", () => {
-    chosenRate = Number(speed.value);
-    video.playbackRate = chosenRate;
-    remember?.("speed", speed.value);
+  menus.list(speed, {
+    items: () => SPEEDS.map((rate) => ({ value: String(rate), label: speedLabel(rate), current: rate === chosenRate })),
+    pick: (value) => setSpeed(Number(value)),
   });
   video.addEventListener("loadedmetadata", () => {
     if (video.playbackRate !== chosenRate) video.playbackRate = chosenRate;
@@ -297,11 +264,6 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
   }
   full.addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", () => refresh());
-  // A named ratio's window is computed against the stage's own pixels, which
-  // a window resize (or entering/leaving fullscreen, which resizes it too)
-  // changes without this bar hearing about it any other way; `fit`/`fill`
-  // re-apply the same 100% they already were, so this is a no-op for them.
-  window.addEventListener("resize", () => applyFraming());
 
   /** Everything the bar shows, from what the element and the film both say. */
   function refresh() {
@@ -313,7 +275,7 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
     mute.setAttribute("aria-label", silent ? "Unmute" : "Mute");
     if (document.activeElement !== volume) volume.value = String(video.muted ? 0 : video.volume);
 
-    speed.value = String(video.playbackRate);
+    speed.textContent = speedLabel(video.playbackRate);
 
     const full_ = document.fullscreenElement !== null;
     setIcon(full, full_ ? ICONS.unfull : ICONS.full);
@@ -368,7 +330,7 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
       case "pictureInPicture":
         return togglePictureInPicture();
       case "framing":
-        return cycleFraming();
+        return frame.cycle();
       case "step":
         return step(action.by);
       case "speed":

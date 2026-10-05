@@ -21,9 +21,9 @@ test("importing before the page exists does not look up or mount controls", asyn
     const player = await freshPlayer();
     expect(typeof player.initializePlayer).toBe("function");
     env = browserEnvironment();
-    expect(env.node("speed-rate").children).toHaveLength(0);
+    expect(env.node("speed").getAttribute("aria-haspopup")).toBeNull();
     player.initializePlayer();
-    expect(env.node("speed-rate").children).toHaveLength(6);
+    expect(env.node("speed").getAttribute("aria-haspopup")).toBe("true");
   } finally {
     // The fixture was installed while globals were absent. Restore it first,
     // then the previous page, including when import failed before mounting.
@@ -39,11 +39,15 @@ test("importing before the page exists does not look up or mount controls", asyn
 test("initialization twice mounts controls and click listeners once", async () => {
   env = browserEnvironment();
   const player = await freshPlayer();
-  expect(env.node("speed-rate").children).toHaveLength(0);
+  expect(env.node("speed").getAttribute("aria-haspopup")).toBeNull();
   player.initializePlayer();
   player.initializePlayer();
-  expect(env.node("speed-rate").children).toHaveLength(6);
-  expect(env.node(".hud-bottom").children).toHaveLength(1);
+  // A second listener would open the list and close it again in one click.
+  env.node("speed").fire("click");
+  expect(env.node("card-menu").hidden).toBe(false);
+  expect(env.node("card-menu").children).toHaveLength(6);
+  env.node("speed").fire("click");
+  expect(env.node("card-dock").children).toHaveLength(1);
   player.openPlayer({
     setId: "one",
     container: "mp4",

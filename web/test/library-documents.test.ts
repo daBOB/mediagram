@@ -13,11 +13,11 @@ import {
   documentsUnder,
   firstItemOf,
   flattenCollection,
+  nextInQueue,
   groupLibrary,
   isDocument,
   lessonsUnder,
   levelEntries,
-  nextAfter,
   type CatalogSet,
 } from "../public/lib/library.js";
 
@@ -90,7 +90,7 @@ describe("a document is not in the playback order", () => {
   /** Reaching the end of a lesson must not auto-advance into a workbook. */
   test("what follows a lesson is the next lesson", () => {
     const course = library().tutorials[0]!;
-    expect(nextAfter(course, "L1")?.setId).toBe("L2");
+    expect(nextInQueue(flattenCollection(course), "L1")?.setId).toBe("L2");
   });
 
   test("flattening a collection yields only what plays", () => {

@@ -43,8 +43,7 @@ video {
 .hud button,
 .hud select,
 .hud input,
-.hud label,
-.hud .picker { pointer-events: auto; }
+.hud label { pointer-events: auto; }
 
 .hud-top {
   top: 0;
@@ -61,19 +60,6 @@ video {
   );
 }
 
-.hud-bottom {
-  container: hudbar / inline-size;
-  bottom: 0;
-  padding: 3.5rem 1.5rem 1.6rem;
-  background: linear-gradient( /* deslop-ignore 06: scrim under the player controls */
-    to top,
-    rgba(0, 0, 0, 0.94) 0%,
-    rgba(0, 0, 0, 0.78) 40%,
-    rgba(0, 0, 0, 0.35) 72%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-
 dialog.resting .hud {
   opacity: 0;
 }
@@ -81,8 +67,7 @@ dialog.resting .hud {
 dialog.resting .hud button,
 dialog.resting .hud select,
 dialog.resting .hud input,
-dialog.resting .hud label,
-dialog.resting .hud .picker { pointer-events: none; }
+dialog.resting .hud label { pointer-events: none; }
 
 .hud .what {
   flex: 1;
@@ -94,16 +79,6 @@ dialog.resting .hud .picker { pointer-events: none; }
   font-size: 1.15rem;
   font-weight: 500;
   color: var(--stage-ink);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-}
-
-.hud .tech {
-  flex: none;
-  white-space: nowrap;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-  color: var(--stage-ink);
-  opacity: 0.62;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
@@ -186,8 +161,7 @@ dialog.resting .hud .picker { pointer-events: none; }
   border-radius: 50%; /* deslop-ignore 19: seek thumb */
   background: var(--stage-accent);
 }
-.ends,
-.preload {
+.ends {
   color: var(--stage-ink-2);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -195,62 +169,7 @@ dialog.resting .hud .picker { pointer-events: none; }
   letter-spacing: 0.04em;
 }
 .hud .seek label,
-.hud .picker label,
-.ends,
-.preload { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
-
-.preload { color: var(--stage-ink-2); }
-
-.rail {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.rail .spacer { flex: 1; }
-
-.picker {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.picker label {
-  color: var(--stage-ink-2);
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-}
-
-.picker select {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--stage-rule);
-  border-radius: var(--radius);
-  color: var(--stage-ink);
-  font-family: var(--text);
-  font-size: 0.85rem;
-  padding: 0.3rem 0.5rem;
-  max-width: 17rem;
-  cursor: pointer;
-}
-.picker select:hover { border-color: var(--stage-accent); }
-
-.bar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.15rem;
-}
-.bar-side {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.bar .picker,
-.bar .picker select { min-width: 0; }
-.bar-side.end { justify-content: flex-end; }
+.ends { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 
 .transport {
   display: flex;
@@ -317,17 +236,6 @@ dialog.resting .hud .picker { pointer-events: none; }
   cursor: pointer;
 }
 
-@container hudbar (max-width: 780px) {
-  .bar { gap: 0.6rem; }
-  .bar-side { gap: 0.6rem; }
-  .bar .picker label { display: none; }
-  .volume input { width: 3.5rem; }
-}
-@container hudbar (max-width: 600px) {
-  .volume input { display: none; }
-  .bar .picker select { font-size: 0.78rem; padding: 0.25rem 0.3rem; }
-}
-
 .peek {
   position: absolute;
   bottom: 100%;
@@ -356,18 +264,9 @@ dialog.resting .hud .picker { pointer-events: none; }
 }
 
 .cue-panel {
-  position: absolute;
-  left: 1.5rem;
-  bottom: 100%;
-  margin-bottom: 0.6rem;
-  z-index: 2;
   display: grid;
   gap: 0.55rem;
   padding: 0.9rem 1rem;
-  background: rgba(0, 0, 0, 0.92);
-  border: 1px solid var(--stage-rule);
-  border-radius: var(--radius);
-  pointer-events: auto;
 }
 .cue-row {
   display: flex;
@@ -405,21 +304,6 @@ dialog.resting .hud .picker { pointer-events: none; }
   font-variant-numeric: tabular-nums;
 }
 
-#cue-settings {
-  font-family: var(--display);
-  font-size: 0.95rem;
-  letter-spacing: 0;
-}
-
-.bar .at {
-  color: var(--stage-ink);
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-}
-
 .note {
   margin: 0;
   color: var(--stage-accent);
@@ -431,7 +315,7 @@ dialog.resting .hud .picker { pointer-events: none; }
   position: absolute;
   right: 1.5rem;
   
-  bottom: 9.5rem;
+  bottom: 12.5rem;
   z-index: 3;
   display: grid;
   gap: 0.35rem;
@@ -724,23 +608,13 @@ dialog.paused .featured-slide.on .featured-poster img { animation-play-state: pa
 .notes-head { font-size: 0.8125rem; }
 @media (max-width: 767px) {
   .hud-top { padding: 16px 16px 32px; }
-  .hud .tech { display: none; }
   .hud .what { font-size: 1rem; }
-  .hud-bottom { padding: 40px 16px max(24px, env(safe-area-inset-bottom)); }
-  .rail { flex-wrap: wrap; gap: 8px; }
-  .rail .spacer { display: none; }
   .ghost { padding: 8px; font-size: 0.75rem; }
-  .bar { grid-template-columns: minmax(0, 1fr) auto; row-gap: 16px; }
-  .bar-side { flex-wrap: wrap; gap: 8px; }
-  .transport { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
-  .bar-side.end { justify-content: flex-end; }
-  .bar .picker select { font-size: 1rem; max-width: 7rem; }
-  .picker label { display: none; }
   :root { --notes-width: 100%; }
   dialog.with-notes video { right: 0; }
   .notes { border-left: 0; }
   .notes-body { padding: 16px 20px 32px; }
-  .up-next, dialog.with-notes .up-next { left: 16px; right: 16px; bottom: 12rem; max-width: none; }
+  .up-next, dialog.with-notes .up-next { left: 16px; right: 16px; bottom: 17rem; max-width: none; }
   .featured-title { font-size: 1.75rem; }
   .featured-nav { gap: 8px; bottom: 16px; }
   .featured-dot { width: 20px; }

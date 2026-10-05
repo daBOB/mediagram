@@ -1,9 +1,10 @@
 /**
  * The three controls that make a subtitle usable.
  *
- * A panel rather than four more things on the bar: these are set once for a
+ * A panel rather than four more things on the card: these are set once for a
  * series and then never touched again, and a control that is adjusted once a
- * month does not earn permanent space beside play and pause.
+ * month does not earn permanent space beside play and pause. It opens from
+ * the CC menu's Style…, through the card's menus, which also close it.
  *
  * Everything here is a node or an event. The decisions — what a size means,
  * where an offset puts a cue — are in `subtitle-style.js`, which can be proved
@@ -77,12 +78,10 @@ function chooser(id, label, options, onPick) {
 export function subtitlePanel({ recall, remember, onPlacement }) {
   const panel = el("div", "cue-panel");
   panel.hidden = true;
-
-  const trigger = el("button", "tsp", "");
-  trigger.id = "cue-settings";
-  trigger.setAttribute("aria-label", "Subtitle appearance");
-  trigger.setAttribute("aria-expanded", "false");
-  trigger.textContent = "Aa";
+  // Focusable itself, so opening it puts a keyboard at its first control.
+  panel.tabIndex = -1;
+  panel.setAttribute("role", "group");
+  panel.setAttribute("aria-label", "Subtitle style");
 
   let held = { size: "100", backing: "shadow", offset: 0 };
 
@@ -105,13 +104,6 @@ export function subtitlePanel({ recall, remember, onPlacement }) {
   syncRow.append(earlier, at, later, reset);
 
   panel.append(size.wrap, backing.wrap, syncRow);
-
-  trigger.addEventListener("click", () => show(panel.hidden));
-
-  function show(open) {
-    panel.hidden = !open;
-    trigger.setAttribute("aria-expanded", String(open));
-  }
 
   function nudge(by) {
     // Rounded, or floating point turns four taps of 0.1 into 0.30000000000004
@@ -156,12 +148,11 @@ export function subtitlePanel({ recall, remember, onPlacement }) {
       backing: oneOf(BACKINGS, recall?.("cue-backing"), "shadow"),
       offset: clamp(Number(recall?.("cue-offset") ?? 0), FURTHEST) || 0,
     };
-    show(false);
     draw();
     return placement();
   }
 
-  return { trigger, panel, recallFor, placement };
+  return { panel, recallFor, placement };
 }
 
 /** The remembered value, if it is one of the ones on offer. */
