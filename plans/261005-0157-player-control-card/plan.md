@@ -72,3 +72,13 @@
   - *Why:* surface parity.
   - *Cost if wrong:* a one-line change in `episodeListOf`.
 - **2026-10-05:** phase 03 started in a worktree. It runs beside the web phases, as the phase table allows.
+- **2026-10-05, phase 03 merged** (`a0f5e5c5`). The review found 1 High, 1 Medium and 4 Low issues, all fixed in fix round 1 and confirmed by a scoped re-review, with mutation checks showing the new tests catch breakage.
+  - **Parity rulings made at review:**
+    - No ☰ for a hand-picked run (the web passes `collection: null`).
+    - The last section is "Episodes".
+    - Course sections take the last path segment.
+    - A watched row keeps its progress line.
+  - **Parked:**
+    - A title twice in a run: ⏮/⏭ use the first occurrence, as ⏭ always did.
+    - Two Low-risk surviving mutants on catalogue retention (the call site of `runSetsOf`, and dropping `loaded` on an empty run). Neither can be seen by a viewer.
+- **2026-10-05:** phases 04 (phone) and 05 (TV) started in parallel worktrees from `a0f5e5c5`, with no shared files. Phase 01 (web) is in progress.

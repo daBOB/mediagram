@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.112.0 — skip 15 s; the player model behind the coming control card
+
+**Changed** (Android phone, tablet and TV)
+
+- **Skip is 15 s.** The player's skip buttons and the phone's double-tap are now 15 s. The TV D-pad still moves 10 s until the TV card lands.
+- **Seeking back off the end stops the Up-next countdown.** Before, rewinding or scrubbing back after the credits kept the countdown running, and it then switched titles under a viewer watching again.
+
+**Added** (Android, not yet drawn on screen)
+
+- **The model the new control card draws from:**
+  - an episode list grouped like the web player's season page. Watched, partly watched and now-playing rows; a last "Episodes" group for episodes without a season. There is none for a film or a hand-picked list.
+  - Previous and Restart. Restart after the end stays paused.
+  - Picking a title from the run.
+  - The rule that keeps the controls up while a menu or the episode list is open.
+
 ## 0.111.0 — profile security fixes
 
 **Fixed** (Rust core, web player, Android phone, tablet and TV)
