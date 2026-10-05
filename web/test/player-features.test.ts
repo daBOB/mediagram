@@ -206,6 +206,32 @@ describe("player HUD", () => {
     hud.clear();
   });
 
+  test("focus on the dialog itself, which a click on the picture gives it, does not hold the card up", async () => {
+    const dialog = env.node("player");
+    const hud = mountPlayerHud({ dialog, video: env.video, card: env.node("control-card"), holding: () => false });
+    hud.open();
+    await env.video.play();
+    env.document.activeElement = dialog;
+    dialog.fire("pointerdown");
+    env.advance(2600);
+    expect(dialog.classes.has("resting")).toBe(true);
+    hud.clear();
+  });
+
+  test("closing forgets a pointer that was on the card, so the next title can rest", async () => {
+    const dialog = env.node("player");
+    const card = env.node("control-card");
+    const hud = mountPlayerHud({ dialog, video: env.video, card, holding: () => false });
+    hud.open();
+    card.fire("pointerenter");
+    hud.clear();
+    hud.open();
+    await env.video.play();
+    env.advance(2600);
+    expect(dialog.classes.has("resting")).toBe(true);
+    hud.clear();
+  });
+
   test("an open menu or a pointer on the card holds it up, and letting go starts the clock again", async () => {
     const dialog = env.node("player");
     const card = env.node("control-card");

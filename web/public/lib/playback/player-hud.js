@@ -14,6 +14,7 @@ export function mountPlayerHud({ dialog, video, card, holding }) {
 
   function clear() {
     active = false;
+    over = false;
     clearTimeout(timer);
     timer = null;
     dialog.classList.remove("resting");
@@ -25,8 +26,9 @@ export function mountPlayerHud({ dialog, video, card, holding }) {
     clearTimeout(timer);
     if (video.paused || over || holding()) return;
     const focused = document.activeElement;
-    // The picture itself does not hold the controls open; a focused button does.
-    if (focused !== null && focused !== video && dialog.contains(focused)) return;
+    // Neither the picture nor the dialog itself holds the controls open — a
+    // click on the picture focuses the dialog — but a focused button does.
+    if (focused !== null && focused !== video && focused !== dialog && dialog.contains(focused)) return;
     // Asked again as the clock runs out: a menu opened since it started — by
     // the very click that started it — holds the card as much as one open before.
     timer = setTimeout(() => {
