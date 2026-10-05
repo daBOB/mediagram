@@ -143,46 +143,6 @@ dialog.resting .control-card { pointer-events: none; }
 .stats-overlay dd { margin: 0; color: var(--stage-ink); }
 #stats-toggle[aria-pressed="true"] { color: var(--stage-accent); }
 
-/* The episode sidebar: over the right of the picture, in the card's fill.
-   Its rows are the show page's, re-inked for the stage. */
-.episode-sidebar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  width: min(360px, 100%);
-  background: color-mix(in srgb, var(--stage) 45%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
-  backdrop-filter: blur(24px) saturate(1.2); /* deslop-ignore 19: player card, see the note above */
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-.episode-sidebar[hidden] { display: none; }
-.sidebar-head { display: flex; align-items: center; gap: 0.25rem; padding: 0.75rem 0.75rem 0.5rem 1rem; }
-.sidebar-title { flex: 1; margin: 0; font-family: var(--display); font-size: 1.05rem; font-weight: 500; }
-.sidebar-rows { flex: 1; overflow-y: auto; padding: 0 0.5rem 1rem; }
-.episode-sidebar .season { margin: 0; }
-.episode-sidebar .row { min-height: 48px; padding: 12px 8px; border-bottom-color: rgba(255, 255, 255, 0.08); color: var(--stage-ink); cursor: pointer; }
-.episode-sidebar .row:hover { background: rgba(255, 255, 255, 0.06); }
-.episode-sidebar .row:hover .title b { color: var(--stage-accent); }
-.episode-sidebar .row .num, .episode-sidebar .row .meta { color: var(--stage-ink-2); }
-/* Number, title and runtime: the file's codec and badges are the show page's to say. */
-.episode-sidebar .row .title > span, .episode-sidebar .row .badge, .episode-sidebar .row .has-summary { display: none; }
-.episode-sidebar .row.is-watched { opacity: 0.45; }
-/* Disabled only so it cannot be picked; it is the one row that should read loudest. */
-.episode-sidebar .row[aria-current="true"] { opacity: 1; cursor: default; background: none; }
-.episode-sidebar .row[aria-current="true"] .title b { color: var(--stage-ink); }
-.episode-sidebar .row[aria-current="true"] .meta { color: var(--stage-accent); }
-.episode-sidebar .row .watched-at { background: var(--stage-accent); }
-/* The card and the top bar are laid out to the sidebar's left; below this width it covers them. */
-@media (min-width: 768px) {
-  dialog.sidebar-open .card-dock { right: calc(360px + 24px); }
-  dialog.sidebar-open .hud-top { right: 360px; flex-wrap: wrap; row-gap: 8px; }
-  dialog.sidebar-open .hud .what { flex: 1 1 100%; }
-}
-
 @media (max-width: 767px) {
   /* The title takes a row of its own, ellipsized, with the marks wrapping
      beneath; the way out stays in the corner, clear of both. */

@@ -60,6 +60,7 @@ export function mountEpisodeSidebar({ onPick, onClose }) {
   function draw() {
     const group = model.groups[shown];
     title.textContent = group.title;
+    title.title = group.title;
     back.hidden = model.groups.length < 2;
     on.hidden = model.groups.length < 2;
     back.disabled = shown === 0;

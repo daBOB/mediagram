@@ -67,6 +67,7 @@ describe("the seasons", () => {
     expect(panel().hidden).toBe(false);
     expect(env.node("episodes").getAttribute("aria-expanded")).toBe("true");
     expect(titleText()).toBe("Season 2");
+    expect(head(1).title).toBe("Season 2");
     expect(nextSeason().disabled).toBe(true);
     prevSeason().fire("click");
     expect(titleText()).toBe("Season 1");
