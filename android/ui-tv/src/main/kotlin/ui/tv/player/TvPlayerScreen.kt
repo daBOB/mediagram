@@ -88,6 +88,7 @@ fun TvPlayerScreen(
     val notesOpen = notes?.open == true
     val failed = state is PlayerUiState.Failed
     PlayerLifecycle(viewModel)
+    TvDisplayModeMatch(player)
     PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch)
     // The phone's rule: the countdown drops playing (the title has ended)
     // and the wait for the next title's buffer pauses on purpose; neither
