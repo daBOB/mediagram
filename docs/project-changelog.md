@@ -5,6 +5,21 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.111.0 — profile security fixes
+
+**Fixed** (Rust core, web player, Android phone, tablet and TV)
+
+- **Manage profiles closes when the app is left.** It closes, and forgets the PIN it was opened with, when the app goes to the background or the library shows again. Before, it stayed open with the PIN still held.
+- **The wrong-PIN wait survives a restart.** After five wrong PINs the 60 s wait is now stored, so restarting the app no longer resets it.
+- **A first profile waits for the household.**
+  - The first profile, and with it the admin role, is offered only after the device has taken in a sync round for the library it follows. Before, a device opened before its first sync could make a profile that took the admin role from the household's existing admin once the two synced.
+  - Until then, phone, TV and web show "Waiting for this household's profiles…" with Try again. The web API answers `not-synced` (409).
+  - The mark is kept per library, so switching libraries waits for the new household.
+- **A first PIN never overrides.** A first PIN (set where the person had none) never replaces a PIN set earlier on another device. Only someone who knows the current PIN, or the admin's Reset PIN, can replace it.
+  - Between two first PINs, the oldest wins. A proven PIN always beats a first PIN, and between proven PINs the newest wins.
+  - This closes a stale offline device setting a grown-up's PIN that then won everywhere.
+  - Schema: web state v13 and core v9 (`pin_proven`). PINs stored before this count as first PINs, so a PIN changed on 0.110.0 that hasn't reached every device yet can lose once to the older value.
+
 ## 0.110.1 — quieter menu counts
 
 **Changed** (web player, Android phone, tablet and TV)

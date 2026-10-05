@@ -63,7 +63,7 @@
 
 ### Task 2: Gates on main
 
-- [ ] Run `./check.sh` from the repo root. Expect exit 0. If it fails, fix the failure at its source; never by skipping.
+- [ ] Run `scripts/check.sh` from the repo root. Expect exit 0. If it fails, fix the failure at its source; never by skipping.
 - [ ] Run the web suite: `cd web && bun run lint && bun run typecheck && bun test`. Expect 0 failures.
 
 ### Task 3: Tablet walk (look and navigate only)
