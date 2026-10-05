@@ -87,6 +87,8 @@ class PlayerViewModel @Inject constructor(
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
     internal val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
     val upNext: StateFlow<UpNextUiState> = upNextController.state
+    internal val runIsList = MutableStateFlow(false) // a hand-built list: no sidebar, see episodeListFlow
+    val episodes: StateFlow<EpisodeList?> = viewModelScope.episodeListFlow(catalogRepository, _openSetId, upNextController.state, repository.snapshot, runIsList)
 
     /** Takes the next two episodes of an open show into the cache while this one plays. */
     internal val preloadController = PlayerPreloadController(viewModelScope, catalogRepository, seriesPreloader)

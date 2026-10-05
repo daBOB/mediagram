@@ -114,20 +114,22 @@ class PlayerFactoryTest {
         }
 
     /**
-     * Both directions, explicitly. media3 defaults to five seconds back and
-     * fifteen forward, so a bar whose buttons both say ten would be telling
-     * a viewer something the player does not do.
+     * Both directions, explicitly, and the one number every skip reads.
+     * media3 defaults to five seconds back and fifteen forward, so a card
+     * whose buttons both say fifteen would be telling a viewer something
+     * the player does not do going back.
      */
     @Test
-    fun aSkipMovesTenSecondsInEitherDirection() =
+    fun aSkipMovesFifteenSecondsInEitherDirection() =
         runTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
 
             val player = buildPlayer(context, PlaybackCounters()) { FakeCore() }
 
             try {
-                assertEquals(10_000L, player.seekBackIncrement)
-                assertEquals(10_000L, player.seekForwardIncrement)
+                assertEquals(15_000L, SKIP_MS)
+                assertEquals(SKIP_MS, player.seekBackIncrement)
+                assertEquals(SKIP_MS, player.seekForwardIncrement)
             } finally {
                 player.release()
             }

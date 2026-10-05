@@ -45,4 +45,14 @@ class ControlsVisibilityTest {
     fun aBarBeingDraggedStaysUnderTheThumb() {
         assertFalse(controlsShouldFade(isPlaying = true, isScrubbing = true))
     }
+
+    /**
+     * A menu or the episode sidebar is a viewer in the middle of a choice:
+     * the card going would take the choice with it, and on a television
+     * the remote's focus too.
+     */
+    @Test
+    fun anOpenMenuOrSidebarKeepsThemUp() {
+        assertFalse(controlsShouldFade(isPlaying = true, isScrubbing = false, menuOrSidebarOpen = true))
+    }
 }

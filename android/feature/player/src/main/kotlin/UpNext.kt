@@ -55,3 +55,13 @@ fun nextInQueue(run: List<String>, setId: String): String? {
     val at = run.indexOf(setId)
     return if (at == -1 || at == run.lastIndex) null else run[at + 1]
 }
+
+/**
+ * What comes before [setId] in [run], or `null` at its start or for a title
+ * the run does not hold — [nextInQueue]'s mirror, for the card's ⏮ and the
+ * television's Previous key.
+ */
+fun previousInQueue(run: List<String>, setId: String): String? {
+    val at = run.indexOf(setId)
+    return if (at <= 0) null else run[at - 1]
+}
