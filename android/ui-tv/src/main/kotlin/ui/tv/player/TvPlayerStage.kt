@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -76,17 +77,20 @@ internal fun BoxScope.TvPlayerStage(
     val lowest = listOfNotNull(bands.barTop, bands.cardTop).minOrNull()
     val room = TvCueRoom(barTop = lowest.takeIf { shown }, ceiling = bands.topBottom.takeIf { shown }, besideLeft = bands.panelLeft)
     TvVideoWithSubtitles(player, picture.cues, picture.choices, room)
-    if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands)
-    if (shown && view.upNext.phase != UpNextPhase.HIDDEN) {
-        TvUpNextOverStage(view.upNext, focus, actions.onPlayNext, viewModel::cancelUpNext, bands, besidePanel = picture.settingsOpen)
-    }
-    if (picture.settingsOpen) {
-        TvPlayerSettingsPanel(
-            choices = picture.choices,
-            viewModel = viewModel,
-            modifier = Modifier.align(Alignment.CenterEnd).onGloballyPositioned { bands.panelLeft = it.boundsInRoot().left },
-        )
-        DisposableEffect(Unit) { onDispose { bands.panelLeft = null } }
+    // Everything over the picture is a control that holds still under focus.
+    CompositionLocalProvider(LocalFlatControls provides true) {
+        if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands)
+        if (shown && view.upNext.phase != UpNextPhase.HIDDEN) {
+            TvUpNextOverStage(view.upNext, focus, actions.onPlayNext, viewModel::cancelUpNext, bands, besidePanel = picture.settingsOpen)
+        }
+        if (picture.settingsOpen) {
+            TvPlayerSettingsPanel(
+                choices = picture.choices,
+                viewModel = viewModel,
+                modifier = Modifier.align(Alignment.CenterEnd).onGloballyPositioned { bands.panelLeft = it.boundsInRoot().left },
+            )
+            DisposableEffect(Unit) { onDispose { bands.panelLeft = null } }
+        }
     }
 }
 
