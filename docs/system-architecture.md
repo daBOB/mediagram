@@ -806,6 +806,18 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   blank one is saved; on a remote the keyboard's action key is also how a viewer who
   only came to look closes the keyboard, so the television ignores a blank answer and
   offers "Clear stored key" behind a confirmation instead.
+- **Player card: controls hold their size under focus.** The television's 1.08 grow is
+  dropped over the stage (the focus border stays); profile screens and the two mark
+  dialogs keep it. The card follows the design rule that controls never lift or grow on hover
+  or focus; the border alone says where focus is.
+- **Player card: the remote opens the sidebar on "Now playing".** A pointer has no
+  position to start from; Back, ✕ or picking a row leaves it.
+- **Player card: Back closes one layer at a time** (menu, sidebar, up-next, notes, stats,
+  card, then leave), since a remote has no tap-outside to dismiss.
+- **Player card: top-bar marks and Notes are reached Up from the seek bar.** There is no
+  pointer to hit them; each row's ends are fenced so focus never slides out sideways.
+- **Player card (phone): ⓘ and ☰ sit beside the transport**, centred, not at the far
+  right as on the web: at the far end they strand on a wide tablet card, away from the controls they accompany.
 - **No picture-in-picture or gesture controls.** No touch input and no window to shrink
   into; these are phone affordances. The player does publish a media session, so the
   remote's play/pause, fast-forward and rewind keys reach it.

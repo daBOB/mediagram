@@ -143,3 +143,38 @@ Fix: add `left`/`right = FocusRequester.Cancel` on the first and last stop of ea
 
 - M1: keep the two-line clock as a recorded TV difference, or match the spec's one row? This is a lead/user call.
 - The top bar has no ✕ Close on TV (Back leaves). It is not listed among the deliberate differences for phase 06's docs.
+
+## Re-review (fix round 1, `58410725..dd0f62fb`)
+
+Gate: `:ui-tv:testDebugUnitTest lint :app:checkDebugDuplicateClasses` passes. Worktree clean after every break (only the untracked `reports/`).
+
+| Finding | Verdict |
+|---|---|
+| H1 | **Fixed.** `onLanded` resets landing and opener after the effect acts; `opener.requestFocus() \|\| playPause.requestFocus()`; a title change closes the menu and resets landing. The three fixture hooks (`holdPrepare`, `becomeReady`, `reportTracks`) are test-only and default off, so production is unchanged. |
+| M1 | **Fixed.** `TvSeekRow`: `position  bar  duration · ends` in one `Row`, pinned by a test. |
+| M2 | **Fixed.** `Cancel` on Left of the first and Right of the last stop of the top bar, tools row and transport row. Up/Down are untouched (`down`/`up` keep their own properties; the 183 focus tests pass). |
+| L1 | Fixed: the gap is asserted as `list.left - card.right == 32 dp`. |
+| L2 | Fixed: grep finds no "settings panel" or "gear" in `main`. |
+| L3 | Fixed: ⓘ carries On/Off and dims its label only. |
+| L4 | Fixed in code (alpha moved to the content). Not testable through semantics; box walk. |
+| Split | Behaviour unchanged (diff read: same actions, same state, positional `remote.onKey` args match). Main files all under 200 (max 198). No name clashes in `ui.player`. Test files `TvPlayerScreenTest` (247, was 212) and `TvPlayerKeysTest` (217) are over 200. |
+
+### Teeth (each break reverted)
+
+| Break | Result |
+|---|---|
+| `onLanded()` call removed, title-change reset kept | **survives** |
+| Title-change reset removed, `onLanded` kept | **survives** |
+| Both removed | 1 fails |
+| All eight `Cancel` fences removed | 4 fail |
+| Fences removed per file: MarksRail 1, ToolGroup 1, Transport 2 fail | **TopBar (Notes Left/Right) survives** |
+| Card end padding drops `TvCardInset` (gap 0) | 1 fails |
+
+### New findings (Low)
+
+- **R1. The one-shot is not pinned on its own.** Each of the two resets is covered by the other for a title switch. The case only `onLanded` covers has no test: Speed menu, Back, let the card fade, press a key, and the card lands on ▶ rather than Speed. Add that test (`TvPlayerScreenEffects.kt:92`).
+- **R2. The Notes fences in `TvPlayerTopBar.kt` (right, and left when there are no marks) are vacuous in Robolectric.** Nothing lies to the right, so `theTopBarStopsAtNotes` passes with the fence removed. Harmless; box walk.
+- **R3. `TvTransport.kt` ⓘ modifier** is `(if (onOpenEpisodes == null) toTools.then(atEnd) else toTools)`, a structural change on a focus node if the episode list appears or disappears while ⓘ is focused (gotcha 4). Low risk: it is a `focusProperties` element, not a requester. Check in the phase 06 walk.
+- L5 and L6 remain as previously accepted (phase 06 walk).
+
+merge-ready: yes

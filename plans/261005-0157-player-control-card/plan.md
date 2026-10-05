@@ -17,11 +17,11 @@
 
 | # | Phase | Depends on | Status |
 |---|---|---|---|
-| 01 | [Web control card](phase-01-web-control-card.md) | — | pending |
-| 02 | [Web episode sidebar](phase-02-web-episode-sidebar.md) | 01 | pending |
-| 03 | [Android shared player model](phase-03-android-shared-player-model.md) | — (can run beside 01–02) | pending |
-| 04 | [Phone/tablet control card](phase-04-phone-control-card.md) | 03 | pending |
-| 05 | [TV control card](phase-05-tv-control-card.md) | 03 (parallel with 04, no shared files) | pending |
+| 01 | [Web control card](phase-01-web-control-card.md) | — | done |
+| 02 | [Web episode sidebar](phase-02-web-episode-sidebar.md) | 01 | done |
+| 03 | [Android shared player model](phase-03-android-shared-player-model.md) | — (can run beside 01–02) | done |
+| 04 | [Phone/tablet control card](phase-04-phone-control-card.md) | 03 | done |
+| 05 | [TV control card](phase-05-tv-control-card.md) | 03 (parallel with 04, no shared files) | done |
 | 06 | [Close-out: docs, devices, release](phase-06-close-out.md) | 01–05 | pending |
 
 ## Global Constraints
@@ -94,3 +94,6 @@
 - **2026-10-05, phase 02 review: changes needed.** One High (focus lost to `<body>` after ✕, a pick, or a season arrow at its end) and three Medium. Fix round 1 is under way.
   - **Ruling:** the clears-the-sidebar breakpoint is set to the width where the card's bottom row fits.
   - **Parked:** web and Android group a rare edge case of episodes differently. Nothing in today's catalogue hits it.
+- **2026-10-05, phases 01–05 merged and released:** 0.112.0 (Android model), 0.113.0 (web card), 0.114.0 (phone), 0.115.0 (web sidebar), 0.116.0 (TV and docs). Each phase was reviewed, sent back for one fix round, then re-reviewed. `scripts/check.sh` is green on main.
+  - **Phase 06:** docs are done. The tablet walk was done on the phase 04 branch, and 0.114.0 is installed on the tablet.
+  - **Owed:** the TV box walk (box unreachable at 02:35); it includes the parked TV Lows: R1 one-shot focus, R2 the Notes fence, R3 ⓘ's conditional modifier. Also owed: the user's word on publishing to the channel.

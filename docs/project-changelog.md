@@ -5,6 +5,28 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.116.0 — the TV player's control card
+
+**Changed** (Android TV)
+
+- **One control card.** The TV player's controls now sit in one frosted card, 760 dp, at the bottom of the picture, in the same three rows as the web and the phone:
+  - position, seek bar, length and "ends at" on one line;
+  - CC▾, speed, audio and framing;
+  - ↺ ⏮ −15 ▶ +15 ⏭ with ⓘ and ☰.
+- **The settings panel is gone.** CC switches subtitles on and off. Speed, audio and framing open small menus that land on the current value, and Back returns to the button.
+- **Marks and Notes moved to the top bar.** Press Up from the seek bar to reach them.
+- **☰ opens the episode list** on the right, landing on "Now playing". The card moves left of it while it is open.
+- **Remote behaviour:**
+  - The D-pad skips 15 s.
+  - Focus starts on ▶/❚❚ and returns there after every title switch.
+  - The ends of each row are fenced.
+  - Back closes one thing at a time: menu, list, up-next, notes, stats, then the card.
+- **Controls no longer grow when focused.** The focus border shows where focus is.
+
+**Docs**
+
+- `web/DESIGN.md`, `DESIGN.md` and `docs/system-architecture.md` describe the control card on every surface, and what differs on television and phone.
+
 ## 0.115.0 — the web player's episode list
 
 **Added** (web player)

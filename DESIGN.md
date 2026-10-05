@@ -744,8 +744,9 @@ art: a film's title page, a department's cover story, Movies and Shows.
   right). Black at 78%, a 1dp hairline at 8% white, radius 12dp
   (`Radius.card`), 16dp inside, no shadow. Phone: the window's width less
   12dp each side, never wider than 720dp, 12dp above the bottom edge.
-  Television: 760dp, centred, 32dp above the bottom edge. A row wraps rather
-  than shrink a control; every touch target is at least 48dp.
+  Television: 760dp, centred, 32dp above the bottom edge and 32dp clear of the
+  open sidebar, which narrows the card to the room left of it. A row wraps
+  rather than shrink a control; every touch target is at least 48dp.
 - **Menus and the episode sidebar** take the card's own fill. A menu opens
   directly above the button that opened it, inside the card's width, one at
   a time. The sidebar stands down the right — 320dp on a phone or tablet,
@@ -759,6 +760,14 @@ art: a film's title page, a department's cover story, Movies and Shows.
   gradient from 55% black (`SCRIM_ALPHA`) at the top edge to clear.
 - **Nothing lifts or grows.** A control keeps its size on press and on
   focus; the television marks focus with its own colours and border only.
+- **Television remote:** focus lands on ▶/❚❚ whenever the controls come up
+  and after a title switch (a menu left open is closed by the switch). The
+  first and last control of each row are fenced: Left and Right stop there
+  rather than leave the row. A menu opens on its current value and Back
+  returns focus to its button; the sidebar opens on "Now playing". Back
+  closes one thing at a time: menu, sidebar, up-next, notes, stats, card,
+  then leaves. The card's controls do not grow on focus (the focus border
+  stays); watched sidebar rows fade their content, not their focus border.
 - **Deliberate difference: no blur.** The web blurs what lies behind its
   card; Android fills it with a flat dark tint. The video draws on its own
   surface, which is what keeps HDR and Dolby Vision passthrough working —
