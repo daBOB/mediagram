@@ -5,10 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import playback.Mode
-import playback.pickDisplayMode
+import playback.displayModeToApply
 import ui.player.findActivity
 
 /**
@@ -30,6 +31,12 @@ internal fun TvDisplayModeMatch(player: Player?) {
         if (player == null || window == null) return@DisposableEffect onDispose {}
         val before = window.attributes.preferredDisplayModeId
 
+        // The mode the display was in before this screen touched it, taken on
+        // the first decision (which precedes any write of ours). Every title
+        // is judged against it, so a mode we switched to for one film is not
+        // mistaken for the display's own when the next one has no fit.
+        var start: Mode? = null
+
         fun match(tracks: Tracks) {
             val fps =
                 tracks.groups
@@ -38,10 +45,13 @@ internal fun TvDisplayModeMatch(player: Player?) {
                         (0 until group.length)
                             .firstOrNull { group.isTrackSelected(it) }
                             ?.let { group.getTrackFormat(it).frameRate }
-                    } ?: return
+                    } ?: Format.NO_VALUE.toFloat()
             val display = window.decorView.display ?: return
-            val id = pickDisplayMode(display.mode.toMode(), display.supportedModes.map { it.toMode() }, fps) ?: return
-            window.attributes = window.attributes.apply { preferredDisplayModeId = id }
+            val from = start ?: display.mode.toMode().also { start = it }
+            val id = displayModeToApply(before, from, display.supportedModes.map { it.toMode() }, fps)
+            if (window.attributes.preferredDisplayModeId != id) {
+                window.attributes = window.attributes.apply { preferredDisplayModeId = id }
+            }
         }
         val listener =
             object : Player.Listener {

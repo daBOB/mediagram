@@ -42,4 +42,18 @@ fun pickDisplayMode(
     return best?.id?.takeIf { it != current.id }
 }
 
+/**
+ * The preferred mode id to hold for a title of [fps]: the picked mode, or
+ * [before] (what the window preferred when the screen opened, normally 0) when
+ * nothing fits or the rate is unknown. [start] is the display's mode from
+ * before any switch of ours, so an earlier title's switch never leaks into
+ * this one's decision.
+ */
+fun displayModeToApply(
+    before: Int,
+    start: Mode,
+    supported: List<Mode>,
+    fps: Float,
+): Int = pickDisplayMode(start, supported, fps) ?: before
+
 private const val TOLERANCE = 0.005f

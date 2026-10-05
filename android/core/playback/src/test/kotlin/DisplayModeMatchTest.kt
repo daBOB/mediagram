@@ -55,4 +55,12 @@ class DisplayModeMatchTest {
         assertNull(pickDisplayMode(at5994, modes, 0f))
         assertNull(pickDisplayMode(at5994, modes, Format.NO_VALUE.toFloat()))
     }
+
+    @Test
+    fun aTitleWithNoFitGoesBackToWhatWasPreferredBefore() {
+        val modes = listOf(at5994, mode(2, 24f))
+        assertEquals(2, displayModeToApply(0, at5994, modes, 24f))
+        assertEquals(0, displayModeToApply(0, at5994, modes, 25f))
+        assertEquals(0, displayModeToApply(0, at5994, modes, Format.NO_VALUE.toFloat()))
+    }
 }
