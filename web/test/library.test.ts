@@ -14,7 +14,6 @@ import {
   groupLibrary,
   lessonsUnder,
   levelEntries,
-  nextAfter,
   nextInQueue,
 } from "../public/lib/library.js";
 
@@ -376,19 +375,19 @@ describe("what comes next", () => {
   ]).series[0]!;
 
   test("the next episode of the season", () => {
-    expect(nextAfter(show, show.divisions[0]!.items[0]!.setId)?.title).toBe("S1E2");
+    expect(nextInQueue(flattenCollection(show), show.divisions[0]!.items[0]!.setId)?.title).toBe("S1E2");
   });
 
   test("crosses into the next season without being told there was one", () => {
-    expect(nextAfter(show, show.divisions[0]!.items[1]!.setId)?.title).toBe("S2E1");
+    expect(nextInQueue(flattenCollection(show), show.divisions[0]!.items[1]!.setId)?.title).toBe("S2E1");
   });
 
   test("the last episode of the last season has nothing after it", () => {
-    expect(nextAfter(show, show.divisions[1]!.items[0]!.setId)).toBeNull();
+    expect(nextInQueue(flattenCollection(show), show.divisions[1]!.items[0]!.setId)).toBeNull();
   });
 
   test("a set that is not in this collection has no next", () => {
-    expect(nextAfter(show, "01NOTHERE")).toBeNull();
+    expect(nextInQueue(flattenCollection(show), "01NOTHERE")).toBeNull();
   });
 
   test("a course walks out of a folder and on to the next one", () => {
@@ -400,9 +399,9 @@ describe("what comes next", () => {
 
     const a1 = course.divisions[0]!.items[0]!;
     // Into the nested folder, then out of it and into the sibling.
-    expect(nextAfter(course, a1.setId)?.title).toBe("A2");
+    expect(nextInQueue(flattenCollection(course), a1.setId)?.title).toBe("A2");
     const a2 = course.divisions[0]!.children[0]!.items[0]!;
-    expect(nextAfter(course, a2.setId)?.title).toBe("B1");
+    expect(nextInQueue(flattenCollection(course), a2.setId)?.title).toBe("B1");
   });
 });
 

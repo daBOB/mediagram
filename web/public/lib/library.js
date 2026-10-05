@@ -233,17 +233,6 @@ export function nextInQueue(sets, setId) {
   return at === -1 || at === sets.length - 1 ? null : sets[at + 1];
 }
 
-/**
- * What follows `setId` in its collection, or `null` at the end of one.
- *
- * Crosses a season or folder boundary without being told to, because the
- * flattening does not know there was one — which is the behaviour wanted:
- * the last episode of a season is followed by the first of the next.
- */
-export function nextAfter(collection, setId) {
-  return nextInQueue(flattenCollection(collection), setId);
-}
-
 /** Groups one kind's sets by container (show or course), then by folder. */
 export function collections(sets, fallbackName) {
   const byName = new Map();

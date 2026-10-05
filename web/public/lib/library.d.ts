@@ -137,9 +137,6 @@ export function levelEntries(level: Pick<Division, "items" | "children">): Level
 /** Every playable set in a collection, in the order its pages walk them. */
 export function flattenCollection(collection: Pick<Collection, "divisions">): CatalogSet[];
 
-/** What follows `setId` in its collection, or `null` at the end of one. */
-export function nextAfter(collection: Collection, setId: string): CatalogSet | null;
-
 /** The set after `setId`, or null when the set is absent or last. */
 export function nextInQueue<T extends { setId: string }>(sets: readonly T[], setId: string): T | null;
 

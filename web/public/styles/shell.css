@@ -1,5 +1,4 @@
-/* The frame around every page: a fixed library rail (`.library-rail`, not
-   `.rail`, which is the player's own control row) with the reader's own shelves,
+/* The frame around every page: a fixed library rail (`.library-rail`) with the reader's own shelves,
    a sticky department bar, and the main column the cover story bleeds into. */
 .skip-link {
   position: fixed;

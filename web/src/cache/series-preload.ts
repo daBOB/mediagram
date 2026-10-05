@@ -2,8 +2,8 @@
  * Takes the next episodes of a show into the cache while the viewer watches
  * this one.
  *
- * Which episodes is the page's call, made with the same `nextAfter` that
- * drives Play next — so what is fetched ahead is exactly what would play
+ * Which episodes is the page's call, made with the same run (`nextInQueue` over
+ * `flattenCollection`) that drives Play next — so what is fetched ahead is exactly what would play
  * next, and the server keeps no second idea of episode order.
  *
  * One set at a time, one run at a time. That is what keeps it out of the
