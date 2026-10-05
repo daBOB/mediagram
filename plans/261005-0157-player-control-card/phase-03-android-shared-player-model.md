@@ -18,7 +18,7 @@
 ## Key insights
 
 - **The run is already the play order.** `runFor` (`feature/catalog/src/main/kotlin/RunFor.kt:17`) hands the player the collection flattened by `playOrder`; an explicit run (a list, the Kids wall) wins over it (`ui-mobile/src/main/kotlin/ui/LibraryFlowBranches.kt:142`, `ui-tv/src/main/kotlin/ui/tv/TvLibraryBranches.kt:103`). So the episode list keeps run order and only *groups*; it never re-sorts.
-- **Grouping mirrors the catalogue's `trailOf`** (`Shelves.kt:140`): `path` folders, else `chapter`, else an episode's "Season N", else a lesson's "Chapter N". The one deliberate change: an episode with no season, and an id the catalogue does not know, go to one section placed **last** ("Other", or "Episodes" when nothing else exists), per Review Focus 5.
+- **Grouping mirrors the catalogue's `trailOf`** (`Shelves.kt:140`): `path` folders, else `chapter`, else an episode's "Season N", else a lesson's "Chapter N". The one deliberate change: an episode with no season, and an id the catalogue does not know, go to one section placed **last**, named "Episodes" like the web's season-less division, per Review Focus 5. Course sections take the folder that holds the lessons (last path segment), as the web does. *(Lead ruling after review, 2026-10-05: parity with phase 02.)* A hand-picked run (`handPicked`) has no episode list, as the web passes `collection: null` for a list.
 - **One catalogue read, not one per row.** `CatalogRepository.sets()` (`core/data/src/main/kotlin/CatalogRepository.kt:35`) once per run change: a course runs to 162 lessons, and `mediaSet(id)` is one core crossing each (`CatalogRepository.kt:162`). Re-read only when a run holds an id the last listing lacked.
 - **Previous and a picked row take Next's switch.** `UpNextController.switchTo` (`UpNextController.kt:179`) saves, then asks the UI to move via `pendingSwitch`; `PlayerNavigationEffects` (`ui-common/src/main/kotlin/ui/player/PlayerLifecycle.kt:93-98`) performs it on both surfaces. The TV's own `previousInRun` + direct `onSwitch` (`ui-tv/.../TvPlayerRun.kt:13-19,61-66`) becomes redundant; phase 05 deletes it.
 - **A seek back off the end must clear "ended".** Today `ended` (`UpNextController.kt:42`) is cleared only by a new title or a switch; `onSeeked` (`:107`) re-evaluates with it still set, so Restart (or a scrub back) after the credits keeps the countdown running and switches titles under a viewer watching again. Fix at the root, in `onSeeked`: clear it unless the playhead is still on the end. Unknown position/length leaves it set (today's behaviour).
@@ -106,8 +106,7 @@ data class EpisodeRow(
 )
 data class EpisodeSection(val title: String, val rows: List<EpisodeRow>)
 data class EpisodeList(val sections: List<EpisodeSection>, val currentSection: Int)
-const val OTHER_SECTION = "Other"
-const val EPISODES_SECTION = "Episodes"
+const val EPISODES_SECTION = "Episodes"   // the last section: no season, or unknown to the catalogue
 const val UNKNOWN_TITLE = "Unknown title"
 fun episodeListOf(openId: String, run: List<String>, sets: Map<String, MediaSet>, watch: WatchSnapshot): EpisodeList?
 fun previousInQueue(run: List<String>, setId: String): String?
