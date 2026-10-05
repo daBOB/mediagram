@@ -131,3 +131,13 @@ test("in a run, Previous and Next open their neighbours the way the next title o
   expect(env.node("play-next").disabled).toBe(true);
   expect(env.node("previous").disabled).toBe(false);
 });
+
+test("choosing a menu row hands focus back to its button, so the player's keys keep working", async () => {
+  openPlayer(set("keys"));
+  chooseInMenu(env.node, "speed", "1.25");
+  expect(env.document.activeElement).toBe(env.node("speed"));
+  expect(env.video.paused).toBe(true);
+  env.node("player").dispatchEvent(Object.assign(new Event("keydown"), { key: "k" }));
+  await settle();
+  expect(env.video.paused).toBe(false);
+});

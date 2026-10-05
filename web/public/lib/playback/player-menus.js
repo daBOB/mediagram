@@ -71,7 +71,9 @@ export function mountPlayerMenus({ onClose } = {}) {
         row.dataset.value = item.value;
         row.setAttribute("aria-pressed", String(item.current === true));
         row.addEventListener("click", () => {
-          close();
+          // The focused row is about to be hidden; without a new home focus falls
+          // to the page and the player's keys stop hearing the viewer.
+          close()?.focus();
           pick(item.value);
         });
         return row;

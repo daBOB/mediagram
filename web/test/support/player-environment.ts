@@ -83,7 +83,9 @@ export class Node extends EventTarget {
   matches(_selector: string) {
     return false;
   }
-  focus() {}
+  focus() {
+    (globalThis as { document?: { activeElement: Node | null } }).document!.activeElement = this;
+  }
   querySelectorAll(tag: string) {
     return this.children.filter((node) => node.tagName === tag.toUpperCase());
   }
