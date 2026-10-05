@@ -5,13 +5,9 @@
 
 package ui.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,22 +17,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.unit.round
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import designsystem.Spacing
-import player.UpNextPhase
 import player.PlayerUiState
 import player.PlayerViewModel
-import player.controlsMayShow
+import player.UpNextPhase
 import player.chooseFraming
+import player.controlsMayShow
 import player.createListAndAdd
+import player.playFromRun
 import player.retry
 import player.setInList
 import player.setKidsMark
-import player.toggleSubtitles
 import player.toggleWatchlist
 
 /**
@@ -49,16 +46,17 @@ import player.toggleWatchlist
  * singleton player/ViewModel underneath were never touched either way.
  * See [shouldStopOnDispose].
  *
- * A tap toggles the transport bar, which takes itself away while a film runs
- * and stays while it is paused, being scrubbed, or the settings sheet is
- * open; see [controlsShouldFade]. Double-tap seeking, play/pause and pinch
- * framing live in [PlayerGestureLayer], which wraps everything below. All of
- * it — transport bar, marks, sheet, up-next card, top bar — is hidden while
- * [LocalIsInPictureInPicture] is true; see [PipController].
+ * The controls are one card at the bottom of the picture
+ * ([PlayerControlCard]) under a slim top bar ([PlayerTopChrome]). A tap
+ * toggles both; they take themselves away while a film runs and stay while
+ * it is paused, being scrubbed, or while a menu or the episode sidebar is
+ * open — see [controlsShouldFade]. A tap on the picture with a menu open
+ * closes the menu instead. Back closes the open menu, then the sidebar,
+ * before the library's own Back is reached. Double-tap seeking, play/pause
+ * and pinch framing live in [PlayerGestureLayer], which wraps everything
+ * below. All of it is hidden while [LocalIsInPictureInPicture] is true; see
+ * [PipController].
  */
-// The toggles are inset by the system bars even while the player hides them,
-// which Compose still marks experimental.
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerScreen(
     setId: String,
@@ -78,6 +76,7 @@ fun PlayerScreen(
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
@@ -90,25 +89,27 @@ fun PlayerScreen(
         isPlaying = state is PlayerUiState.Playing || upNext.phase != UpNextPhase.HIDDEN || upNext.awaitingStart,
     )
 
-    // Shown when the screen opens, so a viewer finds out the bar is there at
-    // all, then left to take itself away.
+    // Shown when the screen opens, so a viewer finds out the card is there
+    // at all, then left to take itself away.
     var controlsShown by remember { mutableStateOf(true) }
     var scrubbing by remember { mutableStateOf(false) }
-    var settingsShown by remember { mutableStateOf(false) }
     // Saved, because a rotation destroys this composition and a viewer who
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
-    var barTop by remember { mutableStateOf<Float?>(null) }
-    ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, settingsShown, onHide = { controlsShown = false })
-    // One predicate, read twice, because the bar and the statistics sit in
-    // different corners and cannot be nested under a single `if`. Both are
-    // the bar being on screen, so both ask the same question rather than two
-    // that could drift apart. `!isInPip` folds in here too: there is no
-    // touch surface of this app's own inside that window to show a bar on.
+    val card = remember { PlayerCardState() }
+    ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, menuOrSidebarOpen = card.somethingOpen, onHide = { controlsShown = false })
+    // Composed after the library's own Back, so it answers first — and only
+    // while the card has something open to close.
+    BackHandler(enabled = card.somethingOpen, onBack = card::closeTopmost)
+    // `!isInPip` folds in here: there is no touch surface of this app's own
+    // inside that window to show a card on.
     val barShown = controlsShown && controlsMayShow(state) && !isInPip
-    // The up-next card appearing is itself a reason to bring the bar back —
+    // The up-next card appearing is itself a reason to bring the card back —
     // a viewer who let it fade is exactly who most wants to see the panel.
     LaunchedEffect(upNext.phase) { if (upNext.phase != UpNextPhase.HIDDEN) controlsShown = true }
+    // A title with no run left has nothing to list.
+    LaunchedEffect(episodes == null) { if (episodes == null) card.sidebarOpen = false }
+    val barTop = card.bounds?.top?.toFloat()?.takeIf { barShown }
 
     // Root-coordinate measurements the up-next card clamps to; see UpNextCard.
     var screenBottom by remember { mutableStateOf<Float?>(null) }
@@ -117,68 +118,54 @@ fun PlayerScreen(
     NotesLayout(notes, isInPip, onClose = viewModel::toggleNotes) {
         PlayerGestureLayer(
             player = player,
-            onToggleControls = { controlsShown = !controlsShown },
+            onToggleControls = { if (!card.dismissMenu()) controlsShown = !controlsShown },
             onPinchFraming = viewModel::chooseFraming,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .onGloballyPositioned { screenBottom = it.boundsInRoot().bottom },
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .onGloballyPositioned {
+                        screenBottom = it.boundsInRoot().bottom
+                        card.origin = it.positionInRoot().round()
+                    },
         ) {
             player?.let { current ->
-                VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop.takeIf { barShown }, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
+                VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
                 if (barShown) {
-                    PlayerControls(
+                    PlayerControlCard(
                         player = current,
+                        view = PlayerCardView(choices, upNext, statsShown, hasEpisodes = episodes != null, catalogedDurationSecs = openSet?.durationSecs),
+                        actions = playerCardActions(viewModel, card, onToggleStats = { statsShown = !statsShown }, onEnterPip = pip.enterPip.takeIf { pip.supported }),
                         onScrubbingChanged = { scrubbing = it },
-                        statsShown = statsShown,
-                        onToggleStats = { statsShown = !statsShown },
-                        speed = choices.speed,
-                        onOpenSettings = { settingsShown = true },
-                        hasSubtitles = choices.ccVisible, subtitlesOn = choices.subtitlesOn, onToggleSubtitles = viewModel::toggleSubtitles,
-                        catalogedDurationSecs = openSet?.durationSecs,
-                        hasNext = upNext.hasNext,
-                        nextTitleLine = upNext.titleLine,
-                        onPlayNext = viewModel::playNext,
-                        modifier = Modifier.align(Alignment.BottomCenter).onGloballyPositioned { barTop = it.boundsInRoot().top },
+                        onBounds = { card.bounds = it },
+                        modifier = Modifier.align(Alignment.BottomCenter),
                     )
-                    // Top-right, opposite back: the web keeps these in the player
-                    // because "this is where a viewer finds out what a film
-                    // actually is", not because of where on the page they sit —
-                    // this platform's transport bar already owns the bottom edge.
-                    // Below the status bar's band, measured against the system
-                    // bars even while hidden, so the row does not jump on fullscreen.
-                    PlayerMarks(
-                        marks = marks,
-                        notice = actionNotice,
-                        actions = PlayerMarksActions(
-                            onToggleWatchlist = viewModel::toggleWatchlist,
-                            onKidsMark = viewModel::setKidsMark,
-                            onSetInList = viewModel::setInList,
-                            onCreateList = viewModel::createListAndAdd,
-                        ),
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
-                            .padding(Spacing.medium),
-                    )
-                }
-                if (settingsShown && !isInPip) {
-                    PlayerSettingsSheetForViewModel(
-                        choices = choices,
-                        viewModel = viewModel,
-                        onDismiss = { settingsShown = false },
-                    )
+                    CardMenuOverStage(card, choices, viewModel.cardMenuActions())
                 }
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
-                if (!isInPip) UpNextCard(
-                    state = upNext,
-                    onPlayNow = viewModel::playNext,
-                    onCancel = viewModel::cancelUpNext,
-                    barTop = barTop.takeIf { barShown },
-                    pictureBottom = pictureBottom,
-                    screenBottom = screenBottom,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                if (!isInPip) {
+                    UpNextCard(
+                        state = upNext,
+                        onPlayNow = viewModel::playNext,
+                        onCancel = viewModel::cancelUpNext,
+                        barTop = barTop,
+                        pictureBottom = pictureBottom,
+                        screenBottom = screenBottom,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+            // Over the picture, which keeps playing beside it.
+            episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list ->
+                EpisodeSidebar(
+                    list = list,
+                    onPick = { id ->
+                        card.sidebarOpen = false
+                        viewModel.playFromRun(id)
+                    },
+                    onClose = { card.sidebarOpen = false },
+                    modifier = Modifier.align(Alignment.CenterEnd),
                 )
             }
 
@@ -196,10 +183,22 @@ fun PlayerScreen(
                 player = player,
                 totals = viewModel.totals,
                 onBack = onBack,
-                onEnterPip = pip.enterPip.takeIf { pip.supported && player != null },
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
+                marks = {
+                    PlayerMarks(
+                        marks = marks,
+                        notice = actionNotice,
+                        actions =
+                            PlayerMarksActions(
+                                onToggleWatchlist = viewModel::toggleWatchlist,
+                                onKidsMark = viewModel::setKidsMark,
+                                onSetInList = viewModel::setInList,
+                                onCreateList = viewModel::createListAndAdd,
+                            ),
+                    )
+                },
             )
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }

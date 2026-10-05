@@ -124,7 +124,7 @@ private fun pipRemoteAction(context: Context, controlType: Int, iconRes: Int, ti
 /**
  * Where [pipRemoteAction]'s three buttons actually land — registered only
  * while a player screen is on screen (see [PipController]), on the same
- * [Player] the transport bar's own buttons already act on, through the
+ * [Player] the card's own buttons already act on, through the
  * same buffering-aware play/pause toggle [PlayerGestureLayer] uses.
  */
 internal class PipActionReceiver(private val player: Player?) : BroadcastReceiver() {

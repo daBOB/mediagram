@@ -20,17 +20,17 @@ import playback.Framing
 
 /**
  * Touch over the picture — phone-native input for decisions the web already
- * made (CLAUDE.md § Surface Parity). A tap toggles the transport bar,
+ * made (CLAUDE.md § Surface Parity). A tap toggles the card,
  * delayed by the double-tap timeout the same as any video app; a double tap
  * in the outer thirds seeks by whatever [Player.getSeekBackIncrement]/
  * [Player.getSeekForwardIncrement] already are — the buttons' own amount,
  * never a second number kept in step with them by hand — and in the middle
  * toggles play/pause. A pinch sets [Framing.FILL] or [Framing.FIT]
  * directly, the Android idiom standing in for the web's `z` key, which this
- * app has no keyboard for; the other two framings are the sheet's own rows.
+ * app has no keyboard for; the other two framings are the Framing menu's.
  *
  * Attached to the whole screen rather than measured against the video box:
- * the transport bar, the settings sheet and the up-next card all consume
+ * the card, its menus, the episode sidebar and the up-next card all consume
  * their own taps before this modifier ever sees one, so nothing here has to
  * carve the video area out by hand — see `PlayerScreen`.
  */

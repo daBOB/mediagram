@@ -39,6 +39,7 @@ import testing.WatchStateFixture
  */
 internal class PlayerLifecycleFixture(
     val watchState: WatchStateFixture = WatchStateFixture(),
+    private val catalog: CatalogRepository = mockk(relaxed = true),
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository = watchState.repository
@@ -81,7 +82,7 @@ internal class PlayerLifecycleFixture(
                     repository,
                     ProgressRecorder(repository),
                     mockk<WatchSync>(relaxed = true),
-                    mockk<CatalogRepository>(relaxed = true),
+                    catalog,
                     mockk<PlayerPreferences>(relaxed = true),
                     mockk<SubtitleTrackSource>(relaxed = true),
                     PlaybackServiceController.Noop,

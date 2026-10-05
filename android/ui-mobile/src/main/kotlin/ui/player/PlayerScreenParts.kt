@@ -36,8 +36,8 @@ internal fun CenteredSpinner() {
 }
 
 /**
- * The back arrow, the picture-in-picture button beside it, the title and
- * the statistics — split out of `PlayerScreen` to keep that file under the
+ * The back arrow, the title, the marks and Notes beside it, and the
+ * statistics — split out of `PlayerScreen` to keep that file under the
  * project's line guideline. Absent entirely in picture-in-picture: there
  * is no touch surface of this app's own inside that window, and no room
  * for the statistics either.
@@ -55,17 +55,17 @@ internal fun PlayerTopChrome(
     player: Player?,
     totals: () -> PlaybackTotals,
     onBack: () -> Unit,
-    onEnterPip: (() -> Unit)?,
     modifier: Modifier = Modifier,
     held: Boolean = false,
     onNotes: (() -> Unit)? = null,
+    marks: @Composable () -> Unit = {},
 ) {
     if (isInPip) return
     Column(modifier = modifier) {
-        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onEnterPip = onEnterPip, onNotes = onNotes)
+        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks)
         // Gated on the bar being shown as well as on the toggle, so the
         // statistics have no visibility rule of their own: a viewer who
-        // leaves the numbers on gets the picture back when the bar takes
+        // leaves the numbers on gets the picture back when the card takes
         // itself away, and keeps them while the film is paused.
         if (statsShown && barShown) {
             player?.let { current ->

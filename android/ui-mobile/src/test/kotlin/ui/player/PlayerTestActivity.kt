@@ -31,11 +31,11 @@ class PlayerTestActivity : ComponentActivity() {
                     if (showingPlayer) {
                         PlayerScreen(
                             "set-one",
-                            emptyList(),
+                            run,
                             null,
                             handPicked = false,
                             onBack = { showingPlayer = false },
-                            onSwitch = { _, _ -> },
+                            onSwitch = { id, _ -> switches += id },
                             viewModel = playerViewModel,
                         )
                     } else {
@@ -48,5 +48,11 @@ class PlayerTestActivity : ComponentActivity() {
 
     companion object {
         internal lateinit var fixture: PlayerLifecycleFixture
+
+        /** The run the title opens on: none — a film — unless a test gives it one. */
+        internal var run: List<String> = emptyList()
+
+        /** Every title a switch asked to move to, in order. */
+        internal val switches = mutableListOf<String>()
     }
 }

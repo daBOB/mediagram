@@ -17,9 +17,9 @@ import designsystem.Spacing
 import playback.AudioOption
 
 /**
- * The settings sheet's "Audio" section — rows already built and labelled by
- * `playback.audioOptions`, so this is only the same radio-row shape the
- * sheet's other sections use. Its caller is what decides whether to show
+ * The Audio menu's rows — already built and labelled by
+ * `playback.audioOptions`, so this is only the same radio-row shape
+ * the other menus use. Its caller is what decides whether to show
  * it at all: a single track is not a menu, it is a label for something
  * nobody can change, and this never sees that case since the list arrives
  * empty for it.

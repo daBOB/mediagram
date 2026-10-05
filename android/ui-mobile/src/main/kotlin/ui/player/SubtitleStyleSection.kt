@@ -20,7 +20,7 @@ import playback.CUE_SIZES
 import playback.cueOffsetLabel
 
 /**
- * The settings sheet's "Subtitle style" section: size, backing and a timing
+ * The subtitle style panel, reached from the subtitle menu's Style… row: size, backing and a timing
  * nudge — a port of the web's subtitle-appearance panel
  * (`subtitle-panel.js`), with no position control; see that file's own
  * header for why one was tried and dropped. Its caller decides whether to

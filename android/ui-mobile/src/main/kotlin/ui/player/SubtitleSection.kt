@@ -17,7 +17,7 @@ import designsystem.Spacing
 import player.SubtitleOption
 
 /**
- * The settings sheet's "Subtitles" section: "Off" plus a row per language —
+ * The subtitle menu's language rows: "Off" plus a row per language —
  * built and labelled by `player.subtitleOptions`, the same radio-row shape
  * [AudioSection] uses. Its caller decides whether to show it at all: empty
  * for a file with no subtitles, which this never sees since the list
