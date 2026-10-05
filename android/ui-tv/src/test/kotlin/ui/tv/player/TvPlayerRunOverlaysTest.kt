@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithTag
@@ -110,7 +111,7 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
 
     @Test
     fun theCardDoesNotTakeTheRemoteFromTheSeekBar() {
-        press(Key.DirectionUp)
+        repeat(2) { press(Key.DirectionUp) }
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
 
         nearTheEnd()
@@ -144,12 +145,9 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
         assertTrue(fixture.isPlaying)
     }
 
-    /** Down to the marks rail, across to Add to list, and pressed. */
+    /** Up to the marks along the top, across to Add to list, and pressed. */
     private fun openAddToList() {
-        press(Key.DirectionDown)
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
-        compose.onNodeWithText("Add to list").assertIsFocused()
+        toTopBar(hasText("Add to list"))
         press(Key.DirectionCenter)
         compose.onNodeWithText("☐ Favourites").assertIsFocused()
     }

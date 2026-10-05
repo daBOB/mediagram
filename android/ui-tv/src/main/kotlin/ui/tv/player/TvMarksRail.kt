@@ -17,21 +17,16 @@ import player.kidsLabel
 import player.listLabel
 
 /**
- * The phone's three kept controls — My List, Kids, Add to list — as a row
- * under the transport, where Down from the transport lands and Up goes back
- * to it ([up]). The web keeps these in the player because "this is where a
- * viewer is when they find out what a film actually is" (`player.js`), and
- * the wordings are the phone's and the web's own.
+ * The phone's three kept controls — My List, Kids, Add to list — along the
+ * top beside what is playing, where the web's slim top bar keeps them:
+ * "this is where a viewer is when they find out what a film actually is"
+ * (`player.js`). Down from any of them goes to the seek bar ([down]).
  *
- * The [tools] follow them on the same row, and wrap to a line of their own
- * on a stage too narrow for both — the notes column's, most often — rather
- * than run off its edge out of the remote's reach.
- *
- * The marks are absent with nothing open, as on the phone; the tools are
- * always here. The Kids mark is absent on a kids profile — a child does not
- * approve titles for itself — and dimmed but still focusable on a rated
- * title, whose rating decided and is still worth reading. [first] is
- * My List, the one mark always here while there are any.
+ * Absent with nothing open, as on the phone. The Kids mark is absent on a
+ * kids profile — a child does not approve titles for itself — and dimmed
+ * but still focusable on a rated title, whose rating decided and is still
+ * worth reading. [first] is My List, the one mark always here while there
+ * are any. Wraps rather than running off a stage the notes have narrowed.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -39,41 +34,29 @@ internal fun TvMarksRail(
     marks: PlayerMarksState?,
     actions: TvMarksActions,
     first: FocusRequester,
-    up: FocusRequester,
+    down: FocusRequester,
     modifier: Modifier = Modifier,
-    tools: @Composable () -> Unit,
 ) {
-    val toTransport = Modifier.focusProperties { this.up = up }
+    if (marks == null) return
+    val toCard = Modifier.focusProperties { this.down = down }
 
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.End),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        if (marks != null) {
-            MarkButton(
-                label = listLabel(marks),
-                onClick = actions.onToggleWatchlist,
-                modifier = toTransport.focusRequester(first),
-            )
-            if (marks.canMarkKids) {
-                MarkButton(
-                    label = kidsLabel(marks),
-                    onClick = actions.onKids,
-                    enabled = marks.kidsVerdict == KidsVerdict.UNRATED,
-                    modifier = toTransport,
-                )
-            }
-            MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toTransport)
+        MarkButton(label = listLabel(marks), onClick = actions.onToggleWatchlist, modifier = toCard.focusRequester(first))
+        if (marks.canMarkKids) {
+            MarkButton(label = kidsLabel(marks), onClick = actions.onKids, enabled = marks.kidsVerdict == KidsVerdict.UNRATED, modifier = toCard)
         }
-        tools()
+        MarkButton(label = "Add to list", onClick = actions.onAddToList, modifier = toCard)
     }
 }
 
 /**
- * What the rail's marks do. Kids and Add to list only open their dialogs:
- * those live with the screen rather than the rail, so they outlast the controls
+ * What the marks do. Kids and Add to list only open their dialogs: those
+ * live with the screen rather than the rail, so they outlast the controls
  * fading behind it.
  */
 internal data class TvMarksActions(

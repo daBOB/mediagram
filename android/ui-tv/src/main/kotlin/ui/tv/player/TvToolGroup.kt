@@ -1,10 +1,13 @@
 package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -17,40 +20,30 @@ import designsystem.TvTypeScale
 import player.speedLabel
 
 /**
- * The controls that do not move the film, kept together at the end of the
- * marks row: Notes while the title has any, the card's tools
- * ([TvCardTools]), and, last, the statistics toggle, which only reports.
- *
- * One group, so that where the row has to wrap on a narrowed stage the
- * tools go to the next line together.
+ * The card's middle row: its tools ([TvCardTools]), wrapping rather than
+ * running off a stage the notes column has narrowed. From anywhere along
+ * it, Up is the seek bar and Down is play/pause — named, since the row is
+ * shorter than the ones either side of it.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun TvToolGroup(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     bands: TvStageBands,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small), verticalAlignment = Alignment.CenterVertically) {
-        extras.onToggleNotes?.let { toggle ->
-            TvOverlayButton(
-                text = "Notes",
-                style = TvTypeScale.body,
-                enabled = true,
-                onClick = toggle,
-                modifier = Modifier.focusRequester(focus.notes),
-                padding = Spacing.medium,
-            )
+    val between =
+        Modifier.focusProperties {
+            this.up = focus.seekBar
+            this.down = focus.playPause
         }
-        TvCardTools(focus = focus, extras = extras, bands = bands)
-        // Named for which way the press goes, as play/pause is: a glyph that
-        // stays put while what it does reverses tells a screen reader nothing.
-        TvGlyphButton(
-            glyph = "ⓘ",
-            description = if (extras.statsShown) "Hide playback statistics" else "Show playback statistics",
-            enabled = true,
-            onClick = extras.onToggleStats,
-            padding = Spacing.medium,
-        )
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        TvCardTools(focus = focus, extras = extras, bands = bands, each = between)
     }
 }
 

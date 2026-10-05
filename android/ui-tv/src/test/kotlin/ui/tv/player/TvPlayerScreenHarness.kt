@@ -88,12 +88,15 @@ abstract class TvPlayerScreenHarness {
         compose.waitForIdle()
     }
 
-    /**
-     * From the controls as they open, on play/pause: Down to the row of
-     * marks and tools, then Right along it until [target] holds the remote.
-     */
+    /** From the controls as they open, on play/pause: up into the row of tools, then Right along it until [target] holds the remote. */
     internal fun toTool(target: SemanticsMatcher) {
-        press(Key.DirectionDown)
+        press(Key.DirectionUp)
+        along(target)
+    }
+
+    /** From play/pause: up through the tools and the seek bar to the controls along the top, then Right along them to [target]. */
+    internal fun toTopBar(target: SemanticsMatcher) {
+        repeat(3) { press(Key.DirectionUp) }
         along(target)
     }
 

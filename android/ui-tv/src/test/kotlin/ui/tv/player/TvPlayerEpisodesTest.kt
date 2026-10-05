@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -24,6 +25,7 @@ import player.CONTROLS_LINGER_MS
 import testing.WatchStateFixture
 import ui.tv.catalog.set
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * [THREE_TITLE_RUN] over two seasons — set-zero alone in the first, already
@@ -145,6 +147,22 @@ class TvPlayerEpisodesTest : TvPlayerScreenHarness() {
 
         compose.onNodeWithTag(TvSeekBarTag).assertExists()
         compose.onNodeWithTag(TvEpisodeSidebarTag).assertExists()
+    }
+
+    @Test
+    fun theCardStandsClearOfTheListAndComesBackWhenItCloses() {
+        val normal = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+
+        openEpisodes()
+
+        val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
+        assertTrue(card.right <= list.left, "the card ends at ${card.right}, the list starts at ${list.left}")
+        compose.onNodeWithContentDescription("Pause").assertExists()
+
+        back()
+
+        assertEquals(normal, compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot())
     }
 
     private fun openEpisodes() {

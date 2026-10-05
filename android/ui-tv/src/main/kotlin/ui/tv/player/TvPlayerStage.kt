@@ -142,7 +142,7 @@ private fun BoxScope.TvUpNextOverStage(
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = Overscan.horizontal, bottom = lift + Spacing.small)
+                    .padding(end = Overscan.horizontal, bottom = lift)
                     .widthIn(max = (maxWidth - Overscan.horizontal * 2).coerceAtLeast(0.dp))
                     .onGloballyPositioned { bands.cardTop = it.boundsInRoot().top },
         )

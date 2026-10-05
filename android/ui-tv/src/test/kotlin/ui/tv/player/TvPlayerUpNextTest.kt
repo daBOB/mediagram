@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -89,7 +90,7 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvSeekBarTag).assertExists()
         assertEquals(emptyList(), TvPlayerTestActivity.switches)
         // The standing button stays after a cancel, as on the phone.
-        compose.onNodeWithContentDescription("Play next", substring = true).assertExists()
+        compose.onNodeWithContentDescription("Next").assertExists()
     }
 
     @Test
@@ -116,5 +117,21 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
         compose.runOnUiThread { handled = controller.get().dispatchKeyEvent(KeyEvent(action, keyCode)) }
         compose.waitForIdle()
         return handled
+    }
+
+    @Test
+    fun previousOnTheCardStepsBackThroughTheRun() {
+        toTransport(hasContentDescription("Previous"), Key.DirectionLeft)
+        press(Key.DirectionCenter)
+
+        assertEquals(listOf("set-zero"), TvPlayerTestActivity.switches)
+    }
+
+    @Test
+    fun nextOnTheCardStepsForward() {
+        toTransport(hasContentDescription("Next"))
+        press(Key.DirectionCenter)
+
+        assertEquals(listOf("set-two"), TvPlayerTestActivity.switches)
     }
 }

@@ -3,9 +3,13 @@ package ui.tv.player
 import android.content.res.Configuration
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.width
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -165,5 +169,44 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         press(Key.DirectionRight)
 
         assertEquals(fixture.durationMs, fixture.positionMs)
+    }
+
+    @Test
+    fun theCardIsCentredAtMostItsWidthAndStandsOffTheBottom() {
+        val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        assertEquals(TvCardWidth, card.width)
+        assertEquals(100.dp, card.left)
+        assertEquals(508.dp, card.bottom)
+    }
+
+    @Test
+    fun upFromTheTransportReachesTheToolsThenTheSeekBarAndDownComesBack() {
+        press(Key.DirectionUp)
+        compose.onNodeWithContentDescription("Subtitles").assertIsFocused()
+        press(Key.DirectionUp)
+        compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
+        press(Key.DirectionDown)
+        compose.onNodeWithContentDescription("Subtitles").assertIsFocused()
+        press(Key.DirectionDown)
+        compose.onNodeWithContentDescription("Pause").assertIsFocused()
+    }
+
+    @Test
+    fun restartGoesBackToTheTopAndKeepsPlaying() {
+        toTransport(hasContentDescription("Restart"), Key.DirectionLeft)
+        press(Key.DirectionCenter)
+
+        assertEquals(0L, fixture.positionMs)
+        assertTrue(fixture.isPlaying)
+    }
+
+    /** A title opened on its own has no run: no previous, no next, no episodes — hidden, not disabled. */
+    @Test
+    fun aTitleWithNoRunHasNoPreviousNextOrEpisodes() {
+        compose.onNodeWithContentDescription("Previous").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Next").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Episodes").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Restart").assertExists()
+        compose.onNodeWithContentDescription("Stats").assertExists()
     }
 }

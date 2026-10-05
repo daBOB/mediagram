@@ -30,6 +30,7 @@ import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
 import player.playFromRun
+import player.previous
 import player.retry
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
@@ -63,7 +64,7 @@ import ui.player.PlayerNavigationEffects
  * has no entry for it, which leaves only the top bar out.
  *
  * [run] is what the title plays into, as on the phone: up next, the next
- * episodes taken ahead, and the remote's Next and Previous ([TvRunSteps])
+ * episodes taken ahead, ⏮ and ⏭ and the remote's Next and Previous
  * all walk it; [onSwitch] moves the library to another title of it.
  * [handPicked] says [run] is a list or the Kids wall rather than the
  * title's own show, which takes nothing ahead.
@@ -97,7 +98,6 @@ fun TvPlayerScreen(
     // and the wait for the next title's buffer pauses on purpose; neither
     // is a viewer looking away.
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing || upNextShown || upNext.awaitingStart)
-    val steps = rememberTvRunSteps(viewModel, setId, run, onSwitch)
 
     var controlsShown by remember { mutableStateOf(true) }
     var landing by remember { mutableStateOf(TvControlsLanding.PlayPause) }
@@ -147,8 +147,9 @@ fun TvPlayerScreen(
                     landing = to
                     controlsShown = true
                 },
-                onNext = { steps.next() },
-                onPrevious = { steps.previous() }, onToggleSubtitles = { viewModel.toggleSubtitles() },
+                onNext = viewModel::playNext,
+                onPrevious = viewModel::previous,
+                onToggleSubtitles = viewModel::toggleSubtitles,
             )
         }
     TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
@@ -197,7 +198,7 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, upNext, statsShown, choices, hasEpisodes = episodes != null),
+                    view = TvControlsView(marks, held, upNext, statsShown, choices, hasEpisodes = episodes != null, sidebarOpen = sidebarShown),
                     actions =
                         TvControlsActions(
                             onToggleStats = { statsShown = !statsShown },
