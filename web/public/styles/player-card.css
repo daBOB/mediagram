@@ -167,21 +167,20 @@ dialog.resting .control-card { pointer-events: none; }
 .episode-sidebar .row { min-height: 48px; padding: 12px 8px; border-bottom-color: rgba(255, 255, 255, 0.08); color: var(--stage-ink); cursor: pointer; }
 .episode-sidebar .row:hover { background: rgba(255, 255, 255, 0.06); }
 .episode-sidebar .row:hover .title b { color: var(--stage-accent); }
-.episode-sidebar .row .num,
-.episode-sidebar .row .meta { color: var(--stage-ink-2); }
+.episode-sidebar .row .num, .episode-sidebar .row .meta { color: var(--stage-ink-2); }
 /* Number, title and runtime: the file's codec and badges are the show page's to say. */
-.episode-sidebar .row .title > span,
-.episode-sidebar .row .badge,
-.episode-sidebar .row .has-summary { display: none; }
+.episode-sidebar .row .title > span, .episode-sidebar .row .badge, .episode-sidebar .row .has-summary { display: none; }
 .episode-sidebar .row.is-watched { opacity: 0.45; }
 /* Disabled only so it cannot be picked; it is the one row that should read loudest. */
 .episode-sidebar .row[aria-current="true"] { opacity: 1; cursor: default; background: none; }
 .episode-sidebar .row[aria-current="true"] .title b { color: var(--stage-ink); }
 .episode-sidebar .row[aria-current="true"] .meta { color: var(--stage-accent); }
 .episode-sidebar .row .watched-at { background: var(--stage-accent); }
-/* The card is laid out to the sidebar's left, a gap short of it; below this width it is covered. */
+/* The card and the top bar are laid out to the sidebar's left; below this width it covers them. */
 @media (min-width: 768px) {
   dialog.sidebar-open .card-dock { right: calc(360px + 24px); }
+  dialog.sidebar-open .hud-top { right: 360px; flex-wrap: wrap; row-gap: 8px; }
+  dialog.sidebar-open .hud .what { flex: 1 1 100%; }
 }
 
 @media (max-width: 767px) {
