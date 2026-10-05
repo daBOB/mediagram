@@ -106,7 +106,7 @@ class UpNextController(
     /** A seek landed while paused — the ticker does not run then, so this is the only way the card notices; a single re-check, not a reason to start ticking. */
     fun onSeeked() {
         if (session.openSetId == null) return
-        // Off the end is not the end any more (Restart, −15 from the last frame): left set, the countdown would switch titles under a viewer watching again.
+        // Off the end is not the end: left set, the countdown would switch titles under a viewer watching again.
         if (ended && !handle.isAtEnd()) ended = false
         evaluate()
     }
@@ -122,7 +122,7 @@ class UpNextController(
         nextId?.let { switchTo(it, gate = false) }
     }
 
-    /** A title of the run picked by hand — Previous, or a sidebar row — through [playNow]'s own switch; the open title, or one outside the run, is none. */
+    /** A title of the run picked by hand, through [playNow]'s switch; the open title or one outside the run is none. */
     fun playFromRun(setId: String) {
         if (setId != session.openSetId && setId in run) switchTo(setId, gate = false)
     }

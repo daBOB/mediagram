@@ -48,7 +48,8 @@ const val UNKNOWN_TITLE = "Unknown title"
 /**
  * [run] grouped into sections in run order — the run is already the
  * collection's play order, so nothing is re-sorted, only grouped — with
- * each row marked against [watch]. `null` for no run, and for an open title
+ * each row marked against [watch], one row per id (both surfaces key rows
+ * by it). `null` for no run, and for an open title
  * the catalogue knows to belong to no show: a film played from a hand-picked
  * list still walks that list with ⏮/⏭, but it is no series or course to list.
  *
@@ -62,7 +63,7 @@ fun episodeListOf(openId: String, run: List<String>, sets: Map<String, MediaSet>
     val watched = watch.watched.mapTo(HashSet()) { it.setId }
     val positions = watch.progress.associateBy { it.setId }
     val grouped = LinkedHashMap<String?, MutableList<EpisodeRow>>()
-    for (id in run) {
+    for (id in run.distinct()) {
         val set = sets[id]
         val done = id in watched
         val progress = if (done) null else ResumePoint.watchedFraction(positions[id]?.let { ProgressPoint(it.at, it.duration) })

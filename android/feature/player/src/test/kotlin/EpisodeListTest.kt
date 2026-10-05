@@ -144,6 +144,14 @@ class EpisodeListTest {
         assertTrue(list.sections.single().rows[0].current)
     }
 
+    /** Rows are keyed by id on both surfaces (a lazy list throws on a repeated key), so a list holding a title twice lists it once. */
+    @Test
+    fun aTitleTheRunHoldsTwiceIsListedOnce() {
+        val list = assertNotNull(episodeListOf("a1", listOf("a1", "a2", "a1"), sets, watch()))
+
+        assertEquals(listOf("a1", "a2"), list.sections.single().rows.map { it.setId })
+    }
+
     @Test
     fun anOpenTitleTheRunDoesNotHoldOpensOnTheFirstSection() {
         val list = assertNotNull(episodeListOf("elsewhere", run, sets, watch()))
