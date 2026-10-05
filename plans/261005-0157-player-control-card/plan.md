@@ -65,4 +65,10 @@
 
 ## Review log
 
-(Filled in as phases merge.)
+- **2026-10-05, ruling: one implementer per phase.** Each phase gets one implementer, working task by task test-first, rather than a fresh agent per task. A spec-and-quality review follows each phase, and a final whole-branch review closes the work.
+  - *Why:* the 5 phases hold about 45 tasks that build on each other inside a phase. A fresh agent per task would re-read the same files about 45 times.
+  - *Cost if wrong:* a mistake surfaces at the phase review instead of the task review, so the rework is up to one phase.
+- **2026-10-05, ruling: the progress line follows the web.** It shows for any recorded position with a known runtime, as the web's season page does, rather than only for a resume point.
+  - *Why:* surface parity.
+  - *Cost if wrong:* a one-line change in `episodeListOf`.
+- **2026-10-05:** phase 03 started in a worktree. It runs beside the web phases, as the phase table allows.
