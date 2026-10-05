@@ -37,9 +37,11 @@ fun controlsMayShow(state: PlayerUiState): Boolean = state == PlayerUiState.Play
  * A running film gets its picture back; a paused one keeps its controls,
  * because nothing else on screen offers a way to start again and the tap that
  * would bring them back is invisible. A drag in progress keeps them too — the
- * slider cannot be pulled out from under the thumb holding it.
+ * slider cannot be pulled out from under the thumb holding it — and so does an
+ * open menu or episode sidebar, a choice the viewer is in the middle of.
  */
 fun controlsShouldFade(
     isPlaying: Boolean,
     isScrubbing: Boolean,
-): Boolean = isPlaying && !isScrubbing
+    menuOrSidebarOpen: Boolean = false,
+): Boolean = isPlaying && !isScrubbing && !menuOrSidebarOpen
