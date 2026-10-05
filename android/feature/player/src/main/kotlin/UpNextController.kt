@@ -105,7 +105,10 @@ class UpNextController(
 
     /** A seek landed while paused — the ticker does not run then, so this is the only way the card notices; a single re-check, not a reason to start ticking. */
     fun onSeeked() {
-        if (session.openSetId != null) evaluate()
+        if (session.openSetId == null) return
+        // Off the end is not the end any more (Restart, −15 from the last frame): left set, the countdown would switch titles under a viewer watching again.
+        if (ended && !handle.isAtEnd()) ended = false
+        evaluate()
     }
 
     /** The open title ran out, or was seeked past its last frame — the only event that may start the next one. */
