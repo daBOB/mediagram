@@ -32,7 +32,7 @@ internal const val TvSeekBarTag = "tv-seek-bar"
  * Where the film is, as a bar the remote can stand on. Focusable but not
  * draggable — a remote has nothing to drag with — and it moves nothing by
  * itself: Left and Right on it are the player screen's to answer (see
- * [TvPlayerRemote]), ten seconds a press and faster the longer a key is
+ * [TvPlayerRemote]), fifteen seconds a press and faster the longer a key is
  * held, because the screen already holds every other key and a second
  * handler here would be a second place deciding what an arrow means.
  *

@@ -21,7 +21,7 @@ import designsystem.Spacing
 import ui.player.TransportIcons
 
 /**
- * The three buttons that move the film — back ten, play/pause, forward ten
+ * The three buttons that move the film — back fifteen, play/pause, forward fifteen
  * — and "Play next" after them while the run has a next title: the phone's
  * transport row, read through the same media3 state holders
  * the phone reads, so a label cannot come to say one thing and do another
@@ -61,7 +61,7 @@ internal fun TvTransport(
     ) {
         TvIconButton(
             icon = TransportIcons.SkipBack,
-            description = "Skip back ${seekBack.seekBackAmountMs / 1_000} seconds",
+            description = "Back ${seekBack.seekBackAmountMs / 1_000} seconds",
             enabled = seekBack.isEnabled,
             onClick = seekBack::onClick,
             modifier = toSeekBar,
@@ -75,7 +75,7 @@ internal fun TvTransport(
         )
         TvIconButton(
             icon = TransportIcons.SkipForward,
-            description = "Skip forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
+            description = "Forward ${seekForward.seekForwardAmountMs / 1_000} seconds",
             enabled = seekForward.isEnabled,
             onClick = seekForward::onClick,
             modifier = toSeekBar,

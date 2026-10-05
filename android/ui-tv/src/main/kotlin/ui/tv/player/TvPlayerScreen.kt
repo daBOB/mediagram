@@ -145,12 +145,14 @@ fun TvPlayerScreen(
         settingsOpen = settingsOpen,
         upNextShown = upNextShown,
         notesOpen = notesOpen,
+        statsShown = statsShown,
         onClosePanel = {
             landing = TvControlsLanding.Settings
             settingsOpen = false
         },
         onCancelUpNext = viewModel::cancelUpNext,
         onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
+        onHideStats = { statsShown = false },
         onHideControls = { controlsShown = false },
         onLeave = onBack,
     )

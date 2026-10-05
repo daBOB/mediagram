@@ -26,6 +26,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
+import playback.SKIP_MS
 import playback.SeriesPreloading
 import playback.SubtitleTrackSource
 import playback.SummarySource
@@ -78,8 +79,8 @@ internal class TvPlayerFixture(
         every { media.playbackParameters } returns PlaybackParameters.DEFAULT
         every { media.availableCommands } returns Player.Commands.Builder().addAll(*OFFERED).build()
         every { media.isCommandAvailable(any()) } answers { firstArg<Int>() in OFFERED }
-        every { media.seekBackIncrement } returns 10_000L
-        every { media.seekForwardIncrement } returns 10_000L
+        every { media.seekBackIncrement } returns SKIP_MS
+        every { media.seekForwardIncrement } returns SKIP_MS
         every { media.playbackState } answers { playbackState }
         every { media.playWhenReady } answers { playWhenReady }
         every { media.isPlaying } answers { playbackState == Player.STATE_READY && playWhenReady }

@@ -1,6 +1,7 @@
 package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
+import playback.SKIP_MS
 
 /**
  * What a remote key press asks the television player to do. A sealed
@@ -47,6 +48,9 @@ sealed interface TvKeyAction {
     /** Closes the notes column beside the picture, and only that. */
     data object CloseNotes : TvKeyAction
 
+    /** Puts the playback statistics away, and only that: the controls stay up behind them. */
+    data object HideStats : TvKeyAction
+
     /** Puts the controls away without leaving the title. */
     data object HideControls : TvKeyAction
 
@@ -64,8 +68,8 @@ sealed interface TvKeyAction {
 private val PANEL_KEYS =
     setOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight, Key.DirectionCenter, Key.Enter)
 
-/** Ten seconds, the same skip the phone and the web both use. */
-private const val SKIP_SECONDS = 10
+/** One skip — the card's back and forward buttons, the phone's and the web's: fifteen seconds. */
+private val SKIP_SECONDS = (SKIP_MS / 1_000).toInt()
 
 /**
  * The remote key table as a pure function — no element, no playback, no
@@ -90,7 +94,7 @@ private const val SKIP_SECONDS = 10
  * [panelOpen] is the settings panel, which answers before anything else:
  * Back closes it, and the D-pad and Centre are ordinary focus movement and
  * selection inside it — a Left meant for the next row of choices must not
- * skip the film ten seconds. The dedicated media keys keep their meaning,
+ * skip the film. The dedicated media keys keep their meaning,
  * as they do everywhere: a viewer can pause to look at a subtitle size
  * without closing the panel first.
  *
@@ -106,6 +110,10 @@ private const val SKIP_SECONDS = 10
  * the remote, and Up and Down page through them rather than raising the
  * seek bar: a lesson's notes are read while it plays, and Left, Right and
  * Centre still skip and pause as they always do.
+ *
+ * [statsShown] is the statistics overlay, which Back puts away after the
+ * notes and before the controls themselves: the numbers are the last thing
+ * the viewer turned on that is not the controls.
  *
  * Next and Previous move through the run whatever else is on screen,
  * the way the dedicated media keys keep their meaning everywhere, and
@@ -123,6 +131,7 @@ fun tvKeyAction(
     panelOpen: Boolean = false,
     upNextShown: Boolean = false,
     notesOpen: Boolean = false,
+    statsShown: Boolean = false,
 ): TvKeyAction {
     if (key == Key.MediaNext) return TvKeyAction.Next
     if (key == Key.MediaPrevious) return TvKeyAction.Previous
@@ -169,7 +178,7 @@ fun tvKeyAction(
         Key.DirectionLeft -> if (focusInControls) TvKeyAction.SeekBy(-SKIP_SECONDS) else TvKeyAction.PassThrough
         Key.DirectionRight -> if (focusInControls) TvKeyAction.SeekBy(SKIP_SECONDS) else TvKeyAction.PassThrough
         Key.DirectionCenter, Key.Enter, Key.DirectionUp, Key.DirectionDown -> TvKeyAction.PassThrough
-        Key.Back -> TvKeyAction.HideControls
+        Key.Back -> if (statsShown) TvKeyAction.HideStats else TvKeyAction.HideControls
         else -> TvKeyAction.Ignore
     }
 }

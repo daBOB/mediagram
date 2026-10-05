@@ -92,7 +92,7 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
         pressInDialog(Key.MediaPlayPause)
         assertTrue(fixture.isPlaying)
         pressInDialog(Key.MediaRewind)
-        assertEquals(32_000L, fixture.positionMs)
+        assertEquals(27_000L, fixture.positionMs)
         // The dialog is still open, and its own row still holds the remote.
         compose.onNodeWithText("☐ Favourites").assertIsFocused()
     }

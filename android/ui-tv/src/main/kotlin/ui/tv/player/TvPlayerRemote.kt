@@ -19,11 +19,11 @@ internal enum class TvControlsLanding { PlayPause, SeekBar, Settings }
 
 /**
  * How far one press of a held Left/Right moves the film. A held key
- * repeats about twenty times a second after its first half-second, so ten
- * seconds a repeat already covers minutes quickly; the steps only grow once
- * the key has plainly been held on purpose, so that crossing a two-hour
- * film does not take the better part of a minute, while a tap or a short
- * hold still lands to the ten seconds the web and the phone skip.
+ * repeats about twenty times a second after its first half-second, so
+ * fifteen seconds a repeat already covers minutes quickly; the steps only
+ * grow once the key has plainly been held on purpose, so that crossing a
+ * two-hour film does not take the better part of a minute, while a tap or a
+ * short hold still lands on the fifteen seconds the web and the phone skip.
  */
 internal fun seekStepSeconds(
     seconds: Int,
@@ -154,7 +154,7 @@ internal class TvPlayerRemote(
                 }
                 true
             }
-            TvKeyAction.CancelUpNext, TvKeyAction.ClosePanel, TvKeyAction.CloseNotes, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
+            TvKeyAction.CancelUpNext, TvKeyAction.ClosePanel, TvKeyAction.CloseNotes, TvKeyAction.HideStats, TvKeyAction.HideControls, TvKeyAction.Leave, TvKeyAction.PassThrough, TvKeyAction.Ignore -> false
         }
 }
 

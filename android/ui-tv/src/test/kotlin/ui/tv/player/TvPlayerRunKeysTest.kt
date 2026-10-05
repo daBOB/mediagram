@@ -52,4 +52,9 @@ class TvPlayerRunKeysTest {
         assertEquals(null, previousInRun(listOf("a", "b"), "z"))
         assertEquals(null, previousInRun(emptyList(), "a"))
     }
+
+    @Test
+    fun backCancelsTheUpNextCardBeforePuttingTheStatisticsAway() {
+        assertEquals(TvKeyAction.CancelUpNext, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, upNextShown = true, statsShown = true))
+    }
 }

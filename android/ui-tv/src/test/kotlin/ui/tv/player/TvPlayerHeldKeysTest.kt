@@ -25,20 +25,20 @@ import kotlin.test.assertTrue
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerHeldKeysTest : TvPlayerScreenHarness() {
     @Test
-    fun aHeldRightSkipsTenAtATimeThenFasterOnTheSeekBar() {
+    fun aHeldRightSkipsFifteenAtATimeThenFasterOnTheSeekBar() {
         back()
 
         keyDown(KeyEvent.KEYCODE_DPAD_RIGHT, repeat = 0)
-        assertEquals(52_000L, fixture.positionMs)
+        assertEquals(57_000L, fixture.positionMs)
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
 
         for (repeat in 1 until 20) keyDown(KeyEvent.KEYCODE_DPAD_RIGHT, repeat)
-        assertEquals(242_000L, fixture.positionMs)
+        assertEquals(342_000L, fixture.positionMs)
 
         keyDown(KeyEvent.KEYCODE_DPAD_RIGHT, repeat = 20)
-        assertEquals(272_000L, fixture.positionMs)
+        assertEquals(387_000L, fixture.positionMs)
         keyDown(KeyEvent.KEYCODE_DPAD_RIGHT, repeat = 21)
-        assertEquals(302_000L, fixture.positionMs)
+        assertEquals(432_000L, fixture.positionMs)
 
         keyUp(KeyEvent.KEYCODE_DPAD_RIGHT)
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()

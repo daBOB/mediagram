@@ -80,7 +80,7 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
 
         press(Key.DirectionLeft)
-        assertEquals(32_000L, fixture.positionMs)
+        assertEquals(27_000L, fixture.positionMs)
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
     }
 
@@ -90,7 +90,7 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
 
         press(Key.DirectionRight)
 
-        assertEquals(52_000L, fixture.positionMs)
+        assertEquals(57_000L, fixture.positionMs)
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
     }
 
@@ -99,7 +99,7 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         press(Key.DirectionLeft)
 
         assertEquals(42_000L, fixture.positionMs)
-        compose.onNodeWithContentDescription("Skip back 10 seconds").assertIsFocused()
+        compose.onNodeWithContentDescription("Back 15 seconds").assertIsFocused()
     }
 
     @Test
@@ -143,5 +143,27 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         verify(exactly = 0) { fixture.media.stop() }
         compose.runOnUiThread { controller.restart().start().resume() }
         compose.waitForIdle()
+    }
+
+    /** -15 at 0:05 lands on 0:00, never before it. */
+    @Test
+    fun aSkipBackNearTheStartStopsAtTheStart() {
+        compose.runOnUiThread { fixture.positionMs = 5_000L }
+        back()
+
+        press(Key.DirectionLeft)
+
+        assertEquals(0L, fixture.positionMs)
+    }
+
+    /** +15 inside the last fifteen seconds lands on the end, where media3's own ended event takes over. */
+    @Test
+    fun aSkipForwardNearTheEndStopsAtTheEnd() {
+        compose.runOnUiThread { fixture.positionMs = 590_000L }
+        back()
+
+        press(Key.DirectionRight)
+
+        assertEquals(fixture.durationMs, fixture.positionMs)
     }
 }
