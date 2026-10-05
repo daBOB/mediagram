@@ -9,7 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -26,77 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntRect
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
-import androidx.tv.material3.Text
 import designsystem.Overscan
-import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.MediaSet
-import playback.PlaybackTotals
-import player.PlayerChoices
-import player.PlayerMarksState
 import player.READOUT_TICK_MS
 import player.UpNextPhase
-import player.UpNextUiState
-import player.clockTime
 import player.endsLine
 import ui.player.SCRIM_ALPHA
 import ui.player.playerCard
-
-/** The focus stops the player screen moves the remote between — each attached for as long as its control is drawn, never added or dropped by a condition. */
-internal class TvPlayerFocus {
-    val playPause = FocusRequester()
-    val seekBar = FocusRequester()
-    val cc = FocusRequester()
-    val subtitleOptions = FocusRequester()
-    val speed = FocusRequester()
-    val audio = FocusRequester()
-    val framing = FocusRequester()
-    val episodes = FocusRequester()
-    val marks = FocusRequester()
-    val upNext = FocusRequester()
-    val notes = FocusRequester()
-    val retry = FocusRequester()
-    val notesRegion = FocusRequester()
-
-    /** The control a menu or the episode list was opened from: where the remote goes back to when it closes. */
-    var opener: FocusRequester = playPause
-
-    /** The tool [menu] is opened from. */
-    fun openerOf(menu: TvCardMenu): FocusRequester =
-        when (menu) {
-            TvCardMenu.Subtitles, TvCardMenu.SubtitleStyle -> subtitleOptions
-            TvCardMenu.Speed -> speed
-            TvCardMenu.Audio -> audio
-            TvCardMenu.Framing -> framing
-        }
-}
-
-/** What the controls show beyond the player's own state, and what pressing them does. */
-internal class TvPlayerExtras(
-    val marks: PlayerMarksState?,
-    val markActions: TvMarksActions,
-    val statsShown: Boolean,
-    val onToggleStats: () -> Unit,
-    val totals: () -> PlaybackTotals,
-    /** Whether this device holds the title in full, which the statistics' buffer row reports as "cached". */
-    val held: Boolean = false,
-    /** What the tools read and change: subtitles, speed, audio and framing. */
-    val choices: PlayerChoices = PlayerChoices.Default,
-    val onToggleSubtitles: () -> Unit = {},
-    val onOpenMenu: (TvCardMenu) -> Unit = {},
-    /** The run as ⏮ and ⏭ walk it, and whether the up-next card floats above the card. */
-    val upNext: UpNextUiState = UpNextUiState(),
-    val onRestart: () -> Unit = {},
-    val onPrevious: () -> Unit = {},
-    val onPlayNext: () -> Unit = {},
-    /** Opens the episode list; null with no list to open, which leaves ☰ out. */
-    val onOpenEpisodes: (() -> Unit)? = null,
-    /** Opens and closes the notes column; null while the title has none, which leaves the Notes button out. */
-    val onToggleNotes: (() -> Unit)? = null,
-    /** Whether the episode list is open down the right, which the card then stands clear of. */
-    val sidebarOpen: Boolean = false,
-)
 
 /** Finds the controls' two bands in a test: what is playing along the top, and the card along the bottom. */
 internal const val TvTopBandTag = "tv-player-top-band"
@@ -202,14 +137,10 @@ internal fun TvPlayerControls(
                     .padding(Spacing.medium),
             verticalArrangement = Arrangement.spacedBy(Spacing.small),
         ) {
-            TvPlayerClock(
+            TvSeekRow(
                 positionMs = positionMs,
                 durationMs = durationMs,
                 ends = endsLine(set?.durationSecs, positionMs, durationMs, player.playbackParameters.speed, System.currentTimeMillis()),
-            )
-            TvSeekBar(
-                positionMs = positionMs,
-                durationMs = durationMs,
                 focusRequester = focus.seekBar,
                 down = focus.cc,
                 up = above,
@@ -218,19 +149,5 @@ internal fun TvPlayerControls(
             TvToolGroup(focus = focus, extras = extras, bands = bands)
             TvTransport(player = player, focus = focus, extras = extras)
         }
-    }
-}
-
-/** Where the film is, when it will end by the clock on the wall, and how long it runs — the phone's clock row, with the web's end time between. */
-@Composable
-private fun TvPlayerClock(
-    positionMs: Long,
-    durationMs: Long,
-    ends: String,
-) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = clockTime(positionMs), style = TvTypeScale.body, color = Palette.Text)
-        Text(text = ends, style = TvTypeScale.body, color = Palette.Figures)
-        Text(text = clockTime(durationMs), style = TvTypeScale.body, color = Palette.Text)
     }
 }

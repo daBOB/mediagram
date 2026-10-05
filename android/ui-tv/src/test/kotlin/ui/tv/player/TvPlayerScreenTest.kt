@@ -7,7 +7,11 @@ import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import io.mockk.verify
@@ -208,5 +212,23 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
         compose.onNodeWithContentDescription("Episodes").assertDoesNotExist()
         compose.onNodeWithContentDescription("Restart").assertExists()
         compose.onNodeWithContentDescription("Stats").assertExists()
+    }
+
+    /** Row one reads as on the phone and the web: position, the bar, then the length and when it ends — all on one line. */
+    @Test
+    fun rowOneIsPositionBarAndDurationThenEndsOnOneLine() {
+        val position = compose.onAllNodes(SemanticsMatcher("a clock reading") { node ->
+            node.config.getOrNull(SemanticsProperties.Text)?.any { Regex("\\d+:\\d{2}").matches(it.text) } == true
+        }).onFirst().getBoundsInRoot()
+        val bar = compose.onNodeWithTag(TvSeekBarTag).getBoundsInRoot()
+        val length = compose.onNode(SemanticsMatcher("a length then an end time") { node ->
+            node.config.getOrNull(SemanticsProperties.Text)?.any { Regex("\\d+:\\d{2} · ends \\d{2}:\\d{2}").matches(it.text) } == true
+        }).getBoundsInRoot()
+
+        assertTrue(position.right <= bar.left, "the position ends at ${position.right}, the bar starts at ${bar.left}")
+        assertTrue(bar.right <= length.left, "the bar ends at ${bar.right}, the length starts at ${length.left}")
+        val middle = (bar.top + bar.bottom) / 2
+        assertTrue(position.top < middle && middle < position.bottom, "the position spans ${position.top}..${position.bottom}, the bar's middle is $middle")
+        assertTrue(length.top < middle && middle < length.bottom, "the length spans ${length.top}..${length.bottom}, the bar's middle is $middle")
     }
 }
