@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 /**
- * The transport's shapes — play, pause, the two skips and next — drawn as
+ * The transport's shapes — play, pause, the two skips, next and previous — drawn as
  * paths rather than typed as characters. "⏪", "⏩", "⏸" and "⏭" have an
  * emoji presentation, and Android's font fallback takes it: they came out
  * as orange tiles on both players, beside a gear and an ⓘ that draw as
@@ -78,6 +78,19 @@ object TransportIcons {
         moveTo(16f, 6f)
         verticalLineToRelative(12f)
         horizontalLineToRelative(2f)
+        verticalLineTo(6f)
+        close()
+    }
+
+    /** Next's mirror — the bar on the left, the triangle pointing back at it. */
+    val Previous: ImageVector = icon("Previous") {
+        moveTo(6f, 6f)
+        horizontalLineToRelative(2f)
+        verticalLineToRelative(12f)
+        horizontalLineTo(6f)
+        close()
+        moveTo(9.5f, 12f)
+        lineToRelative(8.5f, 6f)
         verticalLineTo(6f)
         close()
     }
