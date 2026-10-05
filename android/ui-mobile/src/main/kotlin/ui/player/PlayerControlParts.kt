@@ -1,5 +1,6 @@
 package ui.player
 
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -9,15 +10,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /*
- * The two pieces the transport bar is drawn from that hold none of its
- * state: each is handed everything it shows and decides nothing.
+ * The pieces the card is drawn from that hold none of its state: each is
+ * handed everything it shows and decides nothing.
  *
- * Apart from the bar itself because they have no tie to it — a glyph
+ * Apart from the card itself because they have no tie to it — a glyph
  * button is a glyph button wherever it is pressed — and because a file is
  * easier to read when the thing it is named for is the only thing in it.
  */
+
+/** The smallest a control over the picture is ever drawn: a thumb's width, however narrow the window it wraps in. */
+internal val MIN_TARGET: Dp = 48.dp
+
+/** Faint enough to read as off, or unavailable, beside a row of white controls. */
+private const val DIM_ALPHA = 0.5f
 
 /**
  * A control drawn as a character, named for a screen reader.
@@ -31,17 +41,20 @@ internal fun GlyphButton(
     description: String,
     enabled: Boolean,
     onClick: () -> Unit,
-    // A toggle's off state: drawn faint, where a bar of white glyphs has no other way to show it.
+    // A toggle's off state: drawn faint, where a row of white glyphs has no other way to show it.
     dimmed: Boolean = false,
+    modifier: Modifier = Modifier,
+    /** What a screen reader says of a toggle or an opener — "On", "Expanded" — beyond its name; null for a plain button. */
+    state: String? = null,
 ) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.semantics { contentDescription = description },
+        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
     ) {
         Text(
             text = glyph,
-            color = if (dimmed) Color.White.copy(alpha = 0.5f) else Color.White,
+            color = if (dimmed || !enabled) Color.White.copy(alpha = DIM_ALPHA) else Color.White,
             style = MaterialTheme.typography.headlineMedium,
         )
     }
@@ -49,7 +62,7 @@ internal fun GlyphButton(
 
 /**
  * [GlyphButton] for a shape with no reliable character: the transport's
- * play, pause, skips and next, which as text fall back to colour emoji
+ * play, pause, previous and next, which as text fall back to colour emoji
  * (see [TransportIcons]). Named for a screen reader the same way.
  */
 @Composable
@@ -58,13 +71,37 @@ internal fun TransportButton(
     description: String,
     enabled: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.semantics { contentDescription = description },
+        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description },
     ) {
-        TransportIcon(icon = icon, tint = Color.White, size = MaterialTheme.typography.headlineMedium.fontSize)
+        TransportIcon(
+            icon = icon,
+            tint = if (enabled) Color.White else Color.White.copy(alpha = DIM_ALPHA),
+            size = MaterialTheme.typography.headlineMedium.fontSize,
+        )
+    }
+}
+
+/** A tool that names what is chosen — `1×`, `Fit`, `Audio` — set smaller than a glyph, since it is a word. */
+@Composable
+internal fun LabelButton(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    state: String? = null,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
+    ) {
+        Text(text = label, color = Color.White, style = MaterialTheme.typography.labelLarge)
     }
 }
 

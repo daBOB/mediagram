@@ -31,7 +31,7 @@ import player.UpNextUiState
  * [UpNextUiState.phase] decides whether it is on screen at all.
  *
  * [barTop]/[screenBottom]/[pictureBottom] are root-coordinate measurements
- * from `PlayerScreen` — `null` for [barTop] while the transport bar is
+ * from `PlayerScreen` — `null` for [barTop] while the card is
  * hidden, meaning nothing of *it* to clear. The card still has to clear
  * something else then: immersive mode (`ImmersiveEffect`) leaves the bar
  * hidden over a picture that a letterboxing framing may not reach all the

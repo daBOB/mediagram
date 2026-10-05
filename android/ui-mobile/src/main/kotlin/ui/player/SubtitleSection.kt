@@ -3,6 +3,7 @@ package ui.player
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +17,7 @@ import designsystem.Spacing
 import player.SubtitleOption
 
 /**
- * The settings sheet's "Subtitles" section: "Off" plus a row per language —
+ * The subtitle menu's language rows: "Off" plus a row per language —
  * built and labelled by `player.subtitleOptions`, the same radio-row shape
  * [AudioSection] uses. Its caller decides whether to show it at all: empty
  * for a file with no subtitles, which this never sees since the list
@@ -38,6 +39,7 @@ private fun SubtitleOptionRow(option: SubtitleOption, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = option.selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = MIN_TARGET)
             .padding(vertical = Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {

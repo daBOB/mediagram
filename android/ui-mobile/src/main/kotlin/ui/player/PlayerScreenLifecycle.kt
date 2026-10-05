@@ -23,15 +23,15 @@ internal fun PlayerLifecycleEffects(viewModel: PlayerViewModel, isPlaying: Boole
 }
 
 /**
- * Takes the transport bar away after [CONTROLS_LINGER_MS] once
- * [controlsShouldFade] says it may, and not while the settings sheet is
- * open — the rule itself lives there, where it can be tested.
+ * Takes the card and the top bar away after [CONTROLS_LINGER_MS] once
+ * [controlsShouldFade] says they may — never while a menu or the episode
+ * sidebar is open; the rule itself lives there, where it can be tested.
  */
 @Composable
-internal fun ControlsAutoHide(controlsShown: Boolean, isPlaying: Boolean, scrubbing: Boolean, settingsShown: Boolean, onHide: () -> Unit) {
-    LaunchedEffect(controlsShown, isPlaying, scrubbing, settingsShown) {
-        if (!controlsShown || settingsShown) return@LaunchedEffect
-        if (!controlsShouldFade(isPlaying = isPlaying, isScrubbing = scrubbing)) return@LaunchedEffect
+internal fun ControlsAutoHide(controlsShown: Boolean, isPlaying: Boolean, scrubbing: Boolean, menuOrSidebarOpen: Boolean, onHide: () -> Unit) {
+    LaunchedEffect(controlsShown, isPlaying, scrubbing, menuOrSidebarOpen) {
+        if (!controlsShown) return@LaunchedEffect
+        if (!controlsShouldFade(isPlaying = isPlaying, isScrubbing = scrubbing, menuOrSidebarOpen = menuOrSidebarOpen)) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         onHide()
     }

@@ -28,15 +28,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
  * actual (hidden) state, which is what keeps it from jumping the moment
  * this hides or a swipe reveals them.
  *
- * Hiding once on entry is not enough: the settings sheet is its own dialog
+ * Hiding once on entry is not enough: the Add to list dialog is its own
  * window, and on API 30+ the focused window's own requested visibility
  * wins — while it is open the real bars come back, and returning from the
- * background or from any other window (a permission prompt, the sheet
+ * background or from any other window (a permission prompt, the dialog
  * itself closing) can leave them shown on API 24-29's legacy flag path too,
  * since nothing there re-applies them on its own. Re-hiding on `ON_RESUME`
  * and on this window regaining focus covers both: a window losing focus to
- * another (the sheet opening) is not this, and a window *regaining* it is
- * exactly what "the sheet closed" and "back from the background" both are.
+ * another (the dialog opening) is not this, and a window *regaining* it is
+ * exactly what "the dialog closed" and "back from the background" both are.
  */
 @Composable
 internal fun ImmersiveEffect() {

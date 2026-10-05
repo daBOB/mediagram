@@ -3,6 +3,7 @@ package ui.player
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +20,7 @@ import playback.CUE_SIZES
 import playback.cueOffsetLabel
 
 /**
- * The settings sheet's "Subtitle style" section: size, backing and a timing
+ * The subtitle style panel, reached from the subtitle menu's Style… row: size, backing and a timing
  * nudge — a port of the web's subtitle-appearance panel
  * (`subtitle-panel.js`), with no position control; see that file's own
  * header for why one was tried and dropped. Its caller decides whether to
@@ -53,6 +54,7 @@ private fun ChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = MIN_TARGET)
             .padding(vertical = Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -71,6 +73,6 @@ private fun SyncRow(offsetMs: Long, onNudge: (Int) -> Unit, onResetOffset: () ->
         GlyphButton(glyph = "−", description = "Subtitles earlier", enabled = true, onClick = { onNudge(-1) })
         Text(cueOffsetLabel(offsetMs / 1000.0), modifier = Modifier.padding(horizontal = Spacing.small))
         GlyphButton(glyph = "+", description = "Subtitles later", enabled = true, onClick = { onNudge(1) })
-        TextButton(onClick = onResetOffset) { Text("Reset") }
+        TextButton(onClick = onResetOffset, modifier = Modifier.heightIn(min = MIN_TARGET)) { Text("Reset") }
     }
 }

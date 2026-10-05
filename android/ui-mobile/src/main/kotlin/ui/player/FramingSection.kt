@@ -3,6 +3,7 @@ package ui.player
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
@@ -16,12 +17,12 @@ import designsystem.Spacing
 import playback.Framing
 
 /**
- * The settings sheet's "Framing" section — the four rows the web's `z` key
+ * The Framing menu's rows — the four rows the web's `z` key
  * cycles through (`framing.js`), offered directly here since this app has
- * no keyboard to cycle with. Always on the sheet, unlike Audio and
+ * no keyboard to cycle with. Always offered, unlike Audio and
  * Subtitles: every title has a shape, not just the ones with extra tracks.
  * A pinch over the picture reaches Fill and Fit, the two of these a viewer
- * asks for most, without opening the sheet at all — see `PlayerGestures`.
+ * asks for most, without opening the menu at all — see `PlayerGestures`.
  */
 @Composable
 fun FramingSection(framing: Framing, onChosen: (Framing) -> Unit) {
@@ -39,6 +40,7 @@ private fun FramingRow(option: Framing, selected: Boolean, onClick: () -> Unit) 
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = MIN_TARGET)
             .padding(vertical = Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {

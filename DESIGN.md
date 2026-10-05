@@ -437,7 +437,9 @@ beneath the content, and a poster cropped to fill would cover it.
 **The No Floating Container Rule.** The departments bar is either translucent
 over art or the page's own colour — never a colour of its own. A tinted bar
 becomes a band floating between the art and the page, which is the one thing
-this world does not do.
+this world does not do. The player card is the one floating container, and
+it floats over the picture, not between art and page: it is the film's
+controls, not a band of the catalogue (see Player card).
 
 ## Shapes
 
@@ -501,7 +503,8 @@ written beside it.
   to the page colour as the art scrolls away. **Deliberate difference:** no
   blur behind it — Compose cannot blur what lies behind a node without a new
   dependency — so the art shows through sharper than on the web until the bar
-  settles.
+  settles. The player card makes the same choice for a different reason; see
+  Player card.
 - **Compact (phone, tablet portrait):** the web's ≤900px header — wordmark and
   an icon row, a scrolling row of department pills, then a search field and the
   avatar. **Deliberate difference:** it hides on scroll down and returns on
@@ -730,6 +733,37 @@ art: a film's title page, a department's cover story, Movies and Shows.
   in two places by necessity — the window opens before Compose exists — and each
   names the other.
 
+### Player card
+
+- **The card:** the player's controls in one card at the bottom of the
+  picture, in three rows — where the film is (position, scrub bar, length ·
+  ends HH:MM; the length and end time drop under the bar when it would
+  narrow below 160dp), how it plays (CC, ▾, speed, Audio, framing at the left,
+  picture-in-picture at the right end on a phone), and what moves it
+  (↺ ⏮ −15 ▶ +15 ⏭, then ⓘ and ☰ beside them, centred rather than pinned
+  right). Black at 78%, a 1dp hairline at 8% white, radius 12dp
+  (`Radius.card`), 16dp inside, no shadow. Phone: the window's width less
+  12dp each side, never wider than 720dp, 12dp above the bottom edge.
+  Television: 760dp, centred, 32dp above the bottom edge. A row wraps rather
+  than shrink a control; every touch target is at least 48dp.
+- **Menus and the episode sidebar** take the card's own fill. A menu opens
+  directly above the button that opened it, inside the card's width, one at
+  a time. The sidebar stands down the right — 320dp on a phone or tablet,
+  the whole width under 600dp, 360dp on a television — watched rows at 45%
+  with a ✓, the catalogue's progress line under a part-watched row, and
+  "Now playing" for the open one. Beside the picture it never overlaps the
+  card: while it is open the card is laid out in the width left of it, ending
+  12dp short and centred in that space; under 600dp the sidebar covers the
+  window, card and top bar included.
+- **Top bar:** back, the title, My List, Kids, Add to list and Notes, over a
+  gradient from 55% black (`SCRIM_ALPHA`) at the top edge to clear.
+- **Nothing lifts or grows.** A control keeps its size on press and on
+  focus; the television marks focus with its own colours and border only.
+- **Deliberate difference: no blur.** The web blurs what lies behind its
+  card; Android fills it with a flat dark tint. The video draws on its own
+  surface, which is what keeps HDR and Dolby Vision passthrough working —
+  blurring it would need a TextureView, and that breaks both.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -787,11 +821,11 @@ look them up:
   D-pad-driven two-pane build on television, both drawing the
   Settings-index-row, ledger, pill, toggle, swatch-card and artwork entries
   above. A menu shortcut still opens System directly, without the index.
-  The player, the title detail screen and the collection screen have not
-  been restyled at all; they inherit the palette and type through the theme
-  but their own composition is undocumented and unreviewed — a sweep of
-  what that leaves off-token is tracked outside this file (see the
-  Settings/System redesign plan's own review).
+  The title detail screen and the collection screen have not been restyled
+  at all; they inherit the palette and type through the theme but their own
+  composition is undocumented and unreviewed — a sweep of what that leaves
+  off-token is tracked outside this file (see the Settings/System redesign
+  plan's own review). The player's controls are composed: see Player card.
 - **This palette change touches every screen at once.** Every surface that
   reads `MaterialTheme.colorScheme` or a body/label typography role now reads
   the web's dark theme and Geist rather than the values this system replaces.
@@ -805,10 +839,10 @@ look them up:
 - **No component vocabulary for dialogs or lists.** The catalogue has none of
   these, so none are recorded. They are Material defaults wherever they
   appear today, at the new 6dp radius.
-- **The player's palette is unresolved on Android.** The web player's own
-  screening room is this catalogue's own dark ground now, which narrows this
-  question rather than closing it: whether playback still wants a second,
-  darker palette of its own is open.
+- **The player's palette is the catalogue's, plus one card.** Its controls
+  sit on a single black-at-78% card (Player card, above) over the
+  catalogue's own ground; whether playback wants a second, darker palette
+  beyond that card is still open.
 - **Dynamic type is untested.** The scale is declared in `sp`, so it will
   respond to the system font scale, but no size has been checked at a large
   setting, and `TextAutoSize.StepBased` on the page title has not been
