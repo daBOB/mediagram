@@ -9,9 +9,9 @@ describe("the keys the player takes", () => {
     expect(keyAction({ key: "k" })).toEqual({ do: "playPause" });
   });
 
-  test("the arrows skip the same ten the buttons do", () => {
-    expect(keyAction({ key: "ArrowLeft" })).toEqual({ do: "skip", by: -10 });
-    expect(keyAction({ key: "ArrowRight" })).toEqual({ do: "skip", by: 10 });
+  test("the arrows skip the same fifteen the buttons do", () => {
+    expect(keyAction({ key: "ArrowLeft" })).toEqual({ do: "skip", by: -15 });
+    expect(keyAction({ key: "ArrowRight" })).toEqual({ do: "skip", by: 15 });
   });
 
   test("up and down are the volume", () => {
@@ -84,7 +84,7 @@ describe("the keys it leaves alone", () => {
   });
 
   test("anything held with a modifier belongs to the browser", () => {
-    // ctrl+F is find and meta+← is back; neither asks to skip ten seconds.
+    // ctrl+F is find and meta+← is back; neither asks to skip.
     expect(keyAction({ key: "f", ctrlKey: true })).toBeNull();
     expect(keyAction({ key: "ArrowLeft", metaKey: true })).toBeNull();
     expect(keyAction({ key: " ", altKey: true })).toBeNull();
@@ -108,7 +108,7 @@ describe("a focused button", () => {
   });
 
   test("but gives back everything else", () => {
-    expect(keyAction({ key: "ArrowRight", onButton: true })).toEqual({ do: "skip", by: 10 });
+    expect(keyAction({ key: "ArrowRight", onButton: true })).toEqual({ do: "skip", by: 15 });
     expect(keyAction({ key: "m", onButton: true })).toEqual({ do: "mute" });
   });
 });

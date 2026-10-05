@@ -8,7 +8,7 @@
  * audio track ours, the subtitles theirs. So the loan is being paid back.
  *
  * The shape is the phone's, from the Android player's transport design: skip
- * ten, play/pause, skip ten, elapsed on the left and duration on the right.
+ * back, play/pause, skip on, elapsed on the left and duration on the right.
  * Two surfaces over one library should not be learnt twice.
  *
  * Kept out of `player.js`, which is over eight hundred lines against a
@@ -42,8 +42,8 @@ const ICONS = {
 /** The speeds worth offering. Anything finer is a setting, not a choice. */
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
-/** Ten, the same ten the phone skips and the same ten the buttons say. */
-export const SKIP_SECONDS = 10;
+/** Fifteen: the same every surface skips, and the same the buttons say. */
+export const SKIP_SECONDS = 15;
 
 /** `1×`, `1.5×` — never `1.00×`, which is a measurement, not a speed. */
 export function speedLabel(rate) {
@@ -84,15 +84,14 @@ function setIcon(button, path) {
  * A skip button: which way, and how far.
  *
  * Both, because neither alone is enough. Two arrows without a number are a
- * skip of some unstated length — the phone had to be told ten explicitly
+ * skip of some unstated length — the phone had to be told its skip explicitly
  * because media3's own defaults are five back and fifteen forward, and a
  * control that does not say is a control that can quietly disagree with its
  * twin. A number without arrows does not say which way it goes.
  */
-function skipButton(button, path, seconds) {
-  const far = document.createElement("span");
-  far.textContent = String(seconds);
-  button.replaceChildren(icon(path), far);
+function skipButton(button, path, seconds, way) {
+  button.replaceChildren(icon(path), String(seconds));
+  button.setAttribute("aria-label", `${way} ${seconds} seconds`);
 }
 
 /**
@@ -247,8 +246,8 @@ export function mountTransport({ video, onPlay, onPause, onSeekTo, filmTime, run
   }
 
   playPause.addEventListener("click", togglePlay);
-  skipButton(back, ICONS.back, SKIP_SECONDS);
-  skipButton(forward, ICONS.forward, SKIP_SECONDS);
+  skipButton(back, ICONS.back, SKIP_SECONDS, "Back");
+  skipButton(forward, ICONS.forward, SKIP_SECONDS, "Forward");
   back.addEventListener("click", () => onSeekTo(filmTime() - SKIP_SECONDS));
   forward.addEventListener("click", () => onSeekTo(filmTime() + SKIP_SECONDS));
 

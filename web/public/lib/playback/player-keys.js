@@ -11,8 +11,8 @@
  * answer, and the table can be proved.
  */
 
-/** Ten, the same ten the buttons skip and the same ten the phone skips. */
-const SKIP = 10;
+/** Fifteen: the same the buttons skip, and the same every other surface skips. */
+const SKIP = 15;
 
 /** A tenth of the way up or down, which is about as fine as a key should be. */
 const VOLUME_STEP = 0.1;
@@ -53,7 +53,7 @@ export function keyAction(press = {}) {
   const { key } = press;
   if (typeof key !== "string" || key === "") return null;
   // A modified key belongs to the browser or the window manager: ctrl+F is
-  // find, meta+← is back, and neither is a request to skip ten seconds.
+  // find, meta+← is back, and neither is a request to skip.
   if (press.ctrlKey === true || press.altKey === true || press.metaKey === true) return null;
   if (press.inControl === true) return null;
 
