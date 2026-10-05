@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.117.1 — the TV's baseline profile ships
+
+**Changed** (Android)
+
+- **The release build carries the app's own baseline profile.** It was recorded on the TV box (Android 14), driven by remote keys from launch through Home, the Movies page, the Movies wall and one title page, and is committed under `android/app/src/release/generated/baselineProfiles/`. Those screens are now compiled ahead of time instead of interpreted on first use.
+
+**Fixed** (build)
+
+- **The profile journey gets past Home.** On the box every iteration stopped at Home, for two reasons:
+  - **Labels.** A bar pill takes focus on its own node while its label sits in a child, so asking whether the label was focused never matched. The generator now also accepts a focused node that contains the label.
+  - **Stale reads.** A node found first and read afterwards goes stale when the screen recomposes in between. The generator now asks as a single query.
+  - It also walks left along the bar before right, since focus can come back up anywhere along it.
+- **Known limit.** The climb back up from the Home rows still misses on most iterations: focus can stick on a row at the bottom edge that Up does not leave, or fall into the side rail. ART merges every iteration's profile, so the 4 of 13 that got through carry the Movies page (68 rules), the wall (53) and the title page (28) into the shipped profile. A relaunch between Home and Movies was tried and dropped: an uncompiled cold start on the box often outlasts the 15 s wait for the library.
+
 ## 0.117.0 — sharper TV backdrops, a baseline profile, refresh-rate matching
 
 **Changed** (Android TV)
@@ -15,7 +29,7 @@ to `main`. Full phase-by-phase detail lives in
 - **Refresh-rate matching.** On a television that offers it, playback switches the display to the film's own rate (23.976, 24, 25 Hz and so on) and switches back when the player closes.
   - A mode that already fits (30 fps on 60 Hz) is kept rather than switched, since each switch blanks the screen briefly.
   - Phones and tablets keep Media3's own seamless-only switching. A browser cannot switch display modes at all.
-- **App baseline profile.** A `:baselineprofile` module drives the TV with the D-pad, through Home, the Movies wall and one title page. The release build now ships the resulting profile, so those screens are compiled ahead of time.
+- **App baseline profile, wired.** A `:baselineprofile` module drives the TV with the D-pad, through Home, the Movies wall and one title page. `profileinstaller` is now a direct dependency. The profile itself is generated on the TV box and ships in 0.117.1.
 
 **Fixed**
 

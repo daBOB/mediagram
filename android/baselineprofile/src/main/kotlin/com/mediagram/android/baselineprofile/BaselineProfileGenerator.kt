@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import org.junit.Rule
@@ -34,6 +35,13 @@ import java.util.regex.Pattern
  * Where the app is not showing a library (first-run setup, or the profile
  * picker waiting for a viewer) it records the launch alone and says so in
  * the log: picking a profile would be choosing for someone.
+ *
+ * On the box the climb back from the Home rows to the bar still misses on
+ * most iterations: focus can stick on a row at the bottom edge that Up
+ * does not leave, or fall into the side rail. Each iteration's profile is
+ * merged into the next, so the ones that get through (4 of 13 on the box)
+ * carry the Movies page, the wall and the title page into the result. Check
+ * the log for at least one iteration without a "recorded ... only" line.
  */
 class BaselineProfileGenerator {
     @get:Rule
@@ -114,27 +122,44 @@ class BaselineProfileGenerator {
     /** Down the Movies page until its closing pill holds focus. */
     private fun UiDevice.focusAllFilmsPill(): Boolean {
         repeat(MAX_PAGE_STEPS) {
-            if (findObject(ALL_FILMS_PILL)?.isFocused == true) return true
+            if (holdsFocus(ALL_FILMS_PILL)) return true
             pressDPadDown()
             waitForIdle()
         }
-        return findObject(ALL_FILMS_PILL)?.isFocused == true
+        return holdsFocus(ALL_FILMS_PILL)
     }
 
-    /** Up to the bar, then right along it until the Movies pill holds focus. */
+    /**
+     * Up to the bar, then along it until the Movies pill holds focus. Focus
+     * can reach the bar anywhere along it (above the hero's dots, or on the
+     * icons at its right end), so it goes left first, stopping at Home rather
+     * than stepping off the bar, then right.
+     */
     private fun UiDevice.focusMoviesPill(): Boolean {
-        repeat(MAX_BAR_STEPS) {
-            if (moviesPillFocused()) return true
-            pressDPadUp()
-        }
-        repeat(MAX_BAR_STEPS) {
-            if (moviesPillFocused()) return true
-            pressDPadRight()
-        }
-        return moviesPillFocused()
+        stepWhile({ !holdsFocus(MOVIES_PILL) }) { pressDPadUp() }
+        stepWhile({ !holdsFocus(MOVIES_PILL) && !holdsFocus(HOME_PILL) }) { pressDPadLeft() }
+        stepWhile({ !holdsFocus(MOVIES_PILL) }) { pressDPadRight() }
+        return holdsFocus(MOVIES_PILL)
     }
 
-    private fun UiDevice.moviesPillFocused(): Boolean = findObject(MOVIES_PILL)?.isFocused == true
+    /** Presses [press] while [keepGoing] holds, at most the bar's length of times. */
+    private inline fun UiDevice.stepWhile(keepGoing: () -> Boolean, press: () -> Unit) {
+        repeat(MAX_BAR_STEPS) {
+            if (!keepGoing()) return
+            press()
+            waitForIdle()
+        }
+    }
+
+    /**
+     * Whether the node carrying the label, or the node around it, holds focus:
+     * a pill takes focus on its own node while its label sits in a child.
+     * Asked as queries: a node found first and read afterwards goes stale
+     * when the screen recomposes in between, which focus moves make it do.
+     */
+    private fun UiDevice.holdsFocus(label: BySelector): Boolean =
+        hasObject(By.copy(label).focused(true)) ||
+            hasObject(By.focused(true).hasDescendant(By.copy(label)))
 
     private fun UiDevice.settle() {
         waitForIdle()
@@ -152,8 +177,9 @@ class BaselineProfileGenerator {
         const val MAX_BAR_STEPS = 12
         const val MAX_PAGE_STEPS = 40
 
-        // The pill's text is its title plus a count ("Movies 120"), merged into one node.
+        // The pill's title; its count (" 120") is a sibling node.
         val MOVIES_PILL = By.pkg(TARGET_PACKAGE).textStartsWith("Movies")
+        val HOME_PILL = By.pkg(TARGET_PACKAGE).text("Home")
 
         // "All 120 films →": the page's closing pill, unlike the wall's own "All films" heading.
         val ALL_FILMS_PILL = By.pkg(TARGET_PACKAGE).text(Pattern.compile("All \\d+ films.*"))

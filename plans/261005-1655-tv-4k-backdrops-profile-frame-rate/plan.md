@@ -22,7 +22,7 @@
 | 01 | [TV backdrops at w1280, re-fetch narrower ones](phase-01-tv-backdrops-w1280-refetch-narrower.md) | — | done (merged, review fixes applied) |
 | 02 | [App Baseline Profile](phase-02-app-baseline-profile.md) | — | done (merged, review fixes applied) |
 | 03 | [TV frame-rate matching](phase-03-tv-frame-rate-matching.md) | — | done (merged, review fixes applied) |
-| 04 | [Close-out: version, docs, device walk](phase-04-close-out.md) | 01–03 | in progress (box offline for generation) |
+| 04 | [Close-out: version, docs, device walk](phase-04-close-out.md) | 01–03 | in progress (profile shipped in 0.117.1; refresh-rate walk waits for the TV to be on) |
 
 Phases 01, 02 and 03 touch no shared files, so they can run in parallel worktrees. The exception is `android/gradle/libs.versions.toml`, which only phase 02 edits.
 
@@ -72,4 +72,10 @@ Phases 01, 02 and 03 touch no shared files, so they can run in parallel worktree
 - **Found on the box:**
   - It now drives a 2024 **Hisense** TV with 23.976/24/25/50 Hz modes and HDR, so frame-rate matching is live there. The plan's "no gain on the OMEN" premise no longer holds.
   - It ran app **0.109.1**.
-  - User decision (2026-10-05): generate on the box, then release 0.117.0 so it self-updates.
+  - User decision (2026-10-05): generate on the box, then release so it self-updates. Released as 0.117.1, since the generation build itself installs 0.117.0.
+
+### 2026-10-06
+
+- **Profile generated on the box** after three generator fixes. The journey still misses the bar on most iterations, but merged iterations cover Home, the Movies page, the wall and the title page. Details in phase 04.
+- **The box sleeps through HDMI-CEC.** `stay_on_while_plugged_in` was already 3, so the earlier sleep came from CEC standby when the TV went off or switched input. For this session it was set to 15; the original value is 3.
+- **Refresh-rate walk is not done.** With the TV off, the box sees no EDID and offers only a fallback 1080p60 mode.

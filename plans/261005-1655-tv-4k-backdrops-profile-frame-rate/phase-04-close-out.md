@@ -1,6 +1,6 @@
 # Phase 04: Close-out (version, docs, device walk)
 
-**Priority:** high. **Status:** pending. **Depends on:** 01–03.
+**Priority:** high. **Status:** in progress (profile generated; refresh-rate walk waits for the TV). **Depends on:** 01–03.
 
 ## Steps
 
@@ -13,11 +13,15 @@
   - `docs/project-changelog.md` gets one entry.
   - Update the research report's "Applies to mediagram" checklist to done.
   - Note the TV-only frame-rate decision in `docs/system-architecture.md` (Android section).
-- [ ] **Full checks.** `cargo test --workspace`; `./gradlew testDebugUnitTest lint :app:assembleRelease`; `scripts/check.sh` if present.
+- [x] **Full checks.** `cargo test --workspace`; `./gradlew testDebugUnitTest lint :app:assembleRelease`; `scripts/check.sh` if present.
 - [ ] **Device walk on the TV box.**
   - Pin it: `ANDROID_SERIAL=192.168.0.35:5555`.
   - Navigate only, on the "TV test" profile.
   - Hero sharpness: does Home show the w1280 backdrop after enrichment?
   - Movies wall held-key gfxinfo.
   - One 24p play: no mode change, normal exit.
-- [ ] **Release.** Ask the user before running `scripts/release-android.sh`, because it is outward-facing: TVs self-update from the channel.
+- [x] **Profile generated on the box** (2026-10-06), shipped as 0.117.1 because the generation build installs 0.117.0 and the self-updater only moves to a strictly higher versionCode.
+  - Three generator fixes were needed: focus asked as one query (a found node went stale), a focused node containing the label counts (bar pill labels sit in a child), and a left walk along the bar.
+  - Still misses the bar on most iterations (focus sticks on a bottom-edge row, or falls into the side rail). 4 of 13 got through; ART merges iterations, so the profile covers Home 139, Movies page 68, wall 53, title page 28 rules.
+  - Relaunch between Home and Movies was tried and dropped: the uncompiled cold start often outlasts the 15 s library wait.
+- [ ] **Release.** Approved by the user ("Generate on box, then release"): `scripts/release-android.sh` at 0.117.1.
