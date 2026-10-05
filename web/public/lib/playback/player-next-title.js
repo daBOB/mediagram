@@ -1,7 +1,7 @@
 /**
  * The run around the open title: the next-title offer with its countdown,
- * cancellation and speculative work, and the card's ⏮ and ⏭ — every way of
- * moving along a run opens through `openInRun`.
+ * cancellation and speculative work, the card's ⏮ and ⏭, and the ☰ sidebar —
+ * every way of moving along a run opens through `openInRun`.
  */
 import { episodeLabel } from "../format.js";
 import { playbackFor } from "../link.js";
@@ -9,6 +9,7 @@ import { resumeAt } from "../resume-point.js";
 import * as state from "../watch-state.js";
 import { warmTranscode } from "./streaming/hls-playback.js";
 import { COUNTDOWN_SECONDS, upNextPhase } from "./up-next.js";
+import { mountEpisodeSidebar } from "./episode-sidebar.js";
 
 const PRELOAD_BYTES = 8 * 1024 * 1024;
 
@@ -33,6 +34,7 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
   let shownPhase = null;
   let preloaded = null;
   let warm = null;
+  const sidebar = mountEpisodeSidebar({ onPick: (set) => openInRun(set), onClose: showControls });
 
   const titleLine = (set) => [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
 
@@ -73,6 +75,7 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     onOpenNext = options.onOpenNext ?? null;
     preloaded = null;
     offer();
+    sidebar.open(set, options.collection ?? null);
   }
 
   function clear() {
@@ -81,6 +84,7 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     playing = next = previous = onOpenNext = preloaded = null;
     inRun = false;
     offer();
+    sidebar.close();
   }
 
   /** Called after the source joins, or after its startup has failed. */
@@ -163,5 +167,5 @@ export function mountPlayerNextTitle({ showControls, openTitle }) {
     hide();
     dropWarm();
   });
-  return { open, update, preload, releaseWarm, clear, openInRun };
+  return { open, update, preload, releaseWarm, clear, openInRun, sidebarOpen: sidebar.isOpen };
 }

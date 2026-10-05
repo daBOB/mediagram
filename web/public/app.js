@@ -52,7 +52,7 @@ import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
-import { playsNext, requestPreload } from "./lib/playback/plays-next.js";
+import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
 import { loadPlayer } from "./lib/playback/player-loader.js";
 
 const main = document.getElementById("main");
@@ -311,7 +311,7 @@ async function openTitle(set, queue, options, request) {
   const { next, previous, inRun, preload } = playsNext(library, set, queue);
   requestPreload(preload);
   openPlayer(set, {
-    next, previous, inRun,
+    next, previous, inRun, collection: queue ? null : collectionOf(library, set),
     onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
     freshResume,

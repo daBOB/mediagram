@@ -46,11 +46,11 @@ const viewer = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.t
  * @property {CatalogSet|null} [next]
  * @property {CatalogSet|null} [previous]
  * @property {boolean} [inRun] Whether the title is one of a run; see `playsNext`.
+ * @property {import("../library.js").Collection|null} [collection] The run's show or course, for the sidebar.
  * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
- * @property {Promise<number|null>} [freshResume] A position read from the
- *   server after the title was already open — see `play` in `app.js`. Applied
- *   on arrival only for direct playback, and only while the viewer has not
- *   really begun; see `RESUME_DRIFT_SECONDS`.
+ * @property {Promise<number|null>} [freshResume] A position read from the server
+ *   after the title opened (see `play` in `app.js`), applied only for direct
+ *   playback while the viewer has not really begun; see `RESUME_DRIFT_SECONDS`.
  */
 
 /**
@@ -82,7 +82,7 @@ function mountPlayer() {
   const notes = mountPlayerNotes({ dialog });
   const marks = mountPlayerLibraryMarks();
   const menus = mountPlayerMenus({ onClose: () => hud.show() });
-  const hud = mountPlayerHud({ dialog, video, card: document.getElementById("control-card"), holding: () => menus.isOpen() });
+  const hud = mountPlayerHud({ dialog, video, card: document.getElementById("control-card"), holding: () => menus.isOpen() || upNext.sidebarOpen() });
   const note = document.getElementById("note");
   const now = document.getElementById("now");
   const seek = document.getElementById("seek");

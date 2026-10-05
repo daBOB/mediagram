@@ -387,6 +387,26 @@ test("a list's Previous and Next walk it through the app's own play path", async
   expect(env.video.src).toBe("/api/sets/First/stream");
 });
 
+test("an episode opened from its show offers the sidebar; the same title from a list does not", async () => {
+  const ep = (setId: string, episode: string) => ({ ...film(setId), kind: "ep", show: "Star City", season: 1, episode });
+  catalog = JSON.stringify([ep("One", "1"), ep("Two", "2")]);
+  snapshot = { collections: [{ id: "list", name: "My list", items: ["Two", "One"] }] };
+  await start();
+  await env.navigate("#/series/Star%20City");
+  descendants(env.node("main")).filter((node) => node.className === "row")[1]!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Two/stream");
+  expect(env.node("episodes").hidden).toBe(false);
+  env.node("episodes").fire("click");
+  expect(textOf(env.node("episode-sidebar"))).toContain("Season 1");
+  env.node("player").close();
+  await env.navigate("#/collections/list");
+  descendants(env.node("main")).find((node) => node.textContent === "Play all")!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Two/stream");
+  expect(env.node("episodes").hidden).toBe(true);
+});
+
 test("a film opened from its page has no run to step through", async () => {
   await start();
   await env.navigate("#/film/First");
