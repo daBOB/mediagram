@@ -124,10 +124,22 @@ fun TvPlayerScreen(
         choosingList = false
         choosingKids = false
     }
-    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = {
-        menu = null
-        sidebarOpen = false
-    })
+    val focus = remember { TvPlayerFocus() }
+    TvPlayerOverlaysReset(
+        setId,
+        marks == null,
+        player == null,
+        closeList = closeMarkDialogs,
+        closePanel = {
+            menu = null
+            sidebarOpen = false
+        },
+        onTitleChanged = {
+            menu = null
+            landing = TvControlsLanding.PlayPause
+            focus.opener = focus.playPause
+        },
+    )
     TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
@@ -138,7 +150,6 @@ fun TvPlayerScreen(
     // Where the stage's bands are, for what floats between them to keep clear.
     val bands = remember { TvStageBands() }
     val root = remember { FocusRequester() }
-    val focus = remember { TvPlayerFocus() }
     val notesFocus = remember { TvNotesFocus() }
     val remote =
         remember {
@@ -152,7 +163,10 @@ fun TvPlayerScreen(
                 onToggleSubtitles = viewModel::toggleSubtitles,
             )
         }
-    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
+    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar }, onLanded = {
+        landing = TvControlsLanding.PlayPause
+        focus.opener = focus.playPause
+    })
     TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { panelOpen }, failed = { failed })
     TvPlayerBack(
         barShown = barShown,

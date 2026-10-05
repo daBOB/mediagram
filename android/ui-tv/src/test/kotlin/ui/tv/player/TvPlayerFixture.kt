@@ -91,8 +91,12 @@ internal class TvPlayerFixture(
         every { media.addListener(any()) } answers { listeners.add(firstArg()) }
         every { media.removeListener(any()) } answers { listeners.remove(firstArg()) }
         every { media.prepare() } answers {
-            playbackState = Player.STATE_READY
-            listeners.toList().forEach { it.onPlaybackStateChanged(playbackState) }
+            if (holdPrepare) {
+                // Quiet while buffering: the player's own ready event is the next thing it says.
+                playbackState = Player.STATE_BUFFERING
+            } else {
+                becomeReady()
+            }
         }
         every { media.play() } answers { setPlaying(true) }
         every { media.pause() } answers { setPlaying(false) }
@@ -108,6 +112,18 @@ internal class TvPlayerFixture(
 
     val isPlaying: Boolean get() = media.isPlaying
 
+    /** While set, `prepare()` leaves the title preparing until [becomeReady] — as a real file takes a while to open. */
+    var holdPrepare = false
+
+    /** The prepared title is ready to play, as media3 reports it. */
+    fun becomeReady() {
+        playbackState = Player.STATE_READY
+        listeners.toList().forEach { it.onPlaybackStateChanged(playbackState) }
+    }
+
+    /** The open title's tracks, as the player reports them once it has probed the file. */
+    fun reportTracks(tracks: Tracks) = listeners.toList().forEach { it.onTracksChanged(tracks) }
+
     /** Fails the title the way media3 reports a failure: the player drops to idle, and says so. */
     fun fail() {
         playbackState = Player.STATE_IDLE
@@ -121,6 +137,7 @@ internal class TvPlayerFixture(
 
     private fun setPlaying(playing: Boolean) {
         playWhenReady = playing
+        if (holdPrepare && playbackState == Player.STATE_BUFFERING) return
         listeners.toList().forEach {
             it.onPlayWhenReadyChanged(playing, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
             it.onIsPlayingChanged(media.isPlaying)

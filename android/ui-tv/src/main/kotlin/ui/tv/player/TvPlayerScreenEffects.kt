@@ -77,6 +77,7 @@ internal fun TvRemoteFollowsControls(
     failed: Boolean = false,
     notesOpen: () -> Boolean = { false },
     busy: () -> Boolean = { false },
+    onLanded: () -> Unit = {},
 ) {
     LaunchedEffect(barShown, panelOpen, upNextShown, failed) {
         when {
@@ -85,9 +86,13 @@ internal fun TvRemoteFollowsControls(
             !barShown -> if (notesOpen()) focus.notesRegion.requestFocus() else root.requestFocus()
             upNextShown -> if (!busy()) focus.upNext.requestFocus()
             landing == TvControlsLanding.SeekBar -> focus.seekBar.requestFocus()
-            landing == TvControlsLanding.Opener -> focus.opener.requestFocus()
+            // The opener may be gone (Audio on a title with one track), and asking for it then does nothing.
+            landing == TvControlsLanding.Opener -> focus.opener.requestFocus() || focus.playPause.requestFocus()
             else -> focus.playPause.requestFocus()
         }
+        // A landing is for the one arrival it was asked for: the next time the
+        // controls come back — after a title switch, say — they open on play/pause.
+        if (barShown && !panelOpen && !failed && !upNextShown) onLanded()
     }
 }
 
@@ -101,7 +106,8 @@ internal fun TvRemoteFollowsControls(
  * title recomposed after a configuration change keeps its dialog. The
  * menus and the episode list are drawn over a player; without one (a restore that comes
  * back before the player is built) one would be open but nowhere, and still
- * taking the D-pad and Back for itself.
+ * taking the D-pad and Back for itself. A menu goes with the title too: its
+ * tracks are the last title's, and the new one has none yet.
  */
 @Composable
 internal fun TvPlayerOverlaysReset(
@@ -110,12 +116,14 @@ internal fun TvPlayerOverlaysReset(
     playerGone: Boolean,
     closeList: () -> Unit,
     closePanel: () -> Unit,
+    onTitleChanged: () -> Unit = {},
 ) {
     var listFor by rememberSaveable { mutableStateOf(setId) }
     LaunchedEffect(setId) {
         if (setId != listFor) {
             listFor = setId
             closeList()
+            onTitleChanged()
         }
     }
     LaunchedEffect(marksGone) { if (marksGone) closeList() }
