@@ -17,6 +17,10 @@ use crate::posters::{POSTER_MAX_BYTES, POSTER_TIMEOUT, PosterRef};
 /// is already held would make the common case the slow one. Delete the
 /// directory to fetch it all again.
 ///
+/// A backdrop is held only at the width it was asked for or wider, because
+/// its key carries no width: without a record of what landed, a device that
+/// now wants a sharper backdrop would keep the blurry one for ever.
+///
 /// A poster that will not download is skipped rather than fatal. The catalog
 /// is the product; the artwork is a convenience, and one unreachable image
 /// must never cost a run that has already done real work.
@@ -34,7 +38,19 @@ pub async fn download_each(
     http: &reqwest::Client,
     refs: &[PosterRef],
     dir: &Path,
+    step: impl FnMut(usize),
+) -> Result<Vec<String>> {
+    fetch_each(http, refs, dir, step, PosterRef::url).await
+}
+
+/// [`download_each`] with the URL of each image supplied by the caller, so a
+/// test can serve images from a local socket instead of the CDN.
+async fn fetch_each(
+    http: &reqwest::Client,
+    refs: &[PosterRef],
+    dir: &Path,
     mut step: impl FnMut(usize),
+    url_of: impl Fn(&PosterRef) -> String,
 ) -> Result<Vec<String>> {
     if refs.is_empty() {
         return Ok(Vec::new());
@@ -52,12 +68,28 @@ pub async fn download_each(
             continue;
         }
         let dest = dir.join(format!("{}.jpg", poster.key));
-        if dest.exists() {
+        if is_held(poster, dir) {
             written.push(poster.key.clone());
             continue;
         }
-        match download(http, &poster.url(), &dest).await {
-            Ok(()) => written.push(poster.key.clone()),
+        match download(http, &url_of(poster), &dest).await {
+            Ok(()) => {
+                if let Some(width) = poster.backdrop_width
+                    && let Err(err) =
+                        write_private(&width_record(poster, dir), width.to_string().as_bytes())
+                {
+                    // Without the record the next run fetches it again,
+                    // which costs a download and nothing else.
+                    tracing::warn!(key = %poster.key, error = %err, "backdrop width not recorded");
+                }
+                written.push(poster.key.clone());
+            }
+            // A narrower image already here still serves; the record is
+            // left as it was so the next run tries again.
+            Err(err) if dest.exists() => {
+                tracing::warn!(key = %poster.key, error = %err, "wider image not fetched, keeping the one held");
+                written.push(poster.key.clone());
+            }
             Err(err) => {
                 tracing::warn!(key = %poster.key, error = %err, "poster skipped");
             }
@@ -69,9 +101,29 @@ pub async fn download_each(
 /// How many of `refs` are already on disk in `dir`, so a caller can say what
 /// it actually did rather than reporting every poster as freshly fetched.
 pub fn already_held(refs: &[PosterRef], dir: &Path) -> usize {
-    refs.iter()
-        .filter(|p| dir.join(format!("{}.jpg", p.key)).exists())
-        .count()
+    refs.iter().filter(|p| is_held(p, dir)).count()
+}
+
+/// The file recording the width a backdrop was asked for. The width asked
+/// for, not the pixels received: TMDB's original may be narrower than the
+/// request, and recording what arrived would refetch it on every run.
+fn width_record(poster: &PosterRef, dir: &Path) -> std::path::PathBuf {
+    dir.join(format!("{}.width", poster.key))
+}
+
+/// Whether `dir` already holds `poster` well enough to skip it. One rule for
+/// the download walk and the count, so the two cannot disagree.
+fn is_held(poster: &PosterRef, dir: &Path) -> bool {
+    if !dir.join(format!("{}.jpg", poster.key)).exists() {
+        return false;
+    }
+    let Some(wanted) = poster.backdrop_width else {
+        return true;
+    };
+    std::fs::read_to_string(width_record(poster, dir))
+        .ok()
+        .and_then(|held| held.trim().parse::<u32>().ok())
+        .is_some_and(|held| held >= wanted)
 }
 
 async fn download(http: &reqwest::Client, url: &str, dest: &Path) -> Result<()> {
@@ -119,3 +171,7 @@ fn restrict_dir(path: &Path) -> Result<()> {
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
         .with_context(|| format!("restricting {}", path.display()))
 }
+
+#[cfg(test)]
+#[path = "poster_files_tests.rs"]
+mod tests;

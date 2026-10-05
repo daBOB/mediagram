@@ -5,7 +5,7 @@ mod fetch_stub;
 
 use fetch_stub::{
     RejectingApi, StubApi, catalog_with_collection, catalog_with_kinds, core_at, fetch_rejecting,
-    fetch_with, install_crypto_provider, offline_client, write_existing_poster,
+    fetch_with, install_crypto_provider, offline_client, write_existing_poster, write_width_record,
 };
 
 use mediagram_core::api::CoreError;
@@ -255,16 +255,33 @@ async fn a_title_with_no_backdrop_counts_nothing_there() {
     assert_eq!(report.backdrops_already_held, 0);
 }
 
-/// A backdrop already on disk is left alone, exactly like a poster already
-/// held.
+/// A backdrop already on disk at the width asked for is left alone, exactly
+/// like a poster already held.
 #[tokio::test]
 async fn a_backdrop_already_on_disk_is_kept_and_not_requested_again() {
     let dir = tempfile::tempdir().unwrap();
     catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
     write_existing_poster(dir.path(), "tmdb-movie-550-bg");
+    write_width_record(dir.path(), "tmdb-movie-550-bg", 780);
 
     let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
 
     assert_eq!(report.backdrops_already_held, 1);
     assert_eq!(report.backdrops_fetched, 0);
+}
+
+/// A backdrop fetched narrower than the device now wants is not held: its key
+/// carries no width, so the record is the only thing that can say so. The CDN
+/// is unreachable here, so the narrow file stays and is not a failure.
+#[tokio::test]
+async fn a_backdrop_held_narrower_than_wanted_is_not_counted_held() {
+    let dir = tempfile::tempdir().unwrap();
+    catalog_with_kinds(dir.path(), &[("movie", Some(550))]);
+    write_existing_poster(dir.path(), "tmdb-movie-550-bg");
+    write_width_record(dir.path(), "tmdb-movie-550-bg", 500);
+
+    let report = fetch_with(dir.path(), StubApi::with_poster_and_backdrop("/p.jpg", "/b.jpg")).await;
+
+    assert_eq!(report.backdrops_already_held, 0);
+    assert_eq!(report.failed, 1, "only the poster, which the unreachable CDN never delivered");
 }

@@ -19,6 +19,9 @@ dependencies {
     androidTestImplementation(libs.findLibrary("kotlinx.coroutines.test").get())
 
     testImplementation(project(":core:testing"))
+    // TelevisionTest and BackdropWidthTest stand in for the system services
+    // the surface and width choices read.
+    testImplementation(libs.findLibrary("mockk").get())
 
     // ResumePointFixtureTest reads the web's own resume-point.json as plain
     // JSON — no @Serializable models, so the compiler plugin isn't needed,

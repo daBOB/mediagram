@@ -164,6 +164,13 @@ pub fn write_existing_poster(dir: &Path, key: &str) {
     std::fs::write(posters.join(format!("{key}.jpg")), b"stub").unwrap();
 }
 
+/// The record a backdrop download leaves beside its file: the width it was
+/// asked for. A backdrop on disk with no record counts as held at no width.
+pub fn write_width_record(dir: &Path, key: &str, width: u32) {
+    let posters = plan_fetch(&core_at(dir), "en-US").unwrap().artwork_dir;
+    std::fs::write(posters.join(format!("{key}.width")), width.to_string()).unwrap();
+}
+
 /// Plans a fetch over the catalog the test just seeded, then calls
 /// `fetch_into` directly — the internal half, never the public
 /// `fetch_missing`, which constructs a real client from a key this test does

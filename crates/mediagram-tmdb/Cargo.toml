@@ -24,3 +24,10 @@ tracing.workspace = true
 # Cargo unifies features per target, so one chosen here would be chosen for
 # every build that links this crate.
 reqwest = { workspace = true, features = ["json"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["net", "io-util", "rt", "macros"] }
+# reqwest here has no TLS provider of its own, and building any client
+# panics without one installed, even for a plain-http test server.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
