@@ -36,10 +36,7 @@ data class EpisodeSection(val title: String, val rows: List<EpisodeRow>)
 /** The whole run, opening on [currentSection] — the section holding the open title, or the first. */
 data class EpisodeList(val sections: List<EpisodeSection>, val currentSection: Int)
 
-/** Heads what nothing could be placed for — an id the catalogue does not know, an episode with no season — when other sections exist. */
-const val OTHER_SECTION = "Other"
-
-/** Heads the same rows when they are the whole run. */
+/** Heads what nothing could be placed for — an id the catalogue does not know, an episode with no season — placed last, as on the web. */
 const val EPISODES_SECTION = "Episodes"
 
 /** What a row says for an id the catalogue does not know, rather than print the raw id back at the viewer. */
@@ -55,18 +52,18 @@ const val UNKNOWN_TITLE = "Unknown title"
  *
  * Progress is the web's own rule (`progressRuleFor`): any recorded position
  * against a known runtime, so the sidebar and the season page agree about
- * the same row; a watched row is ticked instead.
+ * the same row — a watched row with a position left draws the tick and the line.
  */
 fun episodeListOf(openId: String, run: List<String>, sets: Map<String, MediaSet>, watch: WatchSnapshot): EpisodeList? {
     if (run.isEmpty()) return null
     if (sets[openId]?.let { it.show == null } == true) return null
     val watched = watch.watched.mapTo(HashSet()) { it.setId }
     val positions = watch.progress.associateBy { it.setId }
-    val grouped = LinkedHashMap<String?, MutableList<EpisodeRow>>()
+    val grouped = LinkedHashMap<List<String>?, MutableList<EpisodeRow>>()
     for (id in run.distinct()) {
         val set = sets[id]
         val done = id in watched
-        val progress = if (done) null else ResumePoint.watchedFraction(positions[id]?.let { ProgressPoint(it.at, it.duration) })
+        val progress = ResumePoint.watchedFraction(positions[id]?.let { ProgressPoint(it.at, it.duration) })
         val row = EpisodeRow(
             setId = id,
             number = set?.let(::episodeLabel).orEmpty(),
@@ -78,21 +75,23 @@ fun episodeListOf(openId: String, run: List<String>, sets: Map<String, MediaSet>
         )
         grouped.getOrPut(set?.let(::sectionOf)) { mutableListOf() } += row
     }
-    val placed = grouped.mapNotNull { (title, rows) -> title?.let { EpisodeSection(it, rows) } }
-    val unplaced = grouped[null]?.let { EpisodeSection(if (placed.isEmpty()) EPISODES_SECTION else OTHER_SECTION, it) }
+    val placed = grouped.mapNotNull { (trail, rows) -> trail?.let { EpisodeSection(it.last(), rows) } }
+    val unplaced = grouped[null]?.let { EpisodeSection(EPISODES_SECTION, it) }
     val sections = placed + listOfNotNull(unplaced)
     val current = sections.indexOfFirst { section -> section.rows.any(EpisodeRow::current) }
     return EpisodeList(sections, current.coerceAtLeast(0))
 }
 
 /**
- * The section [set] sits in: the folder trail the catalogue shelves it
- * under (`Shelves.kt`'s `trailOf`, which this module may not import), or
- * `null` for an episode with no season — placed last rather than given one.
+ * The folder trail [set] sits under, as the catalogue shelves it
+ * (`Shelves.kt`'s `trailOf`, which this module may not import), or `null`
+ * for an episode with no season — placed last rather than given one. A
+ * section is keyed by the whole trail but named by its last folder, as the
+ * web names it, so two folders sharing a name stay two sections.
  */
-private fun sectionOf(set: MediaSet): String? {
-    set.path?.split('/')?.filter(String::isNotBlank)?.takeIf { it.isNotEmpty() }?.let { return it.joinToString(" › ") }
-    set.chapter?.takeIf(String::isNotBlank)?.let { return it }
-    if (set.kind == Kind.EPISODE) return set.season?.let { "Season $it" }
-    return "Chapter ${set.season ?: 1}"
+private fun sectionOf(set: MediaSet): List<String>? {
+    set.path?.split('/')?.filter(String::isNotBlank)?.takeIf { it.isNotEmpty() }?.let { return it }
+    set.chapter?.takeIf(String::isNotBlank)?.let { return listOf(it) }
+    if (set.kind == Kind.EPISODE) return set.season?.let { listOf("Season $it") }
+    return listOf("Chapter ${set.season ?: 1}")
 }

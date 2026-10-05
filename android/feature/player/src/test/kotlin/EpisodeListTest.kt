@@ -61,12 +61,14 @@ class EpisodeListTest {
         assertEquals(1, rows.values.count { it.current })
     }
 
-    /** A finished title is ticked, not ruled: a position left at the credits would draw a full bar beside the tick. */
+    /** As the web's `progressRuleFor` does: a watched row with a position left draws the tick and the line. */
     @Test
-    fun aWatchedTitleDrawsNoProgressLineEvenWithAPositionLeft() {
+    fun aWatchedTitleKeepsItsProgressLine() {
         val list = assertNotNull(episodeListOf("b1", run, sets, watch(watched = listOf("a2"), progress = listOf(Progress("a2", 1_490.0, 1_500.0, 1L)))))
 
-        assertNull(list.sections[0].rows[1].progress)
+        val row = list.sections[0].rows[1]
+        assertTrue(row.watched)
+        assertEquals((1_490.0 / 1_500.0).toFloat(), row.progress)
     }
 
     @Test
@@ -105,9 +107,19 @@ class EpisodeListTest {
         )
         val list = assertNotNull(episodeListOf("l3", lessons.map { it.setId }, lessons.associateBy { it.setId }, watch()))
 
-        assertEquals(listOf("Basics › 1. Start", "2. Broker"), list.sections.map { it.title })
+        assertEquals(listOf("1. Start", "2. Broker"), list.sections.map { it.title })
         assertEquals("1", list.sections[0].rows[0].number)
         assertEquals(1, list.currentSection)
+    }
+
+    /** A section is named by the folder holding its lessons, but two folders that share a name are still two sections. */
+    @Test
+    fun foldersSharingANameStaySeparateSections() {
+        val lessons = listOf(lesson("l1", 1, path = "Basics/1. Start"), lesson("l2", 1, path = "Advanced/1. Start"))
+        val list = assertNotNull(episodeListOf("l1", lessons.map { it.setId }, lessons.associateBy { it.setId }, watch()))
+
+        assertEquals(listOf("1. Start", "1. Start"), list.sections.map { it.title })
+        assertEquals(listOf(listOf("l1"), listOf("l2")), list.sections.map { s -> s.rows.map { it.setId } })
     }
 
     @Test
@@ -126,7 +138,7 @@ class EpisodeListTest {
         val messy = listOf("ghost", "a1", "x1", "a2")
         val list = assertNotNull(episodeListOf("a1", messy, sets + ("x1" to extra), watch()))
 
-        assertEquals(listOf("Season 1", OTHER_SECTION), list.sections.map { it.title })
+        assertEquals(listOf("Season 1", EPISODES_SECTION), list.sections.map { it.title })
         val other = list.sections.last().rows
         assertEquals(listOf("ghost", "x1"), other.map { it.setId })
         assertEquals(UNKNOWN_TITLE, other[0].title)
