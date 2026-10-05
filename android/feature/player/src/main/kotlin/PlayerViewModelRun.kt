@@ -1,5 +1,7 @@
 package player
 
+import androidx.media3.common.Player
+
 /*
  * The card's own steps through the run and back to the top of the title —
  * split out of [PlayerViewModel] to keep that file under the project's line
@@ -22,9 +24,14 @@ fun PlayerViewModel.playFromRun(setId: String) = upNextController.playFromRun(se
 
 /**
  * Back to 0:00 of the open title. A seek, so it leaves play and pause as
- * they were; a countdown already running after the credits stops, since
- * the seek has left the end (`UpNextController.onSeeked`).
+ * they were — except past the credits, where the picture is stopped but
+ * media3 still holds play-when-ready: that is paused first, so the viewer
+ * who pressed ↺ on a stopped picture gets the stopped first frame, as on
+ * the web. A countdown already running after the credits stops, since the
+ * seek has left the end (`UpNextController.onSeeked`).
  */
 fun PlayerViewModel.restart() {
-    handle.player.value?.seekTo(0L)
+    val player = handle.player.value ?: return
+    if (player.playbackState == Player.STATE_ENDED) player.pause()
+    player.seekTo(0L)
 }

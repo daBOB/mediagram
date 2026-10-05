@@ -1,8 +1,10 @@
 package player
 
 import androidx.media3.common.Player
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -86,5 +88,28 @@ class PlayerRunStepsTest {
         verify(exactly = 0) { player.play() }
         verify(exactly = 0) { player.pause() }
         verify(exactly = 0) { player.playWhenReady = any() }
+    }
+
+    /**
+     * Past the credits the viewer sees a stopped picture, but media3 still
+     * holds play-when-ready, so a bare seek would start it. The web stays
+     * paused there, and so does this.
+     */
+    @Test
+    fun restartAfterTheCreditsSeeksToTheTopAndStaysPaused() = runTest {
+        installMainDispatcher()
+        val player = mockk<Player>(relaxed = true)
+        every { player.playbackState } returns Player.STATE_ENDED
+        val vm = buildViewModel(FakePlayerHandle().apply { installPlayer(player) })
+        vm.open("e2", run)
+        advanceUntilIdle()
+
+        vm.restart()
+
+        verifyOrder {
+            player.pause()
+            player.seekTo(0L)
+        }
+        verify(exactly = 0) { player.play() }
     }
 }
