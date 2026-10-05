@@ -107,3 +107,27 @@ test("the card stays up while a menu is open and rests on the usual timer once i
   env.advance(2600);
   expect(env.node("player").classes.has("resting")).toBe(true);
 });
+
+test("a film has no run, so Previous and Next are hidden rather than disabled", () => {
+  openPlayer(set("film"));
+  expect(env.node("previous").hidden).toBe(true);
+  expect(env.node("play-next").hidden).toBe(true);
+});
+
+test("in a run, Previous and Next open their neighbours the way the next title opens, and each end is disabled", () => {
+  const opened: Array<[string, unknown]> = [];
+  const onOpenNext = (following: { setId: string }, how: unknown) => opened.push([following.setId, how]);
+  openPlayer(set("first"), { next: set("second"), previous: null, inRun: true, onOpenNext });
+  expect(env.node("previous").hidden).toBe(false);
+  expect(env.node("previous").disabled).toBe(true);
+  expect(env.node("play-next").disabled).toBe(false);
+  expect(env.node("play-next").title).toBe("second");
+  openPlayer(set("second"), { next: set("third"), previous: set("first"), inRun: true, onOpenNext });
+  env.node("previous").fire("click");
+  env.node("play-next").fire("click");
+  expect(opened).toEqual([["first", { autoplay: "asap" }], ["third", { autoplay: "asap" }]]);
+  openPlayer(set("third"), { next: null, previous: set("second"), inRun: true, onOpenNext });
+  expect(env.node("play-next").hidden).toBe(false);
+  expect(env.node("play-next").disabled).toBe(true);
+  expect(env.node("previous").disabled).toBe(false);
+});

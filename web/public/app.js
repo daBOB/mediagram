@@ -308,10 +308,10 @@ async function openTitle(set, queue, options, request) {
   const autoplay = options.autoplay ?? null;
   const { freshResume } = options;
 
-  const { next, preload } = playsNext(library, set, queue);
+  const { next, previous, inRun, preload } = playsNext(library, set, queue);
   requestPreload(preload);
   openPlayer(set, {
-    next,
+    next, previous, inRun,
     onOpenNext: (following, how) => play(following, queue, how),
     autoplay,
     freshResume,

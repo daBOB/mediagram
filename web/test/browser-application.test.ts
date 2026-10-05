@@ -367,6 +367,36 @@ test("a superseded play cannot replace the latest title when refreshes finish in
   expect(env.video.attachments).toEqual(["/api/sets/First/stream", "/api/sets/Second/stream"]);
 });
 
+test("a list's Previous and Next walk it through the app's own play path", async () => {
+  catalog = JSON.stringify([film("First"), film("Second")]);
+  snapshot = { collections: [{ id: "list", name: "My list", items: ["First", "Second"] }] };
+  await start();
+  await env.navigate("#/collections/list");
+  descendants(env.node("main")).find((node) => node.textContent === "Play all")!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/First/stream");
+  expect(env.node("previous").hidden).toBe(false);
+  expect(env.node("previous").disabled).toBe(true);
+  env.node("play-next").fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/Second/stream");
+  expect(env.node("previous").disabled).toBe(false);
+  expect(env.node("play-next").disabled).toBe(true);
+  env.node("previous").fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/First/stream");
+});
+
+test("a film opened from its page has no run to step through", async () => {
+  await start();
+  await env.navigate("#/film/First");
+  descendants(env.node("main")).find((node) => node.className.split(" ").includes("film-play"))!.fire("click");
+  await settle();
+  expect(env.video.src).toBe("/api/sets/First/stream");
+  expect(env.node("previous").hidden).toBe(true);
+  expect(env.node("play-next").hidden).toBe(true);
+});
+
 test.each(["close", "pagehide"])("%s invalidates Play next while its state refresh is pending", async (exit) => {
   catalog = JSON.stringify([film("First"), film("Second")]);
   snapshot = { collections: [{ id: "list", name: "My list", items: ["First", "Second"] }] };

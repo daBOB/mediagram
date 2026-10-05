@@ -43,6 +43,8 @@ const viewer = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.t
  * @typedef {Object} PlayerOptions
  * @property {"buffered"|"asap"|null} [autoplay]
  * @property {CatalogSet|null} [next]
+ * @property {CatalogSet|null} [previous]
+ * @property {boolean} [inRun] Whether the title is one of a run; see `playsNext`.
  * @property {(set: CatalogSet, options: PlayerOptions) => void} [onOpenNext]
  * @property {Promise<number|null>} [freshResume] A position read from the
  *   server after the title was already open — see `play` in `app.js`. Applied
