@@ -1,13 +1,17 @@
 package ui.player
 
+import androidx.media3.common.Player
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Which third of the screen a double tap lands in — [handleDoubleTap] itself
- * needs a real `Player` to prove anything more, which this module has no
- * fake for; this proves the split it reads off, the same way `PlayerScreenTest`
- * proves `shouldStopOnDispose` rather than `PlayerScreen`'s own wiring.
+ * Which third of the screen a double tap lands in, and what a double tap on
+ * either outer third does: seek by the player's own increment — the same
+ * fifteen seconds the card's −15 and +15 read off it — never a second number
+ * kept here.
  */
 class PlayerGesturesTest {
 
@@ -36,5 +40,27 @@ class PlayerGesturesTest {
     @Test
     fun aScreenNotYetMeasuredNeverSeeks() {
         assertEquals(SeekZone.PLAY_PAUSE, seekZoneFor(50f, 0f))
+    }
+
+    @Test
+    fun aDoubleTapOnTheLeftSeeksBackByThePlayersOwnSkip() {
+        val player = mockk<Player>(relaxed = true) { every { seekBackIncrement } returns 15_000L }
+
+        val flash = handleDoubleTap(player, tapX = 100f, width = width, previous = null)
+
+        verify { player.seekBack() }
+        assertEquals(SeekZone.BACK, flash?.zone)
+        assertEquals(15L, flash?.totalSeconds)
+    }
+
+    @Test
+    fun aDoubleTapOnTheRightSeeksForwardByThePlayersOwnSkip() {
+        val player = mockk<Player>(relaxed = true) { every { seekForwardIncrement } returns 15_000L }
+
+        val flash = handleDoubleTap(player, tapX = 1_100f, width = width, previous = null)
+
+        verify { player.seekForward() }
+        assertEquals(SeekZone.FORWARD, flash?.zone)
+        assertEquals(15L, flash?.totalSeconds)
     }
 }
