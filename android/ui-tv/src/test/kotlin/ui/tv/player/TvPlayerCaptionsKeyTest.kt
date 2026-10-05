@@ -25,7 +25,7 @@ class TvPlayerCaptionsKeyTest {
     fun withFocusOnTheSeekBar() = assertEquals(TvKeyAction.ToggleSubtitles, press(controlsShowing = true, focusInControls = true))
 
     @Test
-    fun withTheSettingsPanelOpen() = assertEquals(TvKeyAction.ToggleSubtitles, press(controlsShowing = true, panelOpen = true))
+    fun withAMenuOrTheEpisodesOpen() = assertEquals(TvKeyAction.ToggleSubtitles, press(controlsShowing = true, panelOpen = true))
 
     @Test
     fun withTheNotesOpen() = assertEquals(TvKeyAction.ToggleSubtitles, press(notesOpen = true))

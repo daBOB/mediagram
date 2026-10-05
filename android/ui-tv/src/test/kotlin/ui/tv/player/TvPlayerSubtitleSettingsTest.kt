@@ -1,22 +1,25 @@
 package ui.tv.player
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
-import designsystem.Overscan
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performSemanticsAction
 import data.CatalogRepository
+import designsystem.Spacing
 import io.mockk.coEvery
 import io.mockk.mockk
 import model.Kind
@@ -34,11 +37,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The settings panel on a title with one regular English subtitle track:
- * the two subtitle sections join it, with the phone's rows, off selected
- * by default — nothing is remembered or preferred for this show — and what
- * a row chosen by hand picks is the shared choice the picture's own
- * subtitles are drawn from.
+ * CC ▾ on a title with one regular English subtitle track: the languages
+ * and Off, Off chosen by default — nothing is remembered or preferred for
+ * this show — then "Style…", which opens the style menu in the options'
+ * place. What a row chosen by hand picks is the shared choice the
+ * picture's own subtitles are drawn from.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -57,65 +60,80 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun bothSubtitleSectionsAppearWithThePhonesRowsOffSelectedByDefault() {
-        openSettingsPanel()
-        for (text in listOf("Subtitles", "Off", "English", "Subtitle style", "Small", "Normal", "Large", "Larger", "Shadow", "Box", "None", "Sync")) {
-            inPanel(text).assertExists()
-        }
-        inPanel("Off").assertIsSelected()
-        inPanel("Normal").assertIsSelected()
-        inPanel("Shadow").assertIsSelected()
+    fun theOptionsOfferOffAndEnglishWithOffChosenThenStyle() {
+        openOptions()
+        for (text in listOf("Subtitles", "Off", "English", "Style…")) inMenu(text).assertExists()
+        inMenu("Off").assertIsSelected()
+        inMenu("Off").assertIsFocused()
         compose.onNodeWithText("Hello.").assertDoesNotExist()
     }
 
     @Test
-    fun choosingEnglishTurnsSubtitlesOnAndShowsItsCue() {
-        openSettingsPanel()
+    fun styleTakesTheOptionsPlaceOnTheCurrentSize() {
+        openStyle()
+        for (text in listOf("Subtitle style", "Small", "Normal", "Large", "Larger", "Shadow", "Box", "None", "Sync")) {
+            inMenu(text).assertExists()
+        }
+        inMenu("Normal").assertIsSelected()
+        inMenu("Normal").assertIsFocused()
+        inMenu("Shadow").assertIsSelected()
+        // One menu at a time: the options gave way rather than standing under it.
+        compose.onAllNodesWithTag(TvCardMenuTag).assertCountEquals(1)
+        inMenu("English").assertDoesNotExist()
+    }
 
-        inPanel("English").performSemanticsAction(SemanticsActions.OnClick)
+    @Test
+    fun choosingEnglishClosesTheMenuTurnsCcOnAndShowsItsCue() {
+        openOptions()
+
+        inMenu("English").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
-        inPanel("English").assertIsSelected()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+        compose.onNodeWithText("CC ●").assertExists()
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     @Test
-    fun sizeAndBackingChosenAreTheSharedChoices() {
-        openSettingsPanel()
-        inPanel("Larger").performSemanticsAction(SemanticsActions.OnClick)
-        inPanel("Box").performSemanticsAction(SemanticsActions.OnClick)
+    fun sizeAndBackingChosenAreTheSharedChoicesAndTheStyleStaysOpen() {
+        openStyle()
+        inMenu("Larger").performSemanticsAction(SemanticsActions.OnClick)
+        inMenu("Box").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
         val choices = controller.get().playerViewModel.choices.value
         assertEquals(135, choices.subtitleSizePercent)
         assertEquals("box", choices.subtitleBacking)
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
     }
 
     @Test
     fun theSyncRowNudgesAndResets() {
-        openSettingsPanel()
+        openStyle()
         compose.onNodeWithContentDescription("Subtitles later").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
-        inPanel("+0.1s").assertExists()
+        inMenu("+0.1s").assertExists()
         assertEquals(100L, controller.get().playerViewModel.choices.value.subtitleOffsetMs)
 
-        inPanel("Reset").performSemanticsAction(SemanticsActions.OnClick)
+        inMenu("Reset").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
-        inPanel("0.0s").assertExists()
+        inMenu("0.0s").assertExists()
     }
 
     @Test
     fun offTurnsTheSubtitlesOff() {
-        openSettingsPanel()
-        inPanel("English").performSemanticsAction(SemanticsActions.OnClick)
+        openOptions()
+        inMenu("English").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
         }
 
-        inPanel("Off").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Subtitle options").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        inMenu("Off").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
         val chosen = controller.get().playerViewModel.choices.value.subtitleOptions.single { it.selected }
@@ -124,31 +142,37 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theSyncButtonsFitInsideThePanelOnOneLine() {
-        openSettingsPanel()
-        // Bounds are clipped to what the panel's scroll shows; bring the row into it first.
+    fun theSyncButtonsFitInsideTheMenuOnOneLine() {
+        openStyle()
+        // Bounds are clipped to what the menu's scroll shows; bring the row into it first.
         compose.onNodeWithTag(TvSyncButtonsTag).performScrollTo()
-        val panel = compose.onNodeWithTag(TvSettingsPanelTag).getBoundsInRoot()
+        val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
         val row = compose.onNodeWithTag(TvSyncButtonsTag).getBoundsInRoot()
         val earlier = compose.onNodeWithContentDescription("Subtitles earlier").getBoundsInRoot()
-        val reset = inPanel("Reset").getBoundsInRoot()
+        val reset = inMenu("Reset").getBoundsInRoot()
 
-        assertTrue(reset.right <= panel.right - Overscan.horizontal + 0.5.dp, "Reset ends at ${reset.right}, the panel's margin at ${panel.right - Overscan.horizontal}")
-        assertTrue(row.right <= panel.right - Overscan.horizontal + 0.5.dp, "the row ends at ${row.right}")
+        assertTrue(reset.right <= menu.right - Spacing.medium + 0.5.dp, "Reset ends at ${reset.right}, the menu's margin at ${menu.right - Spacing.medium}")
+        assertTrue(row.right <= menu.right - Spacing.medium + 0.5.dp, "the row ends at ${row.right}")
         // Squeezed, "Reset" would wrap onto a second line and stand taller than "−".
         assertTrue(reset.height <= earlier.height + 0.5.dp, "Reset is ${reset.height} tall, − is ${earlier.height}")
         assertTrue(reset.width > earlier.width, "Reset is ${reset.width} wide, − is ${earlier.width}")
     }
 
-    /** Opens the panel once the set's own track is known — a regular track makes the sections appear regardless of the (now off) default choice. */
-    private fun openSettingsPanel() {
+    /** Opens CC ▾ once the set's own track is known — a regular track is what puts language rows in it. */
+    private fun openOptions() {
         compose.waitUntil(timeoutMillis = 5_000) {
             controller.get().playerViewModel.choices.value.subtitleOptions.isNotEmpty()
         }
-        openSettings()
+        openMenu("Subtitle options")
     }
 
-    private fun inPanel(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(TvSettingsPanelTag)))
+    private fun openStyle() {
+        openOptions()
+        inMenu("Style…").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+    }
+
+    private fun inMenu(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag(TvCardMenuTag)))
 
     private companion object {
         val ENGLISH_TRACK = SubtitleTrackInfo(track = 0, lang = "en", forced = false, sdh = false, label = "")

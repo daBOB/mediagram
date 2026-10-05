@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -19,7 +20,7 @@ import kotlin.test.assertTrue
  * The player opened on the middle title of a three-title run: the remote's
  * Next and Previous step through it and are never left for the playback
  * session, and the up-next card near the end puts the remote on Play now —
- * except over the settings panel, which keeps it.
+ * except over a menu, which keeps it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -89,13 +90,13 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvSeekBarTag).assertExists()
         assertEquals(emptyList(), TvPlayerTestActivity.switches)
         // The standing button stays after a cancel, as on the phone.
-        compose.onNodeWithContentDescription("Play next", substring = true).assertExists()
+        compose.onNodeWithContentDescription("Next").assertExists()
     }
 
     @Test
-    fun theCardDoesNotTakeTheRemoteFromTheSettingsPanel() {
-        openSettings()
-        compose.onNodeWithTag(TvSettingsPanelTag).assertExists()
+    fun theCardDoesNotTakeTheRemoteFromAMenu() {
+        openMenu("Speed")
+        compose.onNodeWithTag(TvCardMenuTag).assertExists()
 
         nearTheEnd()
 
@@ -104,7 +105,7 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
 
         back()
 
-        compose.onNodeWithTag(TvSettingsPanelTag).assertDoesNotExist()
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
         compose.onNodeWithText("Play now").assertIsFocused()
     }
 
@@ -116,5 +117,21 @@ class TvPlayerUpNextTest : TvPlayerScreenHarness() {
         compose.runOnUiThread { handled = controller.get().dispatchKeyEvent(KeyEvent(action, keyCode)) }
         compose.waitForIdle()
         return handled
+    }
+
+    @Test
+    fun previousOnTheCardStepsBackThroughTheRun() {
+        toTransport(hasContentDescription("Previous"), Key.DirectionLeft)
+        press(Key.DirectionCenter)
+
+        assertEquals(listOf("set-zero"), TvPlayerTestActivity.switches)
+    }
+
+    @Test
+    fun nextOnTheCardStepsForward() {
+        toTransport(hasContentDescription("Next"))
+        press(Key.DirectionCenter)
+
+        assertEquals(listOf("set-two"), TvPlayerTestActivity.switches)
     }
 }

@@ -88,23 +88,39 @@ abstract class TvPlayerScreenHarness {
         compose.waitForIdle()
     }
 
-    /**
-     * From the controls as they open, on play/pause: Down to the row of
-     * marks and tools, then Right along it until [target] holds the remote
-     * — failing if it never does, which is a tool out of the remote's reach.
-     */
+    /** From the controls as they open, on play/pause: up into the row of tools, then Right along it until [target] holds the remote. */
     internal fun toTool(target: SemanticsMatcher) {
-        press(Key.DirectionDown)
+        press(Key.DirectionUp)
+        along(target)
+    }
+
+    /** From play/pause: up through the tools and the seek bar to the controls along the top, then Right along them to [target]. */
+    internal fun toTopBar(target: SemanticsMatcher) {
+        repeat(3) { press(Key.DirectionUp) }
+        along(target)
+    }
+
+    /** Along the transport from play/pause — Right, or Left for what stands before it — until [target] holds the remote. */
+    internal fun toTransport(
+        target: SemanticsMatcher,
+        key: Key = Key.DirectionRight,
+    ) = along(target, key)
+
+    /** [key] along a row until [target] holds the remote — failing if it never does, which is a control out of the remote's reach. */
+    internal fun along(
+        target: SemanticsMatcher,
+        key: Key = Key.DirectionRight,
+    ) {
         repeat(MAX_ROW) {
             if (compose.onAllNodes(target and isFocused()).fetchSemanticsNodes().isNotEmpty()) return
-            press(Key.DirectionRight)
+            press(key)
         }
         compose.onNode(target).assertIsFocused()
     }
 
-    /** From the controls as they open: to the gear, and pressed. */
-    internal fun openSettings() {
-        toTool(hasContentDescription("Playback settings"))
+    /** From the controls as they open: to the tool named [description], pressed — its menu opens above it on the current value. */
+    internal fun openMenu(description: String) {
+        toTool(hasContentDescription(description))
         press(Key.DirectionCenter)
     }
 

@@ -6,14 +6,13 @@ import kotlin.test.assertEquals
 
 /**
  * The remote key table's rows for the run: Next and Previous wherever they
- * are pressed, and Back with the up-next card on screen — and where
- * Previous goes in the run.
+ * are pressed, and Back with the up-next card on screen.
  */
 class TvPlayerRunKeysTest {
     // Next and Previous are never left for the playback session to answer.
 
     @Test
-    fun nextAndPreviousStepThroughTheRunWithTheSettingsPanelOpen() {
+    fun nextAndPreviousStepThroughTheRunWithAMenuOpen() {
         assertEquals(TvKeyAction.Next, tvKeyAction(Key.MediaNext, controlsShowing = true, focusInControls = false, panelOpen = true))
         assertEquals(TvKeyAction.Previous, tvKeyAction(Key.MediaPrevious, controlsShowing = true, focusInControls = false, panelOpen = true))
     }
@@ -32,7 +31,7 @@ class TvPlayerRunKeysTest {
     }
 
     @Test
-    fun backClosesTheSettingsPanelBeforeCancellingTheUpNextCard() {
+    fun backClosesAMenuBeforeCancellingTheUpNextCard() {
         assertEquals(TvKeyAction.ClosePanel, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, panelOpen = true, upNextShown = true))
     }
 
@@ -41,15 +40,14 @@ class TvPlayerRunKeysTest {
         assertEquals(TvKeyAction.PassThrough, tvKeyAction(Key.DirectionCenter, controlsShowing = true, focusInControls = false, upNextShown = true))
     }
 
+    /** Where Previous goes is the run's own answer, shared with the phone; here it is only ever the remote's, never the session's. */
     @Test
-    fun previousIsTheTitleBeforeInTheRun() {
-        assertEquals("a", previousInRun(listOf("a", "b", "c"), "b"))
+    fun previousIsTakenWithTheNotesOpenAndTheUpNextCardUp() {
+        assertEquals(TvKeyAction.Previous, tvKeyAction(Key.MediaPrevious, controlsShowing = true, focusInControls = false, upNextShown = true, notesOpen = true))
     }
 
     @Test
-    fun thereIsNothingBeforeTheFirstTitleOrOneTheRunDoesNotHold() {
-        assertEquals(null, previousInRun(listOf("a", "b"), "a"))
-        assertEquals(null, previousInRun(listOf("a", "b"), "z"))
-        assertEquals(null, previousInRun(emptyList(), "a"))
+    fun backCancelsTheUpNextCardBeforePuttingTheStatisticsAway() {
+        assertEquals(TvKeyAction.CancelUpNext, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, upNextShown = true, statsShown = true))
     }
 }

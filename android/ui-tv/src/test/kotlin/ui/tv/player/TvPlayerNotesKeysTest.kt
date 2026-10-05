@@ -27,9 +27,14 @@ class TvPlayerNotesKeysTest {
 
     @Test
     fun withTheNotesOpenTheOtherKeysStillSkipAndPause() {
-        assertEquals(TvKeyAction.SeekByAndShowControls(-10), tvKeyAction(Key.DirectionLeft, controlsShowing = false, focusInControls = false, notesOpen = true))
-        assertEquals(TvKeyAction.SeekByAndShowControls(10), tvKeyAction(Key.DirectionRight, controlsShowing = false, focusInControls = false, notesOpen = true))
+        assertEquals(TvKeyAction.SeekByAndShowControls(-15), tvKeyAction(Key.DirectionLeft, controlsShowing = false, focusInControls = false, notesOpen = true))
+        assertEquals(TvKeyAction.SeekByAndShowControls(15), tvKeyAction(Key.DirectionRight, controlsShowing = false, focusInControls = false, notesOpen = true))
         assertEquals(TvKeyAction.TogglePlayAndShowControls, tvKeyAction(Key.DirectionCenter, controlsShowing = false, focusInControls = false, notesOpen = true))
         assertEquals(TvKeyAction.TogglePlay, tvKeyAction(Key.MediaPlayPause, controlsShowing = false, focusInControls = false, notesOpen = true))
+    }
+
+    @Test
+    fun backClosesTheNotesBeforePuttingTheStatisticsAway() {
+        assertEquals(TvKeyAction.CloseNotes, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, notesOpen = true, statsShown = true))
     }
 }

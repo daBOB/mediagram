@@ -24,8 +24,8 @@ import kotlin.test.assertEquals
 
 /**
  * The player's marks rail, list dialog, statistics and notices, driven by
- * the remote for a grown-up viewer with one list: where Down from the
- * transport lands, what each mark writes, and what the controls do while a
+ * the remote for a grown-up viewer with one list: where Up from the
+ * seek bar lands, what each mark writes, and what the controls do while a
  * list is being chosen.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -34,12 +34,12 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     override fun makeFixture() = TvPlayerFixture(WatchStateFixture(seed = { createList("Favourites") }))
 
     @Test
-    fun downFromTheTransportReachesTheRailAndUpComesBack() {
-        press(Key.DirectionDown)
+    fun upFromTheSeekBarReachesTheMarksAndDownComesBack() {
+        repeat(3) { press(Key.DirectionUp) }
         compose.onNodeWithText("My List").assertIsFocused()
 
-        press(Key.DirectionUp)
-        compose.onNodeWithContentDescription("Pause").assertIsFocused()
+        press(Key.DirectionDown)
+        compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
     }
 
     @Test
@@ -47,7 +47,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
         compose.onNodeWithText("Not for kids").assertExists()
         compose.onNodeWithText("Add to list").assertExists()
 
-        press(Key.DirectionDown)
+        toTopBar(hasText("My List"))
         press(Key.DirectionCenter)
 
         assertEquals(listOf("set-one"), fixture.repository.snapshot.value.watchlist)
@@ -56,8 +56,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     /** The web's select as a dialog: the three answers, the current one holding the remote; choosing closes it onto the mark. */
     @Test
     fun theKidsMarkOpensTheChoiceAndFromSixMarksFromSix() {
-        press(Key.DirectionDown)
-        press(Key.DirectionRight)
+        toTopBar(hasText("Not for kids"))
         compose.onNodeWithText("Not for kids").assertIsFocused()
         press(Key.DirectionCenter)
         compose.onNodeWithText("For kids").assertExists()
@@ -75,8 +74,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     /** Open, it holds the controls as the list dialog does; Cancel leaves the mark as it was. */
     @Test
     fun theKidsChoiceHoldsTheControlsAndCancelChangesNothing() {
-        press(Key.DirectionDown)
-        press(Key.DirectionRight)
+        toTopBar(hasText("Not for kids"))
         press(Key.DirectionCenter)
 
         compose.mainClock.advanceTimeBy(CONTROLS_LINGER_MS + 500)
@@ -91,14 +89,14 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theStatisticsToggleEndsTheRowOfTools() {
+    fun theStatsButtonTogglesTheOverlay() {
         compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
-        toTool(hasContentDescription("Show playback statistics"))
+        toTransport(hasContentDescription("Stats"))
 
         press(Key.DirectionCenter)
         compose.onNodeWithTag(TvStatsOverlayTag).assertExists()
         compose.onNodeWithText("buffer").assertExists()
-        compose.onNodeWithContentDescription("Hide playback statistics").assertIsFocused()
+        compose.onNodeWithContentDescription("Stats").assertIsFocused()
 
         press(Key.DirectionCenter)
         compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
@@ -106,9 +104,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
 
     @Test
     fun addToListFilesTheTitleAndHoldsTheControlsUntilItCloses() {
-        press(Key.DirectionDown)
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
+        toTopBar(hasText("Add to list"))
         compose.onNodeWithText("Add to list").assertIsFocused()
 
         press(Key.DirectionCenter)
@@ -133,9 +129,7 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
     fun aWriteThatCannotBeConfirmedIsSaidAndThenGoesByItself() {
         // The provider cannot hand the core out, so no list write is confirmed.
         fixture.watchState.provider.beforeCore = { error("keystore unavailable") }
-        press(Key.DirectionDown)
-        press(Key.DirectionRight)
-        press(Key.DirectionRight)
+        toTopBar(hasText("Add to list"))
         press(Key.DirectionCenter)
         pressInDialog(Key.DirectionCenter)
         compose.onNodeWithTag(TvActionNoticeTag).assertExists()
@@ -164,7 +158,7 @@ class TvPlayerKidsProfileMarksTest : TvPlayerScreenHarness() {
         compose.onNodeWithText("Add to list").assertExists()
         compose.onNodeWithText("Not for kids").assertDoesNotExist()
 
-        press(Key.DirectionDown)
+        toTopBar(hasText("My List"))
         press(Key.DirectionRight)
         compose.onNodeWithText("Add to list").assertIsFocused()
     }

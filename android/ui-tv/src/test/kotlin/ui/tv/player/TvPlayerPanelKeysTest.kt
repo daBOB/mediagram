@@ -33,8 +33,8 @@ class TvPlayerPanelKeysTest {
         assertEquals(TvKeyAction.TogglePlay, panel(Key.MediaPlayPause))
         assertEquals(TvKeyAction.Play, panel(Key.MediaPlay))
         assertEquals(TvKeyAction.Pause, panel(Key.MediaPause))
-        assertEquals(TvKeyAction.SeekBy(-10), panel(Key.MediaRewind))
-        assertEquals(TvKeyAction.SeekBy(10), panel(Key.MediaFastForward))
+        assertEquals(TvKeyAction.SeekBy(-15), panel(Key.MediaRewind))
+        assertEquals(TvKeyAction.SeekBy(15), panel(Key.MediaFastForward))
     }
 
     @Test
@@ -53,5 +53,11 @@ class TvPlayerPanelKeysTest {
         controlsShowing: Boolean = true,
         focusInControls: Boolean = false,
         canControl: Boolean = true,
-    ) = tvKeyAction(key, controlsShowing, focusInControls, canControl, panelOpen = true)
+        statsShown: Boolean = false,
+    ) = tvKeyAction(key, controlsShowing, focusInControls, canControl, panelOpen = true, statsShown = statsShown)
+
+    @Test
+    fun backClosesThePanelBeforePuttingTheStatisticsAway() {
+        assertEquals(TvKeyAction.ClosePanel, panel(Key.Back, statsShown = true))
+    }
 }

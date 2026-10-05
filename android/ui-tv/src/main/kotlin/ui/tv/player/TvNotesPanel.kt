@@ -68,8 +68,7 @@ internal const val TvNotesTag = "tv-player-notes"
  * else. Focused, it wears the house accent, so a viewer across the room
  * can see the remote is on the notes and not the film.
  *
- * No ✕ as on the phone: Back closes the column, as it closes the settings
- * panel, and the Notes button in the controls opens and closes it too.
+ * No ✕ as on the phone: Back closes the column, as it closes a menu, and the Notes button in the controls opens and closes it too.
  * Selection is left out for the same reason — a remote has nothing to
  * select with.
  */

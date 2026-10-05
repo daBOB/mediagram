@@ -53,28 +53,32 @@ internal fun BoxScope.TvPlayerKeyHolder(
 /**
  * The table's Back row, answered from the dispatcher rather than as a key
  * so a Back that is not one — a gesture, the dispatcher itself — does the
- * same: the panel closes first, then the up-next card goes, then the
- * notes, then the controls, and only then is the player left.
+ * same: an open panel or the episode list closes first, then the up-next card goes, then the
+ * notes, then the statistics, then the controls, and only then is the
+ * player left.
  */
 @Composable
 internal fun TvPlayerBack(
     barShown: Boolean,
     onSeekBar: Boolean,
-    settingsOpen: Boolean,
+    panelOpen: Boolean,
     upNextShown: Boolean,
     notesOpen: Boolean,
+    statsShown: Boolean,
     onClosePanel: () -> Unit,
     onCancelUpNext: () -> Unit,
     onCloseNotes: () -> Unit,
+    onHideStats: () -> Unit,
     onHideControls: () -> Unit,
     onLeave: () -> Unit,
 ) {
     BackHandler {
-        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = settingsOpen, upNextShown = upNextShown, notesOpen = notesOpen)
+        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = panelOpen, upNextShown = upNextShown, notesOpen = notesOpen, statsShown = statsShown)
         when (action) {
             TvKeyAction.ClosePanel -> onClosePanel()
             TvKeyAction.CancelUpNext -> onCancelUpNext()
             TvKeyAction.CloseNotes -> onCloseNotes()
+            TvKeyAction.HideStats -> onHideStats()
             TvKeyAction.HideControls -> onHideControls()
             else -> onLeave()
         }

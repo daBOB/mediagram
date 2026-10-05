@@ -3,7 +3,9 @@ package ui.tv.player
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -24,7 +26,7 @@ import ui.tv.TvFocus
 /**
  * A transport control drawn as a character, named for a screen reader —
  * a glyph has no accessible text of its own. A character where one draws
- * plainly — the gear, the ⓘ — and [TvIconButton] where it would not.
+ * plainly — the CC, the ⓘ — and [TvIconButton] where it would not.
  */
 @Composable
 internal fun TvGlyphButton(
@@ -34,8 +36,10 @@ internal fun TvGlyphButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     padding: Dp = Spacing.large,
+    dimmed: Boolean = false,
 ) {
     TvOverlayButton(
+        dimmed = dimmed,
         text = glyph,
         style = TvTypeScale.title,
         enabled = enabled,
@@ -79,8 +83,9 @@ internal fun TvIconButton(
  * of controls.
  *
  * The house focus treatment ([TvFocus]) rather than a stock button, so a
- * focused control grows and takes the accent border the way every other
- * focused thing on this surface does. Transparent until focused: over a
+ * focused control takes the accent border and fill every other focused
+ * thing on this surface does — and, over the player, holds its size
+ * ([LocalFlatControls]). Transparent until focused: over a
  * film, a row of filled chips would be more things to look at. Disabled
  * it dims but stays focusable, so a mark that cannot be pressed can still
  * be read. [padding] is the room either side of the label: the controls'
@@ -95,15 +100,28 @@ internal fun TvOverlayButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     padding: Dp = Spacing.large,
+    dimmed: Boolean = false,
 ) {
     TvOverlaySurface(onClick = onClick, enabled = enabled, modifier = modifier) {
         Text(
             text = text,
             style = style,
-            modifier = Modifier.padding(horizontal = padding, vertical = Spacing.small),
+            // The label alone: fading the surface would fade its focus border with it.
+            modifier = Modifier.padding(horizontal = padding, vertical = Spacing.small).alpha(if (dimmed) DIMMED_ALPHA else 1f),
         )
     }
 }
+
+/** A control that is switched off, drawn quieter but still readable and focusable. */
+private const val DIMMED_ALPHA = 0.55f
+
+/**
+ * Whether the controls drawn here hold their size under focus. The player
+ * sets it: its controls never lift or grow (the web's rule, kept on every
+ * surface), while the rest of this surface — and [TvChoiceRow], which the
+ * profile screens share — keeps the house treatment's grow ([TvFocus]).
+ */
+internal val LocalFlatControls = staticCompositionLocalOf { false }
 
 /** [TvOverlayButton]'s treatment around any content, for a control that is more than one line of text. */
 @Composable
@@ -129,7 +147,7 @@ internal fun TvOverlaySurface(
                 disabledContainerColor = Color.Transparent,
                 disabledContentColor = Palette.Figures,
             ),
-        scale = TvFocus.surfaceScale(),
+        scale = if (LocalFlatControls.current) ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f) else TvFocus.surfaceScale(),
         border = TvFocus.surfaceBorder(),
         glow = TvFocus.surfaceGlow(),
         content = content,

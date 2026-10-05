@@ -39,22 +39,22 @@ class TvPlayerKeysTest {
 
     @Test
     fun directionLeftSkipsBackAndBringsControlsUpWhileHidden() {
-        assertEquals(TvKeyAction.SeekByAndShowControls(-10), tvKeyAction(Key.DirectionLeft, controlsShowing = false, focusInControls = false))
+        assertEquals(TvKeyAction.SeekByAndShowControls(-15), tvKeyAction(Key.DirectionLeft, controlsShowing = false, focusInControls = false))
     }
 
     @Test
     fun directionRightSkipsForwardAndBringsControlsUpWhileHidden() {
-        assertEquals(TvKeyAction.SeekByAndShowControls(10), tvKeyAction(Key.DirectionRight, controlsShowing = false, focusInControls = false))
+        assertEquals(TvKeyAction.SeekByAndShowControls(15), tvKeyAction(Key.DirectionRight, controlsShowing = false, focusInControls = false))
     }
 
     @Test
     fun mediaRewindSkipsBackAndBringsControlsUpWhileHidden() {
-        assertEquals(TvKeyAction.SeekByAndShowControls(-10), tvKeyAction(Key.MediaRewind, controlsShowing = false, focusInControls = false))
+        assertEquals(TvKeyAction.SeekByAndShowControls(-15), tvKeyAction(Key.MediaRewind, controlsShowing = false, focusInControls = false))
     }
 
     @Test
     fun mediaFastForwardSkipsForwardAndBringsControlsUpWhileHidden() {
-        assertEquals(TvKeyAction.SeekByAndShowControls(10), tvKeyAction(Key.MediaFastForward, controlsShowing = false, focusInControls = false))
+        assertEquals(TvKeyAction.SeekByAndShowControls(15), tvKeyAction(Key.MediaFastForward, controlsShowing = false, focusInControls = false))
     }
 
     @Test
@@ -121,12 +121,12 @@ class TvPlayerKeysTest {
 
     @Test
     fun mediaRewindStillSkipsBackWhileShowing() {
-        assertEquals(TvKeyAction.SeekBy(-10), tvKeyAction(Key.MediaRewind, controlsShowing = true, focusInControls = false))
+        assertEquals(TvKeyAction.SeekBy(-15), tvKeyAction(Key.MediaRewind, controlsShowing = true, focusInControls = false))
     }
 
     @Test
     fun mediaFastForwardStillSkipsForwardWhileShowing() {
-        assertEquals(TvKeyAction.SeekBy(10), tvKeyAction(Key.MediaFastForward, controlsShowing = true, focusInControls = false))
+        assertEquals(TvKeyAction.SeekBy(15), tvKeyAction(Key.MediaFastForward, controlsShowing = true, focusInControls = false))
     }
 
     @Test
@@ -158,12 +158,12 @@ class TvPlayerKeysTest {
 
     @Test
     fun directionLeftStepsTheSeekBarBackRatherThanMovingFocus() {
-        assertEquals(TvKeyAction.SeekBy(-10), tvKeyAction(Key.DirectionLeft, controlsShowing = true, focusInControls = true))
+        assertEquals(TvKeyAction.SeekBy(-15), tvKeyAction(Key.DirectionLeft, controlsShowing = true, focusInControls = true))
     }
 
     @Test
     fun directionRightStepsTheSeekBarForwardRatherThanMovingFocus() {
-        assertEquals(TvKeyAction.SeekBy(10), tvKeyAction(Key.DirectionRight, controlsShowing = true, focusInControls = true))
+        assertEquals(TvKeyAction.SeekBy(15), tvKeyAction(Key.DirectionRight, controlsShowing = true, focusInControls = true))
     }
 
     @Test
@@ -198,5 +198,20 @@ class TvPlayerKeysTest {
             assertEquals(TvKeyAction.PassThrough, tvKeyAction(key, controlsShowing = false, focusInControls = false, canControl = false), "$key")
         }
         assertEquals(TvKeyAction.Leave, tvKeyAction(Key.Back, controlsShowing = false, focusInControls = false, canControl = false))
+    }
+
+    // The statistics, put away on their own before the controls go.
+
+    @Test
+    fun backPutsTheStatisticsAwayBeforeTheControls() {
+        assertEquals(TvKeyAction.HideStats, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, statsShown = true))
+        assertEquals(TvKeyAction.HideStats, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = true, statsShown = true))
+        assertEquals(TvKeyAction.HideControls, tvKeyAction(Key.Back, controlsShowing = true, focusInControls = false, statsShown = false))
+    }
+
+    /** The statistics only show with the controls; with those away, Back leaves as it always has. */
+    @Test
+    fun withTheControlsAwayBackStillLeaves() {
+        assertEquals(TvKeyAction.Leave, tvKeyAction(Key.Back, controlsShowing = false, focusInControls = false, statsShown = true))
     }
 }

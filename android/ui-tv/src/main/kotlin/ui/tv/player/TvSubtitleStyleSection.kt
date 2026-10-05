@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -22,7 +23,7 @@ import playback.cueOffsetLabel
 internal const val TvSyncButtonsTag = "tv-player-sync-buttons"
 
 /**
- * The settings panel's "Subtitle style": the phone's size, backing and
+ * The subtitle style menu's "Subtitle style": the phone's size, backing and
  * timing nudge, with the phone's labels. A size here is the same percentage
  * the phone offers, applied on top of the television's own larger cue
  * ([TvSubtitles]), so "Large" is the same step up on both screens rather
@@ -41,19 +42,21 @@ internal fun TvSubtitleStyleSection(
     offsetMs: Long,
     onNudge: (Int) -> Unit,
     onResetOffset: () -> Unit,
+    current: FocusRequester? = null,
 ) {
     TvSettingsHeading("Subtitle style")
+    val landing = CUE_SIZES.firstOrNull { it.percent == sizePercent } ?: CUE_SIZES.first()
     for (option in CUE_SIZES) {
-        TvChoiceRow(label = option.label, selected = option.percent == sizePercent, onClick = { onSizeChosen(option.percent) })
+        TvChoiceRow(label = option.label, selected = option.percent == sizePercent, onClick = { onSizeChosen(option.percent) }, focusRequester = current?.takeIf { option == landing })
     }
     for (option in CUE_BACKINGS) {
         TvChoiceRow(label = option.label, selected = option.stored == backing, onClick = { onBackingChosen(option.stored) })
     }
     // Two lines rather than one: "Sync", the offset and three buttons in
-    // the overlay treatment need about 320dp, and the panel leaves about
-    // 270dp inside its margins. Shrinking the buttons instead would make
+    // the overlay treatment need about 320dp, and the menu leaves about
+    // 270dp inside its padding. Shrinking the buttons instead would make
     // these the only controls over the picture drawn smaller than the
-    // rest, and widening the panel would cover more of the film a sync
+    // rest, and widening the menu would cover more of the film a sync
     // nudge is being judged against.
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = Spacing.small),

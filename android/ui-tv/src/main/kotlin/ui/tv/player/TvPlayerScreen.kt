@@ -10,7 +10,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +28,7 @@ import player.toggleSubtitles
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.controlsMayShow
+import player.previous
 import player.retry
 import ui.player.KeepScreenOnWhile
 import ui.player.PlayerLifecycle
@@ -36,35 +36,25 @@ import ui.player.PlayerNavigationEffects
 
 /**
  * A title playing on a television, driven by the remote — the phone's
- * `PlayerScreen` with keys where the phone has taps. The same lifecycle
- * ([PlayerLifecycle]: Home saves, leaving stops, a configuration change
- * does neither), the same screen-on rule, the same picture and subtitles
- * (drawn from the same shared settings, lifted clear of the controls while
- * they are up), and controls that fade by the same shared rule on the
- * same clock: shown when the screen opens, gone after a while of playing,
- * never while paused.
+ * `PlayerScreen` with keys where the phone has taps: the same lifecycle
+ * ([PlayerLifecycle]), screen-on rule, picture and subtitles, and controls
+ * that fade by the same shared rule on the same clock, never while paused.
  *
  * Every key is read once, here, before anything focused sees it, and
  * answered by [tvKeyAction]'s table through [TvPlayerRemote]. While the
- * controls are away [TvPlayerKeyHolder] holds the remote, so no key is
- * ever lost to a focus that went with them.
+ * controls are away [TvPlayerKeyHolder] holds the remote.
  *
- * The gear among the tools opens the phone's playback settings as a panel
- * to one side ([TvPlayerSettingsPanel]); a title's notes open in a column
- * beside the picture ([TvNotesBeside]). Back closes the panel, then the
- * up-next card, then the notes, then the controls ([TvPlayerBack]). A
- * failed title offers Retry, as on the phone ([TvPlayerStatus]).
+ * The tools open small menus above themselves ([TvCardMenuOverlay]); ☰
+ * opens the episodes down the right ([TvEpisodeSidebar]); notes open in a
+ * column beside the picture ([TvNotesBeside]). Back closes a menu or the
+ * list, the up-next card, the notes, the statistics, then the controls
+ * ([TvPlayerBack]). A failed title offers Retry ([TvPlayerStatus]).
  *
- * [set] is the catalogue's entry for [setId], for what the top bar says
- * and the runtime the end time is read from; its age rating is what the
- * player is opened with, as the phone opens it. Null while the catalogue
- * has no entry for it, which leaves only the top bar out.
- *
- * [run] is what the title plays into, as on the phone: up next, the next
- * episodes taken ahead, and the remote's Next and Previous ([TvRunSteps])
- * all walk it; [onSwitch] moves the library to another title of it.
- * [handPicked] says [run] is a list or the Kids wall rather than the
- * title's own show, which takes nothing ahead.
+ * [set] is the catalogue's entry for [setId], for the top bar and the end
+ * time; null while the catalogue has none. [run] is what the title plays
+ * into — up next, ⏮ and ⏭ and the remote's Next and Previous walk it, and
+ * [onSwitch] moves the library to another title of it. [handPicked] says
+ * [run] is a list or the Kids wall, which takes nothing ahead.
  */
 @Composable
 fun TvPlayerScreen(
@@ -85,6 +75,7 @@ fun TvPlayerScreen(
     val subtitleCues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val upNextShown = upNext.phase != UpNextPhase.HIDDEN
     val notesOpen = notes?.open == true
     val failed = state is PlayerUiState.Failed
@@ -94,27 +85,27 @@ fun TvPlayerScreen(
     // and the wait for the next title's buffer pauses on purpose; neither
     // is a viewer looking away.
     KeepScreenOnWhile(isPlaying = state is PlayerUiState.Playing || upNextShown || upNext.awaitingStart)
-    val steps = rememberTvRunSteps(viewModel, setId, run, onSwitch)
 
     var controlsShown by remember { mutableStateOf(true) }
     var landing by remember { mutableStateOf(TvControlsLanding.PlayPause) }
     var onSeekBar by remember { mutableStateOf(false) }
-    // Every press restarts the fade: a viewer working through the
-    // controls with the remote is using them, the way a pointer moving
-    // over the web's is.
+    // Every press restarts the fade: a viewer working the remote is using the controls.
     var presses by remember { mutableIntStateOf(0) }
-    // Saved, as on the phone: a configuration change is not a viewer asking
-    // for the numbers to go, nor for the list or the Kids choice they were in to close.
-    var statsShown by rememberSaveable { mutableStateOf(false) }
-    var choosingList by rememberSaveable { mutableStateOf(false) }
-    var choosingKids by rememberSaveable { mutableStateOf(false) }
-    var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    val closeMarkDialogs = {
-        choosingList = false
-        choosingKids = false
+    val overlays = rememberTvPlayerOverlayState()
+    // A switch to a title with no run takes its list away, and the sidebar with it.
+    val sidebarShown = overlays.sidebarOpen && episodes != null
+    val panelOpen = overlays.menu != null || sidebarShown
+    val closePanel = {
+        overlays.closePanel()
+        landing = TvControlsLanding.Opener
     }
-    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = closeMarkDialogs, closePanel = { settingsOpen = false })
-    TvControlsAutoHide(controlsShown, state, presses, held = choosingList || choosingKids || settingsOpen || upNextShown, onHide = { controlsShown = false })
+    val focus = remember { TvPlayerFocus() }
+    TvPlayerOverlaysReset(setId, marks == null, player == null, closeList = overlays::closeMarkDialogs, closePanel = overlays::closeAllPanels, onTitleChanged = {
+        overlays.menu = null
+        landing = TvControlsLanding.PlayPause
+        focus.opener = focus.playPause
+    })
+    TvControlsAutoHide(controlsShown, state, presses, held = overlays.choosingList || overlays.choosingKids || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
     // remote lands on it rather than on a picture it is being taken from.
@@ -124,7 +115,6 @@ fun TvPlayerScreen(
     // Where the stage's bands are, for what floats between them to keep clear.
     val bands = remember { TvStageBands() }
     val root = remember { FocusRequester() }
-    val focus = remember { TvPlayerFocus() }
     val notesFocus = remember { TvNotesFocus() }
     val remote =
         remember {
@@ -133,24 +123,27 @@ fun TvPlayerScreen(
                     landing = to
                     controlsShown = true
                 },
-                onNext = { steps.next() },
-                onPrevious = { steps.previous() }, onToggleSubtitles = { viewModel.toggleSubtitles() },
+                onNext = viewModel::playNext,
+                onPrevious = viewModel::previous,
+                onToggleSubtitles = viewModel::toggleSubtitles,
             )
         }
-    TvRemoteFollowsControls(barShown, settingsOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { choosingList || choosingKids || onSeekBar })
-    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { settingsOpen }, failed = { failed })
+    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { overlays.choosingList || overlays.choosingKids || onSeekBar }, onLanded = {
+        landing = TvControlsLanding.PlayPause
+        focus.opener = focus.playPause
+    })
+    TvNotesFollow(notesOpen, barShown, notesFocus, root, focus, busy = { panelOpen }, failed = { failed })
     TvPlayerBack(
         barShown = barShown,
         onSeekBar = onSeekBar,
-        settingsOpen = settingsOpen,
+        panelOpen = panelOpen,
         upNextShown = upNextShown,
         notesOpen = notesOpen,
-        onClosePanel = {
-            landing = TvControlsLanding.Settings
-            settingsOpen = false
-        },
+        statsShown = overlays.statsShown,
+        onClosePanel = closePanel,
         onCancelUpNext = viewModel::cancelUpNext,
         onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
+        onHideStats = { overlays.statsShown = false },
         onHideControls = { controlsShown = false },
         onLeave = onBack,
     )
@@ -164,16 +157,7 @@ fun TvPlayerScreen(
                 // one that holds the remote must never be an ancestor.
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown) presses++
-                    remote.onKey(
-                        event,
-                        player,
-                        controlsShowing = barShown,
-                        onSeekBar = onSeekBar,
-                        canControl = controlsMayShow(state),
-                        panelOpen = settingsOpen,
-                        upNextShown = upNextShown,
-                        notesOpen = notesOpen,
-                    )
+                    remote.onKey(event, player, barShown, onSeekBar, controlsMayShow(state), panelOpen, upNextShown, notesOpen)
                 },
     ) {
         TvPlayerKeyHolder(root, canHold = !barShown)
@@ -184,28 +168,25 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, choices.speed, upNext, statsShown, choices.ccVisible, choices.subtitlesOn),
+                    view = TvControlsView(marks, held, upNext, overlays.statsShown, choices, hasEpisodes = episodes != null, sidebarOpen = sidebarShown),
                     actions =
-                        TvControlsActions(
-                            onToggleStats = { statsShown = !statsShown },
-                            onAddToList = { choosingList = true },
-                            onKids = { choosingKids = true },
-                            onOpenSettings = { settingsOpen = true },
-                            onPlayNext = steps.next,
+                        tvControlsActions(
+                            overlays = overlays,
+                            focus = focus,
+                            viewModel = viewModel,
+                            closePanel = closePanel,
                             onToggleNotes = notes?.let { { notesFocus.toggleFromButton(notesOpen, viewModel::toggleNotes) } },
                             onSeekBarFocused = { onSeekBar = it },
+                            onPicked = { landing = TvControlsLanding.PlayPause },
                         ),
-                    picture = TvStagePicture(subtitleCues, choices, barShown, settingsOpen),
+                    picture = TvStagePicture(subtitleCues, choices, barShown, overlays.menu, episodes.takeIf { sidebarShown }),
                     bands = bands,
                 )
             }
             // A dialog window's own keys: the remote's media keys still reach
-            // the film through it, as through the settings panel.
+            // the film through it, as through a menu.
             val dialogKeys = { event: KeyEvent -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) }
-            if (choosingList) {
-                TvAddToListOverPlayer(marks = marks, notice = actionNotice, viewModel = viewModel, onDismiss = { choosingList = false }, keys = dialogKeys)
-            }
-            if (choosingKids) TvKidsChoiceOverPlayer(marks = marks, viewModel = viewModel, onDismiss = { choosingKids = false }, keys = dialogKeys)
+            TvMarkDialogs(overlays, marks, actionNotice, viewModel, dialogKeys)
             TvActionNotice(
                 notice = actionNotice,
                 onGone = viewModel::dismissActionNotice,

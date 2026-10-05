@@ -1,9 +1,12 @@
 package ui.tv.player
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.DpRect
 import data.CatalogRepository
 import io.mockk.coEvery
@@ -24,7 +27,7 @@ import kotlin.test.assertTrue
 /**
  * Where a long cue goes when the controls come up: lifted clear of them
  * only as far as the title along the top allows — never printed over it —
- * and, with the settings panel open, into what the panel leaves of the
+ * and, with the episode list open, into what the list leaves of the
  * picture rather than under it.
  *
  * The title carries one forced track in its own audio language — the one
@@ -58,13 +61,13 @@ class TvPlayerCueRoomTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun withThePanelOpenTheCueStaysLeftOfIt() {
+    fun withTheEpisodesOpenTheCueStaysLeftOfThem() {
         awaitCue()
-        openSettings()
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
-        val panel = compose.onNodeWithTag(TvSettingsPanelTag).getBoundsInRoot()
+        val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
         val cue = compose.onNodeWithText(THREE_LINES).getBoundsInRoot()
-        assertTrue(cue.right <= panel.left, "cue ends at ${cue.right}, the panel starts at ${panel.left}")
+        assertTrue(cue.right <= list.left, "cue ends at ${cue.right}, the list starts at ${list.left}")
     }
 
     @Test
