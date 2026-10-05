@@ -4,7 +4,7 @@
  * is open.
  */
 
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { browserEnvironment, chooseInMenu, markedInMenu, settle } from "./support/player-environment";
 import * as state from "../public/lib/watch-state.js";
 
@@ -140,4 +140,50 @@ test("choosing a menu row hands focus back to its button, so the player's keys k
   env.node("player").dispatchEvent(Object.assign(new Event("keydown"), { key: "k" }));
   await settle();
   expect(env.video.paused).toBe(false);
+});
+
+describe("the episode sidebar", () => {
+  const ep = (id: string, episode: string) => ({ ...set(id), kind: "ep", show: "Star City", season: 1, episode });
+  const show = { name: "Star City", divisions: [{ title: "Season 1", season: 1, items: [ep("e1", "1"), ep("e2", "2"), ep("e3", "3")], children: [] }] };
+  const escape = () => {
+    const event = Object.assign(new Event("keydown", { cancelable: true }), { key: "Escape" });
+    env.node("player").dispatchEvent(event);
+    return event;
+  };
+
+  test("☰ is offered for a run with a show behind it and not for a film", () => {
+    openPlayer(set("film"));
+    expect(env.node("episodes").hidden).toBe(true);
+    openPlayer(ep("e2", "2"), { next: ep("e3", "3"), previous: ep("e1", "1"), inRun: true, collection: show });
+    expect(env.node("episodes").hidden).toBe(false);
+  });
+
+  test("a row opens through the same path as Next, and the sidebar shuts", () => {
+    const opened: Array<[string, unknown]> = [];
+    const onOpenNext = (following: { setId: string }, how: unknown) => opened.push([following.setId, how]);
+    openPlayer(ep("e1", "1"), { next: ep("e2", "2"), inRun: true, collection: show, onOpenNext });
+    env.node("episodes").fire("click");
+    env.node("episode-sidebar").children[1]!.children[0]!.children[2]!.fire("click");
+    expect(opened).toEqual([["e3", { autoplay: "asap" }]]);
+    expect(env.node("episode-sidebar").hidden).toBe(true);
+  });
+
+  test("the card stays up while it is open, and Esc shuts a menu over it before the sidebar, the player staying open", async () => {
+    openPlayer(ep("e1", "1"), { next: ep("e2", "2"), inRun: true, collection: show });
+    env.node("player").open = true;
+    await env.video.play();
+    env.node("episodes").fire("click");
+    env.advance(10_000);
+    expect(env.node("player").classes.has("resting")).toBe(false);
+    env.node("speed").fire("click");
+    expect(escape().defaultPrevented).toBe(true);
+    expect(env.node("card-menu").hidden).toBe(true);
+    expect(env.node("episode-sidebar").hidden).toBe(false);
+    expect(escape().defaultPrevented).toBe(true);
+    expect(env.node("episode-sidebar").hidden).toBe(true);
+    expect(env.node("player").open).toBe(true);
+    expect(escape().defaultPrevented).toBe(false);
+    env.advance(2600);
+    expect(env.node("player").classes.has("resting")).toBe(true);
+  });
 });

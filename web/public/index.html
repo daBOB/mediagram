@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="/styles/library-controls.css" />
     <link rel="stylesheet" href="/styles/playback.css" />
     <link rel="stylesheet" href="/styles/player-card.css" />
+    <link rel="stylesheet" href="/styles/episode-sidebar.css" />
     <link rel="stylesheet" href="/styles/stats.css" />
     <!-- The deepest modules the first shelf's own render reaches, fetched
          alongside the shallower ones that import them rather than after: an
@@ -193,6 +194,7 @@
             </span>
             <span class="card-end">
               <button id="stats-toggle" class="tsp" aria-label="Stats" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg></button>
+              <button id="episodes" class="tsp" aria-label="Episodes" aria-expanded="false" aria-controls="episode-sidebar" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg></button>
             </span>
           </div>
         </div>
@@ -202,6 +204,11 @@
            buffer, under the top bar. Not part of the card: it stays while
            the card rests, for as long as ⓘ leaves it on. -->
       <dl class="stats-overlay" id="stats-panel" hidden></dl>
+
+      <!-- The run beside the picture, a season at a time: over the video
+           rather than beside it, because it is open for a moment and the
+           film keeps playing under it. -->
+      <aside class="episode-sidebar" id="episode-sidebar" tabindex="-1" aria-label="Episodes" hidden></aside>
 
       <!-- Appears as a title runs out. Counts down and goes on its own unless
            stopped, which is what a run of episodes wants; cancelling is

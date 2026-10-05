@@ -84,6 +84,10 @@ export class Node extends EventTarget {
   matches(_selector: string) {
     return false;
   }
+  scrolledIntoView = false;
+  scrollIntoView() {
+    this.scrolledIntoView = true;
+  }
   focus() {
     (globalThis as { document?: { activeElement: Node | null } }).document!.activeElement = this;
   }
