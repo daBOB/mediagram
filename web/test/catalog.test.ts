@@ -215,7 +215,7 @@ describe("the schema the player expects", () => {
     db.run("CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)");
     db.run(`INSERT INTO meta VALUES ('schema_version', '${EXPECTED_SCHEMA + 1}')`);
 
-    expect(() => assertSchema(db)).not.toThrow();
+    expect(assertSchema(db)).toBe(EXPECTED_SCHEMA + 1);
   });
 
   test("a database with no meta table at all is reported", () => {

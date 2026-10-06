@@ -10,7 +10,7 @@ import { Database } from "bun:sqlite";
 import { rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { load, redactedConfig, type Config } from "./config";
-import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
+import { assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { SheetStore } from "./thumbs/sheets";
 import { StateSync } from "./state/sync";
@@ -49,7 +49,7 @@ import type { NoIndex } from "./channel-index/pick-newest-index";
 
 import { openCatalog } from "./application/open-catalog";
 import { CatalogFollower } from "./application/catalog-follow";
-import { ChannelState, UpdatesBinding } from "./application/telegram-binding";
+import { FollowedChannel, UpdatesBinding } from "./application/telegram-binding";
 import { announcingPulls, installShutdownSignals, shutdownFor, syncOnce, type ApplicationResources } from "./application/lifecycle";
 import { WriteDebounce } from "./application/write-debounce";
 import { readTelegramFile } from "./settings/telegram-file";
@@ -121,7 +121,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // this handle once the listener starts and replaces it when an index arrives.
     const db = new Database(indexPath, { readonly: true });
     resources.catalog = { close: () => db.close() };
-    assertSchema(db);
+    const schema = assertSchema(db);
     // Artwork lives beside the index when the index brought it: inside the
     // catalog a package unpacked, or next to the library on this machine, where
     // `mediagram posters` puts it. A channel snapshot is only `library.db`, so a
@@ -245,7 +245,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // sync, mutable across a library switch from Settings. Subscribed here,
     // before the follower or the server exist: a listener bound and later
     // torn down on a startup failure must not depend on how far startup got.
-    const channel = new ChannelState(config.chatId, config.channelAccessHash, telegramFile?.title ?? null);
+    const channel = new FollowedChannel(config.chatId, config.channelAccessHash, telegramFile?.title ?? null);
     const updatesBinding = new UpdatesBinding(connection, channel, state.deviceId(), sync, null, io.listen);
     resources.updates = { stop: () => updatesBinding.stop() };
     await updatesBinding.start();
@@ -274,7 +274,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         publishedAt: catalog.publishedAt,
         refresh: catalog.refresh,
         reason: catalog.reason,
-        schema: EXPECTED_SCHEMA,
+        schema,
         sets: playableCount,
         posters: posters.count(),
       },

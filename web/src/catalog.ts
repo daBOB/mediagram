@@ -56,7 +56,7 @@ export const READABLE_SCHEMAS: readonly number[] = Array.from(
  * owns. Saying so beats failing three calls later inside a query with "no
  * such column", which is what a missing migration actually looks like.
  */
-export function assertSchema(db: Database): void {
+export function assertSchema(db: Database): number {
   const row = db
     .query("SELECT value FROM meta WHERE key = 'schema_version'")
     .get() as { value: string } | null;
@@ -68,6 +68,7 @@ export function assertSchema(db: Database): void {
         "Run any writing mediagram command once (`mediagram verify --all` will do) to migrate it.",
     );
   }
+  return found;
 }
 
 export const PLAYABLE_SQL = `s.status = 'complete'
@@ -132,8 +133,8 @@ const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode
 /**
  * Every playable set with the text a search reads, summaries included.
  *
- * Built once: the catalog is read-only for the life of the process, so the
- * search index this feeds can be folded at startup and never invalidated.
+ * Built per catalog: the search index this feeds is folded once for it, and
+ * rebuilt with the router when a swap replaces it (`server.ts` replaceCatalog).
  */
 export function listSearchable(db: Database): Array<PlayableSet & { summary: string | null }> {
   return db

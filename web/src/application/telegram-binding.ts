@@ -27,7 +27,7 @@ import type { CatalogFollower } from "./catalog-follow";
  * account can actually see — the same recoverable failure a channel that
  * changed ownership would produce, not a special case.
  */
-export class ChannelState {
+export class FollowedChannel {
   constructor(
     public chatId: number,
     public accessHash: bigint,
@@ -40,7 +40,7 @@ export class UpdatesBinding {
 
   constructor(
     private readonly connection: TelegramConnection,
-    private readonly channel: ChannelState,
+    private readonly channel: FollowedChannel,
     private readonly ownDevice: string,
     private readonly sync: Sync,
     private follower: Pick<CatalogFollower, "refresh"> | null,

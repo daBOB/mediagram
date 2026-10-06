@@ -4,7 +4,7 @@
  * `web/src/settings/routes.ts` is HTTP shape only — parsing a body, checking
  * the gate, turning an outcome into a status code. Every actual effect (a
  * restart, a channel switch, a budget change) happens here, against the same
- * connection, channel state and catalog follower `index.ts` built at
+ * connection, followed channel and catalog follower `index.ts` built at
  * startup, so a setting changed from the browser is indistinguishable from
  * one that had always been that way.
  *
@@ -19,7 +19,7 @@
 
 import { Telegram } from "../telegram/client";
 import type { TelegramConnection } from "../telegram/connection";
-import type { ChannelState, UpdatesBinding } from "../application/telegram-binding";
+import type { FollowedChannel, UpdatesBinding } from "../application/telegram-binding";
 import type { CatalogFollower } from "../application/catalog-follow";
 import type { FoundIndex } from "../channel-index/find-newest-channel-index";
 import type { NoIndex } from "../channel-index/pick-newest-index";
@@ -36,7 +36,7 @@ import { join } from "node:path";
 
 export interface SettingsDeps {
   connection: TelegramConnection;
-  channel: ChannelState;
+  channel: FollowedChannel;
   updatesBinding: UpdatesBinding;
   follower: Pick<CatalogFollower, "tryChannel">;
   findIndex: (telegram: Telegram) => Promise<FoundIndex | NoIndex>;

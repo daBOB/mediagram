@@ -11,7 +11,7 @@ import { Api } from "teleproto";
 import type { Config } from "../config";
 import { Telegram } from "../telegram/client";
 import type { TelegramConnection } from "../telegram/connection";
-import type { ChannelState, UpdatesBinding } from "../application/telegram-binding";
+import type { FollowedChannel, UpdatesBinding } from "../application/telegram-binding";
 import { SignInFlow, type SignInStep } from "./sign-in";
 import { writeTelegramFile, type TelegramFile } from "./telegram-file";
 import { failureMessage } from "../failure-message";
@@ -28,7 +28,7 @@ type SignInReply = Exclude<SignInStep, { step: "done" }> | { step: "done" };
 
 export interface AccountDeps {
   connection: TelegramConnection;
-  channel: ChannelState;
+  channel: FollowedChannel;
   updatesBinding: UpdatesBinding;
   telegramFilePath: string;
 }

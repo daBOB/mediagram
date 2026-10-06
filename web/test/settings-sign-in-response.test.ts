@@ -11,7 +11,7 @@ import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ChannelState, UpdatesBinding } from "../src/application/telegram-binding";
+import { FollowedChannel, UpdatesBinding } from "../src/application/telegram-binding";
 import type { PlayerRequest, PlayerResponse } from "../src/http/contracts";
 import { AdminGate } from "../src/settings/admin-gate";
 import { SettingsRuntime } from "../src/settings/context";
@@ -60,7 +60,7 @@ test.each([
   try {
     const telegramFilePath = join(dir, "telegram.json");
     const connection = new TelegramConnection(null);
-    const channel = new ChannelState(-1001234567890, 99n, "Library");
+    const channel = new FollowedChannel(-1001234567890, 99n, "Library");
     const runtime = new SettingsRuntime(
       {
         connection,

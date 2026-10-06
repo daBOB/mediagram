@@ -118,10 +118,11 @@ export class CatalogFollower {
     let next: Database | null = null;
     let expected: Map<string, number> | undefined;
     let sets: number;
+    let schema: number;
     const publishedAt = result.pushedAt * 1000;
     try {
       next = new Database(join(result.dir, "library.db"), { readonly: true });
-      assertSchema(next);
+      schema = assertSchema(next);
       expected = held ? expectedChunks(next) : undefined;
       sets = listPlayable(next).length;
       server.replaceCatalog({ db: next, catalog: { origin: "channel", publishedAt } });
@@ -136,7 +137,7 @@ export class CatalogFollower {
     this.db = next;
     this.servingPushedAt = result.pushedAt;
     this.retire(previous);
-    facts.catalog = { ...facts.catalog, origin: "channel", publishedAt, refresh: result.refresh === "kept" ? "kept" : "updated", reason: result.reason, sets };
+    facts.catalog = { ...facts.catalog, origin: "channel", publishedAt, refresh: result.refresh === "kept" ? "kept" : "updated", reason: result.reason, schema, sets };
     if (expected) {
       await held!.replaceExpected(expected);
       // Held titles keep their subtitles offline: a bundle pushed without

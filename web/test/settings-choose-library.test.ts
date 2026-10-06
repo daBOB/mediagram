@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Api } from "teleproto";
 import { CatalogFollower } from "../src/application/catalog-follow";
-import { ChannelState, UpdatesBinding } from "../src/application/telegram-binding";
+import { FollowedChannel, UpdatesBinding } from "../src/application/telegram-binding";
 import type { FoundIndex } from "../src/channel-index/find-newest-channel-index";
 import type { NoIndex } from "../src/channel-index/pick-newest-index";
 import { EXPECTED_SCHEMA } from "../src/catalog";
@@ -67,7 +67,7 @@ test("a channel without an index leaves the player on its library; one with an i
     };
     const following = Telegram.withChannel({ client } as unknown as Telegram, A.chatId, A.accessHash);
     const connection = new TelegramConnection(following);
-    const channel = new ChannelState(A.chatId, A.accessHash, A.title);
+    const channel = new FollowedChannel(A.chatId, A.accessHash, A.title);
     const indexes = new Map<number, FoundIndex | NoIndex>([[A.bare, snapshot("Before", 100)], [B.bare, "not-an-index"]]);
     const asked: number[] = [];
     const findIndex = async (telegram: Telegram) => {
