@@ -27,7 +27,9 @@ import player.speedLabel
 
 /**
  * The card menus' radio-choice sections — Speed, Audio, Subtitles and
- * Framing, with the phone sheet's own headings, rows and labels. Each is a
+ * Framing, with the phone's own rows and labels and, as on the web and the
+ * phone, no heading: the tool that opened one names it, and a 540 dp screen
+ * has no line to spare between the title and the card. Each is a
  * plain function of what it shows and what choosing does, as the phone's
  * are, and opens with [current] on the value already chosen — or the first,
  * before one is.
@@ -38,7 +40,6 @@ internal fun TvSpeedSection(
     onChosen: (Float) -> Unit,
     current: FocusRequester,
 ) {
-    TvSettingsHeading("Speed")
     // A speed off the list (none today) still gives the remote a row.
     val landing = PLAYBACK_SPEEDS.firstOrNull { it == speed } ?: PLAYBACK_SPEEDS.first()
     for (option in PLAYBACK_SPEEDS) {
@@ -57,7 +58,6 @@ internal fun TvAudioSection(
     onChosen: (AudioOption) -> Unit,
     current: FocusRequester? = null,
 ) {
-    TvSettingsHeading("Audio")
     val landing = options.firstOrNull { it.selected } ?: options.firstOrNull()
     for (option in options) {
         TvChoiceRow(label = option.text, selected = option.selected, onClick = { onChosen(option) }, focusRequester = current?.takeIf { option == landing })
@@ -70,7 +70,6 @@ internal fun TvSubtitleSection(
     onChosen: (String) -> Unit,
     current: FocusRequester? = null,
 ) {
-    TvSettingsHeading("Subtitles")
     val landing = options.firstOrNull { it.selected } ?: options.firstOrNull()
     for (option in options) {
         TvChoiceRow(label = option.label, selected = option.selected, onClick = { onChosen(option.value) }, focusRequester = current?.takeIf { option == landing })
@@ -83,7 +82,6 @@ internal fun TvFramingSection(
     onChosen: (Framing) -> Unit,
     current: FocusRequester? = null,
 ) {
-    TvSettingsHeading("Framing")
     for (option in Framing.entries) {
         TvChoiceRow(label = option.label, selected = option == framing, onClick = { onChosen(option) }, focusRequester = current?.takeIf { option == framing })
     }

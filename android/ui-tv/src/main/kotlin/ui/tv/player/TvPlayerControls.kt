@@ -103,6 +103,7 @@ internal fun TvPlayerControls(
                 markActions = extras.markActions,
                 onToggleNotes = extras.onToggleNotes,
                 focus = focus,
+                titleShown = !extras.sidebarOpen,
                 modifier =
                     Modifier
                         .fillMaxWidth()
