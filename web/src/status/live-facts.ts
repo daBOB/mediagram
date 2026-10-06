@@ -9,7 +9,7 @@ import { diskFree } from "./disk-free";
 import { countSegments } from "./dir-bytes";
 import type { LoopLag } from "./loop-lag";
 import type { LiveFacts, PolledFacts, TranscodeSession } from "./snapshot";
-import type { TranscodeMode } from "../transcode/registry";
+import type { TranscodeMode } from "../transcode/session-identity";
 import type { TranscodeProgress } from "../transcode/progress";
 import type { PlaybackRow } from "./playback-reports";
 import { LinkStats } from "../telegram/link-stats";

@@ -11,7 +11,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { mergeStates, type MergedProfile } from "../src/state/merge";
+import { mergeStates } from "../src/state/merge";
+import type { MergedProfile } from "../src/state/merged";
 import type { Profile } from "../src/state/profiles";
 import { WatchState } from "../src/state/store";
 import { normalName } from "../src/state/sync-record";

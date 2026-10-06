@@ -31,8 +31,6 @@ import {
 import { unpackTo } from "./unpack";
 import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "./catalog-versions";
 
-export type { Pointer };
-
 /** Written into a version directory so identity and catalog cannot disagree. */
 const IDENTITY_FILE = "identity.json";
 const MANIFEST_FILE = "manifest.json";

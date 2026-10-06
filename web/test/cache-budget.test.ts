@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { GROUPS } from "../src/state/schema";
-import { Settings } from "../src/state/settings";
-import { applyBudget, MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES, startBudget, validateBudget } from "../src/cache/budget";
+import { MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES, Settings } from "../src/state/settings";
+import { applyBudget, startBudget, validateBudget } from "../src/cache/budget";
 
 function settingsOver(db: Database | null): Settings {
   return new Settings(db);

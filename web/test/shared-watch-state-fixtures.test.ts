@@ -16,7 +16,8 @@ import { catalogSet } from "./support/catalog-set";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { mergeStates, type MergedState } from "../src/state/merge";
+import { mergeStates } from "../src/state/merge";
+import type { MergedState } from "../src/state/merged";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
 import { achievements, type AchievementInput, type Achievements } from "../src/state/achievements";
 import { achievementLabel, progressLine } from "../public/lib/catalog/stats-achievements.js";

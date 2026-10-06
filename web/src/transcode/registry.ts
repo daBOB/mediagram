@@ -14,8 +14,6 @@ import type { TranscodeProgress } from "./progress";
 import { modeOf, sessionId } from "./session-identity";
 import type { TranscodeMode } from "./session-identity";
 
-export type { TranscodeMode };
-
 /**
  * What one transcode is of.
  *

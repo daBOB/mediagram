@@ -22,7 +22,7 @@ import { failureMessage } from "../failure-message";
 import { GROUPS } from "./schema";
 import { Settings } from "./settings";
 import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
-import type { MergedState } from "./merge";
+import type { MergedState } from "./merged";
 import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
 import { exportRoles, importRoles } from "./roles-exchange";
 import { ProfileManager } from "./profiles-manage";

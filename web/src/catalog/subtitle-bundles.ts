@@ -24,8 +24,6 @@ import type { HeldSets } from "../cache/held";
 import { failureMessage } from "../failure-message";
 import { bundleRef, type BundleRef } from "./subtitle-tracks";
 
-export type { BundleRef } from "./subtitle-tracks";
-
 /** A gzip body over this size is refused before a byte of it is fetched. */
 const MAX_COMPRESSED_BYTES = 16 * 1024 * 1024;
 /** Decompressed JSON over this size is refused mid-read, the gzip-bomb guard. */

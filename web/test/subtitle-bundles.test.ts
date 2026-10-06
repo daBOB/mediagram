@@ -10,7 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { SubtitleBundles, heldSubtitlesDir, type BundleRef } from "../src/catalog/subtitle-bundles";
+import { SubtitleBundles, heldSubtitlesDir } from "../src/catalog/subtitle-bundles";
+import type { BundleRef } from "../src/catalog/subtitle-tracks";
 import { emptyIndex } from "./index-fixture";
 import { deferred } from "./application-fixture";
 

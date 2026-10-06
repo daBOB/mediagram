@@ -62,13 +62,15 @@ const ROOT = join(import.meta.dir, "..");
  * the write guard moved to the dispatcher and its body reads to `jsonBody`.
  * Lowered the same day for `src/index.ts`, once the status router became a
  * plain value built before the server and the cache budget left startup facts.
+ * Lowered the same day for `app.js` and `shelf-view.js`, once `SECTIONS` was
+ * imported from `sections.js` rather than forwarded.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 694,
+  "public/app.js": 693,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 287,
+  "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 309,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 994,

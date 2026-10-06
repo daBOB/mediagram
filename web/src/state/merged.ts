@@ -1,8 +1,7 @@
 /**
  * What `mergeStates` answers: every viewer the devices know of, reconciled.
  *
- * The shapes only, kept apart from `merge.ts` so its rules have the room;
- * `merge.ts` re-exports both, so a reader imports them from where they are made.
+ * The shapes only, kept apart from `merge.ts` so its rules have the room.
  */
 
 import type { CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow } from "./sync-record";

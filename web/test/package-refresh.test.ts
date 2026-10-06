@@ -14,7 +14,8 @@ import { mkdir, mkdtemp, readFile, readdir, readlink, rename, rm, writeFile } fr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { refreshCatalog, type Pointer } from "../src/package/refresh";
+import { refreshCatalog } from "../src/package/refresh";
+import type { Pointer } from "../src/package/pointer";
 import { NONCE_LEN } from "../src/package/open";
 import { archive, member, text } from "./tar-fixture";
 

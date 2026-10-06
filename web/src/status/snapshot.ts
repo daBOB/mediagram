@@ -11,7 +11,7 @@ import type { StartupFacts } from "./facts";
 import type { LoopLagReading } from "./loop-lag";
 import type { DiskFree } from "./disk-free";
 import type { LinkSnapshot } from "../telegram/link-stats";
-import type { TranscodeMode } from "../transcode/registry";
+import type { TranscodeMode } from "../transcode/session-identity";
 import type { PlaybackRow } from "./playback-reports";
 
 /** One running conversion, as the panel shows it. */

@@ -12,8 +12,6 @@ import { MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES } from "../state/setting
 import type { ChunkCache } from "./store";
 import type { HeldSets } from "./held";
 
-export { MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES };
-
 /**
  * The budget to start the cache with: the stored value first, the
  * environment next, and only then the project's own default. Env `0` (or no
