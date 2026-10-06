@@ -152,6 +152,16 @@ describe("the watchlist and collections", () => {
     expect((await send(mine("/collections/nope"), "PATCH", { name: "x" })).status).toBe(404);
     expect((await send(mine("/collections/nope"), "DELETE")).status).toBe(404);
   });
+
+  test("renaming a list that is there to nothing is a 400, and the old name stays", async () => {
+    const made = await send(mine("/collections"), "POST", { name: "Bleibt" });
+    const { id } = JSON.parse(new TextDecoder().decode(made.body));
+
+    expect((await send(mine(`/collections/${id}`), "PATCH", { name: "   " })).status).toBe(400);
+    expect((await snapshot()).collections).toMatchObject([{ id, name: "Bleibt" }]);
+
+    expect((await send(mine(`/collections/${id}`), "DELETE")).status).toBe(204);
+  });
 });
 
 /**

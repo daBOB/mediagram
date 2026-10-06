@@ -189,8 +189,8 @@ export function createStateRouter(options: StateRouterOptions) {
       const [, profileId, id] = collection as unknown as [string, string, string];
       if (method === "DELETE") return bodiless(state.deleteCollection(profileId, id) ? 204 : 404);
       if (method !== "PATCH") return bodiless(405);
-      const name = jsonBody(request.body)?.name;
-      return bodiless(state.renameCollection(profileId, id, name) ? 204 : 404);
+      const renamed = state.renameCollection(profileId, id, jsonBody(request.body)?.name);
+      return bodiless(renamed === null ? 400 : renamed ? 204 : 404);
     }
 
     const item = COLLECTION_ITEM.exec(path);

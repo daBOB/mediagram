@@ -133,6 +133,14 @@ describe("collections", () => {
     expect(state.addToCollection(me, list.id, "01B")).toBe(false);
   });
 
+  test("a name of nothing is refused for a list that is there, and the old name stays", () => {
+    const { state, me } = stateIn();
+    const list = state.createCollection(me, "Bleibt")!;
+
+    expect(state.renameCollection(me, list.id, "   ")).toBeNull();
+    expect(state.snapshot(me).collections[0]).toMatchObject({ name: "Bleibt" });
+  });
+
   test("a list that is not there says so rather than inventing one", () => {
     const { state, me } = stateIn();
     expect(state.renameCollection(me, "nope", "x")).toBe(false);

@@ -527,11 +527,11 @@ export class WatchState {
     return made ? { id, name: clean, createdAt, items: [] } : null;
   }
 
-  /** Whether the list is there to rename, so a caller can answer 404. */
-  renameCollection(profileId: string, id: string, name: unknown): boolean {
+  /** False when there is no list to rename (a 404); null when the name is unusable (a 400). */
+  renameCollection(profileId: string, id: string, name: unknown): boolean | null {
     if (!this.db) return false;
     const clean = cleanName(name);
-    if (clean === null) return false;
+    if (clean === null) return null;
     return (
       this.db
         .query(
