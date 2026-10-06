@@ -103,8 +103,9 @@ async function fetchPartOnce(
   const media = await telegram.partMedia(messageId);
   const out: Uint8Array[] = [];
   let got = 0;
+  // partMedia answers TypeMessageMedia, wider than iterDownload accepts.
   for await (const chunk of telegram.client.iterDownload(media as never, {
-    offset: helpers.returnBigInt(offset) as never,
+    offset: helpers.returnBigInt(offset),
     requestSize: requestSizeFor(length),
   })) {
     out.push(chunk);

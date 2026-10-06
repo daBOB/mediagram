@@ -141,7 +141,7 @@ export class SignInFlow {
   private async finish(result: unknown): Promise<SignInStep> {
     const pending = this.pending!;
     this.pending = null;
-    const session = pending.client.session.save() as unknown as string;
+    const session = pending.client.session.save() as string;
     const authorized = result as { user?: { id?: { toString(): string } } };
     const userId = String(authorized.user?.id ?? "");
     await pending.client.disconnect().catch(() => {});

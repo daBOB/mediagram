@@ -9,6 +9,7 @@
 
 import { Api, TelegramClient, events } from "teleproto";
 import { Logger } from "teleproto/extensions";
+import { LogLevel } from "teleproto/extensions/Logger";
 import { UpdateConnectionState } from "teleproto/network";
 import { LinkStats } from "./link-stats";
 
@@ -23,7 +24,7 @@ const RESET = "\x1b[0m";
 
 /** A logger whose default terminal output is unchanged, but that also feeds `stats`. */
 export function countingLogger(stats: Pick<LinkStats, "flood">): Logger {
-  const logger = new Logger("info" as never);
+  const logger = new Logger(LogLevel.INFO);
   logger.handler = (record) => {
     const match = FLOOD_LOG.exec(record.message);
     if (match) stats.flood(Number(match[1]));

@@ -8,8 +8,7 @@
  */
 
 import { Api } from "teleproto";
-import type { Config } from "../config";
-import { Telegram } from "../telegram/client";
+import { Telegram, type TelegramAccount } from "../telegram/client";
 import type { TelegramConnection } from "../telegram/connection";
 import type { FollowedChannel, UpdatesBinding } from "../application/telegram-binding";
 import { SignInFlow, type SignInStep } from "./sign-in";
@@ -130,23 +129,17 @@ export class AccountActions {
 
   private sessionOf(telegram: Telegram | null): string | null {
     if (!telegram) return null;
-    return telegram.client.session.save() as unknown as string;
+    return telegram.client.session.save() as string;
   }
 
-  /**
-   * A `Config` shaped just enough for `Telegram.open`, which reads only
-   * these five fields. Cast rather than padded with the rest of `Config`'s
-   * unrelated fields (cache, paths, ports) that a connection attempt never
-   * touches.
-   */
-  private configFor(apiId: number, apiHash: string, session: string | null): Config {
+  private configFor(apiId: number, apiHash: string, session: string | null): TelegramAccount {
     return {
       apiId,
       apiHash,
       session,
       chatId: this.deps.channel.chatId,
       channelAccessHash: this.deps.channel.accessHash,
-    } as Config;
+    };
   }
 
   /** Writes the account and chosen channel to disk. */

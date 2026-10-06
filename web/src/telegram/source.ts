@@ -140,8 +140,9 @@ export class TelegramSource implements ByteSource {
 
       for (;;) {
         try {
+          // partMedia answers TypeMessageMedia, wider than iterDownload accepts.
           for await (const chunk of telegram.client.iterDownload(media as never, {
-            offset: helpers.returnBigInt(step.offset) as never,
+            offset: helpers.returnBigInt(step.offset),
             requestSize: requestSizeFor(headDrop + step.take),
           })) {
             let piece: Uint8Array = chunk;
