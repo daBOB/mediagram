@@ -26,6 +26,14 @@ pub fn parse_chunk_num(raw: &str) -> Option<u32> {
     raw.parse().ok()
 }
 
+/// The chunk a file in a set directory holds, if its name is exactly what
+/// the store writes (`n.to_string()`). `01` and `+1` parse to 1 as well, but
+/// a hand-placed file under such a name would be indexed as chunk 1 beside
+/// the real one, and could then never be read or evicted.
+pub fn chunk_file_num(name: &str) -> Option<u32> {
+    parse_chunk_num(name).filter(|n| n.to_string() == name)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum LengthError {
     /// Neither a full `CHUNK` nor exactly what is left of `total`.

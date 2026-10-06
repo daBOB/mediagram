@@ -62,10 +62,7 @@ fn scan_set(dir: &Path, id: &str, found: &mut Vec<(ChunkKey, u64, SystemTime)>) 
         };
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if name == "total" {
-            continue;
-        }
-        let Ok(n) = name.parse::<u32>() else {
+        let Some(n) = rules::chunk_file_num(&name) else {
             continue;
         };
         let Ok(metadata) = entry.metadata().inspect_err(|err| warn(&entry.path(), err)) else {

@@ -120,6 +120,20 @@ fn the_total_marker_and_unnumbered_files_are_not_chunks() {
     assert!(dir.join("notes").exists(), "ignored, not deleted");
 }
 
+/// `01` and `+1` parse to 1; indexed as chunk 1 beside the real one, the
+/// held byte count would stay too high for good and the stray file could
+/// never be read or evicted.
+#[test]
+fn a_hand_placed_file_spelling_a_chunk_number_differently_is_not_a_chunk() {
+    let root = tempdir().unwrap();
+    let dir = set(root.path(), "set1", None);
+    chunk(&dir, 1, CHUNK);
+    fs::write(dir.join("01"), b"stray").unwrap();
+    fs::write(dir.join("+1"), b"stray").unwrap();
+
+    assert_eq!(found(root.path()), vec![("set1".to_string(), 1, CHUNK)]);
+}
+
 /// A chunk whose length cannot be part of its set's recorded total would
 /// be served as if it were good data, so it is deleted, not just ignored.
 #[test]

@@ -3,6 +3,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::rules;
+
 use super::index::Index;
 
 fn set_dir(root: &Path, id: &str) -> PathBuf {
@@ -28,8 +30,7 @@ fn remove_set_dir_if_empty(root: &Path, id: &str) {
     let dir = set_dir(root, id);
     let has_chunk = fs::read_dir(&dir).into_iter().flatten().any(|entry| {
         entry.ok().is_some_and(|entry| {
-            let name = entry.file_name();
-            name != "total" && name.to_string_lossy().parse::<u32>().is_ok()
+            rules::chunk_file_num(&entry.file_name().to_string_lossy()).is_some()
         })
     });
     if !has_chunk {
