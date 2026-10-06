@@ -1,5 +1,5 @@
 use super::*;
-use crate::media::test_fixtures::{
+use crate::test_fakes::media::{
     ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4, make_trailing_moov_mp4_multi,
     make_trailing_moov_mp4_unmuxable_stream,
 };

@@ -13,6 +13,8 @@
 
 #[path = "../tests/support/channel.rs"]
 pub(crate) mod channel;
+#[path = "../tests/support/media.rs"]
+pub(crate) mod media;
 #[path = "../tests/support/session.rs"]
 pub(crate) mod session;
 #[path = "../tests/support/upload.rs"]

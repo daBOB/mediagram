@@ -78,7 +78,9 @@ fn every_sqlite_open_in_the_uploader_configures_sqlite_first() {
         })
         .filter(|file| {
             let text = std::fs::read_to_string(file).expect("a readable file");
-            text.contains("Connection::open(") || text.contains("Connection::open_in_memory(")
+            text.contains("Connection::open(")
+                || text.contains("Connection::open_in_memory(")
+                || text.contains("Connection::open_with_flags(")
         })
         .map(|file| file.display().to_string())
         .collect();

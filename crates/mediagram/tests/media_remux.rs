@@ -3,11 +3,13 @@
 //! given one, and that its output path for a given source is stable across
 //! repeated calls. Skipped with a printed note when ffmpeg is not on PATH.
 
+mod support;
+
 use tempfile::TempDir;
 
 use mediagram::media;
 
-use media::test_fixtures::{ffmpeg_required, make_trailing_moov_mp4};
+use support::media::{ffmpeg_required, make_trailing_moov_mp4};
 
 #[tokio::test]
 async fn ensure_faststart_errors_when_tmp_dir_is_missing() {

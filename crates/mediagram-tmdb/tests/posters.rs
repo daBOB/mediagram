@@ -275,14 +275,19 @@ async fn no_titles_means_no_requests_and_no_posters() {
 // that decides whether a request happens at all, which is where a local
 // poster directory differs from a staged one.
 
+/// A plain client: none of these tests gets as far as a request. reqwest has
+/// no TLS provider of its own here, and building a client panics without one.
+fn http_client() -> reqwest::Client {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    reqwest::Client::new()
+}
+
 #[tokio::test]
 async fn no_posters_means_no_directory() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().join("posters");
 
-    let written = download_into(&mediagram_core::http::client().unwrap(), &[], &dir)
-        .await
-        .unwrap();
+    let written = download_into(&http_client(), &[], &dir).await.unwrap();
 
     assert!(written.is_empty());
     assert!(
@@ -303,9 +308,7 @@ async fn a_malformed_key_is_refused_without_a_request() {
         width: None,
     }];
 
-    let written = download_into(&mediagram_core::http::client().unwrap(), &refs, &dir)
-        .await
-        .unwrap();
+    let written = download_into(&http_client(), &refs, &dir).await.unwrap();
 
     assert!(written.is_empty());
     assert_eq!(
@@ -333,9 +336,7 @@ async fn a_poster_already_on_disk_is_kept_and_not_requested_again() {
 
     // The bytes are the proof: had the skip failed, the CDN response would
     // have replaced this placeholder with a real image.
-    let written = download_into(&mediagram_core::http::client().unwrap(), &refs, &dir)
-        .await
-        .unwrap();
+    let written = download_into(&http_client(), &refs, &dir).await.unwrap();
 
     assert_eq!(written, vec!["tmdb-movie-550".to_string()]);
     assert_eq!(

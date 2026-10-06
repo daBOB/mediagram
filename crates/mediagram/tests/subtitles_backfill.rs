@@ -142,7 +142,7 @@ async fn redo_with(push: bool) -> (Vec<i64>, i64, i64) {
 
 #[tokio::test]
 async fn a_redo_deletes_the_old_message_once_the_new_index_is_published() {
-    if !mediagram::media::test_fixtures::ffmpeg_required("redo") {
+    if !support::media::ffmpeg_required("redo") {
         return;
     }
     let (ids, old, new) = redo_with(true).await;
@@ -151,7 +151,7 @@ async fn a_redo_deletes_the_old_message_once_the_new_index_is_published() {
 
 #[tokio::test]
 async fn a_redo_without_a_publish_keeps_the_old_message() {
-    if !mediagram::media::test_fixtures::ffmpeg_required("redo") {
+    if !support::media::ffmpeg_required("redo") {
         return;
     }
     let (ids, old, new) = redo_with(false).await;

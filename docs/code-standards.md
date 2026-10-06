@@ -96,7 +96,7 @@ correctness property, not a style preference:
    verdicts, retry backoff math.
 2. **Fixture-based integration tests** (`crates/*/tests/*.rs`) that exercise
    real IO against controlled inputs: a real sqlite file in a `tempdir()`,
-   ffmpeg-built MP4/MKV fixtures (`media::test_fixtures`), or canned TMDB
+   ffmpeg-built MP4/MKV fixtures (`tests/support/media.rs`), or canned TMDB
    JSON responses served by `tests/support::FixtureApi`. No network access.
 3. **`edge_cases_probe_*` suites** (`crates/*/tests/edge_cases_probe_*.rs`):
    boundary conditions and adversarial inputs for one area at a time (mp4

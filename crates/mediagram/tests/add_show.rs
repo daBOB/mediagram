@@ -5,10 +5,11 @@ use mediagram::config::Config;
 use mediagram::index::set_row::SetRow;
 use mediagram::index::status::SetStatus;
 use mediagram::index::{db, lifecycle, parts, sets};
-use mediagram::media::test_fixtures::{ffmpeg_required, make_faststart_mp4};
 use mlib_spec::caption::{Episode, Kind};
 
 mod support;
+
+use support::media::{ffmpeg_required, make_faststart_mp4};
 
 #[tokio::test]
 async fn existing_episodes_are_not_replanned_or_deleted_by_a_bulk_rerun() {
