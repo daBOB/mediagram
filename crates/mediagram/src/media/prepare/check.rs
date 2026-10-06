@@ -41,8 +41,8 @@ pub fn check_prepared(
     source: Measured,
     expected_languages: &[String],
     // Whether the result may be no smaller than the source. Dropping tracks
-    // can only shrink a file, but re-encoding the audio can round the other
-    // way on one that had little to drop.
+    // can only shrink a file, but rewrapping it as MP4 (mov_text subtitles,
+    // MP4 indexes, faststart) and re-encoding its audio can both enlarge it.
     allow_growth: bool,
 ) -> Result<(), Rejection> {
     if prepared.size == 0 || prepared_streams.is_empty() {
