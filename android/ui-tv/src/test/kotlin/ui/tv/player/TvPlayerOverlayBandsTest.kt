@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.height
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -76,6 +77,19 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
         assertTrue(menu.bottom <= bottom.top, "menu ends at ${menu.bottom}, the card starts at ${bottom.top}")
         assertTrue(menu.top >= top.bottom, "menu starts at ${menu.top}, the title ends at ${top.bottom}")
+    }
+
+    /** The statistics are a reading, not a place: a menu may cover them, so they leave it its full room. */
+    @Test
+    fun theStatisticsDoNotShortenAMenu() {
+        openMenu("Speed")
+        val bare = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot().height
+        pressBackKey()
+        compose.onNodeWithContentDescription("Stats").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+        press(Key.DirectionCenter)
+        val withStats = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot().height
+        assertTrue(withStats >= bare, "menu is $withStats tall with the statistics on, $bare without")
     }
 
     @Test

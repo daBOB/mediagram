@@ -89,7 +89,7 @@ internal fun BoxScope.TvCardMenuOverlay(
     val density = LocalDensity.current
     val gap = with(density) { MenuGap.roundToPx() }
     // Never taller than the room between the title and the card, so a long list scrolls instead of covering either.
-    val room = bands.card?.let { card -> with(density) { (card.top - gap - (bands.topBottom ?: 0f)).coerceAtLeast(0f).toDp() } } ?: MenuMaxHeight
+    val room = bands.card?.let { card -> with(density) { (card.top - gap - (bands.titleBottom ?: 0f)).coerceAtLeast(0f).toDp() } } ?: MenuMaxHeight
     LaunchedEffect(menu) { current.requestFocus() }
     // The stage's own corner, which the notes column can move off the root's.
     Box(modifier = Modifier.matchParentSize().onGloballyPositioned { origin = it.positionInRoot().round() })

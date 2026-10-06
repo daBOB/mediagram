@@ -106,6 +106,7 @@ internal fun TvPlayerControls(
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .onGloballyPositioned { bands.titleBottom = it.boundsInRoot().bottom }
                         .background(Color.Black.copy(alpha = SCRIM_ALPHA))
                         .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )
