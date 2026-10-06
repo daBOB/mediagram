@@ -67,6 +67,38 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         compose.onNodeWithText("When this ends").assertIsDisplayed()
     }
 
+    /** Above the whole card, as on the web — never down over the seek row — and under the title. */
+    @Test
+    fun aMenuOpensBetweenTheTitleAndTheCard() {
+        openMenu("Speed")
+        val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
+        val bottom = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
+        assertTrue(menu.bottom <= bottom.top, "menu ends at ${menu.bottom}, the card starts at ${bottom.top}")
+        assertTrue(menu.top >= top.bottom, "menu starts at ${menu.top}, the title ends at ${top.bottom}")
+    }
+
+    @Test
+    fun withTheEpisodesOpenTheTitleEndsBesideThem() {
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
+        val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
+        assertTrue(top.right <= list.left, "title ends at ${top.right}, the list starts at ${list.left}")
+    }
+
+    /** No room for both beside the list: the statistics wait for it to close, and come back on their own. */
+    @Test
+    fun withTheEpisodesOpenTheStatisticsWait() {
+        compose.onNodeWithContentDescription("Stats").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
+        pressBackKey()
+        compose.onNodeWithTag(TvEpisodeSidebarTag).assertDoesNotExist()
+        compose.onNodeWithTag(TvStatsOverlayTag).assertExists()
+    }
+
     /** Back as a remote sends it — through focus first — closes the menu and only the menu. */
     @Test
     fun aBackKeyClosesAMenuOntoItsTool() {

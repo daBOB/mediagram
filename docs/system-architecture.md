@@ -828,6 +828,10 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   position to start from; Back, ✕ or picking a row leaves it.
 - **Player card: Back closes one layer at a time** (menu, sidebar, up-next, notes, stats,
   card, then leave), since a remote has no tap-outside to dismiss.
+- **Player card: stats wait while the episode sidebar is open.** Beside the 360dp sidebar the
+  narrowed card wraps its transport onto a fourth line, and a 540dp-tall screen has no
+  height left for the title, the five stats lines and that card together. The stats come
+  back when the sidebar closes; Back still closes the sidebar first, then the stats.
 - **Player card: top-bar marks and Notes are reached Up from the seek bar.** There is no
   pointer to hit them; each row's ends are fenced so focus never slides out sideways.
 - **Player card (phone): ⓘ and ☰ sit beside the transport**, centred, not at the far

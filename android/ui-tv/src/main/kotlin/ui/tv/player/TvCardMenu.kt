@@ -62,8 +62,8 @@ private val MenuMaxHeight = 320.dp
 private val MenuGap = 8.dp
 
 /**
- * The open [menu], just above the tool that opened it and inside the
- * controls' width ([cardMenuOffset]), in the card's own fill. The remote
+ * The open [menu], just above the card at the tool that opened it and
+ * inside the controls' width ([cardMenuOffset]), in the card's own fill. The remote
  * lands on the value already chosen, as a radio group opens on its
  * selection, and cannot wander out: the controls behind are still drawn,
  * and a Left meant for the next row would otherwise land on a button that
@@ -86,7 +86,10 @@ internal fun BoxScope.TvCardMenuOverlay(
     val current = remember { FocusRequester() }
     var origin by remember { mutableStateOf(IntOffset.Zero) }
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val gap = with(LocalDensity.current) { MenuGap.roundToPx() }
+    val density = LocalDensity.current
+    val gap = with(density) { MenuGap.roundToPx() }
+    // Never taller than the room between the title and the card, so a long list scrolls instead of covering either.
+    val room = bands.card?.let { card -> with(density) { (card.top - gap - (bands.topBottom ?: 0f)).coerceAtLeast(0f).toDp() } } ?: MenuMaxHeight
     LaunchedEffect(menu) { current.requestFocus() }
     // The stage's own corner, which the notes column can move off the root's.
     Box(modifier = Modifier.matchParentSize().onGloballyPositioned { origin = it.positionInRoot().round() })
@@ -96,7 +99,7 @@ internal fun BoxScope.TvCardMenuOverlay(
                 .align(Alignment.TopStart)
                 .offset { placed(bands.openers[menu], bands.card, origin, size, gap) }
                 .width(MenuWidth)
-                .heightIn(max = MenuMaxHeight)
+                .heightIn(max = minOf(MenuMaxHeight, room))
                 .onSizeChanged { size = it }
                 .testTag(TvCardMenuTag)
                 .playerCard()
