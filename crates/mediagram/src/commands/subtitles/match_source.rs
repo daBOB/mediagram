@@ -9,7 +9,7 @@
 //!     season/episode or year, and a duration within 2 s of the candidate's,
 //!     naming exactly one set. This fallback is reported, never matched
 //!     outright: `subtitles backfill` only sends it once a person names the
-//!     file with `--accept-fallback` (a later phase).
+//!     file with `--accept-fallback`.
 //!
 //! Whichever way found it, two files never claim the same set: both are
 //! downgraded to [`Verdict::Conflict`] and neither is used.

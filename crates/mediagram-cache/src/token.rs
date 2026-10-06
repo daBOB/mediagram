@@ -23,9 +23,10 @@ pub const SCHEME: &str = "MGC1";
 /// unpair every device.
 ///
 /// Refuses to start rather than run with anything short of a well-formed
-/// token: a partial write a crash or a full disk left behind (`create_new`
-/// then `write_all`, non-atomically, was the earlier design) would
-/// otherwise become a real, if empty or truncated, HMAC key.
+/// token: a partial write a crash or a full disk left behind would
+/// otherwise become a real, if empty or truncated, HMAC key. So the token
+/// is written whole to a temp file and only then published under its name,
+/// never written in place.
 pub fn ensure(state_dir: &Path) -> io::Result<String> {
     let path = state_dir.join("token");
     if let Some(token) = read_valid(&path)? {

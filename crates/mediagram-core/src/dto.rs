@@ -1,6 +1,8 @@
-//! The records Kotlin receives. A set's episode arrives as the index's JSON
-//! text; [`summary::summary_from`] hands the boundary two plain numbers
-//! instead.
+//! The catalog records Kotlin receives: a set's summary, its credits and its
+//! subtitle tracks. Watch state, search and app-release records are defined
+//! beside the `state/` and `api/` modules that produce them. A set's episode
+//! arrives as the index's JSON text; [`summary::summary_from`] hands the
+//! boundary two plain numbers instead.
 
 mod credits;
 mod subtitle;

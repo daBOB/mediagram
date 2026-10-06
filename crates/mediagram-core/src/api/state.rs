@@ -3,12 +3,13 @@
 //! every rule lives there, pinned to the web by the shared fixtures; this
 //! file only carries calls across the boundary.
 //!
-//! **Nothing here throws.** A write that could not be made is logged inside
-//! `StateDb::with` and reported back as the value that means "nothing
-//! happened" — `false`, `None`, `ProfileOutcome::Invalid`, or an unmodified
-//! read — never a `CoreError`:
-//! a position that failed to save is a bad afternoon, and a player that
-//! stops because of it is a broken one.
+//! **Nothing here throws.** A failure is logged inside `StateDb::with` and
+//! never surfaces as a `CoreError`: a position that failed to save is a bad
+//! afternoon, and a player that stops because of it is a broken one. A call
+//! that answers something answers "nothing happened" instead — `false`,
+//! `None`, `ProfileOutcome::Invalid`, or an empty read; the plain setters (a
+//! position, a watched mark, the watchlist, Kids, the editor's choice) have
+//! nothing to report and return `()`.
 
 use std::sync::Arc;
 

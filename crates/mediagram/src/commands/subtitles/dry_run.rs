@@ -93,9 +93,8 @@ pub async fn survey(conn: &Connection, folders: &[PathBuf]) -> Result<Survey> {
 }
 
 /// Every complete `movie`/`ep`/`docu` set, whether or not it already has a
-/// subtitle bundle: the red team's fix for a candidate pool that used to
-/// shrink as sets got bundles, letting a later run's fallback drift onto
-/// the wrong title.
+/// subtitle bundle, so the candidate pool does not shrink between runs and
+/// a later run's fallback cannot drift onto the wrong title.
 fn load_candidate_sets(conn: &Connection) -> Result<Vec<SetRow>> {
     let mut stmt = conn.prepare(
         "SELECT * FROM sets WHERE status = ?1 AND kind IN (?2, ?3, ?4)

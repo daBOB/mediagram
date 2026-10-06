@@ -30,10 +30,11 @@ pub struct BundleRef {
 /// A set with a `subtitle_files` row reads its own `subtitle_tracks`, in
 /// their bundle position. Every other set reads its inline `assets` rows,
 /// `ORDER BY lang`, each synthesised into a track at its position in that
-/// order — the fallback `plan.md`'s playback rule names, gone once phase 09
-/// removes the inline path. An index older than v13, or one with no bundles
-/// at all yet, simply has no `subtitle_tracks` table: read as no bundled
-/// tracks anywhere, not a failure.
+/// order: indexes published before the `subtitle_tracks` table existed are
+/// still being read, and their sets carry subtitles only as those rows. An
+/// index older than v13, or one with no bundles at all yet, simply has no
+/// `subtitle_tracks` table: read as no bundled tracks anywhere, not a
+/// failure.
 pub fn tracks_by_set(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<SubtitleTrack>>> {
     let mut by_set: HashMap<String, Vec<SubtitleTrack>> = HashMap::new();
     let mut bundled: std::collections::HashSet<String> = std::collections::HashSet::new();

@@ -7,10 +7,22 @@ the module map these rules apply to.
 ## Module layout
 
 - One directory per concern (`commands/`, `media/`, `metadata/`, `index/`,
-  `upload/`, `telegram/`, `verify/`); each has a thin `mod.rs` that only
-  declares submodules and states, in its doc comment, what the directory is
-  for and which submodules may touch external systems (e.g. `verify` keeps
-  Telegram message retrieval and chunk streaming in `source` and `download_hash`).
+  `upload/`, `telegram/`, `verify/`). Its module file declares the
+  submodules and states, in its doc comment, what the directory is for and
+  which submodules may touch external systems (e.g. `verify` keeps chunk
+  streaming in `source` and `download_hash`, while batched message
+  retrieval is `telegram::messages`). It may also hold the directory's
+  entry points or central type: `verify/mod.rs` reads and writes the index
+  rows `commands::verify` needs, and `mediagram-core`'s `api/mod.rs`
+  defines `Core`.
+- Two shapes of directory module are in use. `mediagram` and `mlib-spec`
+  put the module file inside its directory as `mod.rs`; `mediagram-cache`
+  puts a parent `name.rs` beside a same-named directory; `mediagram-core`
+  uses both; `mediagram-tmdb` has no subdirectories. A child module sits in
+  its parent's directory, and `#[path]` appears only on test files: the
+  `<module>_tests.rs` sidecars, and `crates/mediagram/src/test_fakes.rs`
+  mounting the files of `crates/mediagram/tests/support/` into the unit
+  tests.
 - Each `commands/*.rs` file exposes a `pub fn run(...)` (async when needed) as its entry
   point and is the orchestration layer: it wires config, the index, and
   Telegram together and prints output. Logic a second command needs lives in
@@ -80,7 +92,7 @@ correctness property, not a style preference:
   `resume` run's adoption scan (§ System architecture, "Resume and adopt")
   finds the already-posted part without re-uploading it.
 - Some Telegram-facing code deliberately has **no** retry wrapper at all:
-  `verify::download_hash::hash_document` streams a document through
+  `verify::download_hash::hash_chunks` hashes a document streamed through
   `iter_download` chunk by chunk without retrying a failed chunk, because
   `grammers-client` 0.10's `DownloadIter::next` silently ends the stream
   (returns `Ok(None)`) after any failed request instead of resuming it — a

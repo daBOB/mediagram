@@ -72,8 +72,8 @@ async fn send_and_pin<W: DocumentWriter>(
     Ok(id)
 }
 
-/// Sync supplies a serialized state body; malformed input keeps the existing
-/// harmless empty-device fallback used by the web adapter.
+/// The body is always a serialized sync record, which carries the caller's
+/// device; the empty-string fallback for one that does not is defensive only.
 fn device_of(body: &str) -> Option<String> {
     let value: serde_json::Value = serde_json::from_str(body).ok()?;
     value.get("device")?.as_str().map(str::to_string)

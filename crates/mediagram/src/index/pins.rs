@@ -119,7 +119,7 @@ pub fn pending_unpins(conn: &Connection) -> Result<Vec<i32>> {
 /// The memory of which snapshot is current lives in `library.db`, and
 /// `rescan` exists because that file gets lost — so without this the first
 /// push after a rescan pins a new index and leaves the old one pinned beside
-/// it. Found by a live run against a real channel, which is what those are for.
+/// it.
 pub fn record_index_messages(conn: &Connection, ids: &[i32]) -> Result<()> {
     if ids.is_empty() {
         return Ok(());

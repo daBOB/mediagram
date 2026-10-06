@@ -144,8 +144,8 @@ async fn falls_back_when_the_mapped_remux_is_refused() {
 }
 
 /// Reads `disposition.forced` for one subtitle stream directly with
-/// `ffprobe`: [`Stream`] has no disposition field, and this phase does not
-/// add one.
+/// `ffprobe`: [`Stream`] has no disposition field, so the test asks ffprobe
+/// for the flag the remux must have kept.
 async fn subtitle_forced(path: &Path, sub_index: u32) -> bool {
     let output = tokio::process::Command::new("ffprobe")
         .args(["-v", "error", "-select_streams"])

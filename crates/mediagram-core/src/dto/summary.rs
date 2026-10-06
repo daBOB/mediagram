@@ -50,8 +50,8 @@ pub struct SetSummary {
     /// its show's. Named as the web player names it.
     pub fsk: Option<String>,
     /// The provider's genres for this title. A series carries its show's,
-    /// the way `fsk` does — see `store::list_sets`, which attaches all four
-    /// of these by poster key rather than storing them on the row.
+    /// the way `fsk` does — see `store::listing::enrich`, which attaches
+    /// these by poster key rather than storing them on the row.
     pub genres: Vec<String>,
     /// Subtitle tracks this set offers, from its bundle once it has one, or
     /// its inline rows until then. See `catalog_subtitles::tracks_by_set`.
