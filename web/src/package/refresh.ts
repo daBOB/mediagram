@@ -111,7 +111,8 @@ async function heldIdentity(root: string): Promise<Identity | null> {
       schema: fields.schema as number,
       spec: fields.spec as number,
     };
-  } catch {
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT" && !(error instanceof SyntaxError)) console.warn(`catalog: held identity unreadable: ${failureMessage(error)}`);
     return null;
   }
 }
@@ -121,7 +122,8 @@ async function heldDir(root: string): Promise<string | null> {
   try {
     await readFile(join(path, IDENTITY_FILE));
     return path;
-  } catch {
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") console.warn(`catalog: held catalog unreadable: ${failureMessage(error)}`);
     return null;
   }
 }

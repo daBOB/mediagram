@@ -8,7 +8,7 @@
  * who can rewrite the pointer can set to whatever the reader is holding.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, readlink, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -402,11 +402,18 @@ describe("filesystem failures while installing a package", () => {
   test("a file in the catalog path is a refusal with no held catalog", async () => {
     const blocked = join(root, "not-a-directory");
     await writeFile(blocked, "file");
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
 
-    const result = await refresh(build({ createdAt: NOW - 50 }), { root: join(blocked, "catalog") }).run();
+    try {
+      const result = await refresh(build({ createdAt: NOW - 50 }), { root: join(blocked, "catalog") }).run();
 
-    expect(result).toMatchObject({ status: "kept", dir: null, identity: null });
-    expect(result.reason).toMatch(/ENOTDIR/);
+      expect(result).toMatchObject({ status: "kept", dir: null, identity: null });
+      expect(result.reason).toMatch(/ENOTDIR/);
+      // The held catalog reads as none, but not silently: ENOTDIR is not "absent".
+      expect(warning.mock.calls.map(String)).toContainEqual(expect.stringMatching(/ENOTDIR/));
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   test("a refused pointer staging operation keeps the old identity and bytes", async () => {
