@@ -122,3 +122,7 @@ impl Listener {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "listener_tests.rs"]
+mod tests;

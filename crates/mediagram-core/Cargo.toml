@@ -105,3 +105,5 @@ rusqlite.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+# A paused clock, so the update listener's five-second windows pass instantly.
+tokio = { workspace = true, features = ["test-util"] }
