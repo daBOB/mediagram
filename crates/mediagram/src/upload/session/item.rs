@@ -4,6 +4,7 @@ use std::path::Path;
 
 use anyhow::{Context, anyhow};
 
+use super::delete_source::report_deletion;
 use super::link::Link;
 use super::{Item, Outcome, Session, Set, Step, identity};
 use crate::index::status::SetStatus;
@@ -180,20 +181,6 @@ impl<L: Link> Session<'_, L> {
     }
 }
 
-/// Removes the file the person named, once the index says every part of it
-/// is in the channel. The parts are not read back; that is what `verify` is
-/// for, and what someone whose local copy is the only other one runs first.
-fn report_deletion(path: &Path, complete: bool, total: u64) {
-    let name = path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| path.display().to_string());
-    if !complete {
-        println!("  {name} kept: not every part reached the channel");
-        return;
-    }
-    match std::fs::remove_file(path) {
-        Ok(()) => println!("  {name} deleted, {:.2} GB freed", total as f64 / 1e9),
-        Err(err) => println!("  {name} kept: {err}"),
-    }
-}
+#[cfg(test)]
+#[path = "item_tests.rs"]
+mod tests;

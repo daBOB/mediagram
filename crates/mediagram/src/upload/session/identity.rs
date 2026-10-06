@@ -42,3 +42,7 @@ fn file_status(conn: &Connection, new: &NewSet) -> Result<Option<SetStatus>> {
         _ => Ok(None),
     }
 }
+
+#[cfg(test)]
+#[path = "identity_tests.rs"]
+mod tests;

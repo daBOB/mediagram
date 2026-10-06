@@ -58,3 +58,7 @@ async fn publish<L: Link>(session: &mut Session<'_, L>, no_push: bool) -> Result
     println!("pushed index as message {id}");
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "end_tests.rs"]
+mod tests;

@@ -11,6 +11,7 @@
 //!
 //! The connection is a [`link::Link`]; Telegram only in `link`.
 
+mod delete_source;
 mod end;
 mod identity;
 mod item;
