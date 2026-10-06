@@ -55,8 +55,12 @@ fn is_slug(s: &str) -> bool {
     !s.is_empty()
         && !s.starts_with('-')
         && !s.ends_with('-')
-        && s.split('-')
-            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()))
+        && s.split('-').all(|part| {
+            !part.is_empty()
+                && part
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        })
 }
 
 /// The key a title with no provider id is stored under: `title-{slug}`, the
@@ -94,3 +98,7 @@ pub fn is_backdrop_key(key: &str) -> bool {
 pub fn season_poster_key(show_key: &str, season: u32) -> String {
     format!("{show_key}-s{season}")
 }
+
+#[cfg(test)]
+#[path = "artwork_key_tests.rs"]
+mod tests;

@@ -49,3 +49,7 @@ impl Caption {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "caption_display_tests.rs"]
+mod tests;
