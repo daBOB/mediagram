@@ -108,3 +108,7 @@ fn warn(path: &Path, err: &io::Error) {
         path.display()
     );
 }
+
+#[cfg(test)]
+#[path = "scan_tests.rs"]
+mod tests;

@@ -36,3 +36,7 @@ fn remove_set_dir_if_empty(root: &Path, id: &str) {
         let _ = fs::remove_dir_all(&dir);
     }
 }
+
+#[cfg(test)]
+#[path = "evict_tests.rs"]
+mod tests;

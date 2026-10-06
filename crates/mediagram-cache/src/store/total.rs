@@ -73,3 +73,7 @@ pub(super) fn read_valid(path: &Path) -> io::Result<Option<u64>> {
         Err(e) => Err(e),
     }
 }
+
+#[cfg(test)]
+#[path = "total_tests.rs"]
+mod tests;

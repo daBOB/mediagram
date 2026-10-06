@@ -42,3 +42,7 @@ pub(super) async fn set_status(
         Err(err) => server_error(&err),
     }
 }
+
+#[cfg(test)]
+#[path = "set_status_tests.rs"]
+mod tests;
