@@ -11,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CoreProvider
 import data.RefreshLog
+import data.orDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,14 +20,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withTimeoutOrNull
 import playback.CacheProvider
 import playback.PlaybackCounters
 import playback.ReadSource
+import uniffi.mediagram_core.CoreInterface
 import update.AppUpdater
 import update.updateLine
 import javax.inject.Inject
 
 private const val TAG = "system"
+
+/** How long the Telegram row waits for an answer before it reads as not connected. */
+private const val TELEGRAM_PROBE_MS = 3_000L
 
 /**
  * Reads the catalog's own facts, the disk cache's own occupancy, and the
@@ -119,7 +125,7 @@ class SystemViewModel
                 // A live session only means something once the catalog is
                 // bound to a channel; a published package has no
                 // connection for this row to report on.
-                connected = if (facts.origin == "channel") core.isAuthorized() else null,
+                connected = if (facts.origin == "channel") telegramAnswers(core) else null,
                 versionName = versionName,
                 // Process start, not ViewModel construction: a viewer who
                 // reopens this screen after playing for an hour should read
@@ -131,4 +137,19 @@ class SystemViewModel
                 updateLine = updateLine(updater.status.value, System.currentTimeMillis()),
             )
         }
+
+        /**
+         * Asked rather than remembered, as the web player's row is: the stored
+         * auth key only says a login once completed, so an offline device would
+         * read "connected". One account round trip, bounded so an unreachable
+         * Telegram costs the snapshot a few seconds rather than hanging it.
+         * The timeout sits outside [orDefault], which rethrows cancellation.
+         */
+        private suspend fun telegramAnswers(core: CoreInterface): Boolean =
+            withTimeoutOrNull(TELEGRAM_PROBE_MS) {
+                orDefault(false, "Telegram probe") {
+                    core.account()
+                    true
+                }
+            } ?: false
     }
