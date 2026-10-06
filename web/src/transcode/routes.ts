@@ -4,6 +4,7 @@ import { playableSet } from "../catalog";
 import { isLocalAddress } from "../client-reach";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless, withBody } from "../response";
+import { failureMessage } from "../failure-message";
 import { copyVideoAs } from "./video-copy";
 import type { SessionSpec } from "./registry";
 
@@ -144,6 +145,7 @@ export async function beginTranscode(
       hevcCopy,
     });
   } catch (error) {
+    console.warn(`transcode: ${setId} did not start: ${failureMessage(error)}`);
     const reason = error instanceof Error ? error.message : "the conversion did not start";
     return withBody(JSON.stringify({ error: reason }), "application/json", { status: 503 });
   }

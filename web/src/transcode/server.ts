@@ -10,6 +10,7 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
+import { failureMessage } from "../failure-message";
 import type { HlsFile, HlsServer } from "./routes";
 import type { SessionSpec, TranscodeRegistry } from "./registry";
 
@@ -62,8 +63,11 @@ export class TranscodeFiles implements HlsServer {
     } catch (error) {
       // A session that never produced anything is an ffmpeg holding the
       // encoder for nothing. Released rather than stopped: another viewer may
-      // be watching the same one and getting segments perfectly well.
-      await this.registry.release(session.id);
+      // be watching the same one and getting segments perfectly well. A
+      // release that fails is logged, not thrown: the viewer needs the reason
+      // the start failed, not the cleanup's.
+      await this.registry.release(session.id).catch((cleanup) =>
+        console.warn(`transcode: release after a failed start failed: ${failureMessage(cleanup)}`));
       throw error;
     }
     return `/hls/${session.id}/index.m3u8`;
@@ -88,7 +92,7 @@ export class TranscodeFiles implements HlsServer {
       // line is the first evidence that there is a picture.
       if (text !== null && /^[^#\r\n]+\.(?:ts|m4s)\s*$/m.test(text)) return;
       if (stopped) {
-        throw new Error(`the conversion stopped before it produced anything; see ffmpeg.log`);
+        throw new Error("the conversion stopped before it produced anything");
       }
       if (Date.now() >= deadline) {
         throw new Error(

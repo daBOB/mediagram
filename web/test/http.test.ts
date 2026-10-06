@@ -11,7 +11,7 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { startServer, type RunningServer } from "../src/server";
 import type { ByteSource } from "../src/http/stream";
 import type { HlsFile, HlsServer } from "../src/transcode/routes";
@@ -457,19 +457,22 @@ describe("releasing a transcode", () => {
     expect(ended).toEqual([]);
   });
 
-  test("a conversion that cannot start says so, and is not a server error", async () => {
+  test("a conversion that cannot start says so, logs why, and is not a server error", async () => {
     const failing = fakeHls({
       begin: async () => {
         throw new Error("the conversion produced no segment within 45s");
       },
     });
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
     const server = await startServer({ db: index(), source: new FakeSource(), hls: failing });
     try {
       const response = await rawRequest(server.port, `/api/sets/${SET}/transcode`, START);
 
       expect(response.status).toBe(503);
       expect(new TextDecoder().decode(response.body)).toContain("no segment");
+      expect(warning).toHaveBeenCalledWith(`transcode: ${SET} did not start: the conversion produced no segment within 45s`);
     } finally {
+      warning.mockRestore();
       await server.close();
     }
   });
