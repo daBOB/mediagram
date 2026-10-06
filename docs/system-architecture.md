@@ -1025,7 +1025,7 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 | `$XDG_DATA_HOME/mediagram/tmdb-cache/*.json` | Disk-cached TMDB responses, keyed by `sha256(path + sorted query)`. |
 | `$XDG_DATA_HOME/mediagram/upload.lock` | Held (`flock`) by whichever process is uploading, so the others queue behind it. |
 | `$XDG_DATA_HOME/mediagram/publish.lock` | Held (`flock`) by whichever process is publishing the index, so two uploads finishing together publish one after the other. |
-| `$XDG_DATA_HOME/mediagram/upload-progress.json` | How far the part in flight has got, for `status` to read. Rewritten every 2s, meaningless once stale. |
+| `$XDG_DATA_HOME/mediagram/upload-progress-<set>.json` | How far each upload's part in flight has got, one file per set because uploads can run side by side, for `status` to read. Rewritten every 2s, meaningless once stale. |
 | `$XDG_DATA_HOME/mediagram/background.log` | Output of the detached uploads `add` starts. |
 
 Both `config.toml` and `data_dir` can be overridden (`--config`,
