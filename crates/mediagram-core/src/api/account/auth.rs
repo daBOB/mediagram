@@ -135,5 +135,9 @@ fn out_of_step(err: SignInError) -> CoreError {
 }
 
 #[cfg(test)]
+#[path = "auth_fixture.rs"]
+mod fixture;
+
+#[cfg(test)]
 #[path = "auth_tests.rs"]
 mod tests;
