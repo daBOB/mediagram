@@ -31,6 +31,8 @@ pub struct Channel {
     pub messages: Vec<Msg>,
     pub downloads: usize,
     pub sends: usize,
+    /// Unpin requests made, refused ones included.
+    pub unpins: usize,
     pub unpin_fails: HashSet<i32>,
     pub unpin_lies: HashSet<i32>,
     pub captions_fail: bool,
@@ -220,6 +222,7 @@ impl ChannelRemote for FakeChannel {
 
     async fn unpin(&self, id: i32) -> Result<Unpin> {
         self.with(|c| {
+            c.unpins += 1;
             if c.unpin_fails.contains(&id) {
                 bail!("the channel refused to unpin {id}");
             }

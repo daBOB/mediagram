@@ -17,7 +17,7 @@ use crate::media::classify;
 use crate::media::streams::{self, Probed};
 use crate::media::video_files::collect_videos;
 
-use super::dry_run_report::print_report;
+use super::dry_run_report::report_lines;
 use super::match_source::{self, Match, SourceFile};
 
 /// Everything a backfill knows about the folders before it sends anything.
@@ -31,7 +31,9 @@ pub struct Survey {
 pub async fn run(cfg: &Config, folders: &[PathBuf]) -> Result<()> {
     let conn = db::open_read_only(&cfg.data_dir()?, "measure a subtitles backfill")?;
     let found = survey(&conn, folders).await?;
-    print_report(&found.files, &found.probes, &found.matches, &found.sets);
+    for line in report_lines(&found.files, &found.probes, &found.matches, &found.sets) {
+        println!("{line}");
+    }
     Ok(())
 }
 
@@ -103,3 +105,7 @@ fn load_candidate_sets(conn: &Connection) -> Result<Vec<SetRow>> {
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
+
+#[cfg(test)]
+#[path = "dry_run_tests.rs"]
+mod tests;

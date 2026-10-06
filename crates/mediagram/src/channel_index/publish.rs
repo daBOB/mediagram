@@ -80,7 +80,12 @@ async fn send(
     let caption = mlib_spec::index_caption::render(now_unix(), i64::try_from(sets::count(conn)?)?);
     let bytes = std::fs::read(path).with_context(|| format!("reading {}", path.display()))?;
     let id = remote
-        .send_document(&bytes, mlib_spec::schema::INDEX_FILE, INDEX_MIME_TYPE, &caption)
+        .send_document(
+            &bytes,
+            mlib_spec::schema::INDEX_FILE,
+            INDEX_MIME_TYPE,
+            &caption,
+        )
         .await
         .context("sending the index document")?;
     remote.pin(id).await.context("pinning the index message")?;
@@ -113,3 +118,7 @@ impl Drop for Snapshot {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "publish_tests.rs"]
+mod tests;

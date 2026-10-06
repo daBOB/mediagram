@@ -66,3 +66,7 @@ pub(super) async fn resolve(
     }
     Ok(summary)
 }
+
+#[cfg(test)]
+#[path = "conflicts_tests.rs"]
+mod tests;

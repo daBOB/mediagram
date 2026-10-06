@@ -73,3 +73,7 @@ pub struct EditArgs {
     )]
     pub clear_category: bool,
 }
+
+#[cfg(test)]
+#[path = "args_edit_tests.rs"]
+mod tests;

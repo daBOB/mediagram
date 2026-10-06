@@ -9,8 +9,16 @@ use crate::index::sets_pending;
 const NAMED: usize = 5;
 
 pub(super) fn print(report: &MergeReport, dry_run: bool) {
+    for line in lines(report, dry_run) {
+        println!("{line}");
+    }
+}
+
+/// What [`print`] says, a line per entry: what was added, then only the
+/// counts that are not zero.
+fn lines(report: &MergeReport, dry_run: bool) -> Vec<String> {
     let verb = if dry_run { "would add" } else { "added" };
-    println!("{verb} {} set(s)", report.sets_added.len());
+    let mut out = vec![format!("{verb} {} set(s)", report.sets_added.len())];
     if !report.sets_added.is_empty() {
         let named: Vec<&str> = report
             .sets_added
@@ -24,66 +32,83 @@ pub(super) fn print(report: &MergeReport, dry_run: bool) {
         } else {
             String::new()
         };
-        println!("  e.g. {}{tail}", named.join(", "));
+        out.push(format!("  e.g. {}{tail}", named.join(", ")));
     }
     if !report.sets_skipped_pending.is_empty() {
-        println!(
+        out.push(format!(
             "{} channel set(s) still pending elsewhere, skipped",
             report.sets_skipped_pending.len()
-        );
+        ));
     }
     if !report.sets_skipped_removed.is_empty() {
-        println!(
+        out.push(format!(
             "{} channel set(s) no longer exist in the channel, skipped",
             report.sets_skipped_removed.len()
-        );
+        ));
     }
     if report.shows_added > 0 || report.shows_filled > 0 {
-        println!(
+        out.push(format!(
             "{} show(s) added, {} filled in",
             report.shows_added, report.shows_filled
-        );
+        ));
     }
     if report.credits_added > 0 {
-        println!("{} credit row(s) added", report.credits_added);
+        out.push(format!("{} credit row(s) added", report.credits_added));
     }
     if report.franchises_added > 0 {
-        println!("{} franchise(s) added", report.franchises_added);
+        out.push(format!("{} franchise(s) added", report.franchises_added));
     }
     if report.artwork_added > 0 {
-        println!("{} artwork row(s) added", report.artwork_added);
+        out.push(format!("{} artwork row(s) added", report.artwork_added));
     }
     if report.anime_overrides_taken > 0 {
-        println!("{} anime override(s) taken", report.anime_overrides_taken);
+        out.push(format!(
+            "{} anime override(s) taken",
+            report.anime_overrides_taken
+        ));
     }
     if report.categories_taken > 0 {
-        println!("{} category row(s) taken", report.categories_taken);
+        out.push(format!("{} category row(s) taken", report.categories_taken));
     }
     if report.subtitles_taken > 0 {
-        println!("{} subtitle file(s) taken", report.subtitles_taken);
+        out.push(format!("{} subtitle file(s) taken", report.subtitles_taken));
     }
     if report.channel_lacks_subtitles {
-        println!(
+        out.push(
             "warning: the channel index has no subtitle_files table but this index holds \
              subtitle rows — an older uploader likely published over it; publish again to \
              restore them"
+                .to_string(),
         );
     }
+    out
 }
 
 /// What resolving the merge's conflicting sets from their captions did.
 pub(super) fn print_conflicts(total: usize, summary: &ResolveSummary) {
-    if total > 0 {
-        println!(
-            "{} of {total} conflicting set(s) re-read from captions",
-            summary.resolved
-        );
-    }
-    sets_pending::print_skipped(&summary.skipped_kinds);
-    if summary.newer_captions > 0 {
-        println!(
-            "{} caption(s) among the conflicts use a newer #mlib version this build cannot read",
-            summary.newer_captions
-        );
+    for line in conflict_lines(total, summary) {
+        println!("{line}");
     }
 }
+
+fn conflict_lines(total: usize, summary: &ResolveSummary) -> Vec<String> {
+    let mut out = Vec::new();
+    if total > 0 {
+        out.push(format!(
+            "{} of {total} conflicting set(s) re-read from captions",
+            summary.resolved
+        ));
+    }
+    out.extend(sets_pending::skipped_lines(&summary.skipped_kinds));
+    if summary.newer_captions > 0 {
+        out.push(format!(
+            "{} caption(s) among the conflicts use a newer #mlib version this build cannot read",
+            summary.newer_captions
+        ));
+    }
+    out
+}
+
+#[cfg(test)]
+#[path = "report_tests.rs"]
+mod tests;

@@ -34,12 +34,22 @@ pub(crate) fn known_kind_placeholders() -> (String, Vec<&'static str>) {
 /// The one line per run an operator needs about sets skipped for a `kind`
 /// this build cannot decode: what happened, and what to do about it.
 pub fn print_skipped(skipped: &[SkippedKind]) {
-    for s in skipped {
-        println!(
-            "{} set(s) of kind '{}' from a newer uploader skipped — reinstall mediagram",
-            s.count, s.kind
-        );
+    for line in skipped_lines(skipped) {
+        println!("{line}");
     }
+}
+
+/// [`print_skipped`]'s lines, for a report that prints them among its own.
+pub fn skipped_lines(skipped: &[SkippedKind]) -> Vec<String> {
+    skipped
+        .iter()
+        .map(|s| {
+            format!(
+                "{} set(s) of kind '{}' from a newer uploader skipped — reinstall mediagram",
+                s.count, s.kind
+            )
+        })
+        .collect()
 }
 
 /// Every set still `pending` whose `kind` this build knows, oldest first (so
@@ -143,7 +153,10 @@ mod tests {
         let (pending, skipped) = list_pending(&conn).unwrap();
 
         assert_eq!(
-            pending.iter().map(|s| s.set_id.as_str()).collect::<Vec<_>>(),
+            pending
+                .iter()
+                .map(|s| s.set_id.as_str())
+                .collect::<Vec<_>>(),
             ["01JQ8F2K9M4XZ00000000001"]
         );
         assert_eq!(

@@ -68,3 +68,7 @@ async fn clear_pin(remote: &impl ChannelRemote, old_id: i32) -> bool {
     }
     false
 }
+
+#[cfg(test)]
+#[path = "unpin_tests.rs"]
+mod tests;

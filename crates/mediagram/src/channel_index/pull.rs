@@ -32,8 +32,7 @@ pub(super) async fn current(remote: &impl ChannelRemote) -> Result<Option<Candid
         .iter()
         .map(|p| (p.caption.as_str(), i64::from(p.id)))
         .collect();
-    let chosen =
-        mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone());
+    let chosen = mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone());
     if let Some(candidate) = &chosen {
         if let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption) {
             ensure!(
@@ -153,3 +152,7 @@ fn open_scratch(path: &Path) -> Result<Connection> {
         .context("enabling foreign key enforcement")?;
     Ok(conn)
 }
+
+#[cfg(test)]
+#[path = "pull_tests.rs"]
+mod tests;
