@@ -179,7 +179,7 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
         documents: Counts::default(),
     };
 
-    let lines = summary.lines().join("\n");
+    let lines = summary.lines(Kind::Tut).join("\n");
     assert!(lines.contains("1 lesson(s) uploaded, 1 already done, 1 failed"));
     assert!(lines.contains("resume"), "{lines}");
     assert!(
@@ -204,7 +204,7 @@ fn the_summary_counts_documents_separately() {
         },
     };
 
-    let lines = summary.lines().join("\n");
+    let lines = summary.lines(Kind::Tut).join("\n");
     assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
     assert!(
         lines.contains("1 document(s) uploaded, 0 already done, 1 failed"),
@@ -227,7 +227,7 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
         lessons,
         documents: vec![],
     };
-    let table = dry_run_table("Rust Course", "rust-course", &walked).join("\n");
+    let table = dry_run_table("Rust Course", "rust-course", &walked, Kind::Tut).join("\n");
     assert!(table.contains("rust-course"));
     assert!(table.contains("Install"));
     // Folders, not chapter numbers: the numbers are made unique across a

@@ -1,6 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use mlib_spec::Kind;
+
 use super::*;
+use crate::course::report::{Summary, dry_run_table};
+use crate::course::walk::walk_course;
 use crate::test_fakes::session::config_in;
 
 fn args(path: &Path, dry_run: bool, category: Option<&str>) -> AddDocuArgs {
@@ -30,19 +34,18 @@ fn index_exists(data_dir: &Path) -> bool {
     data_dir.join(mlib_spec::schema::INDEX_FILE).exists()
 }
 
-/// The dry-run table is `add-course`'s own; reworded, it must not say
-/// "lesson" or "course" anywhere a collection's episodes are counted.
+/// The dry-run table and summary are `add-course`'s own, worded for a
+/// collection: its videos are episodes marked `E`, as their captions are
+/// (`C01E01`), and nothing calls it a course or its videos lessons.
 #[test]
-fn the_course_table_is_reworded_for_a_collection() {
+fn a_collection_reports_episodes_not_lessons() {
     let dir = tempfile::tempdir().unwrap();
     let folder = terra_x(dir.path());
     let walked = walk_course(&folder).unwrap();
 
-    let lines: Vec<String> = dry_run_table("Terra X", "terra-x", &walked)
-        .iter()
-        .map(|line| in_docu_words(line))
-        .collect();
+    let lines = dry_run_table("Terra X", "terra-x", &walked, Kind::Docu);
 
+    assert!(lines[0].starts_with("collection: Terra X"), "{lines:#?}");
     assert!(
         lines.contains(&"(collection root)  (2 episode(s))".to_string()),
         "{lines:#?}"
@@ -51,12 +54,19 @@ fn the_course_table_is_reworded_for_a_collection() {
         lines.contains(&"Ozeane  (1 episode(s))".to_string()),
         "{lines:#?}"
     );
+    assert!(lines.iter().any(|l| l.starts_with("  E ")), "{lines:#?}");
+    assert!(!lines.iter().any(|l| l.starts_with("  L ")), "{lines:#?}");
     assert_eq!(lines.last().unwrap(), "3 episode(s) across 2 folder(s)");
     assert!(
         lines
             .iter()
-            .all(|l| !l.contains("lesson") && !l.contains("course root")),
+            .all(|l| !l.contains("lesson") && !l.contains("course")),
         "{lines:#?}"
+    );
+    let summary = Summary::default().lines(Kind::Docu);
+    assert!(
+        summary[0].starts_with("0 episode(s) uploaded"),
+        "{summary:#?}"
     );
 }
 
