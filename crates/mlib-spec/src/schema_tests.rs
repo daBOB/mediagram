@@ -9,12 +9,6 @@ fn the_playable_gate_spells_states_as_the_constants_do() {
 }
 
 #[test]
-fn readers_accept_every_version_from_the_oldest_to_the_current() {
-    let range: Vec<i64> = (super::OLDEST_READABLE_SCHEMA..=super::SCHEMA_VERSION).collect();
-    assert_eq!(super::READABLE_SCHEMAS, range.as_slice());
-}
-
-#[test]
 fn the_first_group_creates_the_tables_idempotently() {
     let v1 = super::GROUPS[0];
     assert!(v1.len() >= 4);

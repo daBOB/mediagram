@@ -1144,8 +1144,8 @@ there is nothing for a sidecar to fetch. The web player reads the table
 directly (`web/src/catalog/categories.ts`); the two are held to the same key
 fixture (`web/test/fixtures/categories/keys.json`).
 
-Version tracking: `SCHEMA_VERSION=12`, `READABLE_SCHEMAS=[6,7,8,9,10,11,12]`,
-`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v11 and earlier (optional
+Version tracking: `SCHEMA_VERSION=12`, `OLDEST_READABLE_SCHEMA=6` (the floor
+a reader checks; every newer schema is read too). Readers tolerant of v11 and earlier (optional
 columns/tables); writers from the release introducing this table produce v12.
 Both uploaders and Android installs must run that release or later before any
 push/export; older Android builds refuse v12 packages.

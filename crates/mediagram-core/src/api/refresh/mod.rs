@@ -31,7 +31,7 @@ pub(super) async fn refresh_catalog(
         .await
         .map_err(CoreError::network("pointer response was not valid JSON"))?;
 
-    mlib_spec::package::pointer_is_readable(&pointer, package::SUPPORTED_SCHEMA)
+    mlib_spec::package::pointer_is_readable(&pointer, mlib_spec::schema::OLDEST_READABLE_SCHEMA)
         .map_err(|err| CoreError::Cipher(err.to_string()))?;
 
     // Before the download: a package sealed for another key cannot open, and

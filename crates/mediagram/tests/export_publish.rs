@@ -57,7 +57,7 @@ fn a_completed_pointer_passes_the_readers_own_check() {
         &"c".repeat(64),
     );
     assert!(
-        mlib_spec::package::pointer_is_readable(&done, &[mlib_spec::schema::SCHEMA_VERSION])
+        mlib_spec::package::pointer_is_readable(&done, mlib_spec::schema::OLDEST_READABLE_SCHEMA)
             .is_ok()
     );
 }

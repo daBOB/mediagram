@@ -528,8 +528,9 @@ caption:
 table at snapshot time, `schema` is `mlib_spec::schema::SCHEMA_VERSION`
 (the `library.db` table layout version — distinct from the caption spec
 version `v=2`, which carries `v=2` or `v=3` captions on parts). The index
-caption's `schema` field reads current on every push; READABLE_SCHEMAS
-(in the crate) defines which index versions this reader accepts. This marker
+caption's `schema` field reads current on every push; OLDEST_READABLE_SCHEMA
+(in the crate) is the floor: a reader accepts that index version and every
+newer one. This marker
 (`#mlib-index v=`) never collides with a part caption's marker (`#mlib v=`),
 so a reader can tell the two apart by prefix alone. Each push pins the new
 index message and unpins whatever index message it replaces. A reader

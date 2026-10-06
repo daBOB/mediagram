@@ -509,7 +509,7 @@ fn package_file_name_uses_only_the_first_four_digest_bytes() {
 
 #[test]
 fn a_pointer_of_a_known_format_and_schema_is_readable() {
-    assert!(pointer_is_readable(&pointer(), &[mlib_spec::schema::SCHEMA_VERSION]).is_ok());
+    assert!(pointer_is_readable(&pointer(), mlib_spec::schema::OLDEST_READABLE_SCHEMA).is_ok());
 }
 
 #[test]
@@ -517,9 +517,14 @@ fn a_pointer_of_an_unknown_format_is_refused() {
     let mut future = pointer();
     future.format = PACKAGE_FORMAT + 1;
     assert!(matches!(
-        pointer_is_readable(&future, &[mlib_spec::schema::SCHEMA_VERSION]),
+        pointer_is_readable(&future, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::UnsupportedFormat(_))
     ));
+    assert_eq!(
+        PointerError::UnsupportedFormat(0).to_string(),
+        format!("unsupported package format 0 (this reader reads {PACKAGE_FORMAT})"),
+        "an older format is not called newer"
+    );
 }
 
 #[test]
@@ -527,7 +532,7 @@ fn a_pointer_naming_a_schema_older_than_the_oldest_readable_is_refused() {
     let mut older = pointer();
     older.schema = mlib_spec::schema::OLDEST_READABLE_SCHEMA - 1;
     assert!(matches!(
-        pointer_is_readable(&older, mlib_spec::schema::READABLE_SCHEMAS),
+        pointer_is_readable(&older, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::UnsupportedSchema(_))
     ));
 }
@@ -539,7 +544,7 @@ fn a_pointer_naming_a_schema_older_than_the_oldest_readable_is_refused() {
 fn a_pointer_naming_a_newer_schema_is_read() {
     let mut newer = pointer();
     newer.schema = 99;
-    assert!(pointer_is_readable(&newer, mlib_spec::schema::READABLE_SCHEMAS).is_ok());
+    assert!(pointer_is_readable(&newer, mlib_spec::schema::OLDEST_READABLE_SCHEMA).is_ok());
 }
 
 #[test]
@@ -547,7 +552,7 @@ fn a_pointer_naming_an_unknown_cipher_is_refused() {
     let mut odd = pointer();
     odd.cipher = "rot13".into();
     assert!(matches!(
-        pointer_is_readable(&odd, &[mlib_spec::schema::SCHEMA_VERSION]),
+        pointer_is_readable(&odd, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::UnsupportedCipher(_))
     ));
 }
@@ -568,7 +573,7 @@ fn a_pointer_with_a_malformed_key_id_is_refused() {
         let mut p = pointer();
         p.key_id = bad.into();
         assert_eq!(
-            pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
+            pointer_is_readable(&p, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
             Err(PointerError::Malformed("key_id")),
             "`{bad}` must be refused"
         );
@@ -587,7 +592,7 @@ fn a_pointer_with_a_malformed_sha256_is_refused() {
         let mut p = pointer();
         p.sha256 = bad.to_string();
         assert_eq!(
-            pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
+            pointer_is_readable(&p, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
             Err(PointerError::Malformed("sha256"))
         );
     }
@@ -598,7 +603,7 @@ fn a_pointer_claiming_more_than_the_limit_is_refused_before_downloading() {
     let mut p = pointer();
     p.bytes = mlib_spec::package::MAX_PACKAGE_BYTES + 1;
     assert_eq!(
-        pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
+        pointer_is_readable(&p, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::TooLarge(
             mlib_spec::package::MAX_PACKAGE_BYTES + 1
         ))
@@ -610,7 +615,7 @@ fn a_pointer_claiming_zero_bytes_is_refused() {
     let mut p = pointer();
     p.bytes = 0;
     assert_eq!(
-        pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
+        pointer_is_readable(&p, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::Malformed("bytes"))
     );
 }
@@ -620,17 +625,9 @@ fn a_pointer_dated_before_the_epoch_is_refused() {
     let mut p = pointer();
     p.created_at = -1;
     assert_eq!(
-        pointer_is_readable(&p, &[mlib_spec::schema::SCHEMA_VERSION]),
+        pointer_is_readable(&p, mlib_spec::schema::OLDEST_READABLE_SCHEMA),
         Err(PointerError::Malformed("created_at"))
     );
-}
-
-#[test]
-fn a_pointer_is_refused_when_the_supported_schema_list_is_empty() {
-    assert!(matches!(
-        pointer_is_readable(&pointer(), &[]),
-        Err(PointerError::UnsupportedSchema(_))
-    ));
 }
 
 /// The checks run in a fixed order, so a pointer wrong in every way still
@@ -642,23 +639,23 @@ fn pointer_is_readable_checks_format_before_cipher_or_schema() {
     wrong_in_every_way.cipher = "unknown".into();
     wrong_in_every_way.schema = 999;
     assert!(matches!(
-        pointer_is_readable(&wrong_in_every_way, &[1]),
+        pointer_is_readable(&wrong_in_every_way, 1),
         Err(PointerError::UnsupportedFormat(_))
     ));
 }
 
 #[test]
-fn a_pointer_with_a_negative_schema_is_accepted_if_listed() {
+fn a_pointer_with_a_negative_schema_is_accepted_at_that_floor() {
     let mut p = pointer();
     p.schema = -1;
-    assert!(pointer_is_readable(&p, &[-1]).is_ok());
+    assert!(pointer_is_readable(&p, -1).is_ok());
 }
 
 #[test]
-fn a_pointer_with_schema_zero_is_accepted_if_listed() {
+fn a_pointer_with_schema_zero_is_accepted_at_that_floor() {
     let mut p = pointer();
     p.schema = 0;
-    assert!(pointer_is_readable(&p, &[0]).is_ok());
+    assert!(pointer_is_readable(&p, 0).is_ok());
 }
 
 /// `key_id` is hex by the time it reaches the cipher, which is what lets a

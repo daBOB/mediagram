@@ -23,12 +23,6 @@ pub const SCHEMA_VERSION: i64 = 13;
 /// [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
 
-/// Every layout a reader accepts: [`OLDEST_READABLE_SCHEMA`] through
-/// [`SCHEMA_VERSION`], each one. Spelled out because a package pointer is
-/// checked by membership — listing only the two ends once refused every
-/// version between them. A test holds this to the range.
-pub const READABLE_SCHEMAS: &[i64] = &[6, 7, 8, 9, 10, 11, 12, 13];
-
 /// The index's file name, wherever a copy of it sits: the uploader's data
 /// directory, the snapshot pinned in the channel, and a metadata package all
 /// carry it under this one name, which is how a reader finds it in each.
