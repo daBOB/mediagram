@@ -18,6 +18,14 @@ import { failureMessage } from "../failure-message";
 
 export type ActionResult<T> = ({ ok: true } & T) | { ok: false; error: string };
 
+/**
+ * A sign-in step as the page sees it. A finished one is only `done`: its
+ * session string is the account's credential, which stays on this server —
+ * the page has no use for it, and anything that reaches the browser can leak
+ * from there.
+ */
+type SignInReply = Exclude<SignInStep, { step: "done" }> | { step: "done" };
+
 export interface AccountDeps {
   connection: TelegramConnection;
   channel: ChannelState;
@@ -58,23 +66,19 @@ export class AccountActions {
     return { ok: true, signedIn: telegram !== null, connected: telegram?.connected ?? null };
   }
 
-  async signInPhone(phoneNumber: string): Promise<ActionResult<SignInStep>> {
-    try {
-      return { ok: true, ...(await this.signInFlow.phone(this.creds.apiId, this.creds.apiHash, phoneNumber)) };
-    } catch (error) {
-      return { ok: false, error: failureMessage(error) };
-    }
+  async signInPhone(phoneNumber: string): Promise<ActionResult<SignInReply>> {
+    return this.advanceSignIn(() => this.signInFlow.phone(this.creds.apiId, this.creds.apiHash, phoneNumber));
   }
 
-  async signInCode(code: string): Promise<ActionResult<SignInStep>> {
+  async signInCode(code: string): Promise<ActionResult<SignInReply>> {
     return this.advanceSignIn(() => this.signInFlow.code(code));
   }
 
-  async signInPassword(password: string): Promise<ActionResult<SignInStep>> {
+  async signInPassword(password: string): Promise<ActionResult<SignInReply>> {
     return this.advanceSignIn(() => this.signInFlow.password(password));
   }
 
-  private async advanceSignIn(step: () => Promise<SignInStep>): Promise<ActionResult<SignInStep>> {
+  private async advanceSignIn(step: () => Promise<SignInStep>): Promise<ActionResult<SignInReply>> {
     let result: SignInStep;
     try {
       result = await step();
@@ -90,7 +94,7 @@ export class AccountActions {
     }
     const saved = await this.commit();
     if (!saved.ok) return saved;
-    return { ok: true, ...result };
+    return { ok: true, step: "done" };
   }
 
   async signOut(): Promise<{ ok: true } | { ok: false; error: string }> {
