@@ -50,7 +50,7 @@ export interface RefreshOptions {
   key: Buffer;
   /** Directory the reader owns: versions and the `current` link live here. */
   root: string;
-  supportedSchema: number[];
+  minSchema: number;
   now?: () => number;
   fetch?: (url: string) => Promise<Response>;
 }
@@ -146,7 +146,7 @@ async function keep(root: string, reason: string): Promise<RefreshResult> {
  * play what it has.
  */
 export async function refreshCatalog(options: RefreshOptions): Promise<RefreshResult> {
-  const { root, key, supportedSchema } = options;
+  const { root, key, minSchema } = options;
   const get = options.fetch ?? globalThis.fetch;
   const now = options.now ?? (() => Math.floor(Date.now() / 1000));
   try {
@@ -165,7 +165,7 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
     return keep(root, `could not read the pointer: ${failureMessage(error)}`);
   }
 
-  const refusal = pointerReadabilityRefusal(pointer, supportedSchema);
+  const refusal = pointerReadabilityRefusal(pointer, minSchema);
   if (refusal) return keep(root, refusal.reason);
 
   const expectedKeyId = createHash("sha256").update(key).digest("hex").slice(0, 8);

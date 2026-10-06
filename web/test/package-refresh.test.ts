@@ -109,7 +109,7 @@ const refresh = (built: ReturnType<typeof build>, over: Record<string, unknown> 
         baseUrl: "https://example.test",
         key: KEY,
         root,
-        supportedSchema: [4],
+        minSchema: 4,
         now: () => NOW,
         fetch: served.fetcher,
         ...over,
@@ -234,7 +234,7 @@ describe("where the package is fetched from", () => {
       baseUrl: "https://example.test",
       key: KEY,
       root,
-      supportedSchema: [4],
+      minSchema: 4,
       now: () => NOW,
       fetch: served.fetcher,
     });
@@ -329,7 +329,7 @@ describe("a refresh that fails", () => {
       baseUrl: "https://example.test",
       key: KEY,
       root,
-      supportedSchema: [4],
+      minSchema: 4,
       now: () => NOW,
       fetch: (async () => {
         throw new Error("getaddrinfo ENOTFOUND");
@@ -445,9 +445,10 @@ describe("filesystem failures while installing a package", () => {
   });
 });
 
-test("a package at any schema from the oldest readable to the expected one is accepted", async () => {
-  const { READABLE_SCHEMAS, OLDEST_READABLE_SCHEMA, EXPECTED_SCHEMA } = await import("../src/catalog");
-  expect(READABLE_SCHEMAS[0]).toBe(OLDEST_READABLE_SCHEMA);
-  expect(READABLE_SCHEMAS.at(-1)).toBe(EXPECTED_SCHEMA);
-  expect(READABLE_SCHEMAS.length).toBe(EXPECTED_SCHEMA - OLDEST_READABLE_SCHEMA + 1);
+test("a package older than the floor the refresh was given is kept out", async () => {
+  const result = await refresh(build({ createdAt: NOW - 50 }), { minSchema: 5 }).run();
+
+  expect(result.status).toBe("kept");
+  expect(result.dir).toBeNull();
+  expect(result.reason).toContain("schema 4");
 });

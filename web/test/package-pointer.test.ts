@@ -27,7 +27,7 @@ const GOOD = {
 };
 
 const readable = (over: Record<string, unknown> = {}) =>
-  pointerReadabilityRefusal(parsePointer(JSON.stringify({ ...GOOD, ...over })), [4]);
+  pointerReadabilityRefusal(parsePointer(JSON.stringify({ ...GOOD, ...over })), 4);
 
 describe("reading a pointer", () => {
   test("a well-formed one is accepted", () => {

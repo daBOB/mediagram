@@ -134,7 +134,7 @@ function isLowerHex(text: string, length: number): boolean {
  * problem found rather than the first sends whoever is debugging a failed
  * refresh after the wrong one.
  */
-export function pointerReadabilityRefusal(pointer: Pointer, supportedSchema: number[]): Refusal | null {
+export function pointerReadabilityRefusal(pointer: Pointer, minSchema: number): Refusal | null {
   if (pointer.format !== PACKAGE_FORMAT) {
     return { reason: `unsupported package format ${pointer.format} (this reader reads ${PACKAGE_FORMAT})` };
   }
@@ -145,7 +145,7 @@ export function pointerReadabilityRefusal(pointer: Pointer, supportedSchema: num
   // schema changes only add optional columns, and a breaking change moves
   // `format`, checked exactly above. Refusing newer ones cut every installed
   // player off at each bump.
-  if (supportedSchema.length === 0 || pointer.schema < Math.min(...supportedSchema)) {
+  if (pointer.schema < minSchema) {
     return { reason: `package holds schema ${pointer.schema}, older than this player can query` };
   }
   if (!isLowerHex(pointer.key_id, KEY_ID_HEX)) {

@@ -45,16 +45,6 @@ export function hasTable(db: Database, name: string): boolean {
 }
 
 /**
- * Every layout a package may carry for this build to read it: the oldest
- * through the expected, each one. A pointer is checked by membership, so
- * naming only the two ends would refuse every version between them.
- */
-export const READABLE_SCHEMAS: readonly number[] = Array.from(
-  { length: EXPECTED_SCHEMA - OLDEST_READABLE_SCHEMA + 1 },
-  (_, offset) => OLDEST_READABLE_SCHEMA + offset,
-);
-
-/**
  * Refuses an index written by an older uploader.
  *
  * The player opens the index read-only and must not migrate what the uploader
