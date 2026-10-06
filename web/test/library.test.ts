@@ -9,10 +9,10 @@
 import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
 import {
+  countsUnder,
   divisionAt,
   flattenCollection,
   groupLibrary,
-  lessonsUnder,
   levelEntries,
   nextInQueue,
 } from "../public/lib/library.js";
@@ -307,16 +307,16 @@ describe("levels", () => {
   test("a folder counts every lesson beneath it, not just its own", () => {
     const divisions = course().divisions;
 
-    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung"])!)).toBe(4);
-    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen"])!)).toBe(3);
+    expect(countsUnder(divisionAt(divisions, ["Ausbildung"])!).lessons).toBe(4);
+    expect(countsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen"])!).lessons).toBe(3);
     // Two of its own, plus the one in the folder below it.
-    expect(lessonsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen", "3. Signal"])!)).toBe(3);
-    expect(lessonsUnder(divisionAt(divisions, ["Basis"])!)).toBe(1);
+    expect(countsUnder(divisionAt(divisions, ["Ausbildung", "1. Grundlagen", "3. Signal"])!).lessons).toBe(3);
+    expect(countsUnder(divisionAt(divisions, ["Basis"])!).lessons).toBe(1);
   });
 
   test("the stand-in counts the whole course, as the shelf card does", () => {
     const collection = course();
-    expect(lessonsUnder(divisionAt(collection.divisions, [])!)).toBe(collection.count);
+    expect(countsUnder(divisionAt(collection.divisions, [])!).lessons).toBe(collection.count);
   });
 });
 

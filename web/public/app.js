@@ -17,7 +17,7 @@ import { countDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
-import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
+import { renderAdminSettings } from "./lib/settings-view.js";
 import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
 import { emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
@@ -562,7 +562,7 @@ function drawRoute() {
   if (address.page === "settings") {
     stopSettings = renderSettings(main, {
       profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
-      admin: adminSettings ? renderSettingsPage : null,
+      admin: adminSettings ? renderAdminSettings : null,
     });
     return;
   }

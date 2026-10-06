@@ -74,7 +74,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
   "public/lib/catalog/shelf-view.js": 285,
-  "public/lib/library.js": 309,
+  "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 994,
   "public/lib/playback/streaming/buffer-health.js": 258,

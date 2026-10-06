@@ -117,12 +117,6 @@ export function collections(sets: CatalogSet[], fallbackName: string): Collectio
 /** The first *playable* set under these divisions, in display order. */
 export function firstItemOf(divisions: Division[]): CatalogSet | null;
 
-/** How many lessons sit under `division`, at whatever depth. */
-export function lessonsUnder(division: Pick<Division, "items" | "children">): number;
-
-/** How many documents sit under `division`, at whatever depth. */
-export function documentsUnder(division: Pick<Division, "items" | "children">): number;
-
 /** Both content counts under this division, including nested folders. */
 export function countsUnder(division: Pick<Division, "items" | "children">): {
   lessons: number;

@@ -10,13 +10,12 @@
 import { describe, expect, test } from "bun:test";
 import { catalogSet } from "./support/catalog-set";
 import {
-  documentsUnder,
+  countsUnder,
   firstItemOf,
   flattenCollection,
   nextInQueue,
   groupLibrary,
   isDocument,
-  lessonsUnder,
   levelEntries,
   type CatalogSet,
 } from "../public/lib/library.js";
@@ -139,8 +138,8 @@ describe("a level's entries", () => {
       document({ title: "Zwei", path: "Kapitel/Anhang", episode: "2" }),
     ]).tutorials[0]!;
 
-    expect(lessonsUnder(course.divisions[0]!)).toBe(1);
-    expect(documentsUnder(course.divisions[0]!)).toBe(2);
+    expect(countsUnder(course.divisions[0]!).lessons).toBe(1);
+    expect(countsUnder(course.divisions[0]!).documents).toBe(2);
   });
 });
 

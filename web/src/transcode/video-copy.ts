@@ -54,7 +54,10 @@ export interface CopyLink {
 }
 
 /**
- * Whether the video stream can be carried across untouched.
+ * Whether the video stream can be carried across untouched, and why: because
+ * every browser plays it, or because this one said it decodes it. A
+ * negotiated copy needs its own segment format, and this is where that is
+ * known.
  *
  * Reads `decidePlayback`'s flags and nothing else, so there is still one copy
  * of the policy: teaching the player about a new codec teaches this at the
@@ -67,15 +70,6 @@ export interface CopyLink {
  * patience — is what pays for it.
  *
  * @param link how the file will travel, the same shape the browser uses
- */
-export function canCopyVideo(profile: CopyProfile, link: CopyLink = {}): boolean {
-  return copyVideoAs(profile, link) !== false;
-}
-
-/**
- * The same decision, saying *why* the picture may be copied: because every
- * browser plays it, or because this one said it decodes it. A negotiated copy
- * needs its own segment format, and this is where that is known.
  */
 export function copyVideoAs(
   profile: CopyProfile,
