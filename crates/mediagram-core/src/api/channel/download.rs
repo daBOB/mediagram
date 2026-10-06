@@ -1,6 +1,11 @@
-//! The capped chunk-download loop shared by everything this crate pulls
-//! through Telegram's `iter_download`: the index snapshot ([`super::install`])
-//! and a subtitle bundle (`crate::api::subtitles`'s cache).
+//! The capped chunk-download loop that writes a pinned document to a file.
+//! Three things arrive through it: the index snapshot ([`super::install`]), a
+//! subtitle bundle (`fetch_into` in `crate::api::subtitles_cache_download`)
+//! and the app release APK (`write_verified` in [`super::app_release`]).
+//! State sync's watch-state documents do not: they are read into memory by
+//! their own loop (`download_capped` in
+//! `crate::api::state_sync::telegram_channel`), which skips an oversized
+//! document instead of failing.
 
 use std::io::Write;
 use std::path::Path;
@@ -16,7 +21,7 @@ use crate::api::{Core, CoreError};
 /// document and filling a device's storage before anything looks at what it
 /// downloaded. `what` labels a write failure and an interrupted download
 /// alike; `oversize` builds the error a caller wants for going past the cap,
-/// since the index and a subtitle bundle are refused differently.
+/// since each caller words its refusal differently.
 pub(in crate::api) async fn download_with(
     core: &Core,
     owner: &SenderPoolFatHandle,

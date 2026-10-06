@@ -12,7 +12,7 @@ pub(in crate::api) mod download;
 pub(super) mod index;
 mod install;
 pub(super) mod library;
-mod responses;
+pub(in crate::api) mod responses;
 mod search;
 
 use grammers_client::peer::Dialog;
