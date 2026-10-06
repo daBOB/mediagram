@@ -62,3 +62,7 @@ pub(in crate::api) async fn invalidate(core: &Core, failed: &SenderPoolFatHandle
         *state = State::default();
     }
 }
+
+#[cfg(test)]
+#[path = "session_updates_tests.rs"]
+mod tests;
