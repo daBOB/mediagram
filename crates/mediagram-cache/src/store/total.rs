@@ -6,14 +6,14 @@
 //! racing reader in that window sees an empty file. Instead the full
 //! content is staged in a uniquely named temp file first, and only a
 //! `hard_link` — atomic, and either fully there or not there at all —
-//! publishes it, the same publish scheme chunk bodies use.
+//! publishes it ([`super::publish`]).
 
 use std::fs;
 use std::io;
 use std::path::Path;
 use std::time::Duration;
 
-use super::temp_name;
+use super::publish::{publish_new, temp_name};
 
 /// Records `total` at `path`, or reads back what a racing writer recorded
 /// there instead. Returns `None` when this call was the one that created
@@ -26,35 +26,29 @@ pub(super) fn pair(tmp_dir: &Path, path: &Path, total: u64) -> io::Result<Option
 
     let tmp_path = tmp_dir.join(temp_name());
     fs::write(&tmp_path, total.to_string())?;
-    let publish = fs::hard_link(&tmp_path, path);
-    let _ = fs::remove_file(&tmp_path);
-
-    match publish {
-        Ok(()) => Ok(None),
-        Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
-            // The winner's `hard_link` only ever makes a fully written file
-            // visible — there is no partial-content window to lose a race
-            // into — so this should resolve on the first read. It retries
-            // anyway, briefly, as a defense against a `total` file a
-            // pre-fix build left empty or truncated on disk; genuinely
-            // corrupt, unrecovered data still errors once the budget is
-            // spent, rather than retrying forever.
-            for _ in 0..20 {
-                if let Some(held) = read_valid(path)? {
-                    return Ok(Some(held));
-                }
-                std::thread::sleep(Duration::from_millis(5));
-            }
-            Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!(
-                    "{} never became a valid total after losing the write race",
-                    path.display()
-                ),
-            ))
-        }
-        Err(e) => Err(e),
+    if publish_new(&tmp_path, path)? {
+        return Ok(None);
     }
+    // The winner's `hard_link` only ever makes a fully written file
+    // visible — there is no partial-content window to lose a race
+    // into — so this should resolve on the first read. It retries
+    // anyway, briefly, as a defense against a `total` file a
+    // pre-fix build left empty or truncated on disk; genuinely
+    // corrupt, unrecovered data still errors once the budget is
+    // spent, rather than retrying forever.
+    for _ in 0..20 {
+        if let Some(held) = read_valid(path)? {
+            return Ok(Some(held));
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    Err(io::Error::new(
+        io::ErrorKind::InvalidData,
+        format!(
+            "{} never became a valid total after losing the write race",
+            path.display()
+        ),
+    ))
 }
 
 /// `Ok(None)` for "not there yet" (the caller should try to become the
