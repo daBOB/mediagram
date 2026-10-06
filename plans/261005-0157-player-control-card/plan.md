@@ -110,4 +110,4 @@
 - **2026-10-06, rechecked on the box as 0.117.3.**
   - Menus have no headings, matching the web and phone. Six speeds still scroll at 540 dp.
   - Beside the sidebar the TV keeps the marks and drops the title. This keeps the user's "Slim top bar keeps them" decision intact.
-  - `check.sh` was run on main.
+  - `check.sh` on main first failed: a TV subtitle test still expected the removed "Subtitles" heading, and the ui-tv test JVM ran out of its 512 MB default and wedged the run. The test now asserts no heading; ui-tv tests get 2 GB. Rerun green (ui-tv: 572 tests, 0 failures).

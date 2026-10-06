@@ -62,7 +62,8 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
     @Test
     fun theOptionsOfferOffAndEnglishWithOffChosenThenStyle() {
         openOptions()
-        for (text in listOf("Subtitles", "Off", "English", "Style…")) inMenu(text).assertExists()
+        for (text in listOf("Off", "English", "Style…")) inMenu(text).assertExists()
+        inMenu("Subtitles").assertDoesNotExist()
         inMenu("Off").assertIsSelected()
         inMenu("Off").assertIsFocused()
         compose.onNodeWithText("Hello.").assertDoesNotExist()

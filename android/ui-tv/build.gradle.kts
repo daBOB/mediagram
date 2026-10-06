@@ -13,6 +13,9 @@ plugins {
 android {
     namespace = "com.mediagram.android.ui.tv"
     testOptions.unitTests.isIncludeAndroidResources = true
+    // About 500 Robolectric screen tests share one test JVM; Gradle's 512 MB
+    // default ran out partway through and wedged the whole run.
+    testOptions.unitTests.all { it.maxHeapSize = "2g" }
 }
 
 dependencies {
