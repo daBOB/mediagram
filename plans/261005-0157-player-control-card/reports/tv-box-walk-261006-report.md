@@ -49,3 +49,8 @@ The 30 s rule is the same on Android (`ResumePoint.kt:20-23`) and the web (`resu
   - On 0.117.2 the narrowed bar squeezed the title to "•••". 0.117.3 keeps the marks and drops the title while the list is open; "Now playing" names it.
 - A review follow-up, caught by a test: a menu opened with stats on was 0 dp tall, because its room was measured from under the stats. It now measures from the title bar.
 - **Footprint addendum:** S1E8 was opened twice more, paused at about 0.2 s and left at 0.1 s. Any recorded position draws an empty progress line under its row in the season list and the sidebar. E8 and Videodrome now show one. They are still not in Continue.
+
+## Rechecked on the box (0.117.4), 13:15
+
+- All six speeds show at once (`v4-speed`). The menu now reaches up to the overscan margin and covers the file details line while open. That line shows faintly through the menu's top padding, because the card fill is 78% black; it touches no row.
+- **Footprint:** S1E8 again, the same title, paused at 0.07 s. Nothing new was touched.
