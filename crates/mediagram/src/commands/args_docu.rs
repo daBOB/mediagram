@@ -81,3 +81,7 @@ pub struct ArtworkArgs {
     #[arg(long)]
     pub clear: bool,
 }
+
+#[cfg(test)]
+#[path = "args_docu_tests.rs"]
+mod tests;
