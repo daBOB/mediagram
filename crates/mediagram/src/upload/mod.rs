@@ -17,14 +17,3 @@ pub mod progress_line;
 pub mod record_document;
 pub mod session;
 pub mod transport;
-
-#[deprecated(
-    since = "0.40.2",
-    note = "Use prepare_set for preparation that records the set"
-)]
-pub use prepare_set as plan_set;
-#[deprecated(
-    since = "0.40.2",
-    note = "Use record_document for document persistence"
-)]
-pub use record_document as plan_document;

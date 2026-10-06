@@ -14,12 +14,6 @@ use crate::metadata::title_details;
 use crate::upload::new_set::{NewSet, Planned};
 use crate::upload::plan::{Source, record_planned};
 
-#[deprecated(
-    since = "0.40.2",
-    note = "Use prepare_and_record_set; this operation persists the set"
-)]
-pub use prepare_and_record_set as plan_set;
-
 /// Inspects, resolves and remuxes one file and writes it to the index as a
 /// set ready to upload.
 pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planned> {

@@ -59,7 +59,7 @@ fn a_round_trip_through_the_file_survives() {
 
 /// With `upload_slots` above one, two uploads run at once. Each keeps its
 /// own note, so neither overwrites the other, and one finishing clears only
-/// its own; the shared file an older version writes is still read.
+/// its own.
 #[test]
 fn two_uploads_at_once_each_keep_their_own_note() {
     let dir = tempfile::tempdir().unwrap();
@@ -70,18 +70,12 @@ fn two_uploads_at_once_each_keep_their_own_note() {
         )
         .unwrap();
     }
-    std::fs::write(
-        progress::path_in(dir.path()),
-        serde_json::to_string(&note("OLD", 30)).unwrap(),
-    )
-    .unwrap();
-
     let mut ids: Vec<String> = progress::read_all(dir.path())
         .into_iter()
         .map(|p| p.set_id)
         .collect();
     ids.sort();
-    assert_eq!(ids, ["A", "B", "OLD"]);
+    assert_eq!(ids, ["A", "B"]);
 
     progress::clear(dir.path(), "A");
     let mut ids: Vec<String> = progress::read_all(dir.path())
@@ -89,7 +83,7 @@ fn two_uploads_at_once_each_keep_their_own_note() {
         .map(|p| p.set_id)
         .collect();
     ids.sort();
-    assert_eq!(ids, ["B", "OLD"]);
+    assert_eq!(ids, ["B"]);
 }
 
 /// A half-written file must not stop a reader reporting everything else it

@@ -20,12 +20,6 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-/// The single shared file of versions before `upload_slots`; still read, as
-/// an older process may be running beside a newer one.
-pub fn path_in(data_dir: &Path) -> PathBuf {
-    data_dir.join("upload-progress.json")
-}
-
 /// This set's own file.
 pub fn path_for(data_dir: &Path, set_id: &str) -> PathBuf {
     data_dir.join(format!("upload-progress-{set_id}.json"))
@@ -69,7 +63,7 @@ impl Progress {
     }
 }
 
-/// Every upload's file, the shared legacy one included.
+/// Every upload's file.
 ///
 /// A malformed file is treated as absent rather than as an error: it is a
 /// hint, and a half-written one must not stop a reader reporting everything

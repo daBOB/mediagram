@@ -24,12 +24,6 @@ use crate::index::db;
 use crate::media::classify;
 use crate::upload::plan::{Source, record_planned};
 
-#[deprecated(
-    since = "0.40.2",
-    note = "Use record_document_set; this operation persists the document"
-)]
-pub use record_document_set as plan_document;
-
 /// One document to upload, as the walk describes it.
 pub struct Document {
     pub file: PathBuf,
