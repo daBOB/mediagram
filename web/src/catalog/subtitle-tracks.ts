@@ -3,7 +3,7 @@
  * an uploader has not re-published since — the legacy `assets` rows every
  * reader already knew how to serve.
  *
- * Both layouts are read until phase 09 removes the older one: a v13 row wins
+ * Both layouts are read while older indexes are still out there: a v13 row wins
  * outright for a set that has one, an inline set is numbered `0..n` by
  * `ORDER BY lang` the way it always was, and every read tolerates the table
  * itself being absent, the same way `catalog/assets.ts` already does for
