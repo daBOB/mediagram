@@ -107,3 +107,7 @@
   - **Ruling:** menus sit above the card, centred on their button. This follows the spec's decision table ("above the card") and the web; the spec's line 109 ("directly above its button") was read as horizontal placement.
   - **Ruling:** on the TV the stats wait while the sidebar is open, because of the screen budget. This is recorded in the Television differs section of the design docs.
   - **Open:** R2, the Notes fence, needs a title with notes. Publishing still needs the user's word.
+- **2026-10-06, rechecked on the box as 0.117.3.**
+  - Menus have no headings, matching the web and phone. Six speeds still scroll at 540 dp.
+  - Beside the sidebar the TV keeps the marks and drops the title. This keeps the user's "Slim top bar keeps them" decision intact.
+  - `check.sh` was run on main.

@@ -40,3 +40,12 @@ The 30 s rule is the same on Android (`ResumePoint.kt:20-23`) and the web (`resu
 ## Unresolved questions
 
 - R2 (the Notes fence) still needs a title that has notes.
+
+## Rechecked on the box (0.117.2, then 0.117.3), 03:15–03:55
+
+- The Speed menu ends above the card and below the title (`v3-speed`). With six speeds, the list does not fit in 540 dp: 2× is one Down away.
+  - On 0.117.2 the TV's focus-pivot scrolling cut the "Speed" heading in half. 0.117.3 drops the card menus' headings, as the web and phone have none.
+- Sidebar open (`v3-sidebar`): the stats wait, and the top bar ends at the sidebar.
+  - On 0.117.2 the narrowed bar squeezed the title to "•••". 0.117.3 keeps the marks and drops the title while the list is open; "Now playing" names it.
+- A review follow-up, caught by a test: a menu opened with stats on was 0 dp tall, because its room was measured from under the stats. It now measures from the title bar.
+- **Footprint addendum:** S1E8 was opened twice more, paused at about 0.2 s and left at 0.1 s. Any recorded position draws an empty progress line under its row in the season list and the sidebar. E8 and Videodrome now show one. They are still not in Continue.
