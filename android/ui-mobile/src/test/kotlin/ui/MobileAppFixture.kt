@@ -47,7 +47,7 @@ internal class MobileAppFixture :
     val storage = InMemoryCoreStorage()
     private val dispatcher = Dispatchers.Main.immediate
     val provider = StoredCoreProvider(telegram, dispatcher) { core }
-    private val libraries = Libraries(provider, library, dispatcher)
+    private val libraries = Libraries(provider, library)
     val setup: SetupViewModel
     val login: LoginViewModel
     val flow: LibraryFlowFixture

@@ -175,7 +175,7 @@ class StoredCoreProvider<T>(
                         build(TelegramCredentials(apiId, apiHash)).also { candidate = it }
                     }
                 client.account()
-                withContext(NonCancellable + dispatcher) { settings.write(apiId, apiHash) }
+                withContext(NonCancellable) { settings.write(apiId, apiHash) }
                 built.value = client
             } catch (
                 @Suppress("TooGenericExceptionCaught") failure: Throwable,

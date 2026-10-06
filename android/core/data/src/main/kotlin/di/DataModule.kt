@@ -68,13 +68,15 @@ object DataModule {
     @Singleton
     fun provideTelegramSettings(
         @ApplicationContext context: Context,
-    ): TelegramSettings = EncryptedTelegramSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): TelegramSettings = EncryptedTelegramSettings(context, dispatcher)
 
     @Provides
     @Singleton
     fun provideTmdbSettings(
         @ApplicationContext context: Context,
-    ): TmdbSettings = EncryptedTmdbSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): TmdbSettings = EncryptedTmdbSettings(context, dispatcher)
 
     @Provides
     @Singleton
@@ -86,7 +88,8 @@ object DataModule {
     @Singleton
     fun provideLanCacheTokenSettings(
         @ApplicationContext context: Context,
-    ): LanCacheTokenSettings = EncryptedLanCacheTokenSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): LanCacheTokenSettings = EncryptedLanCacheTokenSettings(context, dispatcher)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.

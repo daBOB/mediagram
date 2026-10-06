@@ -85,7 +85,7 @@ class SettingsViewModel
             // in and whether Telegram is answering at all.
             val account = optionalRow { core.account() }
             val title = libraries.chosen()?.let { handle -> titleOf(handle) }
-            val apiId = withContext(dispatcher) { telegramSettings.read()?.apiId }
+            val apiId = telegramSettings.read()?.apiId
             val dc = withContext(dispatcher) { core.dcId() }
             _state.update {
                 it.copy(

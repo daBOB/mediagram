@@ -1,8 +1,6 @@
 package setup
 
 import data.CoreProvider
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.withContext
 import settings.LibrarySettings
 import javax.inject.Inject
 
@@ -21,7 +19,6 @@ class Libraries
     constructor(
         private val coreProvider: CoreProvider,
         private val settings: LibrarySettings,
-        private val dispatcher: CoroutineDispatcher,
     ) {
         /** What the account can see, in the order Telegram itself lists it. */
         suspend fun list(): List<LibraryOption> = coreProvider.awaitCore().listLibraries().map { LibraryOption(it.handle, it.title) }
@@ -36,11 +33,11 @@ class Libraries
          */
         suspend fun install(handle: String) {
             coreProvider.awaitCore().refreshLibrary(handle)
-            withContext(dispatcher) { settings.write(handle) }
+            settings.write(handle)
         }
 
         /** The handle this device chose, or `null` while the picker is still due. */
-        suspend fun chosen(): String? = withContext(dispatcher) { settings.read() }
+        suspend fun chosen(): String? = settings.read()
 
-        suspend fun forget(): Unit = withContext(dispatcher) { settings.clear() }
+        suspend fun forget() = settings.clear()
     }

@@ -68,12 +68,12 @@ class EncryptedLibrarySettings(
     override fun selections(): Flow<String?> = revision.map { read() }.distinctUntilChanged()
 
     override suspend fun write(handle: String) {
-        preferences.edit().putString(KEY_HANDLE, handle).apply()
+        withContext(dispatcher) { preferences.edit().putString(KEY_HANDLE, handle).apply() }
         revision.update { it + 1 }
     }
 
     override suspend fun clear() {
-        preferences.edit().clear().apply()
+        withContext(dispatcher) { preferences.edit().clear().apply() }
         revision.update { it + 1 }
     }
 

@@ -103,7 +103,7 @@ dependencies {
     implementation(project(":ui-tv"))
     implementation(project(":core:model"))
     // Provides the CoreProvider DI wiring in di/CoreModule.kt and the
-    // PackageSettings field MainActivity injects to route between screens.
+    // WatchSync field MainActivity injects to sync as the app comes and goes.
     implementation(project(":core:data"))
     // The self-updater, and the player whose state it waits on.
     implementation(project(":core:update"))

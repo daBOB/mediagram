@@ -43,6 +43,25 @@ class CoreStorageTest {
             assertFalse(File(dataDir.root, "catalog").exists())
         }
 
+    /**
+     * A device set up from a pasted package URL kept that package's key in
+     * its own encrypted preferences file, beside the files directory.
+     * Nothing reads it any more, so starting over is the only thing that
+     * will ever remove it.
+     */
+    @Test
+    fun theLegacyPackageKeyBesideTheFilesDirectoryIsDeleted() =
+        runTest {
+            val files = File(dataDir.root, "files").apply { mkdirs() }
+            val packageKey = File(dataDir.root, "shared_prefs/package_settings.xml")
+            packageKey.parentFile!!.mkdirs()
+            packageKey.writeText("<map />")
+
+            FileCoreStorage(files, Dispatchers.Unconfined).clear()
+
+            assertFalse(packageKey.exists())
+        }
+
     @Test
     fun clearingADirectoryThatHoldsNothingYetIsNotAFailure() =
         runTest {

@@ -174,7 +174,7 @@ internal class TvAppFixture(
         val library = InMemoryLibrarySettings()
         val dispatcher = Dispatchers.Main.immediate
         val provider = StoredCoreProvider(telegram, dispatcher) { core }
-        val libraries = Libraries(provider, library, dispatcher)
+        val libraries = Libraries(provider, library)
         val watchState = DefaultWatchStateRepository(provider, dispatcher)
         runBlocking {
             if (stage != TvSetupStage.APPLICATION) telegram.write(1234, "0123456789abcdef0123456789abcdef")

@@ -1,6 +1,9 @@
 package settings
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * What counts as a stored API key, for every store alike.
@@ -46,22 +49,23 @@ class InMemoryTmdbSettings : TmdbSettings {
  * device or when the key behind it has been invalidated; thrown from a
  * constructor that dependency injection runs, that is an unconditional
  * crash on every launch, with no screen reached to say so or to offer
- * starting over.
+ * starting over. Every call runs on [dispatcher], so a caller on main
+ * never waits on that keystore round trip.
  */
 class EncryptedTmdbSettings(
     private val context: Context,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : TmdbSettings {
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
 
-    override suspend fun read(): String? = keyOrNull(preferences.getString(KEY_TMDB, null))
+    override suspend fun read(): String? = withContext(dispatcher) { keyOrNull(preferences.getString(KEY_TMDB, null)) }
 
-    override suspend fun write(key: String) {
-        preferences.edit().putString(KEY_TMDB, key).apply()
-    }
+    override suspend fun write(key: String) =
+        withContext(dispatcher) {
+            preferences.edit().putString(KEY_TMDB, key).apply()
+        }
 
-    override suspend fun clear() {
-        preferences.edit().clear().apply()
-    }
+    override suspend fun clear() = withContext(dispatcher) { preferences.edit().clear().apply() }
 
     private companion object {
         const val PREFS_FILE_NAME = "tmdb_settings"

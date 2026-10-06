@@ -1,6 +1,9 @@
 package settings
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The Telegram *application* identity, created at my.telegram.org. It
@@ -76,20 +79,24 @@ class InMemoryTelegramSettings : TelegramSettings {
  * device or when the key behind it has been invalidated; thrown from a
  * constructor that dependency injection runs, that is an unconditional
  * crash on every launch, with no screen reached to say so or to offer
- * starting over.
+ * starting over. Every call runs on [dispatcher], so a caller on main
+ * never waits on that keystore round trip.
  */
 class EncryptedTelegramSettings(
     private val context: Context,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : TelegramSettings {
     private val preferences by lazy { encryptedPreferences(context, PREFS_FILE_NAME) }
 
     override suspend fun read(): TelegramCredentials? =
-        credentialsOrNull(preferences.getInt(KEY_API_ID, 0), preferences.getString(KEY_API_HASH, null))
+        withContext(dispatcher) {
+            credentialsOrNull(preferences.getInt(KEY_API_ID, 0), preferences.getString(KEY_API_HASH, null))
+        }
 
     override suspend fun write(
         apiId: Int,
         apiHash: String,
-    ) {
+    ) = withContext(dispatcher) {
         preferences
             .edit()
             .putInt(KEY_API_ID, apiId)
@@ -97,9 +104,7 @@ class EncryptedTelegramSettings(
             .apply()
     }
 
-    override suspend fun clear() {
-        preferences.edit().clear().apply()
-    }
+    override suspend fun clear() = withContext(dispatcher) { preferences.edit().clear().apply() }
 
     private companion object {
         const val PREFS_FILE_NAME = "telegram_settings"

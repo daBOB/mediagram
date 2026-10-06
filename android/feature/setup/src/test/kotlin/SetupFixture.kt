@@ -44,10 +44,10 @@ internal class SetupFixture(
     val watchState = DefaultWatchStateRepository(provider, dispatcher)
 
     fun viewModel(): SetupViewModel =
-        SetupViewModel(provider, Libraries(provider, library, dispatcher), tmdb, storage, dispatcher, watchState)
+        SetupViewModel(provider, Libraries(provider, library), tmdb, storage, dispatcher, watchState)
 
     fun settingsViewModel(): SettingsViewModel =
-        SettingsViewModel(provider, Libraries(provider, library, dispatcher), storage, telegram, dispatcher, watchState)
+        SettingsViewModel(provider, Libraries(provider, library), storage, telegram, dispatcher, watchState)
 
     /** A device that has answered everything up to the library question. */
     suspend fun signedIn(): SetupFixture =

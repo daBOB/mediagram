@@ -80,7 +80,7 @@ class SettingsProfileRetryTest {
                 builds++
                 core
             }
-        val library = Libraries(provider, InMemoryLibrarySettings(), Dispatchers.Main.immediate)
+        val library = Libraries(provider, InMemoryLibrarySettings())
         val watch = DefaultWatchStateRepository(provider, Dispatchers.Main.immediate)
         compose.runOnUiThread {
             model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch)
