@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PosterStore } from "../src/package/posters";
+import { PosterStore } from "../src/catalog/posters";
 
 let directory: string;
 let warning: ReturnType<typeof spyOn<typeof console, "warn">>;

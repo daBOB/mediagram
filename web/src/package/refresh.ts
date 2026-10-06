@@ -29,7 +29,7 @@ import {
   type Pointer,
 } from "./pointer";
 import { unpackTo } from "./unpack";
-import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "./catalog-versions";
+import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../catalog/catalog-versions";
 
 /** Written into a version directory so identity and catalog cannot disagree. */
 const IDENTITY_FILE = "identity.json";

@@ -14,7 +14,7 @@ import { readlink, rename, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { assertSchema, listPlayable } from "../catalog";
 import { errorCode, failureMessage } from "../failure-message";
-import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../package/catalog-versions";
+import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../catalog/catalog-versions";
 
 /**
  * A ceiling on the snapshot. A real index for a few hundred sets is a few

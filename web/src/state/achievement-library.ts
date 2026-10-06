@@ -11,7 +11,7 @@
 import type { Database } from "bun:sqlite";
 import { listPlayable } from "../catalog";
 import { providerFactsByShow } from "../catalog/shows";
-import { posterKeyFor } from "../package/posters";
+import { posterKeyFor } from "../catalog/posters";
 import type { AchievementLibrary, LibraryTitle, TitleKind } from "./achievements";
 
 export function achievementLibrary(db: Database): AchievementLibrary {

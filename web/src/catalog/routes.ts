@@ -8,7 +8,7 @@ import type { HeldSets } from "../cache/held";
 import { listPlayable, listSearchable, playableSet, type PlayableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { negotiatedResponse } from "../http/compression";
-import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "../package/posters";
+import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "./posters";
 import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";

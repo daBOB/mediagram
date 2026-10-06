@@ -15,7 +15,7 @@
 import type { Database } from "bun:sqlite";
 import { hasTable } from "../catalog";
 import { terms, variants } from "../search/normalize";
-import { personKeyFor } from "../package/posters";
+import { personKeyFor } from "./posters";
 
 export interface Credit {
   personId: number;

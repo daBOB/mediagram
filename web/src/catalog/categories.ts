@@ -14,7 +14,7 @@
 
 import type { Database } from "bun:sqlite";
 import { hasTable } from "../catalog";
-import { posterKeyFor } from "../package/posters";
+import { posterKeyFor } from "./posters";
 
 /** Department for a course or one of its documents. */
 export const TUTORIALS = "tutorials";

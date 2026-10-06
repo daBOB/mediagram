@@ -14,7 +14,7 @@
  * and cannot drift that way.
  */
 
-import { FUTURE_TOLERANCE_SECONDS } from "../package/catalog-versions";
+import { FUTURE_TOLERANCE_SECONDS } from "../catalog/catalog-versions";
 import { INDEX_MARKER } from "../telegram/channel-captions";
 
 /** One message that might be a snapshot: its caption and its id. */

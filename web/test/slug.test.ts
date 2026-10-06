@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { slug } from "../src/package/posters";
+import { slug } from "../src/catalog/posters";
 
 describe("slug", () => {
   test("a title becomes a readable slug", () => {

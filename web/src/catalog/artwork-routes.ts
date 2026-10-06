@@ -2,7 +2,7 @@
 import type { Database } from "bun:sqlite";
 import { hasTable, playableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { posterKeyIsValid, type PosterStore } from "../package/posters";
+import { posterKeyIsValid, type PosterStore } from "./posters";
 import { bodiless, withBody } from "../response";
 import type { SheetStore } from "../thumbs/sheets";
 import { spritePlan } from "../../public/lib/sprite-plan.js";

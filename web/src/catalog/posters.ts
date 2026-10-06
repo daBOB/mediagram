@@ -1,5 +1,6 @@
 /**
- * The artwork a package carries.
+ * The artwork every catalog serves, whichever source brought it: a package,
+ * a channel snapshot, or this machine's own library.
  *
  * A poster key is `tmdb-movie-<id>` or `tmdb-tv-<id>`. TMDB's film and
  * television id spaces are independent, so the kind is part of the key and a

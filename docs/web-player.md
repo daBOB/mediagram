@@ -59,8 +59,9 @@ response.ts        byte-range planning and shared buffered-response framing
 http/              request/response contracts, browser-write checks, static
                    files, and streaming with explicit range headers
 catalog/           catalog/search presentation, metadata readers, asset and
-                   artwork endpoints, audio-track probing, and subtitle
-                   tracks/bundles (below)
+                   artwork endpoints, poster keys and the poster store, the
+                   versioned catalog directory every source installs into,
+                   audio-track probing, and subtitle tracks/bundles (below)
 range.ts           byte ranges to per-part reads, and the 1 MiB alignment
 login.ts           issues this host's session; writes web/.env, mode 600
 catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
@@ -75,8 +76,7 @@ cache/             1 MiB chunks on disk: keys, store with quota, reader and
                    the fetches it shares while they run,
                    the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
                    which sets are held in full, for the offline badge
-package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
-                   and the artwork a package carries
+package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh
 transcode/         playback HTTP negotiation, ffmpeg arguments, encoder probe,
                    session registry, process supervision, and HLS delivery
 public/            the page: the start page, shelves, the player dialog,

@@ -30,7 +30,7 @@ import { AudioTrackReader } from "./catalog/audio-tracks";
 import { SubtitleBundles, heldSubtitlesDir } from "./catalog/subtitle-bundles";
 import { backgroundFetcher, connectionFetcher } from "./telegram/part-fetch";
 import { WatchState } from "./state/store";
-import { PosterStore } from "./package/posters";
+import { PosterStore } from "./catalog/posters";
 import type { RefreshOptions } from "./package/refresh";
 import { createStatusRouter } from "./status/routes";
 import { dirBytes } from "./status/dir-bytes";
