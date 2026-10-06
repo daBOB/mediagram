@@ -5,6 +5,7 @@ import { LogLevel } from "teleproto/extensions/Logger";
 import { closeSync, fchmodSync, openSync, writeFileSync } from "node:fs";
 import { env as environment } from "node:process";
 import { sessionName } from "../telegram/session-name";
+import { failureMessage } from "../failure-message";
 import { authenticate, type LoginClient } from "./authenticate";
 import { loginPrompts, type LoginPrompts } from "./prompts";
 
@@ -115,7 +116,7 @@ export async function runLogin(
     await cleanup(() => client?.destroy());
   }
   if (failures.length) {
-    for (const error of failures) report(`\nLogin failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    for (const error of failures) report(`\nLogin failed: ${failureMessage(error)}\n`);
     return 1;
   }
   if (!ready) return 1;
@@ -129,7 +130,7 @@ export async function runLogin(
     }
     return 0;
   } catch (error) {
-    report(`\nLogin failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    report(`\nLogin failed: ${failureMessage(error)}\n`);
     return 1;
   }
 }
