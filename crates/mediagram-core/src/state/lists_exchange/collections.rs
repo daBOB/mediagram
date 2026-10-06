@@ -93,3 +93,7 @@ pub fn import_collections(
     }
     Ok(changed)
 }
+
+#[cfg(test)]
+#[path = "collections_tests.rs"]
+mod tests;
