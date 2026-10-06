@@ -13,15 +13,15 @@ pub struct EditArgs {
     #[arg(long)]
     pub refresh: bool,
     /// Move the set to another shelf: movie, ep, tut or docu
-    #[arg(long)]
-    pub kind: Option<String>,
+    #[arg(long, value_parser = crate::edit::plan::editable_kind)]
+    pub kind: Option<mlib_spec::Kind>,
     /// Set the TMDB id, so `--refresh` has something to ask about
     #[arg(long)]
     pub tmdb: Option<u64>,
     /// Empty a field, comma separated: show,chap,path,year,season,episode.
     /// The wrong kind leaves fields behind that no value would fix
-    #[arg(long, value_delimiter = ',')]
-    pub clear: Vec<String>,
+    #[arg(long, value_delimiter = ',', value_parser = crate::edit::plan::clearable)]
+    pub clear: Vec<crate::edit::plan::Clearable>,
     #[arg(long)]
     pub title: Option<String>,
     /// Show title, or course title for a lesson

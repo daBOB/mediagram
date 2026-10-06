@@ -1,7 +1,9 @@
 use super::*;
 use crate::edit::anime::AnimeChoice;
+use crate::edit::plan::Clearable;
 use clap::Parser;
 use clap::error::ErrorKind;
+use mlib_spec::Kind;
 
 /// `mediagram edit`'s arguments, parsed by clap exactly as the CLI parses
 /// them, without the binary's own command enum.
@@ -46,9 +48,9 @@ fn each_field_correction_reaches_its_field() {
 
     assert_eq!(args.set_id, "set-a");
     assert!(args.refresh);
-    assert_eq!(args.kind.as_deref(), Some("ep"));
+    assert_eq!(args.kind, Some(Kind::Ep));
     assert_eq!(args.tmdb, Some(1399));
-    assert_eq!(args.clear, ["year"]);
+    assert_eq!(args.clear, [Clearable::Year]);
     assert_eq!(args.title.as_deref(), Some("Winter"));
     assert_eq!(args.show.as_deref(), Some("Thrones"));
     assert_eq!(args.year, Some(2011));
@@ -64,7 +66,33 @@ fn each_field_correction_reaches_its_field() {
 fn clear_takes_a_comma_separated_list_and_repeats() {
     let args = parse(&["set-a", "--clear", "show,year", "--clear", "path"]).unwrap();
 
-    assert_eq!(args.clear, ["show", "year", "path"]);
+    assert_eq!(
+        args.clear,
+        [Clearable::Show, Clearable::Year, Clearable::Path]
+    );
+}
+
+/// A space after a comma has always been accepted, and typing the flag must
+/// not start refusing it.
+#[test]
+fn clear_trims_each_listed_field() {
+    let args = parse(&["set-a", "--clear", "show, chap"]).unwrap();
+
+    assert_eq!(args.clear, [Clearable::Show, Clearable::Chap]);
+}
+
+/// An unknown field or a kind a set cannot be moved to is refused while the
+/// arguments are read, before the index is opened.
+#[test]
+fn an_unknown_field_or_kind_is_refused_by_the_parser() {
+    assert_eq!(
+        refused(&["set-a", "--clear", "bogus"]),
+        ErrorKind::ValueValidation
+    );
+    assert_eq!(
+        refused(&["set-a", "--kind", "doc"]),
+        ErrorKind::ValueValidation
+    );
 }
 
 /// The set to correct is not optional, and numbers out of their range are

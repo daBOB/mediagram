@@ -16,7 +16,7 @@ use crate::commands::args::EditArgs;
 use crate::config::Config;
 use crate::edit::apply::write_captions;
 use crate::edit::captions::captions;
-use crate::edit::plan::{Clearable, Edits, apply_checked, editable_kind};
+use crate::edit::plan::{Edits, Fetched, apply_checked, merge_refreshed};
 use crate::index::set_row::SetRow;
 use crate::index::{db, parts, sets};
 use crate::metadata::lookup::fetch_episode_title;
@@ -37,19 +37,10 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         return crate::edit::category::run(&conn, &row, args.category.as_deref(), args.dry_run);
     }
 
-    let clear = args
-        .clear
-        .iter()
-        .map(|name| {
-            Clearable::parse(name.trim())
-                .with_context(|| format!("cannot clear {name:?}; see --help for the field names"))
-        })
-        .collect::<Result<Vec<_>>>()?;
-
     let mut edits = Edits {
-        kind: args.kind.as_deref().map(editable_kind).transpose()?,
+        kind: args.kind,
         tmdb: args.tmdb,
-        clear,
+        clear: args.clear.clone(),
         title: args.title.clone(),
         show: args.show.clone(),
         year: args.year,
@@ -66,9 +57,7 @@ pub async fn run(cfg: &Config, args: EditArgs) -> Result<()> {
         // another shelf must be looked up on that shelf's endpoint.
         let provisional = apply_checked(&row, &edits)?;
         let fetched = refresh_from_tmdb(cfg, &provisional).await?;
-        edits.title = edits.title.or(fetched.title);
-        edits.show = edits.show.or(fetched.show);
-        edits.year = edits.year.or(fetched.year);
+        merge_refreshed(&row, &mut edits, fetched);
     }
 
     if edits.is_empty() {
@@ -147,14 +136,6 @@ fn episode_text(episode: Episode) -> String {
         Episode::Single(n) => n.to_string(),
         Episode::Range([first, last]) => format!("{first}-{last}"),
     }
-}
-
-#[derive(Default)]
-struct Fetched {
-    title: Option<String>,
-    show: Option<String>,
-    /// A release year the row may be missing, taken from the same answer.
-    year: Option<u16>,
 }
 
 /// Asks TMDB again, in the configured language, for what this set already
