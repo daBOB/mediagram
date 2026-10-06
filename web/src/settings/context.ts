@@ -8,11 +8,13 @@
  * startup, so a setting changed from the browser is indistinguishable from
  * one that had always been that way.
  *
- * Account identity (app id/hash, sign in/out) is `account-actions.ts`; this
- * file keeps the cache and library actions, and the read view both draw on.
+ * Account identity (app id/hash, sign in/out) is `account-actions.ts`,
+ * reached as `account`; this file keeps the cache and library actions, and
+ * the read view both draw on.
  *
- * Order throughout is prove, then persist, then swap: nothing is written to
- * `telegram.json` until the change it describes actually took.
+ * Order throughout is prove, swap, rebind, save: nothing is written to
+ * `telegram.json` until the change it describes actually took, and a save
+ * that fails after that is reported, not thrown.
  */
 
 import type { StartupFacts } from "../status/facts";
@@ -26,8 +28,7 @@ import { applyBudget, validateBudget, MIN_CACHE_BUDGET_BYTES } from "../cache/bu
 import type { Settings } from "../state/settings";
 import { listLibraries, type LibraryCandidate } from "../telegram/libraries";
 import { HandleMap } from "./handles";
-import type { SignInFlow, SignInStep } from "./sign-in";
-import { AccountActions } from "./account-actions";
+import { AccountActions, type ActionResult } from "./account-actions";
 import { listSessions, revokeSession, type RevokeOutcome, type SessionSummary } from "./sessions";
 import { failureMessage } from "../failure-message";
 import { join } from "node:path";
@@ -58,8 +59,6 @@ export interface SettingsView {
   cache: { enabled: boolean; budget: number; heldBytes: number | null; min: number };
 }
 
-export type ActionResult<T> = ({ ok: true } & T) | { ok: false; error: string };
-
 /** A library entry the browser may pick, without the access hash it must never see. */
 export interface LibraryListing {
   handle: string;
@@ -69,15 +68,13 @@ export interface LibraryListing {
 
 export class SettingsRuntime {
   private readonly handles = new HandleMap<LibraryCandidate>();
-  private readonly account: AccountActions;
+  readonly account: AccountActions;
 
   constructor(
     private readonly deps: SettingsDeps,
     creds: { apiId: number; apiHash: string },
-    accountUserId: string | null,
-    signInFlow?: SignInFlow,
   ) {
-    this.account = new AccountActions(deps, creds, accountUserId, signInFlow);
+    this.account = new AccountActions(deps, creds);
   }
 
   async view(): Promise<SettingsView> {
@@ -148,29 +145,9 @@ export class SettingsRuntime {
     this.deps.channel.chatId = candidate.chatId;
     this.deps.channel.accessHash = candidate.accessHash;
     this.deps.channel.title = candidate.title;
-    await (await this.deps.updatesBinding.rebind()).ready;
-    await this.account.persist();
+    const saved = await this.account.commit();
+    if (!saved.ok) return saved;
     return { ok: true, title: candidate.title, sets: this.deps.facts.catalog.sets };
-  }
-
-  setAppCredentials(apiId: number, apiHash: string): Promise<ActionResult<{ signedIn: boolean; connected: boolean | null }>> {
-    return this.account.setAppCredentials(apiId, apiHash);
-  }
-
-  signInPhone(phoneNumber: string): Promise<ActionResult<SignInStep>> {
-    return this.account.signInPhone(phoneNumber);
-  }
-
-  signInCode(code: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
-    return this.account.signInCode(code);
-  }
-
-  signInPassword(password: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
-    return this.account.signInPassword(password);
-  }
-
-  signOut(): Promise<{ ok: true } | { ok: false; error: string }> {
-    return this.account.signOut();
   }
 
   async sessions(): Promise<ActionResult<{ sessions: SessionSummary[] }>> {

@@ -13,7 +13,8 @@ import { isOwnNetwork } from "../client-reach";
 import { jsonBody } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import type { AdminGate } from "./admin-gate";
-import type { ActionResult, SettingsRuntime } from "./context";
+import type { ActionResult } from "./account-actions";
+import type { SettingsRuntime } from "./context";
 
 const PREFIX = "/api/settings";
 
@@ -42,8 +43,7 @@ function answer<T extends object>(result: ActionResult<T>): PlayerResponse {
 export function createSettingsRouter(options: SettingsRouterOptions) {
   const { gate, runtime } = options;
 
-  return async function settingsRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
-    if (!request.path.startsWith(PREFIX)) return null;
+  const route = async (request: PlayerRequest): Promise<PlayerResponse> => {
     if (!isOwnNetwork(request.client ?? "")) return bodiless(404);
 
     const reading = request.method === "GET" || request.method === "HEAD";
@@ -100,33 +100,33 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
       const apiId = Number(body?.apiId);
       const apiHash = body?.apiHash;
       if (typeof apiHash !== "string") return json({ error: "an application hash is required" }, 400);
-      return answer(await runtime.setAppCredentials(apiId, apiHash));
+      return answer(await runtime.account.setAppCredentials(apiId, apiHash));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/phone`) {
       if (request.method !== "POST") return bodiless(405);
       const phone = jsonBody(request.body)?.phone;
       if (typeof phone !== "string") return json({ error: "a phone number is required" }, 400);
-      return answer(await runtime.signInPhone(phone));
+      return answer(await runtime.account.signInPhone(phone));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/code`) {
       if (request.method !== "POST") return bodiless(405);
       const code = jsonBody(request.body)?.code;
       if (typeof code !== "string") return json({ error: "a code is required" }, 400);
-      return answer(await runtime.signInCode(code));
+      return answer(await runtime.account.signInCode(code));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/password`) {
       if (request.method !== "POST") return bodiless(405);
       const password = jsonBody(request.body)?.password;
       if (typeof password !== "string") return json({ error: "a password is required" }, 400);
-      return answer(await runtime.signInPassword(password));
+      return answer(await runtime.account.signInPassword(password));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-out`) {
       if (request.method !== "POST") return bodiless(405);
-      return answer(await runtime.signOut());
+      return answer(await runtime.account.signOut());
     }
 
     if (request.path === `${PREFIX}/sessions`) {
@@ -142,5 +142,17 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
     }
 
     return json({ error: "not found" }, 404);
+  };
+
+  return async function settingsRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
+    if (!request.path.startsWith(PREFIX)) return null;
+    const response = await route(request);
+    // Every answered write leaves a line: these change the account, the
+    // library and the cache. Never the body — it can carry a token, a phone
+    // number or a sign-in code.
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      console.log(`settings: ${request.method} ${request.path} from ${request.client ?? "unknown"} -> ${response.status}`);
+    }
+    return response;
   };
 }

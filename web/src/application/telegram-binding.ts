@@ -80,9 +80,9 @@ export class UpdatesBinding {
   }
 
   /** `start` then `followCatalog`, for a restart or channel switch once startup is already over. */
-  async rebind(): Promise<{ ready: Promise<void> }> {
+  async rebind(): Promise<void> {
     await this.start();
-    return { ready: this.followCatalog() };
+    await this.followCatalog();
   }
 
   stop(): void {

@@ -2,9 +2,9 @@
  * Everything about the account itself: which app id/hash speaks for it,
  * whether it is signed in, and ending or starting a session.
  *
- * Split out of `context.ts`'s `SettingsRuntime`, which delegates every
- * identity action here and keeps the cache and library actions, which touch
- * a different set of collaborators.
+ * The settings router reaches it as `SettingsRuntime.account`; the runtime
+ * keeps the cache and library actions, which touch a different set of
+ * collaborators.
  */
 
 import { Api } from "teleproto";
@@ -15,7 +15,8 @@ import type { ChannelState, UpdatesBinding } from "../application/telegram-bindi
 import { SignInFlow, type SignInStep } from "./sign-in";
 import { writeTelegramFile, type TelegramFile } from "./telegram-file";
 import { failureMessage } from "../failure-message";
-import type { ActionResult } from "./context";
+
+export type ActionResult<T> = ({ ok: true } & T) | { ok: false; error: string };
 
 export interface AccountDeps {
   connection: TelegramConnection;
@@ -25,12 +26,11 @@ export interface AccountDeps {
 }
 
 export class AccountActions {
+  private readonly signInFlow = new SignInFlow();
+
   constructor(
     private readonly deps: AccountDeps,
     private creds: { apiId: number; apiHash: string },
-    private accountUserId: string | null,
-    /** Overridable so a stub harness can answer sign-in without teleproto ever reaching Telegram. */
-    private readonly signInFlow: SignInFlow = new SignInFlow(),
   ) {}
 
   get credentials(): { apiId: number; apiHash: string } {
@@ -52,8 +52,8 @@ export class AccountActions {
       return { ok: false, error: failureMessage(error) };
     }
     this.creds = { apiId, apiHash };
-    await (await this.deps.updatesBinding.rebind()).ready;
-    await this.persist();
+    const saved = await this.commit();
+    if (!saved.ok) return saved;
     const telegram = this.deps.connection.current();
     return { ok: true, signedIn: telegram !== null, connected: telegram?.connected ?? null };
   }
@@ -66,24 +66,15 @@ export class AccountActions {
     }
   }
 
-  async signInCode(code: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
+  async signInCode(code: string): Promise<ActionResult<SignInStep>> {
     return this.advanceSignIn(() => this.signInFlow.code(code));
   }
 
-  async signInPassword(password: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
+  async signInPassword(password: string): Promise<ActionResult<SignInStep>> {
     return this.advanceSignIn(() => this.signInFlow.password(password));
   }
 
-  /**
-   * `differentAccount` warns the caller that the previously chosen channel's
-   * access hash belongs to the account just left: it stops answering for
-   * this one, and the browser should offer "Change library" next. It is not
-   * cleared here — the same recoverable failure a channel that changed
-   * ownership out from under this account would produce either way.
-   */
-  private async advanceSignIn(
-    step: () => Promise<SignInStep>,
-  ): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
+  private async advanceSignIn(step: () => Promise<SignInStep>): Promise<ActionResult<SignInStep>> {
     let result: SignInStep;
     try {
       result = await step();
@@ -92,29 +83,36 @@ export class AccountActions {
     }
     if (result.step !== "done") return { ok: true, ...result };
 
-    const signedInBefore = this.deps.connection.current();
-    const differentAccount = this.accountUserId !== null && this.accountUserId !== result.userId;
-    // Best effort, and only while the old session is still connected: once
-    // `restart` disconnects it, Telegram no longer takes requests on it.
-    if (differentAccount && signedInBefore) await this.logOut(signedInBefore).catch(() => {});
-
     try {
       await this.deps.connection.restart(() => Telegram.open(this.configFor(this.creds.apiId, this.creds.apiHash, result.session)));
     } catch (error) {
       return { ok: false, error: failureMessage(error) };
     }
-    this.accountUserId = result.userId;
-    await (await this.deps.updatesBinding.rebind()).ready;
-    await this.persist();
-    return { ok: true, ...result, differentAccount };
+    const saved = await this.commit();
+    if (!saved.ok) return saved;
+    return { ok: true, ...result };
   }
 
   async signOut(): Promise<{ ok: true } | { ok: false; error: string }> {
     const telegram = this.deps.connection.current();
     if (telegram) await this.logOut(telegram).catch(() => {});
     await this.deps.connection.restart(() => Promise.resolve(null));
-    await (await this.deps.updatesBinding.rebind()).ready;
-    await this.persist();
+    return this.commit();
+  }
+
+  /**
+   * Rebinds the listener to the connection and channel as they now are, then
+   * saves them. The change has already taken effect by now, so a failed save
+   * is reported rather than thrown: the caller still answers, and says the
+   * change will not survive a restart.
+   */
+  async commit(): Promise<{ ok: true } | { ok: false; error: string }> {
+    await this.deps.updatesBinding.rebind();
+    try {
+      await this.persist();
+    } catch (error) {
+      return { ok: false, error: `the change took effect but could not be saved: ${failureMessage(error)}` };
+    }
     return { ok: true };
   }
 
@@ -147,8 +145,8 @@ export class AccountActions {
     } as Config;
   }
 
-  /** Writes the account and chosen channel to disk. Public: a library switch persists through here too. */
-  async persist(): Promise<void> {
+  /** Writes the account and chosen channel to disk. */
+  private async persist(): Promise<void> {
     const file: TelegramFile = {
       apiId: this.creds.apiId,
       apiHash: this.creds.apiHash,

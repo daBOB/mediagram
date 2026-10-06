@@ -409,7 +409,6 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         telegramFilePath: config.telegramFilePath,
       },
       { apiId: config.apiId, apiHash: config.apiHash },
-      null,
     );
     settingsBox.route = createSettingsRouter({
       gate,
