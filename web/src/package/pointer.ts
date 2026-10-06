@@ -136,7 +136,7 @@ function isLowerHex(text: string, length: number): boolean {
  */
 export function pointerReadabilityRefusal(pointer: Pointer, supportedSchema: number[]): Refusal | null {
   if (pointer.format !== PACKAGE_FORMAT) {
-    return { reason: `package format ${pointer.format} is newer than this reader understands` };
+    return { reason: `unsupported package format ${pointer.format} (this reader reads ${PACKAGE_FORMAT})` };
   }
   if (pointer.cipher !== CIPHER) {
     return { reason: `package cipher \`${pointer.cipher}\` is not recognised` };
