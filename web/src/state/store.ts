@@ -17,7 +17,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 
 import { GROUPS } from "./schema";
 import { Settings } from "./settings";
@@ -634,9 +634,7 @@ function tolerate(write: () => void): boolean {
     write();
     return true;
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "SQLITE_CONSTRAINT_FOREIGNKEY") {
-      return false;
-    }
+    if (errorCode(error) === "SQLITE_CONSTRAINT_FOREIGNKEY") return false;
     throw error;
   }
 }

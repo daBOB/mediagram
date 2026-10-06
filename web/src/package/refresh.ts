@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 
 import { openPackage } from "./open";
 import {
@@ -249,8 +249,8 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
 
 /** The manifest is inside the ciphertext, so it and the pointer must agree. */
 async function checkManifest(dir: string, pointer: Pointer): Promise<void> {
-  const text = await readFile(join(dir, MANIFEST_FILE), "utf8").catch((error: NodeJS.ErrnoException) => {
-    if (error.code === "ENOENT") return null;
+  const text = await readFile(join(dir, MANIFEST_FILE), "utf8").catch((error: unknown) => {
+    if (errorCode(error) === "ENOENT") return null;
     throw error;
   });
   if (text === null) throw new Error("the package has no manifest");

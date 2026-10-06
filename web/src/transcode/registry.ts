@@ -10,6 +10,7 @@
 
 import { mkdir, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { errorCode } from "../failure-message";
 import type { TranscodeProgress } from "./progress";
 import { modeOf, sessionId } from "./session-identity";
 import type { TranscodeMode } from "./session-identity";
@@ -269,7 +270,7 @@ export class TranscodeRegistry {
       await rename(session.directory, discarded);
       moved = true;
     } catch (error) {
-      if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) failures.push(error);
+      if (errorCode(error) !== "ENOENT") failures.push(error);
     }
 
     try { await session.process.stop(); }

@@ -11,7 +11,7 @@
 
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 
 export interface TelegramFile {
   apiId: number;
@@ -57,7 +57,7 @@ export async function readTelegramFile(path: string): Promise<TelegramFile | nul
   try {
     text = await readFile(path, "utf8");
   } catch (error) {
-    if ((error as { code?: string }).code === "ENOENT") return null;
+    if (errorCode(error) === "ENOENT") return null;
     console.warn(`telegram.json: could not be read (${failureMessage(error)}); falling back to the environment`);
     return null;
   }

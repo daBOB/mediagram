@@ -65,6 +65,8 @@ const ROOT = join(import.meta.dir, "..");
  * Lowered the same day for `app.js` and `shelf-view.js`, once `SECTIONS` was
  * imported from `sections.js` rather than forwarded, and for
  * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
+ * Lowered the same day for `src/state/store.ts`, once its foreign-key check
+ * read the SQLite code through `errorCode`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 693,
@@ -92,7 +94,7 @@ const CEILINGS: Record<string, number> = {
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 725,
+  "src/state/store.ts": 723,
   "src/state/sync-record.ts": 293,
   "src/transcode/registry.ts": 338,
 };

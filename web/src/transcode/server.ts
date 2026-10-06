@@ -10,7 +10,7 @@
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 import type { HlsFile, HlsServer } from "./routes";
 import type { SessionSpec, TranscodeRegistry } from "./registry";
 
@@ -142,6 +142,6 @@ export class TranscodeFiles implements HlsServer {
 
 /** Output can disappear while a session stops; other disk failures need diagnosis. */
 function pendingOutput(error: unknown): null {
-  if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+  if (errorCode(error) === "ENOENT") return null;
   throw error;
 }

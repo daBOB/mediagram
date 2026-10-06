@@ -8,6 +8,7 @@
 
 import { lstat, readdir, rename, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
+import { errorCode } from "../failure-message";
 
 /** The symlink that names the live version. */
 export const CURRENT = "current";
@@ -27,7 +28,7 @@ export async function availableVersionName(root: string, seconds: number): Promi
     try {
       await lstat(join(root, name));
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return name;
+      if (errorCode(error) === "ENOENT") return name;
       throw error;
     }
   }

@@ -20,6 +20,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { errorCode } from "../failure-message";
 
 const TITLE_SLUG = "[a-z0-9]+(?:-[a-z0-9]+)*";
 const KEY = new RegExp(`^(?:tmdb-(?:(?:movie|tv)-\\d{1,12}(?:-s\\d{1,4}|-bg)?|person-\\d{1,12})|title-${TITLE_SLUG}(?:-bg)?)$`);
@@ -129,7 +130,7 @@ export class PosterStore {
       ).length;
     } catch (error) {
       // A library with no artwork is a normal library.
-      if (!isAbsent(error)) console.warn("Could not count posters", path, error);
+      if (errorCode(error) !== "ENOENT") console.warn("Could not count posters", path, error);
       return 0;
     }
   }
@@ -142,12 +143,8 @@ export class PosterStore {
       return new Uint8Array(readFileSync(path));
     } catch (error) {
       // Absent, or removed between the check and the read.
-      if (!isAbsent(error)) console.warn("Could not read poster", path, error);
+      if (errorCode(error) !== "ENOENT") console.warn("Could not read poster", path, error);
       return null;
     }
   }
-}
-
-function isAbsent(error: unknown): boolean {
-  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

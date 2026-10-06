@@ -16,6 +16,7 @@
 import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { errorCode } from "../failure-message";
 import { chunkPath } from "./key";
 
 interface Entry {
@@ -279,7 +280,7 @@ export class ChunkCache {
       try {
         listing = await readdir(directory, { withFileTypes: true });
       } catch (error) {
-        if (isMissing(error)) return;
+        if (errorCode(error) === "ENOENT") return;
         throw error;
       }
       // A scan walks the whole cache — tens of thousands of files — and a
@@ -297,7 +298,7 @@ export class ChunkCache {
               found.push({ path, size: info.size, usedAt: info.atimeMs });
             } catch (error) {
               // Evicted by someone else between the listing and the stat.
-              if (!isMissing(error)) throw error;
+              if (errorCode(error) !== "ENOENT") throw error;
             }
           }
         }),
@@ -306,8 +307,4 @@ export class ChunkCache {
     await walk(this.root);
     return found;
   }
-}
-
-function isMissing(error: unknown): boolean {
-  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
