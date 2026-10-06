@@ -18,7 +18,6 @@
 import { Api, TelegramClient, sessions } from "teleproto";
 import { computeCheck } from "teleproto/Password";
 import { sessionName } from "../telegram/session-name";
-import { failureMessage } from "../failure-message";
 
 /** How long an attempt may sit between steps before it is discarded. */
 const PENDING_TTL_MS = 10 * 60_000;
@@ -76,8 +75,8 @@ export class SignInFlow {
   async phone(apiId: number, apiHash: string, phoneNumber: string): Promise<SignInStep> {
     await this.cancel();
     const client = this.makeClient(apiId, apiHash);
-    await client.connect();
     try {
+      await client.connect();
       const sent = await client.invoke(
         new Api.auth.SendCode({ phoneNumber, apiId, apiHash, settings: new Api.CodeSettings({}) }),
       );
@@ -91,7 +90,7 @@ export class SignInFlow {
       return { step: "code", viaApp: sent.type instanceof Api.auth.SentCodeTypeApp };
     } catch (error) {
       await client.disconnect().catch(() => {});
-      throw new Error(failureMessage(error));
+      throw error;
     }
   }
 
@@ -108,21 +107,17 @@ export class SignInFlow {
       return await this.finish(result);
     } catch (error) {
       if (passwordNeeded(error)) return { step: "password" };
-      throw new Error(failureMessage(error));
+      throw error;
     }
   }
 
   /** The account's 2FA password, when Telegram asked for one after the code. */
   async password(password: string): Promise<SignInStep> {
     const pending = this.activePending();
-    try {
-      const info = await pending.client.invoke(new Api.account.GetPassword());
-      const check = await computeCheck(info, password);
-      const result = await pending.client.invoke(new Api.auth.CheckPassword({ password: check }));
-      return await this.finish(result);
-    } catch (error) {
-      throw new Error(failureMessage(error));
-    }
+    const info = await pending.client.invoke(new Api.account.GetPassword());
+    const check = await computeCheck(info, password);
+    const result = await pending.client.invoke(new Api.auth.CheckPassword({ password: check }));
+    return this.finish(result);
   }
 
   private activePending(): Pending {

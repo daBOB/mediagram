@@ -119,4 +119,28 @@ describe("SignInFlow", () => {
     await expect(flow.phone(1, "hash", "+15551234")).rejects.toThrow();
     expect(disconnects).toBe(1);
   });
+
+  test("a connect that fails rejects with Telegram's own error and disconnects", async () => {
+    let disconnects = 0;
+    const refused = Object.assign(new Error("API_ID_INVALID"), { errorMessage: "API_ID_INVALID" });
+    const client: SignInClient = {
+      connect: async () => { throw refused; }, disconnect: async () => { disconnects += 1; }, destroy: async () => {},
+      session: fakeSession(), invoke: async () => { throw new Error("unexpected request"); },
+    } as unknown as SignInClient;
+    const flow = new SignInFlow(() => client);
+
+    const failure = await flow.phone(1, "hash", "+15551234").catch((error: unknown) => error);
+
+    expect(failure).toBe(refused);
+    expect(disconnects).toBe(1);
+  });
+
+  test("a refused code reaches the caller as Telegram's error, not a copy of its text", async () => {
+    const invalid = Object.assign(new Error("PHONE_CODE_INVALID"), { errorMessage: "PHONE_CODE_INVALID" });
+    const { client } = fakeClient({ signIn: () => { throw invalid; } });
+    const flow = new SignInFlow(() => client);
+    await flow.phone(1, "hash", "+15551234");
+
+    expect(await flow.code("00000").catch((error: unknown) => error)).toBe(invalid);
+  });
 });
