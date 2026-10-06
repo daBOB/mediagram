@@ -56,7 +56,9 @@ const ROOT = join(import.meta.dir, "..");
  * record's scalar readers moved out to `profiles*.ts` and `record-scalars.ts`.
  * Lowered 2026-10-05 for `player.js`, `transport.js` and `playback.css`, once the
  * player's controls became one card with its menus, framing and stats in modules
- * and styles of their own.
+ * and styles of their own. Lowered 2026-10-06 for `src/state/store.ts`, once its
+ * hand-rolled transactions became `db.transaction()` and the progress exchange
+ * moved to `stats-recorder.ts`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 694,
@@ -84,7 +86,7 @@ const CEILINGS: Record<string, number> = {
   "src/server.ts": 269,
   "src/state/routes.ts": 223,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 760,
+  "src/state/store.ts": 725,
   "src/state/sync-record.ts": 301,
   "src/transcode/registry.ts": 338,
 };

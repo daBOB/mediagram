@@ -30,9 +30,9 @@ import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
 import { exportCollections, exportTitleMarks, exportWatchlist, importCollections, importTitleMarks, importWatchlist } from "./lists-exchange";
-import { exportPreferences, importPreferences, preferenceStamp } from "./preferences-record";
+import { exportPreferences, importPreferences, isSyncedPreference, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
-import { tickKey, UPSERT_PROGRESS, writeProgress, type Ticks } from "./stats-recorder";
+import { exportProgress, importProgress, tickKey, writeProgress, type Ticks } from "./stats-recorder";
 import { exportStats, importStats, NO_LIBRARY, readStats } from "./stats-exchange";
 
 export interface Progress {
@@ -96,6 +96,7 @@ export class WatchState {
   private readonly db: Database | null;
   private readonly ticks: Ticks = new Map(); // each title's last position write, this process only
   private readonly pins = new PinWait(); // the wrong-PIN count: one per store, so one per server process
+  private ephemeralDeviceId: string | null = null;
   /** Whether a round of the channel followed now has come in; a first profile waits for one. */
   readonly household: Household;
 
@@ -120,11 +121,14 @@ export class WatchState {
     return listProfiles(this.db);
   }
 
+  /** A test seam, as `deleteProfile` is: the player adds profiles through
+   * `manage()`, PIN and rule checked; the tests that build on this stay. */
   createProfile(name: unknown, kids = false): Profile | null {
     return insertProfile(this.db, name, { kids });
   }
 
-  /** Takes everything that was theirs with it — every table cascades. */
+  /** A test seam too. Its own rows cascade, but a grown-up's kids stay (`parent_id` is
+   * not a foreign key); the HTTP route deletes through `manage().remove`, which takes them. */
   deleteProfile(id: string): boolean {
     return deleteProfileById(this.db, id);
   }
@@ -276,9 +280,9 @@ export class WatchState {
    * Remembers a choice, or forgets it.
    *
    * An empty value forgets, rather than storing an empty string that every
-   * reader would then have to recognise as meaning nothing.
-   *
-   * Synced names (`preferences-record.ts`) must never be forgotten: a delete returns from other devices.
+   * reader would then have to recognise as meaning nothing. Not for a synced
+   * name (`preferences-record.ts`): a delete would return from other devices,
+   * so an empty value for one is refused and the stored choice stays.
    *
    * Everything is length-capped and nothing is interpreted. This does not
    * know what an audio track or a subtitle offset is, and should not: a
@@ -289,29 +293,30 @@ export class WatchState {
   setPreference(profileId: string, scope: unknown, name: unknown, value: unknown): boolean {
     // A player with nowhere to write did not remember it, and saying it did
     // would have the page show a choice that is gone on the next title.
-    if (!this.db) return false;
-    const at = short(scope);
-    const called = short(name);
-    if (at === null || called === null) return false;
+    const db = this.db;
+    if (!db) return false;
+    const scopeKey = short(scope);
+    const prefName = short(name);
+    if (scopeKey === null || prefName === null) return false;
 
-    const held = short(value);
-    if (held === null) {
-      this.db
-        ?.query("DELETE FROM preferences WHERE profile_id = ?1 AND scope = ?2 AND name = ?3")
-        .run(profileId, at, called);
+    const prefValue = short(value);
+    if (prefValue === null) {
+      if (isSyncedPreference(prefName)) return false;
+      db.query("DELETE FROM preferences WHERE profile_id = ?1 AND scope = ?2 AND name = ?3")
+        .run(profileId, scopeKey, prefName);
       return true;
     }
 
-    const stamp = preferenceStamp(this.db, profileId, at, called);
+    const stamp = preferenceStamp(db, profileId, scopeKey, prefName);
     return tolerate(() =>
-      this.db
-        ?.query(
+      db
+        .query(
           `INSERT INTO preferences(profile_id, scope, name, value, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT(profile_id, scope, name)
                DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
         )
-        .run(profileId, at, called, held, stamp),
+        .run(profileId, scopeKey, prefName, prefValue, stamp),
     );
   }
 
@@ -323,12 +328,13 @@ export class WatchState {
    * happened to share a name would write over each other's.
    */
   deviceId(): string {
+    // A player with nowhere to write still needs to call itself something for
+    // the length of this run, or its own document looks like a stranger's.
+    if (!this.db) return (this.ephemeralDeviceId ??= crypto.randomUUID());
     const held = readMeta(this.db, "device_id");
     if (held !== null) return held;
     const made = crypto.randomUUID();
     writeMeta(this.db, "device_id", made);
-    // A player with nowhere to write still needs to call itself something for
-    // the length of this run, or its own document looks like a stranger's.
     return readMeta(this.db, "device_id") ?? made;
   }
 
@@ -348,12 +354,7 @@ export class WatchState {
         name: profile.name,
         localId: profile.id,
         ...roles.get(profile.id),
-        progress: (this.db
-          ?.query(
-            `SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt
-               FROM progress WHERE profile_id = ?1`,
-          )
-          .all(profile.id) ?? []) as SyncRecord["profiles"][number]["progress"],
+        progress: exportProgress(this.db, profile.id),
         watched,
         unwatched,
         watchlist: exportWatchlist(this.db, profile.id),
@@ -383,18 +384,18 @@ export class WatchState {
    * failure rolls them back and reaches the sync round before it can send.
    */
   importMerged(merged: MergedState): number {
-    if (!this.db) throw new Error("watch state database is unavailable");
-    this.db.exec("BEGIN");
-    try {
+    const db = this.db;
+    if (!db) throw new Error("watch state database is unavailable");
+    return db.transaction(() => {
       // `?? []` throughout: a caller that built a `MergedState` by hand — a
       // test, or a future format that predates these three — says nothing
       // about them, which must read as "no change" rather than a crash.
-      let changed = importTitleMarks(this.db, "kids", merged.kids ?? []);
-      changed += importTitleMarks(this.db, "editors_choice", merged.editorsChoice ?? []);
+      let changed = importTitleMarks(db, "kids", merged.kids ?? []);
+      changed += importTitleMarks(db, "editors_choice", merged.editorsChoice ?? []);
 
       for (const profile of merged.profiles) {
         // The identity to match on, and the spelling to create with.
-        const matched = findOrCreateProfile(this.db, profile.name, profile.displayName, profile.kids === true);
+        const matched = findOrCreateProfile(db, profile.name, profile.displayName, profile.kids === true);
         if (matched === null) continue;
         const profileId = matched.id;
         if (matched.created) changed += 1;
@@ -403,38 +404,23 @@ export class WatchState {
         // FSK 12 until `importRoles` brings the merged limit, so a kid never
         // reads as having none.
         if (profile.kids === true && !matched.kids) {
-          this.db.query("UPDATE profiles SET kids = 1, kids_age = COALESCE(kids_age, 12) WHERE id = ?1").run(profileId);
+          db.query("UPDATE profiles SET kids = 1, kids_age = COALESCE(kids_age, 12) WHERE id = ?1").run(profileId);
           changed += 1;
         }
 
-        for (const row of profile.progress) {
-          const standing = this.db
-            .query("SELECT at_seconds AS at, duration, updated_at AS updatedAt FROM progress WHERE profile_id = ?1 AND set_id = ?2")
-            .get(profileId, row.setId) as Omit<Progress, "setId"> | null;
-          // The merge already broke equal-time ties by device. Keep strictly
-          // newer local news, but apply a changed winner with the same clock.
-          if (standing !== null && (standing.updatedAt > row.updatedAt ||
-            (standing.updatedAt === row.updatedAt && standing.at === row.at && standing.duration === row.duration))) continue;
-          this.db.query(UPSERT_PROGRESS).run(profileId, row.setId, row.at, row.duration, row.updatedAt);
-          changed += 1;
-        }
-
-        changed += importWatched(this.db, profileId, profile.watched);
-        changed += importUnwatched(this.db, profileId, profile.unwatched ?? []);
-        changed += importWatchlist(this.db, profileId, profile.watchlist ?? []);
-        changed += importCollections(this.db, profileId, profile.collections ?? []);
-        changed += importPreferences(this.db, profileId, profile.preferences ?? []);
-        changed += importStats(this.db, profileId, profile);
+        changed += importProgress(db, profileId, profile.progress);
+        changed += importWatched(db, profileId, profile.watched);
+        changed += importUnwatched(db, profileId, profile.unwatched ?? []);
+        changed += importWatchlist(db, profileId, profile.watchlist ?? []);
+        changed += importCollections(db, profileId, profile.collections ?? []);
+        changed += importPreferences(db, profileId, profile.preferences ?? []);
+        changed += importStats(db, profileId, profile);
       }
       // After the loop, not in it: a kid's parent may be a viewer this same
       // import has only just made.
-      changed += importRoles(this.db, merged.profiles);
-      this.db.exec("COMMIT");
+      changed += importRoles(db, merged.profiles);
       return changed;
-    } catch (error) {
-      this.db.exec("ROLLBACK");
-      throw error;
-    }
+    })();
   }
 
   /**
@@ -486,7 +472,8 @@ export class WatchState {
    *
    * One pick, but not one row. Marking a title here retires the last pick,
    * yet a merge can still bring two live marks from two devices; the newest
-   * wins, which is what either viewer last meant.
+   * wins, which is what either viewer last meant. A test seam: the player
+   * reads `editorsChoices()`, so it can skip a pick its catalog lacks.
    */
   editorsChoice(): string | null {
     return this.editorsChoices()[0] ?? null;
@@ -511,8 +498,7 @@ export class WatchState {
     const db = this.db;
     if (!db) return;
     const now = Date.now();
-    db.exec("BEGIN");
-    try {
+    db.transaction(() => {
       if (marked) {
         db.query("UPDATE editors_choice SET removed_at = ?2 WHERE set_id <> ?1 AND removed_at IS NULL").run(setId, now);
         db.query(
@@ -522,26 +508,20 @@ export class WatchState {
       } else {
         db.query("UPDATE editors_choice SET removed_at = ?1 WHERE removed_at IS NULL").run(now);
       }
-      db.exec("COMMIT");
-    } catch (error) {
-      db.exec("ROLLBACK");
-      throw error;
-    }
+    })();
   }
 
   /** A new, empty list. Returns it, so the page need not re-read everything. */
   createCollection(profileId: string, name: unknown): Collection | null {
-    if (!this.db) return null;
+    const db = this.db;
+    if (!db) return null;
     const clean = cleanName(name);
     if (clean === null) return null;
 
     const id = crypto.randomUUID();
     const createdAt = Date.now();
     const made = tolerate(() => {
-      this.db!
-        .query(
-          "INSERT INTO collections(id, profile_id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
-        )
+      db.query("INSERT INTO collections(id, profile_id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)")
         .run(id, profileId, clean, createdAt);
     });
     return made ? { id, name: clean, createdAt, items: [] } : null;
@@ -724,17 +704,12 @@ function migrate(db: Database): void {
     const version = index + 1;
     if (version <= at) continue;
 
-    db.exec("BEGIN");
-    try {
+    db.transaction(() => {
       for (const statement of group) db.exec(statement);
       db.query("INSERT OR REPLACE INTO state_meta(key, value) VALUES ('schema_version', ?1)").run(
         String(version),
       );
-      db.exec("COMMIT");
-    } catch (error) {
-      db.exec("ROLLBACK");
-      throw error;
-    }
+    })();
   }
 }
 

@@ -171,8 +171,8 @@ export function createStateRouter(options: StateRouterOptions) {
         | { scope?: unknown; name?: unknown; value?: unknown }
         | null;
       // `setPreference` decides what is storable — length, type, and that an
-      // empty value means forget. A 400 here is the request being unusable,
-      // not the choice being unwelcome.
+      // empty value forgets a device-only name and is refused for a synced one.
+      // A 400 here is the request being unusable, not the choice being unwelcome.
       return status(
         state.setPreference(profileId, body?.scope, body?.name, body?.value) ? 204 : 400,
       );

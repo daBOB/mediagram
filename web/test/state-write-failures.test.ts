@@ -44,3 +44,13 @@ test.each([
   expect(write).toThrow("fixture storage refused");
   expect(database.query(`SELECT COUNT(*) AS n FROM ${table}`).get()).toEqual({ n: 0 });
 });
+
+test("a sync import storage gives up on reports why, not the rollback that follows", () => {
+  // SQLite ends the transaction itself on a full disk or an I/O error, as
+  // RAISE(ROLLBACK) does here, so a second ROLLBACK has nothing to undo.
+  database.exec(`CREATE TRIGGER give_up BEFORE INSERT ON progress
+    BEGIN SELECT RAISE(ROLLBACK, 'fixture storage gave up'); END`);
+  const progress = [{ setId: "title", at: 10, duration: 100, updatedAt: 1000 }];
+  expect(() => state.importMerged({ profiles: [{ name: "viewer", displayName: "Viewer", progress, watched: [] }] }))
+    .toThrow("fixture storage gave up");
+});

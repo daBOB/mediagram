@@ -22,6 +22,9 @@ import type { Database } from "bun:sqlite";
 /** The names that travel, in every scope (`key:`, `show:`, `set:`, `profile`). */
 const SYNCED = new Set(["subtitle", "cue-size", "cue-backing", "cue-offset"]);
 
+/** Whether `name` travels between devices, and so may be changed but never forgotten. */
+export const isSyncedPreference = (name: string): boolean => SYNCED.has(name);
+
 /** The same cap `store.ts` puts on what a player writes; this caps what a
  * stranger's document is allowed to claim. */
 const MAX_PREFERENCE = 200;

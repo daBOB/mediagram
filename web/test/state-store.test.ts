@@ -165,6 +165,12 @@ describe("a player that cannot remember", () => {
     expect(state.addToCollection("nobody", "x", "01SET")).toBe(false);
   });
 
+  test("keeps one device id for the run, or its own document reads as a stranger's", () => {
+    const state = new WatchState(null);
+
+    expect(state.deviceId()).toBe(state.deviceId());
+  });
+
   test("a path that cannot be created is that, not a crash", () => {
     // `/proc` exists and refuses new directories on Linux.
     const state = new WatchState("/proc/mediagram-nope/state.db");
@@ -462,10 +468,21 @@ describe("what a viewer chose", () => {
     // Rather than storing "" for every reader to recognise as meaning nothing.
     const { state, me } = stateIn();
 
-    state.setPreference(me, "show:X", "subtitle", "de");
-    state.setPreference(me, "show:X", "subtitle", "");
+    state.setPreference(me, "show:X", "audio", "de");
+    expect(state.setPreference(me, "show:X", "audio", "")).toBe(true);
 
     expect(state.snapshot(me).preferences).toEqual([]);
+  });
+
+  test("an empty value for a synced name is refused and the choice stays", () => {
+    // A synced row has no tombstone: deleted here, it would come back from
+    // every other device that still holds it.
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "show:X", "subtitle", "de");
+
+    expect(state.setPreference(me, "show:X", "subtitle", "")).toBe(false);
+    expect(state.snapshot(me).preferences).toEqual([{ scope: "show:X", name: "subtitle", value: "de" }]);
   });
 
   test("one profile's choice is not another's", () => {

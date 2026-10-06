@@ -142,7 +142,7 @@ export function insertProfile(db: Database | null, name: unknown, role: NewProfi
   return toProfile(row);
 }
 
-/** Takes everything that was theirs with it — every table cascades. */
+/** Its own rows cascade; a grown-up's kids stay (`parent_id` is no foreign key) — `ProfileManager.remove` takes them. */
 export function deleteProfileById(db: Database | null, id: string): boolean {
   if (!db) return false;
   return db.query("DELETE FROM profiles WHERE id = ?1").run(id).changes > 0;
