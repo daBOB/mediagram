@@ -16,7 +16,7 @@
 import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { errorCode } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 import { chunkPath } from "./key";
 
 interface Entry {
@@ -177,7 +177,7 @@ export class ChunkCache {
 
   /**
    * Attempts to store a chunk and enforce the budget without interrupting playback.
-   * Write failures are ignored and eviction failures are logged; successful
+   * Write and eviction failures are logged, not thrown; successful
    * resolution guarantees neither persistence nor compliance with the budget.
    */
   async put(setId: string, partIdx: number, index: number, bytes: Uint8Array): Promise<void> {
@@ -196,14 +196,17 @@ export class ChunkCache {
   }
 
   private async writeChunk(path: string, bytes: Uint8Array): Promise<void> {
+    // Renamed into place so a reader never sees a partial file.
+    const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
     try {
       await mkdir(dirname(path), { recursive: true });
-      // Renamed into place so a reader never sees a partial file.
-      const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
       await writeFile(temporary, bytes);
       await rename(temporary, path);
-    } catch {
-      // A cache that cannot write is a slow cache, not a broken player.
+    } catch (error) {
+      // A cache that cannot write is a slow cache, not a broken player. The
+      // temporary goes too: entries() skips .tmp names, so eviction never would.
+      await rm(temporary, { force: true }).catch(() => {});
+      console.warn(`cache: chunk write failed: ${failureMessage(error)}`);
       return;
     }
     // Maintenance must not reject bytes already fetched for playback. An

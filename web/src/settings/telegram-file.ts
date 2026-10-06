@@ -81,9 +81,9 @@ export async function writeTelegramFile(path: string, value: TelegramFile): Prom
   await mkdir(dir, { recursive: true, mode: 0o700 });
   await chmod(dir, 0o700).catch(() => {});
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-  await writeFile(tmp, JSON.stringify(value), { mode: 0o600 });
-  await chmod(tmp, 0o600);
   try {
+    await writeFile(tmp, JSON.stringify(value), { mode: 0o600 });
+    await chmod(tmp, 0o600);
     await rename(tmp, path);
   } catch (error) {
     await rm(tmp, { force: true });

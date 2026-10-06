@@ -8,7 +8,7 @@
 
 import { collectRead } from "./support/cache-reader";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
-import { chmod, mkdir, mkdtemp, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -166,6 +166,23 @@ describe("a write not yet on disk", () => {
     expect(await cache.get(SET, 0, 0, 999)).toBeNull();
 
     await writing;
+  });
+});
+
+describe("write failures", () => {
+  test("a chunk write that fails leaves no temporary behind, and says so", async () => {
+    // A directory where the chunk goes: the temporary is written, the rename fails.
+    const path = chunkPath(root, SET, 0, 0);
+    await mkdir(path, { recursive: true });
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await new ChunkCache(root, 10_000).put(SET, 0, 0, block(1));
+
+      expect(await readdir(dirname(path))).toEqual(["0"]);
+      expect(warning).toHaveBeenCalledWith(expect.stringMatching(/^cache: chunk write failed: /));
+    } finally {
+      warning.mockRestore();
+    }
   });
 });
 

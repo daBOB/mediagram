@@ -193,6 +193,20 @@ describe("hold", () => {
     }
   });
 
+  test("a bundle that cannot be renamed into place leaves no temporary in the held dir", async () => {
+    const ref = refFor(GZ);
+    const name = `${ref.sha256}.json.gz`;
+    await mkdir(join(heldDir, name), { recursive: true });
+    const warnings = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await bundles(async () => GZ).hold(ref);
+      expect(await readdir(heldDir)).toEqual([name]);
+      expect(warnings).toHaveBeenCalledTimes(1);
+    } finally {
+      warnings.mockRestore();
+    }
+  });
+
   test("already on disk needs no second fetch", async () => {
     let calls = 0;
     const ref = refFor(GZ);

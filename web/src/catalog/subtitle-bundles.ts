@@ -177,12 +177,17 @@ async function readDisk(path: string): Promise<Bundle | null> {
 async function writeDiskAtomic(path: string, bytes: Uint8Array): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-  const handle = await open(tmp, "w");
   try {
-    await handle.writeFile(bytes);
-    await handle.sync();
-  } finally {
-    await handle.close();
+    const handle = await open(tmp, "w");
+    try {
+      await handle.writeFile(bytes);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await rename(tmp, path);
+  } catch (error) {
+    await rm(tmp, { force: true });
+    throw error;
   }
-  await rename(tmp, path);
 }
