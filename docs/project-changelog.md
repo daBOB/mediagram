@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.117.3 — the TV card menus lose their headings; the title gives way beside the episode list
+
+Found while checking 0.117.2 on the box.
+
+**Fixed** (Android TV)
+
+- **Card menus have no heading line**, as on the web and the phone. Six speeds could not fit between the title and the card, so the Speed list scrolled, and the TV's focus scrolling cut its "Speed" heading in half. The button that opens a menu already names it.
+- **Beside the open episode list, the title gives way to the marks.** The narrowed top bar gave its room to My List, the rating and Add to list first, which squeezed the title to "•••". The marks stay because they can be pressed; the list's "Now playing" row names the title until the list closes.
+
 ## 0.117.2 — card menus above the card; the TV card beside its episode list
 
 Found on the TV box walk of the player card (`plans/261005-0157-player-control-card/reports/tv-box-walk-261006-report.md`).

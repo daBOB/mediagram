@@ -757,7 +757,10 @@ art: a film's title page, a department's cover story, Movies and Shows.
   card: while it is open the card is laid out in the width left of it, ending
   12dp short and centred in that space; under 600dp the sidebar covers the
   window, card and top bar included. On a television the top bar also ends
-  where the sidebar starts, and the stats overlay waits while it is open.
+  where the sidebar starts and, with no room for both, keeps its marks and
+  drops the title ("Now playing" names it meanwhile); the stats overlay waits
+  while it is open. A menu is its rows alone, with no heading, on every
+  surface: the tool that opened it names it.
 - **Top bar:** back, the title, My List, Kids, Add to list and Notes, over a
   gradient from 55% black (`SCRIM_ALPHA`) at the top edge to clear.
 - **Nothing lifts or grows.** A control keeps its size on press and on
