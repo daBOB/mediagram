@@ -6,7 +6,7 @@ use std::path::Path;
 /// Removes the file the person named, once the index says every part of it
 /// is in the channel. The parts are not read back; that is what `verify` is
 /// for, and what someone whose local copy is the only other one runs first.
-pub(super) fn report_deletion(path: &Path, complete: bool, total: u64) {
+pub(super) fn delete_source_if_complete(path: &Path, complete: bool, total: u64) {
     let name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_string())

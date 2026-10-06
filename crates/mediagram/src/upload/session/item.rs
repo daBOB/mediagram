@@ -4,7 +4,7 @@ use std::path::Path;
 
 use anyhow::{Context, anyhow};
 
-use super::delete_source::report_deletion;
+use super::delete_source::delete_source_if_complete;
 use super::link::Link;
 use super::{Item, Outcome, Session, Set, Step, identity};
 use crate::index::status::SetStatus;
@@ -43,19 +43,30 @@ impl<L: Link> Session<'_, L> {
             (Set::Planned(id), Some(SetStatus::Complete)) => {
                 if let Some(path) = &item.delete_source {
                     // The upload that finished it may still be reading the
-                    // subtitles from this very file.
-                    if matches!(lifecycle::original_of(&self.conn, id), Ok(Some(_))) {
-                        println!(
-                            "  {} kept: its subtitles are still being read",
-                            path.display()
-                        );
-                        return Some(Outcome::AlreadyHeld);
+                    // subtitles from this very file. When that cannot be
+                    // checked, the file is kept: a deletion cannot be undone.
+                    match lifecycle::original_of(&self.conn, id) {
+                        Ok(Some(_)) => {
+                            println!(
+                                "  {} kept: its subtitles are still being read",
+                                path.display()
+                            );
+                            return Some(Outcome::AlreadyHeld);
+                        }
+                        Err(err) => {
+                            println!(
+                                "  {} kept: could not check whether its subtitles are still being read: {err:#}",
+                                path.display()
+                            );
+                            return Some(Outcome::AlreadyHeld);
+                        }
+                        Ok(None) => {}
                     }
                     let total = sets::get_set(&self.conn, id)
                         .ok()
                         .flatten()
                         .map_or(0, |s| s.total);
-                    report_deletion(path, true, total);
+                    delete_source_if_complete(path, true, total);
                 }
                 return Some(Outcome::AlreadyHeld);
             }
@@ -166,7 +177,7 @@ impl<L: Link> Session<'_, L> {
             }
         }
         if let Some(path) = delete {
-            report_deletion(path, complete, set.total);
+            delete_source_if_complete(path, complete, set.total);
         }
         Some(if complete {
             Outcome::Uploaded

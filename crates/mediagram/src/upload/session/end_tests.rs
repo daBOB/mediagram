@@ -82,3 +82,23 @@ async fn a_stopped_session_whose_publish_fails_says_both() {
     assert_eq!(err.root_cause().to_string(), "the line went down");
     assert!(owed(dir.path()));
 }
+
+/// With more than one slot, an upload in any slot defers the publish, not
+/// only one in slot 0: two sessions publishing side by side pin twice.
+#[tokio::test]
+async fn another_upload_in_a_later_slot_defers_the_publish() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut cfg = config_in(dir.path());
+    cfg.upload_slots = 2;
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    let session = Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+    let _held = lock::acquire_file(&lock::slot_path(dir.path(), 1), || {})
+        .await
+        .unwrap();
+    pins::owe_publish(&session.conn).unwrap();
+
+    end(session, false).await.unwrap();
+
+    assert_eq!(connects.get(), 0);
+    assert!(owed(dir.path()));
+}
