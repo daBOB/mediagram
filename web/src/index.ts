@@ -9,7 +9,7 @@
 import { Database } from "bun:sqlite";
 import { rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { describe, load, type Config } from "./config";
+import { load, redactedConfig, type Config } from "./config";
 import { EXPECTED_SCHEMA, assertSchema, listPlayable } from "./catalog";
 import { startServer } from "./server";
 import { SheetStore } from "./thumbs/sheets";
@@ -93,7 +93,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // a player that has never opened Settings.
     const telegramFile = await readTelegramFile(config.telegramFilePath);
     config = resolveTelegram(config, telegramFile);
-    console.log("player:", describe(config));
+    console.log("player:", redactedConfig(config));
 
     // Signed out is a mode, not a startup failure: the catalog, cached
     // chunks and state on this disk are all still servable without a client.
