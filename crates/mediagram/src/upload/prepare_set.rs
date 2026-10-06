@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use mlib_spec::{Caption, Part};
 
 use crate::config::Config;
-use crate::index::{db, lifecycle, shows};
+use crate::index::{db, lifecycle};
 use crate::media::{classify, inspect, remux};
 use crate::metadata::prompt::DialoguerPrompter;
 use crate::metadata::resolve::{self, ResolveInput};
@@ -118,16 +118,7 @@ pub async fn prepare_and_record_set(cfg: &Config, new: &NewSet) -> Result<Planne
     // and no Cast tab. Once per title (a show's later episodes find it held),
     // and a provider that will not answer costs the tab, never the upload.
     if let Some(id) = title_id {
-        match title_details::fetch(&api, title_kind, id, &cfg.tmdb_language).await {
-            Ok(row) => {
-                shows::upsert(&conn, &row)?;
-                title_details::backfill_credits(&conn, &api, title_kind, id).await?;
-                if let Some(collection) = row.collection_id {
-                    title_details::backfill_franchise(&conn, &api, collection).await?;
-                }
-            }
-            Err(err) => tracing::warn!(id, error = %err, "no description recorded for this title"),
-        }
+        title_details::record_for_title(&conn, &api, title_kind, id, &cfg.tmdb_language).await?;
     }
     let source = Source {
         path: &source_path,
