@@ -58,7 +58,8 @@ const ROOT = join(import.meta.dir, "..");
  * player's controls became one card with its menus, framing and stats in modules
  * and styles of their own. Lowered 2026-10-06 for `src/state/store.ts`, once its
  * hand-rolled transactions became `db.transaction()` and the progress exchange
- * moved to `stats-recorder.ts`.
+ * moved to `stats-recorder.ts`. Lowered the same day for `src/state/routes.ts`, once
+ * the write guard moved to the dispatcher and its body reads to `jsonBody`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 694,
@@ -84,7 +85,7 @@ const CEILINGS: Record<string, number> = {
   "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
-  "src/state/routes.ts": 223,
+  "src/state/routes.ts": 209,
   "src/state/schema.ts": 245,
   "src/state/store.ts": 725,
   "src/state/sync-record.ts": 301,

@@ -26,7 +26,7 @@ export interface TelegramFile {
 }
 
 /** The file's shape, checked field by field rather than trusted from `JSON.parse`. */
-function parse(text: string): TelegramFile | null {
+function parseTelegramFile(text: string): TelegramFile | null {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -61,7 +61,7 @@ export async function readTelegramFile(path: string): Promise<TelegramFile | nul
     console.warn(`telegram.json: could not be read (${failureMessage(error)}); falling back to the environment`);
     return null;
   }
-  const parsed = parse(text);
+  const parsed = parseTelegramFile(text);
   if (parsed === null) {
     console.warn("telegram.json: malformed; falling back to the environment");
   }

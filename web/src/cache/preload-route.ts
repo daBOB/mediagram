@@ -3,6 +3,7 @@ import type { Database } from "bun:sqlite";
 import { partLocations, playableSet } from "../catalog";
 import type { SubtitleBundles } from "../catalog/subtitle-bundles";
 import { bundleRef } from "../catalog/subtitle-tracks";
+import { jsonBody } from "../http/browser-write";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless } from "../response";
 import type { SeriesPreload } from "./series-preload";
@@ -28,10 +29,6 @@ export function preloadResponse(
 }
 
 function preloadIds(body: string | null | undefined): string[] {
-  try {
-    const ids = (JSON.parse(body ?? "") as { setIds?: unknown })?.setIds;
-    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
+  const ids = jsonBody(body)?.setIds;
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
 }

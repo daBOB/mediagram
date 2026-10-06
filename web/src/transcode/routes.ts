@@ -3,7 +3,7 @@ import type { Database } from "bun:sqlite";
 import { playableSet } from "../catalog";
 import { isLocalAddress } from "../client-reach";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { bodiless as empty, withBody } from "../response";
+import { bodiless, withBody } from "../response";
 import { copyVideoAs } from "./video-copy";
 import type { SessionSpec } from "./registry";
 
@@ -97,11 +97,11 @@ function requestedAudioTrack(asked: string | null | undefined): number {
 export async function beginTranscode(
   db: Database, hls: HlsServer | undefined, request: PlayerRequest, setId: string, maxBitrate: number,
 ): Promise<PlayerResponse> {
-  if (!hls) return empty(501);
+  if (!hls) return bodiless(501);
   // Looked up once and kept: this is both the check that the title exists
   // and the profile the copy decision below is made from.
   const profile = playableSet(db, setId);
-  if (profile === null) return empty(404);
+  if (profile === null) return bodiless(404);
   // `Number.isFinite`, not a NaN check: `Infinity` survives one of those
   // and reaches the command line as `-ss Infinity`, which ffmpeg exits on
   // at once while the request waits out the whole readiness timeout.
@@ -164,8 +164,8 @@ export async function hlsResponse(
   // what they say: still starting is worth waiting for, stopped or reaped is
   // not, and a player told to wait for a session that is never coming back
   // waits instead of falling back to direct play.
-  if (found === "gone") return empty(404);
-  if (found === "not-ready") return empty(503);
+  if (found === "gone") return bodiless(404);
+  if (found === "not-ready") return bodiless(503);
 
   return withBody(found.body, found.type, {
     headOnly: method === "HEAD", headers: { "cache-control": "no-store" },

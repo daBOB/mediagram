@@ -7,11 +7,12 @@
  * the page can say what went wrong.
  */
 
+import { jsonBody } from "../http/browser-write";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { withBody } from "../response";
+import { bodiless, withBody } from "../response";
 import type { Profile } from "./profiles";
 import type { Refusal, Refused } from "./profiles-manage";
-import { json, P, parse, status } from "./route-shared";
+import { json, P } from "./route-shared";
 import type { WatchState } from "./store";
 
 const PROFILES = /^\/api\/profiles$/;
@@ -42,18 +43,17 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
   // said who they are. It says whether a profile has a PIN, never what, and
   // whether the household has been heard — until then no first profile is made.
   if (method === "GET" || method === "HEAD") {
-    if (!list) return status(405);
+    if (!list) return bodiless(405);
     const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles() };
     return json(JSON.stringify(said), method === "HEAD");
   }
 
-  const body = parse(request.body);
-  const said = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  const said = jsonBody(request.body) ?? {};
   const actorId = typeof said.actorId === "string" ? said.actorId : "";
   const manage = state.manage();
 
   if (list) {
-    if (method !== "POST") return status(405);
+    if (method !== "POST") return bodiless(405);
     // Nobody asking is the first profile, on a player with no grown-up yet.
     if (said.actorId === undefined) return answer(manage.createFirst(said.name, said.newPin));
     // Only a literal true: a restricting flag is not switched on by accident.
@@ -62,7 +62,7 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       : manage.createGrownUp(actorId, said.pin, said.name, said.newPin));
   }
   if (named !== null) {
-    return method === "DELETE" ? answer(manage.remove(actorId, said.pin, named[1]!)) : status(405);
+    return method === "DELETE" ? answer(manage.remove(actorId, said.pin, named[1]!)) : bodiless(405);
   }
 
   const id = acting![1]!;
@@ -76,13 +76,13 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
     case "PUT kids-age":
       return answer(manage.setKidsAge(actorId, said.pin, id, said.age));
     default:
-      return status(405);
+      return bodiless(405);
   }
 }
 
 /** 204 for done, 201 and the profile for one made, a reason for a refusal. */
 function answer(result: Refused | Profile | null): PlayerResponse {
-  if (result === null) return status(204);
+  if (result === null) return bodiless(204);
   if (!("reason" in result)) return json(JSON.stringify(result), false, 201);
   const headers: Record<string, string> =
     result.retryAfter === undefined ? {} : { "retry-after": String(result.retryAfter) };

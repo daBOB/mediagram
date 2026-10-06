@@ -1,8 +1,8 @@
-/** The browser write guard, and the one place every write meets it: the dispatcher. */
+/** The browser write guard, the one place every write meets it, and the body reader the writes share. */
 
 import { describe, expect, test } from "bun:test";
 
-import { refuseUnsafeBrowserWrite } from "../src/http/browser-write";
+import { jsonBody, refuseUnsafeBrowserWrite } from "../src/http/browser-write";
 import type { PlayerRequest } from "../src/http/contracts";
 import type { ByteSource } from "../src/http/stream";
 import { bodiless } from "../src/response";
@@ -53,5 +53,12 @@ describe("refuseUnsafeBrowserWrite", () => {
   test("a write that is not JSON is 415", () => expect(verdict({ contentType: "text/plain" })).toBe(415));
   test("a DELETE skips the type check", () => {
     expect(refuseUnsafeBrowserWrite(write("DELETE", { contentType: null }))).toBeNull();
+  });
+});
+
+describe("jsonBody", () => {
+  test("an object is kept", () => expect(jsonBody('{"name":"Films"}')).toEqual({ name: "Films" }));
+  test.each(["[1]", "not json", "", "null", "\"text\"", null, undefined])("%p reads as no fields", (body) => {
+    expect(jsonBody(body)).toBeNull();
   });
 });

@@ -2,7 +2,7 @@
 import type { Database } from "bun:sqlite";
 import { partLocations, playableSet, type PartLocation } from "../catalog";
 import { planReads, totalSize, type PartSpan, type Step } from "../range";
-import { bodiless as empty, contentType, planResponse } from "../response";
+import { bodiless, contentType, planResponse } from "../response";
 import type { PlayerRequest, PlayerResponse } from "./contracts";
 
 /** Where a stream's bytes come from. */
@@ -20,7 +20,7 @@ export function streamSet(
   const set = playableSet(db, setId);
   // Not there, incomplete, or inconsistent: all the same to a player, and
   // none of them worth telling a caller apart.
-  if (set === null) return empty(404);
+  if (set === null) return bodiless(404);
 
   const locations = partLocations(db, setId);
   const spans: PartSpan[] = locations.map((l) => l.span);

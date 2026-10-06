@@ -20,6 +20,7 @@
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
+import { jsonBody } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
@@ -62,17 +63,6 @@ export interface StatusRouterOptions {
 const json = (body: string, headOnly: boolean): PlayerResponse =>
   // A reading is true for the instant it was taken and no longer.
   withBody(body, "application/json", { headOnly, headers: { "cache-control": "no-store" } });
-
-const status = bodiless;
-
-function parseJson(body: string | null | undefined): unknown {
-  if (typeof body !== "string" || body === "") return null;
-  try {
-    return JSON.parse(body);
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Answers a status request, or `null` when the path is not one of these.
@@ -130,18 +120,18 @@ export function createStatusRouter(options: StatusRouterOptions) {
 
     // Before the method check, so a caller from outside cannot learn the
     // difference between "wrong method here" and "nothing here".
-    if (!isOwnNetwork(request.client ?? "")) return status(404);
+    if (!isOwnNetwork(request.client ?? "")) return bodiless(404);
 
     if (isPlayback) {
-      if (request.method !== "POST") return status(405);
-      const report = validateReport(parseJson(request.body));
-      if (!report) return status(400);
+      if (request.method !== "POST") return bodiless(405);
+      const report = validateReport(jsonBody(request.body));
+      if (!report) return bodiless(400);
       playback.put(report, request.client);
-      return status(204);
+      return bodiless(204);
     }
 
     const reading = request.method === "GET" || request.method === "HEAD";
-    if (!reading) return status(405);
+    if (!reading) return bodiless(405);
 
     // All three at once: they are independent, and one after another would
     // make the slow case the sum of three reads rather than the longest one.

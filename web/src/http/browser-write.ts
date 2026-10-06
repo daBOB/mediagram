@@ -29,3 +29,19 @@ export function refuseUnsafeBrowserWrite(request: PlayerRequest): PlayerResponse
   }
   return null;
 }
+
+/**
+ * A write's JSON body as an object, or `null` for anything else.
+ *
+ * Lenient on purpose: an empty, malformed, array or scalar body reads as no
+ * fields at all, and each route answers for the field it needed.
+ */
+export function jsonBody(body: string | null | undefined): Record<string, unknown> | null {
+  try {
+    const value: unknown = JSON.parse(body ?? "");
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}

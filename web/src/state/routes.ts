@@ -3,10 +3,12 @@
  * profiles through `profileRoute`. The browser write guard runs once, in the `src/routes.ts` dispatcher.
  */
 
+import { jsonBody } from "../http/browser-write";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
+import { bodiless } from "../response";
 import type { WatchState } from "./store";
 import { profileRoute } from "./profiles-routes";
-import { json, P, parse, status } from "./route-shared";
+import { json, P } from "./route-shared";
 
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
 const PROGRESS = new RegExp(`^/api/profiles/${P}/progress/([A-Za-z0-9]{1,64})$`);
@@ -65,10 +67,10 @@ export function createStateRouter(options: StateRouterOptions) {
       // Every live mark, and which of them are "from 6": a subset, so a page
       // that reads `kids` alone still sees every mark.
       if (reading) return json(JSON.stringify({ kids: state.kids(), fromSix: state.kidsFromSix() }), method === "HEAD");
-      return status(405);
+      return bodiless(405);
     }
     if (EDITORS_CHOICE.test(path)) {
-      if (!reading) return status(405);
+      if (!reading) return bodiless(405);
       // A pick the catalog no longer holds is no pick; the next live one is.
       const pick = state.editorsChoices().find((setId) => isPlayable(setId)) ?? null;
       return json(JSON.stringify({ setId: pick }), method === "HEAD");
@@ -80,7 +82,7 @@ export function createStateRouter(options: StateRouterOptions) {
 
     const snapshot = STATE.exec(path);
     if (snapshot && reading) {
-      if (!state.has(snapshot[1]!)) return status(404);
+      if (!state.has(snapshot[1]!)) return bodiless(404);
       return json(
         JSON.stringify({ remembers: state.remembers, ...state.snapshot(snapshot[1]!) }),
         method === "HEAD",
@@ -88,15 +90,15 @@ export function createStateRouter(options: StateRouterOptions) {
     }
 
     // Past here everything writes, and the dispatcher has checked every write.
-    if (reading) return status(405);
+    if (reading) return bodiless(405);
 
     const progress = PROGRESS.exec(path);
     if (progress) {
       const [, profileId, setId] = progress as unknown as [string, string, string];
-      if (!state.has(profileId) || !isPlayable(setId)) return status(404);
+      if (!state.has(profileId) || !isPlayable(setId)) return bodiless(404);
       if (method === "DELETE") {
         state.clearProgress(profileId, setId);
-        return status(204);
+        return bodiless(204);
       }
       // `POST` as well as `PUT`, because `navigator.sendBeacon` can only POST
       // and a beacon is how a position survives the tab being closed — which
@@ -109,60 +111,58 @@ export function createStateRouter(options: StateRouterOptions) {
       // dispatcher's write guard, which requires `application/json`. A form
       // may only send urlencoded, multipart or text/plain, and anything that
       // could set a JSON type needs a preflight this server does not answer.
-      if (method !== "PUT" && method !== "POST") return status(405);
+      if (method !== "PUT" && method !== "POST") return bodiless(405);
 
-      const body = parse(request.body);
-      const at = Number((body as { at?: unknown })?.at);
-      if (!Number.isFinite(at)) return status(400);
-      const runtime = Number((body as { duration?: unknown })?.duration);
+      const body = jsonBody(request.body);
+      const at = Number(body?.at);
+      if (!Number.isFinite(at)) return bodiless(400);
+      const runtime = Number(body?.duration);
       state.setProgress(profileId, setId, at, Number.isFinite(runtime) && runtime > 0 ? runtime : null);
-      return status(204);
+      return bodiless(204);
     }
 
     // No write here carries its own copy of the guard: the dispatcher runs
     // it once for every write, so none can be added that skips it.
     const kid = KIDS_ITEM.exec(path);
     if (kid) {
-      if (!isPlayable(kid[1]!)) return status(404);
-      if (method !== "PUT" && method !== "DELETE") return status(405);
+      if (!isPlayable(kid[1]!)) return bodiless(404);
+      if (method !== "PUT" && method !== "DELETE") return bodiless(405);
       // No age is from 12, which is what every mark meant before there were
       // two; anything but 6 or 12 is not an age.
-      const age = (parse(request.body) as { age?: unknown } | null)?.age;
-      if (method === "PUT" && age !== undefined && age !== 6 && age !== 12) return status(400);
+      const age = jsonBody(request.body)?.age;
+      if (method === "PUT" && age !== undefined && age !== 6 && age !== 12) return bodiless(400);
       state.setKids(kid[1]!, method === "PUT", age === 6 ? 6 : 12);
-      return status(204);
+      return bodiless(204);
     }
 
     const pinned = EDITORS_CHOICE_ITEM.exec(path);
     if (pinned) {
-      if (!isPlayable(pinned[1]!)) return status(404);
-      if (method !== "PUT" && method !== "DELETE") return status(405);
+      if (!isPlayable(pinned[1]!)) return bodiless(404);
+      if (method !== "PUT" && method !== "DELETE") return bodiless(405);
       state.setEditorsChoice(pinned[1]!, method === "PUT");
-      return status(204);
+      return bodiless(204);
     }
 
     const watchlist = WATCHLIST.exec(path);
     if (watchlist) {
       const [, profileId, setId] = watchlist as unknown as [string, string, string];
-      if (!state.has(profileId) || !isPlayable(setId)) return status(404);
-      if (method !== "PUT" && method !== "DELETE") return status(405);
+      if (!state.has(profileId) || !isPlayable(setId)) return bodiless(404);
+      if (method !== "PUT" && method !== "DELETE") return bodiless(405);
       state.setWatchlisted(profileId, setId, method === "PUT");
-      return status(204);
+      return bodiless(204);
     }
 
     const preference = PREFERENCE.exec(path);
     if (preference) {
       const profileId = preference[1]!;
-      if (!state.has(profileId)) return status(404);
-      if (method !== "PUT" && method !== "POST") return status(405);
+      if (!state.has(profileId)) return bodiless(404);
+      if (method !== "PUT" && method !== "POST") return bodiless(405);
 
-      const body = parse(request.body) as
-        | { scope?: unknown; name?: unknown; value?: unknown }
-        | null;
+      const body = jsonBody(request.body);
       // `setPreference` decides what is storable — length, type, and that an
       // empty value forgets a device-only name and is refused for a synced one.
       // A 400 here is the request being unusable, not the choice being unwelcome.
-      return status(
+      return bodiless(
         state.setPreference(profileId, body?.scope, body?.name, body?.value) ? 204 : 400,
       );
     }
@@ -170,43 +170,40 @@ export function createStateRouter(options: StateRouterOptions) {
     const watched = WATCHED.exec(path);
     if (watched) {
       const [, profileId, setId] = watched as unknown as [string, string, string];
-      if (!state.has(profileId) || !isPlayable(setId)) return status(404);
-      if (method !== "PUT" && method !== "DELETE") return status(405);
+      if (!state.has(profileId) || !isPlayable(setId)) return bodiless(404);
+      if (method !== "PUT" && method !== "DELETE") return bodiless(405);
       state.setWatched(profileId, setId, method === "PUT");
-      return status(204);
+      return bodiless(204);
     }
 
     const lists = COLLECTIONS.exec(path);
     if (lists) {
-      if (!state.has(lists[1]!)) return status(404);
-      if (method !== "POST") return status(405);
-      const made = state.createCollection(
-        lists[1]!,
-        (parse(request.body) as { name?: unknown })?.name,
-      );
-      return made === null ? status(400) : json(JSON.stringify(made), false, 201);
+      if (!state.has(lists[1]!)) return bodiless(404);
+      if (method !== "POST") return bodiless(405);
+      const made = state.createCollection(lists[1]!, jsonBody(request.body)?.name);
+      return made === null ? bodiless(400) : json(JSON.stringify(made), false, 201);
     }
 
     const collection = COLLECTION.exec(path);
     if (collection) {
       const [, profileId, id] = collection as unknown as [string, string, string];
-      if (method === "DELETE") return status(state.deleteCollection(profileId, id) ? 204 : 404);
-      if (method !== "PATCH") return status(405);
-      const name = (parse(request.body) as { name?: unknown })?.name;
-      return status(state.renameCollection(profileId, id, name) ? 204 : 404);
+      if (method === "DELETE") return bodiless(state.deleteCollection(profileId, id) ? 204 : 404);
+      if (method !== "PATCH") return bodiless(405);
+      const name = jsonBody(request.body)?.name;
+      return bodiless(state.renameCollection(profileId, id, name) ? 204 : 404);
     }
 
     const item = COLLECTION_ITEM.exec(path);
     if (item) {
       const [, profileId, id, setId] = item as unknown as [string, string, string, string];
-      if (!isPlayable(setId)) return status(404);
-      if (method === "PUT") return status(state.addToCollection(profileId, id, setId) ? 204 : 404);
+      if (!isPlayable(setId)) return bodiless(404);
+      if (method === "PUT") return bodiless(state.addToCollection(profileId, id, setId) ? 204 : 404);
       if (method === "DELETE") {
-        return status(state.removeFromCollection(profileId, id, setId) ? 204 : 404);
+        return bodiless(state.removeFromCollection(profileId, id, setId) ? 204 : 404);
       }
-      return status(405);
+      return bodiless(405);
     }
 
-    return status(404);
+    return bodiless(404);
   };
 }
