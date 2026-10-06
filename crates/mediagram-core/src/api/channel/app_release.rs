@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use super::download::download_with;
 use super::responses::Responses;
 use super::{index, library};
-use crate::api::account::revoked::checked_for;
+use crate::api::account::revoked::{self, checked_for};
 use crate::api::account::session;
 use crate::api::{Core, CoreError};
 use crate::transport::stream::part_document;
@@ -122,9 +122,12 @@ async fn download(core: &Core, release: &AppRelease, path: &Path) -> Result<(), 
             "this device has no way to reach the channel the app release is in".into(),
         )
     })?;
-    let document = part_document(&client, channel, release.message_id)
-        .await
-        .map_err(CoreError::network("resolving the app release"))?;
+    let document = match part_document(&client, channel, release.message_id).await {
+        Ok(document) => document,
+        Err(err) => {
+            return Err(revoked::failed(core, &owner, "resolving the app release", err).await);
+        }
+    };
     write_verified(core, &owner, release, path, client.iter_download(&document)).await
 }
 

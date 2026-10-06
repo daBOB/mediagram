@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::api::account::session;
+use crate::api::account::{revoked, session};
 use crate::api::channel::download::download_with;
 use crate::api::channel::library;
 use crate::api::{Core, CoreError};
@@ -41,9 +41,12 @@ pub(super) async fn fetch_into(
             "this device has no way to reach the channel a subtitle bundle is in".into(),
         )
     })?;
-    let document = part_document(&client, channel, bundle.message_id)
-        .await
-        .map_err(CoreError::network("resolving a subtitle bundle"))?;
+    let document = match part_document(&client, channel, bundle.message_id).await {
+        Ok(document) => document,
+        Err(err) => {
+            return Err(revoked::failed(core, &owner, "resolving a subtitle bundle", err).await);
+        }
+    };
 
     std::fs::create_dir_all(dir(core)).map_err(CoreError::io("preparing the subtitle cache"))?;
     let tmp = tmp_path(core, &bundle.sha256);
