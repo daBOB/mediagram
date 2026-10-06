@@ -15,6 +15,7 @@
 mod backup_path;
 mod conflicts;
 mod live;
+mod message_gone;
 mod publish;
 mod pull;
 pub mod remote;
@@ -30,7 +31,7 @@ use crate::config::Config;
 use crate::index::{db, pins};
 use crate::telegram::client::Tg;
 use remote::ChannelRemote;
-pub use telegram_remote::{TelegramRemote, message_is_gone};
+pub use telegram_remote::TelegramRemote;
 
 /// MIME type the index document is sent under.
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";

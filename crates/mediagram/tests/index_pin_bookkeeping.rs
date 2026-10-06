@@ -126,39 +126,3 @@ fn the_pulled_channel_index_is_remembered_and_forgotten() {
     record_pulled(&conn, None).unwrap();
     assert_eq!(pulled(&conn).unwrap(), None);
 }
-
-mod nothing_left_to_unpin {
-    use grammers_mtsender::InvocationError;
-    use mediagram::channel_index::message_is_gone;
-
-    fn rpc(code: i32, message: &str) -> anyhow::Error {
-        anyhow::Error::new(InvocationError::Rpc(
-            grammers_tl_types::types::RpcError {
-                error_code: code,
-                error_message: message.to_string(),
-            }
-            .into(),
-        ))
-    }
-
-    #[test]
-    fn a_message_that_no_longer_exists_is_gone() {
-        assert!(message_is_gone(&rpc(400, "MESSAGE_ID_INVALID")));
-        assert!(message_is_gone(&rpc(400, "MESSAGE_NOT_MODIFIED")));
-    }
-
-    /// These arrive in the same 400 class and say nothing about the message.
-    /// Reading them as "gone" would drop the id and strand the pin.
-    #[test]
-    fn a_channel_level_refusal_is_not_the_message_being_gone() {
-        assert!(!message_is_gone(&rpc(400, "PEER_ID_INVALID")));
-        assert!(!message_is_gone(&rpc(400, "CHANNEL_INVALID")));
-        assert!(!message_is_gone(&rpc(400, "CHAT_WRITE_FORBIDDEN")));
-    }
-
-    #[test]
-    fn a_server_error_or_a_flood_wait_is_never_gone() {
-        assert!(!message_is_gone(&rpc(500, "MESSAGE_ID_INVALID")));
-        assert!(!message_is_gone(&rpc(420, "FLOOD_WAIT_31")));
-    }
-}
