@@ -73,3 +73,65 @@ fn a_multi_episode_range_is_rendered_as_sxxeyy_dash_eyy() {
     ));
     assert_eq!(name, "Breaking Bad (1995) - s05e14-e16");
 }
+
+fn of_kind(
+    t: Kind,
+    show: Option<&str>,
+    title: Option<&str>,
+    s: Option<u32>,
+    e: Option<Episode>,
+) -> Caption {
+    Caption {
+        t,
+        show: show.map(Into::into),
+        title: title.map(Into::into),
+        ..episode("", s, e, None)
+    }
+}
+
+#[test]
+fn a_lesson_names_its_course_code_then_title() {
+    let lesson = of_kind(
+        Kind::Tut,
+        Some("Rust Course"),
+        Some("Ownership"),
+        Some(2),
+        Some(Episode::Single(3)),
+    );
+    assert_eq!(
+        base_name(&lesson),
+        "Rust Course (1995) - c02l03 - Ownership"
+    );
+    let unnamed = of_kind(Kind::Tut, None, None, Some(2), Some(Episode::Single(3)));
+    assert_eq!(base_name(&unnamed), "01ABC (1995) - c02l03");
+}
+
+#[test]
+fn a_collection_episode_reads_like_a_lesson_with_its_own_code() {
+    let docu = of_kind(
+        Kind::Docu,
+        Some("Terra X"),
+        Some("Vulkane"),
+        Some(1),
+        Some(Episode::Single(5)),
+    );
+    assert_eq!(base_name(&docu), "Terra X (1995) - c01e05 - Vulkane");
+    let unnumbered = of_kind(Kind::Docu, Some("Terra X"), Some("Vulkane"), None, None);
+    assert_eq!(base_name(&unnumbered), "Terra X (1995)");
+}
+
+#[test]
+fn a_standalone_documentary_and_a_movie_are_their_title_and_year() {
+    let docu = of_kind(Kind::Docu, None, Some("Free Solo"), None, None);
+    assert_eq!(base_name(&docu), "Free Solo (1995)");
+    let movie = of_kind(
+        Kind::Movie,
+        Some("ignored"),
+        Some("Heat"),
+        Some(1),
+        Some(Episode::Single(1)),
+    );
+    assert_eq!(base_name(&movie), "Heat (1995)");
+    let untitled = of_kind(Kind::Movie, None, None, None, None);
+    assert_eq!(base_name(&untitled), "01ABC (1995)");
+}

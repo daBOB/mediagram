@@ -3,6 +3,8 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use mlib_spec::caption::position_code;
+
 use crate::index::set_row::SetRow;
 use crate::media::classify;
 use crate::media::prepare::plan::PICTURE_SUBTITLES;
@@ -160,14 +162,20 @@ fn count_subtitle_tracks(probed: &Probed) -> (u32, u32) {
     (de_en_text, picture_only)
 }
 
+/// Reads like the label `status` and `remove` print: the show and its
+/// position code, so a range and a lesson read as what they are.
 fn display_title(set: &SetRow) -> String {
-    if let (Some(show), Some(season), Some(episode)) = (&set.show, set.season, set.episode) {
-        format!("{show} S{season:02}E{:02}", episode.first())
-    } else {
-        set.title
+    let code = set
+        .season
+        .zip(set.episode)
+        .and_then(|(s, e)| position_code(set.kind, s, e));
+    match (&set.show, code) {
+        (Some(show), Some(code)) => format!("{show} {code}"),
+        _ => set
+            .title
             .clone()
             .or_else(|| set.show.clone())
-            .unwrap_or_default()
+            .unwrap_or_default(),
     }
 }
 

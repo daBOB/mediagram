@@ -46,6 +46,20 @@ fn display_and_episode_code() {
 }
 
 #[test]
+fn each_kind_has_its_own_position_code() {
+    let two = Episode::Single(2);
+    assert_eq!(position_code(Kind::Ep, 1, two).as_deref(), Some("S01E02"));
+    assert_eq!(
+        position_code(Kind::Ep, 1, Episode::Range([2, 3])).as_deref(),
+        Some("S01E02-E03")
+    );
+    assert_eq!(position_code(Kind::Tut, 1, two).as_deref(), Some("C01L02"));
+    assert_eq!(position_code(Kind::Doc, 1, two).as_deref(), Some("C01D02"));
+    assert_eq!(position_code(Kind::Docu, 1, two).as_deref(), Some("C01E02"));
+    assert_eq!(position_code(Kind::Movie, 1, two), None);
+}
+
+#[test]
 fn with_part_keeps_everything_else() {
     let c = ep();
     let d = c.with_part(Part {

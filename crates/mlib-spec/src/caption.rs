@@ -172,6 +172,19 @@ pub fn episode_code(season: u32, e: Episode) -> String {
     }
 }
 
+/// Where `kind` sits in its show, course or collection: `S01E02`, `C01L02`,
+/// `C01D02` or `C01E02`. `None` for a movie, which sits nowhere.
+#[must_use]
+pub fn position_code(kind: Kind, season: u32, ep: Episode) -> Option<String> {
+    match kind {
+        Kind::Ep => Some(episode_code(season, ep)),
+        Kind::Tut => Some(lesson_code(season, ep)),
+        Kind::Doc => Some(document_code(season, ep)),
+        Kind::Docu => Some(docu_code(season, ep)),
+        Kind::Movie => None,
+    }
+}
+
 #[cfg(test)]
 #[path = "caption_tests.rs"]
 mod tests;

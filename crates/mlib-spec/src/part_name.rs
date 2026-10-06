@@ -1,7 +1,7 @@
 //! Telegram trims document names to 60 characters. Names here are a human
 //! convenience only; captions and the index are authoritative.
 
-use crate::caption::{Caption, Episode, Kind, docu_code};
+use crate::caption::{Caption, Kind, position_code};
 
 pub const MAX_NAME_LEN: usize = 60;
 const MAX_EXT_LEN: usize = 8;
@@ -13,52 +13,31 @@ pub fn base_name(c: &Caption) -> String {
         Some(y) => format!("{name} ({y})"),
         None => name.to_string(),
     };
-    let raw = match c.t {
-        Kind::Movie => with_year(c.title.as_deref().unwrap_or(&c.set)),
-        Kind::Ep => {
-            let show = with_year(c.show.as_deref().unwrap_or(&c.set));
-            match (c.s, c.e, c.abs) {
-                (Some(s), Some(e), _) => format!("{show} - {}", lower_code(s, e)),
-                (_, _, Some(a)) => format!("{show} - {a:03}"),
-                _ => show,
+    let code =
+        c.s.zip(c.e)
+            .and_then(|(s, e)| position_code(c.t, s, e))
+            .map(|code| code.to_lowercase());
+    let raw = match (c.t, c.show.as_deref()) {
+        // A standalone documentary reads exactly as a movie does.
+        (Kind::Movie, _) | (Kind::Docu, None) => with_year(c.title.as_deref().unwrap_or(&c.set)),
+        (Kind::Ep, show) => {
+            let show = with_year(show.unwrap_or(&c.set));
+            match (code, c.abs) {
+                (Some(code), _) => format!("{show} - {code}"),
+                (None, Some(a)) => format!("{show} - {a:03}"),
+                (None, None) => show,
             }
         }
-        Kind::Tut | Kind::Doc => {
-            let course = with_year(c.show.as_deref().unwrap_or(&c.set));
-            let code = match (c.s, c.e) {
-                (Some(ch), Some(n)) => Some(
-                    match c.t {
-                        Kind::Doc => crate::caption::document_code(ch, n),
-                        _ => crate::caption::lesson_code(ch, n),
-                    }
-                    .to_lowercase(),
-                ),
-                _ => None,
-            };
+        // A lesson, a document or a collection's episode: the course, its
+        // code, then the item's own title last so truncation eats it first.
+        (Kind::Tut | Kind::Doc | Kind::Docu, show) => {
+            let course = with_year(show.unwrap_or(&c.set));
             match (code, c.title.as_deref()) {
-                // The lesson title is last so truncation eats it first.
-                (Some(code), Some(lesson)) => format!("{course} - {code} - {lesson}"),
+                (Some(code), Some(title)) => format!("{course} - {code} - {title}"),
                 (Some(code), None) => format!("{course} - {code}"),
                 (None, _) => course,
             }
         }
-        Kind::Docu => match c.show.as_deref() {
-            // A collection episode: same shape as a lesson's, its own code.
-            Some(_) => {
-                let collection = with_year(c.show.as_deref().unwrap_or(&c.set));
-                let code = match (c.s, c.e) {
-                    (Some(ch), Some(n)) => Some(docu_code(ch, n).to_lowercase()),
-                    _ => None,
-                };
-                match (code, c.title.as_deref()) {
-                    (Some(code), Some(title)) => format!("{collection} - {code} - {title}"),
-                    (Some(code), None) => format!("{collection} - {code}"),
-                    (None, _) => collection,
-                }
-            }
-            // A standalone documentary reads exactly as a movie does.
-            None => with_year(c.title.as_deref().unwrap_or(&c.set)),
-        },
     };
     sanitize(&raw)
 }
@@ -75,13 +54,6 @@ pub fn part_file_name(base: &str, ext: &str, idx: u32, n: u32) -> String {
     };
     let room = MAX_NAME_LEN.saturating_sub(suffix.chars().count());
     format!("{}{suffix}", truncate_words(&sanitize(base), room))
-}
-
-fn lower_code(season: u32, e: Episode) -> String {
-    match e {
-        Episode::Single(n) => format!("s{season:02}e{n:02}"),
-        Episode::Range([a, b]) => format!("s{season:02}e{a:02}-e{b:02}"),
-    }
 }
 
 /// Drop characters that are illegal in common file systems, collapse whitespace.
@@ -107,7 +79,7 @@ fn truncate_words(s: &str, max: usize) -> String {
     }
     let hard: String = s.chars().take(max).collect();
     match hard.rfind(' ') {
-        Some(i) if i >= max / 2 => hard[..i].trim_end().to_string(),
+        Some(i) if hard[..i].chars().count() >= max / 2 => hard[..i].trim_end().to_string(),
         _ => hard.trim_end().to_string(),
     }
 }
@@ -126,6 +98,17 @@ mod tests {
             part_file_name("Dune Part Two (2024)", "mkv", 0, 1),
             "Dune Part Two (2024).mkv"
         );
+    }
+
+    /// The word boundary must lie past half of the budget in characters,
+    /// not in bytes: a multibyte title would otherwise be cut at its first
+    /// word, a fraction of the room it has.
+    #[test]
+    fn a_multibyte_name_is_not_cut_at_an_early_word() {
+        let cjk = format!("{} {}", "語".repeat(9), "語".repeat(50));
+        assert_eq!(part_file_name(&cjk, "mkv", 0, 2).chars().count(), 60);
+        let umlauts = format!("{} {}", "ä".repeat(20), "ä".repeat(40));
+        assert_eq!(part_file_name(&umlauts, "mkv", 0, 2).chars().count(), 60);
     }
 
     #[test]
