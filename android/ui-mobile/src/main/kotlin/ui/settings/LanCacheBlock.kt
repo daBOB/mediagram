@@ -1,5 +1,6 @@
 package ui.settings
 
+import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,8 +42,6 @@ import system.lanCacheRows
 import ui.components.Block
 import ui.components.LedgerEntry
 
-private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
-
 /**
  * Settings' home-cache-server block: bound to [LanCacheViewModel], and the
  * one place the runtime permission prompt is requested. `ACCESS_LOCAL_NETWORK`
@@ -50,42 +49,45 @@ private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWOR
  * launching it would be a no-op on this project's own target device, a
  * tablet on API 36, but it costs nothing to be explicit about why.
  * Enabling is not the trigger: [LanCacheUiState.enabled] defaults to
- * `true`, so an off→on toggle would rarely fire. Saving a token — pairing
- * is the moment the feature becomes worth having it — and the status
- * row's own "Grant" action both are.
+ * `true`, so an off→on toggle would rarely fire. Saving a token the block
+ * accepts — pairing is the moment the feature becomes worth having it —
+ * and the status row's own "Grant" action both are.
  */
 @Composable
 internal fun LanCacheBlock() {
     val viewModel: LanCacheViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             viewModel.permissionResolved()
         }
-    val requestPermission: () -> Unit = { if (Build.VERSION.SDK_INT >= 37) launcher.launch(ACCESS_LOCAL_NETWORK) }
+    val requestPermission: () -> Unit = { if (Build.VERSION.SDK_INT >= 37) launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK) }
     LaunchedEffect(Unit) { viewModel.open() }
     LanCacheBlockContent(
         state = state,
+        failure = failure,
         onSetEnabled = viewModel::setEnabled,
         onSaveManualAddress = viewModel::setManualAddress,
-        onSaveToken = { token ->
-            viewModel.saveToken(token)
-            requestPermission()
-        },
+        onSaveToken = { token -> if (viewModel.saveToken(token)) requestPermission() },
         onGrantPermission = requestPermission,
     )
 }
 
-/** Stateless so a test drives every branch — connection wording, the rejection notice, the switch, the Grant action — without a real ViewModel or permission launcher. */
+/** Stateless so a test drives every branch — connection wording, the rejection and failure notices, the switch, the Grant action — without a real ViewModel or permission launcher. */
 @Composable
 internal fun LanCacheBlockContent(
     state: LanCacheUiState?,
+    failure: String?,
     onSetEnabled: (Boolean) -> Unit,
     onSaveManualAddress: (String) -> Unit,
     onSaveToken: (String) -> Unit,
     onGrantPermission: () -> Unit,
 ) {
-    if (state == null) return
+    if (state == null) {
+        failure?.let { ErrorLine(it) }
+        return
+    }
     var address by remember(state.manualAddress) { mutableStateOf(state.manualAddress) }
     var token by remember { mutableStateOf("") }
     val tones = LocalCatalogueTones.current
@@ -102,14 +104,8 @@ internal fun LanCacheBlockContent(
                 LinePill(text = "Grant local network access", onClick = onGrantPermission)
             }
         }
-        if (state.tokenRejected) {
-            Text(
-                "Pairing token rejected.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = Spacing.small),
-            )
-        }
+        if (state.tokenRejected) ErrorLine("Pairing token rejected.")
+        failure?.let { ErrorLine(it) }
         Row(
             modifier =
                 Modifier
@@ -159,6 +155,11 @@ internal fun LanCacheBlockContent(
             onAction = { onSaveToken(token); token = "" },
         )
     }
+}
+
+@Composable
+private fun ErrorLine(text: String) {
+    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.small))
 }
 
 /** A labeled field beside its own inline action pill, and a note beneath it — Storage's Server address and Pairing token, the only two on this screen shaped this way. */

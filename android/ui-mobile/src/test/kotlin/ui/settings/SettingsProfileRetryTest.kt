@@ -99,6 +99,7 @@ class SettingsProfileRetryTest {
             every { cacheModel.chosenVolumeId } returns MutableStateFlow(null)
             val lanModel = mockk<LanCacheViewModel>(relaxed = true)
             every { lanModel.state } returns MutableStateFlow(null)
+            every { lanModel.failure } returns MutableStateFlow(null)
             val systemModel = mockk<SystemViewModel>(relaxed = true)
             every { systemModel.state } returns MutableStateFlow(null)
             every { systemModel.failure } returns MutableStateFlow(null)

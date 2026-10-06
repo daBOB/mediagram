@@ -1,5 +1,6 @@
 package ui.tv.system
 
+import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,8 +26,6 @@ import system.lanCacheRows
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
 
-private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
-
 /**
  * The phone's home-cache-server block on a television: the status, the
  * switch, and the address and pairing token — each of those two a row that
@@ -49,10 +48,15 @@ internal fun TvLanCacheBlock(
 ) {
     val viewModel: LanCacheViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
     val requestPermission = rememberLocalNetworkRequest(viewModel::permissionResolved)
     val address = remember { FocusRequester() }
     val token = remember { FocusRequester() }
-    val current = state ?: return
+    val current = state
+    if (current == null) {
+        failure?.let { TvQuietLine(it) }
+        return
+    }
 
     // Keyed on the first composition with rows to land on: the state is read
     // asynchronously, and a request made before the rows exist is lost.
@@ -70,6 +74,7 @@ internal fun TvLanCacheBlock(
             TvTextRow(text = "Grant local network access", onClick = requestPermission)
         }
         if (current.tokenRejected) TvQuietLine("Pairing token rejected.")
+        failure?.let { TvQuietLine(it) }
         TvTextRow(
             text = "Use the home cache server — ${if (current.enabled) "on" else "off"}",
             onClick = { viewModel.setEnabled(!current.enabled) },
@@ -96,5 +101,5 @@ internal fun TvLanCacheBlock(
 @Composable
 internal fun rememberLocalNetworkRequest(onResolved: () -> Unit): () -> Unit {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onResolved() }
-    return { if (Build.VERSION.SDK_INT >= 37) launcher.launch(ACCESS_LOCAL_NETWORK) }
+    return { if (Build.VERSION.SDK_INT >= 37) launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK) }
 }

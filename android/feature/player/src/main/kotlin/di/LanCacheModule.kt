@@ -91,7 +91,9 @@ object LanCacheModule {
                 scope = scope,
                 dispatcher = dispatcher,
                 client = client,
-                server = { locator.server.value },
+                // Gated on the sharing switch as reads are: chunks queued just
+                // before a viewer switched sharing off are not sent after it.
+                server = { if (settings.enabled()) locator.server.value else null },
                 token = { tokenSettings.read() },
                 tokenStatus = tokenStatus,
             )

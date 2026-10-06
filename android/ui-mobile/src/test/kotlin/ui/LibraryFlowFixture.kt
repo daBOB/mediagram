@@ -143,6 +143,7 @@ internal class LibraryFlowFixture(
         // discovery pass returns.
         val lanCache = mockk<LanCacheViewModel>(relaxed = true)
         every { lanCache.state } returns MutableStateFlow(null)
+        every { lanCache.failure } returns MutableStateFlow(null)
         // The Stats page resolves StatsViewModel through hiltViewModel(),
         // the same reason every entry below exists; an empty history is the
         // page a fresh profile shows.

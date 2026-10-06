@@ -280,6 +280,7 @@ internal class TvAppFixture(
             )
         every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
         every { lanCache.state } returns lanCacheState
+        every { lanCache.failure } returns MutableStateFlow(null)
         // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the
         // same reason as every entry below.
         every { stats.state } returns

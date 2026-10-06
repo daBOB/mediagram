@@ -27,6 +27,7 @@ import playback.LanServer
 import playback.LanServerSource
 import playback.LanServerStatus
 import settings.InMemoryLanCacheTokenSettings
+import settings.LanCacheTokenSettings
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -77,7 +78,7 @@ internal fun testLanCacheViewModel(
     locator: FakeLocator = FakeLocator(),
     client: LanChunkProtocol = FakeClient(),
     settings: InMemoryLanCacheSettings = InMemoryLanCacheSettings(),
-    tokenSettings: InMemoryLanCacheTokenSettings = InMemoryLanCacheTokenSettings(),
+    tokenSettings: LanCacheTokenSettings = InMemoryLanCacheTokenSettings(),
     tokenStatus: LanCacheTokenStatus = LanCacheTokenStatus(),
 ) = LanCacheViewModel(
     ApplicationProvider.getApplicationContext(),
