@@ -46,3 +46,7 @@ pub(super) async fn live_sets(
         .map(|c| c.set_id.clone())
         .collect())
 }
+
+#[cfg(test)]
+#[path = "live_tests.rs"]
+mod tests;
