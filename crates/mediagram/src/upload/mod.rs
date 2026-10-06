@@ -5,6 +5,7 @@
 
 pub mod adopt;
 pub mod finish;
+pub mod finished_caption;
 pub mod lock;
 pub mod new_set;
 pub mod part_reader;
