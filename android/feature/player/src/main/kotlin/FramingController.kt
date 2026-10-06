@@ -1,6 +1,7 @@
 package player
 
 import data.PlayerPreferences
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import playback.Framing
@@ -53,6 +54,6 @@ class FramingController(
     private fun remember(value: Framing) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, "framing", value.stored) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, "framing", value.stored) } }
     }
 }

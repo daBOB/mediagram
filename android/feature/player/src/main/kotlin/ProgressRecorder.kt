@@ -39,7 +39,7 @@ class ProgressRecorder @Inject constructor(private val repository: WatchStateRep
             if (error is CancellationException) throw error
             // A save is a courtesy to the next time this title is opened,
             // never a reason to interrupt the one playing now.
-            Log.w(TAG, "save: ${error.message}")
+            Log.w(TAG, "progress save failed", error)
         }
     }
 

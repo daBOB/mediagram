@@ -1,5 +1,6 @@
 package setup
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import data.CoreProvider
 import data.CoreStorage
 import data.WatchStateRepository
 import data.coreSentence
+import data.orDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.withContext
 import settings.TelegramSettings
 import javax.inject.Inject
 
+private const val TAG = "settings"
 private const val UNKNOWN = "—"
 private const val IDENTITY_CHANGE_FAILED = "The application identity could not be changed. Try again."
 private const val SIGN_OUT_FAILED = "Signing out did not finish. Try again, or start over."
@@ -83,7 +86,7 @@ class SettingsViewModel
             val core = coreProvider.awaitCore()
             // Asked once and read twice: one round trip says both who is signed
             // in and whether Telegram is answering at all.
-            val account = optionalRow { core.account() }
+            val account = orDefault(null, "account read") { core.account() }
             val title = libraries.chosen()?.let { handle -> titleOf(handle) }
             val apiId = telegramSettings.read()?.apiId
             val dc = withContext(dispatcher) { core.dcId() }
@@ -100,7 +103,7 @@ class SettingsViewModel
             }
         }
 
-        private suspend fun titleOf(handle: String): String? = optionalRow { libraries.list() }?.find { it.handle == handle }?.title
+        private suspend fun titleOf(handle: String): String? = orDefault(null, "library list") { libraries.list() }?.find { it.handle == handle }?.title
 
         /** Lists the account's libraries so another can be chosen. */
         fun listLibraries() = act { _state.update { it.copy(choices = libraries.list()) } }
@@ -116,6 +119,7 @@ class SettingsViewModel
                 } catch (
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
+                    Log.w(TAG, "session list failed", e)
                     _state.update { it.copy(sessionsError = e.coreSentence() ?: "Could not read sessions. Try again.") }
                 }
             }
@@ -132,6 +136,7 @@ class SettingsViewModel
                 } catch (
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
+                    Log.w(TAG, "session revoke failed", e)
                     _state.update { it.copy(sessionsError = e.coreSentence() ?: "Could not end that session. Try again.") }
                 }
             }
@@ -224,7 +229,7 @@ class SettingsViewModel
             }
             // The identity and profile owner are committed; unavailable decorative
             // rows must not turn this completed change into a refusal.
-            optionalRow { readRows() }
+            orDefault(Unit, "settings rows") { readRows() }
         }
 
         /**
@@ -258,6 +263,7 @@ class SettingsViewModel
                 } catch (
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
+                    Log.w(TAG, "settings action failed", e)
                     val notice = onFailure ?: (e as? SettingsFailure)?.sentence ?: e.coreSentence() ?: "That did not work. Try again."
                     _state.update { it.copy(notice = notice) }
                 } finally {
@@ -265,18 +271,6 @@ class SettingsViewModel
                 }
             }
         }
-    }
-
-/** Unavailable rows have a display fallback; cancellation still stops the action. */
-private suspend fun <T> optionalRow(read: suspend () -> T): T? =
-    try {
-        read()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (
-        @Suppress("TooGenericExceptionCaught") e: Exception,
-    ) {
-        null
     }
 
 /** A failure this ViewModel has already put into words. */

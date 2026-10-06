@@ -110,7 +110,7 @@ object PreloadModule {
                         fitsInPreloadBudget(occupancy.heldBytes, currentBytes, candidateBytes, occupancy.budgetBytes)
                     }
             },
-            log = { line -> Log.d(PRELOAD_LOG_TAG, line) },
+            log = { line, e -> if (e == null) Log.d(PRELOAD_LOG_TAG, line) else Log.w(PRELOAD_LOG_TAG, line, e) },
             lane = lane,
         )
     }
@@ -161,7 +161,7 @@ object PreloadModule {
                 fits = { totalBytes, reservedBytes ->
                     fitsFilmPreloadBudget(totalBytes, reservedBytes, CacheProvider.occupancy(context).budgetBytes)
                 },
-                log = { line -> Log.d(FILM_PRELOAD_LOG_TAG, line) },
+                log = { line, e -> if (e == null) Log.d(FILM_PRELOAD_LOG_TAG, line) else Log.w(FILM_PRELOAD_LOG_TAG, line, e) },
             )
         scope.launch {
             preloader.hasWork.filter { it }.collect {

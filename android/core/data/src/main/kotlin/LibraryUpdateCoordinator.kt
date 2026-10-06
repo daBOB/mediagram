@@ -1,6 +1,5 @@
 package data
 
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -31,17 +30,7 @@ class LibraryUpdateCoordinator
             val refreshed =
                 try {
                     reading.value = true
-                    val result =
-                        try {
-                            repository.refresh()
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (
-                            @Suppress("TooGenericExceptionCaught") e: Exception,
-                        ) {
-                            Result.failure(e)
-                        }
-                    (result.exceptionOrNull() as? CancellationException)?.let { throw it }
+                    val result = repository.refresh()
                     readCatalog(result)
                     result
                 } finally {

@@ -1,7 +1,7 @@
 package player
 
 import data.WatchStateRepository
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -131,16 +131,7 @@ class PlayerMarksController(
     ) {
         val started = generation
         scope.launch {
-            val confirmed =
-                try {
-                    block()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (
-                    @Suppress("TooGenericExceptionCaught") e: Exception,
-                ) {
-                    false
-                }
+            val confirmed = orDefault(false, "mark $action") { block() }
             if (started != generation) return@launch
             val failure = "Could not confirm the $action. Check it and try again."
             if (!confirmed) {

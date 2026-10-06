@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -80,6 +81,7 @@ class LanCacheViewModel
                 } catch (
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
+                    Log.w(TAG, "LAN cache status failed", e)
                     _failure.value = FAILURE
                     lastState
                 }
@@ -148,6 +150,7 @@ class LanCacheViewModel
                     } catch (
                         @Suppress("TooGenericExceptionCaught") e: Exception,
                     ) {
+                        Log.w(TAG, "LAN cache change failed", e)
                         _failure.value = FAILURE
                         true
                     }
@@ -198,6 +201,7 @@ class LanCacheViewModel
             )
 
         private companion object {
+            const val TAG = "lan-cache"
             const val FAILURE = "Home cache server settings could not be read or saved. Try again."
         }
     }

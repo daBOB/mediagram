@@ -2,7 +2,7 @@ package player
 
 import android.util.Log
 import data.CatalogRepository
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -45,14 +45,7 @@ internal fun CoroutineScope.resolveUpNextTitle(
     id: String,
     onResolved: (MediaSet?) -> Unit,
 ): Job = launch {
-    val set = try {
-        catalogRepository.mediaSet(id)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        null
-    }
-    onResolved(set)
+    onResolved(orDefault(null) { catalogRepository.mediaSet(id) })
 }
 
 /**

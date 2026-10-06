@@ -5,6 +5,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.Lazy
 import data.CatalogRepository
+import data.orDefault
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import player.safely
 import playback.OpenTitle
 import playback.OpenTitleSource
 import java.util.concurrent.atomic.AtomicBoolean
@@ -104,7 +104,7 @@ class ActivePlayback(
             _openTitle.value = null
             return
         }
-        val totalBytes = safely(0L) { catalogRepository.mediaSet(setId)?.totalBytes ?: 0L }
+        val totalBytes = orDefault(0L) { catalogRepository.mediaSet(setId)?.totalBytes ?: 0L }
         if (generation == myGeneration) _openTitle.value = OpenTitle(setId, totalBytes)
     }
 }

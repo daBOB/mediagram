@@ -10,6 +10,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
+import data.orDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -102,7 +103,7 @@ class CacheDataSourceWriter internal constructor(
         // Best-effort and never awaited-through-a-failure: a bundle this
         // title has no route to, or none at all, must not fail the byte
         // preload this call otherwise exists for.
-        runCatching { currentCore()?.holdSubtitles(item.setId) }
+        orDefault(Unit, "hold subtitles") { currentCore()?.holdSubtitles(item.setId) }
         val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore = currentCore).also { factory = it }
         val writer =
             CacheWriter(built.createDataSource(), DataSpec(setUri(item.setId)), null) { _, bytesCached, _ ->

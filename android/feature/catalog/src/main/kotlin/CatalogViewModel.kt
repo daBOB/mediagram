@@ -10,6 +10,7 @@ import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
 import data.WatchStateRepository
 import data.coreSentence
+import data.orDefault
 import data.refreshSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -336,16 +337,7 @@ class CatalogViewModel
             write: suspend () -> Boolean,
         ) {
             viewModelScope.launch {
-                val saved =
-                    try {
-                        write()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (
-                        @Suppress("TooGenericExceptionCaught") e: Exception,
-                    ) {
-                        false
-                    }
+                val saved = orDefault(false, "catalog write") { write() }
                 val kept = lastReady
                 if (!saved) {
                     show(kept?.copy(notice = failure) ?: CatalogUiState.Failed(failure))

@@ -1,5 +1,6 @@
 package playback
 
+import data.orDefault
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
@@ -79,9 +80,9 @@ class LanWriteQueue(
     // it would have done: the chunk was already served to the reader from
     // Telegram before this ran, and the worker lives on for the next one.
     private suspend fun write(item: QueuedChunk) =
-        safely(Unit) {
-            val srv = server() ?: return@safely
-            val tok = token() ?: return@safely
+        orDefault(Unit, "LAN write") {
+            val srv = server() ?: return@orDefault
+            val tok = token() ?: return@orDefault
             when (client.put(srv.baseUrl, tok, item.setId, item.index, item.total, item.bytes)) {
                 LanPutResult.Unauthorized -> {
                     halted = true

@@ -1,6 +1,7 @@
 package player
 
 import data.PlayerPreferences
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -160,7 +161,7 @@ class SubtitleChoiceController(
         val openSetId = setId ?: return
         val forTrack = wanted.track
         loadJob = launchScope.launch {
-            val loaded = safely(emptyList()) { trackSource.load(openSetId, forTrack) }
+            val loaded = orDefault(emptyList()) { trackSource.load(openSetId, forTrack) }
             if (activeTrack?.track == forTrack) {
                 cues = loaded
                 publish()
@@ -176,6 +177,6 @@ class SubtitleChoiceController(
     private fun rememberChoice(value: String) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, "subtitle", value) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, "subtitle", value) } }
     }
 }

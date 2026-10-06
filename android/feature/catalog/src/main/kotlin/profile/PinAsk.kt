@@ -2,7 +2,7 @@ package catalog.profile
 
 import data.WatchStateRepository
 import data.WatchSync
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,7 +90,7 @@ internal class PinAsk(
         val tell = refused
         shown.value = current.copy(busy = true, error = null)
         scope.launch {
-            val outcome = attempt { sending(pin) }
+            val outcome = orDefault(null, "profile change") { sending(pin) }
             if (started != asking) return@launch
             when {
                 outcome == ProfileOutcome.Done -> {
@@ -107,37 +107,18 @@ internal class PinAsk(
     }
 }
 
-/** Why an answer from [attempt] did not take: its sentence, or that the core could not be asked at all. */
+/**
+ * Why an answer from [orDefault] did not take: its sentence, or that the core
+ * could not be asked at all — a `null` that says nothing about the PIN.
+ */
 internal fun ProfileOutcome?.reason(): String = this?.sentence() ?: DID_NOT_GO_THROUGH
-
-/** [block]'s answer, or null when the core could not be asked at all — which says nothing about the PIN. */
-internal suspend fun attempt(block: suspend () -> ProfileOutcome): ProfileOutcome? =
-    try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (
-        @Suppress("TooGenericExceptionCaught") e: Exception,
-    ) {
-        null
-    }
 
 /**
  * Who is here, read again after a refusal — usually news from another
  * device. A read that fails leaves the list as it was: the refusal is
  * already said, and saying a second failure over it would only bury it.
  */
-internal suspend fun WatchStateRepository.rereadQuietly() {
-    try {
-        reload()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (
-        @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
-    ) {
-        Unit
-    }
-}
+internal suspend fun WatchStateRepository.rereadQuietly() = orDefault(Unit) { reload() }
 
 /**
  * A grown-up saying who they are — the web's `prove`: their PIN, or, for one

@@ -126,7 +126,7 @@ class DefaultWatchSync(
         } catch (failure: CancellationException) {
             throw failure
         } catch (failure: Exception) {
-            Log.w(TAG, "picker: ${failure.message}")
+            Log.w(TAG, "picker sync failed", failure)
         }
     }
 
@@ -155,7 +155,7 @@ class DefaultWatchSync(
         } catch (failure: CancellationException) {
             throw failure
         } catch (failure: Exception) {
-            Log.w(TAG, "$why: ${failure.message}")
+            Log.w(TAG, "$why sync failed", failure)
         }
     }
 
@@ -181,7 +181,7 @@ class DefaultWatchSync(
                         } catch (failure: CancellationException) {
                             throw failure
                         } catch (failure: Exception) {
-                            Log.w(TAG, "$why: ${failure.message}")
+                            Log.w(TAG, "$why sync failed", failure)
                         }
                     } while (roundLock.withLock {
                             val again = running === current && current.again

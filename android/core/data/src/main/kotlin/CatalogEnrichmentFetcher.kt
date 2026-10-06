@@ -1,5 +1,6 @@
 package data
 
+import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,6 +46,7 @@ class CatalogEnrichmentFetcher
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
+                Log.w(TAG, "TMDB key status failed: ${e.javaClass.simpleName}")
                 current.update { it.copy(error = KEY_READ_ERROR) }
             }
         }
@@ -57,6 +59,7 @@ class CatalogEnrichmentFetcher
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
+                Log.w(TAG, "TMDB key save failed: ${e.javaClass.simpleName}")
                 current.update { it.copy(error = "Could not save the TMDB key. Please try again.") }
                 return
             }
@@ -85,6 +88,7 @@ class CatalogEnrichmentFetcher
                     } catch (
                         @Suppress("TooGenericExceptionCaught") e: Exception,
                     ) {
+                        Log.w(TAG, "TMDB key read failed: ${e.javaClass.simpleName}")
                         if (!quiet) current.update { it.copy(error = KEY_READ_ERROR) }
                         return null
                     }
@@ -103,6 +107,7 @@ class CatalogEnrichmentFetcher
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
+                Log.w(TAG, "TMDB fetch failed: ${e.javaClass.simpleName}")
                 if (!quiet) current.update { it.copy(error = e.coreSentence() ?: "The fetch failed.") }
                 return null
             } finally {
@@ -116,6 +121,12 @@ class CatalogEnrichmentFetcher
         }
 
         private companion object {
+            // Only an exception's class is logged here, never its message or
+            // stack: a storage failure can name credentials or private paths,
+            // and a fetch's transport error repeats the request URL, which
+            // carries the TMDB key as a query parameter.
+            const val TAG = "enrichment"
+
             // Storage exceptions can contain credentials or private paths; never render their message.
             const val KEY_READ_ERROR = "Could not read the saved TMDB key. Save it again on the TMDB key screen."
         }

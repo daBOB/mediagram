@@ -3,6 +3,7 @@ package player
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import data.PlayerPreferences
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import playback.AudioOption
@@ -133,7 +134,7 @@ class AudioChoiceController(
     private fun rememberLanguage(language: String?) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, "audio", language) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, "audio", language) } }
     }
 
     /** Detaches [trackListener] — called once this controller's own [PlayerViewModel] is cleared. */

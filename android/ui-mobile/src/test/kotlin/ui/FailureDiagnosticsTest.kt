@@ -138,7 +138,8 @@ class FailureDiagnosticsTest {
                 val model = catalogModel(repository)
                 try {
                     val cancelled = CancellationException("leaving")
-                    if (operation == "refresh") coEvery { repository.refresh() } returns Result.failure(cancelled)
+                    // CatalogRepository.refresh throws cancellation rather than returning it as a failure.
+                    if (operation == "refresh") coEvery { repository.refresh() } throws cancelled
                     if (operation == "read") coEvery { repository.sets() } throws cancelled
                     val subscription = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
                     runCurrent()

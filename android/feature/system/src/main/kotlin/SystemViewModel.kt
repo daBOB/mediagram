@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Process
 import android.os.SystemClock
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +25,8 @@ import playback.ReadSource
 import update.AppUpdater
 import update.updateLine
 import javax.inject.Inject
+
+private const val TAG = "system"
 
 /**
  * Reads the catalog's own facts, the disk cache's own occupancy, and the
@@ -79,6 +82,7 @@ class SystemViewModel
                     } catch (
                         @Suppress("TooGenericExceptionCaught") e: Exception,
                     ) {
+                        Log.w(TAG, "system snapshot failed", e)
                         _failure.value = "System information could not be read. Try again."
                         lastSnapshot
                     }

@@ -139,7 +139,7 @@ private fun SearchResults(
     onOpenList: (String) -> Unit,
 ) {
     if (state is SearchUiState.Failed) {
-        CenteredMessage("Search failed: ${state.message}")
+        CenteredMessage(state.message)
         return
     }
     val ready = state as? SearchUiState.Ready ?: return

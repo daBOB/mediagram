@@ -114,7 +114,7 @@ class ReadAhead(
             } catch (e: CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                Log.w(TAG, "no duration for $setId: ${e.message}")
+                Log.w(TAG, "duration read for $setId failed", e)
                 return 1
             }
         return readAheadWidth(totalBytes, duration).also { width ->

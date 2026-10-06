@@ -111,7 +111,7 @@ class FilmPreloaderBlockingWriterTest {
         openTitleSource = openTitleSource,
         network = UnmeteredNetworkCheck { true },
         fits = fits,
-        log = { logs += it },
+        log = { line, _ -> logs += line },
     )
 
     /** R1: a watchdog pausing the write must never be logged or counted as a write failure. */

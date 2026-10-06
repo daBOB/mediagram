@@ -76,7 +76,7 @@ internal fun TvSearchResults(
     fetchPortrait: suspend (Long) -> String?,
 ) {
     if (state is SearchUiState.Failed) {
-        Said("Search failed: ${state.message}")
+        Said(state.message)
         return
     }
     if (state !is SearchUiState.Ready) return
