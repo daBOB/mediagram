@@ -7,6 +7,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import model.Kind
 import org.junit.After
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

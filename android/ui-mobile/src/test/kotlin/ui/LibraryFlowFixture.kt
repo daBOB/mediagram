@@ -45,6 +45,9 @@ import system.SystemUiState
 import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.FakeFilmPreloading
+import testing.FakeLanChunkProtocol
+import testing.FakeLanServerSource
 import testing.WatchStateFixture
 import ui.player.PlayerLifecycleFixture
 import uniffi.mediagram_core.Achievements

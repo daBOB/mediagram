@@ -14,7 +14,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
@@ -50,7 +50,7 @@ class LibraryEventsLifecycleTest {
             val core = ListeningCore()
             val settings = InMemoryLibrarySettings()
             val heard = mutableListOf<LibraryEvent>()
-            val events = SharedLibraryEvents(CoreLibraryEvents(ResolvedCoreProvider(core), settings), backgroundScope)
+            val events = SharedLibraryEvents(CoreLibraryEvents(FakeCoreProvider(core), settings), backgroundScope)
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { events.events().collect { heard += it } }
             runCurrent()
             assertEquals(0, core.active)
@@ -68,7 +68,7 @@ class LibraryEventsLifecycleTest {
         runTest {
             val core = ListeningCore()
             val settings = InMemoryLibrarySettings().apply { write("first") }
-            val events = SharedLibraryEvents(CoreLibraryEvents(ResolvedCoreProvider(core), settings), backgroundScope)
+            val events = SharedLibraryEvents(CoreLibraryEvents(FakeCoreProvider(core), settings), backgroundScope)
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { events.events().collect {} }
             runCurrent()
             assertEquals(1, core.active)
@@ -91,7 +91,7 @@ class LibraryEventsLifecycleTest {
             val core = ListeningCore()
             val current = MutableStateFlow<CoreInterface?>(core)
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(core) {
+                object : CoreProvider by FakeCoreProvider(core) {
                     override val core: StateFlow<CoreInterface?> = current
                 }
             val settings = InMemoryLibrarySettings().apply { write("library") }

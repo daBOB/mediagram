@@ -4,6 +4,8 @@ import data.WatchStateRepository
 import data.WatchSync
 import playback.PlaybackCounters
 import playback.SummarySource
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
 
 /** Records `soon()` calls rather than doing anything with them — shared by every [PlayerViewModel] test that does not care about sync itself. */

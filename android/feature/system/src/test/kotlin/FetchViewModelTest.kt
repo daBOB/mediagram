@@ -10,6 +10,7 @@ import settings.InMemoryTmdbSettings
 import settings.TmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale

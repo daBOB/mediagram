@@ -8,6 +8,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import playback.PlaybackCounters
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals

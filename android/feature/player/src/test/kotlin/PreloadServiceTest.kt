@@ -1,5 +1,6 @@
 package player
 
+import testing.FakeFilmPreloading
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.junit.runner.RunWith

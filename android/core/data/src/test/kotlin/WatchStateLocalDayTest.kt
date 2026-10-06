@@ -3,7 +3,7 @@ package data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +33,7 @@ class WatchStateLocalDayTest {
                     }
                 }
             var today = "2026-09-26"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined) { today }
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined) { today }
             repository.reload()
 
             repository.setProgress("set-1", 600.0, 5_400.0)

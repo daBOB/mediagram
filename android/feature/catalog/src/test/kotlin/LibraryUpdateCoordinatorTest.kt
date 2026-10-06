@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryTmdbSettings
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
 import kotlin.test.Test
@@ -169,7 +169,7 @@ private class UpdateFixture(
                 return report
             }
         }
-    val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings(), BackdropWidth { 780 })
+    val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings(), BackdropWidth { 780 })
     val coordinator = LibraryUpdateCoordinator(repository, enrichment)
 
     suspend fun run(kind: LibraryUpdateKind = LibraryUpdateKind.Manual) {

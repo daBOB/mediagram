@@ -1,4 +1,4 @@
-package player
+package testing
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,7 +20,7 @@ import playback.PreloadItem
 import playback.SeriesPreloading
 
 /** Records every [want] call rather than touching a real cache or thread — see [playback.SeriesPreloading]. */
-internal class FakeSeriesPreloader : SeriesPreloading {
+class FakeSeriesPreloader : SeriesPreloading {
     val wantCalls = mutableListOf<Pair<List<PreloadItem>, Long>>()
 
     private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
@@ -37,7 +37,7 @@ internal class FakeSeriesPreloader : SeriesPreloading {
 }
 
 /** A fixed answer rather than a real disk cache — see [playback.HeldSets]. */
-internal class FakeHeldSets(private val held: Set<String> = emptySet()) : HeldSetsQuery {
+class FakeHeldSets(private val held: Set<String> = emptySet()) : HeldSetsQuery {
     override suspend fun isHeld(setId: String, totalBytes: Long): Boolean = setId in held
 
     override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> =
@@ -47,7 +47,7 @@ internal class FakeHeldSets(private val held: Set<String> = emptySet()) : HeldSe
 }
 
 /** A settable per-film [FilmPreloadState], plus every enqueue/cancel/remove call — see [playback.FilmPreloading]. */
-internal class FakeFilmPreloading : FilmPreloading {
+class FakeFilmPreloading : FilmPreloading {
     private val states = mutableMapOf<String, MutableStateFlow<FilmPreloadState>>()
     val enqueueCalls = mutableListOf<Triple<String, String, Long>>()
     val cancelCalls = mutableListOf<String>()
@@ -82,8 +82,17 @@ internal class FakeFilmPreloading : FilmPreloading {
         pauseForTimeLimitCallCount++
     }
 
-    override val heldEvents: SharedFlow<String> = MutableSharedFlow()
-    override val unheldEvents: SharedFlow<String> = MutableSharedFlow()
+    private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override val heldEvents: SharedFlow<String> = _heldEvents
+
+    private val _unheldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override val unheldEvents: SharedFlow<String> = _unheldEvents
+
+    /** Fires [heldEvents] for [setId] without a real write. */
+    fun emitHeld(setId: String) = _heldEvents.tryEmit(setId)
+
+    /** Fires [unheldEvents] for [setId] without a real removal. */
+    fun emitUnheld(setId: String) = _unheldEvents.tryEmit(setId)
 
     private val _hasWork = MutableStateFlow(false)
     override val hasWork: StateFlow<Boolean> = _hasWork
@@ -113,7 +122,7 @@ internal class FakeFilmPreloading : FilmPreloading {
 }
 
 /** A fixed (or absent) paired server — see [playback.LanServerSource]. */
-internal class FakeLanServerSource(server: LanServer? = null) : LanServerSource {
+class FakeLanServerSource(server: LanServer? = null) : LanServerSource {
     override val server: StateFlow<LanServer?> = MutableStateFlow(server)
     override val searching: StateFlow<Boolean> = MutableStateFlow(false)
 
@@ -121,7 +130,7 @@ internal class FakeLanServerSource(server: LanServer? = null) : LanServerSource 
 }
 
 /** Answers [setStatus] with whatever [answer] currently holds, and counts how often it was asked — the rest of [playback.LanChunkProtocol] is never exercised through this fake. */
-internal class FakeLanChunkProtocol(var answer: LanSetStatus? = null) : LanChunkProtocol {
+class FakeLanChunkProtocol(var answer: LanSetStatus? = null) : LanChunkProtocol {
     var setStatusCalls = 0
         private set
 

@@ -17,7 +17,7 @@ import model.WatchSnapshot
 import settings.InMemoryLibrarySettings
 import settings.LibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.SyncOutcome
@@ -135,7 +135,7 @@ class WatchSyncTest {
                 }
             val events = TestLibraryEvents()
             val sync =
-                DefaultWatchSync(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RecordingRepository(), events, backgroundScope)
+                DefaultWatchSync(FakeCoreProvider(core), settingsWithAChosenLibrary(), RecordingRepository(), events, backgroundScope)
             sync.onForeground()
             runCurrent()
             repeat(3) {
@@ -165,7 +165,7 @@ class WatchSyncTest {
                 }
             val settings = InMemoryLibrarySettings().apply { write("old") }
             val events = TestLibraryEvents()
-            val sync = DefaultWatchSync(ResolvedCoreProvider(core), settings, RecordingRepository(), events, backgroundScope)
+            val sync = DefaultWatchSync(FakeCoreProvider(core), settings, RecordingRepository(), events, backgroundScope)
             sync.onForeground()
             runCurrent()
             events.push(LibraryEvent.STATE)
@@ -196,7 +196,7 @@ class WatchSyncTest {
             val replacement = SyncCore()
             val current = MutableStateFlow<CoreInterface?>(old)
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(old) {
+                object : CoreProvider by FakeCoreProvider(old) {
                     override val core = current
 
                     override suspend fun coreOrNull(): CoreInterface? = current.value
@@ -232,7 +232,7 @@ class WatchSyncTest {
                 }
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -277,7 +277,7 @@ class WatchSyncTest {
                     }
                 }
             val settings = InMemoryLibrarySettings().apply { write("old") }
-            val sync = DefaultWatchSync(ResolvedCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
+            val sync = DefaultWatchSync(FakeCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
             sync.onForeground()
             runCurrent()
             val waiting = backgroundScope.async { sync.awaitFirstRound() }
@@ -315,7 +315,7 @@ class WatchSyncTest {
                 }
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -338,7 +338,7 @@ class WatchSyncTest {
             val core = SyncCore(listOf(SyncOutcome(0uL, false, null)))
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary("library-1"),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -357,7 +357,7 @@ class WatchSyncTest {
             val core = SyncCore(List(3) { SyncOutcome(0uL, false, null) })
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -383,7 +383,7 @@ class WatchSyncTest {
             val core = SyncCore(List(2) { SyncOutcome(0uL, false, null) })
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -409,7 +409,7 @@ class WatchSyncTest {
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     repository,
                     LibraryEvents.None,
@@ -429,7 +429,7 @@ class WatchSyncTest {
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     repository,
                     LibraryEvents.None,
@@ -450,7 +450,7 @@ class WatchSyncTest {
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     repository,
                     LibraryEvents.None,
@@ -470,7 +470,7 @@ class WatchSyncTest {
             val repository = RecordingRepository()
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     repository,
                     LibraryEvents.None,
@@ -491,7 +491,7 @@ class WatchSyncTest {
             val repository = RecordingRepository().apply { syncedOnce.value = false }
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     repository,
                     LibraryEvents.None,
@@ -511,7 +511,7 @@ class WatchSyncTest {
             val events = TestLibraryEvents()
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     events,
@@ -533,7 +533,7 @@ class WatchSyncTest {
             val core = SyncCore(listOf(SyncOutcome(0uL, false, null)))
             val sync =
                 DefaultWatchSync(
-                    ResolvedCoreProvider(core),
+                    FakeCoreProvider(core),
                     settingsWithAChosenLibrary(),
                     RecordingRepository(),
                     LibraryEvents.None,
@@ -558,7 +558,7 @@ class WatchSyncTest {
             val core = SyncCore()
             var coreLookups = 0
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(core) {
+                object : CoreProvider by FakeCoreProvider(core) {
                     override suspend fun coreOrNull(): CoreInterface? {
                         coreLookups++
                         return null
@@ -599,7 +599,7 @@ class WatchSyncTest {
                     }
                 }
             val settings = InMemoryLibrarySettings()
-            val sync = DefaultWatchSync(ResolvedCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
+            val sync = DefaultWatchSync(FakeCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
             sync.onForeground()
             runCurrent()
             settings.write("chosen-after-setup")
@@ -620,7 +620,7 @@ class WatchSyncTest {
             val second = SyncCore()
             val current = MutableStateFlow<CoreInterface?>(first)
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(first) {
+                object : CoreProvider by FakeCoreProvider(first) {
                     override val core = current
 
                     override suspend fun coreOrNull(): CoreInterface? = current.value
@@ -653,7 +653,7 @@ class WatchSyncTest {
                     }
                 }
             val core = SyncCore()
-            val sync = DefaultWatchSync(ResolvedCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
+            val sync = DefaultWatchSync(FakeCoreProvider(core), settings, RecordingRepository(), LibraryEvents.None, backgroundScope)
 
             val waiting = backgroundScope.async { sync.awaitFirstRound() }
             runCurrent()

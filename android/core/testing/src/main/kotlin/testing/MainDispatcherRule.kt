@@ -1,4 +1,4 @@
-package system
+package testing
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -9,8 +9,8 @@ import org.junit.runner.Description
 
 /**
  * Routes `viewModelScope`'s Main dispatcher onto an unconfined test
- * dispatcher, so a ViewModel's launched coroutines run eagerly instead of
- * needing a manual scheduler advance in every test.
+ * dispatcher, so a ViewModel's launched coroutines run eagerly; `runTest`
+ * shares its scheduler, so `advanceTimeBy` drives the sharing timeout.
  */
 class MainDispatcherRule : TestWatcher() {
     override fun starting(description: Description) {

@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import settings.InMemoryLibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
@@ -30,7 +30,7 @@ class AppUpdaterTest {
     private suspend fun updater(
         handle: String? = "library",
         enabled: Boolean = true,
-        provider: CoreProvider = ResolvedCoreProvider(core),
+        provider: CoreProvider = FakeCoreProvider(core),
     ): AppUpdater {
         val settings = InMemoryLibrarySettings().apply { handle?.let { write(it) } }
         return AppUpdater(
@@ -124,7 +124,7 @@ class AppUpdaterTest {
     fun aCoreThatCannotBeBuiltFailsTheCheckInsteadOfCrashing() =
         runTest {
             val broken =
-                object : CoreProvider by ResolvedCoreProvider(core) {
+                object : CoreProvider by FakeCoreProvider(core) {
                     override suspend fun coreOrNull(): CoreInterface? = throw IllegalStateException("no core")
                 }
             val updater = updater(provider = broken)

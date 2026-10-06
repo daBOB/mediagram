@@ -6,6 +6,7 @@ import settings.InMemoryTelegramSettings
 import settings.TelegramCredentials
 import settings.TelegramSettings
 import testing.FakeCore
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreException
 import kotlin.test.Test
 import kotlin.test.assertEquals

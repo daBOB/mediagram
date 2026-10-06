@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import settings.InMemoryLibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import update.AppUpdater
 import update.ApkInstaller
 import update.UpdateConfig
@@ -14,7 +14,7 @@ import java.io.File
 fun offUpdater(): AppUpdater =
     AppUpdater(
         UpdateConfig(enabled = false, installedVersionCode = 1, updatesDir = File("unused")),
-        ResolvedCoreProvider(FakeCore()),
+        FakeCoreProvider(FakeCore()),
         InMemoryLibrarySettings(),
         { false },
         object : ApkInstaller {

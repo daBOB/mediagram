@@ -6,9 +6,9 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import settings.InMemoryTelegramSettings
-import setup.MainDispatcherRule
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.AuthOutcome
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +25,7 @@ class LoginViewModelTest {
             for (step in LoginStep.entries) {
                 for (message in listOf("private-storage-path-and-input", null)) {
                     val core = FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED)
-                    val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+                    val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
                     val failure = java.io.IOException(message)
                     if (step != LoginStep.PHONE) vm.submitPhone("+49...")
                     if (step == LoginStep.PASSWORD) vm.submitCode("12345")
@@ -79,7 +79,7 @@ class LoginViewModelTest {
     fun typedCoreRefusalsKeepTheirSpecificMessageAtEverySignInStep() =
         runTest {
             val core = FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED)
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             core.requestFailure = uniffi.mediagram_core.CoreException.Network("Cannot reach Telegram. Try again.")
             vm.submitPhone("+49...")
             assertEquals(LoginUiState.Failed(LoginStep.PHONE, "Cannot reach Telegram. Try again."), vm.state.value)
@@ -99,7 +99,7 @@ class LoginViewModelTest {
     fun reenteringAfterAuthorizationLossDiscardsTheCompletedLoginToken() =
         runTest {
             val core = FakeCore(authorized = false)
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             vm.submitCode("12345")
             assertEquals(LoginUiState.Authorized, vm.state.value)
@@ -119,7 +119,7 @@ class LoginViewModelTest {
     fun reenteringWhileACodeIsPendingKeepsTheCurrentAttempt() =
         runTest {
             val core = FakeCore(authorized = false)
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             vm.enterSignIn()
             assertEquals(LoginUiState.NeedsCode, vm.state.value)
@@ -132,7 +132,7 @@ class LoginViewModelTest {
     fun cancellingAPhoneRequestDoesNotBecomeASignInFailure() =
         runTest {
             val core = FakeCore(authorized = false).apply { requestFailure = CancellationException("cancelled request") }
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             assertEquals(LoginUiState.NeedsPhone, vm.state.value)
             core.requestFailure = null
@@ -144,7 +144,7 @@ class LoginViewModelTest {
     fun cancellingACodeSubmissionKeepsTheStepAndTokenForRetry() =
         runTest {
             val core = FakeCore(authorized = false).apply { signInFailure = CancellationException("cancelled code") }
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             vm.submitCode("12345")
             assertEquals(LoginUiState.NeedsCode, vm.state.value)
@@ -163,7 +163,7 @@ class LoginViewModelTest {
                 FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED).apply {
                     passwordFailure = CancellationException("cancelled password")
                 }
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             vm.submitCode("12345")
             vm.submitPassword("password")
@@ -181,7 +181,7 @@ class LoginViewModelTest {
         runTest {
             val vm =
                 LoginViewModel(
-                    ResolvedCoreProvider(FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED)),
+                    FakeCoreProvider(FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED)),
                     UnconfinedTestDispatcher(),
                 )
             vm.submitPhone("+49...")
@@ -192,14 +192,14 @@ class LoginViewModelTest {
     @Test
     fun anAlreadyAuthorizedCoreSkipsStraightToAuthorized() =
         runTest {
-            val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(authorized = true)), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(FakeCore(authorized = true)), UnconfinedTestDispatcher())
             assertEquals(LoginUiState.Authorized, vm.state.value)
         }
 
     @Test
     fun aFailedCodeRequestSurfacesAsFailed() =
         runTest {
-            val vm = LoginViewModel(ResolvedCoreProvider(FakeCore(authorized = false, requestCodeFails = true)), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(FakeCore(authorized = false, requestCodeFails = true)), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             assertTrue(vm.state.value is LoginUiState.Failed)
             // Nothing is in flight to retry, so the phone number is genuinely
@@ -211,7 +211,7 @@ class LoginViewModelTest {
     fun aRejectedCodeIsRetypedWithoutAskingTelegramForAnotherOne() =
         runTest {
             val core = FakeCore(authorized = false, signInFailures = 1)
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
 
             vm.submitCode("00000")
@@ -228,7 +228,7 @@ class LoginViewModelTest {
     fun aRejectedPasswordIsRetypedWithoutRestartingTheSignIn() =
         runTest {
             val core = FakeCore(authorized = false, signInOutcome = AuthOutcome.PASSWORD_NEEDED, passwordFailures = 1)
-            val vm = LoginViewModel(ResolvedCoreProvider(core), UnconfinedTestDispatcher())
+            val vm = LoginViewModel(FakeCoreProvider(core), UnconfinedTestDispatcher())
             vm.submitPhone("+49...")
             vm.submitCode("12345")
 

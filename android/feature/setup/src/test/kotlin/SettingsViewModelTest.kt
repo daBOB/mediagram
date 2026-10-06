@@ -9,6 +9,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Rule
 import settings.TelegramCredentials
 import testing.FakeCore
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.LibraryChoice
 import kotlin.test.Test
 import kotlin.test.assertEquals

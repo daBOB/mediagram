@@ -11,6 +11,9 @@ import playback.InMemoryLanCacheSettings
 import playback.LanServer
 import playback.LanSetStatus
 import playback.PauseReason
+import testing.FakeFilmPreloading
+import testing.FakeLanChunkProtocol
+import testing.FakeLanServerSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 import model.ProfileRequest
 import model.WatchSnapshot
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.ListRow
 import uniffi.mediagram_core.Profile
@@ -111,7 +111,7 @@ class WatchStateOwnershipTest {
             val resume = CompletableDeferred<Unit>()
             var pauseNext = false
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(core) {
+                object : CoreProvider by FakeCoreProvider(core) {
                     override suspend fun awaitCore(): CoreInterface {
                         if (pauseNext) {
                             pauseNext = false
@@ -171,7 +171,7 @@ class WatchStateOwnershipTest {
                         return StateSnapshot(emptyList(), emptyList(), listOf(profileId), emptyList(), emptyList(), null)
                     }
                 }
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             val first = async(start = CoroutineStart.UNDISPATCHED) { repository.chooseProfile("a") }
             firstStarted.await()
@@ -200,7 +200,7 @@ class WatchStateOwnershipTest {
     fun reloadingAnAlreadyPersistedChoiceCannotMakeItsAcknowledgementFail() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delayAfterChoice = true
             val choice = async(start = CoroutineStart.UNDISPATCHED) { repository.chooseProfile("b") }
@@ -217,7 +217,7 @@ class WatchStateOwnershipTest {
     fun returningToTheSameProfileCannotAcceptItsOlderSnapshot() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delaySnapshot = true
             val old = async(start = CoroutineStart.UNDISPATCHED) { repository.reload() }
@@ -239,7 +239,7 @@ class WatchStateOwnershipTest {
     fun resetPreventsPendingReadsFromRestoringState() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delaySnapshot = true
             val old = async(start = CoroutineStart.UNDISPATCHED) { repository.reload() }
@@ -263,7 +263,7 @@ class WatchStateOwnershipTest {
     fun resetPreventsAPendingProfileChangeFromRestoringState() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delayWrite = true
             val change = async(start = CoroutineStart.UNDISPATCHED) { repository.manage(ProfileRequest.CreateKid("a", "1234", "Chris", 12)) }
@@ -283,7 +283,7 @@ class WatchStateOwnershipTest {
     fun newerChoicesPersistAfterAnOlderChoiceFinishes() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delayChoice = true
             val first = async(start = CoroutineStart.UNDISPATCHED) { repository.chooseProfile("a") }
@@ -305,7 +305,7 @@ class WatchStateOwnershipTest {
     fun aDelayedReloadCannotOverwriteANewerProfileChoice() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delaySnapshot = true
             val old = async(start = CoroutineStart.UNDISPATCHED) { repository.reload() }
@@ -326,7 +326,7 @@ class WatchStateOwnershipTest {
         runTest {
             for (operation in listOf("progress", "rename", "create")) {
                 val core = DelayedStateCore()
-                val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+                val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
                 repository.reload()
                 core.delayWrite = true
                 val old =
@@ -353,7 +353,7 @@ class WatchStateOwnershipTest {
     fun anOlderChoiceCannotPublishAfterTheNewChoiceHasFinished() =
         runTest {
             val core = DelayedStateCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             repository.reload()
             core.delaySnapshot = true
             val old = async(start = CoroutineStart.UNDISPATCHED) { repository.chooseProfile("a") }
@@ -374,7 +374,7 @@ class WatchStateOwnershipTest {
             val first = DelayedStateCore()
             val current = MutableStateFlow<CoreInterface?>(first)
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(first) {
+                object : CoreProvider by FakeCoreProvider(first) {
                     override val core = current
 
                     override suspend fun awaitCore() = current.value!!

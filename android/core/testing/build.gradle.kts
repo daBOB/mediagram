@@ -15,10 +15,15 @@ dependencies {
     // them back, so a test compares like with like; FakeProfiles enforces the
     // same `allowed` Manage offers from.
     implementation(project(":core:model"))
+    // The preload and LAN fakes implement core:playback's interfaces.
+    implementation(project(":core:playback"))
 
     // The contract suite's `@Test` methods and `kotlin.test` assertions live
     // in this module's main source set, not test/ — androidTest in another
     // module runs them too, and only main is visible across a project
     // dependency. `api` so that visibility carries to every consumer.
     api(libs.findLibrary("kotlin.test.junit").get())
+    // MainDispatcherRule is a JUnit rule over kotlinx-coroutines-test, which the
+    // convention plugin otherwise adds to test source sets only.
+    api(libs.findLibrary("kotlinx.coroutines.test").get())
 }

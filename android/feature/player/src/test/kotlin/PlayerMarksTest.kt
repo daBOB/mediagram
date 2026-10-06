@@ -14,6 +14,8 @@ import model.Profile
 import model.WatchSnapshot
 import org.junit.After
 import playback.PlaybackCounters
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals

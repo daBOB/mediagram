@@ -12,6 +12,7 @@ import settings.InMemoryTmdbSettings
 import settings.TmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

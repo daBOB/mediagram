@@ -8,9 +8,8 @@ import uniffi.mediagram_core.CoreInterface
 
 /**
  * A [CoreProvider] whose core is already there, or is swapped in by hand —
- * the one fake every module's tests built their own copy of (`ResolvedCoreProvider`
- * twice, `FakeCoreProvider`, `CatalogCoreProvider`), all four the same few
- * lines over a [MutableStateFlow]. These tests are about what a caller does
+ * the one fake every module's tests once built their own copy of, all the
+ * same few lines over a [MutableStateFlow]. These tests are about what a caller does
  * with a core, not about waiting for one — `CoreProviderTest` (core:data)
  * covers the waiting, against the real `StoredCoreProvider`.
  *
@@ -57,9 +56,3 @@ class FakeCoreProvider(
         built.value = core
     }
 }
-
-/** [FakeCoreProvider] over an always-present core, matching every call site that never needs [FakeCoreProvider.set]. */
-fun ResolvedCoreProvider(core: CoreInterface): FakeCoreProvider = FakeCoreProvider(core)
-
-/** As [ResolvedCoreProvider] — feature:catalog's own name for the same fixture, kept so its tests read as they did. */
-fun CatalogCoreProvider(core: CoreInterface): FakeCoreProvider = FakeCoreProvider(core)
