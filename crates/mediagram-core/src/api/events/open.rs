@@ -51,3 +51,7 @@ pub(super) async fn finish(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "open_tests.rs"]
+mod tests;

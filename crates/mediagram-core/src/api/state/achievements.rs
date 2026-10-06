@@ -84,3 +84,7 @@ fn installed_library(core: &Core) -> (Vec<LibraryTitle>, Vec<LibraryCollection>)
         Default::default()
     })
 }
+
+#[cfg(test)]
+#[path = "achievements_tests.rs"]
+mod tests;

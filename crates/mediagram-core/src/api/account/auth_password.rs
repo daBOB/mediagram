@@ -142,3 +142,7 @@ where
     };
     Err((err, next))
 }
+
+#[cfg(test)]
+#[path = "auth_password_tests.rs"]
+mod tests;

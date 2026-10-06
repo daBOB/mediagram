@@ -179,3 +179,7 @@ impl Core {
         .await;
     }
 }
+
+#[cfg(test)]
+#[path = "state_tests.rs"]
+mod tests;

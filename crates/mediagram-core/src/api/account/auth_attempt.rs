@@ -61,3 +61,7 @@ impl Attempt {
 fn stale() -> CoreError {
     CoreError::NotAuthorized("this sign-in attempt is no longer active".into())
 }
+
+#[cfg(test)]
+#[path = "auth_attempt_tests.rs"]
+mod tests;
