@@ -33,8 +33,21 @@ impl Tg {
     /// Opens the session, connects, logs in if needed, and resolves `cfg.channel`.
     pub async fn connect(cfg: &Config) -> Result<Tg> {
         let (client, handle, pool_task) = open_client(cfg).await?;
-        super::login::ensure_login(&client, cfg).await?;
-        let (channel, channel_title) = resolve_channel(&client, &cfg.channel).await?;
+        let resolved = async {
+            super::login::ensure_login(&client, cfg).await?;
+            resolve_channel(&client, &cfg.channel).await
+        }
+        .await;
+        // A failed login or an unknown channel must still stop the pool, as
+        // `shutdown` does, or its connections outlive the error.
+        let (channel, channel_title) = match resolved {
+            Ok(resolved) => resolved,
+            Err(err) => {
+                handle.quit();
+                let _ = pool_task.await;
+                return Err(err);
+            }
+        };
         Ok(Tg {
             client,
             channel,

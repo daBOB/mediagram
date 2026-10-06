@@ -109,10 +109,11 @@ async fn a_pull_backs_up_merges_and_records_what_it_pulled() {
     let local = index_in(dir.path(), &channel, &["local"]);
     let chosen = published(&channel, &["remote"]).await;
 
-    pull_from(&channel, dir.path(), Some(&chosen), false)
+    let lacks_subtitles = pull_from(&channel, dir.path(), Some(&chosen), false)
         .await
         .unwrap();
 
+    assert!(!lacks_subtitles);
     assert_eq!(set_ids(&local), ["local", "remote"]);
     assert_eq!(pins::pulled(&local).unwrap(), Some(chosen.id));
     assert_eq!(files_named(dir.path(), "library.before-channel-merge-"), 1);
@@ -209,14 +210,13 @@ async fn a_conflict_left_unsettled_leaves_the_pull_unrecorded() {
     assert_eq!(pins::pulled(&db::open(dir.path()).unwrap()).unwrap(), None);
 }
 
-/// A channel index an older uploader published has no subtitle tables;
-/// merging it leaves this index's subtitle rows in place and records the
-/// publish that restores them to the channel.
-#[tokio::test]
-async fn a_channel_index_without_subtitle_tables_records_a_publish_owed() {
-    let dir = tempfile::tempdir().unwrap();
-    let channel = FakeChannel::new();
-    let local = index_in(dir.path(), &channel, &["local"]);
+/// A local index holding a subtitle row, and a channel index an older
+/// uploader published without the subtitle tables.
+async fn subtitle_less_channel(
+    dir: &Path,
+    channel: &FakeChannel,
+) -> (Connection, Option<Candidate>) {
+    let local = index_in(dir, channel, &["local"]);
     local
         .execute(
             "INSERT INTO subtitle_files(set_id, chat_id, message_id, bytes, sha256, uploaded_at)
@@ -226,19 +226,47 @@ async fn a_channel_index_without_subtitle_tables_records_a_publish_owed() {
         .unwrap();
     let other = tempfile::tempdir().unwrap();
     let path = other.path().join("older.db");
-    std::fs::write(&path, snapshot_of(&channel, &["remote"])).unwrap();
+    std::fs::write(&path, snapshot_of(channel, &["remote"])).unwrap();
     let older = crate::index::sqlite_init::open(&path).unwrap();
     older
         .execute_batch("DROP TABLE subtitle_tracks; DROP TABLE subtitle_files;")
         .unwrap();
     drop(older);
     channel.with(|c| c.publish(std::fs::read(&path).unwrap(), 1_700_000_000));
-    let chosen = current(&channel).await.unwrap();
+    (local, current(channel).await.unwrap())
+}
 
-    pull_from(&channel, dir.path(), chosen.as_ref(), false)
+/// A channel index an older uploader published has no subtitle tables;
+/// merging it leaves this index's subtitle rows in place, records the
+/// publish that restores them to the channel, and says one is needed.
+#[tokio::test]
+async fn a_channel_index_without_subtitle_tables_records_a_publish_owed() {
+    let dir = tempfile::tempdir().unwrap();
+    let channel = FakeChannel::new();
+    let (local, chosen) = subtitle_less_channel(dir.path(), &channel).await;
+
+    let lacks_subtitles = pull_from(&channel, dir.path(), chosen.as_ref(), false)
         .await
         .unwrap();
 
+    assert!(lacks_subtitles);
     assert!(pins::publish_owed(&local).unwrap().is_some());
     assert_eq!(set_ids(&local), ["local", "remote"]);
+}
+
+/// A publish already owed — an earlier `--no-push` upload, say — does not
+/// hide that the channel lost its subtitle tables: the pull still asks for
+/// the republish that restores them.
+#[tokio::test]
+async fn missing_subtitle_tables_are_reported_when_a_publish_is_already_owed() {
+    let dir = tempfile::tempdir().unwrap();
+    let channel = FakeChannel::new();
+    let (local, chosen) = subtitle_less_channel(dir.path(), &channel).await;
+    pins::owe_publish(&local).unwrap();
+
+    let lacks_subtitles = pull_from(&channel, dir.path(), chosen.as_ref(), false)
+        .await
+        .unwrap();
+
+    assert!(lacks_subtitles);
 }
