@@ -97,3 +97,13 @@
 - **2026-10-05, phases 01–05 merged and released:** 0.112.0 (Android model), 0.113.0 (web card), 0.114.0 (phone), 0.115.0 (web sidebar), 0.116.0 (TV and docs). Each phase was reviewed, sent back for one fix round, then re-reviewed. `scripts/check.sh` is green on main.
   - **Phase 06:** docs are done. The tablet walk was done on the phase 04 branch, and 0.114.0 is installed on the tablet.
   - **Owed:** the TV box walk (box unreachable at 02:35); it includes the parked TV Lows: R1 one-shot focus, R2 the Notes fence, R3 ⓘ's conditional modifier. Also owed: the user's word on publishing to the channel.
+- **2026-10-06, TV box walk** ([report](reports/tv-box-walk-261006-report.md)). It ran on the published 0.117.1, as "andre" and paused. The user ruled this because "TV test" now requires choosing a PIN.
+  - Focus, the row fences (R1 and R3), the menus, the sidebar, greyed rows, title switching and the Back order all held.
+  - Three layout bugs were found, plus a fourth from review. All are fixed in 0.117.2:
+    - menus opened over the seek row;
+    - the TV title ran under the sidebar;
+    - the card covered the stats while the sidebar was open;
+    - a menu opened with stats on was 0 dp tall.
+  - **Ruling:** menus sit above the card, centred on their button. This follows the spec's decision table ("above the card") and the web; the spec's line 109 ("directly above its button") was read as horizontal placement.
+  - **Ruling:** on the TV the stats wait while the sidebar is open, because of the screen budget. This is recorded in the Television differs section of the design docs.
+  - **Open:** R2, the Notes fence, needs a title with notes. Publishing still needs the user's word.

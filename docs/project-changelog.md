@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.117.2 — card menus above the card; the TV card beside its episode list
+
+Found on the TV box walk of the player card (`plans/261005-0157-player-control-card/reports/tv-box-walk-261006-report.md`).
+
+**Fixed** (Android)
+
+- **Card menus open above the card**, as on the web. Speed, Audio, Framing and the subtitle menu used to open just above their own button, on the phone and the TV alike, so they hung over the card's seek row ("2×" on top of "0:00"). They now sit just above the card, centred on their button, and a list too long for the room under the top bar scrolls inside itself.
+- **TV: the title bar stops where the episode list starts.** The rating and "Add to list" used to read through the list's "‹ Season 1 ›" header.
+- **TV: the stats wait while the episode list is open.** Beside the list the narrowed card wraps onto a fourth line, and a 540 dp screen has no height left for the title, the stats and that card together; the stats used to sit under the card. They come back when the list closes, and Back still closes the list first, then the stats. A deliberate difference from the web, noted in `docs/system-architecture.md`.
+- **TV: a menu keeps its room with the stats on.** Its height was measured from the bottom of the stats rather than the title bar, which left no room at all: a menu opened with stats showing was 0 dp tall.
+
 ## 0.117.1 — the TV's baseline profile ships
 
 **Changed** (Android)
