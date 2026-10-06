@@ -5,10 +5,10 @@
 
 use super::ProfileManager;
 use crate::state::StateDb;
+use crate::state::profiles::Answer;
 use crate::state::profiles::ProfileOutcome::{
     self, Done, Invalid, NameTaken, NoPin, NotAllowed, NotFound, Wait, WrongPin,
 };
-use crate::state::profiles::Answer;
 use crate::state::profiles::pin_wait::PinWait;
 use crate::state::profiles::role_rows::{self, NewProfile, Stored};
 use crate::state::profiles::rules::{self, Action};
@@ -113,3 +113,7 @@ impl StateDb {
             .unwrap_or(Invalid)
     }
 }
+
+#[cfg(test)]
+#[path = "checks_tests.rs"]
+mod tests;
