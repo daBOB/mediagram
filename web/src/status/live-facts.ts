@@ -16,6 +16,7 @@ import { LinkStats } from "../telegram/link-stats";
 
 interface CacheStats {
   stats(): { hits: number; misses: number; evicted: number };
+  readonly budget: number;
 }
 
 interface ReaderStats {
@@ -73,6 +74,7 @@ export async function readLiveFacts(deps: LiveFactsDeps): Promise<PolledFacts> {
   const [disks, sessions] = await Promise.all([diskFree(deps.diskDirs), transcodeSessions(deps.transcodes)]);
 
   return {
+    cacheBudget: deps.cache?.budget ?? 0,
     cacheHits: cacheStats?.hits ?? 0,
     cacheMisses: cacheStats?.misses ?? 0,
     cacheEvicted: cacheStats?.evicted ?? 0,

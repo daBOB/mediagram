@@ -284,9 +284,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
         device: encoder.kind === "vaapi" ? encoder.device : null,
       },
       transcodeDir: config.transcodeDir,
-      cache: cache
-        ? { dir: config.cacheDir, budget: cache.budget, readahead: config.cacheReadahead }
-        : null,
+      cache: cache ? { dir: config.cacheDir, readahead: config.cacheReadahead } : null,
       state: { remembered: state.remembers, path: state.remembers ? config.stateDb : null },
       startedAt: Date.now(),
       runtime: { bun: Bun.version },

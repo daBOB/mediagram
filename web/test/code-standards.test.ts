@@ -61,7 +61,7 @@ const ROOT = join(import.meta.dir, "..");
  * moved to `stats-recorder.ts`. Lowered the same day for `src/state/routes.ts`, once
  * the write guard moved to the dispatcher and its body reads to `jsonBody`.
  * Lowered the same day for `src/index.ts`, once the status router became a
- * plain value built before the server.
+ * plain value built before the server and the cache budget left startup facts.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 694,
@@ -84,7 +84,7 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 448,
+  "src/index.ts": 446,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

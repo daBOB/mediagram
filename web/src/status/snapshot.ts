@@ -47,6 +47,8 @@ export interface HostLiveFacts {
 export interface LiveFacts {
   /** Bytes on disk now, or `null` when caching is off or unmeasured. */
   cacheHeldBytes: number | null;
+  /** What the cache may hold now, in bytes; Settings can change it while the player runs. */
+  cacheBudget: number;
   cacheHits: number;
   cacheMisses: number;
   cacheEvicted: number;
@@ -91,6 +93,7 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
         ? null
         : {
             ...facts.cache,
+            budget: live.cacheBudget,
             heldBytes: live.cacheHeldBytes,
             hits: live.cacheHits,
             misses: live.cacheMisses,

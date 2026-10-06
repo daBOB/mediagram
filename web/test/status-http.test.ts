@@ -20,13 +20,14 @@ const facts: StartupFacts = {
   },
   encoder: { name: "libx264", kind: "software", device: null },
   transcodeDir: "/tmp/transcode",
-  cache: { dir: "/tmp/cache", budget: 1024, readahead: 2 },
+  cache: { dir: "/tmp/cache", readahead: 2 },
   state: { remembered: false, path: null },
   startedAt: 0,
   runtime: { bun: "1.4.2" },
 };
 
 const live = () => ({
+  cacheBudget: 1024,
   cacheHits: 1,
   cacheMisses: 1,
   cacheEvicted: 0,
@@ -167,6 +168,15 @@ describe("the status route", () => {
     });
     const answer = await route(ask());
     expect(answer?.status).toBe(200);
+  });
+
+  test("reports the budget Settings set while running, not the one it started with", async () => {
+    let budget = 1024;
+    const route = createStatusRouter({ facts, live: () => ({ ...live(), cacheBudget: budget }), playback: noPlayback });
+    const budgetShown = async () => JSON.parse(new TextDecoder().decode((await route(ask()))?.body as Uint8Array)).cache.budget;
+    expect(await budgetShown()).toBe(1024);
+    budget = 4096;
+    expect(await budgetShown()).toBe(4096);
   });
 
   test("says nothing about cache size when there is no cache to measure", async () => {

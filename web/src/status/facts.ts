@@ -2,8 +2,8 @@
  * What the player worked out at startup, kept rather than only printed.
  *
  * `index.ts` decides all of this once — which catalog opened, whether the
- * refresh worked, which encoder actually initialises, what the cache is
- * allowed to hold — writes it to a terminal nobody is looking at, and throws
+ * refresh worked, which encoder actually initialises, where the cache
+ * lives — writes it to a terminal nobody is looking at, and throws
  * it away. This is the value it fills instead, so the same facts can be asked
  * for later by someone sitting in front of the screen.
  *
@@ -35,8 +35,6 @@ export interface EncoderFacts {
 
 export interface CacheFacts {
   dir: string;
-  /** What it is allowed to hold, in bytes. */
-  budget: number;
   /** Chunks fetched ahead of the read, from `MEDIAGRAM_CACHE_READAHEAD`. */
   readahead: number;
 }

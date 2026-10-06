@@ -14,7 +14,7 @@ const facts: StartupFacts = {
   },
   encoder: { name: "h264_vaapi", kind: "vaapi", device: "/dev/dri/renderD128" },
   transcodeDir: "/var/tmp/mediagram-transcode",
-  cache: { dir: "/var/cache/mediagram", budget: 20 * 1024 ** 3, readahead: 4 },
+  cache: { dir: "/var/cache/mediagram", readahead: 4 },
   state: { remembered: true, path: "/var/lib/mediagram/state.db" },
   startedAt: 1_000_000,
   runtime: { bun: "1.4.2" },
@@ -22,6 +22,7 @@ const facts: StartupFacts = {
 
 const live: LiveFacts = {
   cacheHeldBytes: 7 * 1024 ** 3,
+  cacheBudget: 20 * 1024 ** 3,
   cacheHits: 900,
   cacheMisses: 100,
   cacheEvicted: 12,
