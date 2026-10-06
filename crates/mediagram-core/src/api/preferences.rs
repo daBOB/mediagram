@@ -28,8 +28,9 @@ impl Core {
     }
 
     /// Remembers a choice, or forgets it (`value: None`). `false` when
-    /// `scope` or `name` has nothing left after trimming, or nothing could
-    /// be written.
+    /// `scope` or `name` has nothing left after trimming, when the choice to
+    /// forget is a synced one another device would bring back, or when
+    /// nothing could be written.
     pub async fn set_preference(
         self: Arc<Self>,
         profile_id: String,
