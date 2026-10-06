@@ -91,6 +91,8 @@ internal fun TvPlayerControls(
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
+                    // Stops where the episode list starts, as the card does, so neither reads through the other's header.
+                    .padding(end = if (extras.sidebarOpen) TvSidebarWidth else 0.dp)
                     .fillMaxWidth()
                     .onGloballyPositioned { bands.topBottom = it.boundsInRoot().bottom }
                     .testTag(TvTopBandTag),
@@ -104,12 +106,17 @@ internal fun TvPlayerControls(
                 modifier =
                     Modifier
                         .fillMaxWidth()
+                        .onGloballyPositioned { bands.titleBottom = it.boundsInRoot().bottom }
                         .background(Color.Black.copy(alpha = SCRIM_ALPHA))
                         .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )
             // Under what is playing, on the side the phone keeps them, and
-            // inside the overscan margin like every other reading here.
-            if (extras.statsShown) {
+            // inside the overscan margin like every other reading here. Not
+            // while the episode list is open: the card, narrowed beside it,
+            // wraps a row and leaves a 540 dp screen no height for both; they
+            // come back when the list closes, and Back still closes the list
+            // first, then them.
+            if (extras.statsShown && !extras.sidebarOpen) {
                 TvStatsOverlay(
                     player = player,
                     totals = extras.totals,

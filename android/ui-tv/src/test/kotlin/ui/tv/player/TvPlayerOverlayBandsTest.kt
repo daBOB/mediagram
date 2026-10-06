@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.height
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -65,6 +66,51 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         val card = compose.onNodeWithTag(TvUpNextCardTag).getBoundsInRoot()
         assertTrue(card.right <= list.left, "card ends at ${card.right}, the list starts at ${list.left}")
         compose.onNodeWithText("When this ends").assertIsDisplayed()
+    }
+
+    /** Above the whole card, as on the web — never down over the seek row — and under the title. */
+    @Test
+    fun aMenuOpensBetweenTheTitleAndTheCard() {
+        openMenu("Speed")
+        val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
+        val bottom = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
+        assertTrue(menu.bottom <= bottom.top, "menu ends at ${menu.bottom}, the card starts at ${bottom.top}")
+        assertTrue(menu.top >= top.bottom, "menu starts at ${menu.top}, the title ends at ${top.bottom}")
+    }
+
+    /** The statistics are a reading, not a place: a menu may cover them, so they leave it its full room. */
+    @Test
+    fun theStatisticsDoNotShortenAMenu() {
+        openMenu("Speed")
+        val bare = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot().height
+        pressBackKey()
+        compose.onNodeWithContentDescription("Stats").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Speed").assertIsFocused()
+        press(Key.DirectionCenter)
+        val withStats = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot().height
+        assertTrue(withStats >= bare, "menu is $withStats tall with the statistics on, $bare without")
+    }
+
+    @Test
+    fun withTheEpisodesOpenTheTitleEndsBesideThem() {
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
+        val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
+        assertTrue(top.right <= list.left, "title ends at ${top.right}, the list starts at ${list.left}")
+    }
+
+    /** No room for both beside the list: the statistics wait for it to close, and come back on their own. */
+    @Test
+    fun withTheEpisodesOpenTheStatisticsWait() {
+        compose.onNodeWithContentDescription("Stats").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNodeWithTag(TvStatsOverlayTag).assertDoesNotExist()
+        pressBackKey()
+        compose.onNodeWithTag(TvEpisodeSidebarTag).assertDoesNotExist()
+        compose.onNodeWithTag(TvStatsOverlayTag).assertExists()
     }
 
     /** Back as a remote sends it — through focus first — closes the menu and only the menu. */

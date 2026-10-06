@@ -132,8 +132,8 @@ private fun StyleRow(onClick: () -> Unit) {
 }
 
 /**
- * The open menu, drawn over the stage directly above the button that opened
- * it and inside the card's width ([cardMenuOffset]). Every bound is in root
+ * The open menu, drawn over the stage just above the card, at the button that
+ * opened it and inside the card's width ([cardMenuOffset]). Every bound is in root
  * coordinates, so the stage's own place in the root is taken off. Drawn
  * clear until it has measured itself, so it never shows for a frame at the
  * wrong height.
@@ -150,8 +150,8 @@ internal fun BoxScope.CardMenuOverStage(
     var size by remember(open) { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
     val gap = with(density) { Spacing.small.roundToPx() }
-    // Never taller than the room between the top bar and the button, so a short screen scrolls the menu instead of covering what opened it.
-    val room = with(density) { (anchor.top - gap - card.topLimit).coerceAtLeast(0).toDp() }
+    // Never taller than the room between the top bar and the card, so a short screen scrolls the menu instead of covering either.
+    val room = with(density) { (bounds.top - gap - card.topLimit).coerceAtLeast(0).toDp() }
     CardMenuPanel(
         menu = open,
         choices = choices,

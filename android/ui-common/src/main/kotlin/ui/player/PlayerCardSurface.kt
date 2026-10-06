@@ -38,13 +38,14 @@ fun Modifier.playerCard(): Modifier =
 /**
  * Where a card menu goes, with [anchor] (the button that opened it) and
  * [card] both in window coordinates, since the top edge of the window is
- * what it may not pass: its bottom [gap] above the button,
- * centred on it, never out past either side of the card, and never off the
- * top — a long language list scrolls inside its own height instead.
+ * what it may not pass: its bottom [gap] above the card — as on the web; a
+ * menu dropped from the button itself would cover the seek row above it —
+ * centred on the button, never out past either side of the card, and never
+ * off the top — a long language list scrolls inside its own height instead.
  */
 fun cardMenuOffset(anchor: IntRect, card: IntRect, menu: IntSize, gap: Int): IntOffset {
     val centred = anchor.center.x - menu.width / 2
     val x = centred.coerceIn(card.left, maxOf(card.left, card.right - menu.width))
-    val y = maxOf(0, anchor.top - gap - menu.height)
+    val y = maxOf(0, card.top - gap - menu.height)
     return IntOffset(x, y)
 }

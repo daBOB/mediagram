@@ -748,14 +748,16 @@ art: a film's title page, a department's cover story, Movies and Shows.
   open sidebar, which narrows the card to the room left of it. A row wraps
   rather than shrink a control; every touch target is at least 48dp.
 - **Menus and the episode sidebar** take the card's own fill. A menu opens
-  directly above the button that opened it, inside the card's width, one at
-  a time. The sidebar stands down the right — 320dp on a phone or tablet,
+  just above the card, centred on the button that opened it, inside the
+  card's width, one at a time; it never reaches up past the top bar, and a
+  list too long for that room scrolls inside itself. The sidebar stands down the right — 320dp on a phone or tablet,
   the whole width under 600dp, 360dp on a television — watched rows at 45%
   with a ✓, the catalogue's progress line under a part-watched row, and
   "Now playing" for the open one. Beside the picture it never overlaps the
   card: while it is open the card is laid out in the width left of it, ending
   12dp short and centred in that space; under 600dp the sidebar covers the
-  window, card and top bar included.
+  window, card and top bar included. On a television the top bar also ends
+  where the sidebar starts, and the stats overlay waits while it is open.
 - **Top bar:** back, the title, My List, Kids, Add to list and Notes, over a
   gradient from 55% black (`SCRIM_ALPHA`) at the top edge to clear.
 - **Nothing lifts or grows.** A control keeps its size on press and on
