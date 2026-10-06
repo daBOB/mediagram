@@ -66,3 +66,7 @@ impl Core {
         .await
     }
 }
+
+#[cfg(test)]
+#[path = "collections_tests.rs"]
+mod tests;

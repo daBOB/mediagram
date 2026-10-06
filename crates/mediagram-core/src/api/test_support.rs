@@ -7,6 +7,7 @@ use std::sync::Arc;
 use rusqlite::Connection;
 
 use super::Core;
+use crate::state::profiles::{self, Profile};
 
 impl Core {
     /// A core over `dir` with placeholder credentials, for tests that never connect.
@@ -17,6 +18,15 @@ impl Core {
             "test-hash".into(),
             "test-device".into(),
         )
+    }
+
+    /// A profile the way a sync round brings one in — no PIN, no admin
+    /// claim, no parent — written straight to this core's state store.
+    pub(crate) fn add_profile(&self, name: &str, kids: bool) -> Profile {
+        self.state_db
+            .with(|conn| profiles::create(conn, name, kids))
+            .flatten()
+            .expect("the state store takes a new profile")
     }
 }
 

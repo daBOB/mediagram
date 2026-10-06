@@ -22,7 +22,11 @@ impl Core {
     /// now. `NotAllowed` once a grown-up exists here — `claim_admin` is for
     /// a household with grown-ups but no admin — and `NotSynced` until this
     /// device has taken in a sync round (`has_synced_once`).
-    pub async fn create_first_admin(self: Arc<Self>, name: String, new_pin: String) -> ProfileOutcome {
+    pub async fn create_first_admin(
+        self: Arc<Self>,
+        name: String,
+        new_pin: String,
+    ) -> ProfileOutcome {
         self.blocking(move |core| core.state_db.manage(|m| m.create_first(&name, &new_pin)))
             .await
     }
@@ -61,7 +65,12 @@ impl Core {
     /// the kids it is the parent of. The admin is never removed.
     /// `chosen_profile` clears itself when it named one removed: see
     /// `profiles::chosen`.
-    pub async fn delete_profile(self: Arc<Self>, actor_id: String, pin: String, id: String) -> ProfileOutcome {
+    pub async fn delete_profile(
+        self: Arc<Self>,
+        actor_id: String,
+        pin: String,
+        id: String,
+    ) -> ProfileOutcome {
         self.blocking(move |core| core.state_db.manage(|m| m.remove(&actor_id, &pin, &id)))
             .await
     }
@@ -112,3 +121,7 @@ impl Core {
         .await
     }
 }
+
+#[cfg(test)]
+#[path = "profile_roles_tests.rs"]
+mod tests;

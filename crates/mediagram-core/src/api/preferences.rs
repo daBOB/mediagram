@@ -15,9 +15,14 @@ impl Core {
     /// Every choice this profile has made, in one round trip: there are a
     /// handful of these per show, and a page needs one the instant a title
     /// opens — exactly when it has no time to ask for it.
-    pub async fn preferences(self: Arc<Self>, profile_id: String) -> Vec<preferences::PreferenceRow> {
+    pub async fn preferences(
+        self: Arc<Self>,
+        profile_id: String,
+    ) -> Vec<preferences::PreferenceRow> {
         self.blocking(move |core| {
-            core.state_db.with(|conn| preferences::list_for(conn, &profile_id)).unwrap_or_default()
+            core.state_db
+                .with(|conn| preferences::list_for(conn, &profile_id))
+                .unwrap_or_default()
         })
         .await
     }
@@ -40,3 +45,7 @@ impl Core {
         .await
     }
 }
+
+#[cfg(test)]
+#[path = "preferences_tests.rs"]
+mod tests;

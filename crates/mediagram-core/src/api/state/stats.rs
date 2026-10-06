@@ -38,3 +38,7 @@ impl Core {
         .await
     }
 }
+
+#[cfg(test)]
+#[path = "stats_tests.rs"]
+mod tests;
