@@ -1,4 +1,3 @@
-use super::super::calendar::{day_name, day_number, monday_of};
 use super::*;
 
 fn day(day: &str, device: &str, seconds: f64) -> DayStatRow {
@@ -46,38 +45,6 @@ fn input(
         titles,
         days,
         watched,
-    }
-}
-
-#[test]
-fn day_numbers_count_from_1970_and_name_back() {
-    assert_eq!(day_number("1970-01-01"), Some(0));
-    assert_eq!(day_number("2000-03-01"), Some(11_017));
-    assert_eq!(day_number("2024-02-29"), Some(19_782));
-    assert_eq!(day_number("2026-10-03"), Some(20_729));
-    for number in -1_000..30_000 {
-        assert_eq!(day_number(&day_name(number)), Some(number));
-    }
-    for bad in [
-        "",
-        "2026-13-01",
-        "2026-00-10",
-        "2026-10-32",
-        "2026-1-03",
-        "2026/10/03",
-    ] {
-        assert_eq!(day_number(bad), None, "{bad:?}");
-    }
-}
-
-#[test]
-fn an_iso_week_runs_monday_to_sunday() {
-    for day in ["2026-09-28", "2026-10-03", "2026-10-04"] {
-        assert_eq!(
-            day_name(monday_of(day_number(day).unwrap())),
-            "2026-09-28",
-            "{day}"
-        );
     }
 }
 

@@ -57,3 +57,7 @@ pub struct MergedState {
     #[serde(default, rename = "editorsChoice")]
     pub editors_choice: Vec<ListRow>,
 }
+
+#[cfg(test)]
+#[path = "merged_tests.rs"]
+mod tests;

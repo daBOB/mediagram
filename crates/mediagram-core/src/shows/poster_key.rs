@@ -32,3 +32,7 @@ pub fn read(conn: &Connection, poster_key: &str) -> rusqlite::Result<Option<Titl
         None => Ok(None),
     }
 }
+
+#[cfg(test)]
+#[path = "poster_key_tests.rs"]
+mod tests;

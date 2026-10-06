@@ -194,3 +194,7 @@ pub fn migrations_up_to(version: i64) -> Vec<&'static str> {
         .flat_map(|group| group.iter().copied())
         .collect()
 }
+
+#[cfg(test)]
+#[path = "schema_tests.rs"]
+mod tests;

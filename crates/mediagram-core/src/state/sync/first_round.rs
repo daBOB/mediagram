@@ -32,11 +32,13 @@ pub(crate) fn follow_library(conn: &Connection, handle: &str) -> rusqlite::Resul
 
 /// A round of the library this device follows has been taken in.
 pub(crate) fn round_imported(conn: &Connection) -> rusqlite::Result<bool> {
-    Ok(match (read(conn, IMPORTED_KEY)?, read(conn, FOLLOWED_KEY)?) {
-        (Some(imported), Some(followed)) => imported == followed,
-        (Some(_), None) => true,
-        (None, _) => false,
-    })
+    Ok(
+        match (read(conn, IMPORTED_KEY)?, read(conn, FOLLOWED_KEY)?) {
+            (Some(imported), Some(followed)) => imported == followed,
+            (Some(_), None) => true,
+            (None, _) => false,
+        },
+    )
 }
 
 fn write(conn: &Connection, key: &str, value: &str) -> rusqlite::Result<()> {
@@ -49,6 +51,14 @@ fn write(conn: &Connection, key: &str, value: &str) -> rusqlite::Result<()> {
 }
 
 fn read(conn: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
-    conn.query_row("SELECT value FROM state_meta WHERE key = ?1", [key], |row| row.get(0))
-        .optional()
+    conn.query_row(
+        "SELECT value FROM state_meta WHERE key = ?1",
+        [key],
+        |row| row.get(0),
+    )
+    .optional()
 }
+
+#[cfg(test)]
+#[path = "first_round_tests.rs"]
+mod tests;

@@ -24,3 +24,7 @@ pub(super) fn absorb(into: &mut Kept, rows: &[SyncPreference], device: &str) {
 pub(super) fn rows(kept: Kept) -> Vec<SyncPreference> {
     kept.into_values().map(|held| held.row).collect()
 }
+
+#[cfg(test)]
+#[path = "preferences_tests.rs"]
+mod tests;

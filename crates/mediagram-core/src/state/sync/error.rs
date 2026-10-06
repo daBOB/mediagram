@@ -13,3 +13,7 @@ pub(super) enum SyncError<E> {
     #[error("the local state could not be read")]
     Read,
 }
+
+#[cfg(test)]
+#[path = "error_tests.rs"]
+mod tests;

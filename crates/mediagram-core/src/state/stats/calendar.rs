@@ -49,3 +49,7 @@ pub(super) fn day_name(number: i64) -> String {
 pub(super) fn monday_of(number: i64) -> i64 {
     number - (number + 3).rem_euclid(7)
 }
+
+#[cfg(test)]
+#[path = "calendar_tests.rs"]
+mod tests;
