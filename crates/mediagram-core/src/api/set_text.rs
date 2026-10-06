@@ -12,8 +12,14 @@ impl Core {
     /// `kind` is `"summary"`; anything else — including `"subtitle"`, which
     /// now comes from `Core::subtitle_text`, keyed by track rather than
     /// language — answers `None` without touching the database.
-    pub async fn set_text(self: Arc<Self>, set_id: String, kind: String, lang: String) -> Option<String> {
-        self.blocking(move |core| text(core, &set_id, &kind, &lang)).await
+    pub async fn set_text(
+        self: Arc<Self>,
+        set_id: String,
+        kind: String,
+        lang: String,
+    ) -> Option<String> {
+        self.blocking(move |core| text(core, &set_id, &kind, &lang))
+            .await
     }
 }
 
@@ -32,3 +38,7 @@ fn text(core: &Core, set_id: &str, kind: &str, lang: &str) -> Option<String> {
         None
     })
 }
+
+#[cfg(test)]
+#[path = "set_text_tests.rs"]
+mod tests;

@@ -141,3 +141,7 @@ pub(super) fn trim_to_budget(core: &Core, budget: u64) {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "subtitles_cache_tests.rs"]
+mod tests;

@@ -85,3 +85,7 @@ fn verify_and_sync(path: &Path, expected_sha256: &str) -> Result<(), CoreError> 
         .and_then(|file| file.sync_all())
         .map_err(CoreError::io(VERIFYING))
 }
+
+#[cfg(test)]
+#[path = "subtitles_cache_download_tests.rs"]
+mod tests;
