@@ -6,7 +6,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { partFetcher, TelegramSource } from "../src/telegram/source";
+import { TelegramSource } from "../src/telegram/source";
+import { connectionFetcher } from "../src/telegram/part-fetch";
 import { TelegramConnection } from "../src/telegram/connection";
 import type { PartLocation } from "../src/catalog";
 import type { Step } from "../src/range";
@@ -116,7 +117,7 @@ describe("the cached path's fetcher", () => {
       },
     };
 
-    const fetch = partFetcher(telegram as never, 42);
+    const fetch = connectionFetcher(TelegramConnection.fixed(telegram as never), 42);
     const got = await fetch(0, 10);
 
     expect(got).toEqual(new Uint8Array(10).fill(3));
@@ -131,7 +132,37 @@ describe("the cached path's fetcher", () => {
       client: { iterDownload: (async function* () { throw new Error("boom"); }) as never },
     };
 
-    const fetch = partFetcher(telegram as never, 42);
+    const fetch = connectionFetcher(TelegramConnection.fixed(telegram as never), 42);
     await expect(fetch(0, 10)).rejects.toThrow("boom");
+  });
+
+  test("a client a restart replaced mid-fetch is swapped for the new one, not forgotten", async () => {
+    let forgotten = 0;
+    const second = {
+      partMedia: async () => ({}) as never,
+      forgetPartMedia: () => {},
+      client: { iterDownload: (async function* () { yield new Uint8Array(10).fill(7); }) as never },
+    };
+    const first = {
+      partMedia: async () => ({}) as never,
+      forgetPartMedia: () => { forgotten += 1; },
+      client: {
+        iterDownload: (async function* () {
+          connection.withChannel(() => second as never);
+          throw new Error("connection closed");
+        }) as never,
+      },
+    };
+    const connection = TelegramConnection.fixed(first as never);
+
+    const got = await connectionFetcher(connection, 42)(0, 10);
+
+    expect(got).toEqual(new Uint8Array(10).fill(7));
+    expect(forgotten).toBe(0);
+  });
+
+  test("a signed-out connection refuses with the reason", async () => {
+    const fetch = connectionFetcher(TelegramConnection.fixed(null), 42);
+    await expect(fetch(0, 10)).rejects.toThrow("this part is not cached, and the player is signed out");
   });
 });

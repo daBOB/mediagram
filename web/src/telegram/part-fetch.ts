@@ -1,9 +1,12 @@
 /**
- * Fetching one aligned range of a part straight from Telegram.
+ * Fetching one aligned range of a part straight from Telegram: the unit the
+ * chunk cache asks for when it has a miss to fill.
  *
- * Split out of `source.ts`, which streams a whole set; this is the smaller
- * unit the chunk cache asks for when it has a miss to fill, and the only
- * place a stale file reference is retried.
+ * A stale file reference, or a client a restart replaced, is retried in two
+ * places: `fetchPartViaConnection` here, and `TelegramSource.bytesOf` before
+ * the first byte of an uncached stream. They stay two on purpose. This fetch
+ * collects its bytes before returning, so it can always retry; a streamed
+ * step may retry only until it has yielded something.
  */
 
 import { helpers } from "teleproto";
@@ -26,18 +29,10 @@ const downloads = new DownloadGate();
 
 /**
  * Handed to the cache as its way of filling a miss, so the cache knows
- * nothing about MTProto and this file stays the only place that does.
- */
-export function partFetcher(telegram: Telegram, messageId: number) {
-  return (offset: number, length: number): Promise<Uint8Array> =>
-    downloads.run(() => fetchPart(telegram, messageId, offset, length));
-}
-
-/**
- * The same fetcher, but resolved from a connection at call time rather than
- * bound to one client: a chunk the cache asks for after a restart is fetched
- * with whatever client is current then, not the one that existed when the
- * stream started.
+ * nothing about MTProto. Resolved from the connection at call time rather
+ * than bound to one client: a chunk the cache asks for after a restart is
+ * fetched with whatever client is current then, not the one that existed
+ * when the stream started.
  */
 export function connectionFetcher(connection: TelegramConnection, messageId: number) {
   return (offset: number, length: number): Promise<Uint8Array> =>
@@ -66,31 +61,16 @@ async function fetchPartViaConnection(
   try {
     return await fetchPartOnce(telegram, messageId, offset, length);
   } catch (error) {
+    // `fetchPartOnce` collects every byte before handing any back, so the
+    // fetch can simply be redone from scratch: nothing has reached a caller
+    // yet for the redo to duplicate or skip. Stays inside the gate slot `connectionFetcher`
+    // or `backgroundFetcher` already holds, so a retry cannot add concurrency.
     const swapped = connection.generation !== startGeneration;
     if (!isFileReferenceExpired(error) && !swapped) throw error;
     const fresh = swapped ? await connection.ready() : telegram;
     if (!fresh) throw new Error("this part is not cached, and the player is signed out");
     if (!swapped) fresh.forgetPartMedia(messageId);
     return fetchPartOnce(fresh, messageId, offset, length);
-  }
-}
-
-async function fetchPart(
-  telegram: Telegram,
-  messageId: number,
-  offset: number,
-  length: number,
-): Promise<Uint8Array> {
-  // Collected into `out` before anything is handed back, so a reference that
-  // expired mid-download can simply be retried from scratch: nothing has
-  // reached a caller yet for the redo to duplicate or skip. Stays inside the
-  // gate slot `partFetcher` already holds, so a retry cannot add concurrency.
-  try {
-    return await fetchPartOnce(telegram, messageId, offset, length);
-  } catch (error) {
-    if (!isFileReferenceExpired(error)) throw error;
-    telegram.forgetPartMedia(messageId);
-    return fetchPartOnce(telegram, messageId, offset, length);
   }
 }
 
