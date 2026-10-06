@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 
+use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use crate::catalog::PlayableSet;
@@ -167,7 +168,7 @@ fn resolve_artwork(
     summary.poster_path = resolve_cached(resolved, version_dir, artwork_dir, conn, &key, artwork_keys);
     let backdrop_key = mlib_spec::package::backdrop_key(&key);
     summary.backdrop_path = resolve_cached(resolved, version_dir, artwork_dir, conn, &backdrop_key, artwork_keys);
-    if set.kind == "ep"
+    if set.kind == Kind::Ep.as_str()
         && let Some(season) = set.season
     {
         let season_key = mlib_spec::package::season_poster_key(&key, season);

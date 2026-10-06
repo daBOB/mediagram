@@ -154,6 +154,10 @@ pub const SET_COMPLETE: &str = "complete";
 pub const PART_PENDING: &str = "pending";
 pub const PART_DONE: &str = "done";
 
+/// How `assets.kind` spells each kind; queries bind these, never retype them.
+pub const ASSET_SUBTITLE: &str = "subtitle";
+pub const ASSET_SUMMARY: &str = "summary";
+
 /// Playable invariant, as SQL usable in a WHERE clause on `sets s`.
 pub const PLAYABLE_SQL: &str = "s.status = 'complete'
     AND s.part_count = (SELECT COUNT(*) FROM parts p WHERE p.set_id = s.set_id AND p.status = 'done')

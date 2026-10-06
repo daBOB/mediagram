@@ -12,6 +12,7 @@ mod rungs;
 
 use std::collections::HashMap;
 
+use mlib_spec::Kind;
 use serde::Deserialize;
 
 use crate::state::record::DayStatRow;
@@ -128,9 +129,9 @@ pub fn achievements(input: &AchievementInput) -> Achievements {
         .collect();
 
     let mut ladders = vec![
-        rungs::counted("films", &FILMS, &times_of("movie")),
+        rungs::counted("films", &FILMS, &times_of(Kind::Movie.as_str())),
         rungs::counted("genres", &GENRES, &rungs::genre_arrivals(&finishes)),
-        rungs::counted("docs", &DOCS, &times_of("docu")),
+        rungs::counted("docs", &DOCS, &times_of(Kind::Docu.as_str())),
         rungs::whole_show(&input.collections, &finished_at),
     ];
     if !input.kids {

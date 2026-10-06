@@ -39,10 +39,10 @@ pub(super) fn fill_missing_assets(conn: &Connection) -> Result<()> {
            AND NOT EXISTS (
              SELECT 1 FROM main.assets m
              WHERE m.set_id = ch.set_id AND m.kind = ch.kind AND m.lang = ch.lang)
-           AND NOT (ch.kind = 'subtitle' AND EXISTS (
+           AND NOT (ch.kind = ?1 AND EXISTS (
              SELECT 1 FROM main.subtitle_files sf WHERE sf.set_id = ch.set_id))"
     );
-    conn.execute(&sql, [])
+    conn.execute(&sql, [mlib_spec::schema::ASSET_SUBTITLE])
         .context("filling in missing assets from the channel")?;
     Ok(())
 }

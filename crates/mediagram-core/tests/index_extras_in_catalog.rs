@@ -79,6 +79,27 @@ async fn a_summary_row_marks_has_summary_and_its_absence_does_not() {
     assert!(!set_of(&sets, "01BARE0000000000000000001A").has_summary);
 }
 
+/// Search reads a set's summary text from `assets`, and only its summary: a
+/// subtitle row stored under the same empty language is not search text.
+#[test]
+fn search_reads_a_sets_summary_and_not_its_subtitles() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    add_set(&conn, "01SUMMARISED000000000000001", "movie", None);
+    add_asset(&conn, "01SUMMARISED000000000000001", "summary", "", "What happens.");
+    add_set(&conn, "01SUBTITLED0000000000000001", "movie", None);
+    add_asset(&conn, "01SUBTITLED0000000000000001", "subtitle", "", "WEBVTT english");
+
+    let sets = mediagram_core::catalog::list_searchable(&conn).unwrap();
+    let summary_of = |id: &str| {
+        let set = sets.iter().find(|s| s.set_id == id).expect("listed");
+        set.summary.clone()
+    };
+
+    assert_eq!(summary_of("01SUMMARISED000000000000001").as_deref(), Some("What happens."));
+    assert_eq!(summary_of("01SUBTITLED0000000000000001"), None);
+}
+
 #[tokio::test]
 async fn genres_are_read_from_the_index_by_poster_key() {
     let dir = tempfile::tempdir().unwrap();

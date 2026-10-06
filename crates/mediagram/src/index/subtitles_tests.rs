@@ -64,7 +64,7 @@ fn recording_replaces_tracks_drops_inline_rows_and_owes_a_publish() {
 
     assert_eq!(bundle_message(&conn, "A").unwrap(), Some(7));
     assert_eq!(labels(&conn), ["German (Forced)", "German"]);
-    assert!(assets::languages(&conn, "A").unwrap().is_empty());
+    assert!(assets::inline_subtitles(&conn, "A").unwrap().is_empty());
     assert!(assets::has_summary(&conn, "A").unwrap(), "a summary stays");
     assert!(pins::publish_owed(&conn).unwrap().is_some());
 }

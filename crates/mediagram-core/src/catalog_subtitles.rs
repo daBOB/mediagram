@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 
+use mlib_spec::schema::ASSET_SUBTITLE;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::dto::SubtitleTrack;
@@ -61,8 +62,10 @@ pub fn tracks_by_set(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<
     }
 
     let mut stmt =
-        conn.prepare("SELECT set_id, lang FROM assets WHERE kind = 'subtitle' ORDER BY set_id, lang")?;
-    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+        conn.prepare("SELECT set_id, lang FROM assets WHERE kind = ?1 ORDER BY set_id, lang")?;
+    let rows = stmt.query_map([ASSET_SUBTITLE], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+    })?;
     let mut legacy: HashMap<String, Vec<String>> = HashMap::new();
     for row in rows {
         let (set_id, lang) = row?;
@@ -113,8 +116,8 @@ pub fn bundle_ref(conn: &Connection, set_id: &str) -> rusqlite::Result<Option<Bu
 /// the `lang` [`tracks_by_set`] synthesised a track from.
 pub fn legacy_body(conn: &Connection, set_id: &str, lang: &str) -> rusqlite::Result<Option<String>> {
     conn.query_row(
-        "SELECT body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' AND lang = ?2",
-        params![set_id, lang],
+        "SELECT body FROM assets WHERE set_id = ?1 AND kind = ?2 AND lang = ?3",
+        params![set_id, ASSET_SUBTITLE, lang],
         |row| row.get(0),
     )
     .optional()

@@ -5,6 +5,7 @@
 use anyhow::{Result, bail};
 use mediagram_core::transport::source::TelegramSource;
 use mlib_spec::caption::Kind;
+use mlib_spec::schema::ASSET_SUBTITLE;
 use rusqlite::Connection;
 
 use super::BackfillArgs;
@@ -53,12 +54,12 @@ pub fn candidates(conn: &Connection, mkv: bool, redo: &[String]) -> Result<Vec<C
         "SELECT * FROM sets s WHERE status = ?1
            AND NOT EXISTS (SELECT 1 FROM subtitle_files f WHERE f.set_id = s.set_id)
            AND NOT EXISTS (SELECT 1 FROM meta m WHERE m.key = ?2 || s.set_id)
-           AND NOT EXISTS (SELECT 1 FROM assets a WHERE a.set_id = s.set_id AND a.kind = 'subtitle')
+           AND NOT EXISTS (SELECT 1 FROM assets a WHERE a.set_id = s.set_id AND a.kind = ?3)
          ORDER BY set_id",
     )?;
     let rows = stmt
         .query_map(
-            rusqlite::params![SetStatus::Complete, NONE_KEY],
+            rusqlite::params![SetStatus::Complete, NONE_KEY, ASSET_SUBTITLE],
             SetRow::from_row,
         )?
         .collect::<rusqlite::Result<Vec<_>>>()?;

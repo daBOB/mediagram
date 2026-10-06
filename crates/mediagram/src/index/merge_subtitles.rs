@@ -91,8 +91,8 @@ pub(super) fn merge(conn: &Connection) -> Result<SubtitleMergeReport> {
     // replaces would otherwise linger as unreachable duplicates.
     conn.execute(
         "DELETE FROM main.assets
-         WHERE kind = 'subtitle' AND set_id IN (SELECT set_id FROM main.subtitle_files)",
-        [],
+         WHERE kind = ?1 AND set_id IN (SELECT set_id FROM main.subtitle_files)",
+        [mlib_spec::schema::ASSET_SUBTITLE],
     )
     .context("dropping inline subtitle rows superseded by a bundle")?;
 

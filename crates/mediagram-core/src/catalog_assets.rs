@@ -6,13 +6,14 @@
 
 use std::collections::HashSet;
 
+use mlib_spec::schema::ASSET_SUMMARY;
 use rusqlite::{Connection, OptionalExtension};
 
 /// Every set that carries a summary row, so `list_sets` can flag it without
 /// a query per row.
 pub fn summaries(conn: &Connection) -> rusqlite::Result<HashSet<String>> {
-    let mut stmt = conn.prepare("SELECT set_id FROM assets WHERE kind = 'summary' AND lang = ''")?;
-    let rows = stmt.query_map([], |row| row.get(0))?;
+    let mut stmt = conn.prepare("SELECT set_id FROM assets WHERE kind = ?1 AND lang = ''")?;
+    let rows = stmt.query_map([ASSET_SUMMARY], |row| row.get(0))?;
     rows.collect()
 }
 
@@ -24,8 +25,8 @@ pub fn text(conn: &Connection, set_id: &str, kind: &str, _lang: &str) -> rusqlit
     match kind {
         "summary" => conn
             .query_row(
-                "SELECT body FROM assets WHERE set_id = ?1 AND kind = 'summary' AND lang = ''",
-                [set_id],
+                "SELECT body FROM assets WHERE set_id = ?1 AND kind = ?2 AND lang = ''",
+                [set_id, ASSET_SUMMARY],
                 |row| row.get(0),
             )
             .optional(),

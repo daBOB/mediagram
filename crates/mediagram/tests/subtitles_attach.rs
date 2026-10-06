@@ -87,7 +87,7 @@ async fn embedded_tracks_are_sent_as_one_bundle_and_recorded() {
         )
         .unwrap();
     assert_eq!((chat, tracks), (CHAT_ID, 2));
-    assert!(assets::languages(&conn, SET).unwrap().is_empty());
+    assert!(assets::inline_subtitles(&conn, SET).unwrap().is_empty());
     assert!(pins::publish_owed(&conn).unwrap().is_some());
     assert_eq!(
         listing(media.path()),

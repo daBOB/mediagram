@@ -15,6 +15,7 @@
 
 use std::collections::HashMap;
 
+use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use super::SOURCE;
@@ -29,7 +30,7 @@ use crate::sqlite_schema::table_exists;
 /// can be anime at all, so a documentary or a course is never anime, hand-set
 /// override or not.
 pub fn is_anime(kind: &str, genres: &[String], original_language: Option<&str>, forced: Option<bool>) -> bool {
-    if kind != "movie" && kind != "ep" {
+    if kind != Kind::Movie.as_str() && kind != Kind::Ep.as_str() {
         return false;
     }
     if let Some(forced) = forced {
