@@ -13,6 +13,7 @@ use mlib_spec::Kind;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::shows::SOURCE;
+use crate::sqlite_schema::table_exists;
 
 #[path = "credits_read.rs"]
 mod read;
@@ -87,7 +88,7 @@ pub fn has(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<bool> {
 /// accommodation `shows::optional_column` makes for a column, extended here
 /// to a whole missing table.
 pub fn portraits(conn: &Connection) -> rusqlite::Result<Vec<PosterRef>> {
-    if !read::has_table(conn)? {
+    if !table_exists(conn, "credits")? {
         return Ok(Vec::new());
     }
     let mut stmt = conn.prepare(
@@ -121,7 +122,7 @@ pub fn portraits(conn: &Connection) -> rusqlite::Result<Vec<PosterRef>> {
 /// of [`portraits`], for a caller (`Core::fetch_portrait`) that only needs
 /// one face rather than every one this index holds.
 pub fn profile_of(conn: &Connection, person_id: u64) -> rusqlite::Result<Option<String>> {
-    if !read::has_table(conn)? {
+    if !table_exists(conn, "credits")? {
         return Ok(None);
     }
     let path: Option<String> = conn

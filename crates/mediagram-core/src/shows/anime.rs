@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use super::SOURCE;
+use crate::sqlite_schema::table_exists;
 
 /// Whether `kind` and `genres` describe an anime title, once `forced` (a
 /// hand-set override, or `None` for automatic) and `original_language` have
@@ -48,12 +49,7 @@ pub fn is_anime(kind: &str, genres: &[String], original_language: Option<&str>, 
 /// check for a value that means the same as absent.
 pub fn anime_overrides(conn: &Connection) -> rusqlite::Result<HashMap<String, bool>> {
     let mut overrides = HashMap::new();
-    let present: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'anime_overrides')",
-        [],
-        |row| row.get(0),
-    )?;
-    if !present {
+    if !table_exists(conn, "anime_overrides")? {
         return Ok(overrides);
     }
     let mut stmt =

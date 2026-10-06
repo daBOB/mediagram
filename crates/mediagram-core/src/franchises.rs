@@ -6,6 +6,7 @@ use mediagram_tmdb::franchise::Franchise;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::shows::SOURCE;
+use crate::sqlite_schema::table_exists;
 
 /// Writes a franchise's entry, replacing whatever was there.
 pub fn upsert(conn: &Connection, franchise: &Franchise) -> rusqlite::Result<()> {
@@ -49,12 +50,7 @@ pub fn has(conn: &Connection, id: u64) -> rusqlite::Result<bool> {
 /// predates this table (v8 and older), the same accommodation
 /// `credits::portraits` makes for a whole missing table.
 pub fn all(conn: &Connection) -> rusqlite::Result<Vec<Franchise>> {
-    let has_table: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'franchises')",
-        [],
-        |row| row.get(0),
-    )?;
-    if !has_table {
+    if !table_exists(conn, "franchises")? {
         return Ok(Vec::new());
     }
     let mut stmt =

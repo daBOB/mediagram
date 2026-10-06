@@ -77,7 +77,7 @@ fn run_title_credits(core: &Core, key: &str) -> TitleCreditsRecord {
     let Some((kind, id)) = title_of(key) else {
         return TitleCreditsRecord::default();
     };
-    let Ok(conn) = store::open(core) else {
+    let Some(conn) = store::open_installed(core, "a title's credits") else {
         return TitleCreditsRecord::default();
     };
     let credits = crate::credits::for_title(&conn, kind, id).unwrap_or_else(|err| {
@@ -101,7 +101,7 @@ fn shape(portraits: &Portraits, credited: crate::credits::Credited) -> CreditRec
 }
 
 fn run_person(core: &Core, person_id: u64) -> Option<PersonRecord> {
-    let conn = store::open(core).ok()?;
+    let conn = store::open_installed(core, "a person")?;
     let found = crate::credits::for_person(&conn, person_id)
         .inspect_err(|err| tracing::warn!(error = %err, "a person's credits could not be read"))
         .ok()??;
@@ -115,7 +115,7 @@ fn run_person(core: &Core, person_id: u64) -> Option<PersonRecord> {
 }
 
 fn run_franchises(core: &Core) -> Vec<FranchiseRecord> {
-    let Ok(conn) = store::open(core) else {
+    let Some(conn) = store::open_installed(core, "franchises") else {
         return Vec::new();
     };
     crate::franchises::all(&conn)
@@ -129,7 +129,7 @@ fn run_franchises(core: &Core) -> Vec<FranchiseRecord> {
 }
 
 fn run_search_people(core: &Core, query: &str) -> Vec<PeopleHitRecord> {
-    let Ok(conn) = store::open(core) else {
+    let Some(conn) = store::open_installed(core, "a people search") else {
         return Vec::new();
     };
     let portraits = Portraits::new(core, &conn);
@@ -182,7 +182,7 @@ impl<'a> Portraits<'a> {
 /// first, then this device's own fetched descriptions — the same order
 /// `enrich::details::title_info` prefers the index in.
 fn profile_of(core: &Core, person_id: u64) -> Option<String> {
-    if let Ok(conn) = store::open(core)
+    if let Some(conn) = store::open_installed(core, "a portrait")
         && let Some(path) = crate::credits::profile_of(&conn, person_id).ok().flatten()
     {
         return Some(path);

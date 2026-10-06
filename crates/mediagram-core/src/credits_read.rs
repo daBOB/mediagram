@@ -17,6 +17,7 @@ use mlib_spec::Kind;
 use rusqlite::{Connection, params};
 
 use crate::search::normalize::{terms, variants};
+use crate::sqlite_schema::table_exists;
 
 use super::SOURCE;
 
@@ -40,7 +41,7 @@ pub struct TitleCredits {
 /// A title's cast, in billing order, and its crew — empty for an index with
 /// no `credits` table (v8 and older).
 pub fn for_title(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<TitleCredits> {
-    if !has_table(conn)? {
+    if !table_exists(conn, "credits")? {
         return Ok(TitleCredits::default());
     }
     let kind = mediagram_tmdb::posters::kind_key(kind);
@@ -83,7 +84,7 @@ pub struct PersonCredits {
 /// A person's own titles, or `None` when nothing credits this id — either
 /// nobody by it exists, or the index has no `credits` table.
 pub fn for_person(conn: &Connection, person_id: u64) -> rusqlite::Result<Option<PersonCredits>> {
-    if !has_table(conn)? {
+    if !table_exists(conn, "credits")? {
         return Ok(None);
     }
     let mut stmt = conn
@@ -127,7 +128,7 @@ const PEOPLE_LIMIT: usize = 12;
 /// with no `credits` table.
 pub fn people_matching(conn: &Connection, query: &str) -> rusqlite::Result<Vec<PeopleHit>> {
     let words = terms(Some(query));
-    if words.is_empty() || !has_table(conn)? {
+    if words.is_empty() || !table_exists(conn, "credits")? {
         return Ok(Vec::new());
     }
     let mut stmt = conn.prepare(
@@ -161,17 +162,6 @@ pub fn people_matching(conn: &Connection, query: &str) -> rusqlite::Result<Vec<P
     });
     hits.truncate(PEOPLE_LIMIT);
     Ok(hits)
-}
-
-/// Whether this index carries a `credits` table at all — absent in v8 and
-/// older, so every reader here treats it as optional rather than erroring
-/// on a table that does not exist.
-pub(super) fn has_table(conn: &Connection) -> rusqlite::Result<bool> {
-    conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'credits')",
-        [],
-        |row| row.get(0),
-    )
 }
 
 #[cfg(test)]

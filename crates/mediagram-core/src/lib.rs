@@ -20,6 +20,7 @@ pub mod package;
 pub mod range;
 pub mod search;
 pub mod shows;
+mod sqlite_schema;
 pub mod state;
 pub mod transport;
 pub mod updates;

@@ -14,10 +14,9 @@ use crate::state::stats::achievements::{
 };
 use crate::state::stats::exchange;
 use crate::state::{profiles, record::DayStatRow, rows};
-use crate::versions::{library_db, open_ro};
 
 use super::super::Core;
-use super::super::store::current_dir;
+use super::super::store::open_installed;
 
 /// A profile's kids flag, every device's day rows and its live watched marks.
 type ProfileRows = (bool, Vec<DayStatRow>, Vec<rows::WatchedRow>);
@@ -72,11 +71,7 @@ fn profile_rows(conn: &Connection, profile_id: &str) -> rusqlite::Result<Option<
 /// The installed catalog as the rules read it: empty before one is installed
 /// or when it cannot be read — which still counts hours and streaks.
 fn installed_library(core: &Core) -> (Vec<LibraryTitle>, Vec<LibraryCollection>) {
-    let path = library_db(&current_dir(core));
-    if !path.exists() {
-        return Default::default();
-    }
-    let Ok(conn) = open_ro(&path) else {
+    let Some(conn) = open_installed(core, "achievements") else {
         return Default::default();
     };
     crate::catalog_achievements::library_facts(&conn).unwrap_or_else(|err| {

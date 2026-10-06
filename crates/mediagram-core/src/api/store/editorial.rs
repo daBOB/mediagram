@@ -16,17 +16,16 @@ use rusqlite::Connection;
 
 use crate::catalog::PlayableSet;
 use crate::dto::{self, SetSummary};
-use crate::versions::{library_db, open_ro};
 
 use super::resolve::resolve_cached;
 use super::{Core, CoreError, artwork_dir, current_dir};
 
 pub(in crate::api) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreError> {
-    let path = library_db(&current_dir(core));
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let conn = open_ro(&path)?;
+    let conn = match super::open(core) {
+        Ok(conn) => conn,
+        Err(CoreError::NotFound(_)) => return Ok(Vec::new()),
+        Err(err) => return Err(err),
+    };
     let sets =
         crate::catalog::list_playable(&conn).map_err(CoreError::io("reading the catalog"))?;
     enrich(core, &conn, sets)
@@ -48,11 +47,11 @@ pub(in crate::api) fn list_sets(core: &Core) -> Result<Vec<SetSummary>, CoreErro
 /// not hold, matching `list_sets`'s own "nothing installed is an empty
 /// answer, not a failure".
 pub(in crate::api) fn media_set(core: &Core, set_id: &str) -> Result<Option<SetSummary>, CoreError> {
-    let path = library_db(&current_dir(core));
-    if !path.exists() {
-        return Ok(None);
-    }
-    let conn = open_ro(&path)?;
+    let conn = match super::open(core) {
+        Ok(conn) => conn,
+        Err(CoreError::NotFound(_)) => return Ok(None),
+        Err(err) => return Err(err),
+    };
     let Some(set) = crate::catalog::playable_set(&conn, set_id)
         .map_err(CoreError::io("reading the catalog"))?
     else {

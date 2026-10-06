@@ -8,7 +8,7 @@ use std::sync::Arc;
 use crate::catalog;
 use crate::search::rank;
 
-use super::{Core, CoreError, store};
+use super::{Core, store};
 
 pub(super) mod cache;
 
@@ -45,14 +45,8 @@ impl Core {
 }
 
 fn run(core: &Core, query: &str) -> Vec<SearchHit> {
-    let conn = match store::open(core) {
-        Ok(conn) => conn,
-        // No catalog installed yet: nothing to search, and nothing wrong.
-        Err(CoreError::NotFound(_)) => return Vec::new(),
-        Err(err) => {
-            tracing::warn!(error = %err, "the index could not be opened for a search");
-            return Vec::new();
-        }
+    let Some(conn) = store::open_installed(core, "a search") else {
+        return Vec::new();
     };
     let sets = match catalog::list_searchable(&conn) {
         Ok(sets) => sets,

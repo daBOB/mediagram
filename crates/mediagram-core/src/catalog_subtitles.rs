@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::dto::SubtitleTrack;
+use crate::sqlite_schema::table_exists;
 
 /// Where a set's bundle document lives, once uploaded. Never crosses the
 /// binding surface — see `crate::api::subtitles`, the only caller.
@@ -21,14 +22,6 @@ pub struct BundleRef {
     pub message_id: i64,
     pub bytes: u64,
     pub sha256: String,
-}
-
-fn table_exists(conn: &Connection, name: &str) -> rusqlite::Result<bool> {
-    conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
-        [name],
-        |row| row.get(0),
-    )
 }
 
 /// Every set's subtitle tracks, in the order a picker offers them.

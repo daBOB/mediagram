@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use crate::api::{Core, CoreError, store};
+use crate::api::{Core, store};
 use crate::catalog_assets;
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -27,15 +27,7 @@ fn text(core: &Core, set_id: &str, kind: &str, lang: &str) -> Option<String> {
     if kind != "summary" {
         return None;
     }
-    let conn = match store::open(core) {
-        Ok(conn) => conn,
-        // No catalog installed yet: nothing to read, and nothing wrong.
-        Err(CoreError::NotFound(_)) => return None,
-        Err(err) => {
-            tracing::warn!(error = %err, "the index could not be opened for a set's text");
-            return None;
-        }
-    };
+    let conn = store::open_installed(core, "a set's text")?;
     catalog_assets::text(&conn, set_id, kind, lang).unwrap_or_else(|err| {
         tracing::warn!(error = %err, "a set's text could not be read");
         None

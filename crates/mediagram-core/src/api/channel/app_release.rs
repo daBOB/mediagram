@@ -57,10 +57,7 @@ impl Core {
 
 /// The newest release pinned in the library `handle` names, or `None`.
 async fn latest(core: &Core, handle: &str) -> Result<Option<AppRelease>, CoreError> {
-    let entry = library::lookup(core, handle)?;
-    let peer = entry.peer().ok_or_else(|| {
-        CoreError::NotFound("this device no longer has that library stored".into())
-    })?;
+    let (entry, peer) = library::peer_of(core, handle)?;
     let (client, owner) = session::connection(core).await;
     let pinned = client
         .search_messages(peer)
