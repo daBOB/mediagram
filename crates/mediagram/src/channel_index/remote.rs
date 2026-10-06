@@ -1,11 +1,15 @@
-//! What `channel_index` needs from the channel, and nothing it can decide
-//! itself.
+//! The crate's port to the channel: what the uploader needs from it, and
+//! nothing it can decide itself.
 //!
 //! Two adapters: [`super::telegram_remote::TelegramRemote`] in production and
-//! an in-memory channel in the integration tests. The policy — which pinned
-//! message is the channel index, when to pull again, what to keep trying to
-//! unpin — stays in `channel_index`, so the tests exercise the real decisions
-//! against a channel that can misbehave on cue.
+//! the in-memory `FakeChannel` of `tests/support/channel.rs`, which
+//! `test_fakes` mounts into the unit tests as well. Besides `channel_index`,
+//! seven modules post or read through it: `app_release::publish`,
+//! `commands::subtitles::{backfill, backfill_channel, move_inline, session}`,
+//! `subtitles::attach` and `upload::session::link`. The index's policy —
+//! which pinned message is the channel index, when to pull again, what to
+//! keep trying to unpin — stays in `channel_index`, so the tests exercise the
+//! real decisions against a channel that can misbehave on cue.
 
 use std::collections::HashMap;
 

@@ -1,6 +1,6 @@
 //! The capped chunk-download loop that writes a pinned document to a file.
 //! Three things arrive through it: the index snapshot ([`super::install`]), a
-//! subtitle bundle (`fetch_into` in `crate::api::subtitles_cache_download`)
+//! subtitle bundle (`fetch_into` in `crate::api::subtitles::cache::download`)
 //! and the app release APK (`write_verified` in [`super::app_release`]).
 //! State sync's watch-state documents do not: they are read into memory by
 //! their own loop (`download_capped` in

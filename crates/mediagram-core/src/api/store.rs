@@ -67,8 +67,8 @@ pub(super) fn open_installed(core: &Core, what: &str) -> Option<Connection> {
     }
 }
 
-mod editorial;
-pub(super) use editorial::{list_sets, media_set};
+mod listing;
+pub(super) use listing::{list_sets, media_set};
 
 mod resolve;
 pub(super) use resolve::{poster_path, resolve_with};

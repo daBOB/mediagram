@@ -5,7 +5,7 @@ use anyhow::Result;
 use rusqlite::Connection;
 
 use super::remote::ChannelRemote;
-use crate::index::merge_conflicts::resolve_from_captions;
+use crate::index::merge::conflicts::resolve_from_captions;
 use crate::index::parts;
 use crate::index::sets_pending::SkippedKind;
 

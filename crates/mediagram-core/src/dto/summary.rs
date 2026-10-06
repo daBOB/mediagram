@@ -165,11 +165,11 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         collection_id: None,
         collection_name: None,
         series_type: None,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's genres, original language and overrides, none of which
         // this flattening step reads.
         anime: false,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's own `categories` table, which this flattening step never
         // opens.
         category: None,

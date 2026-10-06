@@ -1,6 +1,6 @@
 //! Resolving a poster key to the file it names, on disk or in the index's
 //! `artwork` table — `poster_path`'s own per-key form, and `resolve_cached`,
-//! the batched, memoised form `editorial` enriches a whole listing with.
+//! the batched, memoised form `listing` enriches a whole listing with.
 //! Split out of `store.rs` to keep that file under the line limit.
 
 use std::collections::{HashMap, HashSet};

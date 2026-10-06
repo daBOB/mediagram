@@ -68,7 +68,7 @@ pub fn rename(conn: &Connection, profile_id: &str, id: &str, name: &str) -> rusq
 
 /// Kept as a tombstone, like `rows::set_watchlisted` — items are left where
 /// they are rather than cascaded away, since a newer live copy arriving
-/// from another device (`lists_exchange::import_collections`) has to find
+/// from another device (`exchange::lists::import_collections`) has to find
 /// the same row to update rather than a gap it would re-create under a new
 /// id.
 pub fn delete(conn: &Connection, profile_id: &str, id: &str) -> rusqlite::Result<bool> {

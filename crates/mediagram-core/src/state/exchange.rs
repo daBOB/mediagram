@@ -4,16 +4,16 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use super::lists_exchange;
 use super::merge::MergedState;
-use super::preferences_exchange;
 use super::profiles;
 use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
 use super::stats;
-use super::watched_exchange;
 
+mod lists;
+mod preferences;
 mod roles;
+mod watched;
 
 /// What this device has to say about where things were left off.
 ///
@@ -33,10 +33,10 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
                 updated_at: row.updated_at as f64,
             })
             .collect();
-        let (watched, unwatched) = watched_exchange::export_watched(conn, &profile.id)?;
-        let watchlist = lists_exchange::export_watchlist(conn, &profile.id)?;
-        let collections = lists_exchange::export_collections(conn, &profile.id)?;
-        let preferences = preferences_exchange::export_preferences(conn, &profile.id)?;
+        let (watched, unwatched) = watched::export_watched(conn, &profile.id)?;
+        let watchlist = lists::export_watchlist(conn, &profile.id)?;
+        let collections = lists::export_collections(conn, &profile.id)?;
+        let preferences = preferences::export_preferences(conn, &profile.id)?;
         let (title_stats, day_stats) = stats::exchange::export(conn, &profile.id)?;
         let roles = roles::export(conn, &profile.id)?;
         profiles.push(ProfileState {
@@ -54,8 +54,8 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             roles,
         });
     }
-    let kids = lists_exchange::export_kids(conn)?;
-    let editors_choice = lists_exchange::export_editors_choice(conn)?;
+    let kids = lists::export_kids(conn)?;
+    let editors_choice = lists::export_editors_choice(conn)?;
     Ok(SyncRecord {
         format: SYNC_FORMAT,
         device: device.to_string(),
@@ -79,8 +79,8 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
 pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Result<u64> {
     let transaction = conn.unchecked_transaction()?;
     let conn = &transaction;
-    let mut changed = lists_exchange::import_kids(conn, &merged.kids)?;
-    changed += lists_exchange::import_editors_choice(conn, &merged.editors_choice)?;
+    let mut changed = lists::import_kids(conn, &merged.kids)?;
+    changed += lists::import_editors_choice(conn, &merged.editors_choice)?;
     for profile in &merged.profiles {
         // The identity to match on, and the spelling to create with.
         let Some((profile_id, created, already_kids)) = profiles::profile_named_with_creation(
@@ -108,12 +108,11 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
         for row in &profile.progress {
             changed += import_progress(conn, &profile_id, row)?;
         }
-        changed += watched_exchange::import_watched(conn, &profile_id, &profile.watched)?;
-        changed += watched_exchange::import_unwatched(conn, &profile_id, &profile.unwatched)?;
-        changed += lists_exchange::import_watchlist(conn, &profile_id, &profile.watchlist)?;
-        changed += lists_exchange::import_collections(conn, &profile_id, &profile.collections)?;
-        changed +=
-            preferences_exchange::import_preferences(conn, &profile_id, &profile.preferences)?;
+        changed += watched::import_watched(conn, &profile_id, &profile.watched)?;
+        changed += watched::import_unwatched(conn, &profile_id, &profile.unwatched)?;
+        changed += lists::import_watchlist(conn, &profile_id, &profile.watchlist)?;
+        changed += lists::import_collections(conn, &profile_id, &profile.collections)?;
+        changed += preferences::import_preferences(conn, &profile_id, &profile.preferences)?;
         changed +=
             stats::exchange::import(conn, &profile_id, &profile.title_stats, &profile.day_stats)?;
     }

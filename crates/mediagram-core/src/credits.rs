@@ -15,7 +15,6 @@ use rusqlite::{Connection, OptionalExtension, params};
 use crate::shows::SOURCE;
 use crate::sqlite_schema::table_exists;
 
-#[path = "credits_read.rs"]
 mod read;
 pub use read::{Credited, PeopleHit, PersonCredits, TitleCredits, for_person, for_title, people_matching};
 

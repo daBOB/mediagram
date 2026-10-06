@@ -5,7 +5,7 @@
 //!
 //! Genres are the index's own `shows` rows only, not the ones this device
 //! fetched into its sidecar that the Android shelves also show
-//! (`api::store::editorial`): the web player has no sidecar, and an
+//! (`api::store::listing`): the web player has no sidecar, and an
 //! achievement one surface shows and the other does not would be exactly the
 //! divergence the two are held together against.
 

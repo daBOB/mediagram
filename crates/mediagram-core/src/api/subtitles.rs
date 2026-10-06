@@ -13,7 +13,6 @@ use rusqlite::Connection;
 use crate::api::{Core, store};
 use crate::catalog_subtitles::{self, BundleRef};
 
-#[path = "subtitles_cache.rs"]
 pub(in crate::api) mod cache;
 
 /// How many lessons past the one just opened a course hold fetches ahead of
