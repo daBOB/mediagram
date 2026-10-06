@@ -1,7 +1,6 @@
 /**
  * The three secondary actions off the Telegram section: choosing a library,
- * editing the application id/hash, and confirming a sign-out. Split out of
- * `settings-telegram.js` to keep it under this project's line ceiling.
+ * editing the application id/hash, and confirming a sign-out.
  */
 
 import { el } from "./dom.js";

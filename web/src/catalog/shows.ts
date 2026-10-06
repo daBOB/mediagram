@@ -97,7 +97,7 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
       .map((column) => column.name),
   );
   if (columns.size === 0) return byKey; // No such table: an index written before it.
-  // Only these two literals are ever spliced into the query below.
+  // Only these literals are ever spliced into the query below.
   const optional = (
     name: "status" | "certification" | "popularity" | "collection_id" | "collection_name" | "series_type" | "original_language",
   ) => (columns.has(name) ? name : "NULL");

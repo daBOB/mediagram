@@ -6,8 +6,6 @@
  * and the same row arriving in two documents — one device's own and another
  * passing it on — stays one: totals are sums over devices, taken later by
  * `stats-summary.ts`, so a merge can never count anything twice.
- *
- * Split out of `merge.ts`, which `mergeStates` calls this from.
  */
 
 import { normalName, type SyncRecord } from "./sync-record";

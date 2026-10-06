@@ -1,10 +1,9 @@
 /**
- * The only file that knows what speaks MTProto.
+ * One signed-in Telegram client and the channel it reads parts from.
  *
- * Everything else in the player deals in parts, ranges and bytes. If
- * `teleproto` — a single-maintainer fork of the archived GramJS — ever needs
- * replacing, this is the file to port, along with `measured-client.ts`,
- * which is the same client subclassed to count requests.
+ * Replacing `teleproto` — a single-maintainer fork of the archived GramJS —
+ * means porting every file that imports it, in `telegram/`, `login/`,
+ * `settings/` and `channel-index/`.
  */
 
 import { Api, sessions } from "teleproto";

@@ -7,7 +7,7 @@
  * reported that, which makes a player that quietly filled a disk look like a
  * player that stopped working for no reason.
  *
- * Separate from `ChunkCache.sizeOnDisk`, which needs each file's mtime to
+ * Separate from `ChunkCache.sizeOnDisk`, which needs each file's atime to
  * order eviction by. This needs only the sum, and pays for only the sum.
  */
 

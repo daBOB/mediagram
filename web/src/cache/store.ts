@@ -71,7 +71,7 @@ export class ChunkCache {
     private maxBytes: number,
   ) {}
 
-  /** What this cache has done so far, and what it is allowed to hold. */
+  /** What this cache has done so far. */
   stats(): CacheStats {
     return {
       hits: this.hits,

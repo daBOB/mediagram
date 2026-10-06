@@ -1,11 +1,6 @@
 /**
  * What this player is doing, for whoever is standing in front of it.
  *
- * Kept apart from `routes.ts` for the reason `state/routes.ts` is: that
- * module is already twice the size the rest of this codebase holds itself to,
- * and a surface with its own access rule is exactly the kind of thing that
- * should not be remembered halfway down it.
- *
  * **The rule is this household's own devices, and the refusal is a 404.**
  * This API has no authentication of its own — anyone who can reach the port
  * can stream the whole library — and a 403 would confirm to a caller from

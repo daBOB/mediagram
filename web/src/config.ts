@@ -231,8 +231,8 @@ export function load(): Config {
 }
 
 /**
- * Safe to print: everything except the two secrets. Used by startup logging,
- * which must never be the thing that leaks a session.
+ * Safe to print: the operational settings, with the three secrets (apiHash,
+ * session, packageKey) redacted. Used by startup logging, which must never leak one.
  */
 export function redactedConfig(config: Config): Record<string, unknown> {
   return {

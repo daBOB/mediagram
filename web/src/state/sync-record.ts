@@ -118,7 +118,7 @@ export interface CollectionRow {
 /** `titleStats`/`dayStats` come from `StatsRows` (`stats-record.ts`); `kids`,
  * `admin`, `kidsAge`, `parent` and `pin` from `RoleKeys` (`roles-record.ts`). */
 export interface ProfileState extends StatsRows, RoleKeys {
-  /** The viewer. See the plan's Identity section: the name, not the id. */
+  /** The viewer: the name, not the id, is what identifies one across devices. */
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
   localId?: string;

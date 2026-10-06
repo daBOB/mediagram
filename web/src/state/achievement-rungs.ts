@@ -1,6 +1,6 @@
 /**
- * The rules behind each achievement, one ladder each — split out of
- * `achievements.ts`, which gathers them. Every function answers the same
+ * The rules behind each achievement, one ladder each, which
+ * `achievements.ts` gathers. Every function answers the same
  * shape, a {@link Rung} per id: when it was earned, or `null`, and the
  * progress towards it.
  */

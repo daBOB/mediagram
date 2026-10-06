@@ -1,7 +1,7 @@
 /**
  * The account this player is bound to: api id/hash, session, and the chosen
- * channel — kept beside `state.db` rather than in it (plan's Q1: the state
- * database is copied and backed up casually, and holds no secret today).
+ * channel — kept beside `state.db` rather than in it (the state database is
+ * copied and backed up casually, and holds no secret today).
  *
  * Read as absent on anything this file did not write itself: a missing file,
  * one that is not JSON, or one missing a required field. A player that
