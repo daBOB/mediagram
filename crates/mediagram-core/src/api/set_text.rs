@@ -24,6 +24,9 @@ impl Core {
 }
 
 fn text(core: &Core, set_id: &str, kind: &str, lang: &str) -> Option<String> {
+    if kind != "summary" {
+        return None;
+    }
     let conn = match store::open(core) {
         Ok(conn) => conn,
         // No catalog installed yet: nothing to read, and nothing wrong.
