@@ -9,15 +9,14 @@ use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 use std::time::SystemTime;
 
 use mlib_spec::subtitle_bundle::{self, Bundle};
-use sha2::{Digest, Sha256};
 use tokio::sync::Mutex as AsyncMutex;
 
-use crate::api::account::session;
-use crate::api::channel::download::download_with;
-use crate::api::channel::library;
-use crate::api::{Core, CoreError};
+use crate::api::Core;
 use crate::catalog_subtitles::BundleRef;
-use crate::transport::stream::part_document;
+
+#[path = "subtitles_cache_download.rs"]
+mod download;
+use download::fetch_into;
 
 /// The whole cache's own budget — roughly the library's every bundle at
 /// once, so eviction is rare in practice.
@@ -54,20 +53,19 @@ pub(super) fn cached_path(core: &Core, sha: &str) -> PathBuf {
     dir(core).join(format!("{sha}.json.gz"))
 }
 
-fn tmp_path(core: &Core, sha: &str) -> PathBuf {
-    let mut rand = [0u8; 8];
-    getrandom::fill(&mut rand).expect("the OS random source is available");
-    dir(core).join(format!("{sha}.{}.{}.tmp", std::process::id(), hex::encode(rand)))
-}
-
 /// The bundle `bundle` names, from the cache once it decodes, else fetched
 /// and cached. `None` for anything that goes wrong — a bad sha shape, an
 /// oversize bundle, a download or decode failure — each logged, none of it
 /// a reason to fail a caller trying to play or preload something else.
 pub(in crate::api) async fn fetch(core: &Core, set_id: &str, bundle: &BundleRef) -> Option<Bundle> {
-    if bundle.bytes > subtitle_bundle::MAX_COMPRESSED_BYTES as u64 || !subtitle_bundle::valid_sha256(&bundle.sha256)
+    if bundle.bytes > subtitle_bundle::MAX_COMPRESSED_BYTES as u64
+        || !subtitle_bundle::valid_sha256(&bundle.sha256)
     {
-        tracing::warn!(set_id, bytes = bundle.bytes, "a subtitle bundle's own record is not one this build will fetch");
+        tracing::warn!(
+            set_id,
+            bytes = bundle.bytes,
+            "a subtitle bundle's own record is not one this build will fetch"
+        );
         return None;
     }
     let _held = LOCKS.get(&bundle.sha256).lock_owned().await;
@@ -84,7 +82,10 @@ pub(in crate::api) async fn fetch(core: &Core, set_id: &str, bundle: &BundleRef)
     match read_cached(&path) {
         Some(cached) => Some(cached),
         None => {
-            tracing::warn!(set_id, "a freshly downloaded subtitle bundle would not decode");
+            tracing::warn!(
+                set_id,
+                "a freshly downloaded subtitle bundle would not decode"
+            );
             let _ = std::fs::remove_file(&path);
             None
         }
@@ -103,56 +104,6 @@ pub(super) fn read_cached(path: &Path) -> Option<Bundle> {
     Some(decoded)
 }
 
-/// Downloads `bundle`'s document into a temp file, verifies its checksum and
-/// durability, then publishes it under its sha — replacing a stale or
-/// corrupt cached file the same rename atomically supersedes.
-async fn fetch_into(core: &Core, bundle: &BundleRef, final_path: &Path) -> Result<(), CoreError> {
-    let (client, owner) = session::connection(core).await;
-    let handles = library::read(&library::path(core))?;
-    let channel = library::peer_for_chat(&handles, bundle.chat_id).ok_or_else(|| {
-        CoreError::NotFound("this device has no way to reach the channel a subtitle bundle is in".into())
-    })?;
-    let document = part_document(&client, channel, bundle.message_id)
-        .await
-        .map_err(CoreError::network("resolving a subtitle bundle"))?;
-
-    std::fs::create_dir_all(dir(core)).map_err(CoreError::io("preparing the subtitle cache"))?;
-    let tmp = tmp_path(core, &bundle.sha256);
-    let result = download_with(
-        core,
-        &owner,
-        &tmp,
-        bundle.bytes,
-        "downloading a subtitle bundle",
-        || CoreError::Io("a subtitle bundle is larger than the index says".into()),
-        client.iter_download(&document),
-    )
-    .await
-    .and_then(|()| verify_and_sync(&tmp, &bundle.sha256));
-
-    match result {
-        Ok(()) => std::fs::rename(&tmp, final_path).map_err(CoreError::io("caching a subtitle bundle")),
-        Err(err) => {
-            let _ = std::fs::remove_file(&tmp);
-            Err(err)
-        }
-    }
-}
-
-/// Checks a freshly downloaded file's sha256 against what the index
-/// declared, then forces it to durable storage — both ahead of the rename
-/// that makes it visible to every other reader.
-fn verify_and_sync(path: &Path, expected_sha256: &str) -> Result<(), CoreError> {
-    const VERIFYING: &str = "verifying a downloaded subtitle bundle";
-    let bytes = std::fs::read(path).map_err(CoreError::io(VERIFYING))?;
-    if hex::encode(Sha256::digest(&bytes)) != expected_sha256 {
-        return Err(CoreError::Io("a subtitle bundle's checksum did not match the index".into()));
-    }
-    std::fs::File::open(path)
-        .and_then(|file| file.sync_all())
-        .map_err(CoreError::io(VERIFYING))
-}
-
 /// Evicts the least recently used cached bundles until the directory is back
 /// under `budget` (always [`MAX_SUBTITLE_CACHE_BYTES`] outside a test).
 /// Runs only after a write grows it — never on install, so a channel a step
@@ -166,7 +117,13 @@ pub(super) fn trim_to_budget(core: &Core, budget: u64) {
         .filter(|entry| entry.path().extension().is_some_and(|ext| ext != "tmp"))
         .filter_map(|entry| {
             let meta = entry.metadata().ok()?;
-            meta.is_file().then(|| (entry.path(), meta.len(), meta.modified().unwrap_or(SystemTime::UNIX_EPOCH)))
+            meta.is_file().then(|| {
+                (
+                    entry.path(),
+                    meta.len(),
+                    meta.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+                )
+            })
         })
         .collect();
 
