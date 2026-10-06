@@ -2,9 +2,11 @@ package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -79,6 +81,13 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         assertTrue(menu.top >= top.bottom, "menu starts at ${menu.top}, the title ends at ${top.bottom}")
     }
 
+    /** Its rows alone, as on the web: the tool beneath already names it. */
+    @Test
+    fun aMenuHasNoHeading() {
+        openMenu("Speed")
+        compose.onAllNodesWithText("Speed").assertCountEquals(0)
+    }
+
     /** The statistics are a reading, not a place: a menu may cover them, so they leave it its full room. */
     @Test
     fun theStatisticsDoNotShortenAMenu() {
@@ -99,6 +108,18 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         val list = compose.onNodeWithTag(TvEpisodeSidebarTag).getBoundsInRoot()
         val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
         assertTrue(top.right <= list.left, "title ends at ${top.right}, the list starts at ${list.left}")
+    }
+
+    /** No room beside the list for the title and the marks: the marks stay, and the title comes back with the room. */
+    @Test
+    fun withTheEpisodesOpenTheTitleMakesRoomForTheMarks() {
+        compose.onNodeWithTag(TvPlayerTitleTag).assertExists()
+        compose.onNodeWithContentDescription("Episodes").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNodeWithTag(TvPlayerTitleTag).assertDoesNotExist()
+        compose.onNodeWithText("My List").assertExists()
+        pressBackKey()
+        compose.onNodeWithTag(TvPlayerTitleTag).assertExists()
     }
 
     /** No room for both beside the list: the statistics wait for it to close, and come back on their own. */
