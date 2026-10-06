@@ -54,6 +54,12 @@ export interface CatalogSet {
   rating: number | null;
   /** TMDB popularity as of when the entry was cached; ranks "trending". */
   popularity: number | null;
+  /** The film franchise it belongs to, e.g. the Star Trek films. */
+  collectionId: number | null;
+  collectionName: string | null;
+  /** A show's form (`Miniseries`, `Scripted`, …) and its run (`Ended`, `Returning Series`, …). */
+  seriesType: string | null;
+  showStatus: string | null;
   offline: boolean;
   hasSummary: boolean;
   subtitles: SubtitleTrack[];

@@ -34,6 +34,7 @@ export const COLUMNS = 10;
  * `null` for a runtime nobody knows: a sheet needs to be divided into tiles
  * before it can be made, and a length that is a guess would put every preview
  * in the wrong place rather than merely in an imprecise one.
+ * @param {number | null | undefined} duration
  */
 export function spritePlan(duration) {
   // `?? NaN` before the coercion: `Number(null)` is 0, and a zero-length title
@@ -61,6 +62,8 @@ export function spritePlan(duration) {
  * Returned as a background position rather than a tile index, because that is
  * what the one caller needs and working it out here keeps the arithmetic in
  * the file that is tested.
+ * @param {ReturnType<typeof spritePlan>} plan
+ * @param {number | null | undefined} at
  */
 export function tileAt(plan, at) {
   if (plan === null) return null;

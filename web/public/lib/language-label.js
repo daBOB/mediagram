@@ -23,6 +23,9 @@ const NAMES = new Intl.DisplayNames(["en"], { type: "language" });
  * `und` counts as nothing useful: it is the standard's way of saying
  * "undetermined", which is exactly what a file with no language metadata
  * deserves — and exactly what a viewer should not be shown.
+ * @param {string | null | undefined} lang
+ * @param {string} fallback
+ * @returns {string}
  */
 export function languageLabel(lang, fallback) {
   if (!lang || lang === "und") return fallback;
