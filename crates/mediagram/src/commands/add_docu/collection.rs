@@ -94,3 +94,7 @@ fn in_docu_words(line: &str) -> String {
     line.replace("lesson(s)", "episode(s)")
         .replace("(course root)", "(collection root)")
 }
+
+#[cfg(test)]
+#[path = "collection_tests.rs"]
+mod tests;
