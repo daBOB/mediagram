@@ -146,7 +146,7 @@ fn an_older_or_equal_import_changes_nothing() {
     let id = profile(&db, "André");
     let standing = row("c1", "Mine", &["01A"], 2000.0, false);
     assert_eq!(
-        db.with(|conn| import_collections(conn, &id, &[standing.clone()]))
+        db.with(|conn| import_collections(conn, &id, std::slice::from_ref(&standing)))
             .unwrap(),
         1
     );
