@@ -51,7 +51,7 @@ impl Core {
     }
 
     /// Fetches and caches the opened lesson's own bundle plus up to
-    /// [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+    /// `COURSE_HOLD_NEXT` that follow it in its course, sequentially, so a
     /// long course never fetches more than the next few lessons at once.
     pub async fn hold_course_subtitles(self: Arc<Self>, set_id: String) {
         let lookup_id = set_id.clone();

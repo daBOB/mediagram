@@ -16,7 +16,7 @@ use crate::index::set_row::SetRow;
 /// clears it (kept as a row, like [`crate::index::categories::set`]
 /// documents); `Some` is already trimmed, collapsed and refused-checked,
 /// but not yet adopted into an existing spelling — that needs
-/// [`categories::in_use`], a database [`write`] has and [`planned`] does not.
+/// [`categories::in_use`], a database [`write()`] has and [`planned`] does not.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Planned {
     pub department: &'static str,

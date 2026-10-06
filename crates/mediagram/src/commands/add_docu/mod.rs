@@ -2,7 +2,7 @@
 //! grouped as a collection (e.g. "Terra X").
 //!
 //! A collection folder is walked exactly as a course is: `add-course`'s walk,
-//! dry-run table and sidecar handling are reused whole, in [`collection`];
+//! dry-run table and sidecar handling are reused whole, in `collection`;
 //! the only difference is the kind each entry becomes (`Kind::Docu` rather
 //! than `Kind::Tut`) and that `poster.*`/`backdrop.*` at the folder root are
 //! picked up as the collection's art. A single file skips all of that and is

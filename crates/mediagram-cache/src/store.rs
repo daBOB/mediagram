@@ -1,5 +1,5 @@
 //! The chunk store: files on disk, and an in-memory LRU index
-//! ([`index`]) rebuilt from them at startup.
+//! (`index`) rebuilt from them at startup.
 //!
 //! An id's shape is validated by the caller ([`crate::rules::valid_id`])
 //! before it ever reaches here — this module trusts it enough to join it

@@ -45,7 +45,7 @@ pub struct PlayableSet {
     /// it until a surface wanted to say what arrived recently.
     pub created_at: i64,
     /// This set's own audio languages, from the file's tracks. See
-    /// [`languages_in`].
+    /// `languages_in`.
     pub alang: Vec<String>,
     /// This set's own subtitle languages, from the file's tracks — distinct
     /// from a track the uploader extracted; see `catalog_subtitles`.

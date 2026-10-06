@@ -23,7 +23,7 @@ pub const PORTRAIT_WIDTH: u32 = 185;
 /// One image to fetch: the key it will be stored under, TMDB's path, and —
 /// for a backdrop only — the width it was resolved at.
 ///
-/// A poster is always fetched at [`IMAGE_BASE`]'s width, so it carries no
+/// A poster is always fetched at `IMAGE_BASE`'s width, so it carries no
 /// width of its own; a backdrop's varies by caller (the desktop web player's
 /// hero wants far more pixels than a phone screen), so [`resolve_backdrops`]
 /// stamps the width it was asked for onto every ref it returns.
