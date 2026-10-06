@@ -28,7 +28,7 @@ afterEach(() => env.restore());
 /** The nav for `hash`, drawn the way the router draws it. */
 const show = (hash: string) => markCurrent(page.querySelectorAll("nav a"), sectionOf(parse(hash)));
 const lit = (selector: string) =>
-  page.querySelectorAll(selector).filter((link) => link.classes.has("active")).map((link) => link.dataset.section);
+  page.querySelectorAll(selector).filter((link) => link.className.split(" ").includes("active")).map((link) => link.dataset.section);
 const link = (section: string) => page.querySelectorAll("nav a").find((node) => node.dataset.section === section)!;
 
 describe("a rail page lights its rail row and no department pill", () => {

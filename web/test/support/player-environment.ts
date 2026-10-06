@@ -22,13 +22,20 @@ export class Node extends EventTarget {
   value = "";
   max = "";
   id = "";
-  className = "";
   title = "";
   clientWidth = 800;
   clientHeight = 0;
   private text = "";
   constructor(readonly tagName = "DIV") {
     super();
+  }
+  // One state behind both, as in a browser, so a test does not depend on
+  // which of the two the code under test happened to write through.
+  get className() {
+    return [...this.classes].join(" ");
+  }
+  set className(value: string) {
+    this.classes = new Set(value.split(/\s+/).filter(Boolean));
   }
   get textContent() {
     return this.text;
