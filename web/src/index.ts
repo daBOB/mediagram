@@ -208,6 +208,12 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       heldDir: heldSubtitlesDir(config.cacheDir),
     });
 
+    // Where open pages hear that the library or another device's watch state
+    // changed. Made before the sync so every round, whatever started it, can
+    // say it took something.
+    const events = new CatalogEvents();
+    resources.events = events;
+
     /**
      * Sharing that state with this account's other devices, if asked.
      *
@@ -219,12 +225,6 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
      * Nothing here can stop the player: `StateSync.once` reports failures, and
      * the local database remains the source of truth for this machine.
      */
-    // Where open pages hear that the library or another device's watch state
-    // changed. Made before the sync so every round, whatever started it, can
-    // say it took something.
-    const events = new CatalogEvents();
-    resources.events = events;
-
     const sync = announcingPulls(
       config.syncState && state.remembers
         ? new StateSync(state, new TelegramStateChannel(connection), state.deviceId())
@@ -238,8 +238,8 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
      * second sync path: a few seconds of quiet after the last one runs the
      * same round the timer, a push, and shutdown all already share.
      */
-    const writeDebounce = sync ? new WriteDebounce(() => void syncOnce(sync, "write"), WRITE_SYNC_DEBOUNCE_MS) : null;
-    resources.writeDebounce = writeDebounce ?? undefined;
+    const writeDebounce = sync ? new WriteDebounce(() => void syncOnce(sync, "write"), WRITE_SYNC_DEBOUNCE_MS) : undefined;
+    resources.writeDebounce = writeDebounce;
 
     // The channel this player follows for its catalog and its watch-state
     // sync, mutable across a library switch from Settings. Subscribed here,
@@ -255,14 +255,14 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       resources.timers.push(setInterval(() => void syncOnce(sync, "timer"), config.syncEveryMs));
     }
 
-    const reader = cache ? new CachedReader(cache, config.cacheReadahead) : null;
-    resources.reader = reader ?? undefined;
-    const bytes = new TelegramSource(connection, reader ?? undefined);
+    const reader = cache ? new CachedReader(cache, config.cacheReadahead) : undefined;
+    resources.reader = reader;
+    const bytes = new TelegramSource(connection, reader);
 
     // Which titles are on this disk in full, for the shelf's offline badge. The
     // expectation is folded again whenever the catalog is swapped, and the first
     // scan is awaited so the first page load is already right.
-    const held = cache ? new HeldSets(config.cacheDir, expectedChunks(db)) : null;
+    const held = cache ? new HeldSets(config.cacheDir, expectedChunks(db)) : undefined;
     if (held) {
       await held.refresh();
       console.log(`held: ${held.count} title(s) cached in full`);
@@ -347,12 +347,22 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     // router needs it, and after everything it touches — cache, held, facts.
     const adminToken = await resolveAdminToken(process.env, config.adminTokenPath);
     const gate = new AdminGate(adminToken);
-    const statusHeldByteInvalidation = { current: () => {} };
     // Filled in once `runtime` exists, after `follower` — both need the
     // running server. `createRouter` reads through this box on every
     // request, so the settings route becomes live without rebuilding the
     // router the way a catalog swap does.
     const settingsBox: { route: ((request: PlayerRequest) => Promise<PlayerResponse | null>) | null } = { route: null };
+
+    const statusRouter = createStatusRouter({
+      facts,
+      live: () => readLiveFacts({
+        cache, reader: reader ?? null, transcodes, telegram: currentLink(connection), bytes, loopLag,
+        diskDirs: [config.cacheDir, config.transcodeDir], playback: playbackReports,
+      }),
+      heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
+      transcodeBytes: () => dirBytes(config.transcodeDir),
+      playback: playbackReports,
+    });
 
     const server = await startServer({
       db,
@@ -371,29 +381,16 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       trustProxy: config.trustProxy,
       maxBitrate: config.transcodeMaxrate,
       catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
-      held: held ?? undefined,
+      held,
       preload,
-      status: (() => {
-        const statusRouter = createStatusRouter({
-          facts,
-          live: () => readLiveFacts({
-            cache, reader: reader ?? null, transcodes, telegram: currentLink(connection), bytes, loopLag,
-            diskDirs: [config.cacheDir, config.transcodeDir], playback: playbackReports,
-          }),
-          heldBytes: cache ? () => cache.sizeOnDisk() : undefined,
-          transcodeBytes: () => dirBytes(config.transcodeDir),
-          playback: playbackReports,
-        });
-        statusHeldByteInvalidation.current = () => statusRouter.invalidateHeldBytes();
-        return statusRouter;
-      })(),
+      status: statusRouter,
       settings: (request) => settingsBox.route?.(request) ?? Promise.resolve(null),
     });
 
     boundUrl = server.baseUrl;
     resources.server = server;
     const follower = new CatalogFollower({
-      db, catalog, server, facts, events, held: held ?? undefined, subtitles,
+      db, catalog, server, facts, events, held, subtitles,
       root: config.channelIndexDir,
       find: findViaConnection,
       fetchPosters: (index) => io.fetchPosters(config.postersCommand, index),
@@ -408,8 +405,8 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const runtime = new SettingsRuntime(
       {
         connection, channel, updatesBinding, follower, facts, settings: state.settings(),
-        cache: cache ?? null, held: held ?? undefined,
-        invalidateHeldBytes: () => statusHeldByteInvalidation.current(),
+        cache, held,
+        invalidateHeldBytes: statusRouter.invalidateHeldBytes,
         channelCatalogDir: config.channelCatalogDir,
         telegramFilePath: config.telegramFilePath,
       },

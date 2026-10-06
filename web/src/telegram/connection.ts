@@ -36,7 +36,7 @@ export class TelegramConnection {
 
   /** The current client once any restart in progress has settled. */
   async ready(): Promise<Telegram | null> {
-    if (this.pending) await this.pending.catch(() => {});
+    if (this.pending) await this.pending;
     return this.telegram;
   }
 

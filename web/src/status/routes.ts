@@ -22,7 +22,7 @@ import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
 import { jsonBody } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
-import { buildSnapshot, type LiveFacts } from "./snapshot";
+import { buildSnapshot, type PolledFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
 import { validateReport, type PlaybackReport } from "./playback-reports";
 
@@ -45,12 +45,10 @@ export interface StatusRouterOptions {
   /**
    * Everything that has to be read at the moment of asking.
    *
-   * A promise since phase 1: the host group's disk-free reading is IO, where
-   * the figures before it were memory already held by the process.
+   * A promise because the host group's disk-free reading is IO, where the
+   * other figures are memory already held by the process.
    */
-  live: () =>
-    | Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">
-    | Promise<Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">>;
+  live: () => PolledFacts | Promise<PolledFacts>;
   /** Bytes the cache holds, measured by scanning. Absent when caching is off. */
   heldBytes?: () => Promise<number>;
   /** Bytes the conversions hold, measured the same way. */

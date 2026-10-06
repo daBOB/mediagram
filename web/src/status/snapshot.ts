@@ -43,11 +43,6 @@ export interface HostLiveFacts {
   disks: DiskFree[];
 }
 
-/** The host group as the snapshot reports it: the live figures plus the runtime version. */
-export interface HostFacts extends HostLiveFacts {
-  bun: string;
-}
-
 /** What is true only at the moment the question is asked. */
 export interface LiveFacts {
   /** Bytes on disk now, or `null` when caching is off or unmeasured. */
@@ -76,6 +71,9 @@ export interface LiveFacts {
   host: HostLiveFacts;
   now: number;
 }
+
+/** The live facts read on each poll; the router adds its memoized scans and the clock. */
+export type PolledFacts = Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">;
 
 /**
  * The reading a viewer is shown.

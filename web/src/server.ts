@@ -73,7 +73,7 @@ function describe(request: IncomingMessage, trustProxy: boolean): PlayerRequest 
     final: url.searchParams.get("final"),
     // Both read here so a route compares them rather than reaching for
     // headers it would have to be handed anyway.
-    contentType: (request.headers["content-type"] ?? null)?.split(";")[0]?.trim().toLowerCase() ?? null,
+    contentType: request.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ?? null,
     origin: typeof request.headers.origin === "string" ? request.headers.origin : null,
     host: typeof request.headers.host === "string" ? request.headers.host : null,
     acceptEncoding: typeof request.headers["accept-encoding"] === "string" ? request.headers["accept-encoding"] : null,
