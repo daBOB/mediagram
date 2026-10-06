@@ -29,7 +29,7 @@ import player.speedLabel
  * The card menus' radio-choice sections — Speed, Audio, Subtitles and
  * Framing, with the phone's own rows and labels and, as on the web and the
  * phone, no heading: the tool that opened one names it, and a 540 dp screen
- * has no line to spare between the title and the card. Each is a
+ * has no line to spare above six speeds. Each is a
  * plain function of what it shows and what choosing does, as the phone's
  * are, and opens with [current] on the value already chosen — or the first,
  * before one is.

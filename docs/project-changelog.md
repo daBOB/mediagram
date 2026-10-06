@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.117.4 — every speed in sight on a television
+
+**Fixed** (Android TV)
+
+- **The Speed menu shows all six speeds.** It stopped under the title, and a 540 dp screen left it 176–204 dp where six rows need 224, so 2× was one press of Down away. It now reaches up to the overscan margin, covering the title for as long as it is open, as the web's menu covers its top bar; the remote cannot leave an open menu, so nothing it covers can be pressed. A longer list, such as many audio languages, still scrolls.
+
+**Tests**
+
+- The TV subtitle options test no longer expects the heading 0.117.3 removed, and the ui-tv test JVM gets 2 GB: about 570 Robolectric tests outgrew Gradle's 512 MB default and wedged `check.sh` (`1edf67f2`).
+
 ## 0.117.3 — the TV card menus lose their headings; the title gives way beside the episode list
 
 Found while checking 0.117.2 on the box.

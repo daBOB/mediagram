@@ -17,11 +17,13 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.height
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import playback.Framing
 import player.CONTROLS_LINGER_MS
 import player.setSpeed
@@ -50,6 +52,22 @@ class TvPlayerSettingsTest : TvPlayerScreenHarness() {
         val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
         assertTrue(menu.bottom <= tool.top, "the menu ends at ${menu.bottom}, its tool starts at ${tool.top}")
         assertTrue(menu.left >= card.left && menu.right <= card.right, "the menu spans ${menu.left}..${menu.right}, the controls ${card.left}..${card.right}")
+    }
+
+    /** Every speed in sight on a television's 540 dp, the last as whole as the first: none is a scroll away. */
+    @Test
+    // Real text measurement: whether six rows fit is a question of how tall they draw.
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun everySpeedIsInSight() {
+        openMenu("Speed")
+        val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
+        val first = inMenu("0.75×").getBoundsInRoot()
+        val last = inMenu("2×").getBoundsInRoot()
+        val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
+        assertTrue(
+            last.height >= first.height && last.bottom <= menu.bottom,
+            "2× spans ${last.top}..${last.bottom} (0.75× is ${first.height} tall); the menu ${menu.top}..${menu.bottom}; the card starts at ${card.top}",
+        )
     }
 
     @Test

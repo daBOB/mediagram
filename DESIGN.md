@@ -749,8 +749,11 @@ art: a film's title page, a department's cover story, Movies and Shows.
   rather than shrink a control; every touch target is at least 48dp.
 - **Menus and the episode sidebar** take the card's own fill. A menu opens
   just above the card, centred on the button that opened it, inside the
-  card's width, one at a time; it never reaches up past the top bar, and a
-  list too long for that room scrolls inside itself. The sidebar stands down the right — 320dp on a phone or tablet,
+  card's width, one at a time; on a phone or tablet it never reaches up past
+  the top bar. On a television, whose 540dp leaves no room under the title
+  for six speeds, it may cover the title, as the web's menu covers its top
+  bar, but never the overscan margin. A list too long for that room scrolls
+  inside itself. The sidebar stands down the right — 320dp on a phone or tablet,
   the whole width under 600dp, 360dp on a television — watched rows at 45%
   with a ✓, the catalogue's progress line under a part-watched row, and
   "Now playing" for the open one. Beside the picture it never overlaps the

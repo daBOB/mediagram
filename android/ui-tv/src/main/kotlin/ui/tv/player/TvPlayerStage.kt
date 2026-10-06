@@ -45,9 +45,6 @@ import player.UpNextUiState
 internal class TvStageBands {
     var barTop by mutableStateOf<Float?>(null)
     var topBottom by mutableStateOf<Float?>(null)
-
-    /** The title bar's own bottom, without the statistics under it: a menu may cover a reading, not the title. */
-    var titleBottom by mutableStateOf<Float?>(null)
     var cardTop by mutableStateOf<Float?>(null)
     var panelLeft by mutableStateOf<Float?>(null)
     var card by mutableStateOf<IntRect?>(null)

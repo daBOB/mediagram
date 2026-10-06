@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.height
+import designsystem.Overscan
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -70,15 +71,14 @@ class TvPlayerOverlayBandsTest : TvPlayerScreenHarness() {
         compose.onNodeWithText("When this ends").assertIsDisplayed()
     }
 
-    /** Above the whole card, as on the web — never down over the seek row — and under the title. */
+    /** Above the whole card, as on the web — never down over the seek row — and never up into the overscan margin. */
     @Test
-    fun aMenuOpensBetweenTheTitleAndTheCard() {
+    fun aMenuOpensAboveTheCardInsideTheOverscan() {
         openMenu("Speed")
         val menu = compose.onNodeWithTag(TvCardMenuTag).getBoundsInRoot()
         val bottom = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
-        val top = compose.onNodeWithTag(TvTopBandTag).getBoundsInRoot()
         assertTrue(menu.bottom <= bottom.top, "menu ends at ${menu.bottom}, the card starts at ${bottom.top}")
-        assertTrue(menu.top >= top.bottom, "menu starts at ${menu.top}, the title ends at ${top.bottom}")
+        assertTrue(menu.top >= Overscan.vertical, "menu starts at ${menu.top}, inside the ${Overscan.vertical} margin")
     }
 
     /** Its rows alone, as on the web: the tool beneath already names it. */

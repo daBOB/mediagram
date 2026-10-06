@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
+import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import player.PlayerChoices
@@ -88,8 +89,10 @@ internal fun BoxScope.TvCardMenuOverlay(
     var size by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
     val gap = with(density) { MenuGap.roundToPx() }
-    // Never taller than the room between the title and the card, so a long list scrolls instead of covering either.
-    val room = bands.card?.let { card -> with(density) { (card.top - gap - (bands.titleBottom ?: 0f)).coerceAtLeast(0f).toDp() } } ?: MenuMaxHeight
+    // Up to the overscan margin, over the title if it must be, as the web's menu grows over its top bar: 540 dp
+    // leaves no room under the title for six speeds, the title is only read, and the remote cannot leave an open
+    // menu for anything it covers. Never past that margin: a longer list scrolls inside itself.
+    val room = bands.card?.let { card -> with(density) { (card.top - origin.y - gap).toDp() - Overscan.vertical }.coerceAtLeast(0.dp) } ?: MenuMaxHeight
     LaunchedEffect(menu) { current.requestFocus() }
     // The stage's own corner, which the notes column can move off the root's.
     Box(modifier = Modifier.matchParentSize().onGloballyPositioned { origin = it.positionInRoot().round() })
