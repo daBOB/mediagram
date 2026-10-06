@@ -26,3 +26,7 @@ pub(super) fn day_totals(rows: &[DayStatRow]) -> Vec<DayTotal> {
         .map(|(day, seconds)| DayTotal { day, seconds })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "day_totals_tests.rs"]
+mod tests;

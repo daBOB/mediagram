@@ -176,3 +176,7 @@ pub(super) fn whole_show(
     .into_iter()
     .collect()
 }
+
+#[cfg(test)]
+#[path = "rungs_tests.rs"]
+mod tests;
