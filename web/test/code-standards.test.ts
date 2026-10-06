@@ -63,7 +63,8 @@ const ROOT = join(import.meta.dir, "..");
  * Lowered the same day for `src/index.ts`, once the status router became a
  * plain value built before the server and the cache budget left startup facts.
  * Lowered the same day for `app.js` and `shelf-view.js`, once `SECTIONS` was
- * imported from `sections.js` rather than forwarded.
+ * imported from `sections.js` rather than forwarded, and for
+ * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 693,
@@ -92,7 +93,7 @@ const CEILINGS: Record<string, number> = {
   "src/state/routes.ts": 209,
   "src/state/schema.ts": 245,
   "src/state/store.ts": 725,
-  "src/state/sync-record.ts": 301,
+  "src/state/sync-record.ts": 293,
   "src/transcode/registry.ts": 338,
 };
 

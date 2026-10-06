@@ -43,8 +43,7 @@ export interface StatsRows {
   dayStats?: DayStatRow[];
 }
 
-import { objectRow, text_ } from "./record-scalars";
-import { parseRows } from "./sync-record";
+import { objectRow, parseRows, text_ } from "./record-scalars";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 

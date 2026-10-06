@@ -2,13 +2,21 @@
  * The readers every value in another device's document goes through.
  *
  * Kept apart from `sync-record.ts` so that it and the files that read part
- * of the same document beside it — `stats-record.ts`, `roles-record.ts` —
- * read a value the same way: one idea of what a number, a piece of text or a
- * time is, not several that could drift apart.
+ * of the same document beside it — `stats-record.ts`, `roles-record.ts`,
+ * `preferences-record.ts` — read a value the same way: one idea of what a
+ * number, a piece of text or a time is, not several that could drift apart.
  */
 
 export function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+/** Each entry through its own check: a bad row is dropped, not the list. */
+export function parseRows<T>(value: unknown, one: (entry: unknown) => T | null): T[] {
+  return asArray(value).flatMap((entry) => {
+    const row = one(entry);
+    return row === null ? [] : [row];
+  });
 }
 
 export function objectRow(value: unknown): Record<string, unknown> | null {
