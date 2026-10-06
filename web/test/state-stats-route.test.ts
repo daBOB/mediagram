@@ -18,7 +18,8 @@ function routed() {
   const state = new WatchState(join(dir, "state.db"));
   const me = state.createProfile("André")!.id;
   const route = createRouter({ db: emptyIndex(), source: NO_BYTES, state });
-  const ask = (method: string, path = `/api/profiles/${me}/stats`) => route({ method, path, range: null });
+  const ask = (method: string, path = `/api/profiles/${me}/stats`) =>
+    route({ method, path, range: null, contentType: "application/json" });
   return { state, me, ask };
 }
 afterEach(() => {

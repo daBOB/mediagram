@@ -20,7 +20,6 @@
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
-import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import { buildSnapshot, type LiveFacts } from "./snapshot";
 import type { StartupFacts } from "./facts";
@@ -135,8 +134,6 @@ export function createStatusRouter(options: StatusRouterOptions) {
 
     if (isPlayback) {
       if (request.method !== "POST") return status(405);
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
       const report = validateReport(parseJson(request.body));
       if (!report) return status(400);
       playback.put(report, request.client);

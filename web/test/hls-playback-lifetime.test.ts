@@ -141,6 +141,13 @@ test("aborted before start sends no request", async () => {
   expect(env.requests).toHaveLength(0);
 });
 
+test("a conversion starts with the JSON POST the server's write guard lets through", async () => {
+  env.replace("MediaSource", undefined);
+  await play();
+  const start = env.requests.find(({ url }) => url.includes("/transcode?"));
+  expect(start?.options).toMatchObject({ method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+});
+
 test("native cleanup is idempotent and cannot clear a source attached after release", async () => {
   env.replace("MediaSource", undefined);
   const controller = new AbortController();

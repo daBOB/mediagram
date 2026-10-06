@@ -225,20 +225,6 @@ describe("POST /api/status/playback", () => {
     expect(puts).toHaveLength(1);
   });
 
-  test("a cross-origin write is refused, the same guard the state routes share", async () => {
-    const puts: unknown[] = [];
-    const route = createStatusRouter({ facts, live, playback: { put: (report) => puts.push(report) } });
-    const answer = await route(post({ origin: "https://elsewhere.example" }));
-    expect(answer?.status).toBe(403);
-    expect(puts).toEqual([]);
-  });
-
-  test("a form post without a JSON content type is refused", async () => {
-    const route = createStatusRouter({ facts, live, playback: noPlayback });
-    const answer = await route(post({ contentType: "text/plain" }));
-    expect(answer?.status).toBe(415);
-  });
-
   test("an unusable body is a 400, not a crash", async () => {
     const route = createStatusRouter({ facts, live, playback: noPlayback });
     const answer = await route(post({ body: JSON.stringify({ mode: "not-a-mode" }) }));

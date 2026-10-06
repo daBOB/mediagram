@@ -315,6 +315,9 @@ describe("the page", () => {
  * uninteresting case. A test overrides only the method it is about, so a
  * method added to `HlsServer` costs one edit here rather than one per stub.
  */
+/** How the player starts a conversion: a POST the browser write guard lets through. */
+const START = { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" };
+
 function fakeHls(over: Partial<HlsServer> = {}): HlsServer {
   return {
     begin: async () => `/hls/${"a".repeat(16)}/index.m3u8`,
@@ -462,7 +465,7 @@ describe("releasing a transcode", () => {
     });
     const server = await startServer({ db: index(), source: new FakeSource(), hls: failing });
     try {
-      const response = await rawRequest(server.port, `/api/sets/${SET}/transcode`);
+      const response = await rawRequest(server.port, `/api/sets/${SET}/transcode`, START);
 
       expect(response.status).toBe(503);
       expect(new TextDecoder().decode(response.body)).toContain("no segment");
@@ -494,7 +497,7 @@ describe("releasing a transcode", () => {
     });
     try {
       for (const rate of ["3000000", "99000000", "1", "", "abc", "-5", "Infinity"]) {
-        await rawRequest(server.port, `/api/sets/${SET}/transcode?maxrate=${rate}`);
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?maxrate=${rate}`, START);
       }
 
       // Asked for, clamped, clamped, clamped, then the default four times.
@@ -525,7 +528,7 @@ describe("releasing a transcode", () => {
       // `Infinity` passes a NaN check and reaches the command line as `-ss
       // Infinity`, which ffmpeg exits on immediately.
       for (const seek of ["Infinity", "-Infinity", "1e400", "NaN", "abc", "-5"]) {
-        await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=${seek}`);
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=${seek}`, START);
       }
 
       for (const seek of asked) {
@@ -622,7 +625,7 @@ describe("releasing a transcode", () => {
     const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
     try {
       for (const track of ["2", "0", "-1", "1.7", "abc", "Infinity", "", "1e400"]) {
-        await rawRequest(server.port, `/api/sets/${SET}/transcode?audio=${track}`);
+        await rawRequest(server.port, `/api/sets/${SET}/transcode?audio=${track}`, START);
       }
       // Asked for, then the first stream for everything that was not a count.
       expect(asked).toEqual([2, 0, 0, 1, 0, 0, 0, 0]);
@@ -645,7 +648,7 @@ describe("releasing a transcode", () => {
     });
     const server = await startServer({ db: index(), source: new FakeSource(), hls: recording });
     try {
-      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`);
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`, START);
       expect(asked).toEqual([0]);
     } finally {
       await server.close();
@@ -659,9 +662,9 @@ describe("releasing a transcode", () => {
   test("a browser that decodes HEVC gets the picture copied, as fMP4", async () => {
     const { specs, server } = await recordingServer(SESSION);
     try {
-      const said = await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0&vcodecs=hevc`);
+      const said = await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0&vcodecs=hevc`, START);
       expect(JSON.parse(new TextDecoder().decode(said.body)).copied).toBe(true);
-      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`);
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`, START);
       expect(specs.map((s) => [s.copyVideo, s.hevcCopy])).toEqual([
         [true, true],
         [false, false],
@@ -674,15 +677,27 @@ describe("releasing a transcode", () => {
   test("a codec the policy does not know is not negotiated", async () => {
     const { specs, server } = await recordingServer(SESSION);
     try {
-      await rawRequest(server.port, `/api/sets/${SET}/transcode?vcodecs=prores,ac3`);
+      await rawRequest(server.port, `/api/sets/${SET}/transcode?vcodecs=prores,ac3`, START);
       expect(specs[0]?.copyVideo).toBe(false);
     } finally {
       await server.close();
     }
   });
 
+  test("a GET does not start a conversion", async () => {
+    const { specs, server } = await recordingServer(SESSION);
+    try {
+      expect((await rawRequest(server.port, `/api/sets/${SET}/transcode?seek=0`)).status).toBe(405);
+      expect(specs).toEqual([]);
+    } finally {
+      await server.close();
+    }
+  });
+
   test("other methods on a session are still refused", async () => {
-    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, { method: "PUT" });
+    const response = await rawRequest(hlsServer.port, `/hls/${SESSION}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+    });
 
     expect(response.status).toBe(405);
   });

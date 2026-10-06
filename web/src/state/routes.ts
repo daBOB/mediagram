@@ -1,16 +1,9 @@
 /**
- * The write half of the API, kept apart from the read half.
- *
- * Apart because the two have different rules. Everything in `routes.ts`
- * answers questions about a library the uploader owns; everything here
- * changes something, on the one surface this project documents as having no
- * authentication of its own. That is a good reason for the checks to live in
- * one place at the front of one module rather than being remembered in nine
- * handlers.
+ * Profile-scoped state reads and writes: the snapshot, kids marks, the editor's choice, and
+ * profiles through `profileRoute`. The browser write guard runs once, in the `src/routes.ts` dispatcher.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import type { WatchState } from "./store";
 import { profileRoute } from "./profiles-routes";
 import { json, P, parse, status } from "./route-shared";
@@ -94,10 +87,8 @@ export function createStateRouter(options: StateRouterOptions) {
       );
     }
 
-    // Past here everything writes, so everything is checked.
+    // Past here everything writes, and the dispatcher has checked every write.
     if (reading) return status(405);
-    const refusal = refuseUnsafeBrowserWrite(request);
-    if (refusal) return refusal;
 
     const progress = PROGRESS.exec(path);
     if (progress) {
@@ -113,12 +104,11 @@ export function createStateRouter(options: StateRouterOptions) {
       // `sendBeacon` reports success on queueing, so the ordinary `PUT`
       // written as its fallback never ran.
       //
-      // Safe for the reason the module header cares about. What keeps a
-      // cross-site form out is not the method — `POST` is the one method a
-      // form can send — but `refuseUnsafe` above, which requires
-      // `application/json`. A form may only send urlencoded, multipart or
-      // text/plain, and anything that could set a JSON type needs a preflight
-      // this server does not answer.
+      // Safe all the same. What keeps a cross-site form out is not the
+      // method — `POST` is the one method a form can send — but the
+      // dispatcher's write guard, which requires `application/json`. A form
+      // may only send urlencoded, multipart or text/plain, and anything that
+      // could set a JSON type needs a preflight this server does not answer.
       if (method !== "PUT" && method !== "POST") return status(405);
 
       const body = parse(request.body);
@@ -129,9 +119,8 @@ export function createStateRouter(options: StateRouterOptions) {
       return status(204);
     }
 
-    // Below the check above, with the other writes, rather than carrying its
-    // own copy of it: the whole point of the choke point is that a write
-    // cannot be added without passing through one.
+    // No write here carries its own copy of the guard: the dispatcher runs
+    // it once for every write, so none can be added that skips it.
     const kid = KIDS_ITEM.exec(path);
     if (kid) {
       if (!isPlayable(kid[1]!)) return status(404);

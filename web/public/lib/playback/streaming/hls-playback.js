@@ -61,7 +61,7 @@ async function beginTranscode(setId, seekSeconds, maxrateBits, audioTrack) {
   // a server that predates the chooser still answers it.
   const track = audioTrack ? `&audio=${Math.floor(audioTrack)}` : "";
   const url = `/api/sets/${encodeURIComponent(setId)}/transcode?${seek}${rate}${track}${decodesParam()}`;
-  const response = await fetch(url);
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   if (!response.ok) {
     // The server says why a conversion would not start; repeating its status
     // code instead would hide the one useful sentence.

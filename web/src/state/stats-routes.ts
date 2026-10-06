@@ -4,8 +4,8 @@
  *
  * Dispatched from `src/routes.ts`'s `createRouter`, the one router that holds
  * both the state and the catalog the achievements are counted against —
- * ahead of the state router and its write checks. Each profile asks for its
- * own; nothing here lists anyone else's.
+ * ahead of the state router. Each profile asks for its own; nothing here
+ * lists anyone else's.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";

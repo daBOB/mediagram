@@ -199,8 +199,8 @@ The main dispatcher and the extracted catalog and HTTP handlers each stay under
 200 lines; the state router remains a larger module. A catalog swap rebuilds
 catalog presentation and state routing together; requests already in flight
 retain the router and database they started with. Buffered responses share one
-framing helper, including HEAD responses. State, preload and HLS session deletion
-share the same Origin/Host checks; body-bearing writes also require JSON.
+framing helper, including HEAD responses. Every non-GET/HEAD request passes one
+Origin/Host check in `src/routes.ts`; body-bearing writes also require JSON.
 Media workers obtain their internal HTTP address from the bound listener, so
 OS-assigned ports and specific IPv4 or IPv6 binds work for audio probing,
 transcoding and thumbnail generation.
@@ -613,8 +613,8 @@ token: `POST /api/settings/unlock {token}` mints an HttpOnly, `SameSite=Strict`
 session cookie (`admin-gate.ts`), scoped to `/api/settings` and compared with
 `crypto.timingSafeEqual` against a token generated on first start (or
 `MEDIAGRAM_ADMIN_TOKEN`) — only its path is ever logged. Every write also
-needs the same same-origin, JSON-only guard (`http/browser-write.ts`) every
-other write route already used.
+passes the same-origin, JSON-only guard (`http/browser-write.ts`) the
+dispatcher runs once for every write.
 
 **The account is swappable at runtime.** `telegram/connection.ts`'s
 `TelegramConnection` holds the live `Telegram` client or `null` (signed out);

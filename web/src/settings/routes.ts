@@ -4,13 +4,12 @@
  * 404 off this household's network, the same rule `status/routes.ts` uses —
  * there is nothing here to confirm to an outside caller either. On the
  * network, every path past `/unlock` and `/lock` also needs an unlocked
- * admin cookie, and every write needs the same-origin, JSON-only guard every
- * other write route in this project already enforces.
+ * admin cookie; every write has already passed the dispatcher's same-origin,
+ * JSON-only guard.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
-import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import type { AdminGate } from "./admin-gate";
 import type { ActionResult, SettingsRuntime } from "./context";
@@ -57,10 +56,6 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
     if (!isOwnNetwork(request.client ?? "")) return bodiless(404);
 
     const reading = request.method === "GET" || request.method === "HEAD";
-    if (!reading) {
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
-    }
 
     if (request.path === `${PREFIX}/unlock`) {
       if (request.method !== "POST") return bodiless(405);

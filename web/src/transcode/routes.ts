@@ -145,14 +145,12 @@ export async function beginTranscode(
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "the conversion did not start";
-    return withBody(JSON.stringify({ error: reason }), "application/json", { status: 503, headOnly: request.method === "HEAD" });
+    return withBody(JSON.stringify({ error: reason }), "application/json", { status: 503 });
   }
   // `copied` so the page can say what is actually happening. "Converting
   // as you watch" is a promise about the picture, and when the picture is
   // being carried across untouched it is the wrong promise.
-  return withBody(JSON.stringify({ playlist, copied: copyVideo }), "application/json", {
-    headOnly: request.method === "HEAD",
-  });
+  return withBody(JSON.stringify({ playlist, copied: copyVideo }), "application/json");
 }
 
 export async function hlsResponse(

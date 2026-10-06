@@ -1,14 +1,13 @@
 /**
  * The profile routes: who watches this library, and managing them.
  *
- * Every write passes the same `refuseUnsafeBrowserWrite` check the other
- * state writes do; whether the PIN is right and the rule agrees is
+ * Every write has passed the dispatcher's `refuseUnsafeBrowserWrite` check
+ * before it gets here; whether the PIN is right and the rule agrees is
  * `profiles-manage.ts`'s to decide, and a refusal answers with its reason so
  * the page can say what went wrong.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { refuseUnsafeBrowserWrite } from "../http/browser-write";
 import { withBody } from "../response";
 import type { Profile } from "./profiles";
 import type { Refusal, Refused } from "./profiles-manage";
@@ -48,8 +47,6 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
     return json(JSON.stringify(said), method === "HEAD");
   }
 
-  const refusal = refuseUnsafeBrowserWrite(request);
-  if (refusal) return refusal;
   const body = parse(request.body);
   const said = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
   const actorId = typeof said.actorId === "string" ? said.actorId : "";

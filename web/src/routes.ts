@@ -100,11 +100,17 @@ export function createRouter(options: RouterOptions) {
   const maxBitrate = options.maxBitrate ?? DEFAULT_MAX_BITRATE;
 
   return async function route(request: PlayerRequest): Promise<PlayerResponse> {
+    // Every write, first and whatever its path: the verdict reads headers
+    // alone, so it reveals nothing the own-network 404s further on withhold.
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      const refusal = refuseUnsafeBrowserWrite(request);
+      if (refusal) return refusal;
+    }
     const settings = await options.settings?.(request);
     if (settings) return settings;
 
     // The stats answer reads the state and this catalog both, so it is
-    // answered here, where both are — ahead of the state router's write gate.
+    // answered here, where both are, rather than in the state router.
     const stats = options.state ? statsRoute(options.state, request, library) : null;
     if (stats) return stats;
 
@@ -121,12 +127,14 @@ export function createRouter(options: RouterOptions) {
       if (!request.path.startsWith("/hls/")) return bodiless(405);
       const session = HLS_SESSION_PATH.exec(request.path);
       if (!session || !hls) return bodiless(404);
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
       await hls.end(session[1]!);
       return bodiless(204);
     }
     if (request.path === "/api/preload") return preloadResponse(db, options.preload, request, options.subtitles);
+    // A conversion holds an encoder until released, so starting one is a guarded write, not a GET.
+    const begin = TRANSCODE_PATH.exec(request.path);
+    if (begin) return request.method === "POST" ? beginTranscode(db, hls, request, begin[1]!, maxBitrate) : bodiless(405);
+    // Preload and transcode start, the two POSTs, are answered above this gate.
     if (request.method !== "GET" && request.method !== "HEAD") return bodiless(405);
     const headOnly = request.method === "HEAD";
 
@@ -158,8 +166,6 @@ export function createRouter(options: RouterOptions) {
 
     const catalog = await catalogRoute(request);
     if (catalog) return catalog;
-    const begin = TRANSCODE_PATH.exec(request.path);
-    if (begin) return beginTranscode(db, hls, request, begin[1]!, maxBitrate);
     const file = HLS_PATH.exec(request.path);
     if (file) return hls ? hlsResponse(hls, file[1]!, file[2]!, request.method) : bodiless(404);
     if (request.path.startsWith("/hls/")) return bodiless(404);
