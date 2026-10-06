@@ -45,7 +45,7 @@ pub(super) async fn resolve(
             // One set's captions out of reach leaves that set as it was;
             // the next pull tries it again.
             Err(err) => {
-                tracing::warn!(set_id, error = %err, "could not re-read captions; left as it was");
+                tracing::warn!(set_id, error = %format_args!("{err:#}"), "could not re-read captions; left as it was");
                 continue;
             }
         };

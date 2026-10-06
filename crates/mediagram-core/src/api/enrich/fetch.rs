@@ -63,7 +63,7 @@ pub async fn fetch_into(
     let written = download_into(http, &refs, artwork_dir)
         .await
         .unwrap_or_else(|err| {
-            tracing::warn!(error = %err, "the artwork directory is unavailable");
+            tracing::warn!(error = %format_args!("{err:#}"), "the artwork directory is unavailable");
             Vec::new()
         });
     // What the run added is what is held now beyond what was held before: a
@@ -138,7 +138,7 @@ async fn record_descriptions(
         let payload = match details(api, *kind, *id).await {
             Ok(payload) => payload,
             Err(err) => {
-                tracing::warn!(id, error = %err, "no description for this title");
+                tracing::warn!(id, error = %format_args!("{err:#}"), "no description for this title");
                 described.lost.push(key);
                 continue;
             }

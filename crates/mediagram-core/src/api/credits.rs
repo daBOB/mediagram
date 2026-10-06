@@ -66,7 +66,7 @@ impl Core {
         let written = mediagram_tmdb::poster_files::download_into(&client, std::slice::from_ref(&poster), &dir)
             .await
             .unwrap_or_else(|err| {
-                tracing::warn!(error = %err, "the portrait could not be downloaded");
+                tracing::warn!(error = %format_args!("{err:#}"), "the portrait could not be downloaded");
                 Vec::new()
             });
         written.contains(&key).then(|| dir.join(format!("{key}.jpg")).display().to_string())

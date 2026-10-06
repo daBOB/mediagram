@@ -81,7 +81,7 @@ pub async fn ensure_faststart(
         Err(err) => {
             tracing::warn!(
                 source = %src.display(),
-                error = %err,
+                error = %format_args!("{err:#}"),
                 "could not probe streams for a mapped faststart remux; falling back to today's arguments"
             );
             None
@@ -97,7 +97,7 @@ pub async fn ensure_faststart(
     if let Some(Err(err)) = mapped_result {
         tracing::warn!(
             source = %src.display(),
-            error = %err,
+            error = %format_args!("{err:#}"),
             "mapped faststart remux was refused; some streams may be dropped, retrying with today's arguments"
         );
     }

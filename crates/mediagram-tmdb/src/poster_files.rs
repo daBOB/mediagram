@@ -80,18 +80,18 @@ async fn fetch_each(
                 {
                     // Without the record the next run fetches it again,
                     // which costs a download and nothing else.
-                    tracing::warn!(key = %poster.key, error = %err, "image width not recorded");
+                    tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "image width not recorded");
                 }
                 written.push(poster.key.clone());
             }
             // A narrower image already here still serves; the record is
             // left as it was so the next run tries again.
             Err(err) if dest.exists() => {
-                tracing::warn!(key = %poster.key, error = %err, "wider image not fetched, keeping the one held");
+                tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "wider image not fetched, keeping the one held");
                 written.push(poster.key.clone());
             }
             Err(err) => {
-                tracing::warn!(key = %poster.key, error = %err, "poster skipped");
+                tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "poster skipped");
             }
         }
     }

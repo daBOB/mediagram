@@ -28,7 +28,7 @@ pub async fn record_for_title(
     let row = match fetch(api, kind, id, lang).await {
         Ok(row) => row,
         Err(err) => {
-            tracing::warn!(id, error = %err, "no description for this title");
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no description for this title");
             return Ok(None);
         }
     };
@@ -53,7 +53,9 @@ async fn fetch(api: &impl TmdbApi, kind: Kind, id: u64, lang: &str) -> Result<Ti
     // kid-safe", which is the safe reading, not a reason to record nothing.
     match certification(api, kind, id, &region_of(lang)).await {
         Ok(rating) => row.certification = rating,
-        Err(err) => tracing::warn!(id, error = %err, "no age rating for this title"),
+        Err(err) => {
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no age rating for this title")
+        }
     }
     Ok(row)
 }
@@ -76,7 +78,7 @@ async fn backfill_credits(
             Ok(true)
         }
         Err(err) => {
-            tracing::warn!(id, error = %err, "no credits for this title");
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no credits for this title");
             Ok(false)
         }
     }
@@ -99,8 +101,12 @@ async fn backfill_franchise(
             Ok(true)
         }
         Err(err) => {
-            tracing::warn!(collection_id, error = %err, "no franchise details");
+            tracing::warn!(collection_id, error = %format_args!("{err:#}"), "no franchise details");
             Ok(false)
         }
     }
 }
+
+#[cfg(test)]
+#[path = "title_details_tests.rs"]
+mod tests;

@@ -53,7 +53,7 @@ pub async fn publish(remote: &impl ChannelRemote, apk: &[u8], badging: &Badging,
     // versionCode — so a refused unpin is reported, not fatal.
     for old in candidates.iter().filter(|c| c.id != id && app_caption::parse(&c.caption).is_some()) {
         if let Err(err) = remote.unpin(old.id).await {
-            tracing::warn!(old_id = old.id, error = %err, "could not unpin a replaced app release");
+            tracing::warn!(old_id = old.id, error = %format_args!("{err:#}"), "could not unpin a replaced app release");
         }
     }
     Ok(id)

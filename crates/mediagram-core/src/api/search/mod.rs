@@ -51,7 +51,7 @@ fn run(core: &Core, query: &str) -> Vec<SearchHit> {
     let sets = match catalog::list_searchable(&conn) {
         Ok(sets) => sets,
         Err(err) => {
-            tracing::warn!(error = %err, "the catalog could not be read for a search");
+            tracing::warn!(error = %format_args!("{err:#}"), "the catalog could not be read for a search");
             return Vec::new();
         }
     };

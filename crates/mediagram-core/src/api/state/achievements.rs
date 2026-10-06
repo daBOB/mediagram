@@ -75,7 +75,7 @@ fn installed_library(core: &Core) -> (Vec<LibraryTitle>, Vec<LibraryCollection>)
         return Default::default();
     };
     crate::catalog_achievements::library_facts(&conn).unwrap_or_else(|err| {
-        tracing::warn!(error = %err, "achievements: the catalog could not be read");
+        tracing::warn!(error = %format_args!("{err:#}"), "achievements: the catalog could not be read");
         Default::default()
     })
 }

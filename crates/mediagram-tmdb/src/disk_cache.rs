@@ -83,7 +83,7 @@ impl<A: TmdbApi> TmdbApi for DiskCachedApi<A> {
         let value = match (self.inner.get_json(path, query).await, cached) {
             (Ok(value), _) => value,
             (Err(err), Some(stale)) => {
-                tracing::warn!(path, error = %err, "keeping a stale TMDB entry; the refresh failed");
+                tracing::warn!(path, error = %format_args!("{err:#}"), "keeping a stale TMDB entry; the refresh failed");
                 return Ok(stale);
             }
             (Err(err), None) => return Err(err),

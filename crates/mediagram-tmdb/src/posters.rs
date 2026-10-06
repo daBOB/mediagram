@@ -97,7 +97,7 @@ pub async fn resolve_backdrops(
         let details = match crate::details::details(api, *kind, *id).await {
             Ok(details) => details,
             Err(err) => {
-                tracing::warn!(id, error = %err, "no backdrop for this title");
+                tracing::warn!(id, error = %format_args!("{err:#}"), "no backdrop for this title");
                 continue;
             }
         };
@@ -118,7 +118,7 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
     let details = match crate::details::details(api, kind, id).await {
         Ok(details) => details,
         Err(err) => {
-            tracing::warn!(id, error = %err, "no poster for this title");
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no poster for this title");
             return Vec::new();
         }
     };

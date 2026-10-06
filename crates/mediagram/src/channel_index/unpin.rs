@@ -47,7 +47,7 @@ async fn clear_pin(remote: &impl ChannelRemote, old_id: i32) -> bool {
             Ok(Unpin::Gone) => return true,
             Ok(Unpin::Sent) => {}
             Err(err) => {
-                tracing::warn!(old_id, error = %err, "failed to unpin index message; will retry on the next publish");
+                tracing::warn!(old_id, error = %format_args!("{err:#}"), "failed to unpin index message; will retry on the next publish");
                 return false;
             }
         }
@@ -61,7 +61,7 @@ async fn clear_pin(remote: &impl ChannelRemote, old_id: i32) -> bool {
             // The unpin may well have worked; without a reading we cannot say,
             // and the next publish is cheaper than a wrong answer here.
             Err(err) => {
-                tracing::warn!(old_id, error = %err, "could not confirm the unpin; will retry on the next publish");
+                tracing::warn!(old_id, error = %format_args!("{err:#}"), "could not confirm the unpin; will retry on the next publish");
                 return false;
             }
         }
