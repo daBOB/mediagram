@@ -69,15 +69,15 @@ fn scan_set(dir: &Path, id: &str, found: &mut Vec<(ChunkKey, u64, SystemTime)>) 
             continue;
         };
         let len = metadata.len();
-        if let Some(total) = total {
-            if rules::check_length(n, len, total).is_err() {
-                tracing::warn!(
-                    "scan: dropping {} — {len} bytes does not fit a total of {total}",
-                    entry.path().display()
-                );
-                let _ = fs::remove_file(entry.path());
-                continue;
-            }
+        if let Some(total) = total
+            && rules::check_length(n, len, total).is_err()
+        {
+            tracing::warn!(
+                "scan: dropping {} — {len} bytes does not fit a total of {total}",
+                entry.path().display()
+            );
+            let _ = fs::remove_file(entry.path());
+            continue;
         }
         found.push((
             (id.to_string(), n),

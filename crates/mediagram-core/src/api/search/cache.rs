@@ -22,10 +22,10 @@ impl SearchCache {
     /// The corpus for `version`, reused as-is when `version` still matches
     /// whichever one was cached last, rebuilt from `sets` otherwise.
     pub(in crate::api) fn get_or_build(&mut self, version: Option<PathBuf>, sets: &[SearchableSet]) -> Arc<Corpus> {
-        if let Some((cached_version, corpus)) = &self.0 {
-            if *cached_version == version {
-                return Arc::clone(corpus);
-            }
+        if let Some((cached_version, corpus)) = &self.0
+            && *cached_version == version
+        {
+            return Arc::clone(corpus);
         }
         let corpus = Arc::new(Corpus::build(sets));
         self.0 = Some((version, Arc::clone(&corpus)));

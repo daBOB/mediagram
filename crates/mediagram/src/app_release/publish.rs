@@ -26,13 +26,16 @@ pub async fn publish(remote: &impl ChannelRemote, apk: &[u8], badging: &Badging,
         .filter(|candidate| candidate.own_post)
         .map(|candidate| (candidate.caption.as_str(), i64::from(candidate.id)))
         .collect();
-    if let Some((_, newest)) = app_caption::newest(&posted) {
-        if badging.version_code <= newest.code {
-            bail!(
-                "the channel already has {} (versionCode {}); this APK is {} (versionCode {})",
-                newest.version, newest.code, badging.version_name, badging.version_code
-            );
-        }
+    if let Some((_, newest)) = app_caption::newest(&posted)
+        && badging.version_code <= newest.code
+    {
+        bail!(
+            "the channel already has {} (versionCode {}); this APK is {} (versionCode {})",
+            newest.version,
+            newest.code,
+            badging.version_name,
+            badging.version_code
+        );
     }
 
     let release = AppRelease {

@@ -24,8 +24,8 @@
 //! Defaults let older documents omit any of these without losing other
 //! rows.
 
+use icu_normalizer::ComposingNormalizerBorrowed;
 use serde::{Deserialize, Serialize};
-use unicode_normalization::UnicodeNormalization;
 
 mod hostile_json;
 mod list_record;
@@ -153,7 +153,7 @@ pub struct SyncRecord {
 /// composed `é` or as an `e` with a combining accent and the two are not
 /// otherwise equal.
 pub fn normal_name(name: &str) -> Option<String> {
-    let clean = name.nfc().collect::<String>();
+    let clean = ComposingNormalizerBorrowed::new_nfc().normalize(name);
     let clean = clean.trim().to_lowercase();
     (!clean.is_empty()).then_some(clean)
 }

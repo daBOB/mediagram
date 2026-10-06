@@ -99,3 +99,39 @@ fn collect_rs(dir: &Path, out: &mut Vec<PathBuf>) {
         }
     }
 }
+
+/// Let chains (`if let … && let …`) are stable only from Rust 1.88. The
+/// workspace's `rust-version` is what a reader is promised builds it, and
+/// what resolver 3 picks dependency versions against, so it must not name a
+/// toolchain that cannot compile the code.
+#[test]
+fn the_declared_rust_version_compiles_let_chains() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let manifest: toml::Table = std::fs::read_to_string(root.join("Cargo.toml"))
+        .expect("the workspace manifest")
+        .parse()
+        .expect("a valid workspace manifest");
+    let declared = manifest["workspace"]["package"]["rust-version"]
+        .as_str()
+        .expect("a workspace rust-version");
+    let version: Vec<u32> = declared
+        .split('.')
+        .map(|n| n.parse().expect("a numeric rust-version"))
+        .collect();
+
+    let mut files = Vec::new();
+    for member in std::fs::read_dir(root.join("crates")).expect("the crates directory") {
+        let src = member.expect("a crate").path().join("src");
+        if src.is_dir() {
+            collect_rs(&src, &mut files);
+        }
+    }
+    let chained = files.iter().any(|file| {
+        let text = std::fs::read_to_string(file).expect("a readable file");
+        text.contains("&& let ")
+    });
+    assert!(
+        !chained || version[..2] >= [1, 88][..],
+        "the code uses let chains, which need Rust 1.88, but rust-version is {declared}"
+    );
+}

@@ -100,7 +100,7 @@ The format is specified in [`docs/mlib-spec.md`](docs/mlib-spec.md).
 
 | | |
 |---|---|
-| Rust | 1.87+ (edition 2024); `rust-toolchain.toml` pins `stable` |
+| Rust | 1.88+ (edition 2024); `rust-toolchain.toml` pins `stable` |
 | ffmpeg | `ffmpeg` and `ffprobe` on `PATH`, for inspection and remuxing |
 | SQLite | a system `libsqlite3`. `rusqlite` links against it, because grammers already statically links its own copy and two bundled copies collide at link time |
 | Telegram | an `api_id`/`api_hash` from <https://my.telegram.org>, and a private broadcast channel where your account is an admin. Premium is needed for the 3.5 GiB parts |

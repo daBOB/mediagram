@@ -33,15 +33,15 @@ pub(super) async fn current(remote: &impl ChannelRemote) -> Result<Option<Candid
         .map(|p| (p.caption.as_str(), i64::from(p.id)))
         .collect();
     let chosen = mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone());
-    if let Some(candidate) = &chosen {
-        if let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption) {
-            ensure!(
-                schema <= mlib_spec::schema::SCHEMA_VERSION,
-                "the channel index is schema v{schema}, newer than this build (v{}); \
-                 reinstall mediagram before pulling or publishing",
-                mlib_spec::schema::SCHEMA_VERSION
-            );
-        }
+    if let Some(candidate) = &chosen
+        && let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption)
+    {
+        ensure!(
+            schema <= mlib_spec::schema::SCHEMA_VERSION,
+            "the channel index is schema v{schema}, newer than this build (v{}); \
+             reinstall mediagram before pulling or publishing",
+            mlib_spec::schema::SCHEMA_VERSION
+        );
     }
     Ok(chosen)
 }
