@@ -18,7 +18,6 @@ import { SettingsRuntime } from "../src/settings/context";
 import { createSettingsRouter } from "../src/settings/routes";
 import { SignInFlow } from "../src/settings/sign-in";
 import { Settings } from "../src/state/settings";
-import type { StartupFacts } from "../src/status/facts";
 import { Telegram } from "../src/telegram/client";
 import { TelegramConnection } from "../src/telegram/connection";
 
@@ -67,9 +66,9 @@ test.each([
         connection,
         channel,
         updatesBinding: new UpdatesBinding(connection, channel, "device", null, null, () => () => {}),
-        follower: { refresh: async () => {}, retarget: () => {} },
-        // Signing in never reads what startup found.
-        facts: {} as StartupFacts,
+        // Signing in never switches the library.
+        follower: { tryChannel: async () => { throw new Error("no library switch expected"); } },
+        findIndex: async () => { throw new Error("no library switch expected"); },
         settings: new Settings(null),
         cache: null,
         channelCatalogDir: dir,

@@ -17,11 +17,12 @@
  * that fails after that is reported, not thrown.
  */
 
-import type { StartupFacts } from "../status/facts";
 import { Telegram } from "../telegram/client";
 import type { TelegramConnection } from "../telegram/connection";
 import type { ChannelState, UpdatesBinding } from "../application/telegram-binding";
 import type { CatalogFollower } from "../application/catalog-follow";
+import type { FoundIndex } from "../channel-index/find-newest-channel-index";
+import type { NoIndex } from "../channel-index/pick-newest-index";
 import type { ChunkCache } from "../cache/store";
 import type { HeldSets } from "../cache/held";
 import { applyBudget, validateBudget, MIN_CACHE_BUDGET_BYTES } from "../cache/budget";
@@ -37,8 +38,8 @@ export interface SettingsDeps {
   connection: TelegramConnection;
   channel: ChannelState;
   updatesBinding: UpdatesBinding;
-  follower: Pick<CatalogFollower, "refresh" | "retarget">;
-  facts: StartupFacts;
+  follower: Pick<CatalogFollower, "tryChannel">;
+  findIndex: (telegram: Telegram) => Promise<FoundIndex | NoIndex>;
   settings: Settings;
   cache: Pick<ChunkCache, "setBudget" | "budget" | "sizeOnDisk"> | null;
   held?: Pick<HeldSets, "refresh">;
@@ -131,23 +132,23 @@ export class SettingsRuntime {
   async chooseLibrary(handle: string): Promise<ActionResult<{ title: string; sets: number }>> {
     const candidate = this.handles.get(handle);
     if (!candidate) return { ok: false, error: "that channel is no longer in the list; refresh and choose again" };
-    if (!this.deps.connection.current()) return { ok: false, error: "cannot choose a library while signed out" };
+    const current = this.deps.connection.current();
+    if (!current) return { ok: false, error: "cannot choose a library while signed out" };
+
+    const probe = Telegram.withChannel(current, candidate.chatId, candidate.accessHash);
+    const outcome = await this.deps.follower.tryChannel(
+      join(this.deps.channelCatalogDir, String(candidate.chatId)),
+      () => this.deps.findIndex(probe),
+    );
+    if (!outcome.served) return { ok: false, error: outcome.reason };
 
     this.deps.connection.withChannel((existing) => Telegram.withChannel(existing, candidate.chatId, candidate.accessHash));
-    this.deps.follower.retarget(join(this.deps.channelCatalogDir, String(candidate.chatId)));
-    const publishedBefore = this.deps.facts.catalog.publishedAt;
-    await this.deps.follower.refresh();
-
-    if (this.deps.facts.catalog.origin !== "channel" || this.deps.facts.catalog.publishedAt === publishedBefore) {
-      return { ok: false, error: this.deps.facts.catalog.reason ?? "the channel's index could not be installed" };
-    }
-
     this.deps.channel.chatId = candidate.chatId;
     this.deps.channel.accessHash = candidate.accessHash;
     this.deps.channel.title = candidate.title;
     const saved = await this.account.commit();
     if (!saved.ok) return saved;
-    return { ok: true, title: candidate.title, sets: this.deps.facts.catalog.sets };
+    return { ok: true, title: candidate.title, sets: outcome.sets };
   }
 
   async sessions(): Promise<ActionResult<{ sessions: SessionSummary[] }>> {

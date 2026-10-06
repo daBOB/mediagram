@@ -624,10 +624,13 @@ leaves them pointed at a client that is gone. `restart()` is strictly
 sequential: gate reads, disconnect the old client, open the new one, release —
 never two clients on one auth key (`login.ts`, measured). A channel switch
 needs none of that: `Telegram.withChannel` reuses the same client with a
-different `InputChannel`, and `CatalogFollower.retarget(root)` points the
-existing follower at a fresh per-channel directory
-(`~/.cache/mediagram-channel-catalog/<chat id>/`) so a newly chosen channel's
-`pushed_at` is never compared against an unrelated channel's history.
+different `InputChannel`. The switch first has `CatalogFollower.tryChannel`
+serve the chosen channel's index from that channel's own directory
+(`~/.cache/mediagram-channel-catalog/<chat id>/`), found through a `Telegram`
+pointed at it by `Telegram.withChannel` and never compared against an
+unrelated channel's `pushed_at`. Only once it is served do the connection,
+the followed channel and `telegram.json` move; a channel with no servable
+index leaves all three where they were.
 
 **Sign-in runs on its own client**, on an empty session — a separate auth key
 from the live one, so an attempt in progress can never collide with it

@@ -402,7 +402,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
 
     const runtime = new SettingsRuntime(
       {
-        connection, channel, updatesBinding, follower, facts, settings: state.settings(),
+        connection, channel, updatesBinding, follower, findIndex: io.findIndex, settings: state.settings(),
         cache, held,
         invalidateHeldBytes: statusRouter.invalidateHeldBytes,
         channelCatalogDir: config.channelCatalogDir,

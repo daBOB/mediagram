@@ -84,7 +84,9 @@ test.each([
 
   await follower.refresh();
   expect(await titles()).toEqual(["Before"]);
-  expect(status.catalog).toMatchObject({ origin: "local", publishedAt: null });
+  expect(status.catalog).toMatchObject({
+    origin: "local", publishedAt: null, refresh: "kept", reason: `the installed channel index could not be served: ${message}`,
+  });
   expect(replacements).toEqual([]);
   expect(changes).toEqual([]);
   expect(await held.check("01NEW")).toBe(false);
@@ -111,25 +113,6 @@ test.each([
   expect(retirements[0]?.cancelled).toBe(true);
   expect(() => before.query("SELECT 1").get()).toThrow();
   expect(() => attempts[1]!.query("SELECT 1").get()).toThrow();
-});
-
-test("a cache refresh failure does not hide a catalog already committed to the listener", async () => {
-  const before = library("Before");
-  databases.push(before);
-  server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() } });
-  const status = facts();
-  const changes: number[] = [];
-  follower = new CatalogFollower({
-    db: before, catalog: { dir: null, origin: "local", publishedAt: null, refresh: null, reason: null },
-    root: join(root, "channel"), find: async () => snapshot("After", 200), server,
-    facts: status, held: { replaceExpected: async () => { throw new Error("cache scan refused"); }, ids: [] },
-    events: { catalogChanged(at) { changes.push(at!); } },
-    fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
-  });
-  await follower.refresh();
-  expect(await titles()).toEqual(["After"]);
-  expect(status.catalog).toMatchObject({ origin: "channel", publishedAt: 200000 });
-  expect(changes).toEqual([200000]);
 });
 
 test("a catalog swap reconciles held sets' subtitle bundles", async () => {
@@ -201,21 +184,33 @@ test("shutdown drains an artwork process already started and admits no more", as
   expect(starts).toBe(1);
 });
 
-test("retarget forgets what was served, so a different channel's index is not compared against it", async () => {
+test("a tried channel is served only when it has an index, whatever that index's age", async () => {
+  const warnings = spyOn(console, "warn").mockImplementation(() => {});
+  restoreDiagnostics.push(() => warnings.mockRestore());
   const before = library("Before");
   databases.push(before);
   server = await startServer({ db: before, source: { stream: () => new ReadableStream<Uint8Array>() } });
   const status = facts();
+  let ownFinds = 0;
   follower = new CatalogFollower({
     db: before, catalog: { dir: null, origin: "channel", publishedAt: 999_000, refresh: "updated", reason: null },
-    root: join(root, "channel-a"), find: async () => snapshot("From B", 5, "01FROMB"), server,
+    root: join(root, "channel-a"), find: async () => { ownFinds++; return "nothing-pinned" as const; }, server,
     facts: status, events: { catalogChanged: () => {} },
     fetchPosters: async () => ({ ok: false, reason: "art unavailable" }), posterCount: () => 0,
   });
-  // A lower pushedAt than what this follower already believes it is serving
-  // (999) would be refused as "unchanged" without retarget resetting that.
-  follower.retarget(join(root, "channel-b"));
+
+  expect(await follower.tryChannel(join(root, "channel-b"), async () => "not-an-index" as const))
+    .toEqual({ served: false, reason: "nothing pinned in the channel is a library index" });
+  expect(await titles()).toEqual(["Before"]);
   await follower.refresh();
+  expect(ownFinds).toBe(1);
+  expect(await titles()).toEqual(["Before"]);
+
+  // Older than what is served (999): a different channel's history is not compared against it.
+  expect(await follower.tryChannel(join(root, "channel-b"), async () => snapshot("From B", 5, "01FROMB")))
+    .toEqual({ served: true, sets: 1 });
   expect(await titles()).toEqual(["From B"]);
-  expect(status.catalog).toMatchObject({ publishedAt: 5000, refresh: "updated" });
+  // Later refreshes install into the tried channel's root, which holds what is now served.
+  await follower.refresh();
+  expect(status.catalog).toMatchObject({ publishedAt: 5000, refresh: "kept" });
 });

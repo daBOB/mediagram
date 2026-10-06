@@ -31,6 +31,9 @@ interface FollowOptions {
 
 const OLD_CATALOG_GRACE_MS = 5 * 60_000;
 
+/** Whether an index is being served after a refresh, and if not, why. */
+export type RefreshOutcome = { served: true; sets: number } | { served: false; reason: string };
+
 export class CatalogFollower {
   private db: Database;
   private servingPushedAt: number | null;
@@ -38,7 +41,9 @@ export class CatalogFollower {
   private running: Promise<void> = Promise.resolve();
   private readonly retired = new Map<Database, () => void>();
   private readonly pendingPosterFetches = new Set<Promise<void>>();
-  private readonly follow = oneAtATime(async () => { if (!this.closed) await this.replace(); });
+  private readonly follow = oneAtATime(async () => {
+    if (!this.closed) await this.replace(this.options.root, this.options.find, this.servingPushedAt);
+  });
 
   constructor(private options: FollowOptions) {
     this.db = options.db;
@@ -53,15 +58,25 @@ export class CatalogFollower {
   }
 
   /**
-   * Points future refreshes at a different install root and, through it, a
-   * different `find` (the connection's channel changed before this is
-   * called). Used when a viewer switches to a channel chosen from Settings:
-   * a different channel's history is not comparable to the old root's, so
-   * whatever this was last serving is forgotten rather than compared against.
+   * Serves a candidate channel's index, installed under its own `root` and
+   * found through `find`; when it cannot be served, what is served now stays.
+   * Settings proves a chosen channel here before anything else moves to it,
+   * and only a served candidate becomes the root later refreshes install
+   * into. Never compared against what is served now: a different channel's
+   * `pushed_at` says nothing about this one's.
+   *
+   * Queued behind a refresh already running and never merged with one, so the
+   * outcome is this attempt's own.
    */
-  retarget(root: string): void {
-    this.options = { ...this.options, root };
-    this.servingPushedAt = null;
+  tryChannel(root: string, find: FollowOptions["find"]): Promise<RefreshOutcome> {
+    const attempt = this.running.then(async (): Promise<RefreshOutcome> => {
+      if (this.closed) return { served: false, reason: "the player is stopping" };
+      const outcome = await this.replace(root, find, null);
+      if (outcome.served) this.options = { ...this.options, root };
+      return outcome;
+    });
+    this.running = attempt.then(() => {}, () => {});
+    return attempt;
   }
 
   async stopFollowing(): Promise<void> {
@@ -86,19 +101,19 @@ export class CatalogFollower {
     this.retired.set(db, cancel);
   }
 
-  private async replace(): Promise<void> {
-    const { root, find, facts, server, held, events, subtitles } = this.options;
+  private async replace(root: string, find: FollowOptions["find"], serving: number | null): Promise<RefreshOutcome> {
+    const { facts, server, held, events, subtitles } = this.options;
     const result = await refreshFromChannel(root, find);
     if (result.kind === "none") {
       console.warn(`catalog: ${result.reason}`);
       facts.catalog = { ...facts.catalog, reason: result.reason };
-      return;
+      return { served: false, reason: result.reason };
     }
     // The installed snapshot can be newer than the one whose router succeeded.
-    if (result.pushedAt === this.servingPushedAt) {
+    if (result.pushedAt === serving) {
       if (result.reason) console.warn(`catalog: ${result.reason}`);
       facts.catalog = { ...facts.catalog, refresh: result.refresh === "kept" ? "kept" : "unchanged", reason: result.reason };
-      return;
+      return { served: true, sets: facts.catalog.sets };
     }
     let next: Database | null = null;
     let expected: Map<string, number> | undefined;
@@ -112,8 +127,10 @@ export class CatalogFollower {
       server.replaceCatalog({ db: next, catalog: { origin: "channel", publishedAt } });
     } catch (error) {
       next?.close();
-      console.error(`catalog: the installed channel index could not be served: ${failureMessage(error)}`);
-      return;
+      const reason = `the installed channel index could not be served: ${failureMessage(error)}`;
+      console.error(`catalog: ${reason}`);
+      facts.catalog = { ...facts.catalog, refresh: "kept", reason };
+      return { served: false, reason };
     }
     const previous = this.db;
     this.db = next;
@@ -121,17 +138,16 @@ export class CatalogFollower {
     this.retire(previous);
     facts.catalog = { ...facts.catalog, origin: "channel", publishedAt, refresh: result.refresh === "kept" ? "kept" : "updated", reason: result.reason, sets };
     if (expected) {
-      try {
-        await held!.replaceExpected(expected);
-        // Held titles keep their subtitles offline: a bundle pushed without
-        // the v13 tables must not cost a held title its file, so this only
-        // ever adds — never triggered by a swap that lost the tables.
-        void subtitles?.reconcile(next, held!).catch((error) => console.warn("subtitles: reconcile failed:", error));
-      } catch (error) { console.warn("catalog: cache expectations could not be refreshed:", error); }
+      await held!.replaceExpected(expected);
+      // Held titles keep their subtitles offline: a bundle pushed without
+      // the v13 tables must not cost a held title its file, so this only
+      // ever adds — never triggered by a swap that lost the tables.
+      void subtitles?.reconcile(next, held!).catch((error) => console.warn("subtitles: reconcile failed:", error));
     }
     console.log(`catalog: now serving the channel index pushed at ${result.pushedAt}, ${sets} playable sets`);
     events.catalogChanged(publishedAt);
     await this.refreshPosters(result.dir);
+    return { served: true, sets };
   }
 
   refreshPosters(dir: string): Promise<void> {
