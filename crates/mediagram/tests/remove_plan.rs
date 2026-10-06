@@ -162,8 +162,8 @@ fn message_ids_are_deduplicated_and_ordered() {
 mod deleting_rows {
     use std::path::Path;
 
+    use mediagram::index::lifecycle::delete_rows;
     use mediagram::index::{assets, db, lifecycle, parts, sets};
-    use mediagram::remove::apply::delete_rows;
     use mlib_spec::part_plan::PartRange;
 
     use super::row;

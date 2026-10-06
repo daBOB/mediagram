@@ -101,7 +101,7 @@ fn removing_a_set_removes_its_bundle_record() {
     let (_dir, conn) = index_with_set("A");
     record(&conn, "A", &file(7), &[track("de", false, "German")]).unwrap();
 
-    crate::remove::apply::delete_rows(&conn, "A").unwrap();
+    crate::index::lifecycle::delete_rows(&conn, "A").unwrap();
 
     assert_eq!(bundle_message(&conn, "A").unwrap(), None);
     assert!(labels(&conn).is_empty());

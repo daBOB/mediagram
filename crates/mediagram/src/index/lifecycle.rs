@@ -84,6 +84,20 @@ pub fn complete(conn: &Connection, set_id: &str, hash: &str) -> Result<Completed
     Ok(Completed { temp })
 }
 
+/// Removes a set's rows. `parts` and `assets` cascade from `sets`.
+///
+/// Runs after the messages are gone, so the index never claims to hold
+/// something the channel no longer has.
+pub fn delete_rows(conn: &Connection, set_id: &str) -> Result<()> {
+    conn.execute("PRAGMA foreign_keys = ON", [])
+        .context("enabling foreign keys")?;
+    conn.execute("DELETE FROM sets WHERE set_id = ?1", [set_id])
+        .with_context(|| format!("deleting the index rows of {set_id}"))?;
+    // The source path is remembered for `resume`; with the set gone it is
+    // just a stale pointer.
+    forget(conn, set_id)
+}
+
 /// Forgets a set's source, original and temporary copy, for a set that is
 /// gone.
 pub fn forget(conn: &Connection, set_id: &str) -> Result<()> {

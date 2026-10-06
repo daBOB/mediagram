@@ -83,8 +83,12 @@ fn a_collection_folder_plans_a_title_cid_and_two_episodes() {
     let conn = db::open(index_dir.path()).unwrap();
     let stored = artwork::adopt_folder(&conn, &dir, &art_key).unwrap();
     assert_eq!(stored, 2);
-    let (poster_mime, _) = artwork::get(&conn, "title-terra-x").unwrap().unwrap();
+    let (poster_mime, _) = mediagram_core::artwork::get(&conn, "title-terra-x")
+        .unwrap()
+        .unwrap();
     assert_eq!(poster_mime, "image/jpeg");
-    let (backdrop_mime, _) = artwork::get(&conn, "title-terra-x-bg").unwrap().unwrap();
+    let (backdrop_mime, _) = mediagram_core::artwork::get(&conn, "title-terra-x-bg")
+        .unwrap()
+        .unwrap();
     assert_eq!(backdrop_mime, "image/png");
 }

@@ -6,7 +6,7 @@
 //! side of a part, not verification).
 
 use anyhow::{Context, Result, bail};
-use rusqlite::{Connection, params_from_iter};
+use rusqlite::Connection;
 
 use crate::index::parts::PartRow;
 use crate::index::sets;
@@ -35,33 +35,7 @@ pub fn resolve_set_ids(
         };
     }
     debug_assert!(all, "caller must require set_id or --all");
-    let (placeholders, kinds) = sets_pending::known_kind_placeholders();
-
-    let mut stmt = conn.prepare(&format!(
-        "SELECT set_id FROM sets WHERE kind IN ({placeholders}) ORDER BY created_at"
-    ))?;
-    let ids = stmt
-        .query_map(params_from_iter(kinds.iter()), |row| {
-            row.get::<_, String>(0)
-        })?
-        .collect::<rusqlite::Result<Vec<_>>>()
-        .context("listing sets for --all")?;
-
-    let mut skip_stmt = conn.prepare(&format!(
-        "SELECT kind, COUNT(*) FROM sets WHERE kind NOT IN ({placeholders}) GROUP BY kind ORDER BY kind"
-    ))?;
-    let skipped = skip_stmt
-        .query_map(params_from_iter(kinds.iter()), |row| {
-            let count: i64 = row.get(1)?;
-            Ok(SkippedKind {
-                kind: row.get(0)?,
-                count: usize::try_from(count).unwrap_or(0),
-            })
-        })?
-        .collect::<rusqlite::Result<Vec<_>>>()
-        .context("counting sets of an unknown kind")?;
-
-    Ok((ids, skipped))
+    sets_pending::list_known(conn)
 }
 
 /// Records a successful `--full` hash match. `verified_at` is the result of
