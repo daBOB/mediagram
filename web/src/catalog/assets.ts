@@ -13,16 +13,13 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { hasTable } from "../catalog";
 
 /** A set's summary, or `null`. */
 export function summary(db: Database, setId: string): string | null {
-  try {
-    const row = db
-      .query("SELECT body FROM assets WHERE set_id = ?1 AND kind = 'summary' AND lang = ''")
-      .get(setId) as { body: string } | null;
-    return row?.body ?? null;
-  } catch (error) {
-    if (error instanceof Error && error.message === "no such table: assets") return null;
-    throw error;
-  }
+  if (!hasTable(db, "assets")) return null;
+  const row = db
+    .query("SELECT body FROM assets WHERE set_id = ?1 AND kind = 'summary' AND lang = ''")
+    .get(setId) as { body: string } | null;
+  return row?.body ?? null;
 }

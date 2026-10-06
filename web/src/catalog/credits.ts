@@ -13,6 +13,7 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { hasTable } from "../catalog";
 import { terms, variants } from "../search/normalize";
 import { personKeyFor } from "../package/posters";
 
@@ -30,10 +31,6 @@ export interface Franchise { id: number; name: string; overview: string | null }
 
 const KEY = /^tmdb-(movie|tv)-(\d{1,12})$/;
 type Has = (key: string) => boolean;
-
-function hasTable(db: Database, name: "credits" | "franchises"): boolean {
-  return db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1").get(name) !== null;
-}
 
 const portraitOf = (has: Has, personId: number) => (has(personKeyFor(personId)) ? personKeyFor(personId) : null);
 

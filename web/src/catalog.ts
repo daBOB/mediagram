@@ -39,6 +39,11 @@ export const EXPECTED_SCHEMA = 13;
  */
 export const OLDEST_READABLE_SCHEMA = 6;
 
+/** Whether the index has table `name`: the guard every reader of a post-v6 table asks first. */
+export function hasTable(db: Database, name: string): boolean {
+  return db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1").get(name) !== null;
+}
+
 /**
  * Every layout a package may carry for this build to read it: the oldest
  * through the expected, each one. A pointer is checked by membership, so
