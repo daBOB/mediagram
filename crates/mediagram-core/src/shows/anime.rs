@@ -62,7 +62,7 @@ pub fn anime_overrides(conn: &Connection) -> rusqlite::Result<HashMap<String, bo
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         let anime: i64 = row.get(2)?;
-        Ok((format!("tmdb-{kind}-{id}"), anime != 0))
+        Ok((mlib_spec::package::tmdb_key(&kind, id), anime != 0))
     })?;
     for row in rows {
         let (key, anime) = row?;

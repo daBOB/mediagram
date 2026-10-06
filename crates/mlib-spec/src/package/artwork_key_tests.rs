@@ -114,3 +114,27 @@ fn a_title_key_whose_slug_could_not_have_come_from_slug_is_refused() {
         assert!(!poster_key_is_valid(bad), "`{bad}` must be rejected");
     }
 }
+
+/// Every TMDB key is built by `tmdb_key`: the row mappers pass a SQL
+/// `i64`, the TMDB client a `u64`, and both must spell the same key.
+#[test]
+fn a_tmdb_key_is_its_kind_and_id_and_passes_the_validator() {
+    assert_eq!(tmdb_key("movie", 550), "tmdb-movie-550");
+    assert_eq!(tmdb_key("tv", 1396_i64), tmdb_key("tv", 1396_u64));
+    for key in [tmdb_key("tv", 1396_i64), tmdb_key("person", 7_u64)] {
+        assert!(poster_key_is_valid(&key), "{key}");
+    }
+}
+
+#[test]
+fn a_tmdb_key_reads_back_as_the_kind_and_id_it_was_built_from() {
+    assert_eq!(tmdb_title_of(&tmdb_key("movie", 550)), Some(("movie", 550)));
+    assert_eq!(tmdb_title_of(&tmdb_key("tv", 1396)), Some(("tv", 1396)));
+    for key in [
+        season_poster_key("tmdb-tv-1396", 2),
+        backdrop_key("tmdb-movie-550"),
+        "title-terra-x".to_string(),
+    ] {
+        assert_eq!(tmdb_title_of(&key), None, "{key}");
+    }
+}

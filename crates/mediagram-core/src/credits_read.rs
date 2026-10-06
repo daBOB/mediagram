@@ -92,7 +92,7 @@ pub fn for_person(conn: &Connection, person_id: u64) -> rusqlite::Result<Option<
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         let name: String = row.get(2)?;
-        Ok((format!("tmdb-{kind}-{id}"), name))
+        Ok((mlib_spec::package::tmdb_key(&kind, id), name))
     })?;
     let mut name = None;
     let mut title_keys = Vec::new();

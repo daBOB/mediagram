@@ -55,13 +55,13 @@ impl Core {
     /// the download failed — a missing face is a cosmetic loss, never an
     /// error a caller must handle.
     pub async fn fetch_portrait(self: Arc<Self>, person_id: u64) -> Option<String> {
-        let key = format!("tmdb-person-{person_id}");
+        let key = mlib_spec::package::tmdb_key("person", person_id);
         if let Some(path) = store::poster_path(&self, key.clone()) {
             return Some(path);
         }
         let profile = self.blocking(move |core| profile_of(core, person_id)).await?;
         let client = crate::http::client().ok()?;
-        let poster = PosterRef { key: key.clone(), path: profile, backdrop_width: Some(PORTRAIT_WIDTH) };
+        let poster = PosterRef { key: key.clone(), path: profile, width: Some(PORTRAIT_WIDTH) };
         let dir = store::artwork_dir(&self);
         let written = mediagram_tmdb::poster_files::download_into(&client, std::slice::from_ref(&poster), &dir)
             .await
@@ -173,7 +173,7 @@ impl<'a> Portraits<'a> {
     /// Present only when the file already exists on this device — see
     /// `SetSummary::backdrop_path`.
     fn resolve(&self, person_id: u64) -> Option<String> {
-        let key = format!("tmdb-person-{person_id}");
+        let key = mlib_spec::package::tmdb_key("person", person_id);
         store::resolve_with(&self.version_dir, &self.artwork_dir, self.conn, &key, &self.artwork_keys)
     }
 }

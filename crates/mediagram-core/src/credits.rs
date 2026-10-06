@@ -108,9 +108,9 @@ pub fn portraits(conn: &Connection) -> rusqlite::Result<Vec<PosterRef>> {
             continue;
         }
         found.push(PosterRef {
-            key: format!("tmdb-person-{person_id}"),
+            key: mlib_spec::package::tmdb_key("person", person_id),
             path,
-            backdrop_width: Some(PORTRAIT_WIDTH),
+            width: Some(PORTRAIT_WIDTH),
         });
     }
     Ok(found)

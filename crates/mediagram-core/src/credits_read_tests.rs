@@ -125,3 +125,23 @@ fn an_index_predating_credits_finds_nobody() {
     let conn = conn_predating_credits();
     assert!(people_matching(&conn, "anna").unwrap().is_empty());
 }
+
+/// `people_matching` builds its keys in SQL rather than through `tmdb_key`;
+/// a hit whose keys differ from every other reader's names titles nothing.
+#[test]
+fn people_matching_spells_title_keys_the_way_tmdb_key_does() {
+    let conn = conn_with_credits();
+    insert_credit(&conn, "movie", 550, 0, 5, "Recurring", None, "cast");
+    insert_credit(&conn, "tv", 1399, 0, 5, "Recurring", None, "cast");
+
+    let mut keys = people_matching(&conn, "recurring")
+        .unwrap()
+        .remove(0)
+        .title_keys;
+    keys.sort();
+    let expected = [
+        mlib_spec::package::tmdb_key("movie", 550),
+        mlib_spec::package::tmdb_key("tv", 1399),
+    ];
+    assert_eq!(keys, expected);
+}

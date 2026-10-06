@@ -14,7 +14,7 @@ use mlib_spec::Kind;
 
 use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::localized::Localized;
-use mediagram_tmdb::posters::kind_key;
+use mediagram_tmdb::posters::poster_key;
 use mediagram_tmdb::tmdb_client::{HttpStatus, TmdbApi, TmdbClient};
 
 use crate::catalog::PlayableSet;
@@ -124,7 +124,7 @@ pub fn split_titles(sets: &[PlayableSet]) -> (Vec<(Kind, u64)>, u32) {
     for set in sets {
         match (set.kind.parse::<Kind>().ok(), set.tmdb) {
             (Some(kind), Some(id)) => {
-                if seen.insert(format!("tmdb-{}-{id}", kind_key(kind))) {
+                if seen.insert(poster_key(kind, id)) {
                     titles.push((kind, id));
                 }
             }
