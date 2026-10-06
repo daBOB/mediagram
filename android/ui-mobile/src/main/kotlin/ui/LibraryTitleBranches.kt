@@ -45,14 +45,14 @@ internal fun TitleFrame(
                 if (kidsProfile) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(title.setId, resolved.watch.editorsChoice != title.setId) }
+                    { catalogViewModel.toggleEditorsChoice(title.setId) }
                 },
             watch = resolved.watch,
             shelves = catalogState.shelvesOrEmpty(),
             onOpenTitle = at::openTitle,
             onOpenFranchise = { id -> at.openFranchise(id.toString()) },
             onOpenPerson = { id -> at.openPerson(id.toString()) },
-            onToggleWatchlist = { catalogViewModel.setWatchlisted(title.setId, title.setId !in resolved.watch.watchlist) },
+            onToggleWatchlist = { catalogViewModel.toggleWatchlist(title.setId) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
             shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
@@ -99,11 +99,9 @@ internal fun CollectionFrame(
                 if (kidsProfile || firstEpisodeId == null) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(firstEpisodeId, resolved.watch.editorsChoice != firstEpisodeId) }
+                    { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
-            onToggleWatchlist = {
-                firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in resolved.watch.watchlist) }
-            },
+            onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
             shouldRequestPortrait = browseViewModel::shouldRequestPortrait,

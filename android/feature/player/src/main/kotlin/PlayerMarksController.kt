@@ -89,8 +89,10 @@ class PlayerMarksController(
      */
     fun setKidsMark(age: Int?) {
         val setId = session.openSetId ?: return
-        // A kids profile does not approve titles for itself.
-        if (repository.chosenProfile.value?.kids == true || marks.value?.canMarkKids == false) return
+        // A kids profile does not approve titles for itself. Asked of the
+        // repository, not [marks]: that shared copy keeps its last value once
+        // nobody collects it, which can still be a kid's after a grown-up is chosen.
+        if (repository.chosenProfile.value?.kids == true) return
         // A rated title is not marked: its rating already decided.
         if (ageOf(openFsk.value) != null) return
         if (age != null && age !in KIDS_LIMITS) return

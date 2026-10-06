@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -174,6 +175,32 @@ class PlayerMarksTest {
                         .isEmpty(),
                 )
             }
+        }
+
+    /**
+     * [PlayerViewModel.marks] keeps its last value once nobody collects it,
+     * so after a kid hands over to a grown-up it can still say a kid is
+     * watching. The grown-up's mark must land anyway.
+     */
+    @Test
+    fun aGrownUpChosenAfterAKidCanMarkWhileTheMarksStillSayKid() =
+        runTest {
+            installMainDispatcher()
+            val repository = WatchStateFixture(listOf(Profile("k", "Mia", kids = true), Profile("a", "Ana"))).repository
+            val vm = viewModel(repository)
+            vm.marks.test {
+                assertNull(awaitItem())
+                vm.open("s1")
+                assertEquals(false, awaitItem()?.canMarkKids)
+            }
+            advanceTimeBy(6_000)
+            repository.chooseProfile("a")
+            assertEquals(false, vm.marks.value?.canMarkKids)
+
+            vm.setKidsMark(6)
+            advanceUntilIdle()
+
+            assertEquals(listOf("s1"), repository.snapshot.value.kidsFromSix)
         }
 
     /** The web's select: "Not for kids", "From 6", "From 12" — and no other age. */

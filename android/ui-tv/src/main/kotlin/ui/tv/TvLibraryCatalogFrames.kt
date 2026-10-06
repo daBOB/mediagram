@@ -82,13 +82,13 @@ internal fun TvTitleFrame(
                 if (kidsProfile) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(set.setId, watch.editorsChoice != set.setId) }
+                    { catalogViewModel.toggleEditorsChoice(set.setId) }
                 },
             // Films only, same as the phone's own TitleDetailScreen — a
             // show's episodes preload two at a time on their own already.
             preload = if (set.kind == Kind.MOVIE) rememberTvFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             watchlisted = set.setId in watch.watchlist,
-            onToggleWatchlist = { catalogViewModel.setWatchlisted(set.setId, set.setId !in watch.watchlist) },
+            onToggleWatchlist = { catalogViewModel.toggleWatchlist(set.setId) },
         )
     }
 }
@@ -151,13 +151,13 @@ internal fun TvCollectionFrame(
             },
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
-            onToggleWatchlist = { firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in watch.watchlist) } },
+            onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
             editorsChoice = watch.editorsChoice,
             onToggleEditorsChoice =
                 if (kidsProfile || firstEpisodeId == null) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(firstEpisodeId, watch.editorsChoice != firstEpisodeId) }
+                    { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
         )
     }

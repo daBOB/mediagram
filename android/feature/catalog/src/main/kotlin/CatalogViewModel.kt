@@ -85,20 +85,37 @@ class CatalogViewModel
                 .map { it?.kids == true }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-        /** Pins or unpins the household's editor's choice — see [data.WatchStateRepository.setEditorsChoice]. */
-        fun setEditorsChoice(
-            setId: String,
-            marked: Boolean,
-        ) {
-            viewModelScope.launch { watchState.setEditorsChoice(setId, marked) }
-        }
-
-        /** Adds or removes [setId] from "My List" — see [data.WatchStateRepository.setWatchlisted]. */
+        /**
+         * Adds or removes [setId] from "My List", for a control that already
+         * says which way — the home cover's pill and every card's own toggle.
+         */
         fun setWatchlisted(
             setId: String,
             listed: Boolean,
         ) {
-            viewModelScope.launch { watchState.setWatchlisted(setId, listed) }
+            writeState("Could not confirm the Watchlist update. Check it and try again.") {
+                watchState.setWatchlisted(setId, listed)
+                true
+            }
+        }
+
+        /** A title page's "My List" button: which way it goes is read from the snapshot at the tap. */
+        fun toggleWatchlist(setId: String) {
+            setWatchlisted(setId, setId !in watchState.snapshot.value.watchlist)
+        }
+
+        /**
+         * A title page's editor's-choice button, pinning [setId] or taking
+         * the pin off it. Refused for a kids profile here as well as by the
+         * button's absence: the pin is the household's, not a kid's, to make.
+         */
+        fun toggleEditorsChoice(setId: String) {
+            if (currentKids() != null) return
+            val marked = watchState.snapshot.value.editorsChoice != setId
+            writeState("Could not confirm the editor's choice update. Check it and try again.") {
+                watchState.setEditorsChoice(setId, marked)
+                true
+            }
         }
 
         /**

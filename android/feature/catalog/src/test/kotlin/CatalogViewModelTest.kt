@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -83,6 +84,8 @@ private class FakeFilmPreloading : FilmPreloading {
 
 private val ANA = Profile("a", "Ana")
 private val MIA = Profile("k", "Mia", kids = true)
+private const val WATCHLIST_NOTICE = "Could not confirm the Watchlist update. Check it and try again."
+private const val EDITORS_CHOICE_NOTICE = "Could not confirm the editor's choice update. Check it and try again."
 
 /**
  * Uses a standard (queued, not eager) test dispatcher tied to the same
@@ -328,6 +331,91 @@ class CatalogViewModelTest {
                 vm.createList("Favourite")
                 assertEquals(listOf("Favourite"), (awaitItem() as CatalogUiState.Ready).watch.collections.map { it.name })
             }
+        }
+
+    /**
+     * A My List or editor's-choice write the core throws on — a core closed
+     * by a sign-out racing the tap — leaves the app up with a notice on the
+     * shelves, and the same write landing later takes that notice back off.
+     */
+    private suspend fun TestScope.aFailedMarkSaysSoUntilItLands(
+        notice: String,
+        write: CatalogViewModel.() -> Unit,
+        landed: (WatchSnapshot) -> Boolean,
+    ) {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val watch = WatchStateFixture()
+        watch.provider.beforeCore = { throw IllegalStateException("core closed") }
+        val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+        vm.state.test {
+            awaitItem()
+            val before = awaitItem() as CatalogUiState.Ready
+            vm.write()
+            val failed = awaitItem() as CatalogUiState.Ready
+            assertEquals(notice, failed.notice)
+            assertEquals(before.shelves, failed.shelves)
+            watch.provider.beforeCore = {}
+            vm.write()
+            runCurrent()
+            val after = vm.state.value as CatalogUiState.Ready
+            assertNull(after.notice)
+            assertTrue(landed(after.watch))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun aFailedMyListWriteSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(WATCHLIST_NOTICE, { setWatchlisted("movie-0", true) }) { "movie-0" in it.watchlist }
+        }
+
+    @Test
+    fun aFailedMyListToggleSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(WATCHLIST_NOTICE, { toggleWatchlist("movie-0") }) { "movie-0" in it.watchlist }
+        }
+
+    @Test
+    fun aFailedEditorsChoiceToggleSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(EDITORS_CHOICE_NOTICE, { toggleEditorsChoice("movie-0") }) { it.editorsChoice == "movie-0" }
+        }
+
+    /** A title page's buttons name only the title: whether it is on or off is the snapshot's to say. */
+    @Test
+    fun titlePageTogglesTurnAMarkOnAndBackOff() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watch = WatchStateFixture()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+
+            vm.toggleWatchlist("movie-0")
+            advanceUntilIdle()
+            assertEquals(listOf("movie-0"), watch.repository.snapshot.value.watchlist)
+            vm.toggleWatchlist("movie-0")
+            advanceUntilIdle()
+            assertEquals(emptyList(), watch.repository.snapshot.value.watchlist)
+
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+            assertEquals("movie-0", watch.repository.snapshot.value.editorsChoice)
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+            assertNull(watch.repository.snapshot.value.editorsChoice)
+        }
+
+    @Test
+    fun aKidsProfileCannotPinTheEditorsChoice() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watch = WatchStateFixture(listOf(MIA))
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+
+            assertNull(watch.core.editorsChoice())
         }
 
     @After
