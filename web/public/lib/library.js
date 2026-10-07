@@ -133,16 +133,6 @@ export function countsUnder(division) {
   return { lessons, documents, noun };
 }
 
-/** How many lessons sit under `division`, at whatever depth. */
-export function lessonsUnder(division) {
-  return countsUnder(division).lessons;
-}
-
-/** How many documents sit under `division`, at whatever depth. */
-export function documentsUnder(division) {
-  return countsUnder(division).documents;
-}
-
 /**
  * The division `names` leads to, as folders from the top down.
  *

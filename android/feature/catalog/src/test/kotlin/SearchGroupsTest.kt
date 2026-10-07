@@ -47,7 +47,7 @@ class SearchGroupsTest {
             key = "series/Show", kind = CollectionKind.SHOW, name = "Show", posterPath = null, posterKey = null,
             count = 1, chapters = 1, divisions = listOf(Division("Show", 1, listOf(episode("e1", "Show")), emptyList())),
         )
-        val state = readyState(listOf(Shelf("Movies", listOf(Entry.Film(film("f1")))), Shelf("Series", listOf(show))))
+        val state = readyState(listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f1")))), Shelf(Department.SERIES, listOf(show))))
         val hits = listOf(SearchHit("f1", "title", null), SearchHit("e1", "title", null))
 
         val groups = searchGroupsOf("show", state, hits, emptyList(), emptyList(), emptyList())
@@ -65,7 +65,7 @@ class SearchGroupsTest {
      */
     @Test
     fun aDocumentaryIsFoundAsItsOwnGroupBetweenSeriesAndTutorials() {
-        val state = readyState(listOf(Shelf(DOCUMENTARIES, listOf(Entry.Film(documentary("baraka"))))))
+        val state = readyState(listOf(Shelf(Department.DOCUMENTARIES, listOf(Entry.Film(documentary("baraka"))))))
         val hits = listOf(SearchHit("baraka", "title", null))
 
         val groups = searchGroupsOf("baraka", state, hits, emptyList(), emptyList(), emptyList())
@@ -76,7 +76,7 @@ class SearchGroupsTest {
 
     @Test
     fun peopleAreFilteredToWhatThisProfileCanSeeAndCounted() {
-        val state = readyState(listOf(Shelf("Movies", listOf(Entry.Film(film("f1").copy(posterKey = "tmdb-movie-1"))))))
+        val state = readyState(listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f1").copy(posterKey = "tmdb-movie-1"))))))
         val hit = PersonHit(1, "Seen", null, listOf("tmdb-movie-1", "tmdb-movie-9"))
 
         val groups = searchGroupsOf("seen", state, emptyList(), listOf(hit), emptyList(), emptyList())
@@ -101,10 +101,12 @@ class SearchGroupsTest {
     fun aFranchiseDestinationKnowsItsFranchiseAndAListsDoesNotEvenWhenItsIdIsANumber() {
         val franchise = Franchise(42, "Dune Collection", listOf(film("dune")), null)
         val list = ListOfSets("7", "Dune night", listOf("f1"))
+        val franchiseLookingList = ListOfSets("tmdb-7", "Dune marathon", listOf("f1"))
 
-        val groups = searchGroupsOf("dune", readyState(emptyList()), emptyList(), emptyList(), listOf(franchise), listOf(list))
+        val groups =
+            searchGroupsOf("dune", readyState(emptyList()), emptyList(), emptyList(), listOf(franchise), listOf(list, franchiseLookingList))
 
-        assertEquals(listOf(42L, null), groups.collections.map(SearchDestination::franchiseId))
+        assertEquals(listOf(42L, null, null), groups.collections.map(SearchDestination::franchiseId))
     }
 
     /**
@@ -120,8 +122,8 @@ class SearchGroupsTest {
         )
         val state = readyState(
             listOf(
-                Shelf("Movies", listOf(Entry.Film(film("f1")))),
-                Shelf(ANIME, listOf(Entry.Film(animeFilm("af1")), animeShow)),
+                Shelf(Department.MOVIES, listOf(Entry.Film(film("f1")))),
+                Shelf(Department.ANIME, listOf(Entry.Film(animeFilm("af1")), animeShow)),
             ),
         )
         val hits = listOf(SearchHit("f1", "title", null), SearchHit("af1", "title", null), SearchHit("ae1", "title", null))
@@ -137,7 +139,7 @@ class SearchGroupsTest {
 
     @Test
     fun filterChipsOmitAllBelowTwoNonEmptyKinds() {
-        val state = readyState(listOf(Shelf("Movies", listOf(Entry.Film(film("f1"))))))
+        val state = readyState(listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f1"))))))
         val hits = listOf(SearchHit("f1", "title", null))
 
         val groups = searchGroupsOf("f", state, hits, emptyList(), emptyList(), emptyList())
@@ -149,7 +151,7 @@ class SearchGroupsTest {
     fun filterChipsPrependAllOnceTwoOrMoreKindsHaveResults() {
         val film1 = Entry.Film(film("f1"))
         val list = ListOfSets("l1", "Dune Watch", listOf("f1"))
-        val state = readyState(listOf(Shelf("Movies", listOf(film1))))
+        val state = readyState(listOf(Shelf(Department.MOVIES, listOf(film1))))
 
         val groups = searchGroupsOf("dune", state, listOf(SearchHit("f1", "title", null)), emptyList(), emptyList(), listOf(list))
 

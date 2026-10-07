@@ -13,8 +13,8 @@ import androidx.compose.runtime.Composable
  *
  * Deliberately reordered from the mockup's own DOM: [CacheVolumeBlock]'s
  * "Where" row draws after the Budget picker rather than between it and
- * "Held", so the two cache blocks stay exactly as independent of each
- * other as they were before this phase — same fields, one row later.
+ * "Held", so each of the two cache blocks draws its own fields together
+ * and neither depends on the other.
  */
 @Composable
 internal fun StorageSection(expanded: Boolean) {

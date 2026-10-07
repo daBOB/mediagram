@@ -9,6 +9,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::profiles::now_ms;
+use super::record::SYNCED_NAMES;
 
 /// How long a preference's three strings may be — the same cap
 /// `store.ts`'s `MAX_PREFERENCE` uses. A scope is a show's key or its name,
@@ -28,22 +29,27 @@ pub struct PreferenceRow {
 /// title: there are a handful of these per show, and a page needs one the
 /// instant a title opens — exactly when it has no time to ask for it.
 pub fn list_for(conn: &Connection, profile_id: &str) -> rusqlite::Result<Vec<PreferenceRow>> {
-    let mut stmt = conn.prepare("SELECT scope, name, value FROM preferences WHERE profile_id = ?1")?;
+    let mut stmt =
+        conn.prepare("SELECT scope, name, value FROM preferences WHERE profile_id = ?1")?;
     let rows = stmt.query_map([profile_id], |row| {
-        Ok(PreferenceRow { scope: row.get(0)?, name: row.get(1)?, value: row.get(2)? })
+        Ok(PreferenceRow {
+            scope: row.get(0)?,
+            name: row.get(1)?,
+            value: row.get(2)?,
+        })
     })?;
     rows.collect()
 }
 
-/// Remembers a choice, or forgets it (`value: None`). Synced names
-/// (`preferences_exchange.rs`) must never be forgotten: a delete would come
-/// back from any device that still holds the row. An empty value forgets
+/// Remembers a choice, or forgets it (`value: None`). An empty value forgets
 /// too, rather than storing an empty string that every reader would then
 /// have to recognise as meaning nothing.
 ///
 /// `false` when `scope` or `name` has nothing left after trimming — there is
-/// nowhere to file the value — never for an absent or over-length value,
-/// which trims and caps instead of refusing.
+/// nowhere to file the value — and when an absent or empty value would forget
+/// a synced name (`SYNCED_NAMES`): that delete would come back from any device
+/// that still holds the row, so the stored choice stays. Never for an
+/// over-length value, which is capped instead of refused.
 pub fn set(
     conn: &Connection,
     profile_id: &str,
@@ -51,10 +57,15 @@ pub fn set(
     name: &str,
     value: Option<&str>,
 ) -> rusqlite::Result<bool> {
-    let Some(scope) = short(scope) else { return Ok(false) };
-    let Some(name) = short(name) else { return Ok(false) };
+    let Some(scope) = short(scope) else {
+        return Ok(false);
+    };
+    let Some(name) = short(name) else {
+        return Ok(false);
+    };
 
     match value.and_then(short) {
+        None if SYNCED_NAMES.contains(&name.as_str()) => return Ok(false),
         None => {
             conn.execute(
                 "DELETE FROM preferences WHERE profile_id = ?1 AND scope = ?2 AND name = ?3",
@@ -80,7 +91,13 @@ pub fn set(
                    VALUES (?1, ?2, ?3, ?4, ?5)
                    ON CONFLICT(profile_id, scope, name)
                      DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-                params![profile_id, scope, name, value, now_ms().max(stored.saturating_add(1))],
+                params![
+                    profile_id,
+                    scope,
+                    name,
+                    value,
+                    now_ms().max(stored.saturating_add(1))
+                ],
             )?;
         }
     }

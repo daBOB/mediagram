@@ -114,7 +114,7 @@ class TvHousekeepingTest {
         compose.onNodeWithText("Continue").assertIsFocused()
     }
 
-    /** Continue is a rail row now, not a masthead tab — see `mastheadSplitOf`. */
+    /** Continue is a rail row now, not a masthead tab — see `mastheadTabsOf`. */
     private fun openContinueWatching() {
         press(compose.onNodeWithContentDescription("Continue"))
     }

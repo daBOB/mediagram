@@ -17,7 +17,8 @@
 import { el } from "../dom.js";
 import { countOf } from "../format.js";
 import { firstItemOf, flattenCollection } from "../library.js";
-import { collectionGrid, emptyState, movieGrid, SECTIONS } from "./shelf-view.js";
+import { collectionGrid, emptyState, movieGrid } from "./shelf-view.js";
+import { SECTIONS } from "./sections.js";
 import { GRID, LIST } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
 import { courseCategoryRows, documentaryCategoryRows } from "./category-rows.js";

@@ -2,8 +2,7 @@ package player
 
 /*
  * Where the playhead stands against the open title's end, as
- * [UpNextController] reads it — split out of that file to keep it under
- * the project's line guideline.
+ * [UpNextController] reads it.
  */
 
 /**

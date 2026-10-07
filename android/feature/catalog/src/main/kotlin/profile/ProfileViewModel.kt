@@ -174,7 +174,7 @@ class ProfileViewModel
         fun cancelPin() = ask.cancel()
 
         /** Enters without a PIN — a kid, or a grown-up [pick] has unlocked. Tiles call [pick]. */
-        fun choose(id: String) {
+        internal fun choose(id: String) {
             val started = ++operation
             viewModelScope.launch {
                 val previousId = repository.chosenProfileId.value

@@ -1,5 +1,7 @@
 package data
 
+import data.settings.InMemoryTelegramSettings
+import data.settings.TelegramSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -9,8 +11,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import settings.InMemoryTelegramSettings
-import settings.TelegramSettings
 import testing.FakeCore
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext

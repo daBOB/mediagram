@@ -13,7 +13,8 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { posterKeyFor } from "../package/posters";
+import { hasTable } from "../catalog";
+import { posterKeyFor } from "./posters";
 
 /** Department for a course or one of its documents. */
 export const TUTORIALS = "tutorials";
@@ -46,10 +47,7 @@ function mapKey(department: string, itemKey: string): string {
  */
 export function categoryNames(db: Database): Map<string, string> {
   const names = new Map<string, string>();
-  const exists = db
-    .query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'categories'")
-    .get();
-  if (!exists) return names;
+  if (!hasTable(db, "categories")) return names;
   const rows = db
     .query("SELECT department, item_key, category FROM categories WHERE category IS NOT NULL")
     .all() as { department: string; item_key: string; category: string }[];

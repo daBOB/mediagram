@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import catalog.Department
 import catalog.Entry
 import catalog.ShowsDepartment
 import catalog.firstItemOf
@@ -40,8 +41,7 @@ import ui.tv.chrome.LocalTvPagePadding
  */
 @Composable
 internal fun TvShowsDepartmentPage(
-    label: String,
-    unit: String,
+    department: Department,
     dept: ShowsDepartment,
     watch: WatchSnapshot,
     onOpenTitle: (setId: String) -> Unit,
@@ -78,8 +78,8 @@ internal fun TvShowsDepartmentPage(
                     Column {
                         Box(modifier = Modifier.padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end)) {
                             TvDepartmentHero(
-                                title = label,
-                                line = showsLineOf(dept, label, unit),
+                                title = department.label,
+                                line = showsLineOf(dept, department),
                                 lead = cover,
                                 // The show's own name, not whichever episode
                                 // happened to lead — the web's own `lead?.show`.
@@ -92,13 +92,13 @@ internal fun TvShowsDepartmentPage(
                                     .padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end, bottom = Spacing.medium),
                         ) {
                             DeptResumeRow(
-                                if (label == "Series") "Continue your series" else "Continue your courses",
+                                if (department == Department.SERIES) "Continue your series" else "Continue your courses",
                                 resumeCards,
                                 onPlay,
-                                focusAt = target?.second?.takeIf { target.first == "underway" },
+                                focusAt = target?.stopAt(UnderwaySection),
                                 focus = rowFocus,
                                 takesFocus = takesFocus,
-                                onSectionFocused = { lastSection = "underway" },
+                                onSectionFocused = { lastSection = UnderwaySection },
                             )
                             for ((i, row) in dept.categories.withIndex()) {
                                 DeptEntryRow(
@@ -109,10 +109,10 @@ internal fun TvShowsDepartmentPage(
                                     onOpenTitle,
                                     onOpenCollection,
                                     heldIds,
-                                    focusAt = target?.second?.takeIf { target.first == "category:$i" },
+                                    focusAt = target?.stopAt(categorySection(i)),
                                     focus = rowFocus,
                                     takesFocus = takesFocus,
-                                    onSectionFocused = { lastSection = "category:$i" },
+                                    onSectionFocused = { lastSection = categorySection(i) },
                                 )
                             }
                             DeptEntryRow(
@@ -123,10 +123,10 @@ internal fun TvShowsDepartmentPage(
                                 onOpenTitle,
                                 onOpenCollection,
                                 heldIds,
-                                focusAt = target?.second?.takeIf { target.first == "popular" },
+                                focusAt = target?.stopAt(PopularSection),
                                 focus = rowFocus,
                                 takesFocus = takesFocus,
-                                onSectionFocused = { lastSection = "popular" },
+                                onSectionFocused = { lastSection = PopularSection },
                             )
                             DeptEntryRow(
                                 "New episodes",
@@ -136,10 +136,10 @@ internal fun TvShowsDepartmentPage(
                                 onOpenTitle,
                                 onOpenCollection,
                                 heldIds,
-                                focusAt = target?.second?.takeIf { target.first == "newEpisodes" },
+                                focusAt = target?.stopAt(NewEpisodesSection),
                                 focus = rowFocus,
                                 takesFocus = takesFocus,
-                                onSectionFocused = { lastSection = "newEpisodes" },
+                                onSectionFocused = { lastSection = NewEpisodesSection },
                             )
                         }
                         Box(modifier = Modifier.padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end)) {

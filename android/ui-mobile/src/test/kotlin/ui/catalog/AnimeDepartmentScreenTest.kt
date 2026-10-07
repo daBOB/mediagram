@@ -10,10 +10,14 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import catalog.AnimeDepartment
+import catalog.CatalogUiState
 import catalog.CollectionKind
+import catalog.Department
 import catalog.Division
 import catalog.Entry
 import catalog.NextUpEntry
+import catalog.Shelf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -55,7 +59,7 @@ class AnimeDepartmentScreenTest {
         count = 1, chapters = 1, divisions = listOf(Division("Dragonball", 1, listOf(film("dragonball-e1")), emptyList())),
     )
 
-    private val department = catalog.AnimeDepartment(
+    private val department = AnimeDepartment(
         showCount = 1,
         filmCount = 2,
         lead = film("your-name", backdrop = "lead-bg"),
@@ -130,7 +134,7 @@ class AnimeDepartmentScreenTest {
         assertEquals(null, openedCollection)
     }
 
-    /** [AnimeDepartment] (the wrapper) never runs on an empty shelf — Anime is omitted from `shelvesOf` at zero, unlike Documentaries. */
+    /** [AnimeDepartmentTab] never runs on an empty shelf — Anime is omitted from `shelvesOf` at zero, unlike Documentaries. */
     @Test
     fun anEmptyShelfDrawsNothing() {
         var composed = false
@@ -139,9 +143,9 @@ class AnimeDepartmentScreenTest {
             controller.get().setContent {
                 MaterialTheme {
                     composed = true
-                    AnimeDepartment(
-                        shelf = catalog.Shelf(catalog.ANIME, emptyList()),
-                        state = catalog.CatalogUiState.Ready(emptyList()),
+                    AnimeDepartmentTab(
+                        shelf = Shelf(Department.ANIME, emptyList()),
+                        state = CatalogUiState.Ready(emptyList()),
                         columns = 3,
                         onOpenTitle = {},
                         onOpenCollection = {},

@@ -8,13 +8,14 @@
  * who can rewrite the pointer can set to whatever the reader is holding.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, readlink, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { refreshCatalog, type Pointer } from "../src/package/refresh";
+import { refreshCatalog } from "../src/package/refresh";
+import type { Pointer } from "../src/package/pointer";
 import { NONCE_LEN } from "../src/package/open";
 import { archive, member, text } from "./tar-fixture";
 
@@ -108,7 +109,7 @@ const refresh = (built: ReturnType<typeof build>, over: Record<string, unknown> 
         baseUrl: "https://example.test",
         key: KEY,
         root,
-        supportedSchema: [4],
+        minSchema: 4,
         now: () => NOW,
         fetch: served.fetcher,
         ...over,
@@ -233,7 +234,7 @@ describe("where the package is fetched from", () => {
       baseUrl: "https://example.test",
       key: KEY,
       root,
-      supportedSchema: [4],
+      minSchema: 4,
       now: () => NOW,
       fetch: served.fetcher,
     });
@@ -328,7 +329,7 @@ describe("a refresh that fails", () => {
       baseUrl: "https://example.test",
       key: KEY,
       root,
-      supportedSchema: [4],
+      minSchema: 4,
       now: () => NOW,
       fetch: (async () => {
         throw new Error("getaddrinfo ENOTFOUND");
@@ -401,11 +402,18 @@ describe("filesystem failures while installing a package", () => {
   test("a file in the catalog path is a refusal with no held catalog", async () => {
     const blocked = join(root, "not-a-directory");
     await writeFile(blocked, "file");
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
 
-    const result = await refresh(build({ createdAt: NOW - 50 }), { root: join(blocked, "catalog") }).run();
+    try {
+      const result = await refresh(build({ createdAt: NOW - 50 }), { root: join(blocked, "catalog") }).run();
 
-    expect(result).toMatchObject({ status: "kept", dir: null, identity: null });
-    expect(result.reason).toMatch(/ENOTDIR/);
+      expect(result).toMatchObject({ status: "kept", dir: null, identity: null });
+      expect(result.reason).toMatch(/ENOTDIR/);
+      // The held catalog reads as none, but not silently: ENOTDIR is not "absent".
+      expect(warning.mock.calls.map(String)).toContainEqual(expect.stringMatching(/ENOTDIR/));
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   test("a refused pointer staging operation keeps the old identity and bytes", async () => {
@@ -437,9 +445,10 @@ describe("filesystem failures while installing a package", () => {
   });
 });
 
-test("a package at any schema from the oldest readable to the expected one is accepted", async () => {
-  const { READABLE_SCHEMAS, OLDEST_READABLE_SCHEMA, EXPECTED_SCHEMA } = await import("../src/catalog");
-  expect(READABLE_SCHEMAS[0]).toBe(OLDEST_READABLE_SCHEMA);
-  expect(READABLE_SCHEMAS.at(-1)).toBe(EXPECTED_SCHEMA);
-  expect(READABLE_SCHEMAS.length).toBe(EXPECTED_SCHEMA - OLDEST_READABLE_SCHEMA + 1);
+test("a package older than the floor the refresh was given is kept out", async () => {
+  const result = await refresh(build({ createdAt: NOW - 50 }), { minSchema: 5 }).run();
+
+  expect(result.status).toBe("kept");
+  expect(result.dir).toBeNull();
+  expect(result.reason).toContain("schema 4");
 });

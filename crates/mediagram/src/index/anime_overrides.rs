@@ -6,7 +6,7 @@
 //!
 //! `anime` is `NULL` for "back to the automatic rule", not a deleted row: a
 //! merge needs a timestamped row to carry that decision to the other machine
-//! (see [`crate::index::merge_anime_overrides`]), and a deleted row carries
+//! (see `index::merge::anime_overrides`), and a deleted row carries
 //! nothing.
 
 use mediagram_tmdb::posters::kind_key;

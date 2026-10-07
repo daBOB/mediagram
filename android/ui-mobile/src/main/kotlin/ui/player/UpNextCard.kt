@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import player.UpNextPhase
 import player.UpNextUiState
+import ui.common.player.SCRIM_ALPHA
 
 /**
  * The panel over the picture in the last moments of a title — "Up next" and

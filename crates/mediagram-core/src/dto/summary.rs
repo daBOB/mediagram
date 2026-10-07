@@ -6,6 +6,9 @@ use mlib_spec::caption::Episode;
 use super::SubtitleTrack;
 use crate::catalog::PlayableSet;
 
+mod poster_key;
+use poster_key::poster_key_for;
+
 /// One title, flattened for a player that never sees `Episode`, `set_id`
 /// internals, or where the bytes live.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -47,8 +50,8 @@ pub struct SetSummary {
     /// its show's. Named as the web player names it.
     pub fsk: Option<String>,
     /// The provider's genres for this title. A series carries its show's,
-    /// the way `fsk` does — see `store::list_sets`, which attaches all four
-    /// of these by poster key rather than storing them on the row.
+    /// the way `fsk` does — see `store::listing::enrich`, which attaches
+    /// these by poster key rather than storing them on the row.
     pub genres: Vec<String>,
     /// Subtitle tracks this set offers, from its bundle once it has one, or
     /// its inline rows until then. See `catalog_subtitles::tracks_by_set`.
@@ -132,7 +135,12 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         quality: set.quality.clone(),
         hdr: set.hdr.clone(),
         duration: set.duration,
-        poster_key: poster_key_for(&set.kind, set.tmdb, set.show.as_deref(), set.title.as_deref()),
+        poster_key: poster_key_for(
+            &set.kind,
+            set.tmdb,
+            set.show.as_deref(),
+            set.title.as_deref(),
+        ),
         // Resolved by `store::list_sets`/`store::media_set`, not here: doing
         // it in this flattening step would mean a filesystem check per set
         // even for a caller that never enriches the result at all.
@@ -157,38 +165,17 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         collection_id: None,
         collection_name: None,
         series_type: None,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's genres, original language and overrides, none of which
         // this flattening step reads.
         anime: false,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's own `categories` table, which this flattening step never
         // opens.
         category: None,
     }
 }
 
-/// Mirrors the web player's `posterKeyFor(kind, tmdb)`. A TMDB id, when there
-/// is one, always wins — that art overrides a title's own. A kind this build
-/// does not know keys as a series, as it does there — only a film is
-/// numbered apart.
-///
-/// Without a TMDB id, only a course (`Kind::Tut`) or a documentary
-/// (`Kind::Docu`) gets a key at all, from its show or its own title's slug: a
-/// manually-entered film or episode missing its id is not this stable — two
-/// such entries sharing a title would collide onto one key.
-fn poster_key_for(kind: &str, tmdb: Option<u64>, show: Option<&str>, title: Option<&str>) -> Option<String> {
-    let parsed = kind.parse::<mlib_spec::Kind>().unwrap_or(mlib_spec::Kind::Ep);
-    if let Some(id) = tmdb {
-        let key = mediagram_tmdb::posters::poster_key(parsed, id);
-        debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
-        return Some(key);
-    }
-    if !matches!(parsed, mlib_spec::Kind::Tut | mlib_spec::Kind::Docu) {
-        return None;
-    }
-    let name = show.or(title)?;
-    let key = mlib_spec::package::title_art_key(name)?;
-    debug_assert!(mlib_spec::package::poster_key_is_valid(&key));
-    Some(key)
-}
+#[cfg(test)]
+#[path = "summary_tests.rs"]
+mod tests;

@@ -87,7 +87,7 @@ impl Transport for FakeTransport {
         caption: &Caption,
         human: &str,
         reader: &mut PartReader,
-        _len: u64,
+        len: u64,
     ) -> Result<Sent> {
         // Decided before the await: the lock must not be held across one.
         let should_fail = *self.fail_on_part.lock().unwrap() == Some(caption.part.i);
@@ -104,11 +104,9 @@ impl Transport for FakeTransport {
         }
 
         *self.send_count.lock().unwrap() += 1;
-        let final_caption = caption.with_part(Part {
-            sha256: reader.finalize(),
-            ..caption.part.clone()
-        });
-        let text = mlib_spec::to_text(&final_caption, human)?;
+        let text = mediagram::upload::finished_caption::finished_caption_text(
+            caption, human, reader, len,
+        )?;
 
         let mut messages = self.messages.lock().unwrap();
         let mut next_id = self.next_id.lock().unwrap();

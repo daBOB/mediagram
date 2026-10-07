@@ -16,6 +16,7 @@
 import { mkdir, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { errorCode, failureMessage } from "../failure-message";
 import { chunkPath } from "./key";
 
 interface Entry {
@@ -70,7 +71,7 @@ export class ChunkCache {
     private maxBytes: number,
   ) {}
 
-  /** What this cache has done so far, and what it is allowed to hold. */
+  /** What this cache has done so far. */
   stats(): CacheStats {
     return {
       hits: this.hits,
@@ -176,7 +177,7 @@ export class ChunkCache {
 
   /**
    * Attempts to store a chunk and enforce the budget without interrupting playback.
-   * Write failures are ignored and eviction failures are logged; successful
+   * Write and eviction failures are logged, not thrown; successful
    * resolution guarantees neither persistence nor compliance with the budget.
    */
   async put(setId: string, partIdx: number, index: number, bytes: Uint8Array): Promise<void> {
@@ -195,14 +196,17 @@ export class ChunkCache {
   }
 
   private async writeChunk(path: string, bytes: Uint8Array): Promise<void> {
+    // Renamed into place so a reader never sees a partial file.
+    const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
     try {
       await mkdir(dirname(path), { recursive: true });
-      // Renamed into place so a reader never sees a partial file.
-      const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
       await writeFile(temporary, bytes);
       await rename(temporary, path);
-    } catch {
-      // A cache that cannot write is a slow cache, not a broken player.
+    } catch (error) {
+      // A cache that cannot write is a slow cache, not a broken player. The
+      // temporary goes too: entries() skips .tmp names, so eviction never would.
+      await rm(temporary, { force: true }).catch(() => {});
+      console.warn(`cache: chunk write failed: ${failureMessage(error)}`);
       return;
     }
     // Maintenance must not reject bytes already fetched for playback. An
@@ -279,7 +283,7 @@ export class ChunkCache {
       try {
         listing = await readdir(directory, { withFileTypes: true });
       } catch (error) {
-        if (isMissing(error)) return;
+        if (errorCode(error) === "ENOENT") return;
         throw error;
       }
       // A scan walks the whole cache — tens of thousands of files — and a
@@ -297,7 +301,7 @@ export class ChunkCache {
               found.push({ path, size: info.size, usedAt: info.atimeMs });
             } catch (error) {
               // Evicted by someone else between the listing and the stat.
-              if (!isMissing(error)) throw error;
+              if (errorCode(error) !== "ENOENT") throw error;
             }
           }
         }),
@@ -306,8 +310,4 @@ export class ChunkCache {
     await walk(this.root);
     return found;
   }
-}
-
-function isMissing(error: unknown): boolean {
-  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }

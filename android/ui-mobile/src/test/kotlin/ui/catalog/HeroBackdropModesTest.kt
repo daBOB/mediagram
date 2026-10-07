@@ -23,6 +23,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import ui.common.catalog.HERO_ARTWORK_TEST_TAG
 
 /**
  * The Artwork setting's Solid mode, at the two hero sites this module owns:

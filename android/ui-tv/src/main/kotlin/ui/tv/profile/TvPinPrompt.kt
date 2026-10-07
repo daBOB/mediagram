@@ -39,6 +39,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 private const val DELETE = "Delete"
 private val Keys = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf(null, "0", DELETE))
@@ -155,12 +156,9 @@ private fun TvPinKey(
     focusRequester: FocusRequester?,
     onClick: () -> Unit,
 ) {
-    // Never omitted: a requester that appeared only on the first key would
-    // change the chain's shape, and Compose would reset whatever it focused.
-    val own = remember { FocusRequester() }
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(KeyWidth, KeyHeight).testTag(tvPinKeyTag(label)).focusRequester(focusRequester ?: own),
+        modifier = Modifier.size(KeyWidth, KeyHeight).testTag(tvPinKeyTag(label)).focusRequester(rememberStableRequester(focusRequester)),
         shape = TvFocus.surfaceShape(),
         colors =
             ClickableSurfaceDefaults.colors(

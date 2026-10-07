@@ -98,7 +98,7 @@ fn portraits_are_deduplicated_across_titles_and_keyed_by_person() {
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].key, "tmdb-person-1");
     assert_eq!(found[0].path, "/shared.jpg");
-    assert_eq!(found[0].backdrop_width, Some(PORTRAIT_WIDTH));
+    assert_eq!(found[0].width, Some(PORTRAIT_WIDTH));
 }
 
 #[test]

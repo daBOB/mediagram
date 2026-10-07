@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.test.core.app.ApplicationProvider
+import data.settings.InMemoryLanCacheTokenSettings
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -42,7 +43,6 @@ import playback.LanPutResult
 import playback.LanServer
 import playback.LanServerSource
 import playback.LanServerStatus
-import settings.InMemoryLanCacheTokenSettings
 import system.CacheBudgetViewModel
 import system.LanCacheViewModel
 

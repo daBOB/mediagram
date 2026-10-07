@@ -1,5 +1,6 @@
 package data
 
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,7 +12,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
-import settings.LibrarySettings
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.time.Duration

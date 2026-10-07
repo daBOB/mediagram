@@ -1,10 +1,14 @@
 package player
 
+import data.AUDIO_PREFERENCE
+import data.FRAMING_PREFERENCE
 import data.PROFILE_SCOPE
+import data.SPEED_PREFERENCE
 import data.SUBTITLE_PREFERENCE
 import data.CatalogRepository
 import data.PlayerPreferences
 import data.WatchStateRepository
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,10 +24,9 @@ import playback.TimedCue
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
- * for one show is kept from leaking into the next — split out of
- * [PlayerViewModel] to keep that file under the project's line guideline.
- * Speed is resolved here directly; the audio menu's own races (it depends
- * on the file's tracks as well as a remembered preference) are guarded by
+ * for one show is kept from leaking into the next. Speed is resolved here
+ * directly; the audio menu's own races (it depends on the file's tracks as
+ * well as a remembered preference) are guarded by
  * [audioChoice] instead, which this controller only feeds the scope and
  * the stored value it loads for it.
  */
@@ -121,7 +124,7 @@ class PlayerChoicesController(
      * has nothing to do with it.
      */
     suspend fun resolve(setId: String) {
-        val set = safely(null) { catalogRepository.mediaSet(setId) }
+        val set = orDefault(null) { catalogRepository.mediaSet(setId) }
         if (session.openSetId != setId) return
         _openSet.value = set
         val scope = scopeOf(set) ?: "set:$setId"
@@ -134,29 +137,29 @@ class PlayerChoicesController(
             // Fire-and-forget: warms this lesson's own bundle plus a few
             // that follow it in its course, never a reason to hold up the
             // rest of this resolve.
-            launchScope.launch { safely(Unit) { catalogRepository.holdCourseSubtitles(setId) } }
+            launchScope.launch { orDefault(Unit) { catalogRepository.holdCourseSubtitles(setId) } }
         }
 
         val profileId = repository.chosenProfileId.value
-        val loaded = if (profileId == null) emptyMap() else safely(emptyMap()) { preferences.load(profileId, scope) }
+        val loaded = if (profileId == null) emptyMap() else orDefault(emptyMap()) { preferences.load(profileId, scope) }
         // The profile's own default subtitle language, apart from this
         // show's own scope: `chooseSubtitles`'s "profile preference" tier.
         val profileSubtitle =
-            if (profileId == null) null else safely(emptyMap()) { preferences.load(profileId, PROFILE_SCOPE) }[SUBTITLE_PREFERENCE]
+            if (profileId == null) null else orDefault(emptyMap()) { preferences.load(profileId, PROFILE_SCOPE) }[SUBTITLE_PREFERENCE]
         if (session.openSetId != setId) return
 
         if (userChoseSpeed) {
             rememberSpeed(scope, _choices.value.speed)
         } else {
-            val speed = speedOrDefault(loaded["speed"])
+            val speed = speedOrDefault(loaded[SPEED_PREFERENCE])
             _choices.value = _choices.value.copy(speed = speed)
             handle.setPlaybackSpeed(speed)
         }
 
-        audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
-        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"], profileSubtitle)
+        audioChoice.onPreferencesLoaded(scope, profileId, loaded[AUDIO_PREFERENCE])
+        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded[SUBTITLE_PREFERENCE], profileSubtitle)
         subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
-        framingChoice.onPreferencesLoaded(scope, profileId, loaded["framing"])
+        framingChoice.onPreferencesLoaded(scope, profileId, loaded[FRAMING_PREFERENCE])
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -175,7 +178,7 @@ class PlayerChoicesController(
     /** The viewer picked a subtitle row by hand — "off" or one of the offered tracks' keys. */
     fun chooseSubtitleLanguage(trackKeyOrOff: String) = subtitleChoice.choose(trackKeyOrOff)
 
-    /** The captions key or CC control: on turns the toggle-on rule's own pick on, on turns it off. */
+    /** The captions key or CC control: off turns the toggle-on rule's own pick on, on turns it off. */
     fun toggleSubtitles() = subtitleChoice.toggle()
 
     fun setSubtitleSize(percent: Int) = subtitleStyle.setSize(percent)
@@ -190,7 +193,7 @@ class PlayerChoicesController(
     private fun rememberSpeed(scope: String, rate: Float) {
         val profileId = repository.chosenProfileId.value ?: return
         launchScope.launch {
-            safely(Unit) { preferences.remember(profileId, scope, "speed", speedPreferenceValue(rate)) }
+            orDefault(Unit) { preferences.remember(profileId, scope, SPEED_PREFERENCE, speedPreferenceValue(rate)) }
         }
     }
 }

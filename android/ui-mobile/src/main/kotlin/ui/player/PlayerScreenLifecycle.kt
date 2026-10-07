@@ -6,11 +6,12 @@ import kotlinx.coroutines.delay
 import player.CONTROLS_LINGER_MS
 import player.PlayerViewModel
 import player.controlsShouldFade
+import ui.common.player.KeepScreenOnWhile
+import ui.common.player.PlayerLifecycle
 
 /**
  * The side effects [PlayerScreen] runs for its own lifecycle rather than for
- * anything on screen — split out to keep that file under the project's line
- * guideline. The shared [PlayerLifecycle] (stop when left for real, save on
+ * anything on screen. The shared [PlayerLifecycle] (stop when left for real, save on
  * `ON_STOP`), plus what only the phone does: keep the screen awake while
  * [isPlaying], and hide the system bars for as long as this screen holds
  * them — see [ImmersiveEffect].

@@ -1,6 +1,8 @@
 //! Reading a title's own description — a film's or a whole series' — out of
 //! the provider payload, and backfilling what it names: its cast and crew,
-//! and (a film) the franchise it belongs to.
+//! and (a film) the franchise it belongs to. [`record_for_title`] is the one
+//! sequence `add` and `mediagram metadata` both run, so the two cannot record
+//! a title differently.
 
 use anyhow::Result;
 use mlib_spec::Kind;
@@ -11,19 +13,49 @@ use mediagram_tmdb::details;
 use mediagram_tmdb::details::{TitleDetailsRow, from_details};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 
+/// Records what the provider says about one title: its description, its
+/// cast and crew, and a film's franchise. A provider that will not describe
+/// the title costs it that description and nothing else — a warning and
+/// `Ok(None)`. `Some((credited, franchised))` says whether a cast and a
+/// franchise were newly recorded; an error is a local write that failed.
+pub async fn record_for_title(
+    conn: &Connection,
+    api: &impl TmdbApi,
+    kind: Kind,
+    id: u64,
+    lang: &str,
+) -> Result<Option<(bool, bool)>> {
+    let row = match fetch(api, kind, id, lang).await {
+        Ok(row) => row,
+        Err(err) => {
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no description for this title");
+            return Ok(None);
+        }
+    };
+    crate::index::shows::upsert(conn, &row)?;
+    let credited = backfill_credits(conn, api, kind, id).await?;
+    let franchised = match row.collection_id {
+        Some(collection_id) => backfill_franchise(conn, api, collection_id).await?,
+        None => false,
+    };
+    Ok(Some((credited, franchised)))
+}
+
 /// What a provider says about one title, ready to record.
 ///
 /// `lang` is only carried through to the row: the client sends the configured
 /// language itself, and recording which one answered is how a later change of
 /// language is known to have replaced the text.
-pub async fn fetch(api: &impl TmdbApi, kind: Kind, id: u64, lang: &str) -> Result<TitleDetailsRow> {
+async fn fetch(api: &impl TmdbApi, kind: Kind, id: u64, lang: &str) -> Result<TitleDetailsRow> {
     let mut row = from_details(kind, lang, &details(api, kind, id).await?);
     // The age rating in the language's country. A title whose rating cannot
     // be had keeps its description: a missing rating means "not known to be
     // kid-safe", which is the safe reading, not a reason to record nothing.
     match certification(api, kind, id, &region_of(lang)).await {
         Ok(rating) => row.certification = rating,
-        Err(err) => tracing::warn!(id, error = %err, "no age rating for this title"),
+        Err(err) => {
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no age rating for this title")
+        }
     }
     Ok(row)
 }
@@ -31,7 +63,7 @@ pub async fn fetch(api: &impl TmdbApi, kind: Kind, id: u64, lang: &str) -> Resul
 /// Records a title's cast and crew, unless it already has some: a re-run of
 /// `mediagram metadata` fills in what an earlier run could not reach, not
 /// what it already answered. Returns whether it fetched and wrote anything.
-pub async fn backfill_credits(
+async fn backfill_credits(
     conn: &Connection,
     api: &impl TmdbApi,
     kind: Kind,
@@ -46,7 +78,7 @@ pub async fn backfill_credits(
             Ok(true)
         }
         Err(err) => {
-            tracing::warn!(id, error = %err, "no credits for this title");
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no credits for this title");
             Ok(false)
         }
     }
@@ -55,7 +87,7 @@ pub async fn backfill_credits(
 /// Records a film's franchise, unless this index already has it — a
 /// franchise is shared by every film in it, so the first film to reach here
 /// answers for the rest. Returns whether it fetched and wrote anything.
-pub async fn backfill_franchise(
+async fn backfill_franchise(
     conn: &Connection,
     api: &impl TmdbApi,
     collection_id: u64,
@@ -69,8 +101,12 @@ pub async fn backfill_franchise(
             Ok(true)
         }
         Err(err) => {
-            tracing::warn!(collection_id, error = %err, "no franchise details");
+            tracing::warn!(collection_id, error = %format_args!("{err:#}"), "no franchise details");
             Ok(false)
         }
     }
 }
+
+#[cfg(test)]
+#[path = "title_details_tests.rs"]
+mod tests;

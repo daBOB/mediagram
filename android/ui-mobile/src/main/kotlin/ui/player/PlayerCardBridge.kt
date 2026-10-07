@@ -15,8 +15,7 @@ import player.toggleSubtitles
 
 /**
  * The card's and its menus' actions over [PlayerViewModel] and the card's
- * own [PlayerCardState] — split out of `PlayerScreen` to keep it under the
- * project's line guideline; the card and its menus stay plain functions of
+ * own [PlayerCardState]; the card and its menus stay plain functions of
  * what they are handed, with no `PlayerViewModel` of their own.
  */
 internal fun playerCardActions(

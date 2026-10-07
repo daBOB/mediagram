@@ -10,14 +10,14 @@ class GenreShelfTest {
 
     private val shelves = listOf(
         Shelf(
-            "Movies",
+            Department.MOVIES,
             listOf(
                 film("Logan Lucky", listOf("Komödie", "Krimi")),
                 film("Looper", listOf("Action", "Thriller")),
                 film("Untagged", emptyList()),
             ),
         ),
-        Shelf("Series", listOf(show("30 Rock", listOf("Komödie")), show("Star City", listOf("Drama")))),
+        Shelf(Department.SERIES, listOf(show("30 Rock", listOf("Komödie")), show("Star City", listOf("Drama")))),
     )
 
     @Test

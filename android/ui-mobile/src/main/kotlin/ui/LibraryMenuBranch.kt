@@ -4,10 +4,15 @@ import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
 import catalog.MenuScreen
 import catalog.libraryTallyLines
-import system.FetchUiState
+import data.CatalogEnrichmentState
 import system.FetchViewModel
+import ui.chrome.BrowseActions
+import ui.chrome.LibraryScaffold
+import ui.chrome.ProfileBarState
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.settings.SettingsSection
 import ui.settings.SettingsScreen
-import ui.settings.SettingsSection
 import ui.settings.TmdbKeyScreen
 
 /**
@@ -23,7 +28,7 @@ internal fun MenuBranch(
     menuScreen: MenuScreen,
     at: LibraryPositions,
     catalogState: CatalogUiState,
-    fetchState: FetchUiState,
+    fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
     profileBar: ProfileBarState,
@@ -57,8 +62,16 @@ internal fun MenuBranch(
             )
 
         MenuScreen.TmdbKey ->
-            LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
+            LibraryBranch(destinationOf(menuScreen), menuActions, profileBar, browse, at, at::pop) {
                 TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
             }
     }
 }
+
+/** The bar's own destination for a menu screen: Storage is Settings opened at one section, so the bar names it Settings. */
+internal fun destinationOf(screen: MenuScreen): Destination =
+    when (screen) {
+        MenuScreen.System -> Destination.System
+        MenuScreen.TmdbKey -> Destination.TmdbKey
+        MenuScreen.Settings, MenuScreen.Storage -> Destination.Settings
+    }

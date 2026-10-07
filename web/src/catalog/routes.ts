@@ -8,7 +8,7 @@ import type { HeldSets } from "../cache/held";
 import { listPlayable, listSearchable, playableSet, type PlayableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { negotiatedResponse } from "../http/compression";
-import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "../package/posters";
+import { PosterStore, backdropKeyFor, posterKeyFor, seasonPosterKeyFor } from "./posters";
 import { bodiless, withBody } from "../response";
 import { SearchIndex } from "../search/index";
 import { providerFactsByShow, showMeta } from "./shows";
@@ -17,6 +17,7 @@ import { categoryNames, categoryOf } from "./categories";
 import { creditsFor, franchises, peopleSearch, personFor } from "./credits";
 import type { SheetStore } from "../thumbs/sheets";
 import { artworkKeys, artworkResponse } from "./artwork-routes";
+import type { CatalogSet } from "../../public/lib/library.js";
 
 const SUMMARY_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/summary$/;
 const AUDIO_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/audio$/;
@@ -58,7 +59,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
 
   // Catalog and search results share the same browser-facing projection.
   // Storage/provider identifiers never become media locations in a response.
-  function forBrowser({ tmdb, ...set }: PlayableSet) {
+  function forBrowser({ tmdb, ...set }: PlayableSet): CatalogSet {
     // A course, a documentary and an untagged film have no provider id; their
     // art, if any, is keyed from their own name (the collection's, when they
     // belong to one) rather than from an id nothing ever gave them.

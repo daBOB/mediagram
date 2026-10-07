@@ -27,6 +27,8 @@ import system.LanCacheViewModel
 import system.SystemViewModel
 import system.storageStatus
 import system.systemStatus
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 import ui.setup.LibraryScreen
 import ui.setup.TelegramApplicationScreen
 
@@ -36,9 +38,7 @@ private enum class SettingsPanel { Library, Application }
 /**
  * Settings + System, one frame: an index (Telegram · Storage · Appearance ·
  * System, each with its own one-line status) and a page — two panes on
- * EXPANDED width, one pane below it — the approved round-2 mockups. Every
- * ViewModel underneath is the one Settings and System always used; only the
- * layout is new.
+ * EXPANDED width, one pane below it.
  *
  * @param initial The section the page opens on — `null` shows the compact
  * index first (the Settings menu item); a section opens straight to it (the

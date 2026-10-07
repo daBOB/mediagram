@@ -1,7 +1,7 @@
 /** Precedence between the environment and a stored `telegram.json`. */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { describe as describeConfig, load } from "../src/config";
+import { load, redactedConfig } from "../src/config";
 import { resolveTelegram } from "../src/settings/resolve-telegram";
 import type { TelegramFile } from "../src/settings/telegram-file";
 
@@ -34,12 +34,12 @@ describe("session", () => {
   });
 
   test("apiHash and a set session are redacted; an absent session is not disguised as one", () => {
-    const signedOut = describeConfig(load());
+    const signedOut = redactedConfig(load());
     expect(signedOut.apiHash).toBe("<redacted>");
     expect(signedOut.session).toBeNull();
 
     process.env.MEDIAGRAM_SESSION = "a-real-session";
-    const signedIn = describeConfig(load());
+    const signedIn = redactedConfig(load());
     expect(signedIn.session).toBe("<redacted>");
   });
 });
@@ -73,7 +73,7 @@ describe("resolveTelegram", () => {
   });
 
   test("the resolved config never leaks the file's secrets when described", () => {
-    const described = describeConfig(resolveTelegram(load(), file));
+    const described = redactedConfig(resolveTelegram(load(), file));
     expect(JSON.stringify(described)).not.toContain("file-hash");
     expect(JSON.stringify(described)).not.toContain("file-session");
   });

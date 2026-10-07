@@ -7,6 +7,7 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { hasTable } from "../catalog";
 
 export interface ShowMeta {
   overview: string | null;
@@ -35,21 +36,16 @@ export function showMeta(db: Database, key: string): ShowMeta | null {
   const parts = KEY.exec(key);
   if (!parts) return null;
   const [, source, kind, id] = parts;
-  try {
-    const row = db
-      .query(
-        `SELECT overview, tagline, genres, rating, network, status,
-                first_air AS firstAir, last_air AS lastAir,
-                total_seasons AS totalSeasons, total_episodes AS totalEpisodes
-           FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3`,
-      )
-      .get(source!, kind!, Number(id)) as ShowMeta | null;
-    return row ?? null;
-  } catch (error) {
-    // No such table: an index written before this existed.
-    if (error instanceof Error && error.message === "no such table: shows") return null;
-    throw error;
-  }
+  if (!hasTable(db, "shows")) return null;
+  const row = db
+    .query(
+      `SELECT overview, tagline, genres, rating, network, status,
+              first_air AS firstAir, last_air AS lastAir,
+              total_seasons AS totalSeasons, total_episodes AS totalEpisodes
+         FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3`,
+    )
+    .get(source!, kind!, Number(id)) as ShowMeta | null;
+  return row ?? null;
 }
 
 /** What the catalog rows carry about a title from its provider entry. */
@@ -101,7 +97,7 @@ export function providerFactsByShow(db: Database): Map<string, ProviderFacts> {
       .map((column) => column.name),
   );
   if (columns.size === 0) return byKey; // No such table: an index written before it.
-  // Only these two literals are ever spliced into the query below.
+  // Only these literals are ever spliced into the query below.
   const optional = (
     name: "status" | "certification" | "popularity" | "collection_id" | "collection_name" | "series_type" | "original_language",
   ) => (columns.has(name) ? name : "NULL");

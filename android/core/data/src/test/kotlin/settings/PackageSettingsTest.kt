@@ -1,4 +1,4 @@
-package settings
+package data.settings
 
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

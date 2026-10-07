@@ -8,13 +8,18 @@ import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.CollectionKind
-import catalog.Destination
 import catalog.MenuScreen
 import catalog.firstItemOf
 import model.Kind
 import ui.catalog.CollectionScreen
 import ui.catalog.TitleDetailScreen
-import ui.catalog.rememberTitleInfo
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.ResolvedPositions
+import ui.common.catalog.rememberFilmPreloadUi
+import ui.common.catalog.rememberTitleInfo
 
 /**
  * A title's own page and a show or course's own page — split out of
@@ -45,17 +50,17 @@ internal fun TitleFrame(
                 if (kidsProfile) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(title.setId, resolved.watch.editorsChoice != title.setId) }
+                    { catalogViewModel.toggleEditorsChoice(title.setId) }
                 },
             watch = resolved.watch,
             shelves = catalogState.shelvesOrEmpty(),
             onOpenTitle = at::openTitle,
-            onOpenFranchise = { id -> at.openFranchise(id.toString()) },
-            onOpenPerson = { id -> at.openPerson(id.toString()) },
-            onToggleWatchlist = { catalogViewModel.setWatchlisted(title.setId, title.setId !in resolved.watch.watchlist) },
+            onOpenFranchise = { id -> at.openFranchise(id) },
+            onOpenPerson = { id -> at.openPerson(id) },
+            onToggleWatchlist = { catalogViewModel.toggleWatchlist(title.setId) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
-            shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+            portraits = browseViewModel.portraits,
             // Films only — a show's episodes preload two at a time on
             // their own already; kids profiles get it too, unlike the
             // editor's-choice pin above, since it is not a household mark.
@@ -92,21 +97,19 @@ internal fun CollectionFrame(
             onOpenGenre = at::openGenre,
             shelves = catalogState.shelvesOrEmpty(),
             onOpenCollection = at::openCollection,
-            onOpenPerson = { id -> at.openPerson(id.toString()) },
+            onOpenPerson = { id -> at.openPerson(id) },
             onPlay = at::openPlayer,
             editorsChoice = resolved.watch.editorsChoice,
             onToggleEditorsChoice =
                 if (kidsProfile || firstEpisodeId == null) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(firstEpisodeId, resolved.watch.editorsChoice != firstEpisodeId) }
+                    { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
-            onToggleWatchlist = {
-                firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in resolved.watch.watchlist) }
-            },
+            onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
-            shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+            portraits = browseViewModel.portraits,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
         )

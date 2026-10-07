@@ -62,7 +62,7 @@ const run = (fetcher: typeof globalThis.fetch) =>
     baseUrl: "https://packages.example.test/mediagram",
     key,
     root,
-    supportedSchema: [4],
+    minSchema: 4,
     // The fixture is dated when it was generated; freezing "now" would make
     // this test start failing the day after it was written.
     now: () => Math.floor(Date.now() / 1000),

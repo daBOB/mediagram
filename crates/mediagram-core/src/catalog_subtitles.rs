@@ -10,9 +10,11 @@
 
 use std::collections::HashMap;
 
+use mlib_spec::schema::ASSET_SUBTITLE;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::dto::SubtitleTrack;
+use crate::sqlite_schema::table_exists;
 
 /// Where a set's bundle document lives, once uploaded. Never crosses the
 /// binding surface — see `crate::api::subtitles`, the only caller.
@@ -23,23 +25,16 @@ pub struct BundleRef {
     pub sha256: String,
 }
 
-fn table_exists(conn: &Connection, name: &str) -> rusqlite::Result<bool> {
-    conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1)",
-        [name],
-        |row| row.get(0),
-    )
-}
-
 /// Every set's subtitle tracks, in the order a picker offers them.
 ///
 /// A set with a `subtitle_files` row reads its own `subtitle_tracks`, in
 /// their bundle position. Every other set reads its inline `assets` rows,
 /// `ORDER BY lang`, each synthesised into a track at its position in that
-/// order — the fallback `plan.md`'s playback rule names, gone once phase 09
-/// removes the inline path. An index older than v13, or one with no bundles
-/// at all yet, simply has no `subtitle_tracks` table: read as no bundled
-/// tracks anywhere, not a failure.
+/// order: indexes published before the `subtitle_tracks` table existed are
+/// still being read, and their sets carry subtitles only as those rows. An
+/// index older than v13, or one with no bundles at all yet, simply has no
+/// `subtitle_tracks` table: read as no bundled tracks anywhere, not a
+/// failure.
 pub fn tracks_by_set(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<SubtitleTrack>>> {
     let mut by_set: HashMap<String, Vec<SubtitleTrack>> = HashMap::new();
     let mut bundled: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -68,8 +63,10 @@ pub fn tracks_by_set(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<
     }
 
     let mut stmt =
-        conn.prepare("SELECT set_id, lang FROM assets WHERE kind = 'subtitle' ORDER BY set_id, lang")?;
-    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
+        conn.prepare("SELECT set_id, lang FROM assets WHERE kind = ?1 ORDER BY set_id, lang")?;
+    let rows = stmt.query_map([ASSET_SUBTITLE], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+    })?;
     let mut legacy: HashMap<String, Vec<String>> = HashMap::new();
     for row in rows {
         let (set_id, lang) = row?;
@@ -120,8 +117,8 @@ pub fn bundle_ref(conn: &Connection, set_id: &str) -> rusqlite::Result<Option<Bu
 /// the `lang` [`tracks_by_set`] synthesised a track from.
 pub fn legacy_body(conn: &Connection, set_id: &str, lang: &str) -> rusqlite::Result<Option<String>> {
     conn.query_row(
-        "SELECT body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' AND lang = ?2",
-        params![set_id, lang],
+        "SELECT body FROM assets WHERE set_id = ?1 AND kind = ?2 AND lang = ?3",
+        params![set_id, ASSET_SUBTITLE, lang],
         |row| row.get(0),
     )
     .optional()

@@ -68,7 +68,7 @@ impl PreparePlan {
     /// `-map` arguments naming exactly the kept streams, in order.
     ///
     /// An mp4 holds only what it can carry, and ffmpeg refuses the whole file
-    /// over one stream it cannot: so when `to_mp4`, [`mp4_cannot_hold`]
+    /// over one stream it cannot: so when `to_mp4`, `mp4_cannot_hold`
     /// streams stay behind.
     pub fn map_args(&self, to_mp4: bool) -> Vec<String> {
         self.keep

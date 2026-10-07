@@ -8,6 +8,9 @@ import designsystem.Spacing
 import playback.Framing
 import playback.TimedCue
 import player.PlayerChoices
+import ui.common.player.SubtitleLayer
+import ui.common.player.SubtitleMetrics
+import ui.common.player.Video
 
 /**
  * The phone's subtitle sizing. 18sp is the unscaled cue text size, the one

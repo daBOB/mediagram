@@ -39,15 +39,10 @@ export const EXPECTED_SCHEMA = 13;
  */
 export const OLDEST_READABLE_SCHEMA = 6;
 
-/**
- * Every layout a package may carry for this build to read it: the oldest
- * through the expected, each one. A pointer is checked by membership, so
- * naming only the two ends would refuse every version between them.
- */
-export const READABLE_SCHEMAS: readonly number[] = Array.from(
-  { length: EXPECTED_SCHEMA - OLDEST_READABLE_SCHEMA + 1 },
-  (_, offset) => OLDEST_READABLE_SCHEMA + offset,
-);
+/** Whether the index has table `name`: the guard every reader of a post-v6 table asks first. */
+export function hasTable(db: Database, name: string): boolean {
+  return db.query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?1").get(name) !== null;
+}
 
 /**
  * Refuses an index written by an older uploader.
@@ -56,7 +51,7 @@ export const READABLE_SCHEMAS: readonly number[] = Array.from(
  * owns. Saying so beats failing three calls later inside a query with "no
  * such column", which is what a missing migration actually looks like.
  */
-export function assertSchema(db: Database): void {
+export function assertSchema(db: Database): number {
   const row = db
     .query("SELECT value FROM meta WHERE key = 'schema_version'")
     .get() as { value: string } | null;
@@ -68,6 +63,7 @@ export function assertSchema(db: Database): void {
         "Run any writing mediagram command once (`mediagram verify --all` will do) to migrate it.",
     );
   }
+  return found;
 }
 
 export const PLAYABLE_SQL = `s.status = 'complete'
@@ -132,8 +128,8 @@ const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode
 /**
  * Every playable set with the text a search reads, summaries included.
  *
- * Built once: the catalog is read-only for the life of the process, so the
- * search index this feeds can be folded at startup and never invalidated.
+ * Built per catalog: the search index this feeds is folded once for it, and
+ * rebuilt with the router when a swap replaces it (`server.ts` replaceCatalog).
  */
 export function listSearchable(db: Database): Array<PlayableSet & { summary: string | null }> {
   return db

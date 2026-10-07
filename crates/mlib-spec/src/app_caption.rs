@@ -30,6 +30,10 @@ pub struct AppRelease {
 }
 
 /// The caption for `release`.
+///
+/// # Panics
+/// Never, in practice: the body is only strings and integers, which always
+/// serialize.
 #[must_use]
 pub fn render(release: &AppRelease) -> String {
     let json = serde_json::to_string(release).expect("strings and integers always serialize");

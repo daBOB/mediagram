@@ -18,9 +18,13 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { numberFromScalar, objectRow, parseRows } from "./record-scalars";
 
 /** The names that travel, in every scope (`key:`, `show:`, `set:`, `profile`). */
 const SYNCED = new Set(["subtitle", "cue-size", "cue-backing", "cue-offset"]);
+
+/** Whether `name` travels between devices, and so may be changed but never forgotten. */
+export const isSyncedPreference = (name: string): boolean => SYNCED.has(name);
 
 /** The same cap `store.ts` puts on what a player writes; this caps what a
  * stranger's document is allowed to claim. */
@@ -42,20 +46,22 @@ function capped(value: unknown): string | null {
 
 /** Hostile input: a bad row is dropped, never the document. */
 export function parsePreferenceRows(value: unknown): PreferenceRow[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry): PreferenceRow[] => {
-    if (entry === null || typeof entry !== "object") return [];
-    const raw = entry as Record<string, unknown>;
-    const scope = capped(raw.scope);
-    const name = capped(raw.name);
-    const held = capped(raw.value);
-    const updatedAt = typeof raw.updatedAt === "object" ? Number.NaN : Number(raw.updatedAt);
-    if (scope === null || name === null || held === null || !SYNCED.has(name)) return [];
-    // Past 2^53 a local write's `stored + 1` stamp no longer advances, and the
-    // peer's row would win every tie from then on.
-    if (!Number.isSafeInteger(updatedAt) || updatedAt <= 0) return [];
-    return [{ scope, name, value: held, updatedAt }];
-  });
+  return parseRows(value, preferenceRow);
+}
+
+function preferenceRow(value: unknown): PreferenceRow | null {
+  const raw = objectRow(value);
+  if (raw === null) return null;
+  const scope = capped(raw.scope);
+  const name = capped(raw.name);
+  const held = capped(raw.value);
+  const updatedAt = numberFromScalar(raw.updatedAt);
+  if (scope === null || name === null || held === null || !SYNCED.has(name)) return null;
+  // Past 2^53 a local write's `stored + 1` stamp no longer advances, and the
+  // peer's row would win every tie from then on.
+  // Whole, unlike isStamp: record-parse.json, read by both engines, drops a fractional stamp.
+  if (!Number.isSafeInteger(updatedAt) || updatedAt <= 0) return null;
+  return { scope, name, value: held, updatedAt };
 }
 
 export function exportPreferences(db: Database | null, profileId: string): PreferenceRow[] {

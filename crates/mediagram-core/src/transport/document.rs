@@ -57,7 +57,7 @@ mod tests {
             error_code: 400,
             error_message: message.into(),
         }));
-        // Wrapped the way `pump_step` wraps it, so the check has to look
+        // Wrapped the way `pump_chunks` wraps it, so the check has to look
         // past the context to find the refusal.
         Err::<(), _>(error)
             .context("downloading chunk")

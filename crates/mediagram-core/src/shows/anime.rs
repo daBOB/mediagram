@@ -15,9 +15,11 @@
 
 use std::collections::HashMap;
 
+use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use super::SOURCE;
+use crate::sqlite_schema::table_exists;
 
 /// Whether `kind` and `genres` describe an anime title, once `forced` (a
 /// hand-set override, or `None` for automatic) and `original_language` have
@@ -28,7 +30,7 @@ use super::SOURCE;
 /// can be anime at all, so a documentary or a course is never anime, hand-set
 /// override or not.
 pub fn is_anime(kind: &str, genres: &[String], original_language: Option<&str>, forced: Option<bool>) -> bool {
-    if kind != "movie" && kind != "ep" {
+    if kind != Kind::Movie.as_str() && kind != Kind::Ep.as_str() {
         return false;
     }
     if let Some(forced) = forced {
@@ -48,12 +50,7 @@ pub fn is_anime(kind: &str, genres: &[String], original_language: Option<&str>, 
 /// check for a value that means the same as absent.
 pub fn anime_overrides(conn: &Connection) -> rusqlite::Result<HashMap<String, bool>> {
     let mut overrides = HashMap::new();
-    let present: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'anime_overrides')",
-        [],
-        |row| row.get(0),
-    )?;
-    if !present {
+    if !table_exists(conn, "anime_overrides")? {
         return Ok(overrides);
     }
     let mut stmt =
@@ -62,7 +59,7 @@ pub fn anime_overrides(conn: &Connection) -> rusqlite::Result<HashMap<String, bo
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         let anime: i64 = row.get(2)?;
-        Ok((format!("tmdb-{kind}-{id}"), anime != 0))
+        Ok((mlib_spec::package::tmdb_key(&kind, id), anime != 0))
     })?;
     for row in rows {
         let (key, anime) = row?;

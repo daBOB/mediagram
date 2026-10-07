@@ -147,8 +147,8 @@ export class HeldSets {
         this.held = held;
         this.scannedAt = this.now();
       })
-      // A cache directory that cannot be read is a cache that answers nothing,
-      // not a player that stops working. The previous reading stands.
+      // isHeld answers false for anything it cannot read, so a scan does not
+      // reject; this only keeps refreshIfStale's unawaited call from rejecting.
       .catch(() => {})
       .finally(() => {
         this.scanning = null;
@@ -196,7 +196,7 @@ export class HeldSets {
         if (have >= want) return true;
       }
     } catch {
-      // Nothing cached for this set, which is the ordinary case.
+      // Nothing cached for this set (the ordinary case), or nothing readable.
       return false;
     }
     // `>=` rather than `===`: a chunk left over from a part layout that has

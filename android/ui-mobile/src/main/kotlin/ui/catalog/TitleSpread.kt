@@ -26,6 +26,7 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.Spacing
+import ui.common.catalog.HeroArtwork
 
 private val HERO_HEIGHT = 260.dp
 

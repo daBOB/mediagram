@@ -1,5 +1,6 @@
 use super::*;
 use crate::index::db;
+use mediagram_core::artwork::get;
 
 fn open() -> (tempfile::TempDir, Connection) {
     let dir = tempfile::tempdir().unwrap();

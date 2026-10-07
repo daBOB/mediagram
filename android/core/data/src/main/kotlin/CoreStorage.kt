@@ -68,6 +68,9 @@ class FileCoreStorage(
      * the first step with a live auth key still on disk, and the next
      * identity typed in would inherit the previous account's session —
      * which is the one outcome this whole path exists to prevent.
+     *
+     * It also deletes the package key a device kept from the pasted-URL
+     * setup, which nothing reads any more but which is still a secret on disk.
      */
     override suspend fun clear() {
         withContext(dispatcher) {
@@ -93,6 +96,12 @@ class FileCoreStorage(
                     throw IOException("this device's watch state could not be deleted")
                 }
             }
+            // Beside filesDir, in the app's own shared_prefs, where the
+            // encrypted preferences file was written.
+            val packageKey = File(File(dataDir.parentFile, SHARED_PREFS_DIR), PACKAGE_SETTINGS_FILE)
+            if (packageKey.exists() && !packageKey.delete()) {
+                throw IOException("the stored package key could not be deleted")
+            }
         }
     }
 
@@ -101,5 +110,7 @@ class FileCoreStorage(
         const val CATALOG_DIR = "catalog"
         const val LIBRARIES_FILE = "libraries.json"
         val STATE_FILES = listOf("state.db", "state.db-wal", "state.db-shm")
+        const val SHARED_PREFS_DIR = "shared_prefs"
+        const val PACKAGE_SETTINGS_FILE = "package_settings.xml"
     }
 }

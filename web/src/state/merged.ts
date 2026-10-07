@@ -1,8 +1,7 @@
 /**
  * What `mergeStates` answers: every viewer the devices know of, reconciled.
  *
- * The shapes only, kept apart from `merge.ts` so its rules have the room;
- * `merge.ts` re-exports both, so a reader imports them from where they are made.
+ * The shapes only, kept apart from `merge.ts` so its rules have the room.
  */
 
 import type { CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow } from "./sync-record";
@@ -20,9 +19,9 @@ export interface MergedProfile extends StatsRows, MergedRoles {
    *
    * Carried separately because the identity is normalised and a name is not:
    * a machine meeting a viewer for the first time creates a local profile,
-   * and creating it from the identity would greet them as "andré". The first
-   * spelling seen wins, which is arbitrary between "André" and "ANDRÉ" and
-   * right in the only case that matters — there being just one.
+   * and creating it from the identity would greet them as "andré". Spelled as
+   * the document from the highest device id has it, the same tie-break rows
+   * use, so the choice does not depend on arrival order.
    */
   displayName: string;
   /** A kids profile if any device's document says so; absent otherwise. */

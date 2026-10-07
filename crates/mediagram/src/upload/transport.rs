@@ -7,8 +7,9 @@ use grammers_client::Client;
 use grammers_client::message::InputMessage;
 use grammers_session::types::PeerRef;
 use mediagram_core::transport::document;
-use mlib_spec::caption::{Caption, Part};
+use mlib_spec::caption::Caption;
 
+use super::finished_caption::finished_caption_text;
 use super::part_reader::PartReader;
 use crate::index::rescan::Seen;
 use crate::telegram::client::Tg;
@@ -80,58 +81,43 @@ impl Transport for TelegramTransport {
         // whatever was queued behind it, and this set sits half-sent until
         // somebody notices and runs `resume`.
         let attempts = self.max_attempts.max(1);
-        let mut attempt = 0u32;
+        let mut failed = 0u32;
         let mut limited = 0u32;
         let uploaded = loop {
-            attempt += 1;
-            match self
+            let err = match self
                 .client
                 .upload_stream(&mut *reader, len as usize, name.clone())
                 .await
             {
                 Ok(uploaded) => break uploaded,
-                // Telegram asking this connection to slow down: waited out,
-                // on a budget of its own, so it does not end the whole run.
-                Err(err) if retry::is_rate_limited(&err) && limited < retry::RATE_LIMIT_RETRIES => {
-                    limited += 1;
-                    let delay = retry::rate_limit_backoff(limited);
-                    println!(
-                        "  Telegram asked to slow down (429); retrying this part in {} s",
-                        delay.as_secs()
-                    );
-                    tokio::time::sleep(delay).await;
-                    reader
-                        .rewind()
-                        .await
-                        .context("rereading the part to retry it")?;
-                    attempt -= 1;
-                }
-                Err(err) if attempt >= attempts => {
+                Err(err) => err,
+            };
+            // Telegram asking this connection to slow down is waited out on a
+            // budget of its own, so it does not end the whole run.
+            let delay = if retry::is_rate_limited(&err) && limited < retry::RATE_LIMIT_RETRIES {
+                limited += 1;
+                let delay = retry::rate_limit_backoff(limited);
+                println!(
+                    "  Telegram asked to slow down (429); retrying this part in {} s",
+                    delay.as_secs()
+                );
+                delay
+            } else {
+                failed += 1;
+                if failed >= attempts {
                     return Err(err).context("uploading part bytes");
                 }
-                Err(err) => {
-                    let delay = retry::backoff(attempt);
-                    tracing::warn!(attempt, ?delay, error = %err, "restarting the part upload");
-                    tokio::time::sleep(delay).await;
-                    reader
-                        .rewind()
-                        .await
-                        .context("rereading the part to retry it")?;
-                }
-            }
+                let delay = retry::backoff(failed);
+                tracing::warn!(attempt = failed, ?delay, error = %err, "restarting the part upload");
+                delay
+            };
+            tokio::time::sleep(delay).await;
+            reader
+                .rewind()
+                .await
+                .context("rereading the part to retry it")?;
         };
-        if reader.bytes_read() != len {
-            bail!(
-                "source shrank during upload: read {} of {len} planned bytes",
-                reader.bytes_read()
-            );
-        }
-
-        let final_caption = caption.with_part(Part {
-            sha256: reader.finalize(),
-            ..caption.part.clone()
-        });
-        let text = mlib_spec::to_text(&final_caption, human).context("rendering part caption")?;
+        let text = finished_caption_text(caption, human, reader, len)?;
 
         let client = self.client.clone();
         let channel = self.channel;

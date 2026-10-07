@@ -12,13 +12,10 @@ import { MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES } from "../state/setting
 import type { ChunkCache } from "./store";
 import type { HeldSets } from "./held";
 
-export { MAX_CACHE_BUDGET_BYTES, MIN_CACHE_BUDGET_BYTES };
-
 /**
- * The budget to start the cache with: the stored value first, the
- * environment next, and only then the project's own default. Env `0` (or no
- * stored value and no env) disables caching entirely, exactly as before
- * Settings existed.
+ * The budget to start the cache with: the stored value if any, else
+ * `envBytes` (`MEDIAGRAM_CACHE_MAX`, which config defaults to 8G). Only an
+ * explicit env `0` with no stored value disables caching.
  */
 export function startBudget(settings: Pick<Settings, "cacheMaxBytes">, envBytes: number): number {
   return settings.cacheMaxBytes() ?? envBytes;

@@ -32,7 +32,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 
@@ -105,7 +104,7 @@ internal fun TvTextField(
                     .padding(Spacing.medium),
             textStyle = TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             singleLine = true,
-            cursorBrush = SolidColor(Palette.Imprint),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(imeAction = imeAction, keyboardType = keyboardType),
             keyboardActions = KeyboardActions(onDone = { onAction() }, onSearch = { onAction() }),

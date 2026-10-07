@@ -64,7 +64,7 @@ fn recording_replaces_tracks_drops_inline_rows_and_owes_a_publish() {
 
     assert_eq!(bundle_message(&conn, "A").unwrap(), Some(7));
     assert_eq!(labels(&conn), ["German (Forced)", "German"]);
-    assert!(assets::languages(&conn, "A").unwrap().is_empty());
+    assert!(assets::inline_subtitles(&conn, "A").unwrap().is_empty());
     assert!(assets::has_summary(&conn, "A").unwrap(), "a summary stays");
     assert!(pins::publish_owed(&conn).unwrap().is_some());
 }
@@ -101,7 +101,7 @@ fn removing_a_set_removes_its_bundle_record() {
     let (_dir, conn) = index_with_set("A");
     record(&conn, "A", &file(7), &[track("de", false, "German")]).unwrap();
 
-    crate::remove::apply::delete_rows(&conn, "A").unwrap();
+    crate::index::lifecycle::delete_rows(&conn, "A").unwrap();
 
     assert_eq!(bundle_message(&conn, "A").unwrap(), None);
     assert!(labels(&conn).is_empty());

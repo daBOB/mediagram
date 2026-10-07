@@ -15,12 +15,6 @@ use thiserror::Error;
 
 use super::cipher::{self, EncryptError};
 
-/// Schema versions this build's catalog code can read: its own, and every
-/// older one a publisher not yet upgraded may still write. The columns added
-/// since the oldest (`certification` in v7, `popularity` in v8) are read as
-/// optional everywhere.
-pub const SUPPORTED_SCHEMA: &[i64] = mlib_spec::schema::READABLE_SCHEMAS;
-
 #[derive(Debug, Error)]
 pub enum PackageError {
     #[error("pointer is not readable by this build: {0}")]
@@ -43,7 +37,7 @@ pub fn read_package(
     key: &[u8; 32],
     into: &Path,
 ) -> Result<PathBuf, PackageError> {
-    pointer_is_readable(pointer, SUPPORTED_SCHEMA)?;
+    pointer_is_readable(pointer, mlib_spec::schema::OLDEST_READABLE_SCHEMA)?;
 
     // Verified ahead of the cipher: a truncated or bit-flipped download is
     // then rejected by a cheap digest check rather than by AES-GCM.

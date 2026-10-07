@@ -7,12 +7,13 @@
  * reported that, which makes a player that quietly filled a disk look like a
  * player that stopped working for no reason.
  *
- * Separate from `ChunkCache.sizeOnDisk`, which needs each file's mtime to
+ * Separate from `ChunkCache.sizeOnDisk`, which needs each file's atime to
  * order eviction by. This needs only the sum, and pays for only the sum.
  */
 
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { errorCode } from "../failure-message";
 
 /**
  * Bytes under `root`, recursively. `0` for a directory that is not there.
@@ -28,7 +29,7 @@ export async function dirBytes(root: string): Promise<number> {
   try {
     entries = await readdir(root, { withFileTypes: true });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+    if (errorCode(error) === "ENOENT") return 0;
     throw error;
   }
 
@@ -44,7 +45,7 @@ export async function dirBytes(root: string): Promise<number> {
         return (await stat(path)).size;
       } catch (error) {
         // Reaped between the listing and the stat.
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+        if (errorCode(error) === "ENOENT") return 0;
         throw error;
       }
     }),
@@ -59,7 +60,7 @@ export async function countSegments(root: string): Promise<number> {
     const entries = await readdir(root);
     return entries.filter((name) => /\.(ts|m4s)$/.test(name)).length;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+    if (errorCode(error) === "ENOENT") return 0;
     throw error;
   }
 }

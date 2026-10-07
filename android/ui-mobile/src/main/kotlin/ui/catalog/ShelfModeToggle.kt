@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import settings.ShelfView
+import data.settings.ShelfView
 
 /**
  * "List · Grid" — `shelfToggle` in the web's `app.js`. The one in use is

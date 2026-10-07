@@ -4,40 +4,42 @@
  * `web/src/settings/routes.ts` is HTTP shape only — parsing a body, checking
  * the gate, turning an outcome into a status code. Every actual effect (a
  * restart, a channel switch, a budget change) happens here, against the same
- * connection, channel state and catalog follower `index.ts` built at
+ * connection, followed channel and catalog follower `index.ts` built at
  * startup, so a setting changed from the browser is indistinguishable from
  * one that had always been that way.
  *
- * Account identity (app id/hash, sign in/out) is `account-actions.ts`; this
- * file keeps the cache and library actions, and the read view both draw on.
+ * Account identity (app id/hash, sign in/out) is `account-actions.ts`,
+ * reached as `account`; this file keeps the cache and library actions, and
+ * the read view both draw on.
  *
- * Order throughout is prove, then persist, then swap: nothing is written to
- * `telegram.json` until the change it describes actually took.
+ * Order throughout is prove, swap, rebind, save: nothing is written to
+ * `telegram.json` until the change it describes actually took, and a save
+ * that fails after that is reported, not thrown.
  */
 
-import type { StartupFacts } from "../status/facts";
 import { Telegram } from "../telegram/client";
 import type { TelegramConnection } from "../telegram/connection";
-import type { ChannelState, UpdatesBinding } from "../application/telegram-binding";
+import type { FollowedChannel, UpdatesBinding } from "../application/telegram-binding";
 import type { CatalogFollower } from "../application/catalog-follow";
+import type { FoundIndex } from "../channel-index/find-newest-channel-index";
+import type { NoIndex } from "../channel-index/pick-newest-index";
 import type { ChunkCache } from "../cache/store";
 import type { HeldSets } from "../cache/held";
-import { applyBudget, validateBudget, MIN_CACHE_BUDGET_BYTES } from "../cache/budget";
-import type { Settings } from "../state/settings";
+import { applyBudget, validateBudget } from "../cache/budget";
+import { MIN_CACHE_BUDGET_BYTES, type Settings } from "../state/settings";
 import { listLibraries, type LibraryCandidate } from "../telegram/libraries";
 import { HandleMap } from "./handles";
-import type { SignInFlow, SignInStep } from "./sign-in";
-import { AccountActions } from "./account-actions";
+import { AccountActions, type ActionResult } from "./account-actions";
 import { listSessions, revokeSession, type RevokeOutcome, type SessionSummary } from "./sessions";
 import { failureMessage } from "../failure-message";
 import { join } from "node:path";
 
 export interface SettingsDeps {
   connection: TelegramConnection;
-  channel: ChannelState;
+  channel: FollowedChannel;
   updatesBinding: UpdatesBinding;
-  follower: Pick<CatalogFollower, "refresh" | "retarget">;
-  facts: StartupFacts;
+  follower: Pick<CatalogFollower, "tryChannel">;
+  findIndex: (telegram: Telegram) => Promise<FoundIndex | NoIndex>;
   settings: Settings;
   cache: Pick<ChunkCache, "setBudget" | "budget" | "sizeOnDisk"> | null;
   held?: Pick<HeldSets, "refresh">;
@@ -58,8 +60,6 @@ export interface SettingsView {
   cache: { enabled: boolean; budget: number; heldBytes: number | null; min: number };
 }
 
-export type ActionResult<T> = ({ ok: true } & T) | { ok: false; error: string };
-
 /** A library entry the browser may pick, without the access hash it must never see. */
 export interface LibraryListing {
   handle: string;
@@ -69,15 +69,13 @@ export interface LibraryListing {
 
 export class SettingsRuntime {
   private readonly handles = new HandleMap<LibraryCandidate>();
-  private readonly account: AccountActions;
+  readonly account: AccountActions;
 
   constructor(
     private readonly deps: SettingsDeps,
     creds: { apiId: number; apiHash: string },
-    accountUserId: string | null,
-    signInFlow?: SignInFlow,
   ) {
-    this.account = new AccountActions(deps, creds, accountUserId, signInFlow);
+    this.account = new AccountActions(deps, creds);
   }
 
   async view(): Promise<SettingsView> {
@@ -134,43 +132,23 @@ export class SettingsRuntime {
   async chooseLibrary(handle: string): Promise<ActionResult<{ title: string; sets: number }>> {
     const candidate = this.handles.get(handle);
     if (!candidate) return { ok: false, error: "that channel is no longer in the list; refresh and choose again" };
-    if (!this.deps.connection.current()) return { ok: false, error: "cannot choose a library while signed out" };
+    const current = this.deps.connection.current();
+    if (!current) return { ok: false, error: "cannot choose a library while signed out" };
+
+    const probe = Telegram.withChannel(current, candidate.chatId, candidate.accessHash);
+    const outcome = await this.deps.follower.tryChannel(
+      join(this.deps.channelCatalogDir, String(candidate.chatId)),
+      () => this.deps.findIndex(probe),
+    );
+    if (!outcome.served) return { ok: false, error: outcome.reason };
 
     this.deps.connection.withChannel((existing) => Telegram.withChannel(existing, candidate.chatId, candidate.accessHash));
-    this.deps.follower.retarget(join(this.deps.channelCatalogDir, String(candidate.chatId)));
-    const publishedBefore = this.deps.facts.catalog.publishedAt;
-    await this.deps.follower.refresh();
-
-    if (this.deps.facts.catalog.origin !== "channel" || this.deps.facts.catalog.publishedAt === publishedBefore) {
-      return { ok: false, error: this.deps.facts.catalog.reason ?? "the channel's index could not be installed" };
-    }
-
     this.deps.channel.chatId = candidate.chatId;
     this.deps.channel.accessHash = candidate.accessHash;
     this.deps.channel.title = candidate.title;
-    await (await this.deps.updatesBinding.rebind()).ready;
-    await this.account.persist();
-    return { ok: true, title: candidate.title, sets: this.deps.facts.catalog.sets };
-  }
-
-  setAppCredentials(apiId: number, apiHash: string): Promise<ActionResult<{ signedIn: boolean; connected: boolean | null }>> {
-    return this.account.setAppCredentials(apiId, apiHash);
-  }
-
-  signInPhone(phoneNumber: string): Promise<ActionResult<SignInStep>> {
-    return this.account.signInPhone(phoneNumber);
-  }
-
-  signInCode(code: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
-    return this.account.signInCode(code);
-  }
-
-  signInPassword(password: string): Promise<ActionResult<SignInStep & { differentAccount?: boolean }>> {
-    return this.account.signInPassword(password);
-  }
-
-  signOut(): Promise<{ ok: true } | { ok: false; error: string }> {
-    return this.account.signOut();
+    const saved = await this.account.commit();
+    if (!saved.ok) return saved;
+    return { ok: true, title: candidate.title, sets: outcome.sets };
   }
 
   async sessions(): Promise<ActionResult<{ sessions: SessionSummary[] }>> {

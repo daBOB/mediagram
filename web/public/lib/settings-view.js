@@ -1,10 +1,12 @@
 /**
- * `#/settings`: the locked form, then the Telegram and Cache sections.
+ * The admin-gated "Library & Telegram" tab of `#/settings`: the locked form,
+ * then the Telegram and Cache sections.
  *
- * Same idiom as the System page (`status-view.js`): plain rows in the page's
- * own faces, mounted and unmounted like any other route. Unlike System,
- * this one gates itself behind a token, so the first draw always asks
- * `/api/settings` and branches on `locked` before showing anything.
+ * Not a route of its own: `catalog/settings-page.js` mounts it into that
+ * tab's panel and tears it down with the page. Same idiom as the System page
+ * (`status-view.js`): plain rows in the page's own faces. Unlike System, it
+ * gates itself behind a token, so the first draw always asks `/api/settings`
+ * and branches on `locked` before showing anything.
  */
 
 import { el } from "./dom.js";
@@ -86,14 +88,14 @@ function cacheSection(root, view, refresh) {
   root.append(section);
 }
 
-/** Renders `#/settings` into `main`. Returns the function that tears it down. */
-export function viewSettings(main) {
+/** Renders the admin tab's body into `container`. Returns the function that tears it down. */
+export function renderAdminSettings(container) {
   let stopped = false;
   const panel = el("div", "status");
   // Outside the grid `panel` lays its sections in: a lone button as a grid
   // item would stretch to fill a whole column-sized cell.
   const footer = el("div", "settings-actions");
-  main.append(panel, footer);
+  container.append(panel, footer);
 
   async function draw() {
     const result = await readSettings();

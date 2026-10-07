@@ -10,10 +10,9 @@ use std::sync::Arc;
 
 use rusqlite::Connection;
 
-use crate::api::{Core, CoreError, store};
+use crate::api::{Core, store};
 use crate::catalog_subtitles::{self, BundleRef};
 
-#[path = "subtitles_cache.rs"]
 pub(in crate::api) mod cache;
 
 /// How many lessons past the one just opened a course hold fetches ahead of
@@ -51,7 +50,7 @@ impl Core {
     }
 
     /// Fetches and caches the opened lesson's own bundle plus up to
-    /// [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+    /// `COURSE_HOLD_NEXT` that follow it in its course, sequentially, so a
     /// long course never fetches more than the next few lessons at once.
     pub async fn hold_course_subtitles(self: Arc<Self>, set_id: String) {
         let lookup_id = set_id.clone();
@@ -67,19 +66,8 @@ enum Resolved {
     Bundle(BundleRef),
 }
 
-fn open(core: &Core) -> Option<Connection> {
-    match store::open(core) {
-        Ok(conn) => Some(conn),
-        Err(CoreError::NotFound(_)) => None,
-        Err(err) => {
-            tracing::warn!(error = %err, "the index could not be opened for a subtitle track");
-            None
-        }
-    }
-}
-
 fn bundle_for(core: &Core, set_id: &str) -> Option<BundleRef> {
-    let conn = open(core)?;
+    let conn = store::open_installed(core, "a subtitle track")?;
     bundle_of(&conn, set_id)
 }
 
@@ -91,7 +79,7 @@ fn bundle_of(conn: &Connection, set_id: &str) -> Option<BundleRef> {
 }
 
 fn resolve(core: &Core, set_id: &str, track: u32) -> Option<Resolved> {
-    let conn = open(core)?;
+    let conn = store::open_installed(core, "a subtitle track")?;
     if let Some(bundle) = bundle_of(&conn, set_id) {
         return Some(Resolved::Bundle(bundle));
     }
@@ -109,7 +97,7 @@ fn resolve(core: &Core, set_id: &str, track: u32) -> Option<Resolved> {
 }
 
 fn course_hold_plan(core: &Core, set_id: &str) -> Vec<(String, BundleRef)> {
-    let Some(conn) = open(core) else {
+    let Some(conn) = store::open_installed(core, "a subtitle track") else {
         return Vec::new();
     };
     let ids = catalog_subtitles::course_run(&conn, set_id, COURSE_HOLD_NEXT).unwrap_or_else(|err| {

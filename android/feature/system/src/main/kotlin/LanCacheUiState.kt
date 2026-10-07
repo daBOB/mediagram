@@ -5,7 +5,7 @@ enum class LanCacheConnection { SEARCHING, CONNECTED, NOT_FOUND, NEEDS_PERMISSIO
 
 /**
  * The LAN cache block's own facts, read straight off
- * [playback.LanCacheSettings], [settings.LanCacheTokenSettings] and
+ * [playback.LanCacheSettings], [data.settings.LanCacheTokenSettings] and
  * [playback.LanServerLocator]. Left unformatted, the same split
  * [system.SystemUiState] keeps from `ui.system.SystemRows` — this module
  * holds the facts, `ui-mobile`'s `LanCacheBlock` turns them into sentences.

@@ -22,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import playback.FilmPreloadState
 import playback.PauseReason
+import ui.common.catalog.TitlePreloadUi
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -44,7 +45,7 @@ class TvTitlePreloadStateTest : TvScreenStateTest() {
         onOpenStorage: () -> Unit = {},
         queuedAheadLabel: String? = null,
         needsSpaceBudgetBytes: Long? = null,
-    ) = TvTitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
+    ) = TitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
 
     @Test
     fun withNoPreloadWiredPlayStillTakesFocusAlone() {

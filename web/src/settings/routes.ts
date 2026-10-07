@@ -4,16 +4,17 @@
  * 404 off this household's network, the same rule `status/routes.ts` uses —
  * there is nothing here to confirm to an outside caller either. On the
  * network, every path past `/unlock` and `/lock` also needs an unlocked
- * admin cookie, and every write needs the same-origin, JSON-only guard every
- * other write route in this project already enforces.
+ * admin cookie; every write has already passed the dispatcher's same-origin,
+ * JSON-only guard.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { isOwnNetwork } from "../client-reach";
-import { refuseUnsafeBrowserWrite } from "../http/browser-write";
+import { jsonBody } from "../http/browser-write";
 import { bodiless, withBody } from "../response";
 import type { AdminGate } from "./admin-gate";
-import type { ActionResult, SettingsRuntime } from "./context";
+import type { ActionResult } from "./account-actions";
+import type { SettingsRuntime } from "./context";
 
 const PREFIX = "/api/settings";
 
@@ -39,32 +40,17 @@ function answer<T extends object>(result: ActionResult<T>): PlayerResponse {
   return json({ error: result.error }, 400);
 }
 
-function parse(body: string | null | undefined): Record<string, unknown> {
-  if (typeof body !== "string" || body === "") return {};
-  try {
-    const value: unknown = JSON.parse(body);
-    return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
 export function createSettingsRouter(options: SettingsRouterOptions) {
   const { gate, runtime } = options;
 
-  return async function settingsRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
-    if (!request.path.startsWith(PREFIX)) return null;
+  const route = async (request: PlayerRequest): Promise<PlayerResponse> => {
     if (!isOwnNetwork(request.client ?? "")) return bodiless(404);
 
     const reading = request.method === "GET" || request.method === "HEAD";
-    if (!reading) {
-      const refusal = refuseUnsafeBrowserWrite(request);
-      if (refusal) return refusal;
-    }
 
     if (request.path === `${PREFIX}/unlock`) {
       if (request.method !== "POST") return bodiless(405);
-      const token = parse(request.body).token;
+      const token = jsonBody(request.body)?.token;
       if (typeof token !== "string") return json({ error: "a token is required" }, 400);
       const secure = options.secure(request);
       const result = gate.unlock(token, request.client ?? "", secure);
@@ -91,7 +77,7 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
 
     if (request.path === `${PREFIX}/cache`) {
       if (request.method !== "PUT") return bodiless(405);
-      const maxBytes = Number(parse(request.body).maxBytes);
+      const maxBytes = Number(jsonBody(request.body)?.maxBytes);
       if (!Number.isFinite(maxBytes)) return json({ error: "a byte count is required" }, 400);
       return answer(await runtime.setCacheBudget(maxBytes));
     }
@@ -103,44 +89,44 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
 
     if (request.path === `${PREFIX}/library`) {
       if (request.method !== "POST") return bodiless(405);
-      const handle = parse(request.body).handle;
+      const handle = jsonBody(request.body)?.handle;
       if (typeof handle !== "string") return json({ error: "a channel is required" }, 400);
       return answer(await runtime.chooseLibrary(handle));
     }
 
     if (request.path === `${PREFIX}/telegram/app`) {
       if (request.method !== "PUT") return bodiless(405);
-      const body = parse(request.body);
-      const apiId = Number(body.apiId);
-      const apiHash = body.apiHash;
+      const body = jsonBody(request.body);
+      const apiId = Number(body?.apiId);
+      const apiHash = body?.apiHash;
       if (typeof apiHash !== "string") return json({ error: "an application hash is required" }, 400);
-      return answer(await runtime.setAppCredentials(apiId, apiHash));
+      return answer(await runtime.account.setAppCredentials(apiId, apiHash));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/phone`) {
       if (request.method !== "POST") return bodiless(405);
-      const phone = parse(request.body).phone;
+      const phone = jsonBody(request.body)?.phone;
       if (typeof phone !== "string") return json({ error: "a phone number is required" }, 400);
-      return answer(await runtime.signInPhone(phone));
+      return answer(await runtime.account.signInPhone(phone));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/code`) {
       if (request.method !== "POST") return bodiless(405);
-      const code = parse(request.body).code;
+      const code = jsonBody(request.body)?.code;
       if (typeof code !== "string") return json({ error: "a code is required" }, 400);
-      return answer(await runtime.signInCode(code));
+      return answer(await runtime.account.signInCode(code));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-in/password`) {
       if (request.method !== "POST") return bodiless(405);
-      const password = parse(request.body).password;
+      const password = jsonBody(request.body)?.password;
       if (typeof password !== "string") return json({ error: "a password is required" }, 400);
-      return answer(await runtime.signInPassword(password));
+      return answer(await runtime.account.signInPassword(password));
     }
 
     if (request.path === `${PREFIX}/telegram/sign-out`) {
       if (request.method !== "POST") return bodiless(405);
-      return answer(await runtime.signOut());
+      return answer(await runtime.account.signOut());
     }
 
     if (request.path === `${PREFIX}/sessions`) {
@@ -150,11 +136,23 @@ export function createSettingsRouter(options: SettingsRouterOptions) {
 
     if (request.path === `${PREFIX}/sessions/revoke`) {
       if (request.method !== "POST") return bodiless(405);
-      const id = parse(request.body).id;
+      const id = jsonBody(request.body)?.id;
       if (typeof id !== "string") return json({ error: "a session id is required" }, 400);
       return answer(await runtime.revokeSession(id));
     }
 
     return json({ error: "not found" }, 404);
+  };
+
+  return async function settingsRoute(request: PlayerRequest): Promise<PlayerResponse | null> {
+    if (!request.path.startsWith(PREFIX)) return null;
+    const response = await route(request);
+    // Every answered write leaves a line: these change the account, the
+    // library and the cache. Never the body — it can carry a token, a phone
+    // number or a sign-in code.
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      console.log(`settings: ${request.method} ${request.path} from ${request.client ?? "unknown"} -> ${response.status}`);
+    }
+    return response;
   };
 }

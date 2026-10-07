@@ -2,43 +2,48 @@ package catalog
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class CatalogTabsTest {
+    private val everyDepartment = Department.entries.map { Shelf(it, emptyList()) }
+
+    /** The web's `nav.departments` order: Home, the shelves in the order [shelvesOf] returns them, then Collections. */
     @Test
-    fun mastheadSplitPutsCollectionsInTheDepartmentRowAndEveryUtilityOnceInTheOverflow() {
-        val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf("Tutorials", emptyList()))
-
-        val split = mastheadSplitOf(shelves)
-
-        assertEquals(listOf("Home", "Movies", "Series", "Tutorials", "Collections"), split.departments)
+    fun theMastheadIsHomeThenEachShelfThenCollections() {
         assertEquals(
-            listOf("My List", "Continue", "Latest", "Genres", "Settings"),
-            split.utilities.map(UtilityDestination::label),
+            listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Collections"),
+            mastheadTabsOf(everyDepartment).map(CatalogTab::label),
         )
     }
 
-    /** [DOCUMENTARIES] is a real shelf now, so both readers place it the same way any other shelf lands — between Series and Tutorials, the order [shelvesOf] itself returns them in. */
+    /** Continue and My List are the rail's own rows, never pills. */
     @Test
-    fun documentariesSitsBetweenSeriesAndTutorialsInBothTabRowsAndCountsInFirstKept() {
-        val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf(DOCUMENTARIES, emptyList()), Shelf("Tutorials", emptyList()))
+    fun theMastheadLeavesContinueAndMyListToTheRail() {
+        val masthead = mastheadTabsOf(everyDepartment)
 
-        val tabs = catalogTabsOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", DOCUMENTARIES, "Tutorials", "Continue", "My List", "Collections"), tabs.titles)
-        assertEquals(5, tabs.firstKept)
-
-        val split = mastheadSplitOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", DOCUMENTARIES, "Tutorials", "Collections"), split.departments)
+        assertFalse(CatalogTab.Kept(KeptKind.CONTINUE) in masthead)
+        assertFalse(CatalogTab.Kept(KeptKind.WATCHLIST) in masthead)
     }
 
-    /** [ANIME] lands the same way — a real shelf `shelvesOf` returns between Series and Documentaries, and neither reader has to name it specially. */
+    /** The keys are the web's own section ids, so a saved key means the same tab on both surfaces. */
     @Test
-    fun animeSitsBetweenSeriesAndDocumentariesInBothTabRows() {
-        val shelves = listOf(Shelf("Movies", emptyList()), Shelf("Series", emptyList()), Shelf(ANIME, emptyList()), Shelf(DOCUMENTARIES, emptyList()))
+    fun everyTabIsFoundAgainByItsKey() {
+        val tabs = listOf(CatalogTab.Home) + everyDepartment.map { CatalogTab.Dept(it.department) } + KeptKind.entries.map(CatalogTab::Kept)
 
-        val tabs = catalogTabsOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Continue", "My List", "Collections"), tabs.titles)
+        assertEquals(
+            listOf("home", "movies", "series", "anime", "documentaries", "tutorials", "continue", "watchlist", "collections"),
+            tabs.map(CatalogTab::key),
+        )
+        for (tab in tabs) assertEquals(tab, catalogTabOf(tab.key, everyDepartment))
+    }
 
-        val split = mastheadSplitOf(shelves)
-        assertEquals(listOf("Home", "Movies", "Series", ANIME, DOCUMENTARIES, "Collections"), split.departments)
+    /** A key this build has never written, or a save from before a refresh, lands on Home rather than on whatever now sits where the tab was. */
+    @Test
+    fun anUnknownKeyOrADepartmentNoLongerShelvedOpensHome() {
+        val withoutAnime = everyDepartment.filterNot { it.department == Department.ANIME }
+
+        assertEquals(CatalogTab.Home, catalogTabOf("nonsense", everyDepartment))
+        assertEquals(CatalogTab.Home, catalogTabOf("anime", withoutAnime))
+        assertEquals(CatalogTab.Dept(Department.DOCUMENTARIES), catalogTabOf("documentaries", withoutAnime))
     }
 }

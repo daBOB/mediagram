@@ -1,5 +1,6 @@
 package setup
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import data.CoreProvider
 import data.CoreStorage
 import data.WatchStateRepository
 import data.coreSentence
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,8 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import settings.TmdbSettings
 import javax.inject.Inject
+
+private const val TAG = "setup"
 
 private const val STORAGE_FAILED =
     "This device's secure storage could not be read. " +
@@ -164,6 +167,7 @@ class SetupViewModel
                         // The message is this app's own, never the exception's: a
                         // platform message can name a file, a key alias or a
                         // provider, and none of that belongs on a setup screen.
+                        Log.w(TAG, "setup step failed", e)
                         SetupUiState.Failed(onFailure)
                     }
                 // The one step that cannot show itself without asking the
@@ -199,6 +203,7 @@ class SetupViewModel
                     } catch (
                         @Suppress("TooGenericExceptionCaught") e: Exception,
                     ) {
+                        Log.w(TAG, "library step failed", e)
                         e
                             .coreSentence()
                             ?.let { SetupUiState.NeedsLibrary(choices = stillListed, error = it) }

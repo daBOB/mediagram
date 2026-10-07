@@ -3,7 +3,7 @@
 //! `id` and `n` are taken as raw path segments and checked by
 //! [`crate::rules`] before either touches the store, so a bad shape is
 //! always a 404 before any filesystem call, on every row. The one row that
-//! answers for a whole set, and why it may say one exists, is [`set_status`].
+//! answers for a whole set, and why it may say one exists, is `set_status`.
 
 use std::sync::Arc;
 

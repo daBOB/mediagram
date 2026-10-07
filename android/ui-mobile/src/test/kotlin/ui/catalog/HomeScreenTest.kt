@@ -10,14 +10,15 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import catalog.Entry
+import catalog.CatalogTab
 import catalog.CollectionKind
 import catalog.EditorialPicks
+import catalog.Entry
 import catalog.Feature
 import catalog.FeatureKind
-import catalog.HomeRow
+import catalog.KeptKind
+import catalog.Latest
 import catalog.MagazineHome
-import catalog.RowContent
 import catalog.SetCard
 import model.Kind
 import model.MediaSet
@@ -76,27 +77,25 @@ class HomeScreenTest {
                 ),
             resumeCards = listOf(SetCard(film("resume"), "1h left", 0.4f, false, false)),
             recentlyAdded = listOf(film("recent")),
-            recentlyAddedRow = HomeRow("Recently added", "Movies", 1, RowContent.Entries(listOf(Entry.Film(film("recent"))))),
+            recentlyAddedTotal = 1,
         )
-    private val rows =
-        listOf(
-            HomeRow(
-                "Latest series", "Series", 1,
-                RowContent.Entries(listOf(Entry.Collection("s1", CollectionKind.SHOW, "Show One", null, null, count = 10, chapters = 2, divisions = emptyList()))),
-            ),
-            HomeRow(
-                "Latest courses", "Tutorials", 1,
-                RowContent.Entries(listOf(Entry.Collection("c1", CollectionKind.COURSE, "Course One", null, null, count = 8, chapters = 1, divisions = emptyList()))),
-            ),
+    private val latest =
+        Latest(
+            movies = emptyList(),
+            series = listOf(Entry.Collection("s1", CollectionKind.SHOW, "Show One", null, null, count = 10, chapters = 2, divisions = emptyList())),
+            courses = listOf(Entry.Collection("c1", CollectionKind.COURSE, "Course One", null, null, count = 8, chapters = 1, divisions = emptyList())),
+            moviesTotal = 0,
+            seriesTotal = 1,
+            coursesTotal = 1,
         )
 
-    private fun show(onSeeAll: (String) -> Unit = {}) {
+    private fun show(onSeeAll: (CatalogTab) -> Unit = {}) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
                     HomeScreen(
-                        magazine = magazine, rows = rows, watch = WatchSnapshot.Empty, listState = rememberLazyListState(),
+                        magazine = magazine, latest = latest, watch = WatchSnapshot.Empty, listState = rememberLazyListState(),
                         onPlay = {}, onOpenTitle = {}, onOpenCollection = {}, onToggleWatchlist = { _, _ -> }, onSeeAll = onSeeAll,
                     )
                 }
@@ -129,12 +128,12 @@ class HomeScreenTest {
 
     @Test
     fun seeAllBesideContinueWatchingLandsOnTheContinueTab() {
-        var target: String? = null
+        var target: CatalogTab? = null
         show(onSeeAll = { target = it })
         // Continue's own band is the first "See all" in the page's own
         // order — Recently Added, Latest series and Latest courses each
         // carry one too, so the plain text alone is ambiguous.
         compose.onAllNodesWithText("See all →")[0].performClick()
-        assertEquals("Continue", target)
+        assertEquals(CatalogTab.Kept(KeptKind.CONTINUE), target)
     }
 }

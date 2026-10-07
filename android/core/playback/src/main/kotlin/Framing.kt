@@ -48,11 +48,11 @@ data class Framed(val box: VideoBox, val window: VideoBox)
  * Where the picture draws for [framing], given the video's own
  * [videoAspect] and a [containerWidth] x [containerHeight] container — a
  * pixel answer to what `object-fit` and `aspect-ratio` settle between them
- * on the web, which Compose has no single primitive for, and which (see the
- * phase this shipped in) the web itself got wrong for the two named ratios
- * on first attempt: `object-fit: cover` alone never changes the *shape* of
- * the content, so cropping to a shape needs a window of that shape to crop
- * *into*, not just a cover algorithm run with a borrowed aspect.
+ * on the web, which Compose has no single primitive for. The two named
+ * ratios are where that goes wrong: `object-fit: cover` alone never changes
+ * the *shape* of the content, so cropping to a shape needs a window of that
+ * shape to crop *into*, not just a cover algorithm run with a borrowed
+ * aspect.
  *
  * [FIT]'s window is the container itself, and its box fits *within* that
  * window using the video's own shape — the same box `Modifier.aspectRatio`

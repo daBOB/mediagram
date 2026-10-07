@@ -24,9 +24,10 @@ import catalog.SearchViewModel
 import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.searchGroupsOf
+import data.PortraitRequestLog
 import designsystem.Overscan
 import model.WatchSnapshot
-import ui.catalog.searchVisitState
+import ui.common.catalog.searchVisitState
 import ui.tv.TvTextField
 
 /** The search field's own tag — it carries no text of its own to be found by until something is typed. */
@@ -50,7 +51,7 @@ internal fun TvSearch(
     onOpenPerson: (personId: Long) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenList: (id: String) -> Unit = {},
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
 ) {
     val viewModel: SearchViewModel = hiltViewModel()
@@ -70,7 +71,7 @@ internal fun TvSearch(
         onOpenPerson = onOpenPerson,
         onOpenFranchise = onOpenFranchise,
         onOpenList = onOpenList,
-        shouldRequestPortrait = shouldRequestPortrait,
+        portraits = portraits,
         fetchPortrait = fetchPortrait,
     )
 }
@@ -109,7 +110,7 @@ internal fun TvSearchScreen(
     onOpenPerson: (personId: Long) -> Unit = {},
     onOpenFranchise: (id: Long) -> Unit = {},
     onOpenList: (id: String) -> Unit = {},
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
 ) {
     var text by rememberSaveable { mutableStateOf(query) }
@@ -188,7 +189,7 @@ internal fun TvSearchScreen(
             onOpenCollection = onOpenCollection,
             onOpenPerson = onOpenPerson,
             onOpenDestination = onOpenDestination,
-            shouldRequestPortrait = shouldRequestPortrait,
+            portraits = portraits,
             fetchPortrait = fetchPortrait,
         )
     }

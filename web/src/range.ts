@@ -6,7 +6,7 @@
  * index, just arithmetic. This module is pure, because a mistake here is not
  * an error message but a corrupt video.
  *
- * The Rust server in `crates/mediagram/src/serve/range.rs` computes the same
+ * The Rust core's `crates/mediagram-core/src/range.rs` computes the same
  * thing and is the oracle this is checked against. The one difference is the
  * seek unit: grammers skips whole 512 KiB chunks, while a read here starts on
  * a 1 MiB boundary (below).

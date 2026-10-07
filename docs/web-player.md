@@ -59,8 +59,9 @@ response.ts        byte-range planning and shared buffered-response framing
 http/              request/response contracts, browser-write checks, static
                    files, and streaming with explicit range headers
 catalog/           catalog/search presentation, metadata readers, asset and
-                   artwork endpoints, audio-track probing, and subtitle
-                   tracks/bundles (below)
+                   artwork endpoints, poster keys and the poster store, the
+                   versioned catalog directory every source installs into,
+                   audio-track probing, and subtitle tracks/bundles (below)
 range.ts           byte ranges to per-part reads, and the 1 MiB alignment
 login.ts           issues this host's session; writes web/.env, mode 600
 catalog.ts         library.db queries; PLAYABLE_SQL, mirrored from mlib-spec
@@ -69,16 +70,28 @@ client-reach.ts    a viewer on this network, or one across an uplink
 status/            what the player is doing: the startup facts worth keeping,
                    a pure snapshot builder, and a route only a local viewer
                    is answered on
+state/             profiles and what each keeps in state.db — positions, the
+                   watchlist, lists, viewing stats, achievements, roles — the
+                   merge rules and channel sync that carry it across devices,
+                   and the profile-scoped routes
+settings/          the admin-gated /api/settings router and what it acts on:
+                   the account file, browser sign-in, sessions, the cache
+                   budget and the library switch
+login/             what login.ts runs: QR or phone-code sign-in, its terminal
+                   prompts, and writing the credentials it produced
 telegram/          teleproto client, turning planned reads into bytes, and
                    dependency-free caption conventions shared by channel policy
+channel-index/     finding the channel's newest index snapshot, installing it,
+                   what to serve when it cannot be had, and its posters
 cache/             1 MiB chunks on disk: keys, store with quota, reader and
                    the fetches it shares while they run,
                    the readahead tracker behind MEDIAGRAM_CACHE_READAHEAD, and
                    which sets are held in full, for the offline badge
-package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh,
-                   and the artwork a package carries
+package/           the mlib-package-v1 reader: pointer, cipher, tar, refresh
 transcode/         playback HTTP negotiation, ffmpeg arguments, encoder probe,
                    session registry, process supervision, and HLS delivery
+search/            title and summary search: text folding, ranking, excerpts
+thumbs/            the scrub bar's preview sprite sheets and their ffmpeg line
 public/            the page: the start page, shelves, the player dialog,
                    hls.js when needed, and the buffer watch that converts
                    down on a slow link
@@ -118,7 +131,7 @@ chunk per second (`PRELOAD_REQUEST_INTERVAL_MS`) — because a whole episode
 fetched flat-out is by itself enough requests to trip the flood limit even
 with no other reader active.
 
-`public/style.css` imports the presentation modules in `public/styles/`:
+`public/index.html` links the modules in `public/styles/`:
 `theme.css` owns local fonts, tokens and the reveal primitives; `shell.css`
 owns the library rail (`.library-rail`, the reader's own shelves; `.rail` is
 the player's control row) and the sticky department bar; `catalog.css` owns
@@ -199,8 +212,8 @@ The main dispatcher and the extracted catalog and HTTP handlers each stay under
 200 lines; the state router remains a larger module. A catalog swap rebuilds
 catalog presentation and state routing together; requests already in flight
 retain the router and database they started with. Buffered responses share one
-framing helper, including HEAD responses. State, preload and HLS session deletion
-share the same Origin/Host checks; body-bearing writes also require JSON.
+framing helper, including HEAD responses. Every non-GET/HEAD request passes one
+Origin/Host check in `src/routes.ts`; body-bearing writes also require JSON.
 Media workers obtain their internal HTTP address from the bound listener, so
 OS-assigned ports and specific IPv4 or IPv6 binds work for audio probing,
 transcoding and thumbnail generation.
@@ -370,16 +383,17 @@ hash at all fall back the same way.
 | `GET` | `/api/search?q=...` | Search results grouped by type (Movies, Series, Episodes, Lessons, People, Collections) |
 | `GET` | `/api/status` | Player status (cache, Telegram link, conversions, host) — own-network only |
 | `POST` | `/api/status/playback` | Playback telemetry from open player |
-| `HEAD`/`GET` | `/stream/:id` | Playable file, Range-responding |
+| `HEAD`/`GET` | `/api/sets/:id/stream` | Playable file, Range-responding |
 | `GET` | `/api/sets/:id/subtitles/:n.vtt` | One subtitle track's WebVTT, by its position in the catalog's own list |
 | `GET` | `/api/sets/:id/cached-stream` | Cache-only stream (for thumbnail generation) |
 | `GET` | `/api/events` | Server-sent events (catalog refresh, index install) |
 | `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
 | `GET` | `/api/settings/*` | Settings endpoints (admin-gated: Telegram/cache/library) |
-| `GET`/`POST`/`DELETE` | `/api/settings/sessions` | Active sessions list, revoke |
+| `GET` | `/api/settings/sessions` | Active sessions list |
+| `POST` | `/api/settings/sessions/revoke` | Revoke one session, by id |
 | `GET` | `/api/profiles/{p}/stats` | The profile's viewing stats: summary (week, month, all time, last 30 days, history) plus achievements; `404` for an unknown profile |
 | `GET` | `/api/editors-choice` | Editor's choice pin (watch-state key) |
-| `GET` | `/artwork/...` | Posters, backdrops, person portraits (keyed, CDN-friendly) |
+| `GET` | `/api/posters/:key.jpg` | Posters, backdrops, person portraits (keyed, CDN-friendly) |
 
 ### Stats
 
@@ -613,8 +627,8 @@ token: `POST /api/settings/unlock {token}` mints an HttpOnly, `SameSite=Strict`
 session cookie (`admin-gate.ts`), scoped to `/api/settings` and compared with
 `crypto.timingSafeEqual` against a token generated on first start (or
 `MEDIAGRAM_ADMIN_TOKEN`) — only its path is ever logged. Every write also
-needs the same same-origin, JSON-only guard (`http/browser-write.ts`) every
-other write route already used.
+passes the same-origin, JSON-only guard (`http/browser-write.ts`) the
+dispatcher runs once for every write.
 
 **The account is swappable at runtime.** `telegram/connection.ts`'s
 `TelegramConnection` holds the live `Telegram` client or `null` (signed out);
@@ -624,10 +638,13 @@ leaves them pointed at a client that is gone. `restart()` is strictly
 sequential: gate reads, disconnect the old client, open the new one, release —
 never two clients on one auth key (`login.ts`, measured). A channel switch
 needs none of that: `Telegram.withChannel` reuses the same client with a
-different `InputChannel`, and `CatalogFollower.retarget(root)` points the
-existing follower at a fresh per-channel directory
-(`~/.cache/mediagram-channel-catalog/<chat id>/`) so a newly chosen channel's
-`pushed_at` is never compared against an unrelated channel's history.
+different `InputChannel`. The switch first has `CatalogFollower.tryChannel`
+serve the chosen channel's index from that channel's own directory
+(`~/.cache/mediagram-channel-catalog/<chat id>/`), found through a `Telegram`
+pointed at it by `Telegram.withChannel` and never compared against an
+unrelated channel's `pushed_at`. Only once it is served do the connection,
+the followed channel and `telegram.json` move; a channel with no servable
+index leaves all three where they were.
 
 **Sign-in runs on its own client**, on an empty session — a separate auth key
 from the live one, so an attempt in progress can never collide with it

@@ -20,13 +20,14 @@ const facts: StartupFacts = {
   },
   encoder: { name: "libx264", kind: "software", device: null },
   transcodeDir: "/tmp/transcode",
-  cache: { dir: "/tmp/cache", budget: 1024, readahead: 2 },
+  cache: { dir: "/tmp/cache", readahead: 2 },
   state: { remembered: false, path: null },
   startedAt: 0,
   runtime: { bun: "1.4.2" },
 };
 
 const live = () => ({
+  cacheBudget: 1024,
   cacheHits: 1,
   cacheMisses: 1,
   cacheEvicted: 0,
@@ -169,6 +170,15 @@ describe("the status route", () => {
     expect(answer?.status).toBe(200);
   });
 
+  test("reports the budget Settings set while running, not the one it started with", async () => {
+    let budget = 1024;
+    const route = createStatusRouter({ facts, live: () => ({ ...live(), cacheBudget: budget }), playback: noPlayback });
+    const budgetShown = async () => JSON.parse(new TextDecoder().decode((await route(ask()))?.body as Uint8Array)).cache.budget;
+    expect(await budgetShown()).toBe(1024);
+    budget = 4096;
+    expect(await budgetShown()).toBe(4096);
+  });
+
   test("says nothing about cache size when there is no cache to measure", async () => {
     const route = createStatusRouter({ facts: { ...facts, cache: null }, live, playback: noPlayback });
     const answer = await route(ask());
@@ -223,20 +233,6 @@ describe("POST /api/status/playback", () => {
     const answer = await route(post());
     expect(answer?.status).toBe(204);
     expect(puts).toHaveLength(1);
-  });
-
-  test("a cross-origin write is refused, the same guard the state routes share", async () => {
-    const puts: unknown[] = [];
-    const route = createStatusRouter({ facts, live, playback: { put: (report) => puts.push(report) } });
-    const answer = await route(post({ origin: "https://elsewhere.example" }));
-    expect(answer?.status).toBe(403);
-    expect(puts).toEqual([]);
-  });
-
-  test("a form post without a JSON content type is refused", async () => {
-    const route = createStatusRouter({ facts, live, playback: noPlayback });
-    const answer = await route(post({ contentType: "text/plain" }));
-    expect(answer?.status).toBe(415);
   });
 
   test("an unusable body is a 400, not a crash", async () => {

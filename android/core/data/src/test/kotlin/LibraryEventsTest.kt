@@ -1,5 +1,7 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
+import data.settings.LibrarySettings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,10 +15,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryLibrarySettings
-import settings.LibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.test.Test
@@ -42,7 +42,7 @@ class LibraryEventsTest {
             val core = FakeCore(events = listOf(Result.success(LibraryEvent.INDEX)))
             val started = currentTime
 
-            val heard = CoreLibraryEvents(ResolvedCoreProvider(core), settings, retryAfter = 30.seconds).events().first()
+            val heard = CoreLibraryEvents(FakeCoreProvider(core), settings, retryAfter = 30.seconds).events().first()
 
             assertEquals(LibraryEvent.INDEX, heard)
             assertEquals(30_000L, currentTime - started)
@@ -55,7 +55,7 @@ class LibraryEventsTest {
             val settings = InMemoryLibrarySettings().apply { write("library-1") }
             val core = FakeCore(events = listOf(Result.success(LibraryEvent.INDEX), Result.success(LibraryEvent.STATE)))
 
-            val heard = CoreLibraryEvents(ResolvedCoreProvider(core), settings).events().take(2).toList()
+            val heard = CoreLibraryEvents(FakeCoreProvider(core), settings).events().take(2).toList()
 
             assertEquals(listOf(LibraryEvent.INDEX, LibraryEvent.STATE), heard)
             assertEquals("library-1", core.eventHandle)
@@ -69,7 +69,7 @@ class LibraryEventsTest {
             val heard = mutableListOf<LibraryEvent>()
 
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                CoreLibraryEvents(ResolvedCoreProvider(core), InMemoryLibrarySettings()).events().toList(heard)
+                CoreLibraryEvents(FakeCoreProvider(core), InMemoryLibrarySettings()).events().toList(heard)
             }
             advanceUntilIdle()
 
@@ -92,7 +92,7 @@ class LibraryEventsTest {
                 )
             val started = currentTime
 
-            val heard = CoreLibraryEvents(ResolvedCoreProvider(core), settings, retryAfter = 30.seconds).events().first()
+            val heard = CoreLibraryEvents(FakeCoreProvider(core), settings, retryAfter = 30.seconds).events().first()
 
             assertEquals(LibraryEvent.INDEX, heard)
             assertEquals(30_000L, currentTime - started)
@@ -113,7 +113,7 @@ class LibraryEventsTest {
             val quiet = FakeCore()
             val current = MutableStateFlow<CoreInterface?>(quiet)
             val provider =
-                object : CoreProvider by ResolvedCoreProvider(quiet) {
+                object : CoreProvider by FakeCoreProvider(quiet) {
                     override val core: StateFlow<CoreInterface?> = current
                 }
             val heard = async { CoreLibraryEvents(provider, settings).events().first() }

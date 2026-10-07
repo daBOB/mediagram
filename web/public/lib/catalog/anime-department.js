@@ -10,7 +10,8 @@
 import { el } from "../dom.js";
 import { countOf } from "../format.js";
 import { firstItemOf } from "../library.js";
-import { collectionGrid, emptyState, movieGrid, SECTIONS } from "./shelf-view.js";
+import { collectionGrid, emptyState, movieGrid } from "./shelf-view.js";
+import { SECTIONS } from "./sections.js";
 import { GRID } from "./shelf-mode.js";
 import { departmentHero, deptRow } from "./department-hero.js";
 import { departmentUnderway } from "./home-shelves.js";

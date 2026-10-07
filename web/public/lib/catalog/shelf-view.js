@@ -27,8 +27,6 @@ import { href } from "../address.js";
  * @typedef {import("../library.js").Division} Division
  */
 
-export { SECTIONS };
-
 /**
  * The container the cards go in, in whichever of the two shapes.
  *

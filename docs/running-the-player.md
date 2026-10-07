@@ -515,9 +515,11 @@ before it produced anything` means ffmpeg exited — a bad argument, a missing
 encoder — and is reported the moment it does. `produced no segment within 45s`
 means it is still running and has written nothing, which is the interesting
 case: it is reading from the player's own Range route, so it is usually the
-byte path rather than the encoder. Either way the detail is in
-`$MEDIAGRAM_TRANSCODE_DIR/<session>/ffmpeg.log`, written as it happens rather
-than at exit, so it exists even for a conversion still hanging.
+byte path rather than the encoder. While a conversion is still hanging, the
+detail is in `$MEDIAGRAM_TRANSCODE_DIR/<session>/ffmpeg.log`, written as it
+happens rather than at exit; once the start is given up the session is stopped
+and the log goes with it, unless another viewer still holds that session. The
+server log keeps a `transcode: <set> did not start` line with the reason.
 
 `too many conversions at once` means four are already running. One stops five
 minutes after the last viewer stops reading it — an open player says it is

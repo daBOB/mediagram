@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
+import ui.common.catalog.rememberRowState
 
 private val CARD_WIDTH = 130.dp
 

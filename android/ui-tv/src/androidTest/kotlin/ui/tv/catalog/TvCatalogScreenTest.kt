@@ -105,7 +105,7 @@ class TvCatalogScreenTest {
         waitUntilFocused("See all")
     }
 
-    /** The avatar carries the viewer's own initial, not the full name — phase 01's own choice, proven here on a real window. */
+    /** The avatar carries the viewer's own initial, not the full name, as the web bar's `#who` and the tablet's avatar do — proven here on a real window. */
     @Test
     fun theAvatarShowsTheViewersInitial() {
         show(films(2), profileName = "andre")

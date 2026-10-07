@@ -15,8 +15,7 @@ import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
 import model.Watched
-import org.junit.Assume.assumeTrue
-import java.io.File
+import testing.webFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -32,10 +31,9 @@ import kotlin.test.assertTrue
 class NextUpFixtureTest {
     @Test
     fun matchesTheWebsFixtures() {
-        val file = locateFixture("next-up.json")
-        assumeTrue("next-up.json not found above this module; is the web checkout present?", file != null)
+        val file = webFixture("watch-state/next-up.json")
 
-        val cases = Json.parseToJsonElement(file!!.readText()).jsonArray
+        val cases = Json.parseToJsonElement(file.readText()).jsonArray
         assertTrue(cases.isNotEmpty(), "next-up.json holds no cases")
 
         for (case in cases) {
@@ -113,14 +111,3 @@ private fun JsonObject.toProgress(): Progress =
         duration = get("duration")?.jsonPrimitive?.double,
         updatedAt = getValue("updatedAt").jsonPrimitive.long,
     )
-
-/** Walks up from the working directory until it finds the web's fixture directory, or gives up at the filesystem root. */
-private fun locateFixture(name: String): File? {
-    var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-    while (dir != null) {
-        val candidate = File(dir, "web/test/fixtures/watch-state/$name")
-        if (candidate.isFile) return candidate
-        dir = dir.parentFile
-    }
-    return null
-}

@@ -32,8 +32,7 @@ import model.ListOfSets
  * — is one click away on the same page. A phone viewer mid-film has no such
  * shelf on screen, so this offers a checkbox per list, ticked or not, and an
  * inline way to start a new one without leaving the player. A deliberate
- * difference from the web's own dialog, not a parity gap — the phase's
- * Related Code Files call for exactly this shape.
+ * difference from the web's own dialog, not a parity gap.
  */
 @Composable
 internal fun AddToListDialog(

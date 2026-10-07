@@ -6,15 +6,14 @@ import data.CatalogRepository
 import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.WatchStateRepository
+import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -27,12 +26,10 @@ import model.Profile
 import model.ProfileRequest
 import model.WatchSnapshot
 import org.junit.After
-import playback.ActivePreload
-import playback.FilmPreloadState
 import playback.FilmPreloading
-import settings.InMemoryTmdbSettings
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
+import testing.FakeFilmPreloading
 import testing.WatchStateFixture
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
@@ -46,7 +43,7 @@ import kotlin.test.assertTrue
 private fun catalogViewModel(
     repository: CatalogRepository,
     watchState: WatchStateRepository,
-    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(CatalogCoreProvider(FakeCore()), InMemoryTmdbSettings()),
+    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings()),
     filmPreloader: FilmPreloading = FilmPreloading.Noop,
     // Last so existing trailing-lambda call sites (`catalogViewModel(a, b) { pushed }`,
     // LibraryEvents being a fun interface) keep binding to this one.
@@ -60,29 +57,10 @@ private fun catalogViewModel(
         filmPreloader = filmPreloader,
     )
 
-/** A [FilmPreloading] a test can fire [heldEvents]/[unheldEvents] through directly — nothing here ever actually preloads anything. */
-private class FakeFilmPreloading : FilmPreloading {
-    private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
-    override val heldEvents: SharedFlow<String> = _heldEvents
-
-    private val _unheldEvents = MutableSharedFlow<String>(extraBufferCapacity = 8)
-    override val unheldEvents: SharedFlow<String> = _unheldEvents
-
-    override val hasWork: StateFlow<Boolean> = MutableStateFlow(false)
-    override val active: StateFlow<ActivePreload?> = MutableStateFlow(null)
-
-    override fun stateOf(setId: String, totalBytes: Long): Flow<FilmPreloadState> = MutableStateFlow(FilmPreloadState.Idle(0L, totalBytes))
-    override fun enqueue(setId: String, title: String, totalBytes: Long) = Unit
-    override fun cancel(setId: String) = Unit
-    override fun remove(setId: String) = Unit
-    override fun pauseForTimeLimit() = Unit
-
-    fun emitHeld(setId: String) = _heldEvents.tryEmit(setId)
-    fun emitUnheld(setId: String) = _unheldEvents.tryEmit(setId)
-}
-
 private val ANA = Profile("a", "Ana")
 private val MIA = Profile("k", "Mia", kids = true)
+private const val WATCHLIST_NOTICE = "Could not confirm the Watchlist update. Check it and try again."
+private const val EDITORS_CHOICE_NOTICE = "Could not confirm the editor's choice update. Check it and try again."
 
 /**
  * Uses a standard (queued, not eager) test dispatcher tied to the same
@@ -167,7 +145,7 @@ class CatalogViewModelTest {
                         return FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
-            val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
             val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             vm.update()
             runCurrent()
@@ -207,7 +185,7 @@ class CatalogViewModelTest {
                         return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
-            val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
             val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             val gate = CompletableDeferred<Unit>()
             vm.state.test {
@@ -328,6 +306,91 @@ class CatalogViewModelTest {
                 vm.createList("Favourite")
                 assertEquals(listOf("Favourite"), (awaitItem() as CatalogUiState.Ready).watch.collections.map { it.name })
             }
+        }
+
+    /**
+     * A My List or editor's-choice write the core throws on — a core closed
+     * by a sign-out racing the tap — leaves the app up with a notice on the
+     * shelves, and the same write landing later takes that notice back off.
+     */
+    private suspend fun TestScope.aFailedMarkSaysSoUntilItLands(
+        notice: String,
+        write: CatalogViewModel.() -> Unit,
+        landed: (WatchSnapshot) -> Boolean,
+    ) {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val watch = WatchStateFixture()
+        watch.provider.beforeCore = { throw IllegalStateException("core closed") }
+        val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+        vm.state.test {
+            awaitItem()
+            val before = awaitItem() as CatalogUiState.Ready
+            vm.write()
+            val failed = awaitItem() as CatalogUiState.Ready
+            assertEquals(notice, failed.notice)
+            assertEquals(before.shelves, failed.shelves)
+            watch.provider.beforeCore = {}
+            vm.write()
+            runCurrent()
+            val after = vm.state.value as CatalogUiState.Ready
+            assertNull(after.notice)
+            assertTrue(landed(after.watch))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun aFailedMyListWriteSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(WATCHLIST_NOTICE, { setWatchlisted("movie-0", true) }) { "movie-0" in it.watchlist }
+        }
+
+    @Test
+    fun aFailedMyListToggleSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(WATCHLIST_NOTICE, { toggleWatchlist("movie-0") }) { "movie-0" in it.watchlist }
+        }
+
+    @Test
+    fun aFailedEditorsChoiceToggleSaysSoUntilItLands() =
+        runTest {
+            aFailedMarkSaysSoUntilItLands(EDITORS_CHOICE_NOTICE, { toggleEditorsChoice("movie-0") }) { it.editorsChoice == "movie-0" }
+        }
+
+    /** A title page's buttons name only the title: whether it is on or off is the snapshot's to say. */
+    @Test
+    fun titlePageTogglesTurnAMarkOnAndBackOff() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watch = WatchStateFixture()
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+
+            vm.toggleWatchlist("movie-0")
+            advanceUntilIdle()
+            assertEquals(listOf("movie-0"), watch.repository.snapshot.value.watchlist)
+            vm.toggleWatchlist("movie-0")
+            advanceUntilIdle()
+            assertEquals(emptyList(), watch.repository.snapshot.value.watchlist)
+
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+            assertEquals("movie-0", watch.repository.snapshot.value.editorsChoice)
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+            assertNull(watch.repository.snapshot.value.editorsChoice)
+        }
+
+    @Test
+    fun aKidsProfileCannotPinTheEditorsChoice() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watch = WatchStateFixture(listOf(MIA))
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), watch.repository)
+
+            vm.toggleEditorsChoice("movie-0")
+            advanceUntilIdle()
+
+            assertNull(watch.core.editorsChoice())
         }
 
     @After
@@ -489,7 +552,7 @@ class CatalogViewModelTest {
                             return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                         }
                     }
-                val enrichment = CatalogEnrichmentFetcher(CatalogCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+                val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
                 val vm =
                     catalogViewModel(
                         FakeCatalogRepository(movies = 1, refreshFails = fails),
@@ -683,7 +746,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                val documentaries = kidsView.shelves.single { it.title == DOCUMENTARIES }
+                val documentaries = kidsView.shelves.single { it.department == Department.DOCUMENTARIES }
                 assertEquals(emptyList(), documentaries.entries)
             }
         }
@@ -709,7 +772,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                assertNull(kidsView.shelves.find { it.title == ANIME }, "Anime is omitted at zero, the same as Movies/Series/Tutorials")
+                assertNull(kidsView.shelves.find { it.department == Department.ANIME }, "Anime is omitted at zero, the same as Movies/Series/Tutorials")
             }
         }
 
@@ -728,7 +791,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                val animeIds = kidsView.shelves.single { it.title == ANIME }.entries.filterIsInstance<Entry.Film>().map { it.set.setId }
+                val animeIds = kidsView.shelves.single { it.department == Department.ANIME }.entries.filterIsInstance<Entry.Film>().map { it.set.setId }
                 assertEquals(setOf("Kids Anime"), animeIds.toSet())
             }
         }

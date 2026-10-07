@@ -74,24 +74,24 @@ async fn fetch_each(
         }
         match download(http, &url_of(poster), &dest).await {
             Ok(()) => {
-                if let Some(width) = poster.backdrop_width
+                if let Some(width) = poster.width
                     && let Err(err) =
                         write_private(&width_record(poster, dir), width.to_string().as_bytes())
                 {
                     // Without the record the next run fetches it again,
                     // which costs a download and nothing else.
-                    tracing::warn!(key = %poster.key, error = %err, "backdrop width not recorded");
+                    tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "image width not recorded");
                 }
                 written.push(poster.key.clone());
             }
             // A narrower image already here still serves; the record is
             // left as it was so the next run tries again.
             Err(err) if dest.exists() => {
-                tracing::warn!(key = %poster.key, error = %err, "wider image not fetched, keeping the one held");
+                tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "wider image not fetched, keeping the one held");
                 written.push(poster.key.clone());
             }
             Err(err) => {
-                tracing::warn!(key = %poster.key, error = %err, "poster skipped");
+                tracing::warn!(key = %poster.key, error = %format_args!("{err:#}"), "poster skipped");
             }
         }
     }
@@ -104,7 +104,7 @@ pub fn already_held(refs: &[PosterRef], dir: &Path) -> usize {
     refs.iter().filter(|p| is_held(p, dir)).count()
 }
 
-/// The file recording the width a backdrop was asked for. The width asked
+/// The file recording the width an image was asked for. The width asked
 /// for, not the pixels received: TMDB's original may be narrower than the
 /// request, and recording what arrived would refetch it on every run.
 fn width_record(poster: &PosterRef, dir: &Path) -> std::path::PathBuf {
@@ -117,7 +117,7 @@ fn is_held(poster: &PosterRef, dir: &Path) -> bool {
     if !dir.join(format!("{}.jpg", poster.key)).exists() {
         return false;
     }
-    let Some(wanted) = poster.backdrop_width else {
+    let Some(wanted) = poster.width else {
         return true;
     };
     std::fs::read_to_string(width_record(poster, dir))

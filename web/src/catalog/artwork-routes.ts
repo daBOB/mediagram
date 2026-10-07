@@ -1,8 +1,8 @@
 /** Catalog artwork and preview frames, independent of media byte delivery. */
 import type { Database } from "bun:sqlite";
-import { playableSet } from "../catalog";
+import { hasTable, playableSet } from "../catalog";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
-import { posterKeyIsValid, type PosterStore } from "../package/posters";
+import { posterKeyIsValid, type PosterStore } from "./posters";
 import { bodiless, withBody } from "../response";
 import type { SheetStore } from "../thumbs/sheets";
 import { spritePlan } from "../../public/lib/sprite-plan.js";
@@ -23,15 +23,11 @@ const ARTWORK_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
  * this build refuses to relay as a `Content-Type` header.
  */
 function artworkRow(db: Database, key: string): { mime: string; bytes: Uint8Array } | null {
-  try {
-    const row = db.query("SELECT mime, bytes FROM artwork WHERE key = ?1").get(key) as
-      | { mime: string; bytes: Uint8Array }
-      | null;
-    return row && ARTWORK_MIME.has(row.mime) ? row : null;
-  } catch (error) {
-    if (error instanceof Error && error.message === "no such table: artwork") return null;
-    throw error;
-  }
+  if (!hasTable(db, "artwork")) return null;
+  const row = db.query("SELECT mime, bytes FROM artwork WHERE key = ?1").get(key) as
+    | { mime: string; bytes: Uint8Array }
+    | null;
+  return row && ARTWORK_MIME.has(row.mime) ? row : null;
 }
 
 /**
@@ -41,12 +37,8 @@ function artworkRow(db: Database, key: string): { mime: string; bytes: Uint8Arra
  * {@link artworkResponse}.
  */
 export function artworkKeys(db: Database): Set<string> {
-  try {
-    return new Set((db.query("SELECT key FROM artwork").all() as { key: string }[]).map((row) => row.key));
-  } catch (error) {
-    if (error instanceof Error && error.message === "no such table: artwork") return new Set();
-    throw error;
-  }
+  if (!hasTable(db, "artwork")) return new Set();
+  return new Set((db.query("SELECT key FROM artwork").all() as { key: string }[]).map((row) => row.key));
 }
 
 export async function artworkResponse(

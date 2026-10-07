@@ -56,15 +56,25 @@ const ROOT = join(import.meta.dir, "..");
  * record's scalar readers moved out to `profiles*.ts` and `record-scalars.ts`.
  * Lowered 2026-10-05 for `player.js`, `transport.js` and `playback.css`, once the
  * player's controls became one card with its menus, framing and stats in modules
- * and styles of their own.
+ * and styles of their own. Lowered 2026-10-06 for `src/state/store.ts`, once its
+ * hand-rolled transactions became `db.transaction()` and the progress exchange
+ * moved to `stats-recorder.ts`. Lowered the same day for `src/state/routes.ts`, once
+ * the write guard moved to the dispatcher and its body reads to `jsonBody`.
+ * Lowered the same day for `src/index.ts`, once the status router became a
+ * plain value built before the server and the cache budget left startup facts.
+ * Lowered the same day for `app.js` and `shelf-view.js`, once `SECTIONS` was
+ * imported from `sections.js` rather than forwarded, and for
+ * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
+ * Lowered the same day for `src/state/store.ts`, once its foreign-key check
+ * read the SQLite code through `errorCode`.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 694,
+  "public/app.js": 693,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 287,
-  "public/lib/library.js": 309,
+  "public/lib/catalog/shelf-view.js": 285,
+  "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 994,
   "public/lib/playback/streaming/buffer-health.js": 258,
@@ -79,13 +89,13 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 451,
+  "src/index.ts": 446,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
-  "src/state/routes.ts": 223,
+  "src/state/routes.ts": 209,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 760,
-  "src/state/sync-record.ts": 301,
+  "src/state/store.ts": 723,
+  "src/state/sync-record.ts": 293,
   "src/transcode/registry.ts": 338,
 };
 

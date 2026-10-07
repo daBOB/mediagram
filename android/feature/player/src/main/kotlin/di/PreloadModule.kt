@@ -17,6 +17,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CatalogRepository
 import data.CoreProvider
+import data.di.MainThreadScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -40,13 +41,16 @@ import playback.SystemUnmeteredNetworkCheck
 import playback.fitsFilmPreloadBudget
 import playback.fitsInPreloadBudget
 import playback.setUri
+import player.ActivePlayback
 import player.PreloadService
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 
 /**
- * The series and film preloaders, and everything they share — split out
- * of `PlaybackModule` to keep both under the project's line guideline.
+ * The series and film preloaders, and everything they share. They stay in
+ * feature:player though the catalogue injects them too: the film preloader
+ * is built on [ActivePlayback] and starts [PreloadService], both this
+ * module's own.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -91,7 +95,7 @@ object PreloadModule {
         heldSets: HeldSetsQuery,
         writer: CacheDataSourceWriter,
         lane: DownloadLane,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): SeriesPreloading {
         // Its own dedicated thread, apart from Dispatchers.IO's shared
         // pool: MlibDataSource's own reads block with `runBlocking`, and a
@@ -110,7 +114,7 @@ object PreloadModule {
                         fitsInPreloadBudget(occupancy.heldBytes, currentBytes, candidateBytes, occupancy.budgetBytes)
                     }
             },
-            log = { line -> Log.d(PRELOAD_LOG_TAG, line) },
+            log = { line, e -> if (e == null) Log.d(PRELOAD_LOG_TAG, line) else Log.w(PRELOAD_LOG_TAG, line, e) },
             lane = lane,
         )
     }
@@ -121,7 +125,7 @@ object PreloadModule {
     fun provideActivePlayback(
         playerDeferred: Lazy<@JvmSuppressWildcards Deferred<ExoPlayer>>,
         catalogRepository: CatalogRepository,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): ActivePlayback = ActivePlayback(playerDeferred, catalogRepository, scope)
 
     /**
@@ -142,7 +146,7 @@ object PreloadModule {
         lane: DownloadLane,
         heldSets: HeldSetsQuery,
         activePlayback: ActivePlayback,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): FilmPreloading {
         val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         val preloader =
@@ -161,7 +165,7 @@ object PreloadModule {
                 fits = { totalBytes, reservedBytes ->
                     fitsFilmPreloadBudget(totalBytes, reservedBytes, CacheProvider.occupancy(context).budgetBytes)
                 },
-                log = { line -> Log.d(FILM_PRELOAD_LOG_TAG, line) },
+                log = { line, e -> if (e == null) Log.d(FILM_PRELOAD_LOG_TAG, line) else Log.w(FILM_PRELOAD_LOG_TAG, line, e) },
             )
         scope.launch {
             preloader.hasWork.filter { it }.collect {

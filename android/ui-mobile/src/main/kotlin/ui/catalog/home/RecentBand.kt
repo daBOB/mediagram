@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import designsystem.Eyebrow
 import model.MediaSet
+import ui.common.catalog.rememberRowState
 import java.io.File
-import ui.catalog.rememberRowState
 
 /**
  * Recently Added — posters alone, no caption, the poster standing for the

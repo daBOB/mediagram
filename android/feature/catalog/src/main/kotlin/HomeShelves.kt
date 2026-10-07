@@ -1,148 +1,87 @@
 package catalog
 
-import data.ProgressPoint
-import data.ResumePoint
 import model.MediaSet
-import model.Progress
-import model.WatchSnapshot
 
 /** How many plates a row holds before the rest is left to its own shelf. Also TV's own row width — six plates fit a television without a rail (`TvHomeRow`'s own doc); changing it moves TV too, not just parity with the web's own row limits. */
 const val HOME_ROW_LIMIT = 6
 
-/** The web's own `POSTER_ROW_LIMIT` (`home-shelves.js:21`) — Recently Added and the Latest shelves' own poster rows hold this many on the phone/tablet page, more than [HOME_ROW_LIMIT] (which still governs Continue/Next up there, and TV's own row width everywhere). */
+/** The web's own `POSTER_ROW_LIMIT` (`home-shelves.js:21`) — Recently Added and Latest series hold this many on Home, more than [HOME_ROW_LIMIT] (which still governs Continue/Next up and Latest courses there, and TV's own row width everywhere). */
 const val HOME_POSTER_ROW_LIMIT = 8
-
-/**
- * One row of the start page. [seeAll] is the shelf "See all" opens; `null`
- * only for a row with no wall of its own to send it to. [total] is how much
- * the row is a window onto, for the heading: the plates on screen cannot say
- * it on their own.
- */
-data class HomeRow(
-    val title: String,
-    val seeAll: String?,
-    val total: Int,
-    val content: RowContent,
-)
-
-/**
- * What a row draws. A show or a course arriving on Latest is a card for the
- * whole of it; an episode offered under Continue or Next up is not — it is
- * one set with a caption about this viewer's own place in it. Two shapes
- * rather than bending [Entry.Film] over an episode that is not a film.
- */
-sealed interface RowContent {
-    data class Entries(
-        val entries: List<Entry>,
-    ) : RowContent
-
-    data class Sets(
-        val cards: List<SetCard>,
-    ) : RowContent
-}
 
 /** One set on Continue or Next up: what to play, what to say under it, and its own mark. */
 data class SetCard(val set: MediaSet, val caption: String, val progress: Float?, val watched: Boolean, val held: Boolean = false)
 
 /**
- * The rows the start page shows, from the library and this viewer's own
- * watch state — Continue and Next up first, then the three Latest shelves,
- * in that order because Continue and Next up are unlikely to correspond to
- * what a viewer opened this page to reload. [heldIds] carries the offline
- * badge onto Continue and Next up's own cards; the three Latest rows carry
- * none — a film or a show's plate there is [Entry], not [SetCard].
+ * What arrived, newest first, by department — the web's `latestMovies`,
+ * `latestSeries` and `latestCourses` (`home-shelves.js`). Home draws the
+ * series and the courses; the Latest page draws all three. Each total is the
+ * whole shelf, what "See all" would open, which a cut row cannot say on its
+ * own.
  */
-fun homeRowsOf(
+data class Latest(
+    val movies: List<Entry.Film>,
+    val series: List<Entry.Collection>,
+    val courses: List<Entry.Collection>,
+    val moviesTotal: Int,
+    val seriesTotal: Int,
+    val coursesTotal: Int,
+)
+
+/**
+ * [Latest] over [shelves]: films and series cut to [posterLimit], courses to
+ * [limit], as the web's `homeShelves` cuts them — a course row is a list, not
+ * a row of posters, and keeps the shorter limit. No anime or documentaries:
+ * the web never draws either as a Latest row.
+ */
+fun latestOf(
     shelves: List<Shelf>,
-    watch: WatchSnapshot,
-    heldIds: Set<String> = emptySet(),
+    posterLimit: Int = HOME_POSTER_ROW_LIMIT,
     limit: Int = HOME_ROW_LIMIT,
-    /** Overrides [limit] for the Latest shelves' own poster rows only — Continue/Next up still use [limit] alone. */
-    posterLimit: Int = limit,
-): List<HomeRow> {
-    val underway = underwayOf(collectionsForNextUp(shelves), indexById(shelves), watch, limit)
-    val positions = watch.progress.associateBy { it.setId }
-    val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-
-    val rows = mutableListOf<HomeRow>()
-
-    if (underway.continues.isNotEmpty()) {
-        rows += HomeRow(
-            title = "Continue",
-            // Its own masthead tab, the same wall this row is a window onto
-            // — see catalog.continueWall.
-            seeAll = "Continue",
-            total = underway.continuesTotal,
-            content = RowContent.Sets(
-                underway.continues.map { set -> setCard(set, resumeLine(positions[set.setId]), positions, watchedIds, heldIds) },
-            ),
-        )
-    }
-
-    if (underway.nextUp.isNotEmpty()) {
-        rows += HomeRow(
-            title = "Next up",
-            seeAll = "Series",
-            total = underway.nextUpTotal,
-            content = RowContent.Sets(
-                underway.nextUp.map { entry ->
-                    // The captions differ within the row on purpose: one card
-                    // is where the viewer stopped, the next is what follows
-                    // an episode they finished.
-                    val caption = if (entry.resume) resumeLine(positions[entry.set.setId]) else "Next up"
-                    setCard(entry.set, caption, positions, watchedIds, heldIds)
-                },
-            ),
-        )
-    }
-
-    for (shelf in shelves) {
-        // No "Latest documentaries" or "Latest anime" — home-shelves.js's
-        // own `homeShelves` only ever names latestMovies/latestSeries/latestCourses,
-        // so the web this is ported from never draws either row.
-        if (shelf.title == DOCUMENTARIES || shelf.title == ANIME) continue
-        rows +=
-            HomeRow(
-                title = latestTitleFor(shelf.title),
-                seeAll = shelf.title,
-                total = shelf.entries.size,
-                content = RowContent.Entries(newestFirst(shelf.entries, posterLimit)),
-            )
-    }
-
-    return rows
+): Latest {
+    fun entriesOf(department: Department) = shelves.firstOrNull { it.department == department }?.entries.orEmpty()
+    val movies = entriesOf(Department.MOVIES)
+    val series = entriesOf(Department.SERIES)
+    val courses = entriesOf(Department.TUTORIALS)
+    return Latest(
+        movies = newestFirst(movies, posterLimit).filterIsInstance<Entry.Film>(),
+        series = newestFirst(series, posterLimit).filterIsInstance<Entry.Collection>(),
+        courses = newestFirst(courses, limit).filterIsInstance<Entry.Collection>(),
+        moviesTotal = movies.size,
+        seriesTotal = series.size,
+        coursesTotal = courses.size,
+    )
 }
 
 /**
  * [shelves]' own collections, for [underwayOf]'s "what is underway" —
  * Documentaries excluded, the same way `home-shelves.js`'s own underway loop
- * only ever walks `library.series` and `library.tutorials`: a documentary
- * has no "next episode" the way a show or a course does, so its folders
- * never offer one here even though a viewer can still resume one directly
- * through the flat, kind-agnostic Continue list [underwayOf] also returns.
+ * only ever walks series, anime and tutorials: a documentary has no "next
+ * episode" the way a show or a course does, so its folders never offer one
+ * here even though a viewer can still resume one directly through the flat,
+ * kind-agnostic Continue list [underwayOf] also returns.
  */
 internal fun collectionsForNextUp(shelves: List<Shelf>): List<Entry.Collection> =
-    shelves.asSequence().filterNot { it.title == DOCUMENTARIES }.flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
-
-/** Internal, not private: [magazineHomeOf] builds the same card for the merged resume strip. */
-internal fun setCard(
-    set: MediaSet,
-    caption: String,
-    positions: Map<String, Progress>,
-    watchedIds: Set<String>,
-    heldIds: Set<String>,
-): SetCard {
-    val progress = ResumePoint.watchedFraction(positions[set.setId]?.let { ProgressPoint(it.at, it.duration) })
-    return SetCard(set, caption, progress?.toFloat(), set.setId in watchedIds, set.setId in heldIds)
-}
+    shelves
+        .asSequence()
+        .filter {
+            when (it.department) {
+                Department.DOCUMENTARIES -> false
+                Department.MOVIES, Department.SERIES, Department.ANIME, Department.TUTORIALS -> true
+            }
+        }.flatMap { it.entries }
+        .filterIsInstance<Entry.Collection>()
+        .toList()
 
 /**
  * Every set anywhere in [shelves], keyed by id — a film as much as an
- * episode or a lesson. Internal rather than private: [continueWall],
- * [watchlistWall] and [kidsWall] in `KeptShelves.kt` resolve the same ids
- * the same way, against the same shelves.
+ * episode or a lesson. [continueWall], [watchlistWall] and [kidsWall] in
+ * `KeptShelves.kt` resolve the same ids the same way, against the same
+ * shelves. A department page needs it for the same reason [magazineHomeOf]
+ * does: a Continue row resolves a progress row to its set before the
+ * department's own [showsDepartmentOf] narrows it to one kind, and a
+ * progress row can name a set of any kind.
  */
-internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
+fun allSetsById(shelves: List<Shelf>): Map<String, MediaSet> {
     val byId = HashMap<String, MediaSet>()
     for (shelf in shelves) {
         for (entry in shelf.entries) {
@@ -157,22 +96,6 @@ internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
     }
     return byId
 }
-
-/**
- * A row's name, from the shelf it draws on.
- *
- * Not a mechanical "Latest " + the shelf's own word: the web's row titles
- * (`home-view.js`) use "films" and "courses" where the masthead itself says
- * "Movies" and "Tutorials", and this keeps that literal wording rather than
- * deriving one that only agrees with the masthead by coincidence.
- */
-private fun latestTitleFor(shelf: String): String =
-    when (shelf) {
-        "Movies" -> "Latest films"
-        "Series" -> "Latest series"
-        "Tutorials" -> "Latest courses"
-        else -> "Latest $shelf"
-    }
 
 /**
  * Newest first, on a copy — the shelf keeps the order it was built in.

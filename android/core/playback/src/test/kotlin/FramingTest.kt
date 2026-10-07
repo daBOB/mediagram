@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  */
 class FramingTest {
 
-    private val wideFilm = 2.39f // the phase's own 2.39:1 film example
+    private val wideFilm = 2.39f // a 2.39:1 scope film
     private val lesson = 4f / 3f
 
     private val containerWidth = 2000f

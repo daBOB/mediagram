@@ -11,6 +11,7 @@ pub mod backfill;
 pub mod backfill_channel;
 mod dry_run;
 mod dry_run_report;
+mod dry_run_totals;
 pub mod loopback;
 pub mod match_source;
 pub mod move_inline;

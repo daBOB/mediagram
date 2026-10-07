@@ -24,7 +24,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { startServer } from "../src/server";
-import { PosterStore } from "../src/package/posters";
+import { PosterStore } from "../src/catalog/posters";
 import { WatchState } from "../src/state/store";
 import { EXPECTED_SCHEMA, listPlayable } from "../src/catalog";
 import { wirePreviewSubtitles } from "./preview-subtitles";

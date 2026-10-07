@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -21,6 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 
 /**
  * [TvDocumentariesDepartmentPage] over real [documentariesDepartmentOf]
@@ -116,8 +118,12 @@ class TvDocumentariesDepartmentPageStateTest : TvScreenStateTest() {
         val library = DocumentaryLibrary(collections = emptyList(), singles = listOf(singleOnly) + newer)
         val dept = documentariesDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!
 
-        show { TvDocumentariesDepartmentPage(dept, WatchSnapshot.Empty, onOpenCollection = {}, onPlay = {}, restoreKey = "solo-old") }
+        val listState = LazyListState()
+
+        show { TvDocumentariesDepartmentPage(dept, WatchSnapshot.Empty, onOpenCollection = {}, onPlay = {}, restoreKey = "solo-old", listState = listState) }
 
         compose.onNodeWithText("solo-old").assertIsFocused()
+        // The hero, Recently added and Standalone: nothing is underway, so no Continue item for the scroll to count past.
+        assertEquals(3, listState.layoutInfo.totalItemsCount)
     }
 }

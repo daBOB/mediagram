@@ -3,8 +3,13 @@ package ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
-import catalog.Destination
 import ui.catalog.CenteredMessage
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
+import ui.common.FrameResolution
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.resolveFrame
 
 /** What the bar says while a frame's own key has not resolved to anything yet. */
 internal const val LOADING = "…"

@@ -1,5 +1,5 @@
 //! The chunk store: files on disk, and an in-memory LRU index
-//! ([`index`]) rebuilt from them at startup.
+//! (`index`) rebuilt from them at startup.
 //!
 //! An id's shape is validated by the caller ([`crate::rules::valid_id`])
 //! before it ever reaches here — this module trusts it enough to join it
@@ -7,6 +7,7 @@
 
 mod evict;
 mod index;
+pub(crate) mod publish;
 mod scan;
 mod set_status;
 mod total;
@@ -90,36 +91,42 @@ impl ChunkStore {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Writes `body` to a name unique to this call, then publishes it with
-    /// a no-overwrite link: the loser of a race sees "exists" and leaves
-    /// the winner's bytes untouched, never interleaved with its own.
+    /// Stages `body`, then publishes it with [`publish::publish_new`]. The
+    /// staging is the slow part and runs unlocked; everything that touches
+    /// the set's directory runs under the index lock, because eviction
+    /// removes a set's directory under that lock once it holds no chunk
+    /// file, and would otherwise take the directory, total or chunk of this
+    /// PUT with it.
     pub fn put(&self, id: &str, n: u32, total: u64, body: &[u8]) -> io::Result<PutOutcome> {
-        fs::create_dir_all(self.set_dir(id))?;
-        if let Some(held) = total::pair(&self.tmp_dir(), &self.total_path(id), total)? {
-            if held != total {
-                return Ok(PutOutcome::TotalMismatch { held });
-            }
+        let staged = self.tmp_dir().join(publish::temp_name());
+        fs::write(&staged, body)?;
+
+        // ponytail: one lock for the whole store, from the set's directory
+        // to eviction; total::pair's corrupt-file retry (20 x 5 ms) sleeps
+        // under it. Per-set locks if PUT contention shows.
+        let mut index = self.lock_index();
+        let paired = fs::create_dir_all(self.set_dir(id))
+            .and_then(|()| total::pair(&self.tmp_dir(), &self.total_path(id), total));
+        let refused = match paired {
+            Ok(Some(held)) if held != total => Some(Ok(PutOutcome::TotalMismatch { held })),
+            Ok(_) => None,
+            Err(e) => Some(Err(e)),
+        };
+        if let Some(refused) = refused {
+            let _ = fs::remove_file(&staged);
+            return refused;
         }
 
-        let tmp_path = self.tmp_dir().join(temp_name());
-        fs::write(&tmp_path, body)?;
         let chunk_path = self.chunk_path(id, n);
-        let publish = fs::hard_link(&tmp_path, &chunk_path);
-        let _ = fs::remove_file(&tmp_path);
-
-        match publish {
-            Ok(()) => {
-                let mtime = fs::metadata(&chunk_path)?
-                    .modified()
-                    .unwrap_or_else(|_| SystemTime::now());
-                let mut index = self.lock_index();
-                index.insert((id.to_string(), n), body.len() as u64, mtime);
-                evict::evict_over_budget(&self.root, self.budget, &mut index);
-                Ok(PutOutcome::Created)
-            }
-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => Ok(PutOutcome::AlreadyHeld),
-            Err(e) => Err(e),
+        if !publish::publish_new(&staged, &chunk_path)? {
+            return Ok(PutOutcome::AlreadyHeld);
         }
+        let mtime = fs::metadata(&chunk_path)?
+            .modified()
+            .unwrap_or_else(|_| SystemTime::now());
+        index.insert((id.to_string(), n), body.len() as u64, mtime);
+        evict::evict_over_budget(&self.root, self.budget, &mut index);
+        Ok(PutOutcome::Created)
     }
 
     /// Reads a chunk's bytes and touches its mtime, so the LRU order
@@ -170,14 +177,6 @@ impl ChunkStore {
             chunks: index.chunk_count(),
         }
     }
-}
-
-/// A name unique enough that two concurrent PUTs of the same chunk never
-/// stage into the same temp file.
-fn temp_name() -> String {
-    let mut buf = [0u8; 16];
-    getrandom::fill(&mut buf).expect("the OS random source is available");
-    hex::encode(buf)
 }
 
 #[cfg(test)]

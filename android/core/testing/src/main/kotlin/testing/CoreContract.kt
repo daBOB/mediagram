@@ -634,4 +634,25 @@ abstract class CoreContract {
             assertEquals("x".repeat(200), core.preferences(profile.id).single().value)
         }
     }
+
+    /**
+     * A synced name is never forgotten: its row carries no tombstone, so a
+     * delete here would come back from every device still holding it. A
+     * device-only name in the same scope still forgets.
+     */
+    @Test
+    fun aSyncedPreferenceIsNeverForgotten() {
+        runBlocking {
+            val core = core()
+            val profile = core.freshProfile("Zia")
+
+            assertTrue(core.setPreference(profile.id, "show:Dark", "subtitle", "en"))
+            assertFalse(core.setPreference(profile.id, "show:Dark", "subtitle", null))
+            assertFalse(core.setPreference(profile.id, "show:Dark", "subtitle", "  "))
+            assertTrue(core.setPreference(profile.id, "show:Dark", "speed", "1.5"))
+            assertTrue(core.setPreference(profile.id, "show:Dark", "speed", null))
+
+            assertEquals(listOf(PreferenceRow("show:Dark", "subtitle", "en")), core.preferences(profile.id))
+        }
+    }
 }

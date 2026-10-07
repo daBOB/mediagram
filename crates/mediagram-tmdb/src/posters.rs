@@ -20,25 +20,26 @@ const IMAGE_BASE: &str = "https://image.tmdb.org/t/p/w342";
 /// needs far fewer pixels than a poster does.
 pub const PORTRAIT_WIDTH: u32 = 185;
 
-/// One image to fetch: the key it will be stored under, TMDB's path, and —
-/// for a backdrop only — the width it was resolved at.
+/// One image to fetch: the key it will be stored under, TMDB's path, and the
+/// CDN width to ask for when it is not a poster's.
 ///
-/// A poster is always fetched at [`IMAGE_BASE`]'s width, so it carries no
-/// width of its own; a backdrop's varies by caller (the desktop web player's
-/// hero wants far more pixels than a phone screen), so [`resolve_backdrops`]
-/// stamps the width it was asked for onto every ref it returns.
+/// `width` is `None` for a poster, which is always fetched at `IMAGE_BASE`'s
+/// width (w342). It is set for a backdrop, whose width varies by caller (the
+/// desktop web player's hero wants far more pixels than a phone screen), so
+/// [`resolve_backdrops`] stamps the width it was asked for onto every ref it
+/// returns; and for a cast or crew portrait, at [`PORTRAIT_WIDTH`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PosterRef {
     pub key: String,
     pub path: String,
-    pub backdrop_width: Option<u32>,
+    pub width: Option<u32>,
 }
 
 impl PosterRef {
     /// The CDN URL, at the width the key's kind of image is shown at.
     #[must_use]
     pub fn url(&self) -> String {
-        match self.backdrop_width {
+        match self.width {
             Some(width) => format!("https://image.tmdb.org/t/p/w{width}{}", self.path),
             None => poster_url(&self.path),
         }
@@ -96,7 +97,7 @@ pub async fn resolve_backdrops(
         let details = match crate::details::details(api, *kind, *id).await {
             Ok(details) => details,
             Err(err) => {
-                tracing::warn!(id, error = %err, "no backdrop for this title");
+                tracing::warn!(id, error = %format_args!("{err:#}"), "no backdrop for this title");
                 continue;
             }
         };
@@ -104,7 +105,7 @@ pub async fn resolve_backdrops(
             found.push(PosterRef {
                 key,
                 path,
-                backdrop_width: Some(width),
+                width: Some(width),
             });
         }
     }
@@ -117,7 +118,7 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
     let details = match crate::details::details(api, kind, id).await {
         Ok(details) => details,
         Err(err) => {
-            tracing::warn!(id, error = %err, "no poster for this title");
+            tracing::warn!(id, error = %format_args!("{err:#}"), "no poster for this title");
             return Vec::new();
         }
     };
@@ -127,7 +128,7 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
         .map(|path| PosterRef {
             key: key.to_owned(),
             path,
-            backdrop_width: None,
+            width: None,
         });
     let seasons = details.seasons.into_iter().filter_map(|season| {
         let path = season.poster_path.filter(|p| is_image_path(p))?;
@@ -135,7 +136,7 @@ async fn posters_for(api: &impl TmdbApi, kind: Kind, id: u64, key: &str) -> Vec<
         Some(PosterRef {
             key,
             path,
-            backdrop_width: None,
+            width: None,
         })
     });
     show.into_iter().chain(seasons).collect()
@@ -162,7 +163,7 @@ pub fn is_image_path(path: &str) -> bool {
 
 /// The key a title's poster is stored under: `tmdb-movie-<id>` or `tmdb-tv-<id>`.
 pub fn poster_key(kind: Kind, id: u64) -> String {
-    format!("tmdb-{}-{id}", kind_key(kind))
+    mlib_spec::package::tmdb_key(kind_key(kind), id)
 }
 
 /// How a kind is spelled in the key, matching the poster keys exactly: TMDB

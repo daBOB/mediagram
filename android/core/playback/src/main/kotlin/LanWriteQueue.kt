@@ -1,12 +1,12 @@
 package playback
 
+import data.orDefault
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 /** What [LanFirstChunkSource] hands a chunk it just fetched from Telegram, to mirror onto the LAN server. */
 fun interface LanChunkWriter {
@@ -75,10 +75,14 @@ class LanWriteQueue(
         queue.trySend(QueuedChunk(setId, index, total, bytes))
     }
 
-    private suspend fun write(item: QueuedChunk) {
-        val srv = server() ?: return
-        val tok = token() ?: return
-        try {
+    // A write that fails for any reason — no server, an unreadable token
+    // store, a server that cannot be reached — costs nothing but the sharing
+    // it would have done: the chunk was already served to the reader from
+    // Telegram before this ran, and the worker lives on for the next one.
+    private suspend fun write(item: QueuedChunk) =
+        orDefault(Unit, "LAN write") {
+            val srv = server() ?: return@orDefault
+            val tok = token() ?: return@orDefault
             when (client.put(srv.baseUrl, tok, item.setId, item.index, item.total, item.bytes)) {
                 LanPutResult.Unauthorized -> {
                     halted = true
@@ -86,12 +90,7 @@ class LanWriteQueue(
                 }
                 LanPutResult.Stored, LanPutResult.Rejected -> Unit
             }
-        } catch (e: IOException) {
-            // A LAN write that failed to even reach the server costs
-            // nothing but the sharing it would have done — the chunk was
-            // already served to the reader from Telegram before this ran.
         }
-    }
 
     private companion object {
         const val CAPACITY = 8

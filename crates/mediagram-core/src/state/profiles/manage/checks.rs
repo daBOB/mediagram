@@ -5,10 +5,10 @@
 
 use super::ProfileManager;
 use crate::state::StateDb;
+use crate::state::profiles::Answer;
 use crate::state::profiles::ProfileOutcome::{
     self, Done, Invalid, NameTaken, NoPin, NotAllowed, NotFound, Wait, WrongPin,
 };
-use crate::state::profiles::Answer;
 use crate::state::profiles::pin_wait::PinWait;
 use crate::state::profiles::role_rows::{self, NewProfile, Stored};
 use crate::state::profiles::rules::{self, Action};
@@ -60,10 +60,8 @@ impl ProfileManager<'_> {
         if actor.kids {
             return Ok(Some(NotAllowed));
         }
-        if !unproven {
-            if let Some(refused) = self.prove(actor, pin)? {
-                return Ok(Some(refused));
-            }
+        if !unproven && let Some(refused) = self.prove(actor, pin)? {
+            return Ok(Some(refused));
         }
         let views: Vec<_> = rows.iter().map(Stored::view).collect();
         let allowed = rules::allowed(&views, actor_id, action, target_id.unwrap_or_default());
@@ -113,3 +111,7 @@ impl StateDb {
             .unwrap_or(Invalid)
     }
 }
+
+#[cfg(test)]
+#[path = "checks_tests.rs"]
+mod tests;

@@ -41,7 +41,7 @@ private val CoverBarClearance = 72.dp
  * of the phone's `HomeCover` and the web's `home-cover.js`. One film at a
  * time, full width under the departments bar (which reads its own
  * translucency from the same list this draws into, through the shared
- * `ui.chrome.coverBlend`); rotates every [HOLD_MS] while no focus sits
+ * `ui.common.chrome.coverBlend`); rotates every [HOLD_MS] while no focus sits
  * anywhere inside it and while nothing has paused it by leaving — a
  * television has no hover to rest and hold it the way a pointer does, so
  * focus is what takes over that job here.

@@ -17,11 +17,9 @@ use grammers_client::SignInError;
 use grammers_client::client::LoginToken;
 use grammers_mtsender::InvocationError;
 
-#[path = "auth_attempt.rs"]
 mod attempt;
 use attempt::Attempt;
 
-#[path = "auth_password.rs"]
 mod password;
 pub(in crate::api) use password::{PendingPassword, check_password};
 
@@ -133,6 +131,9 @@ fn out_of_step(err: SignInError) -> CoreError {
     tracing::warn!(%err, "unexpected answer to a login step");
     CoreError::NotAuthorized("sign-in was rejected".into())
 }
+
+#[cfg(test)]
+mod fixture;
 
 #[cfg(test)]
 #[path = "auth_tests.rs"]

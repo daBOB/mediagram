@@ -74,9 +74,9 @@ export async function findNewestChannelIndex(
   return {
     messageId: message.id,
     pushedAt: versionStamp(message.message ?? "", now),
-    // Called the way `partFetcher` calls it, which is proven against real parts:
+    // Called the way `fetchPartOnce` calls it, which is proven against real parts:
     // from offset 0, in Telegram's largest request, so a whole index costs
     // half the requests teleproto's 512 KiB default would.
-    chunks: () => telegram.client.iterDownload(media as never, { requestSize: MAX_REQUEST }) as AsyncIterable<Uint8Array>,
+    chunks: () => telegram.client.iterDownload(media, { requestSize: MAX_REQUEST }) as AsyncIterable<Uint8Array>,
   };
 }

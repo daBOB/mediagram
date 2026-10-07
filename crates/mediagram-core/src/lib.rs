@@ -1,5 +1,7 @@
-//! Portable core of the mlib client: Telegram transport and index, shared by
-//! the Linux CLI and the Android app.
+//! Portable core of the mlib client, shared by the Linux CLI and the Android
+//! app: the Telegram transport and byte path, the catalog store over the
+//! index, search, watch state and its sync, achievements, and what a device
+//! enriches a library with on its own.
 
 uniffi::setup_scaffolding!();
 
@@ -20,6 +22,7 @@ pub mod package;
 pub mod range;
 pub mod search;
 pub mod shows;
+mod sqlite_schema;
 pub mod state;
 pub mod transport;
 pub mod updates;

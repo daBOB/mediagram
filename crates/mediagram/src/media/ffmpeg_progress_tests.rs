@@ -109,10 +109,10 @@ mod processes {
         async fn pid(&self) -> i32 {
             tokio::time::timeout(Duration::from_secs(5), async {
                 loop {
-                    if let Ok(text) = std::fs::read_to_string(self.pid_file()) {
-                        if let Ok(pid) = text.parse() {
-                            return pid;
-                        }
+                    if let Ok(text) = std::fs::read_to_string(self.pid_file())
+                        && let Ok(pid) = text.parse()
+                    {
+                        return pid;
                     }
                     tokio::time::sleep(Duration::from_millis(10)).await;
                 }

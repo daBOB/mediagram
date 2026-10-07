@@ -9,7 +9,7 @@
  * A show watched to its end offers its first episode again.
  */
 
-import { episodeNumber } from "../episode-label.js";
+import { episodeNumber } from "../format.js";
 import { flattenCollection } from "../library.js";
 
 /**

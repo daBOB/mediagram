@@ -11,7 +11,7 @@ import type { StartupFacts } from "./facts";
 import type { LoopLagReading } from "./loop-lag";
 import type { DiskFree } from "./disk-free";
 import type { LinkSnapshot } from "../telegram/link-stats";
-import type { TranscodeMode } from "../transcode/registry";
+import type { TranscodeMode } from "../transcode/session-identity";
 import type { PlaybackRow } from "./playback-reports";
 
 /** One running conversion, as the panel shows it. */
@@ -43,15 +43,12 @@ export interface HostLiveFacts {
   disks: DiskFree[];
 }
 
-/** The host group as the snapshot reports it: the live figures plus the runtime version. */
-export interface HostFacts extends HostLiveFacts {
-  bun: string;
-}
-
 /** What is true only at the moment the question is asked. */
 export interface LiveFacts {
   /** Bytes on disk now, or `null` when caching is off or unmeasured. */
   cacheHeldBytes: number | null;
+  /** What the cache may hold now, in bytes; Settings can change it while the player runs. */
+  cacheBudget: number;
   cacheHits: number;
   cacheMisses: number;
   cacheEvicted: number;
@@ -77,6 +74,9 @@ export interface LiveFacts {
   now: number;
 }
 
+/** The live facts read on each poll; the router adds its memoized scans and the clock. */
+export type PolledFacts = Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">;
+
 /**
  * The reading a viewer is shown.
  *
@@ -93,6 +93,7 @@ export function buildSnapshot(facts: StartupFacts, live: LiveFacts) {
         ? null
         : {
             ...facts.cache,
+            budget: live.cacheBudget,
             heldBytes: live.cacheHeldBytes,
             hits: live.cacheHits,
             misses: live.cacheMisses,

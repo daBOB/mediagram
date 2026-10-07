@@ -1,8 +1,8 @@
 /**
  * `subtitle-choice.js` against the fixture every surface is proved against.
  *
- * The rule itself is `plan.md`'s "Playback rule" for `260930-0303-subtitles`;
- * this file only turns each fixture case into an assertion.
+ * The rule itself is documented in `subtitle-choice.js`; this file only turns
+ * each fixture case into an assertion.
  */
 
 import { describe, expect, test } from "bun:test";

@@ -34,6 +34,8 @@ import player.retry
 import player.setInList
 import player.setKidsMark
 import player.toggleWatchlist
+import ui.common.player.PlayerNavigationEffects
+import ui.common.player.shouldStopOnDispose
 
 /**
  * Hosts the shared [PlayerViewModel] behind a `PlayerSurface`, keeping the

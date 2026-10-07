@@ -1,8 +1,8 @@
 package data
 
+import data.settings.InMemoryTelegramSettings
+import data.settings.TelegramCredentials
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryTelegramSettings
-import settings.TelegramCredentials
 import testing.FakeCore
 import testing.FakeCoreHandle
 import uniffi.mediagram_core.AccountSummary

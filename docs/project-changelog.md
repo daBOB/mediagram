@@ -5,6 +5,39 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.118.0 — a code-health cycle across the uploader, the player and the app
+
+113 commits from a desloppify review of all three projects: fresh blind reviews, triage, then one commit per cluster with its regression test. Strict scores: uploader and core 88.3, web player 87.3, Android app in `plans/261006-1318-desloppify-code-health/plan.md`.
+
+**Security** (web)
+
+- **Sign-in responses no longer carry the Telegram session.** A finished sign-in through Settings sent the session string, the account's credential, to the browser, which never used it (`e9169658`). Anyone who signed in through web Settings from an untrusted browser or network should end that Telegram session.
+
+**Fixed** (web)
+
+- **A library switch proves the chosen channel before moving to it.** A channel with no readable index used to leave the player half-switched; now nothing moves until the new index is served (`18e5dd18`). Android still records the chosen library first, a known difference.
+- **A subtitle preload that fails on disk no longer exits the player** (`bd1151f9`). An empty or non-numeric player setting falls back to its default.
+- **An unreadable admin token stops startup** instead of being overwritten, which would have signed the admin out of every browser (`14da8e73`). A failed atomic write removes its `.tmp` file.
+- Watch-state writes report the real error and keep synced choices; a blank list rename answers 400; the status page shows the cache budget Settings set; a failed transcode start keeps its reason (the 503 no longer points at a deleted `ffmpeg.log`); sign-in keeps Telegram's own error.
+
+**Fixed** (uploader, core, cache server)
+
+- **The cache server's PUT can no longer race eviction of its own set**, which could answer 500, or 201 for a chunk then deleted (`c2f9ee7e`). The home box needs the new build. Chunk files named `01` or `+1` are no longer counted as chunk 1 (`7305d606`).
+- **Resolving an app release or subtitle bundle notices a revoked login** (`1ab59974`); the core refuses to forget a synced preference, as the web does (`41ab9392`).
+- `edit --refresh` fills a missing year instead of replacing a hand-set one (`972292bf`); `pull-index` republishes on the merge's own finding and a failed connect stops the sender pool (`080e15df`); the session publish waits for any held slot (`891ee32e`); `prepare` removes its working copy whichever check fails.
+- Part names with long non-ASCII titles cut at a word by characters, and the subtitles dry run prints episode ranges and `C01L02`. Version gates say "unsupported package format N (this reader reads 1)" instead of calling an old format newer. A documentary dry run says episodes. Warnings logged at `RUST_LOG=warn` keep their whole cause chain.
+- The workspace declares Rust 1.88, which its let chains already needed.
+
+**Fixed** (Android)
+
+- **My List and Editor's-choice writes can no longer crash the library** (`ccacd98e`); an unreadable LAN token store no longer crashes playback or Settings (`80c11d67`); the encrypted settings stores leave the main thread themselves (`6fa612c5`).
+- **No raw exception text on screen**; one way to fall back on failure (`a7f8c24d`). System's Telegram row asks Telegram instead of trusting the stored login (`d45bf800`).
+- **Home's Latest courses holds six, as on the web**, and the TV keeps the chosen tab across a refresh that adds a department (`008dd50a`). TV department pages restore focus to the right row (`294a04f8`).
+
+**Changed**
+
+- Refactors with no behaviour change: one JSON body reader and one write guard in the web server, module layout and docs that match the code in Rust, typed departments, tabs and navigation ids, and a single package per module in Android. Tests added wherever a fix or a moved seam had none.
+
 ## 0.117.4 — every speed in sight on a television
 
 **Fixed** (Android TV)

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, readdir, readlink, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -103,6 +103,23 @@ describe("installing a channel's index", () => {
 });
 
 describe("filesystem failures while installing a channel snapshot", () => {
+  test("an installed version that cannot be read is none, and said; a missing one is just none", async () => {
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(await installedPushedAt(join(root, "missing"))).toBeNull();
+      await mkdir(join(root, "current"));
+      expect(await installedPushedAt(root)).toBeNull();
+      expect(warning).not.toHaveBeenCalled();
+
+      const blocked = join(root, "not-a-directory");
+      await writeFile(blocked, "file");
+      expect(await installedPushedAt(blocked)).toBeNull();
+      expect(warning.mock.calls.map(String)).toEqual([expect.stringMatching(/ENOTDIR/)]);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
   test.each([
     ["Error", new Error("download interrupted"), "download interrupted"],
     ["null", null, "null"],

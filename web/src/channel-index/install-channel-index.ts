@@ -13,8 +13,8 @@ import { Database } from "bun:sqlite";
 import { readlink, rename, rm, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { assertSchema, listPlayable } from "../catalog";
-import { failureMessage } from "../failure-message";
-import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../package/catalog-versions";
+import { errorCode, failureMessage } from "../failure-message";
+import { CURRENT, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../catalog/catalog-versions";
 
 /**
  * A ceiling on the snapshot. A real index for a few hundred sets is a few
@@ -30,13 +30,19 @@ export type InstallOutcome =
   | { status: "unchanged"; dir: string; pushedAt: number }
   | { status: "kept"; reason: string };
 
-/** When the installed snapshot was pushed, or `null` when none is installed. */
+/**
+ * When the installed snapshot was pushed, or `null` when none is installed
+ * (no `current`, or one that is not a link). Any other failure is `null` too,
+ * but said, since the caller then falls back as if nothing were installed.
+ */
 export async function installedPushedAt(root: string): Promise<number | null> {
   try {
     const target = await readlink(join(root, CURRENT));
     const seconds = Number(/^v-(\d+)(?:-\d+)?$/.exec(target)?.[1]);
     return Number.isSafeInteger(seconds) ? seconds : null;
-  } catch {
+  } catch (error) {
+    const code = errorCode(error);
+    if (code !== "ENOENT" && code !== "EINVAL") console.warn(`channel index: installed snapshot unreadable: ${failureMessage(error)}`);
     return null;
   }
 }

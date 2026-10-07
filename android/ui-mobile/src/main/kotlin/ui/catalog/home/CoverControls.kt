@@ -135,9 +135,9 @@ internal fun CoverPager(
     }
 }
 
-/** [ui.catalog.CoverScrim] (ui-common), reading this module's own `MaterialTheme` for the paper colour it has no way to reach on its own. */
+/** [ui.common.catalog.CoverScrim] (ui-common), reading this module's own `MaterialTheme` for the paper colour it has no way to reach on its own. */
 @Composable
 internal fun CoverScrim(
     compact: Boolean,
     modifier: Modifier = Modifier,
-) = ui.catalog.CoverScrim(compact = compact, paper = MaterialTheme.colorScheme.background, modifier = modifier)
+) = ui.common.catalog.CoverScrim(compact = compact, paper = MaterialTheme.colorScheme.background, modifier = modifier)

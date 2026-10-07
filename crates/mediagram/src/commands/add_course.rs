@@ -3,7 +3,8 @@
 //! Each lesson is an ordinary set, so this adds no upload machinery: it
 //! walks the folder and hands the walk to an upload session
 //! (`course::upload`), which skips what finished and publishes once at the
-//! end.
+//! end. `add-docu` walks a documentary collection through the same
+//! `run_collection`, its videos recorded as episodes instead.
 
 use anyhow::{Result, bail};
 
@@ -11,7 +12,7 @@ use super::args::AddCourseArgs;
 use crate::config::Config;
 use crate::course::identity::{collection_id, course_title, duplicate_identity};
 use crate::course::report::dry_run_table;
-use crate::course::upload::{self, Walk};
+use crate::course::upload::{self, Walk, video_words};
 use crate::course::walk::walk_course;
 use crate::index::{artwork, db};
 use crate::upload::session::Session;
@@ -19,6 +20,12 @@ use crate::upload::session::link::TelegramLink;
 use mlib_spec::Kind;
 
 pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
+    run_collection(cfg, args, Kind::Tut).await
+}
+
+/// Walks a folder and uploads its videos as `kind`: a course's lessons, or a
+/// documentary collection's episodes, numbered and grouped the same way.
+pub(crate) async fn run_collection(cfg: &Config, args: AddCourseArgs, kind: Kind) -> Result<()> {
     let course = course_title(args.course.as_deref(), &args.dir)?;
     let cid = collection_id(&course, args.cid.as_deref())?;
     // Validated before anything is uploaded, so a bad `--category` fails the
@@ -26,7 +33,7 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
     let category = args
         .category
         .as_deref()
-        .map(|raw| crate::edit::category::planned(Kind::Tut, Some(&course), raw))
+        .map(|raw| crate::edit::category::planned(kind, Some(&course), raw))
         .transpose()?;
 
     let walked = walk_course(&args.dir)?;
@@ -35,20 +42,21 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         return Ok(());
     }
 
-    // Defence in depth: identity is what decides whether a lesson is skipped,
-    // so two lessons sharing one would make the second unreachable forever.
+    // Defence in depth: identity is what decides whether a video is skipped,
+    // so two videos sharing one would make the second unreachable forever.
     // The walker guarantees uniqueness; this refuses to upload if that ever
     // stops being true, rather than silently dropping content.
-    if let Some((chapter, lesson)) = duplicate_identity(&walked.lessons) {
+    if let Some((chapter, number)) = duplicate_identity(&walked.lessons) {
+        let (_, noun) = video_words(kind);
         bail!(
-            "two lessons would share chapter {chapter} lesson {lesson}, so one \
+            "two {noun}s would share chapter {chapter} {noun} {number}, so one \
              would be skipped as already uploaded; this is a bug in the walk, \
              please report the folder layout"
         );
     }
 
     if args.dry_run {
-        for line in dry_run_table(&course, &cid, &walked) {
+        for line in dry_run_table(&course, &cid, &walked, kind) {
             println!("{line}");
         }
         if let Some(category) = &category {
@@ -74,12 +82,12 @@ pub async fn run(cfg: &Config, args: AddCourseArgs) -> Result<()> {
         course: &walked,
         title: &course,
         cid: &cid,
-        kind: Kind::Tut,
+        kind,
         variant: args.variant.clone(),
         no_remux: args.no_remux,
     };
     let summary = upload::upload(&mut session, &walk).await;
-    for line in summary.lines() {
+    for line in summary.lines(kind) {
         println!("{line}");
     }
     session.end(args.no_push).await?;

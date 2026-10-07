@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -174,9 +175,7 @@ class LanServerLocator(
 
     private fun pick(generationAtCall: Int) {
         scope.launch {
-            val picked =
-                runCatching { pickLanServer(found.toList(), manualAddress(), LanServerProbe { client.verify(it) }) }
-                    .getOrNull()
+            val picked = orDefault(null) { pickLanServer(found.toList(), manualAddress(), LanServerProbe { client.verify(it) }) }
             if (generationAtCall != generation) return@launch
             if (picked != null) {
                 _server.value = picked

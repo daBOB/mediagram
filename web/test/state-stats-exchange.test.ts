@@ -8,7 +8,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { mergeStates, type MergedState } from "../src/state/merge";
+import { mergeStates } from "../src/state/merge";
+import type { MergedState } from "../src/state/merged";
 import type { DayStatRow, TitleStatRow } from "../src/state/stats-record";
 import { parseRecord } from "../src/state/sync-record";
 import { WatchState } from "../src/state/store";

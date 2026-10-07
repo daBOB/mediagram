@@ -18,7 +18,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import catalog.SetCard
 import designsystem.Spacing
-import ui.catalog.rememberRowState
+import ui.common.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvResumeCard
 

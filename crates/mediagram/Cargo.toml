@@ -19,7 +19,6 @@ dialoguer = "0.12.0"
 directories = "6.0.0"
 flate2.workspace = true
 futures.workspace = true
-glass_pumpkin.workspace = true
 grammers-client.workspace = true
 grammers-mtsender.workspace = true
 grammers-session = { workspace = true, default-features = true }

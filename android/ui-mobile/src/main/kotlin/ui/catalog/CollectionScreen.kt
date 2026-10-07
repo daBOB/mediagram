@@ -23,9 +23,11 @@ import catalog.showsOf
 import catalog.similarShows
 import catalog.summarize
 import catalog.walk
+import data.PortraitRequestLog
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.rememberTitleCredits
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -34,10 +36,9 @@ import uniffi.mediagram_core.TitleInfo
  * ([CoursePage]) — its chapters and lessons, flattened once and shown as
  * one indented list.
  *
- * Every parameter beyond the first six defaults to something inert, so
- * a caller not yet wired for credits, similar shows or a person page keeps
- * compiling — see [TitleDetailScreen]'s own doc comment for the same rule
- * on the film side.
+ * Parameters past [onOpenGenre] default to inert values so a test composes
+ * the page with only what it checks; `LibraryTitleBranches` wires every
+ * one — the same rule as [TitleDetailScreen]'s on the film side.
  */
 @Composable
 fun CollectionScreen(
@@ -56,7 +57,7 @@ fun CollectionScreen(
     onToggleWatchlist: () -> Unit = {},
     titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
     fetchPortrait: suspend (Long) -> String? = { null },
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     season: String? = null,
     onSelectSeason: (String) -> Unit = {},
 ) {
@@ -64,7 +65,7 @@ fun CollectionScreen(
         SeriesPage(
             collection, info, watch, heldIds, onOpenTitle, onOpenGenre, shelves, onOpenCollection,
             onOpenPerson, onPlay, editorsChoice, onToggleEditorsChoice, onToggleWatchlist,
-            titleCredits, fetchPortrait, shouldRequestPortrait, season, onSelectSeason,
+            titleCredits, fetchPortrait, portraits, season, onSelectSeason,
         )
         return
     }
@@ -116,7 +117,7 @@ private fun CoursePage(
  * first) and asks the caller to remember whichever one is actually shown
  * ([shownSeason] below) once the picker changes it. Kept outside so a title
  * opened from Similar, Cast or an episode and left again still finds the
- * same season — [ui.LibraryPositions.setCollectionSeason] is the caller
+ * same season — [ui.common.LibraryPositions.setCollectionSeason] is the caller
  * every real screen wires this to.
  */
 @Composable
@@ -136,7 +137,7 @@ private fun SeriesPage(
     onToggleWatchlist: () -> Unit,
     titleCredits: suspend (String) -> TitleCredits,
     fetchPortrait: suspend (Long) -> String?,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     season: String?,
     onSelectSeason: (String) -> Unit,
 ) {
@@ -204,7 +205,7 @@ private fun SeriesPage(
             "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay)
             "Cast" ->
                 item(key = "cast") {
-                    CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)
+                    CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
                 }
             "Similar" ->
                 item(key = "similar") {

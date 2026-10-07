@@ -8,8 +8,9 @@ import catalog.SearchDestination
 import catalog.factsLine
 import catalog.spelledCountOf
 import catalog.watchedFractionOf
+import data.PortraitRequestLog
+import ui.common.catalog.DESTINATION_ASPECT
 import java.io.File
-import ui.catalog.DESTINATION_ASPECT
 
 /**
  * One search result, drawn the way `search-view.js` draws its kind: a film
@@ -36,7 +37,7 @@ internal fun TvSearchCell(
     onOpenCollection: (key: String) -> Unit,
     onOpenPerson: (personId: Long) -> Unit,
     onOpenDestination: (SearchDestination) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
     modifier: Modifier = Modifier,
 ) {
@@ -79,7 +80,7 @@ internal fun TvSearchCell(
                 portraitPath = person.portraitPath,
                 sub = spelledCountOf(person.titles, "title"),
                 onOpenPerson = onOpenPerson,
-                shouldRequestPortrait = shouldRequestPortrait,
+                portraits = portraits,
                 fetchPortrait = fetchPortrait,
                 modifier = modifier.focusRequester(requester),
             )

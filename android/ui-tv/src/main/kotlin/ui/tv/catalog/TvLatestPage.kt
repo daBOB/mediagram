@@ -2,10 +2,11 @@ package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import catalog.RowContent
+import catalog.Department
+import catalog.Entry
 import catalog.Shelf
-import catalog.homeRowsOf
 import catalog.keyOf
+import catalog.latestOf
 import model.WatchSnapshot
 
 /** How many of each kind — films, shows, courses — the Latest page holds, matching the web's own `renderLatest`. */
@@ -17,12 +18,11 @@ private const val LatestLimit = 48
  * six-wide rail, so nothing here is cut past a rail's first six the way
  * [PlateRow] on Home cuts a longer row. Headed "Latest" over the web's own
  * "Newest arrivals first", with each kind's
- * own heading before its plates — "Movies"/"Series"/"Tutorials", the same
- * label [catalog.HomeRow.seeAll] carries for that shelf and the web's own
- * `SECTIONS` table gives it, rather than the "Latest films" wording Home's
- * own row heading reads (a shelf name said once here is enough; Home repeats
- * "Latest" on each of its three rows because they sit apart, this page
- * because they don't).
+ * own heading before its plates — "Movies"/"Series"/"Tutorials", its
+ * department's own label, as the web's own `SECTIONS` table gives it,
+ * rather than the "Latest series" wording Home's own band headings read (a
+ * department's name said once here is enough; Home repeats "Latest" on each
+ * band because they sit apart, this page because they don't).
  *
  * There is nowhere further this page's own plates lead than what opening one
  * already does, so none of them carries a "See all" — unlike Home's rows,
@@ -42,19 +42,23 @@ internal fun TvLatestPage(
     restoreKey: String? = null,
 ) {
     val (positions, watchedIds) = rememberWatchMarks(watch)
-    val rows =
-        remember(shelves, watch, heldIds) {
-            homeRowsOf(shelves, watch, heldIds, limit = LatestLimit).filter { it.content is RowContent.Entries }
+    val sections =
+        remember(shelves) {
+            val latest = latestOf(shelves, posterLimit = LatestLimit, limit = LatestLimit)
+            listOf<Pair<Department, List<Entry>>>(
+                Department.MOVIES to latest.movies,
+                Department.SERIES to latest.series,
+                Department.TUTORIALS to latest.courses,
+            )
         }
-    val entries = remember(rows) { rows.flatMap { (it.content as RowContent.Entries).entries } }
+    val entries = remember(sections) { sections.flatMap { it.second } }
     val headings =
-        remember(rows) {
+        remember(sections) {
             var offset = 0
             buildMap {
-                for (row in rows) {
-                    val count = (row.content as RowContent.Entries).entries.size
-                    if (count > 0) put(offset, row.seeAll ?: row.title)
-                    offset += count
+                for ((department, items) in sections) {
+                    if (items.isNotEmpty()) put(offset, department.label)
+                    offset += items.size
                 }
             }
         }

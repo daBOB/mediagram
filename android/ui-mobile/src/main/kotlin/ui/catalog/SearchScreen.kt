@@ -29,6 +29,9 @@ import catalog.franchisesIn
 import catalog.searchGroupsOf
 import designsystem.Spacing
 import model.WatchSnapshot
+import ui.common.catalog.SearchResultsView
+import ui.common.catalog.searchResultsView
+import ui.common.catalog.searchVisitState
 
 /**
  * A hundred and seventy lessons named "Definition" are not browsable, only
@@ -139,7 +142,7 @@ private fun SearchResults(
     onOpenList: (String) -> Unit,
 ) {
     if (state is SearchUiState.Failed) {
-        CenteredMessage("Search failed: ${state.message}")
+        CenteredMessage(state.message)
         return
     }
     val ready = state as? SearchUiState.Ready ?: return

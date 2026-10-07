@@ -1,7 +1,7 @@
 /**
  * The account this player is bound to: api id/hash, session, and the chosen
- * channel — kept beside `state.db` rather than in it (plan's Q1: the state
- * database is copied and backed up casually, and holds no secret today).
+ * channel — kept beside `state.db` rather than in it (the state database is
+ * copied and backed up casually, and holds no secret today).
  *
  * Read as absent on anything this file did not write itself: a missing file,
  * one that is not JSON, or one missing a required field. A player that
@@ -11,7 +11,7 @@
 
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 
 export interface TelegramFile {
   apiId: number;
@@ -26,7 +26,7 @@ export interface TelegramFile {
 }
 
 /** The file's shape, checked field by field rather than trusted from `JSON.parse`. */
-function parse(text: string): TelegramFile | null {
+function parseTelegramFile(text: string): TelegramFile | null {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -57,11 +57,11 @@ export async function readTelegramFile(path: string): Promise<TelegramFile | nul
   try {
     text = await readFile(path, "utf8");
   } catch (error) {
-    if ((error as { code?: string }).code === "ENOENT") return null;
+    if (errorCode(error) === "ENOENT") return null;
     console.warn(`telegram.json: could not be read (${failureMessage(error)}); falling back to the environment`);
     return null;
   }
-  const parsed = parse(text);
+  const parsed = parseTelegramFile(text);
   if (parsed === null) {
     console.warn("telegram.json: malformed; falling back to the environment");
   }
@@ -81,9 +81,9 @@ export async function writeTelegramFile(path: string, value: TelegramFile): Prom
   await mkdir(dir, { recursive: true, mode: 0o700 });
   await chmod(dir, 0o700).catch(() => {});
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-  await writeFile(tmp, JSON.stringify(value), { mode: 0o600 });
-  await chmod(tmp, 0o600);
   try {
+    await writeFile(tmp, JSON.stringify(value), { mode: 0o600 });
+    await chmod(tmp, 0o600);
     await rename(tmp, path);
   } catch (error) {
     await rm(tmp, { force: true });

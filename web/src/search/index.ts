@@ -9,8 +9,8 @@
  *
  * Everything is folded once, at construction, and matched as plain substrings
  * of the folded text. At this size that is both simpler and faster than an
- * index: the catalog is read-only for the life of the process, so the folded
- * copy can be built at startup and never invalidated. A library of thousands
+ * index: the folded copy is built per catalog, and rebuilt with the router
+ * when a swap replaces it (`server.ts` replaceCatalog). A library of thousands
  * would want SQLite's FTS5 instead, and would need the schema to carry it.
  */
 

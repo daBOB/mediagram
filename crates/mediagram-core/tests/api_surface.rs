@@ -56,8 +56,8 @@ async fn reading_an_unknown_set_with_no_catalog_at_all_is_not_found() {
     assert!(matches!(err, mediagram_core::api::CoreError::NotFound(_)));
 }
 
-/// The case the earlier version of this test claimed to cover but never
-/// reached: a catalog exists, and the set asked for still is not in it.
+/// A catalog exists, and the set asked for is not in it: `NotFound` for that
+/// id, while a set the catalog does hold is still read.
 #[tokio::test]
 async fn reading_a_set_that_is_not_in_an_existing_catalog_is_not_found() {
     let dir = tempfile::tempdir().unwrap();

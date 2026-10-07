@@ -29,3 +29,7 @@ impl ChunkStore {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "set_status_tests.rs"]
+mod tests;

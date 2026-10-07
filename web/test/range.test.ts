@@ -23,7 +23,6 @@ import {
   totalSize,
   type ByteRange,
   type PartSpan,
-  type Step,
 } from "../src/range";
 
 const P0 = 3_758_096_384;

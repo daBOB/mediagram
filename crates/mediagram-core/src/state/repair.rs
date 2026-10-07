@@ -25,3 +25,7 @@ pub(super) fn add_missing_kids_column(conn: &Connection) -> rusqlite::Result<()>
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "repair_tests.rs"]
+mod tests;

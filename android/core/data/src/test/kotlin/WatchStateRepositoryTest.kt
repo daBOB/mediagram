@@ -7,7 +7,7 @@ import model.ProfileOutcome
 import model.ProfileRequest
 import model.WatchSnapshot
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +29,7 @@ class WatchStateRepositoryTest {
             // never actually read the snapshot would still pass against an
             // empty one.
             core.setProgress("p1", "set-1", 12.0, 100.0, "2026-10-03")
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
 
@@ -42,7 +42,7 @@ class WatchStateRepositoryTest {
     fun noProfileChosenReloadsToAnEmptySnapshot() =
         runTest {
             val core = FakeCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.reload()
 
@@ -57,7 +57,7 @@ class WatchStateRepositoryTest {
             // Seeded ahead of the choice, so the assertion below only holds if
             // choosing actually loaded this profile's own snapshot.
             core.setWatchlisted("p1", "set-1", true)
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("p1")
 
@@ -73,7 +73,7 @@ class WatchStateRepositoryTest {
             // an unknown id, which the fake now follows without needing to be
             // told to refuse.
             val core = FakeCore()
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             val chose = repository.chooseProfile("nobody")
 
@@ -86,7 +86,7 @@ class WatchStateRepositoryTest {
         runTest {
             val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.CreateKid("a", "1234", "Mia", 6)))
@@ -106,7 +106,7 @@ class WatchStateRepositoryTest {
         runTest {
             val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
             core.profilesFailure = IllegalStateException("disk")
 
@@ -123,7 +123,7 @@ class WatchStateRepositoryTest {
         runTest {
             val core = FakeCore().apply { profiles = listOf(CoreProfile("a", "andre", admin = true)) }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
             val reads = core.profilesCalls
 
@@ -142,7 +142,7 @@ class WatchStateRepositoryTest {
                     profiles = listOf(CoreProfile("a", "andre", admin = true), CoreProfile("b", "Bea"), CoreProfile("k", "Kim", kids = true))
                 }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             assertEquals(ProfileOutcome.Invalid, repository.manage(ProfileRequest.CreateGrownUp("a", "1234", "Bo", "12")))
@@ -164,7 +164,7 @@ class WatchStateRepositoryTest {
                     chosen = "k"
                 }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
             assertEquals(12, repository.chosenProfile.value?.kidsLimit)
 
@@ -183,7 +183,7 @@ class WatchStateRepositoryTest {
                     chosen = "k"
                 }
             core.roles.pins["a"] = "1234"
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.Remove("a", "1234", "k")))
@@ -206,7 +206,7 @@ class WatchStateRepositoryTest {
                         wrote = true
                     }
                 }
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
             repository.setProgress("set-1", 12.0, 100.0)
 
@@ -221,7 +221,7 @@ class WatchStateRepositoryTest {
                     profiles = listOf(CoreProfile("p1", "Alice"), CoreProfile("p2", "Ben"))
                     chosen = "p1"
                 }
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             repository.setProgress("set-1", 12.0, 100.0)
@@ -244,7 +244,7 @@ class WatchStateRepositoryTest {
                     profiles = listOf(CoreProfile("p1", "Alice"), CoreProfile("p2", "Ben"))
                     chosen = "p1"
                 }
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             repository.setKids("set-1", 6)
@@ -275,7 +275,7 @@ class WatchStateRepositoryTest {
                     profiles = listOf(CoreProfile("p1", "Alice"))
                     chosen = "p1"
                 }
-            val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
             repository.reload()
 
             repository.markFinished("s1")

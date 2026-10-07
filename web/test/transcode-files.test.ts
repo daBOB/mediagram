@@ -7,7 +7,7 @@
  * answer until there is a segment listed.
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -133,6 +133,24 @@ describe("starting a transcode", () => {
 
     expect(Date.now() - began).toBeLessThan(2000);
     await registry.stopAll();
+  });
+
+  test("a cleanup that fails after a failed start does not replace the start's reason", async () => {
+    const registry = new TranscodeRegistry(work, {
+      start() {
+        return { stop: async () => { throw new Error("ffmpeg would not stop"); }, exited: Promise.resolve(1) };
+      },
+    });
+    const files = new TranscodeFiles(registry, { readyTimeoutMs: 10_000, pollMs: 10 });
+    const warning = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await expect(files.begin(spec("01SET", 0, 8_000_000)))
+        .rejects.toThrow("the conversion stopped before it produced anything");
+      expect(warning).toHaveBeenCalledWith("transcode: release after a failed start failed: ffmpeg would not stop");
+    } finally {
+      warning.mockRestore();
+      await registry.stopAll();
+    }
   });
 
   test("a runner that cannot say whether it exited still times out", async () => {

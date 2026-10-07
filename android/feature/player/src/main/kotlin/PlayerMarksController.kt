@@ -1,7 +1,7 @@
 package player
 
 import data.WatchStateRepository
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,10 +18,9 @@ import model.kidsVerdictOf
 
 /**
  * The Watchlist, Kids and Add-to-list controls — ported from `player.js`'s
- * `watchlistButton`/`kidsButton`/`addToButton` click handlers — split out
- * of [PlayerViewModel] to keep that file under the project's line
- * guideline. Reads [PlayerSession.openSetId] rather than holding a copy of
- * its own, so there is exactly one place that decides which set is open.
+ * `watchlistButton`/`kidsButton`/`addToButton` click handlers. Reads
+ * [PlayerSession.openSetId] rather than holding a copy of its own, so there
+ * is exactly one place that decides which set is open.
  */
 class PlayerMarksController(
     private val scope: CoroutineScope,
@@ -89,8 +88,10 @@ class PlayerMarksController(
      */
     fun setKidsMark(age: Int?) {
         val setId = session.openSetId ?: return
-        // A kids profile does not approve titles for itself.
-        if (repository.chosenProfile.value?.kids == true || marks.value?.canMarkKids == false) return
+        // A kids profile does not approve titles for itself. Asked of the
+        // repository, not [marks]: that shared copy keeps its last value once
+        // nobody collects it, which can still be a kid's after a grown-up is chosen.
+        if (repository.chosenProfile.value?.kids == true) return
         // A rated title is not marked: its rating already decided.
         if (ageOf(openFsk.value) != null) return
         if (age != null && age !in KIDS_LIMITS) return
@@ -129,16 +130,7 @@ class PlayerMarksController(
     ) {
         val started = generation
         scope.launch {
-            val confirmed =
-                try {
-                    block()
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (
-                    @Suppress("TooGenericExceptionCaught") e: Exception,
-                ) {
-                    false
-                }
+            val confirmed = orDefault(false, "mark $action") { block() }
             if (started != generation) return@launch
             val failure = "Could not confirm the $action. Check it and try again."
             if (!confirmed) {

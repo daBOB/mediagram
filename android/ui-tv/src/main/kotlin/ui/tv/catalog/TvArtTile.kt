@@ -25,10 +25,9 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import designsystem.Palette
 import designsystem.TvTypeScale
 import java.io.File
-import ui.catalog.ArtTileScrim
+import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
 import ui.tv.catalog.home.OnImage
 
@@ -132,7 +131,7 @@ internal fun TvPagePill(
         border =
             ClickableSurfaceDefaults.border(
                 border = Border(BorderStroke(1.dp, MaterialTheme.colorScheme.borderVariant), shape = shape),
-                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, Palette.Imprint), shape = shape),
+                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
             ),
         glow = TvFocus.surfaceGlow(),
     ) {

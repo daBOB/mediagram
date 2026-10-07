@@ -92,7 +92,7 @@ test("cache-only stream preserves GET and HEAD ranges and refuses writes or abse
     expect(head.headers).toEqual(response.headers);
     expect(head.body).toBeNull();
     expect((await route({ ...request, range: "bytes=10-" })).status).toBe(416);
-    expect((await route({ ...request, method: "POST" })).status).toBe(405);
+    expect((await route({ ...request, method: "POST", contentType: "application/json" })).status).toBe(405);
     expect((await createRouter({ db, source })(request)).status).toBe(404);
     expect((await route({ ...request, path: "/api/sets/UNKNOWN/cached-stream" })).status).toBe(404);
     expect(cached).toHaveBeenCalledTimes(1);

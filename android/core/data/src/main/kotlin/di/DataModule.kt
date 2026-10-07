@@ -23,20 +23,20 @@ import data.RefreshLog
 import data.SharedLibraryEvents
 import data.WatchStateRepository
 import data.WatchSync
+import data.settings.EncryptedLanCacheTokenSettings
+import data.settings.EncryptedLibrarySettings
+import data.settings.EncryptedTelegramSettings
+import data.settings.EncryptedTmdbSettings
+import data.settings.LanCacheTokenSettings
+import data.settings.LibrarySettings
+import data.settings.SharedPreferencesShelfViewSettings
+import data.settings.ShelfViewSettings
+import data.settings.TelegramSettings
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import settings.EncryptedLanCacheTokenSettings
-import settings.EncryptedLibrarySettings
-import settings.EncryptedTelegramSettings
-import settings.EncryptedTmdbSettings
-import settings.LanCacheTokenSettings
-import settings.LibrarySettings
-import settings.SharedPreferencesShelfViewSettings
-import settings.ShelfViewSettings
-import settings.TelegramSettings
-import settings.TmdbSettings
 import javax.inject.Singleton
 
 @Module
@@ -68,13 +68,15 @@ object DataModule {
     @Singleton
     fun provideTelegramSettings(
         @ApplicationContext context: Context,
-    ): TelegramSettings = EncryptedTelegramSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): TelegramSettings = EncryptedTelegramSettings(context, dispatcher)
 
     @Provides
     @Singleton
     fun provideTmdbSettings(
         @ApplicationContext context: Context,
-    ): TmdbSettings = EncryptedTmdbSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): TmdbSettings = EncryptedTmdbSettings(context, dispatcher)
 
     @Provides
     @Singleton
@@ -86,7 +88,8 @@ object DataModule {
     @Singleton
     fun provideLanCacheTokenSettings(
         @ApplicationContext context: Context,
-    ): LanCacheTokenSettings = EncryptedLanCacheTokenSettings(context)
+        dispatcher: CoroutineDispatcher,
+    ): LanCacheTokenSettings = EncryptedLanCacheTokenSettings(context, dispatcher)
 
     // The same directory the core is constructed with, so clearing it
     // clears the state that core wrote.
@@ -114,8 +117,8 @@ object DataModule {
         dispatcher: CoroutineDispatcher,
     ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes, dispatcher)
 
-    // Process-lifetime work that is not the player: see AppScope's own doc
-    // for why it is a second scope rather than the one PlaybackModule binds.
+    // Process-lifetime work that is not playback: see AppScope's own doc
+    // for why it is a second scope rather than the MainThreadScope one.
     @Provides
     @Singleton
     @AppScope

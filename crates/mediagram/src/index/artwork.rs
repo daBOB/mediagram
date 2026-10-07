@@ -10,7 +10,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, params};
 
 /// Largest single image. Generous for a poster or a backdrop, small enough
 /// that a handful of custom titles cannot push the published package toward
@@ -72,17 +72,6 @@ fn mime_from_ext(path: &Path) -> Result<&'static str> {
             path.display()
         ),
     }
-}
-
-/// The image stored under `key`, as `(mime, bytes)`.
-pub fn get(conn: &Connection, key: &str) -> Result<Option<(String, Vec<u8>)>> {
-    conn.query_row(
-        "SELECT mime, bytes FROM artwork WHERE key = ?1",
-        [key],
-        |row| Ok((row.get(0)?, row.get(1)?)),
-    )
-    .optional()
-    .with_context(|| format!("reading artwork for {key}"))
 }
 
 /// Removes one image. `true` when a row was actually there.

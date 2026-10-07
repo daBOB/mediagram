@@ -1,6 +1,6 @@
-use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::cell::RefCell;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use grammers_mtsender::{RpcError, SenderPool};
 use grammers_session::storages::MemorySession;
@@ -68,22 +68,22 @@ async fn stale_listing_and_download_refusals_preserve_the_replacement_login() {
 
 struct Scripted<T> {
     responses: std::vec::IntoIter<Result<T, InvocationError>>,
-    polls: Rc<Cell<usize>>,
+    polls: Arc<AtomicUsize>,
 }
 
 impl<T> Scripted<T> {
     fn new(responses: Vec<Result<T, InvocationError>>) -> Self {
         Self {
             responses: responses.into_iter(),
-            polls: Rc::default(),
+            polls: Arc::default(),
         }
     }
 }
 
-impl<T> Responses for Scripted<T> {
+impl<T: Send> Responses for Scripted<T> {
     type Item = T;
     async fn next_response(&mut self) -> Result<Option<T>, InvocationError> {
-        self.polls.set(self.polls.get() + 1);
+        self.polls.fetch_add(1, Ordering::Relaxed);
         self.responses.next().transpose()
     }
 }
@@ -242,14 +242,14 @@ async fn oversized_download_stops_polling_as_soon_as_the_limit_is_crossed() {
         Ok(vec![b'x']),
         Err(InvocationError::Dropped),
     ]);
-    let polls = Rc::clone(&chunks.polls);
+    let polls = Arc::clone(&chunks.polls);
     assert!(
         download_capped(&Core::at(dir.path()), chunks)
             .await
             .unwrap()
             .is_none()
     );
-    assert_eq!(polls.get(), 2);
+    assert_eq!(polls.load(Ordering::Relaxed), 2);
 }
 
 #[tokio::test]
@@ -278,7 +278,7 @@ async fn a_download_failure_discards_partial_results_and_stops_listing_without_r
             .map(|id| Ok(message(&client, id, caption, document(id.into()))))
             .collect(),
     );
-    let polls = Rc::clone(&pinned.polls);
+    let polls = Arc::clone(&pinned.polls);
     let downloads = RefCell::new(Vec::new());
     let error = list_pinned(&Core::at(dir.path()), pinned, |doc| {
         downloads.borrow_mut().push(doc.id());
@@ -294,20 +294,20 @@ async fn a_download_failure_discards_partial_results_and_stops_listing_without_r
         matches!(error, CoreError::Network(ref message) if message == "a state document could not be downloaded")
     );
     assert_eq!(*downloads.borrow(), vec![1, 2]);
-    assert_eq!(polls.get(), 2);
+    assert_eq!(polls.load(Ordering::Relaxed), 2);
 }
 
 #[tokio::test]
 async fn a_pin_listing_failure_is_reported_without_downloading_or_retrying() {
     let dir = tempfile::tempdir().unwrap();
     let pinned = Scripted::new(vec![Err(InvocationError::Dropped)]);
-    let polls = Rc::clone(&pinned.polls);
+    let polls = Arc::clone(&pinned.polls);
     let result = list_pinned(&Core::at(dir.path()), pinned, |_| -> Scripted<Vec<u8>> {
         panic!("a refused listing has no document to download")
     })
     .await;
     assert!(matches!(result, Err(CoreError::Network(_))));
-    assert_eq!(polls.get(), 1);
+    assert_eq!(polls.load(Ordering::Relaxed), 1);
 }
 
 #[tokio::test]

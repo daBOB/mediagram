@@ -48,7 +48,7 @@ class FilmPreloader(
     private val network: UnmeteredNetworkCheck,
     /** Whether a film this size can ever fit, reserving [reservedBytes] for whatever else must not be evicted — see `fitsFilmPreloadBudget`. */
     private val fits: suspend (totalBytes: Long, reservedBytes: Long) -> Boolean,
-    private val log: (String) -> Unit = {},
+    private val log: (line: String, failure: Throwable?) -> Unit = { _, _ -> },
 ) : FilmPreloading {
     private val writeAttempt = FilmWriteAttempt(lane, writer, openTitleSource, network)
 
@@ -140,7 +140,7 @@ class FilmPreloader(
             // The write, if any, has now genuinely stopped — safe to clear
             // the cache without racing a still-unwinding write for the
             // same key.
-            safely("could not remove $setId from the cache") { removeFromCache(setId) }
+            logFailure("could not remove $setId from the cache") { removeFromCache(setId) }
             externallySettled -= setId
             // Cache cleared before this settles, not after: a live
             // collector's one emission on this transition must already
@@ -274,7 +274,7 @@ class FilmPreloader(
                         } else {
                             consecutiveFailures++
                         }
-                        log("film preload: ${item.title} write failed: ${result.cause.message}")
+                        log("film preload: ${item.title} write failed", result.cause)
                         if (consecutiveFailures > MAX_CONSECUTIVE_FAILURES) {
                             outcome = ItemOutcome.Failed(result.cause.coreSentence() ?: "Could not preload this film")
                             return
@@ -289,7 +289,7 @@ class FilmPreloader(
             @Suppress("TooGenericExceptionCaught") // one film's broken lookup (heldSets, fits) must not kill runWorker for every film after it
             e: Exception,
         ) {
-            log("film preload: ${item.title} could not be checked: ${e.message}")
+            log("film preload: ${item.title} could not be checked", e)
             outcome = ItemOutcome.Failed(e.coreSentence() ?: "Could not preload this film")
         } finally {
             if (item.setId !in externallySettled) settle(item, outcome)
@@ -303,7 +303,7 @@ class FilmPreloader(
             is ItemOutcome.Done -> {
                 override(item.setId).value = FilmPreloadState.Done
                 _heldEvents.emit(item.setId)
-                log("film preload: ${item.title} held")
+                log("film preload: ${item.title} held", null)
             }
             is ItemOutcome.NeedsSpace -> override(item.setId).value = FilmPreloadState.NeedsSpace(outcome.neededBytes)
             is ItemOutcome.Failed -> override(item.setId).value = FilmPreloadState.Failed(outcome.reason)
@@ -319,13 +319,13 @@ class FilmPreloader(
     }
 
     @Suppress("TooGenericExceptionCaught") // logged and swallowed on purpose — see the call site
-    private suspend fun safely(what: String, block: suspend () -> Unit) {
+    private suspend fun logFailure(what: String, block: suspend () -> Unit) {
         try {
             block()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            log("film preload: $what: ${e.message}")
+            log("film preload: $what", e)
         }
     }
 }

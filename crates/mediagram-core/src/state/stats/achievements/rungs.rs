@@ -5,6 +5,8 @@
 
 use std::collections::{HashMap, HashSet};
 
+use mlib_spec::Kind;
+
 use super::day_totals::DayTotal;
 use super::{LibraryCollection, LibraryTitle};
 
@@ -114,7 +116,10 @@ pub(super) fn binge(
 ) -> Rung {
     let mut per_day: HashMap<i64, u32> = HashMap::new();
     let (mut most, mut first) = (0, None);
-    for finish in finishes.iter().filter(|finish| finish.title.kind == "ep") {
+    for finish in finishes
+        .iter()
+        .filter(|finish| finish.title.kind == Kind::Ep.as_str())
+    {
         let day = finish.at.saturating_add(offset_ms).div_euclid(DAY_MS);
         let on_day = per_day.entry(day).or_default();
         *on_day += 1;
@@ -176,3 +181,7 @@ pub(super) fn whole_show(
     .into_iter()
     .collect()
 }
+
+#[cfg(test)]
+#[path = "rungs_tests.rs"]
+mod tests;

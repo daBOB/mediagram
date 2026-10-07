@@ -1,7 +1,6 @@
 /**
  * A viewer's role, reconciled across devices: a kid's limit, a grown-up's
- * PIN, who made a kid, and which one viewer is the household's admin. Split
- * out of `merge.ts`, which `mergeStates` calls this from.
+ * PIN, who made a kid, and which one viewer is the household's admin.
  *
  * **A limit: the newest `updatedAt` wins.** Not sticky the way `kids` is —
  * a parent lowers a limit as often as it raises one. Ties break by device id

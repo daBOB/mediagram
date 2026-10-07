@@ -21,9 +21,8 @@ import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Database } from "bun:sqlite";
 import type { HeldSets } from "../cache/held";
+import { failureMessage } from "../failure-message";
 import { bundleRef, type BundleRef } from "./subtitle-tracks";
-
-export type { BundleRef } from "./subtitle-tracks";
 
 /** A gzip body over this size is refused before a byte of it is fetched. */
 const MAX_COMPRESSED_BYTES = 16 * 1024 * 1024;
@@ -85,10 +84,11 @@ export class SubtitleBundles {
     return resolved?.bundle.tracks[track]?.vtt ?? null;
   }
 
-  /** Ensures `ref`'s bundle survives a restart. Never deletes; a failed fetch is silent. */
+  /** Ensures `ref`'s bundle survives a restart. Never deletes; a failure is logged and never rejects. */
   async hold(ref: BundleRef | null): Promise<void> {
     if (ref === null) return;
-    await this.resolve(ref, this.opts.background, true);
+    await this.resolve(ref, this.opts.background, true).catch((error) =>
+      console.warn(`subtitles: hold failed: ${failureMessage(error)}`));
   }
 
   /**
@@ -150,7 +150,8 @@ export class SubtitleBundles {
     let gz: Uint8Array;
     try {
       gz = await fetcher(ref.messageId, 0, ref.bytes);
-    } catch {
+    } catch (error) {
+      console.warn(`subtitles: bundle fetch failed: ${failureMessage(error)}`);
       return null;
     }
     if (createHash("sha256").update(gz).digest("hex") !== ref.sha256) return null;
@@ -159,7 +160,7 @@ export class SubtitleBundles {
   }
 }
 
-/** A disk hit that fails to decode is corrupt and is removed rather than served. */
+/** A disk hit that fails to decode is corrupt: removed when it can be, never served, so the bundle is refetched. */
 async function readDisk(path: string): Promise<Bundle | null> {
   let gz: Buffer;
   try {
@@ -168,19 +169,25 @@ async function readDisk(path: string): Promise<Bundle | null> {
     return null;
   }
   const bundle = decode(gz);
-  if (bundle === null) await rm(path, { force: true });
+  if (bundle === null) await rm(path, { force: true }).catch((error) =>
+    console.warn(`subtitles: corrupt bundle not removed: ${failureMessage(error)}`));
   return bundle;
 }
 
 async function writeDiskAtomic(path: string, bytes: Uint8Array): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-  const handle = await open(tmp, "w");
   try {
-    await handle.writeFile(bytes);
-    await handle.sync();
-  } finally {
-    await handle.close();
+    const handle = await open(tmp, "w");
+    try {
+      await handle.writeFile(bytes);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await rename(tmp, path);
+  } catch (error) {
+    await rm(tmp, { force: true });
+    throw error;
   }
-  await rename(tmp, path);
 }

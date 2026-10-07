@@ -18,9 +18,11 @@ export interface DiskFree {
 /**
  * One row per distinct device among `dirs`, in the order first seen.
  *
- * A directory that cannot be `stat`'d — not created yet, or removed — is
- * left out rather than failing the whole reading, the same choice
- * `dirBytes` makes for a missing directory.
+ * A directory that cannot be `stat`'d or `statfs`'d, for any reason — not
+ * created yet, removed, unreadable — is left out rather than failing the
+ * whole status reading it is polled with. `dirBytes` differs: it forgives
+ * only a missing directory and rejects the rest, which its caller absorbs by
+ * keeping the total it had.
  */
 export async function diskFree(dirs: string[]): Promise<DiskFree[]> {
   const rows = await Promise.all(

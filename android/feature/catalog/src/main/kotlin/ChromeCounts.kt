@@ -16,15 +16,15 @@ import model.WatchSnapshot
 data class ChromeCounts(
     val myList: Int,
     val continueWatching: Int,
-    private val perShelf: Map<String, Int>,
+    private val perShelf: Map<Department, Int>,
     val collections: Int,
 ) {
-    /** A department pill's own count — every shelf by its title, Collections from the viewer's own lists, Home none. */
-    fun departmentCount(title: String): Int? =
-        when (title) {
-            HOME -> null
-            KeptKind.COLLECTIONS.label -> collections
-            else -> perShelf[title]
+    /** A department pill's own count — every shelf by its department, Collections from the viewer's own lists, Home none. */
+    fun departmentCount(tab: CatalogTab): Int? =
+        when (tab) {
+            CatalogTab.Home -> null
+            is CatalogTab.Dept -> perShelf[tab.department]
+            is CatalogTab.Kept -> collections.takeIf { tab.kind == KeptKind.COLLECTIONS }
         }
 
     companion object {
@@ -44,7 +44,14 @@ fun chromeCountsOf(
         // card each. Documentaries' pill counts documentaries themselves,
         // the way its own tab does on the web, so a folder there counts
         // what it holds rather than standing for one.
-        perShelf = shelves.associate { it.title to (if (it.title == DOCUMENTARIES) documentaryCountOf(it.entries) else it.entries.size) },
+        perShelf =
+            shelves.associate {
+                it.department to
+                    when (it.department) {
+                        Department.DOCUMENTARIES -> documentaryCountOf(it.entries)
+                        Department.MOVIES, Department.SERIES, Department.ANIME, Department.TUTORIALS -> it.entries.size
+                    }
+            },
         collections = watch.collections.size,
     )
 

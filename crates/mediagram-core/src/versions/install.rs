@@ -27,12 +27,12 @@ impl<'a> Staging<'a> {
     pub async fn begin(turn: &'a Mutex<()>, root: &Path) -> Result<Staging<'a>, CoreError> {
         let held = turn.lock().await;
         let dir = root.join(INCOMING);
-        if let Err(error) = std::fs::remove_dir_all(&dir) {
-            if error.kind() != std::io::ErrorKind::NotFound {
-                return Err(CoreError::io(
-                    "clearing the refreshed catalog staging directory",
-                )(error));
-            }
+        if let Err(error) = std::fs::remove_dir_all(&dir)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            return Err(CoreError::io(
+                "clearing the refreshed catalog staging directory",
+            )(error));
         }
         std::fs::create_dir_all(&dir).map_err(CoreError::io("staging the refreshed catalog"))?;
         Ok(Staging {

@@ -12,7 +12,7 @@ pub(in crate::api) mod download;
 pub(super) mod index;
 mod install;
 pub(super) mod library;
-mod responses;
+pub(in crate::api) mod responses;
 mod search;
 
 use grammers_client::peer::Dialog;
@@ -85,10 +85,7 @@ pub(super) async fn refresh_library(core: &std::sync::Arc<Core>, handle: String)
     let followed = handle.clone();
     core.blocking(move |core| core.state_db.with(|conn| crate::state::sync::follow_library(conn, &followed)))
         .await;
-    let entry = library::lookup(core, &handle)?;
-    let peer = entry.peer().ok_or_else(|| {
-        CoreError::NotFound("this device no longer has that library stored".into())
-    })?;
+    let (_, peer) = library::peer_of(core, &handle)?;
     let (client, owner) = session::connection(core).await;
 
     let (document, caption) = newest_index(core, &client, &owner, peer).await?;

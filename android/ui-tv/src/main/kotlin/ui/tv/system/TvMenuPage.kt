@@ -21,7 +21,7 @@ import catalog.MenuScreen
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.MenuActions
+import ui.common.MenuActions
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
 import ui.tv.setup.START_OVER_BODY

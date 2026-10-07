@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.InterruptedIOException
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -29,15 +31,20 @@ import kotlin.test.assertTrue
  * `CancellationException`. A fake writer that merely suspended
  * (`CompletableDeferred.await()`) would prove nothing about whether a
  * real blocking write can actually be interrupted, which is the one thing
- * every test in this file is about — see also R1: this fake throws
+ * every test in this file is about. This fake also throws
  * `InterruptedIOException` on a deliberate cancel, an ordinary exception,
  * not a `CancellationException`, exactly like the real `CacheWriter` does.
  */
 private class BlockingWriter(private val stepMs: Long = 15L, private val chunkBytes: Long = 50L) : PreloadWriter, FilmPreloadWriter {
     private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-    val started = mutableListOf<String>()
-    val completed = mutableListOf<String>()
+
+    // Written on the write thread, read from the test's: thread-safe lists.
+    val started = CopyOnWriteArrayList<String>()
+    val completed = CopyOnWriteArrayList<String>()
     val cancelCount = AtomicInteger()
+
+    /** Bytes the current write has reached — what a test waits on to know a write is under way rather than sleeping for it. */
+    val written = AtomicLong()
 
     override suspend fun write(item: PreloadItem) = write(item) {}
 
@@ -48,11 +55,13 @@ private class BlockingWriter(private val stepMs: Long = 15L, private val chunkBy
                 launch(dispatcher) {
                     started += item.setId
                     var bytes = 0L
+                    written.set(bytes)
                     onProgress(bytes)
                     while (bytes < item.totalBytes) {
                         if (cancelled.get()) throw InterruptedIOException("cancelled")
                         Thread.sleep(stepMs)
                         bytes = minOf(bytes + chunkBytes, item.totalBytes)
+                        written.set(bytes)
                         onProgress(bytes)
                     }
                     completed += item.setId
@@ -82,12 +91,11 @@ private class BlockingTestOpenTitleSource(initial: OpenTitle? = null) : OpenTitl
 }
 
 /**
- * Real threads, real dispatchers, real (short) waits — these prove the
- * fix for the concurrency review's C1/H1/H2/H3, which the suspending-fake
- * tests in `FilmPreloaderTest` structurally cannot: a `CacheWriter.cache()`
- * that blocks its own thread is exactly what starved the pause/cancel/
- * remove paths before `CacheDataSourceWriter.write` moved to its own
- * dispatcher, and R1: a watchdog's own cancel throws an ordinary
+ * Real threads, real dispatchers, real (short) waits — these prove what the
+ * suspending-fake tests in `FilmPreloaderTest` structurally cannot: that a
+ * `CacheWriter.cache()` blocking its own thread does not starve the pause,
+ * cancel and remove paths, because `CacheDataSourceWriter.write` runs it on
+ * its own dispatcher. And a watchdog's own cancel throws an ordinary
  * `InterruptedIOException`, not a `CancellationException`, so only a
  * writer shaped like this one can prove that is not counted as a failure.
  */
@@ -111,10 +119,10 @@ class FilmPreloaderBlockingWriterTest {
         openTitleSource = openTitleSource,
         network = UnmeteredNetworkCheck { true },
         fits = fits,
-        log = { logs += it },
+        log = { line, _ -> logs += line },
     )
 
-    /** R1: a watchdog pausing the write must never be logged or counted as a write failure. */
+    /** A watchdog pausing the write must never be logged or counted as a write failure. */
     @Test
     fun anOpenTitlePausesARealBlockingWriteRatherThanFailingIt() =
         runBlocking {
@@ -127,8 +135,8 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope, openTitleSource = open, logs = logs)
 
             preloader.enqueue("f1", "Film f1", 10_000L)
-            waitUntil { writer.started.isNotEmpty() }
-            Thread.sleep(100)
+            assertTrue(waitUntil { writer.started.isNotEmpty() }, "the write must start")
+            assertTrue(waitUntil { writer.written.get() in 1 until 10_000L }, "the write must be under way, not finished")
 
             open.set(OpenTitle("other", 1L))
             val interruptedInTime = waitUntil(timeoutMs = 1_000) { writer.cancelCount.get() > 0 }
@@ -136,7 +144,7 @@ class FilmPreloaderBlockingWriterTest {
 
             val paused = waitUntil(timeoutMs = 1_000) { preloader.stateOf("f1", 10_000L).first() is FilmPreloadState.Paused }
             assertTrue(paused, "the pause must actually reach FilmPreloadState.Paused, not stay Running or go to Failed")
-            assertFalse(logs.any { "write failed" in it }, "R1: a watchdog pause must never be logged as a write failure: $logs")
+            assertFalse(logs.any { "write failed" in it }, "a watchdog pause must never be logged as a write failure: $logs")
             scope.cancel()
         }
 
@@ -149,10 +157,10 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope, openTitleSource = open)
 
             preloader.enqueue("f1", "Film f1", 200L)
-            waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Paused }
+            assertTrue(waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Paused }, "the film must wait for the open title")
 
             preloader.cancel("f1")
-            waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Idle }
+            assertTrue(waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Idle }, "the cancel must settle the film to Idle")
 
             open.set(null)
             Thread.sleep(300) // long enough for a re-download to have finished, if one wrongly started
@@ -176,10 +184,10 @@ class FilmPreloaderBlockingWriterTest {
             scope.launch { preloader.heldEvents.collect { heldEvents += it } }
 
             preloader.enqueue("f1", "Film f1", 200L)
-            waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Paused }
+            assertTrue(waitUntil { preloader.stateOf("f1", 200L).first() is FilmPreloadState.Paused }, "the film must wait for the open title")
 
             preloader.remove("f1")
-            waitUntil { removed.contains("f1") }
+            assertTrue(waitUntil { removed.contains("f1") }, "the remove must clear the film from the cache")
 
             open.set(null)
             Thread.sleep(300)
@@ -215,7 +223,7 @@ class FilmPreloaderBlockingWriterTest {
             // 20 steps at 10ms — still writing when the film's cancel below
             // arrives, done well inside waitUntil's own default timeout.
             series.want(listOf(PreloadItem("ep2", "E2", 800L)), 0L)
-            waitUntil { writer.started.contains("ep2") }
+            assertTrue(waitUntil { writer.started.contains("ep2") }, "the series write must start")
 
             preloader.enqueue("f1", "Film f1", 200L)
             Thread.sleep(50) // f1 is now queued behind ep2's write, waiting for the lane
@@ -236,8 +244,8 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope)
 
             preloader.enqueue("f1", "Film f1", 1_000_000L)
-            waitUntil { writer.started.isNotEmpty() }
-            Thread.sleep(150) // now genuinely mid-write, some bytes already progressed
+            assertTrue(waitUntil { writer.started.isNotEmpty() }, "the write must start")
+            assertTrue(waitUntil { writer.written.get() in 1 until 1_000_000L }, "the write must be under way, some bytes already progressed")
 
             preloader.cancel("f1")
             val settled = waitUntil(timeoutMs = 1_000) { preloader.stateOf("f1", 1_000_000L).first() !is FilmPreloadState.Running }
@@ -247,7 +255,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R2: the fits check must not treat a transient open-title reserve as a permanent verdict. */
+    /** The fits check must not treat a transient open-title reserve as a permanent verdict. */
     @Test
     fun openingATitleThatOnlyTransientlyExceedsTheBudgetPausesRatherThanNeedsSpace() =
         runBlocking {
@@ -286,8 +294,9 @@ class FilmPreloaderBlockingWriterTest {
                 )
 
             preloader.enqueue("b", "Film B", 800L)
-            waitUntil { writer.started.contains("b") }
-            Thread.sleep(50) // genuinely mid-write before C opens, not racing the very first chunk
+            assertTrue(waitUntil { writer.started.contains("b") }, "B's write must start")
+            // Genuinely mid-write before C opens, not racing the very first chunk.
+            assertTrue(waitUntil { writer.written.get() in 1 until 800L }, "B's write must be under way, not finished")
 
             // 800 (B) + 500 (C) = 1300 > 1200: does not fit with C's
             // reserve, but 800 alone does — must wait for C, not report
@@ -302,7 +311,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R3: the queue slot must be free the instant cancel() returns, not only once the cancelled write has fully unwound. */
+    /** The queue slot must be free the instant cancel() returns, not only once the cancelled write has fully unwound. */
     @Test
     fun cancelThenImmediateReEnqueueIsNotLost() =
         runBlocking {
@@ -311,8 +320,8 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope)
 
             preloader.enqueue("f1", "Film f1", 1_000_000L)
-            waitUntil { writer.started.isNotEmpty() }
-            Thread.sleep(150)
+            assertTrue(waitUntil { writer.started.isNotEmpty() }, "the write must start")
+            assertTrue(waitUntil { writer.written.get() in 1 until 1_000_000L }, "the write must be under way, not finished")
 
             preloader.cancel("f1")
             preloader.enqueue("f1", "Film f1", 1_000_000L) // viewer taps Preload again right away
@@ -327,7 +336,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R10: Android's own time limit on the foreground service pauses every queued film, not only the one actually writing. */
+    /** Android's own time limit on the foreground service pauses every queued film, not only the one actually writing. */
     @Test
     fun pauseForTimeLimitPausesEveryQueuedFilmNotJustTheActiveOne() =
         runBlocking {
@@ -336,9 +345,9 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope)
 
             preloader.enqueue("a", "Film A", 1_000_000L)
-            waitUntil { writer.started.contains("a") }
+            assertTrue(waitUntil { writer.started.contains("a") }, "A's write must start")
             preloader.enqueue("b", "Film B", 500L)
-            waitUntil { preloader.stateOf("b", 500L).first() is FilmPreloadState.Queued }
+            assertTrue(waitUntil { preloader.stateOf("b", 500L).first() is FilmPreloadState.Queued }, "B must queue behind A")
 
             preloader.pauseForTimeLimit()
 
@@ -365,9 +374,9 @@ class FilmPreloaderBlockingWriterTest {
             val preloader = engine(writer, scope)
 
             preloader.enqueue("a", "Film A", 1_000_000L)
-            waitUntil { writer.started.contains("a") }
+            assertTrue(waitUntil { writer.started.contains("a") }, "A's write must start")
             preloader.enqueue("b", "Film B", 500L)
-            waitUntil { preloader.stateOf("b", 500L).first() is FilmPreloadState.Queued }
+            assertTrue(waitUntil { preloader.stateOf("b", 500L).first() is FilmPreloadState.Queued }, "B must queue behind A")
 
             preloader.pauseForTimeLimit()
             assertTrue(waitUntil(timeoutMs = 1_000) { preloader.timeLimitPaused.value.size == 2 })

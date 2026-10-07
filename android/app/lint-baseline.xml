@@ -256,7 +256,7 @@
         errorLine1="    var openedBeforeAction by rememberSaveable { mutableStateOf(state.completedActionId) }"
         errorLine2="                                                 ~~~~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/ui/tv/system/TvSettingsScreen.kt"
+            file="src/main/kotlin/ui/tv/settings/TvSettingsScreen.kt"
             line="42"
             column="50"/>
     </issue>

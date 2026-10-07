@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CatalogRepository
+import data.coreSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -96,7 +97,8 @@ class SearchViewModel @Inject constructor(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: Exception) {
-            SearchUiState.Failed(error.message ?: "Search failed")
+            Log.w(TAG, "search failed", error)
+            SearchUiState.Failed(error.coreSentence()?.let { "Search failed: $it" } ?: "Search failed. Try again.")
         }
     }
 

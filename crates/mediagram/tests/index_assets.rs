@@ -62,7 +62,14 @@ fn subtitles_are_kept_per_language() {
             .as_deref(),
         Some("WEBVTT\n\ndeutsch")
     );
-    assert_eq!(assets::languages(&conn, SET).unwrap(), vec!["deu", "eng"]);
+    assert_eq!(
+        assets::inline_subtitles(&conn, SET)
+            .unwrap()
+            .into_iter()
+            .map(|(lang, _)| lang)
+            .collect::<Vec<_>>(),
+        ["deu", "eng"]
+    );
 }
 
 /// Re-uploading a lesson should correct its subtitle, not accumulate copies.
@@ -90,7 +97,7 @@ fn a_set_with_no_assets_reports_none() {
         assets::get(&conn, SET, assets::Kind::Summary, "").unwrap(),
         None
     );
-    assert!(assets::languages(&conn, SET).unwrap().is_empty());
+    assert!(assets::inline_subtitles(&conn, SET).unwrap().is_empty());
     assert!(!assets::has_summary(&conn, SET).unwrap());
 }
 

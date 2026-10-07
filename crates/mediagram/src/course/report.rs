@@ -1,8 +1,10 @@
 //! What a course walk prints: the dry-run table and the closing summary.
 //! Pure, so the output can be asserted without touching a disk or a network.
 
+use crate::course::upload::video_words;
 use crate::course::walk::Course;
 use crate::upload::session::Counts;
+use mlib_spec::Kind;
 
 fn failed(counts: &Counts) -> u32 {
     counts.failed + counts.blocked
@@ -25,9 +27,12 @@ impl Summary {
         failed(&self.lessons) + failed(&self.documents)
     }
 
-    pub fn lines(&self) -> Vec<String> {
+    /// The closing lines, the videos named for `kind`: lessons, or a
+    /// documentary's episodes.
+    pub fn lines(&self, kind: Kind) -> Vec<String> {
+        let (_, noun) = video_words(kind);
         let mut out = vec![format!(
-            "{} lesson(s) uploaded, {} already done, {} failed",
+            "{} {noun}(s) uploaded, {} already done, {} failed",
             self.lessons.uploaded,
             self.lessons.held,
             failed(&self.lessons)
@@ -54,8 +59,9 @@ impl Summary {
 
 /// One row of the dry-run table.
 struct Row {
-    /// `L` for a lesson, `D` for a document — the same letters the caption
-    /// uses, so a row here and a name in the channel read alike.
+    /// `L` for a lesson, `E` for a documentary episode, `D` for a document
+    /// — the same letters the caption uses, so a row here and a name in the
+    /// channel read alike.
     mark: char,
     number: u32,
     title: String,
@@ -72,9 +78,18 @@ struct Row {
 ///
 /// A lesson and its handout carry the same number on purpose, so the mark is
 /// what tells two otherwise identical rows apart.
-pub fn dry_run_table(course: &str, cid: &str, walked: &Course) -> Vec<String> {
+///
+/// `kind` is what the videos are recorded as: a documentary collection's are
+/// episodes under a collection, not lessons under a course.
+pub fn dry_run_table(course: &str, cid: &str, walked: &Course, kind: Kind) -> Vec<String> {
+    let (mark, noun) = video_words(kind);
+    let whole = if kind == Kind::Docu {
+        "collection"
+    } else {
+        "course"
+    };
     let mut out = vec![
-        format!("course: {course}"),
+        format!("{whole}: {course}"),
         format!("id:     {cid}"),
         String::new(),
     ];
@@ -88,7 +103,7 @@ pub fn dry_run_table(course: &str, cid: &str, walked: &Course) -> Vec<String> {
             .entry(lesson.rel_path.as_str())
             .or_default()
             .push(Row {
-                mark: 'L',
+                mark: mark.to_ascii_uppercase(),
                 number: lesson.lesson,
                 title: lesson.title.clone().unwrap_or_else(|| "-".into()),
             });
@@ -107,16 +122,17 @@ pub fn dry_run_table(course: &str, cid: &str, walked: &Course) -> Vec<String> {
     for (folder, mut rows) in by_folder.iter_mut().map(|(k, v)| (*k, std::mem::take(v))) {
         // Lessons before documents at the same number, so a handout reads as
         // belonging to the lesson above it. By mark rather than alphabetically:
-        // `D` sorts before `L`, which would put every handout above its lesson.
+        // `D` sorts before `E` and `L`, which would put every handout above
+        // its video.
         rows.sort_by_key(|row| (row.number, u8::from(row.mark == 'D')));
         let heading = if folder.is_empty() {
-            "(course root)".to_string()
+            format!("({whole} root)")
         } else {
             folder.to_string()
         };
-        let lessons = rows.iter().filter(|r| r.mark == 'L').count();
-        let documents = rows.len() - lessons;
-        out.push(format!("{heading}  ({})", counted(lessons, documents)));
+        let videos = rows.iter().filter(|r| r.mark != 'D').count();
+        let documents = rows.len() - videos;
+        out.push(format!("{heading}  ({})", counted(noun, videos, documents)));
         for row in rows {
             out.push(format!("  {} {:>3}  {}", row.mark, row.number, row.title));
         }
@@ -125,19 +141,20 @@ pub fn dry_run_table(course: &str, cid: &str, walked: &Course) -> Vec<String> {
 
     out.push(format!(
         "{} across {} folder(s)",
-        counted(walked.lessons.len(), walked.documents.len()),
+        counted(noun, walked.lessons.len(), walked.documents.len()),
         by_folder.len()
     ));
     out
 }
 
-/// `3 lesson(s)`, or `3 lesson(s), 1 document(s)` when there are any.
+/// `3 lesson(s)`, or `3 lesson(s), 1 document(s)` when there are any; a
+/// collection's videos are counted as episodes.
 ///
 /// Documents are named only when the course has some. A course of pure video
 /// should not have to read the word at all.
-fn counted(lessons: usize, documents: usize) -> String {
+fn counted(noun: &str, videos: usize, documents: usize) -> String {
     if documents == 0 {
-        return format!("{lessons} lesson(s)");
+        return format!("{videos} {noun}(s)");
     }
-    format!("{lessons} lesson(s), {documents} document(s)")
+    format!("{videos} {noun}(s), {documents} document(s)")
 }

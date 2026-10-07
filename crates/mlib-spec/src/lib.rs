@@ -3,6 +3,11 @@
 //!
 //! - [`caption`]: the JSON record carried on every uploaded part
 //! - [`caption_codec`]: caption text ⇄ [`caption::Caption`] with the 1,024-char budget
+//! - [`app_caption`]: the caption on an Android app release
+//! - [`index_caption`]: the caption on an index snapshot document
+//! - [`ids`]: the provider identifiers a caption and the index carry
+//! - [`kind_spelling`]: how a [`Kind`] is spelled on the wire, in the index and
+//!   when a person types one
 //! - [`category_key`]: the per-unit key a hand-set category is filed under
 //! - [`part_plan`]: byte-range planning for raw splits
 //! - [`part_name`]: ≤60-char Telegram file names
@@ -10,7 +15,8 @@
 //! - [`set_hash`]: set identity derived from per-part hashes
 //! - [`schema`]: SQLite DDL for `library.db`
 //! - [`slug`]: default derivation of a collection id
-//! - [`package`]: the prebuilt metadata package published for a player
+//! - [`package`]: the prebuilt metadata package published for a player, and
+//!   the keys artwork is stored under (a poster, a season's poster, a backdrop)
 //! - [`subtitle_bundle`]: a set's subtitle tracks, as the one gzip'd document
 //!   the channel carries them in
 

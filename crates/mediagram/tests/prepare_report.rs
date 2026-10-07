@@ -1,9 +1,11 @@
 //! Exercise the actual CLI dry run: probing, planning, reporting and no rewrite.
 
+mod support;
+
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use mediagram::media::test_fixtures::{ffmpeg_required, make_faststart_mp4};
+use support::media::{ffmpeg_required, make_faststart_mp4};
 
 struct Fixture {
     dir: tempfile::TempDir,

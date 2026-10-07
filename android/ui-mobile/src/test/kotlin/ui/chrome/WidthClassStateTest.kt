@@ -26,8 +26,9 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import catalog.Destination
-import catalog.catalogTabsOf
+import catalog.CatalogTab
+import catalog.KeptKind
+import catalog.mastheadTabsOf
 import designsystem.MediagramTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -36,20 +37,18 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.BrowseActions
-import ui.LibraryScaffold
-import ui.MenuActions
-import ui.ProfileBarState
+import ui.Destination
+import ui.common.MenuActions
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
  * The chrome's own two width-dependent defects a real rotation surfaces:
  * losing a scroll position because the width class change moved [content]
- * to a different slot in the composition (H1 — [ui.LibraryScaffold],
- * [LibraryHome] each now have exactly one call site for it, with only the
+ * to a different slot in the composition ([ui.chrome.LibraryScaffold] and
+ * [LibraryHome] each have exactly one call site for it, with only the
  * rail conditional beside it), and a hidden compact header leaving a blank
- * band instead of the space it just gave up (H2). A fake [WindowInfo]
+ * band instead of the space it just gave up. A fake [WindowInfo]
  * flips the width class in place, the way a real rotation does — the
  * manifest handles `orientation|screenSize`, so nothing here recreates the
  * activity either.
@@ -102,8 +101,8 @@ class WidthClassStateTest {
     @Test fun rootKeepsScrollAcrossWidthClass() {
         host {
             val holder = rememberSaveableStateHolder()
-            val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) {
+            val tabs = mastheadTabsOf(emptyList())
+            LibraryHome(tabs, CatalogTab.Kept(KeptKind.COLLECTIONS), {}, browse, menu, profile, {}, heroState = null) {
                 holder.SaveableStateProvider("shelves") { rows() }
             }
         }
@@ -113,8 +112,8 @@ class WidthClassStateTest {
     @Test fun compactHeaderHidingLeavesContentWhereItWas() {
         widthDp = 400
         host {
-            val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) { rows() }
+            val tabs = mastheadTabsOf(emptyList())
+            LibraryHome(tabs, CatalogTab.Kept(KeptKind.COLLECTIONS), {}, browse, menu, profile, {}, heroState = null) { rows() }
         }
         val before = compose.onNodeWithTag("rows").getUnclippedBoundsInRoot()
         val wordBefore = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()

@@ -14,6 +14,7 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { hasTable } from "../catalog";
 
 /** Only these two kinds ever carry a provider entry an override can key. */
 type AnimeKind = "movie" | "ep";
@@ -49,10 +50,7 @@ type OverrideKey = string;
  */
 export function animeOverrides(db: Database): Map<OverrideKey, boolean> {
   const overrides = new Map<OverrideKey, boolean>();
-  const exists = db
-    .query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'anime_overrides'")
-    .get();
-  if (!exists) return overrides; // No such table: an index written before v11.
+  if (!hasTable(db, "anime_overrides")) return overrides; // No such table: an index written before v11.
   const rows = db
     .query(
       `SELECT kind, id, anime FROM anime_overrides WHERE source = 'tmdb' AND anime IS NOT NULL`,

@@ -6,16 +6,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
+import catalog.franchiseHref
 import catalog.mediaSet
 import model.ListOfSets
 import model.WatchSnapshot
-import ui.FrameResolution
-import ui.LibraryPositions
-import ui.resolveFrame
+import ui.common.FrameResolution
+import ui.common.LibraryPositions
+import ui.common.resolveFrame
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvPlayAllKey
 import ui.tv.catalog.TvSearch
+import ui.tv.catalog.destinationKey
+import ui.tv.catalog.personKey
+import ui.tv.catalog.showKey
 import ui.tv.setup.TvLoadingIndicator
 
 /**
@@ -50,25 +54,26 @@ internal fun TvSearchBranch(
             restore.opened(here, setId)
             at.openTitle(setId)
         },
-        // Recorded under the results' own row keys (`keyOf` in TvSearchGroups.kt), so Back
-        // finds the show, person or collection that was opened rather than the first result.
+        // Recorded under the results' own row keys ([showKey], [personKey] and
+        // [destinationKey], which `keyOf` builds them with), so Back finds the
+        // show, person or collection that was opened rather than the first result.
         onOpenCollection = { key ->
-            restore.opened(here, "show:$key")
+            restore.opened(here, showKey(key))
             at.openCollection(key)
         },
         onOpenPerson = { personId ->
-            restore.opened(here, "person:$personId")
-            at.openPerson(personId.toString())
+            restore.opened(here, personKey(personId))
+            at.openPerson(personId)
         },
         onOpenFranchise = { id ->
-            restore.opened(here, "dest:tmdb-$id")
-            at.openFranchise(id.toString())
+            restore.opened(here, destinationKey(franchiseHref(id)))
+            at.openFranchise(id)
         },
         onOpenList = { id ->
-            restore.opened(here, "dest:$id")
+            restore.opened(here, destinationKey(id))
             at.openList(id)
         },
-        shouldRequestPortrait = browse::shouldRequestPortrait,
+        portraits = browse.portraits,
         fetchPortrait = browse::fetchPortrait,
     )
 }

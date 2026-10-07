@@ -75,7 +75,6 @@ pub async fn publish_package(
     package: &Path,
     bytes: u64,
     sealed: &[u8],
-    dry_run: bool,
 ) -> Result<()> {
     let argv = cfg.publish_cmd.clone().unwrap_or_default();
     let base_url = cfg.publish_base_url.as_deref().unwrap_or("");
@@ -89,13 +88,6 @@ pub async fn publish_package(
     let pointer_path = package.with_file_name("latest.json");
     std::fs::write(&pointer_path, serde_json::to_vec(&complete)?)
         .with_context(|| format!("writing {}", pointer_path.display()))?;
-
-    if dry_run {
-        for file in [package, pointer_path.as_path()] {
-            println!("would run: {:?}", substitute(&argv, file));
-        }
-        return Ok(());
-    }
 
     run_publish(&argv, package).await?;
     run_publish(&argv, &pointer_path).await?;

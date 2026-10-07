@@ -76,7 +76,9 @@ test.each(["127.0.0.2", "0.0.0.0", "::1", "::"])(
       const setUrl = `${baseUrl}/api/sets/01SET`;
       // The very first requests do not wait for background catalog readiness.
       const [audio, transcode, firstSheet] = await Promise.all([
-        fetch(`${setUrl}/audio`), fetch(`${setUrl}/transcode`), fetch(`${setUrl}/thumbs.jpg`),
+        fetch(`${setUrl}/audio`),
+        fetch(`${setUrl}/transcode`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
+        fetch(`${setUrl}/thumbs.jpg`),
       ]);
       await sheetExited.promise;
       expect(inputs.toSorted((a, b) => a.kind.localeCompare(b.kind))).toEqual([

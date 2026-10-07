@@ -1,8 +1,5 @@
 package designsystem
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -59,26 +56,6 @@ object Palette {
      * asking to be seen — the web's `--rule-soft` (8% ink over the ground).
      */
     val RuleSoft = Color(0x14F3EFE7)
-
-    /**
-     * One accent, for the thing this viewer is in the middle of — a
-     * focused card's border on a television, a text cursor, the line
-     * saying where a viewer got to. Settings › Appearance's [Accent]
-     * replaced the fixed red this used to be with a choice, so this is now
-     * that choice's current colour rather than a constant: [MediagramTheme]
-     * and [ui.tv.TvTheme] (through `androidx.compose.runtime.SideEffect`,
-     * the only place either is allowed to write it) set it to the resolved
-     * accent on every composition, and everything below — a television's
-     * focus border, a cursor — reads the same property rather than a value
-     * retyped for each of them. A snapshot state, not a plain `var`,
-     * because most of its readers are themselves inside a composition and
-     * need to recompose the moment a viewer picks a different accent, not
-     * on whatever this object's next unrelated read happens to be.
-     * Defaults to coral's dark value, the constant this always was before
-     * Appearance existed, so a device that has never opened Settings looks
-     * exactly as it always did.
-     */
-    var Imprint: Color by mutableStateOf(Color(0xFFE57A61))
 
     /** The one thing the catalogue ever warns about. The web's `--warn`. */
     val Ochre = Color(0xFFE6C47F)

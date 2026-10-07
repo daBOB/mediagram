@@ -45,8 +45,6 @@ import { mergeStats } from "./stats-merge";
 import { kidsMarkRank, mergeRoles } from "./roles-merge";
 import type { MergedProfile, MergedState } from "./merged";
 
-export type { MergedProfile, MergedState } from "./merged";
-
 /**
  * Merges every device's document into one answer.
  *

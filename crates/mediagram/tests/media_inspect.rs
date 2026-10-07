@@ -5,12 +5,14 @@
 //! ffmpeg-generated fixtures; skipped with a printed note when ffmpeg is
 //! not on PATH.
 
+mod support;
+
 use mediagram::media;
 
 use media::inspect::inspect;
 use media::mp4_atoms::needs_faststart;
 use media::remux::ensure_faststart;
-use media::test_fixtures::{ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4};
+use support::media::{ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4};
 
 #[tokio::test]
 async fn inspect_yields_expected_fixture_metadata() {

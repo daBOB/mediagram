@@ -37,12 +37,12 @@ class DepartmentLinesTest {
 
     @Test
     fun seriesSpellsBothHalvesBelowTheirOwnCeiling() {
-        assertEquals("four shows · seventeen episodes", showsLineOf(showsDept(4, 17), "Series", "episode"))
+        assertEquals("four shows · seventeen episodes", showsLineOf(showsDept(4, 17), Department.SERIES))
     }
 
     @Test
     fun tutorialsNamesItsShowsCoursesAndReadsFiguresPastTwenty() {
-        assertEquals("48 courses · 511 lessons", showsLineOf(showsDept(48, 511), "Tutorials", "lesson"))
+        assertEquals("48 courses · 511 lessons", showsLineOf(showsDept(48, 511), Department.TUTORIALS))
     }
 
     private fun animeDept(showCount: Int, filmCount: Int) =

@@ -123,6 +123,7 @@ export async function revokeSession(telegram: Telegram, id: string): Promise<Rev
     return { ok: false, error: "not a session id" };
   }
   try {
+    // teleproto types longs as big-integer, but accepts a native bigint.
     await telegram.client.invoke(new Api.account.ResetAuthorization({ hash: hash as never }));
     return { ok: true };
   } catch (error) {

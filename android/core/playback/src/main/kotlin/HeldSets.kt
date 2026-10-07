@@ -49,8 +49,8 @@ interface HeldSetsQuery {
  * default is the URI). Nothing here asks Telegram anything.
  *
  * A plain class, not Hilt-injected — this module carries no Hilt plugin of
- * its own (see `CacheBudgetSettings`, the same shape); `player.di.PlaybackModule`
- * builds the one instance the app uses, bound to [HeldSetsQuery].
+ * its own (see `CacheBudgetSettings`, the same shape); the app's
+ * `SharedPlaybackModule` builds the one instance it uses, bound to [HeldSetsQuery].
  */
 class HeldSets(
     private val context: Context,

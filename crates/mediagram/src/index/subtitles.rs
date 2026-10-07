@@ -62,8 +62,8 @@ pub fn record(
         .context("recording a track")?;
     }
     tx.execute(
-        "DELETE FROM assets WHERE set_id = ?1 AND kind = 'subtitle'",
-        [set_id],
+        "DELETE FROM assets WHERE set_id = ?1 AND kind = ?2",
+        [set_id, mlib_spec::schema::ASSET_SUBTITLE],
     )
     .context("dropping the inline subtitles")?;
     pins::owe_publish(&tx)?;

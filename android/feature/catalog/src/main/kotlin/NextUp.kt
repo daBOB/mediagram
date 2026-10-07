@@ -15,10 +15,9 @@ data class NextUpEntry(
 )
 
 /**
- * Continue and Next up, before [homeRowsOf] turns them into rows with
- * captions. Ported from the underway half of `home-shelves.js`'s
- * `homeShelves` — [homeRowsOf] owns the rest: captions, the Latest shelves,
- * and wrapping this in [HomeRow].
+ * Continue and Next up, before [resumeCardsOf] turns them into captioned
+ * cards. Ported from the underway half of `home-shelves.js`'s `homeShelves`
+ * — [latestOf] is the other half.
  */
 data class Underway(
     val continues: List<MediaSet>,
@@ -144,15 +143,6 @@ private fun laterOf(
         b == null -> a
         else -> maxOf(a, b)
     }
-
-/** What follows [setId] in [order], or `null` at the end. Ported from `nextInQueue`/`nextAfter` in library.js. */
-fun nextAfter(
-    order: List<MediaSet>,
-    setId: String,
-): MediaSet? {
-    val at = order.indexOfFirst { it.setId == setId }
-    return if (at == -1 || at == order.lastIndex) null else order[at + 1]
-}
 
 /**
  * Every playable set in a collection, in the order Android's own screens

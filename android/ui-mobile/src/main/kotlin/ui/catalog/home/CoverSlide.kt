@@ -30,8 +30,8 @@ import designsystem.CoverTitle
 import designsystem.Eyebrow
 import designsystem.Spacing
 import model.MediaSet
-import ui.catalog.HeroArtwork
 import ui.chrome.LocalTopChrome
+import ui.common.catalog.HeroArtwork
 
 /** Past this many characters a title steps down a size, so it still fits in three lines (`home-cover.js:22`). */
 private const val LONG_TITLE = 18

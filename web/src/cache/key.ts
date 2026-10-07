@@ -75,6 +75,7 @@ export function chunkPath(root: string, setId: string, partIdx: number, index: n
  * in the directory is left alone.
  */
 export async function retireOtherChunkSizes(root: string): Promise<void> {
+  // Any error but a missing root surfaces again in the next sizeOnDisk, which walks it.
   const names = await readdir(root).catch(() => [] as string[]);
   await Promise.all(names
     .filter((name) => /^\d+$/.test(name) && name !== String(CACHE_CHUNK))

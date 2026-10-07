@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { chmod, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AdminGate, cookieValue, resolveAdminToken } from "../src/settings/admin-gate";
@@ -32,6 +32,20 @@ describe("resolveAdminToken", () => {
 
     const second = await resolveAdminToken({}, path);
     expect(second).toBe(first);
+  });
+
+  // Write-only, so a token written over it would succeed: mode 000 refuses
+  // the write as well, and could not tell rejecting from overwriting apart.
+  test.skipIf(process.getuid?.() === 0)("a token file that cannot be read fails startup and is not replaced", async () => {
+    const dir = await tempDir();
+    const path = join(dir, "admin-token");
+    await writeFile(path, "held-token", { mode: 0o600 });
+    await chmod(path, 0o200);
+
+    await expect(resolveAdminToken({}, path)).rejects.toThrow(/EACCES/);
+
+    await chmod(path, 0o600);
+    expect(await readFile(path, "utf8")).toBe("held-token");
   });
 });
 

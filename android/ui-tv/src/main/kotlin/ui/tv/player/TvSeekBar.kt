@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
@@ -66,7 +67,7 @@ internal fun TvSeekBar(
     var focused by remember { mutableStateOf(false) }
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val track = if (focused) FocusedTrack else Track
-    val fill = if (focused) Palette.Imprint else Palette.Text
+    val fill = if (focused) MaterialTheme.colorScheme.primary else Palette.Text
 
     Box(
         modifier =

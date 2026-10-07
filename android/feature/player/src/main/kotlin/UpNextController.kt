@@ -10,8 +10,7 @@ import model.MediaSet
 
 /**
  * What follows the open title and the countdown that may start it
- * unattended — split out of [PlayerViewModel] to keep that file under the
- * project's line guideline; [UpNextSwitcher] holds the switch itself (never
+ * unattended; [UpNextSwitcher] holds the switch itself (never
  * opens a title directly, only asks the UI layer to — see its own doc) and
  * `UpNextAsync.kt` the phase ticker, countdown and title resolution. A port
  * of `refreshUpNext`/`startWhenReady` in `player.js`, standing on the pure

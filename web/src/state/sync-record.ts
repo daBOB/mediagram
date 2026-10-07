@@ -54,7 +54,7 @@
  */
 
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
-import { asArray, isStamp, numberFromScalar, objectRow, text_ } from "./record-scalars";
+import { asArray, isStamp, numberFromScalar, objectRow, parseRows, text_ } from "./record-scalars";
 import { parseRoleKeys, type RoleKeys } from "./roles-record";
 import { parseDayStatRows, parseTitleStatRows, type StatsRows } from "./stats-record";
 
@@ -118,7 +118,7 @@ export interface CollectionRow {
 /** `titleStats`/`dayStats` come from `StatsRows` (`stats-record.ts`); `kids`,
  * `admin`, `kidsAge`, `parent` and `pin` from `RoleKeys` (`roles-record.ts`). */
 export interface ProfileState extends StatsRows, RoleKeys {
-  /** The viewer. See the plan's Identity section: the name, not the id. */
+  /** The viewer: the name, not the id, is what identifies one across devices. */
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
   localId?: string;
@@ -290,12 +290,4 @@ function collectionRow(value: unknown): CollectionRow | null {
     return setId === null ? [] : [setId];
   });
   return raw.removed === true ? { id, name, items, updatedAt, removed: true } : { id, name, items, updatedAt };
-}
-
-/** Each entry through its own check: a bad row is dropped, not the list. */
-export function parseRows<T>(value: unknown, one: (entry: unknown) => T | null): T[] {
-  return asArray(value).flatMap((entry) => {
-    const row = one(entry);
-    return row === null ? [] : [row];
-  });
 }

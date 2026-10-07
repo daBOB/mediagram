@@ -22,7 +22,6 @@ use tokio::task::JoinHandle;
 
 use crate::api::{Core, CoreError};
 
-#[path = "session_updates.rs"]
 mod updates;
 pub(in crate::api) use updates::{client, connection, invalidate, is_current, updates_receiver};
 
@@ -163,5 +162,4 @@ pub(in crate::api) fn forget_auth_key(data_dir: &Path) -> std::io::Result<()> {
 mod tests;
 
 #[cfg(test)]
-#[path = "session_fixture.rs"]
 pub(in crate::api) mod fixture;

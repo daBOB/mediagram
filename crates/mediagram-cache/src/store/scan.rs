@@ -62,25 +62,22 @@ fn scan_set(dir: &Path, id: &str, found: &mut Vec<(ChunkKey, u64, SystemTime)>) 
         };
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if name == "total" {
-            continue;
-        }
-        let Ok(n) = name.parse::<u32>() else {
+        let Some(n) = rules::chunk_file_num(&name) else {
             continue;
         };
         let Ok(metadata) = entry.metadata().inspect_err(|err| warn(&entry.path(), err)) else {
             continue;
         };
         let len = metadata.len();
-        if let Some(total) = total {
-            if rules::check_length(n, len, total).is_err() {
-                tracing::warn!(
-                    "scan: dropping {} — {len} bytes does not fit a total of {total}",
-                    entry.path().display()
-                );
-                let _ = fs::remove_file(entry.path());
-                continue;
-            }
+        if let Some(total) = total
+            && rules::check_length(n, len, total).is_err()
+        {
+            tracing::warn!(
+                "scan: dropping {} — {len} bytes does not fit a total of {total}",
+                entry.path().display()
+            );
+            let _ = fs::remove_file(entry.path());
+            continue;
         }
         found.push((
             (id.to_string(), n),
@@ -108,3 +105,7 @@ fn warn(path: &Path, err: &io::Error) {
         path.display()
     );
 }
+
+#[cfg(test)]
+#[path = "scan_tests.rs"]
+mod tests;

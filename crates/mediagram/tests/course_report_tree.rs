@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 use mediagram::course::report::dry_run_table;
 use mediagram::course::walk::{Course, Document, Lesson};
+use mlib_spec::Kind;
 
 fn lesson(rel_path: &str, chapter: u32, number: u32, title: &str) -> Lesson {
     Lesson {
@@ -58,7 +59,13 @@ fn lessons_are_shown_under_the_folder_they_came_from() {
         ),
     ];
 
-    let text = dry_run_table("Geldhochschule", "geldhochschule", &course_of(lessons)).join("\n");
+    let text = dry_run_table(
+        "Geldhochschule",
+        "geldhochschule",
+        &course_of(lessons),
+        Kind::Tut,
+    )
+    .join("\n");
 
     assert!(text.contains("Basislektionen/1. Start"), "{text}");
     assert!(
@@ -81,7 +88,7 @@ fn the_summary_counts_lessons_and_folders() {
         lesson("B", 2, 1, "Three"),
     ];
 
-    let text = dry_run_table("C", "c", &course_of(lessons)).join("\n");
+    let text = dry_run_table("C", "c", &course_of(lessons), Kind::Tut).join("\n");
 
     assert!(text.contains("3 lesson(s)"), "{text}");
     assert!(text.contains("2 folder(s)"), "{text}");
@@ -91,7 +98,7 @@ fn the_summary_counts_lessons_and_folders() {
 fn a_lesson_at_the_root_is_shown_under_the_course_itself() {
     let lessons = vec![lesson("", 1, 1, "Einzelvideo")];
 
-    let text = dry_run_table("C", "c", &course_of(lessons)).join("\n");
+    let text = dry_run_table("C", "c", &course_of(lessons), Kind::Tut).join("\n");
 
     assert!(text.contains("Einzelvideo"), "{text}");
     assert!(text.contains("(course root)"), "{text}");
@@ -99,7 +106,13 @@ fn a_lesson_at_the_root_is_shown_under_the_course_itself() {
 
 #[test]
 fn the_course_and_its_id_are_still_stated() {
-    let text = dry_run_table("Geldhochschule", "geldhochschule", &Course::default()).join("\n");
+    let text = dry_run_table(
+        "Geldhochschule",
+        "geldhochschule",
+        &Course::default(),
+        Kind::Tut,
+    )
+    .join("\n");
 
     assert!(text.contains("Geldhochschule"));
     assert!(text.contains("geldhochschule"));
@@ -114,7 +127,7 @@ fn a_document_is_marked_apart_from_the_lesson_it_shares_a_number_with() {
         documents: vec![document("Kapitel", 1, 2, "Signal")],
     };
 
-    let text = dry_run_table("C", "c", &walked).join("\n");
+    let text = dry_run_table("C", "c", &walked, Kind::Tut).join("\n");
 
     assert!(text.contains("L   2  Signal"), "{text}");
     assert!(text.contains("D   2  Signal"), "{text}");
@@ -132,7 +145,7 @@ fn a_folder_of_documents_alone_is_shown_with_its_documents() {
         ],
     };
 
-    let text = dry_run_table("C", "c", &walked).join("\n");
+    let text = dry_run_table("C", "c", &walked, Kind::Tut).join("\n");
 
     assert!(
         text.contains("Ressourcen  (0 lesson(s), 2 document(s))"),
@@ -151,7 +164,13 @@ fn a_folder_of_documents_alone_is_shown_with_its_documents() {
 /// A course of pure video reads exactly as it did before documents existed.
 #[test]
 fn a_course_without_documents_says_nothing_about_them() {
-    let text = dry_run_table("C", "c", &course_of(vec![lesson("A", 1, 1, "One")])).join("\n");
+    let text = dry_run_table(
+        "C",
+        "c",
+        &course_of(vec![lesson("A", 1, 1, "One")]),
+        Kind::Tut,
+    )
+    .join("\n");
     assert!(!text.contains("document"), "{text}");
 }
 
@@ -168,7 +187,7 @@ fn a_handout_is_listed_under_its_lesson_not_above_it() {
         documents: vec![document("Kapitel", 1, 1, "Einstieg")],
     };
 
-    let rows: Vec<String> = dry_run_table("C", "c", &walked)
+    let rows: Vec<String> = dry_run_table("C", "c", &walked, Kind::Tut)
         .into_iter()
         .filter(|line| line.starts_with("  L") || line.starts_with("  D"))
         .collect();

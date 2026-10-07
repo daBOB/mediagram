@@ -4,13 +4,14 @@
  *
  * Dispatched from `src/routes.ts`'s `createRouter`, the one router that holds
  * both the state and the catalog the achievements are counted against —
- * ahead of the state router and its write checks. Each profile asks for its
- * own; nothing here lists anyone else's.
+ * ahead of the state router. Each profile asks for its own; nothing here
+ * lists anyone else's.
  */
 
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
+import { bodiless } from "../response";
 import type { AchievementLibrary } from "./achievements";
-import { json, P, status } from "./route-shared";
+import { json, P } from "./route-shared";
 import type { WatchState } from "./store";
 
 const STATS = new RegExp(`^/api/profiles/${P}/stats$`);
@@ -23,8 +24,8 @@ export function statsRoute(
 ): PlayerResponse | null {
   const matched = STATS.exec(request.path);
   if (!matched) return null;
-  if (request.method !== "GET" && request.method !== "HEAD") return status(405);
+  if (request.method !== "GET" && request.method !== "HEAD") return bodiless(405);
   const profileId = matched[1]!;
-  if (!state.has(profileId)) return status(404);
+  if (!state.has(profileId)) return bodiless(404);
   return json(JSON.stringify(state.stats(profileId, library())), request.method === "HEAD");
 }

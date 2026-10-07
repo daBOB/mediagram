@@ -10,7 +10,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { partFetcher } from "../src/telegram/source";
+import { connectionFetcher } from "../src/telegram/part-fetch";
+import { TelegramConnection } from "../src/telegram/connection";
 
 /** What teleproto does to the offset it is given, and nothing else. */
 interface BigIntish {
@@ -51,7 +52,7 @@ describe("fetching a range of a part", () => {
     const bytes = pattern(3_000_000);
     const fake = fakeTelegram(bytes);
 
-    const got = await partFetcher(fake.telegram as never, 1)(0, 2_000_000);
+    const got = await connectionFetcher(TelegramConnection.fixed(fake.telegram as never), 1)(0, 2_000_000);
 
     expect(got.length).toBe(2_000_000);
     expect(got).toEqual(bytes.subarray(0, 2_000_000));
@@ -62,7 +63,7 @@ describe("fetching a range of a part", () => {
     const bytes = pattern(3_000_000);
     const fake = fakeTelegram(bytes);
 
-    const got = await partFetcher(fake.telegram as never, 1)(1_048_576, 1_000_000);
+    const got = await connectionFetcher(TelegramConnection.fixed(fake.telegram as never), 1)(1_048_576, 1_000_000);
 
     expect(got).toEqual(bytes.subarray(1_048_576, 2_048_576));
     expect(fake.asked[0]?.offset).toBe(1_048_576);
@@ -72,7 +73,7 @@ describe("fetching a range of a part", () => {
     const bytes = pattern(1_500_000);
     const fake = fakeTelegram(bytes);
 
-    const got = await partFetcher(fake.telegram as never, 1)(1_000_000, 1_000_000);
+    const got = await connectionFetcher(TelegramConnection.fixed(fake.telegram as never), 1)(1_000_000, 1_000_000);
 
     expect(got).toEqual(bytes.subarray(1_000_000));
   });

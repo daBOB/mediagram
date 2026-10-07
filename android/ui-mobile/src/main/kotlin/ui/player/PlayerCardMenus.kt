@@ -38,6 +38,8 @@ import designsystem.Spacing
 import playback.AudioOption
 import playback.Framing
 import player.PlayerChoices
+import ui.common.player.cardMenuOffset
+import ui.common.player.playerCard
 
 /** Finds an open card menu in a test. */
 internal const val CardMenuTag = "player-card-menu"

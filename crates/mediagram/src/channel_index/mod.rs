@@ -15,6 +15,7 @@
 mod backup_path;
 mod conflicts;
 mod live;
+mod message_gone;
 mod publish;
 mod pull;
 pub mod remote;
@@ -22,15 +23,14 @@ mod report;
 mod telegram_remote;
 mod unpin;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
 use crate::config::Config;
-use crate::index::{db, pins};
 use crate::telegram::client::Tg;
 use remote::ChannelRemote;
-pub use telegram_remote::{TelegramRemote, message_is_gone};
+pub use telegram_remote::TelegramRemote;
 
 /// MIME type the index document is sent under.
 const INDEX_MIME_TYPE: &str = "application/vnd.sqlite3";
@@ -61,8 +61,10 @@ impl<'r, R: ChannelRemote> ChannelIndex<'r, R> {
     }
 
     /// Merges the current channel index into the local index, or with
-    /// `dry_run` reports what a merge would do and writes nothing.
-    pub async fn pull(&self, dry_run: bool) -> Result<()> {
+    /// `dry_run` reports what a merge would do and writes nothing. Returns
+    /// whether the channel index lacks the subtitle tables, which only a
+    /// publish can restore; never on a dry run.
+    pub async fn pull(&self, dry_run: bool) -> Result<bool> {
         let current = pull::current(self.remote).await?;
         pull::pull_from(self.remote, &self.data_dir, current.as_ref(), dry_run).await
     }
@@ -76,39 +78,24 @@ impl<'r, R: ChannelRemote> ChannelIndex<'r, R> {
     }
 }
 
-/// `pull-index`: connects, pulls, disconnects. When the pull finds that the
-/// channel has lost its subtitle tables — an uploader older than this
-/// schema published over them — it also republishes, restoring them: the
-/// only case where a plain pull sends anything.
+/// `pull-index`: connects, pulls, disconnects. When the merge finds that the
+/// channel index has no subtitle tables — an uploader older than this schema
+/// published over them — it also republishes, restoring them: the only case
+/// where a plain pull sends anything.
 pub async fn pull_from_channel(cfg: &Config, dry_run: bool) -> Result<()> {
     let data_dir = cfg.data_dir()?;
     let tg = Tg::connect(cfg).await.context("connecting to Telegram")?;
     let remote = TelegramRemote::new(&tg, cfg.max_attempts);
-    let index = ChannelIndex::new(&remote, data_dir.clone());
-    let owed_before = pins::publish_owed(&db::open(&data_dir)?)?;
-    let result = index.pull(dry_run).await;
-    let result = match result {
-        Ok(()) if !dry_run => republish_if_newly_owed(&index, &data_dir, owed_before).await,
-        other => other,
+    let index = ChannelIndex::new(&remote, data_dir);
+    let result = match index.pull(dry_run).await {
+        Ok(true) if !dry_run => {
+            println!("publishing again to restore the channel's subtitle tables");
+            index.publish(Mode::AfterPull).await.map(|_| ())
+        }
+        other => other.map(|_| ()),
     };
     tg.shutdown().await;
     result
-}
-
-/// Republishes when this pull just recorded a publish owed that was not
-/// already there: the channel's subtitle tables were missing, and pulling
-/// is the only thing between the two checks that could have caused it.
-async fn republish_if_newly_owed(
-    index: &ChannelIndex<'_, TelegramRemote>,
-    data_dir: &Path,
-    owed_before: Option<u64>,
-) -> Result<()> {
-    let owed_after = pins::publish_owed(&db::open(data_dir)?)?;
-    if owed_after.is_some() && owed_before.is_none() {
-        println!("publishing again to restore the channel's subtitle tables");
-        index.publish(Mode::AfterPull).await?;
-    }
-    Ok(())
 }
 
 /// Every command that publishes: connects, publishes, disconnects, and

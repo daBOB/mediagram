@@ -23,7 +23,6 @@ export async function htmlApplicationEnvironment(html: string) {
             node.id = value;
           } else if (key === "class") {
             node.className = value;
-            for (const name of value.split(/\s+/)) node.classes.add(name);
           } else if (key === "hidden") node.hidden = true;
           else if (key === "value") node.value = value;
           else if (key.startsWith("data-")) node.dataset[key.slice(5)] = value;

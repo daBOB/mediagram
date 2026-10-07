@@ -129,7 +129,7 @@ pub async fn run(
     }
 
     if publish_it {
-        publish::publish_package(cfg, &pointer, &written, sealed_len, &sealed, dry_run).await?;
+        publish::publish_package(cfg, &pointer, &written, sealed_len, &sealed).await?;
     }
     Ok(())
 }

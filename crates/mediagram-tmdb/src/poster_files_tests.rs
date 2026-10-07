@@ -35,11 +35,19 @@ async fn cdn() -> Cdn {
 }
 
 fn backdrop(width: u32) -> PosterRef {
-    PosterRef { key: "tmdb-movie-1-bg".into(), path: "/b.jpg".into(), backdrop_width: Some(width) }
+    PosterRef {
+        key: "tmdb-movie-1-bg".into(),
+        path: "/b.jpg".into(),
+        width: Some(width),
+    }
 }
 
 fn poster() -> PosterRef {
-    PosterRef { key: "tmdb-movie-1".into(), path: "/p.jpg".into(), backdrop_width: None }
+    PosterRef {
+        key: "tmdb-movie-1".into(),
+        path: "/p.jpg".into(),
+        width: None,
+    }
 }
 
 /// Runs the walk against the stand-in CDN.

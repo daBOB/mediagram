@@ -17,10 +17,11 @@ import { countDocumentaries } from "./lib/documentaries.js";
 import { catalogOf, loadLink } from "./lib/link.js";
 import { colophonLine } from "./lib/colophon.js";
 import { watchStatus } from "./lib/status/status-view.js";
-import { viewSettings as renderSettingsPage } from "./lib/settings-view.js";
+import { renderAdminSettings } from "./lib/settings-view.js";
 import { probeSettings } from "./lib/settings-api.js";
 import { renderCollection } from "./lib/catalog/course-view.js";
-import { SECTIONS, emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
+import { emptyState, heading, movieGrid, setGrid } from "./lib/catalog/shelf-view.js";
+import { SECTIONS } from "./lib/catalog/sections.js";
 import { shelfMode, shelfToggle } from "./lib/catalog/shelf-mode.js";
 import { pageOf, pager } from "./lib/catalog/pager.js";
 import { pickFeatured } from "./lib/catalog/featured-picks.js";
@@ -98,9 +99,7 @@ const librarySession = createLibrarySession({
 // fires it again moments later against whoever was actually chosen.
 librarySession.onData((change) => {
   ({ library, byId } = librarySession.current());
-  document.getElementById("n-movies").textContent = String(library.movies.length);
-  document.getElementById("n-series").textContent = String(library.series.length);
-  document.getElementById("n-tutorials").textContent = String(library.tutorials.length);
+  for (const section of ["movies", "series", "tutorials"]) document.getElementById(`n-${section}`).textContent = String(library[section].length);
   document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
   const animeCount = countAnime(library.anime);
   document.getElementById("n-anime").textContent = String(animeCount);
@@ -563,7 +562,7 @@ function drawRoute() {
   if (address.page === "settings") {
     stopSettings = renderSettings(main, {
       profile: state.profile(), switchProfile, systemVisible: !document.getElementById("nav-system").hidden,
-      admin: adminSettings ? renderSettingsPage : null,
+      admin: adminSettings ? renderAdminSettings : null,
     });
     return;
   }

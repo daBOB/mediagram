@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.WatchStateRepository
 import data.WatchSync
+import data.orDefault
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -131,7 +132,9 @@ class ManageProfilesViewModel
         private fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
             val actorId = (step.value as? Step.Managing)?.actorId ?: return
             val pin = heldPin ?: return
-            viewModelScope.launch { report(actorId, attempt { repository.manageAndShare(request(actorId, pin), sync) }) }
+            viewModelScope.launch {
+                report(actorId, orDefault(null, "profile change") { repository.manageAndShare(request(actorId, pin), sync) })
+            }
         }
 
         private fun newPin(

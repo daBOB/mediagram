@@ -34,7 +34,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Profile
-import ui.profile.ManageActions
+import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvSettingsHeading
 

@@ -14,7 +14,7 @@ import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import kotlinx.coroutines.delay
-import ui.player.SCRIM_ALPHA
+import ui.common.player.SCRIM_ALPHA
 
 /** Finds the notice in a test. */
 internal const val TvActionNoticeTag = "tv-action-notice"

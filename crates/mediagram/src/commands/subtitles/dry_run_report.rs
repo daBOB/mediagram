@@ -3,35 +3,25 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use mlib_spec::caption::position_code;
+
 use crate::index::set_row::SetRow;
 use crate::media::classify;
 use crate::media::prepare::plan::PICTURE_SUBTITLES;
 use crate::media::streams::{Probed, StreamKind};
 
+use super::dry_run_totals::{MatchTotals, Totals, add_match, gb};
 use super::match_source::{Match, SourceFile, Verdict};
 
-#[derive(Default, Clone, Copy)]
-struct Totals {
-    count: u64,
-    bytes: u64,
-}
-
-#[derive(Default, Clone, Copy)]
-struct MatchTotals {
-    count: u64,
-    bytes: u64,
-    with_de_en_text: u64,
-}
-
-pub fn print_report(
+pub fn report_lines(
     source_files: &[SourceFile],
     probes: &[Option<Probed>],
     matches: &[Match],
     sets: &[SetRow],
-) {
+) -> Vec<String> {
     let by_id: HashMap<&str, &SetRow> = sets.iter().map(|s| (s.set_id.as_str(), s)).collect();
 
-    println!("file\tverdict\tset_id\tkind\ttitle\tde_en_text\tpicture_only");
+    let mut out = vec!["file\tverdict\tset_id\tkind\ttitle\tde_en_text\tpicture_only".to_string()];
 
     let mut matched_totals: BTreeMap<(String, String), MatchTotals> = BTreeMap::new();
     let mut fallback_totals: BTreeMap<(String, String), MatchTotals> = BTreeMap::new();
@@ -43,7 +33,9 @@ pub fn print_report(
 
     for ((source, probed), m) in source_files.iter().zip(probes).zip(matches) {
         let target_id = match &m.verdict {
-            Verdict::Matched(id) | Verdict::Fallback(id) | Verdict::Conflict(id) => Some(id.as_str()),
+            Verdict::Matched(id) | Verdict::Fallback(id) | Verdict::Conflict(id) => {
+                Some(id.as_str())
+            }
             Verdict::Ambiguous | Verdict::Unmatched => None,
         };
         let set = target_id.and_then(|id| by_id.get(id).copied());
@@ -51,7 +43,7 @@ pub fn print_report(
             .then(|| probed.as_ref().map(count_subtitle_tracks))
             .flatten();
 
-        println!(
+        out.push(format!(
             "{}\t{}\t{}\t{}\t{}\t{}\t{}",
             source.path.display(),
             verdict_label(&m.verdict),
@@ -60,7 +52,7 @@ pub fn print_report(
             set.map(display_title).unwrap_or_default(),
             counts.map(|(d, _)| d.to_string()).unwrap_or_default(),
             counts.map(|(_, p)| p.to_string()).unwrap_or_default(),
-        );
+        ));
 
         match &m.verdict {
             Verdict::Matched(id) => {
@@ -87,65 +79,54 @@ pub fn print_report(
         }
     }
 
-    println!("#\n# matched sets by kind/container (count, with de/en text, bytes):");
+    out.push("#\n# matched sets by kind/container (count, with de/en text, bytes):".to_string());
     for ((kind, container), t) in &matched_totals {
-        println!(
+        out.push(format!(
             "#   {kind}/{container}: {} sets, {} with de/en text, {:.2} GB",
             t.count,
             t.with_de_en_text,
             gb(t.bytes)
-        );
+        ));
     }
-    println!("# fallback candidates by kind/container (listed only, never sent without --accept-fallback):");
+    out.push("# fallback candidates by kind/container (listed only, never sent without --accept-fallback):".to_string());
     for ((kind, container), t) in &fallback_totals {
-        println!(
+        out.push(format!(
             "#   {kind}/{container}: {} candidates, {} with de/en text, {:.2} GB",
             t.count,
             t.with_de_en_text,
             gb(t.bytes)
-        );
+        ));
     }
-    println!(
+    out.push(format!(
         "# ambiguous: {} files, {:.2} GB",
         ambiguous.count,
         gb(ambiguous.bytes)
-    );
-    println!(
+    ));
+    out.push(format!(
         "# conflicts: {} files across {} sets, {:.2} GB",
         conflicts.count,
         conflict_sets.len(),
         gb(conflicts.bytes)
-    );
-    println!(
+    ));
+    out.push(format!(
         "# unmatched: {} files, {:.2} GB",
         unmatched.count,
         gb(unmatched.bytes)
-    );
+    ));
 
-    println!("#\n# de/en-subtitled sets no file matched:");
+    out.push("#\n# de/en-subtitled sets no file matched:".to_string());
     for set in sets {
         let has_de_en = set.slang.iter().any(|l| l == "de" || l == "en");
         if has_de_en && !matched_set_ids.contains(set.set_id.as_str()) {
-            println!("#   {}\t{}\t{}", set.set_id, set.kind, display_title(set));
+            out.push(format!(
+                "#   {}\t{}\t{}",
+                set.set_id,
+                set.kind,
+                display_title(set)
+            ));
         }
     }
-}
-
-fn add_match(
-    totals: &mut BTreeMap<(String, String), MatchTotals>,
-    set: Option<&SetRow>,
-    bytes: u64,
-    counts: Option<(u32, u32)>,
-) {
-    let Some(set) = set else { return };
-    let entry = totals
-        .entry((set.kind.as_str().to_string(), set.container.clone()))
-        .or_default();
-    entry.count += 1;
-    entry.bytes += bytes;
-    if counts.is_some_and(|(de_en_text, _)| de_en_text > 0) {
-        entry.with_de_en_text += 1;
-    }
+    out
 }
 
 fn verdict_label(verdict: &Verdict) -> &'static str {
@@ -181,14 +162,23 @@ fn count_subtitle_tracks(probed: &Probed) -> (u32, u32) {
     (de_en_text, picture_only)
 }
 
+/// Reads like the label `status` and `remove` print: the show and its
+/// position code, so a range and a lesson read as what they are.
 fn display_title(set: &SetRow) -> String {
-    if let (Some(show), Some(season), Some(episode)) = (&set.show, set.season, set.episode) {
-        format!("{show} S{season:02}E{:02}", episode.first())
-    } else {
-        set.title.clone().or_else(|| set.show.clone()).unwrap_or_default()
+    let code = set
+        .season
+        .zip(set.episode)
+        .and_then(|(s, e)| position_code(set.kind, s, e));
+    match (&set.show, code) {
+        (Some(show), Some(code)) => format!("{show} {code}"),
+        _ => set
+            .title
+            .clone()
+            .or_else(|| set.show.clone())
+            .unwrap_or_default(),
     }
 }
 
-fn gb(bytes: u64) -> f64 {
-    bytes as f64 / 1_073_741_824.0
-}
+#[cfg(test)]
+#[path = "dry_run_report_tests.rs"]
+mod tests;

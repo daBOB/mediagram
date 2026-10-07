@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import ui.catalog.home.gutterFor
+import ui.common.catalog.HeroArtwork
 import ui.pageGround
 
 /**

@@ -4,15 +4,13 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
-import catalog.Destination
+import catalog.Department
 import catalog.Entry
 import catalog.ShelfViewModel
 import catalog.allTitles
@@ -33,12 +31,17 @@ import ui.catalog.PersonScreen
 import ui.catalog.PreloadsScreen
 import ui.catalog.ShelfViewChoice
 import ui.catalog.ShelfWall
-import ui.catalog.rememberFranchiseOverviews
-import ui.catalog.rememberPerson
-import ui.catalog.rememberPortrait
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
+import ui.common.FrameKind
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.catalog.rememberFranchiseOverviews
+import ui.common.catalog.rememberPersonLookup
+import ui.common.catalog.rememberPortrait
 
 /**
- * The five browse frames this phase adds — [FrameKind.PERSON],
+ * The five browse frames — [FrameKind.PERSON],
  * [FrameKind.FRANCHISE], [FrameKind.GENRES], [FrameKind.LATEST] and
  * [FrameKind.MOVIES_PAGE] — split out of [LibraryBranches] once its own
  * `when` outgrew that file the same way [ResolvedBranch] once did.
@@ -53,7 +56,7 @@ internal fun FranchiseFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val id = at.franchiseId?.toLongOrNull()
+    val id = at.franchiseId
     if (id == null) {
         LaunchedEffect(Unit) { at.pop() }
         return
@@ -118,7 +121,7 @@ internal fun MoviesPageFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }
+    val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.department == Department.MOVIES }
     LibraryBranch(Destination.MoviesPage, menuActions, profileBar, browse, at, at::pop) {
         if (shelf == null) {
             CenteredMessage("Loading your library…")
@@ -178,10 +181,11 @@ internal fun PreloadsFrame(
 
 /**
  * A person's page — resolved in two steps, unlike [ResolvedBranch]'s one:
- * [catalog.Person] itself is an async lookup ([rememberPerson]), not
+ * the person itself is an async lookup ([rememberPersonLookup]), not
  * something [catalogState] already has synchronously the way a title or a
  * collection is, so "still fetching" and "asked and nobody by that id"
- * cannot both read as the same `null`. [attempted] is what tells them apart.
+ * cannot both read as the same `null`. [ui.common.catalog.PersonLookup.loading] is
+ * what tells them apart.
  */
 @Composable
 internal fun PersonFrame(
@@ -192,25 +196,19 @@ internal fun PersonFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val id = at.personId?.toLongOrNull()
+    val id = at.personId
     if (id == null) {
         LaunchedEffect(Unit) { at.pop() }
         return
     }
     val columns = posterColumnsForCurrentWindow()
     val browseViewModel: BrowseViewModel = hiltViewModel()
-    var attempted by remember(id) { mutableStateOf(false) }
-    val person = rememberPerson(id) { personId ->
-        try {
-            browseViewModel.person(personId)
-        } finally {
-            attempted = true
-        }
-    }
+    val lookup = rememberPersonLookup(id, browseViewModel::person)
+    val person = lookup.person
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
 
     when {
-        !attempted || shelves == null -> LibraryBranch(Destination.Person(LOADING), menuActions, profileBar, browse, at, at::pop) {
+        lookup.loading || shelves == null -> LibraryBranch(Destination.Person(LOADING), menuActions, profileBar, browse, at, at::pop) {
             CenteredMessage("Loading your library…")
         }
         else -> {
@@ -220,7 +218,7 @@ internal fun PersonFrame(
                     CenteredMessage("Nobody by that number is credited on anything in your library.")
                 }
             } else {
-                val portrait = rememberPortrait(id, page.person.portraitPath, browseViewModel::shouldRequestPortrait, browseViewModel::fetchPortrait)
+                val portrait = rememberPortrait(id, page.person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
                 LibraryBranch(Destination.Person(page.person.name), menuActions, profileBar, browse, at, at::pop) {
                     PersonScreen(page, portrait, watch, columns, at::openTitle, at::openCollection)
                 }

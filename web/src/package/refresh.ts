@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { failureMessage } from "../failure-message";
+import { errorCode, failureMessage } from "../failure-message";
 
 import { openPackage } from "./open";
 import {
@@ -29,9 +29,7 @@ import {
   type Pointer,
 } from "./pointer";
 import { unpackTo } from "./unpack";
-import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "./catalog-versions";
-
-export type { Pointer };
+import { CURRENT, FUTURE_TOLERANCE_SECONDS, availableVersionName, cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../catalog/catalog-versions";
 
 /** Written into a version directory so identity and catalog cannot disagree. */
 const IDENTITY_FILE = "identity.json";
@@ -52,7 +50,7 @@ export interface RefreshOptions {
   key: Buffer;
   /** Directory the reader owns: versions and the `current` link live here. */
   root: string;
-  supportedSchema: number[];
+  minSchema: number;
   now?: () => number;
   fetch?: (url: string) => Promise<Response>;
 }
@@ -113,7 +111,8 @@ async function heldIdentity(root: string): Promise<Identity | null> {
       schema: fields.schema as number,
       spec: fields.spec as number,
     };
-  } catch {
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT" && !(error instanceof SyntaxError)) console.warn(`catalog: held identity unreadable: ${failureMessage(error)}`);
     return null;
   }
 }
@@ -123,7 +122,8 @@ async function heldDir(root: string): Promise<string | null> {
   try {
     await readFile(join(path, IDENTITY_FILE));
     return path;
-  } catch {
+  } catch (error) {
+    if (errorCode(error) !== "ENOENT") console.warn(`catalog: held catalog unreadable: ${failureMessage(error)}`);
     return null;
   }
 }
@@ -146,7 +146,7 @@ async function keep(root: string, reason: string): Promise<RefreshResult> {
  * play what it has.
  */
 export async function refreshCatalog(options: RefreshOptions): Promise<RefreshResult> {
-  const { root, key, supportedSchema } = options;
+  const { root, key, minSchema } = options;
   const get = options.fetch ?? globalThis.fetch;
   const now = options.now ?? (() => Math.floor(Date.now() / 1000));
   try {
@@ -165,7 +165,7 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
     return keep(root, `could not read the pointer: ${failureMessage(error)}`);
   }
 
-  const refusal = pointerReadabilityRefusal(pointer, supportedSchema);
+  const refusal = pointerReadabilityRefusal(pointer, minSchema);
   if (refusal) return keep(root, refusal.reason);
 
   const expectedKeyId = createHash("sha256").update(key).digest("hex").slice(0, 8);
@@ -251,8 +251,8 @@ export async function refreshCatalog(options: RefreshOptions): Promise<RefreshRe
 
 /** The manifest is inside the ciphertext, so it and the pointer must agree. */
 async function checkManifest(dir: string, pointer: Pointer): Promise<void> {
-  const text = await readFile(join(dir, MANIFEST_FILE), "utf8").catch((error: NodeJS.ErrnoException) => {
-    if (error.code === "ENOENT") return null;
+  const text = await readFile(join(dir, MANIFEST_FILE), "utf8").catch((error: unknown) => {
+    if (errorCode(error) === "ENOENT") return null;
     throw error;
   });
   if (text === null) throw new Error("the package has no manifest");

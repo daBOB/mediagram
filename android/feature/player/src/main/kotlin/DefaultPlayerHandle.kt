@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Wraps the app's single [ExoPlayer], translating its events into
@@ -24,15 +23,15 @@ import javax.inject.Inject
  * player it wraps), so [playerListener] is attached exactly once, the
  * moment the player becomes available, and never removed: whichever
  * [PlayerViewModel] is current is only ever the *subscriber* ([listener]),
- * swapped in and out by [setListener]/[release]. Removing [playerListener]
- * from the player itself on [release] would permanently silence every
+ * swapped in and out by [setListener]. Removing [playerListener] from the
+ * player itself on `setListener(null)` would permanently silence every
  * future subscriber, since this setup never runs a second time to
  * re-attach it.
  *
  * Subscribers therefore come and go for reasons unrelated to playback, and
  * ask to [open] sets that are already open; [open] works out what that means.
  */
-class DefaultPlayerHandle @Inject constructor(
+class DefaultPlayerHandle(
     private val playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
     private val scope: CoroutineScope,
 ) : PlayerHandle {
@@ -143,10 +142,6 @@ class DefaultPlayerHandle @Inject constructor(
         pendingOpen = null
         currentSetId = null
         _player.value?.stop()
-    }
-
-    override fun release() {
-        listener = null
     }
 
     override fun positionMs(): Long? = _player.value?.trustedPositionMs()

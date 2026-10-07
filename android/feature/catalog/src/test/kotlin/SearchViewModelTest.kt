@@ -3,6 +3,7 @@ package catalog
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -10,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import model.PersonHit
 import org.junit.After
+import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.SearchHit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -102,21 +104,37 @@ class SearchViewModelTest {
         }
     }
 
-    /** The core answering with an error is shown, not crashed past. */
+    /**
+     * A failure is shown, not crashed past — and an exception's own text,
+     * which names internals rather than anything a person can act on, is
+     * never what the screen says.
+     */
     @Test
     fun aFailedRoundIsShownRatherThanThrown() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = SearchViewModel(FakeCatalogRepository(searchThrows = IllegalStateException("no index")))
+        assertEquals("Search failed. Try again.", failedSearch(IllegalStateException("no index")).message)
+    }
 
+    /** A failure the core put into words is shown in those words, as the web player shows it. */
+    @Test
+    fun aCoreFailureIsShownInTheCoresOwnSentence() = runTest {
+        val failed = failedSearch(CoreException.Network("Telegram did not answer"))
+
+        assertEquals("Search failed: Telegram did not answer", failed.message)
+    }
+
+    private suspend fun TestScope.failedSearch(error: Throwable): SearchUiState.Failed {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = SearchViewModel(FakeCatalogRepository(searchThrows = error))
+        lateinit var failed: SearchUiState.Failed
         vm.state.test {
             awaitItem()
             vm.setQuery("steuer")
             advanceTimeBy(250)
             runCurrent()
 
-            val failed = assertIs<SearchUiState.Failed>(awaitItem())
-            assertEquals("no index", failed.message)
+            failed = assertIs<SearchUiState.Failed>(awaitItem())
         }
+        return failed
     }
 
     /**

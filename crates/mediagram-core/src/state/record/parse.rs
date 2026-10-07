@@ -162,3 +162,7 @@ fn unwatched_row(raw: &Value) -> Option<UnwatchedRow> {
         last_finished_at,
     })
 }
+
+#[cfg(test)]
+#[path = "parse_tests.rs"]
+mod tests;

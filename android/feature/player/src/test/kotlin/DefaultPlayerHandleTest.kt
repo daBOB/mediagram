@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 
 /**
  * Regression coverage for a singleton handle over a singleton player:
- * [DefaultPlayerHandle.release] must detach only the current subscriber,
+ * detaching with `setListener(null)` must drop only the current subscriber,
  * never the bridge [Player.Listener] registered on the real player once
  * it's built — that bridge never runs again, so removing it here would
  * silence every future [PlayerViewModel] that reuses this handle.
@@ -29,7 +29,7 @@ import kotlin.test.assertTrue
 class DefaultPlayerHandleTest {
 
     @Test
-    fun releaseNeverDetachesTheListenerBridgeFromThePlayer() = runTest {
+    fun detachingNeverRemovesTheListenerBridgeFromThePlayer() = runTest {
         val player = mockk<ExoPlayer>(relaxed = true)
         val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
         advanceUntilIdle()
@@ -38,20 +38,20 @@ class DefaultPlayerHandleTest {
             override fun onError(message: String) = Unit
         })
 
-        handle.release()
+        handle.setListener(null)
 
         verify(exactly = 0) { player.removeListener(any()) }
     }
 
     @Test
-    fun aListenerSetAfterReleaseStillReceivesEventsFromThePlayer() = runTest {
+    fun aListenerSetAfterDetachingStillReceivesEventsFromThePlayer() = runTest {
         val player = mockk<ExoPlayer>(relaxed = true)
         val bridgeSlot = slot<Player.Listener>()
         every { player.addListener(capture(bridgeSlot)) } returns Unit
 
         val handle = DefaultPlayerHandle(CompletableDeferred(player), this)
         advanceUntilIdle()
-        handle.release()
+        handle.setListener(null)
 
         var delivered = false
         handle.setListener(object : PlayerHandle.Listener {
@@ -63,7 +63,7 @@ class DefaultPlayerHandleTest {
 
         // The real player would fire this on the one bridge it has — the
         // same instance captured when the handle was first constructed,
-        // since release() never asked the player to forget it.
+        // since detaching never asked the player to forget it.
         bridgeSlot.captured.onIsPlayingChanged(true)
 
         assertTrue(delivered)
@@ -99,7 +99,7 @@ class DefaultPlayerHandleTest {
     }
 
     /**
-     * L5: a speed asked for before the player exists is queued the same
+     * A speed asked for before the player exists is queued the same
      * way a start position is — [aStartPositionQueuedBeforeThePlayerIsReadyIsAppliedOnceItArrives]
      * above — but it must land *after* the queued open's own floor to 1x
      * (`openOn`), not before it: applied in the other order, the real

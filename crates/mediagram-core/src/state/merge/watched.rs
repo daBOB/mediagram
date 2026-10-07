@@ -33,7 +33,8 @@ pub(super) fn reconcile(
     for set_id in titles {
         let live = watched.get(set_id);
         let removed = unwatched.get(set_id);
-        let removal_wins = removed.is_some_and(|r| live.is_none_or(|l| r.updated_at >= l.updated_at));
+        let removal_wins =
+            removed.is_some_and(|r| live.is_none_or(|l| r.updated_at >= l.updated_at));
         if removal_wins {
             let removed = removed.unwrap();
             finished_at.insert(set_id.clone(), removed.last_finished_at);
@@ -49,3 +50,7 @@ pub(super) fn reconcile(
         finished_at,
     }
 }
+
+#[cfg(test)]
+#[path = "watched_tests.rs"]
+mod tests;

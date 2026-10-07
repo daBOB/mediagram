@@ -17,7 +17,8 @@
  */
 
 import { el } from "../dom.js";
-import { crumbs, heading, SECTIONS } from "./shelf-view.js";
+import { crumbs, heading } from "./shelf-view.js";
+import { SECTIONS } from "./sections.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "../format.js";
 import { countsUnder, divisionAt, isDocument, levelEntries } from "../library.js";
 import { offlineBadge, progressRuleFor, transcodeBadge, watchedTick } from "./set-badge.js";

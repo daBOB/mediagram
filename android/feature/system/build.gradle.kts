@@ -1,7 +1,6 @@
-// ViewModel and UiState only, no composables — ui-mobile renders this
-// module's state. There is no ui-tv counterpart yet: the System screen is
-// reached through the mobile app bar's overflow menu, which television has
-// not grown.
+// ViewModels, UiState and the System page's rows, no composables —
+// ui-mobile and ui-tv both render this module's state, so the two surfaces'
+// System and storage pages say the same things.
 plugins {
     alias(libs.plugins.app.android.library)
     alias(libs.plugins.app.hilt)
@@ -14,7 +13,9 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:model"))
-    // Only for PlaybackCounters — nothing here touches ExoPlayer directly.
+    // The cache and LAN-cache settings, occupancy and volumes this module
+    // reports and edits, plus PlaybackCounters; nothing here touches
+    // ExoPlayer directly.
     implementation(project(":core:playback"))
     implementation(project(":core:update"))
 

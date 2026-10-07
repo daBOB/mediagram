@@ -86,8 +86,7 @@ export function exportCollections(db: Database | null, profileId: string): Colle
 /** Takes in a table's marks. Corrective, like everything `importMerged`
  * calls: newer local news is left alone, while equal-time differences apply
  * the winner already selected by the merge's device-id tie-break. */
-export function importTitleMarks(db: Database | null, table: TitleMarkTable, rows: ListRow[]): number {
-  if (!db) return 0;
+export function importTitleMarks(db: Database, table: TitleMarkTable, rows: ListRow[]): number {
   let changed = 0;
   for (const row of rows) {
     const standing = db
@@ -119,8 +118,7 @@ export function importTitleMarks(db: Database | null, table: TitleMarkTable, row
   return changed;
 }
 
-export function importWatchlist(db: Database | null, profileId: string, rows: ListRow[]): number {
-  if (!db) return 0;
+export function importWatchlist(db: Database, profileId: string, rows: ListRow[]): number {
   let changed = 0;
   for (const row of rows) {
     const standing = db
@@ -154,8 +152,7 @@ export function importWatchlist(db: Database | null, profileId: string, rows: Li
  * The id it arrives with is kept rather than re-minted, so a later, older
  * write for the same list does not read as a second one.
  */
-export function importCollections(db: Database | null, profileId: string, rows: CollectionRow[]): number {
-  if (!db) return 0;
+export function importCollections(db: Database, profileId: string, rows: CollectionRow[]): number {
   let changed = 0;
   for (const row of rows) {
     const standing = db

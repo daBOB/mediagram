@@ -7,11 +7,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
-import catalog.ANIME
-import catalog.CatalogTabs
+import catalog.CatalogTab
 import catalog.CatalogUiState
-import catalog.DOCUMENTARIES
-import catalog.Destination
+import catalog.Department
 import catalog.Shelf
 import catalog.allSetsById
 import catalog.heroArtOf
@@ -19,9 +17,14 @@ import catalog.magazineHomeOf
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import model.WatchSnapshot
-import ui.catalog.DepartmentScrollStates
-import ui.chrome.HeroListState
-import ui.chrome.asHeroListState
+import ui.chrome.BrowseActions
+import ui.chrome.LibraryScaffold
+import ui.chrome.ProfileBarState
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.catalog.DepartmentScrollStates
+import ui.common.chrome.HeroListState
+import ui.common.chrome.asHeroListState
 
 /**
  * One screen of the library under the app's chrome, and what leaving it
@@ -58,18 +61,6 @@ internal fun LibraryBranch(
     )
 }
 
-/**
- * Which of [tabs]' own tabs [title] names, or Home when it names none.
- *
- * A title saved before a shelf list shift (Documentaries landing between
- * Series and Tutorials, or any future department) no longer matches
- * anything at its old index, so restoring by the plain index would reopen
- * on whichever tab now sits there instead of the one that was actually
- * left open. A title survives the shift; only a title this build no longer
- * has at all — a stale save, or nothing chosen yet — falls back to Home.
- */
-internal fun restoredTabIndex(tabs: CatalogTabs, title: String): Int = tabs.titles.indexOf(title).takeIf { it >= 0 } ?: 0
-
 /** What this device holds in full, or nothing while the shelves are still loading. */
 internal fun CatalogUiState.heldIdsOrEmpty(): Set<String> = (this as? CatalogUiState.Ready)?.heldIds.orEmpty()
 
@@ -79,10 +70,10 @@ internal fun CatalogUiState.shelvesOrEmpty(): List<Shelf> = (this as? CatalogUiS
 /**
  * Whichever list a hero on screen right now would bleed the bar over — the
  * shelves' own home cover when [chosenTab] is Home and has one, a
- * department's own hoisted position when [activeShelfTitle] names one of
- * the four that draw real lead art, `null` everywhere else (a kept wall,
- * Collections, a plain shelf, or a department with nothing to lead its own
- * hero with). Split out of [LibraryBranches] once that function's own body
+ * department's own hoisted position when [chosenTab] is a department whose
+ * hero draws real lead art, `null` everywhere else (a kept wall,
+ * Collections, or a department with nothing to lead its own hero with).
+ * Split out of [LibraryBranches] once that function's own body
  * grew past this computation being able to stay inline and legible.
  */
 @Composable
@@ -91,8 +82,7 @@ internal fun rememberActiveHeroState(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     now: Long,
-    chosenTab: Int,
-    activeShelfTitle: String?,
+    chosenTab: CatalogTab,
     homeListState: LazyListState,
     deptScroll: DepartmentScrollStates,
 ): HeroListState? {
@@ -101,19 +91,22 @@ internal fun rememberActiveHeroState(
             magazineHomeOf(shelves, watch, editorsChoice = watch.editorsChoice, now = now, heldIds = heldIds).editorial.cover.isNotEmpty()
         }
     val byId = remember(shelves) { allSetsById(shelves) }
+    val department = (chosenTab as? CatalogTab.Dept)?.department
     val hasHeroArt =
-        remember(shelves, byId, watch, activeShelfTitle) { heroArtOf(activeShelfTitle, shelves, byId, watch) } != null &&
+        remember(shelves, byId, watch, department) { heroArtOf(department, shelves, byId, watch) } != null &&
             LocalBackdrop.current != Backdrop.SOLID
-    return remember(chosenTab, activeShelfTitle, hasCover, hasHeroArt, homeListState, deptScroll) {
+    return remember(chosenTab, hasCover, hasHeroArt, homeListState, deptScroll) {
         when {
-            chosenTab == 0 -> if (hasCover) homeListState.asHeroListState() else null
+            chosenTab == CatalogTab.Home -> if (hasCover) homeListState.asHeroListState() else null
             !hasHeroArt -> null
-            activeShelfTitle == "Movies" -> deptScroll.movies.asHeroListState()
-            activeShelfTitle == "Series" -> deptScroll.series.asHeroListState()
-            activeShelfTitle == ANIME -> deptScroll.anime.asHeroListState()
-            activeShelfTitle == "Tutorials" -> deptScroll.tutorials.asHeroListState()
-            activeShelfTitle == DOCUMENTARIES -> deptScroll.documentaries.asHeroListState()
-            else -> null
+            else -> when (department) {
+                Department.MOVIES -> deptScroll.movies.asHeroListState()
+                Department.SERIES -> deptScroll.series.asHeroListState()
+                Department.ANIME -> deptScroll.anime.asHeroListState()
+                Department.TUTORIALS -> deptScroll.tutorials.asHeroListState()
+                Department.DOCUMENTARIES -> deptScroll.documentaries.asHeroListState()
+                null -> null
+            }
         }
     }
 }

@@ -160,10 +160,6 @@ fun MediagramTheme(
             ThemeChoice.AUTO -> isSystemInDarkTheme()
         }
     val accentColor = appearance.accent.resolve(dark)
-    // The one place this module is allowed to write Palette.Imprint: every
-    // reader below and across the television surface sees this composition's
-    // resolved accent, not a value they each had to be handed separately.
-    SideEffect { Palette.Imprint = accentColor }
     // The system bars follow the resolved theme, not the system's own:
     // MainActivity's `enableEdgeToEdge` only had a pre-Compose guess to go
     // on, and a viewer who picked Light or Dark over a differently-set
@@ -191,7 +187,7 @@ fun MediagramTheme(
     }
 }
 
-/** Same shape as `ui.player.findActivity` in ui-common — duplicated rather than depended on, since neither module depends on the other. */
+/** Same shape as `ui.common.player.findActivity` in ui-common — duplicated rather than depended on, since neither module depends on the other. */
 private tailrec fun Context.findActivity(): Activity? =
     when (this) {
         is Activity -> this

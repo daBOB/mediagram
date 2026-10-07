@@ -13,10 +13,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import catalog.Entry
-import catalog.HomeRow
+import catalog.CatalogTab
+import catalog.Department
+import catalog.KeptKind
+import catalog.Latest
 import catalog.MagazineHome
-import catalog.RowContent
 import model.WatchSnapshot
 import ui.catalog.home.BandHeading
 import ui.catalog.home.CompactBreakpoint
@@ -38,10 +39,10 @@ import ui.catalog.home.gutterFor
  * plain shelves use: every row here is its own horizontal strip or list,
  * chosen by what it shows rather than forced into one grid's column count.
  *
- * [rows] are the plain shelf rows that follow the magazine header — Latest
+ * [latest] gives the two bands that follow the magazine header — Latest
  * series and Latest courses; [magazine] already carries the cover,
- * features, resume strip and its own "Recently added" row, so [rows] must
- * not repeat Continue, Next up or the Movies shelf.
+ * features, resume strip and its own "Recently added" row. [onSeeAll] opens
+ * the tab a band is a window onto.
  *
  * [listState] is hoisted up to [ui.chrome.LibraryHome] rather than kept as
  * this screen's own — the departments bar over the cover reads where the
@@ -52,24 +53,22 @@ import ui.catalog.home.gutterFor
 @Composable
 internal fun HomeScreen(
     magazine: MagazineHome,
-    rows: List<HomeRow>,
+    latest: Latest,
     watch: WatchSnapshot,
     listState: LazyListState,
     onPlay: (setId: String) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
-    onSeeAll: (shelf: String) -> Unit,
+    onSeeAll: (CatalogTab) -> Unit,
 ) {
     val editorial = magazine.editorial
     val watchlist = remember(watch) { watch.watchlist.toSet() }
     val width = LocalConfiguration.current.screenWidthDp.dp
     val gutter = gutterFor(width)
     val compact = width <= CompactBreakpoint
-    val series = remember(rows) { collectionsOf(rows, "Latest series") }
-    val courses = remember(rows) { collectionsOf(rows, "Latest courses") }
-    val seriesTotal = remember(rows) { rows.firstOrNull { it.title == "Latest series" }?.total ?: 0 }
-    val coursesTotal = remember(rows) { rows.firstOrNull { it.title == "Latest courses" }?.total ?: 0 }
+    val series = latest.series
+    val courses = latest.courses
 
     // `columnWidth` (this `BoxWithConstraints`'s own measured width) is
     // deliberately not `width` (the window's own `screenWidthDp`): every
@@ -104,7 +103,7 @@ internal fun HomeScreen(
                     Box(Modifier.padding(top = 28.dp)) {
                         ContinueBand(
                             cards = magazine.resumeCards, quote = editorial.quote, width = width,
-                            onPlay = onPlay, onOpenTitle = onOpenTitle, onSeeAllContinue = { onSeeAll("Continue") },
+                            onPlay = onPlay, onOpenTitle = onOpenTitle, onSeeAllContinue = { onSeeAll(CatalogTab.Kept(KeptKind.CONTINUE)) },
                         )
                     }
                 }
@@ -113,8 +112,8 @@ internal fun HomeScreen(
                 item(key = "recent") {
                     Box(Modifier.padding(top = 28.dp)) {
                         RecentBand(
-                            recentlyAdded = magazine.recentlyAdded, totalFilms = magazine.recentlyAddedRow.total, thisMonth = editorial.thisMonth,
-                            width = width, onOpenTitle = onOpenTitle, onSeeAllMovies = { onSeeAll("Movies") },
+                            recentlyAdded = magazine.recentlyAdded, totalFilms = magazine.recentlyAddedTotal, thisMonth = editorial.thisMonth,
+                            width = width, onOpenTitle = onOpenTitle, onSeeAllMovies = { onSeeAll(CatalogTab.Dept(Department.MOVIES)) },
                         )
                     }
                 }
@@ -122,7 +121,7 @@ internal fun HomeScreen(
             if (series.isNotEmpty()) {
                 item(key = "series") {
                     Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
-                        BandHeading(title = "Latest series", count = seriesTotal, onSeeAll = { onSeeAll("Series") })
+                        BandHeading(title = "Latest series", count = latest.seriesTotal, onSeeAll = { onSeeAll(CatalogTab.Dept(Department.SERIES)) })
                         HomeShelfRow(shows = series, width = columnWidth - gutter * 2, compact = compact, onOpen = onOpenCollection)
                     }
                 }
@@ -130,7 +129,7 @@ internal fun HomeScreen(
             if (courses.isNotEmpty()) {
                 item(key = "courses") {
                     Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
-                        BandHeading(title = "Latest courses", count = coursesTotal, onSeeAll = { onSeeAll("Tutorials") })
+                        BandHeading(title = "Latest courses", count = latest.coursesTotal, onSeeAll = { onSeeAll(CatalogTab.Dept(Department.TUTORIALS)) })
                         CourseList(courses = courses, onOpen = onOpenCollection)
                     }
                 }
@@ -138,13 +137,3 @@ internal fun HomeScreen(
         }
     }
 }
-
-/** [row]'s own entries, narrowed to the collections a poster row or a course list actually draws — [HomeRow] can also carry [SetCard]s (Continue, Next up), which never reach here. */
-private fun collectionsOf(
-    rows: List<HomeRow>,
-    title: String,
-): List<Entry.Collection> =
-    (rows.firstOrNull { it.title == title }?.content as? RowContent.Entries)
-        ?.entries
-        ?.filterIsInstance<Entry.Collection>()
-        .orEmpty()

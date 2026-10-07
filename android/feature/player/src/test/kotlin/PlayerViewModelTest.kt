@@ -11,8 +11,7 @@ import kotlin.test.assertTrue
 /**
  * State and lifecycle only. Resume-position math is in
  * [PlayerResumePositionTest], and the save ticker is in
- * [PlayerSaveTickerTest] — split apart to keep each file under the
- * project's line guideline.
+ * [PlayerSaveTickerTest].
  */
 class PlayerViewModelTest {
 

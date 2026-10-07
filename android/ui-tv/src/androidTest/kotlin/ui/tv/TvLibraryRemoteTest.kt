@@ -12,7 +12,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.captureToImage
-import designsystem.Palette
+import designsystem.Accent
 import ui.tv.catalog.TvPlate
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.hasText
@@ -34,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvTitlePage
 import ui.tv.profile.TvChosenProfile
@@ -125,7 +126,7 @@ class TvLibraryRemoteTest {
         compose.waitForIdle()
 
         val pixels = compose.onNodeWithText("▶ Play").captureToImage().toPixelMap()
-        val accent = (0 until pixels.width).any { x -> (0 until pixels.height).any { y -> pixels[x, y] == Palette.Imprint } }
+        val accent = (0 until pixels.width).any { x -> (0 until pixels.height).any { y -> pixels[x, y] == Accent.Default.dark } }
         assertTrue("Play is drawn in the focus accent", accent)
     }
 
@@ -147,7 +148,7 @@ class TvLibraryRemoteTest {
         compose.setContent {
             TvTheme {
                 TvShell {
-                    TvCatalogRoot(
+                    TvCatalogScreen(
                         state = CatalogUiState.Ready(shelvesOf((0 until 10).map(::film))),
                         profile = TvChosenProfile(name = "Ada", onChoose = {}),
                         fetching = false,

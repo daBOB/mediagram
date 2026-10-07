@@ -24,6 +24,11 @@ use crate::api::{Core, CoreError};
 
 const LIBRARIES_FILE: &str = "libraries.json";
 
+/// Why a handle names no channel this device can reach — a handle it never
+/// minted, or one whose stored chat no longer reads as a channel. It reaches
+/// Kotlin inside `CoreError::NotFound`, so every refusal shares this one text.
+pub(in crate::api) const NO_LONGER_STORED: &str = "this device no longer has that library stored";
+
 /// What one handle stands for. Private to this crate by construction: it is
 /// only ever read back out of the file below, and only ever to build a
 /// [`PeerRef`] for a request.
@@ -129,7 +134,20 @@ pub(in crate::api) fn peer_for_chat(handles: &Handles, chat: i64) -> Option<Peer
 pub(in crate::api) fn lookup(core: &Core, handle: &str) -> Result<LibraryEntry, CoreError> {
     read(&path(core))?
         .remove(handle)
-        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
+        .ok_or_else(|| CoreError::NotFound(NO_LONGER_STORED.into()))
+}
+
+/// The library `handle` names and the channel it lives in, for every request
+/// that addresses that channel.
+pub(in crate::api) fn peer_of(
+    core: &Core,
+    handle: &str,
+) -> Result<(LibraryEntry, PeerRef), CoreError> {
+    let entry = lookup(core, handle)?;
+    let peer = entry
+        .peer()
+        .ok_or_else(|| CoreError::NotFound(NO_LONGER_STORED.into()))?;
+    Ok((entry, peer))
 }
 
 /// 128 bits from the OS, which is what makes a handle unguessable and, more

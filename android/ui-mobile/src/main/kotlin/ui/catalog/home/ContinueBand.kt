@@ -26,9 +26,8 @@ import model.MediaSet
  * Continue Watching beside a pull-quote, one band sharing a baseline — a
  * Compose port of the `.home-band` around `resumeCards`/`pullQuote`
  * (`home-view.js:74-88`). Either half may be absent; the other then spans
- * the whole band. Replaces `ResumeStrip` and `PullQuote` on the home page
- * (kept for the screens that still draw them on their own). The cards and
- * the quote themselves are `ResumeCard.kt`'s own.
+ * the whole band. The cards and the quote themselves are `ResumeCard.kt`'s
+ * own.
  */
 @Composable
 internal fun ContinueBand(

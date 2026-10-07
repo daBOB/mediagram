@@ -110,3 +110,12 @@ fn parsing_a_non_numeric_chunk_number_fails() {
     // security boundary, not the chunk number's spelling.
     assert_eq!(parse_chunk_num("007"), Some(7));
 }
+
+#[test]
+fn only_the_name_the_store_writes_is_a_chunk_file() {
+    assert_eq!(chunk_file_num("0"), Some(0));
+    assert_eq!(chunk_file_num("17"), Some(17));
+    for name in ["01", "+1", "007", "", "total", "1.tmp"] {
+        assert_eq!(chunk_file_num(name), None, "{name:?}");
+    }
+}

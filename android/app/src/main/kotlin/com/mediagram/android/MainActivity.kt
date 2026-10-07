@@ -2,7 +2,6 @@ package com.mediagram.android
 
 import android.content.res.Configuration
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -12,13 +11,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.Lifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import data.WatchSync
 import data.isTelevision
 import ui.player.LocalIsInPictureInPicture
 import ui.MobileApp
-import ui.player.PipEntryPoint
 import ui.tv.TvApp
 import update.AppUpdater
 import javax.inject.Inject
@@ -93,47 +90,9 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
-    /**
-     * Below API 31, `PictureInPictureParams.Builder.setAutoEnterEnabled`
-     * does not exist and this is the only moment the system offers to
-     * enter picture-in-picture on the home gesture. [PipEntryPoint] is
-     * whatever the mounted player screen last asked for — null with no
-     * player playing, or none open at all, which leaves the app simply
-     * backgrounding, same as ever.
-     */
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-        if (Build.VERSION.SDK_INT in 26..30) PipEntryPoint.onUserLeaveHint?.invoke()
-    }
-
-    /**
-     * The system reports leaving picture-in-picture two different ways
-     * through this one callback: expanding the window back to full screen
-     * (the activity is already `STARTED`/`RESUMED` again by the time this
-     * runs, as part of the same transition), and dismissing it outright —
-     * the ✕, or swiping it away — which stops the activity *first* and
-     * moves its task to the back, landing this at `CREATED` instead.
-     * [PipEntryPoint.onDismissed] is only ever the latter: a viewer who
-     * expanded back is looking at their film full-screen, not asking for
-     * it to pause.
-     */
+    /** Mirrors the mode for `LocalIsInPictureInPicture`; the player screen listens for a dismissal itself (`ui.player.PipController`). */
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         isInPip = isInPictureInPictureMode
-        if (isPipDismissal(isInPictureInPictureMode, lifecycle.currentState)) {
-            PipEntryPoint.onDismissed?.invoke()
-        }
     }
 }
-
-/**
- * Told apart from expanding picture-in-picture back to full screen (the
- * activity is already `STARTED`/`RESUMED` again by the time
- * `onPictureInPictureModeChanged` runs, as part of that same transition)
- * by whether the activity's own lifecycle has already dropped to
- * `CREATED` — dismissal (the ✕, or swiping the window away) stops the
- * activity *first* and moves its task to the back. Split out as a pure
- * function so a test can call it without a real Activity/lifecycle.
- */
-internal fun isPipDismissal(isInPictureInPictureMode: Boolean, lifecycleState: Lifecycle.State): Boolean =
-    !isInPictureInPictureMode && lifecycleState == Lifecycle.State.CREATED

@@ -60,7 +60,7 @@ pub enum BundleError {
     Bomb,
     #[error("bundle JSON: {0}")]
     Json(String),
-    #[error("bundle version {0} is newer than this reader understands")]
+    #[error("unsupported bundle version {0} (this reader reads {BUNDLE_VERSION})")]
     UnsupportedVersion(u32),
     #[error("a track is {0} bytes, over the {MAX_TRACK_BYTES} byte limit")]
     TrackTooLarge(usize),
@@ -88,7 +88,7 @@ pub fn encode(bundle: &Bundle) -> Vec<u8> {
 ///
 /// # Errors
 /// Refuses oversized input at every stage — compressed, decompressed, and
-/// per track — non-gzip data, unparsable JSON, and a version newer than
+/// per track — non-gzip data, unparsable JSON, and any version other than
 /// [`BUNDLE_VERSION`].
 pub fn decode(bytes: &[u8]) -> Result<Bundle, BundleError> {
     if bytes.len() > MAX_COMPRESSED_BYTES {
@@ -146,6 +146,10 @@ struct SubsCaptionBody<'a> {
 
 /// The caption a bundle document carries: the marker, then one line of JSON
 /// naming the set it belongs to.
+///
+/// # Panics
+/// Never, in practice: the body is only strings and integers, which always
+/// serialize.
 #[must_use]
 pub fn render_caption(set_id: &str) -> String {
     let body = SubsCaptionBody { set: set_id };

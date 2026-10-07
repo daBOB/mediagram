@@ -1,6 +1,7 @@
 package data
 
 import android.util.Log
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +14,6 @@ import model.Person
 import model.PersonHit
 import model.SubtitleTrackInfo
 import model.TitleCredits
-import settings.LibrarySettings
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.PeopleHitRecord
@@ -81,7 +81,8 @@ interface CatalogRepository {
 
     /**
      * Fetches and caches this lesson's own subtitle bundle plus a few that
-     * follow it in its course — fire-and-forget; a fake need not implement
+     * follow it in its course, suspending until the core's fetch finishes;
+     * a caller that must not wait launches it. A fake need not implement
      * it. See [uniffi.mediagram_core.CoreInterface.holdCourseSubtitles].
      */
     suspend fun holdCourseSubtitles(setId: String) {}

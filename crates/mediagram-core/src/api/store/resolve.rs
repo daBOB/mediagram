@@ -1,6 +1,6 @@
 //! Resolving a poster key to the file it names, on disk or in the index's
 //! `artwork` table — `poster_path`'s own per-key form, and `resolve_cached`,
-//! the batched, memoised form `editorial` enriches a whole listing with.
+//! the batched, memoised form `listing` enriches a whole listing with.
 //! Split out of `store.rs` to keep that file under the line limit.
 
 use std::collections::{HashMap, HashSet};
@@ -28,7 +28,9 @@ fn on_disk(version_dir: &Path, artwork_dir: &Path, key: &str) -> Option<String> 
         return Some(in_version.display().to_string());
     }
     let in_artwork = artwork_dir.join(&name);
-    in_artwork.exists().then(|| in_artwork.display().to_string())
+    in_artwork
+        .exists()
+        .then(|| in_artwork.display().to_string())
 }
 
 /// Looks in the current version's own `posters/` first, then in the artwork
@@ -85,7 +87,9 @@ fn write_from_conn(conn: &Connection, poster_key: &str, dest: &Path) -> bool {
     let Ok(Some((_mime, bytes))) = crate::artwork::get(conn, poster_key) else {
         return false;
     };
-    let Some(parent) = dest.parent() else { return false };
+    let Some(parent) = dest.parent() else {
+        return false;
+    };
     if std::fs::create_dir_all(parent).is_err() {
         return false;
     }
@@ -148,3 +152,7 @@ pub(in crate::api) fn resolve_cached(
     cache.insert(key.to_string(), resolved.clone());
     resolved
 }
+
+#[cfg(test)]
+#[path = "resolve_tests.rs"]
+mod tests;

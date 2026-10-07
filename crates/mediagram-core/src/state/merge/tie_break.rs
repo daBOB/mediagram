@@ -64,7 +64,12 @@ pub(super) fn keep<T: Timestamped>(
 /// it; between first ones the *oldest* does, so a first PIN set later on a
 /// copy that never heard of an earlier one — a kid's offline tablet — cannot
 /// replace it. Ties by device id, as `keep`'s do.
-pub(super) fn keep_pin(into: &mut HashMap<String, Held<PinRecord>>, key: String, row: PinRecord, device: &str) {
+pub(super) fn keep_pin(
+    into: &mut HashMap<String, Held<PinRecord>>,
+    key: String,
+    row: PinRecord,
+    device: &str,
+) {
     let replace = into.get(&key).is_none_or(|standing| {
         let held = &standing.row;
         if row.proven != held.proven {
@@ -76,7 +81,13 @@ pub(super) fn keep_pin(into: &mut HashMap<String, Held<PinRecord>>, key: String,
         device > standing.device.as_str()
     });
     if replace {
-        into.insert(key, Held { row, device: device.to_string() });
+        into.insert(
+            key,
+            Held {
+                row,
+                device: device.to_string(),
+            },
+        );
     }
 }
 
@@ -108,3 +119,7 @@ pub(super) fn keep_ranked<T: Timestamped>(
         );
     }
 }
+
+#[cfg(test)]
+#[path = "tie_break_tests.rs"]
+mod tests;

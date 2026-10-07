@@ -79,6 +79,7 @@ pub async fn acquire_slot(
 }
 
 /// Whether any of `slots` slots is held right now: something is uploading.
+/// A hint: it can be true a moment after it was false.
 pub fn any_held(data_dir: &Path, slots: usize) -> bool {
     (0..slots.max(1)).any(|slot| {
         open(&slot_path(data_dir, slot)).is_ok_and(|file| !matches!(try_lock(&file), Ok(true)))
@@ -86,7 +87,7 @@ pub fn any_held(data_dir: &Path, slots: usize) -> bool {
 }
 
 /// Whether every one of `slots` slots is held right now, so a new upload
-/// would queue. A hint, like [`is_held`].
+/// would queue. A hint, like [`any_held`].
 pub fn all_held(data_dir: &Path, slots: usize) -> bool {
     (0..slots.max(1)).all(|slot| {
         open(&slot_path(data_dir, slot)).is_ok_and(|file| !matches!(try_lock(&file), Ok(true)))
@@ -111,16 +112,6 @@ pub async fn acquire_file(path: &Path, waiting: impl FnOnce()) -> Result<FileLoc
     .await
     .with_context(|| format!("waiting for {}", path.display()))??;
     Ok(FileLock { _file: file })
-}
-
-/// Whether somebody holds it right now, for a caller that only wants to say
-/// what is going on. A hint: it can be true a moment after it was false.
-pub fn is_held(data_dir: &Path) -> bool {
-    let Ok(file) = open(&path_in(data_dir)) else {
-        return false;
-    };
-    // Taking it means nobody else had it; it is released again on return.
-    !matches!(try_lock(&file), Ok(true))
 }
 
 fn open(path: &Path) -> Result<File> {

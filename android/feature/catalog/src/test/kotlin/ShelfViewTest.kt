@@ -1,8 +1,8 @@
 package catalog
 
+import data.settings.ShelfView
 import model.Kind
 import model.MediaSet
-import settings.ShelfView
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -20,7 +20,7 @@ class ShelfViewTest {
 
     @Test
     fun filmsAndSeriesOfferTheChoiceAndFollowIt() {
-        val films = Shelf("Movies", listOf(film("f1")))
+        val films = Shelf(Department.MOVIES, listOf(film("f1")))
         assertTrue(offersViewChoice(films))
         assertEquals(ShelfView.LIST, shelfViewFor(films, ShelfView.LIST))
         assertEquals(ShelfView.GRID, shelfViewFor(films, ShelfView.GRID))
@@ -28,13 +28,13 @@ class ShelfViewTest {
 
     @Test
     fun coursesAreAlwaysAList() {
-        val courses = Shelf("Tutorials", listOf(course("Geldhochschule")))
+        val courses = Shelf(Department.TUTORIALS, listOf(course("Geldhochschule")))
         assertFalse(offersViewChoice(courses))
         assertEquals(ShelfView.LIST, shelfViewFor(courses, ShelfView.GRID))
     }
 
     @Test
     fun anEmptyShelfOffersNothing() {
-        assertFalse(offersViewChoice(Shelf("Movies", emptyList())))
+        assertFalse(offersViewChoice(Shelf(Department.MOVIES, emptyList())))
     }
 }

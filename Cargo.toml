@@ -3,10 +3,10 @@ resolver = "3"
 members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache"]
 
 [workspace.package]
-version = "0.117.4"
+version = "0.118.0"
 edition = "2024"
 license = "MIT"
-rust-version = "1.87"
+rust-version = "1.88"
 repository = "https://github.com/daBOB/mediagram"
 readme = "README.md"
 keywords = ["telegram", "media", "video", "library"]

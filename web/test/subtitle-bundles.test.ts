@@ -5,12 +5,13 @@
 
 import { createHash } from "node:crypto";
 import { gunzipSync, gzipSync } from "node:zlib";
-import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
-import { beforeEach, describe, expect, test } from "bun:test";
-import { SubtitleBundles, heldSubtitlesDir, type BundleRef } from "../src/catalog/subtitle-bundles";
+import { beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { SubtitleBundles, heldSubtitlesDir } from "../src/catalog/subtitle-bundles";
+import type { BundleRef } from "../src/catalog/subtitle-tracks";
 import { emptyIndex } from "./index-fixture";
 import { deferred } from "./application-fixture";
 
@@ -126,6 +127,35 @@ describe("vtt", () => {
     await sb.vtt(refFor(GZ), 0);
     await nothingHeld(root);
   });
+
+  test.skipIf(process.getuid?.() === 0)("a corrupt disk file that cannot be removed is still refetched, not a rejection", async () => {
+    const ref = refFor(GZ);
+    await mkdir(heldDir, { recursive: true });
+    await writeFile(join(heldDir, `${ref.sha256}.json.gz`), "not gzip at all");
+    await chmod(heldDir, 0o500);
+    const warnings = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      let calls = 0;
+      const sb = bundles(async () => { calls++; return GZ; });
+
+      expect(await sb.vtt(ref, 0)).toBe("WEBVTT\n\nhallo");
+      expect(calls).toBe(1);
+    } finally {
+      warnings.mockRestore();
+      await chmod(heldDir, 0o700);
+    }
+  });
+
+  test("a failed fetch is null, and is logged", async () => {
+    const warnings = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const sb = bundles(async () => { throw new Error("no network"); });
+      expect(await sb.vtt(refFor(GZ), 0)).toBeNull();
+      expect(warnings).toHaveBeenCalledTimes(1);
+    } finally {
+      warnings.mockRestore();
+    }
+  });
 });
 
 describe("hold", () => {
@@ -148,6 +178,33 @@ describe("hold", () => {
     const sb = bundles(async () => { throw new Error("no network"); });
     await sb.hold(refFor(GZ));
     await nothingHeld(root);
+  });
+
+  test("a disk store that cannot be written is logged, not a rejection", async () => {
+    const blocker = join(root, "not-a-dir");
+    await writeFile(blocker, "");
+    heldDir = join(blocker, "held");
+    const warnings = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await bundles(async () => GZ).hold(refFor(GZ));
+      expect(warnings).toHaveBeenCalledTimes(1);
+    } finally {
+      warnings.mockRestore();
+    }
+  });
+
+  test("a bundle that cannot be renamed into place leaves no temporary in the held dir", async () => {
+    const ref = refFor(GZ);
+    const name = `${ref.sha256}.json.gz`;
+    await mkdir(join(heldDir, name), { recursive: true });
+    const warnings = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await bundles(async () => GZ).hold(ref);
+      expect(await readdir(heldDir)).toEqual([name]);
+      expect(warnings).toHaveBeenCalledTimes(1);
+    } finally {
+      warnings.mockRestore();
+    }
   });
 
   test("already on disk needs no second fetch", async () => {

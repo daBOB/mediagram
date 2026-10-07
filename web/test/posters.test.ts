@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { createRouter } from "../src/routes";
 import type { ByteSource } from "../src/http/stream";
 import type { PlayerRequest } from "../src/http/contracts";
-import { PosterStore, backdropKeyFor, posterKeyFor, posterKeyIsValid } from "../src/package/posters";
+import { PosterStore, backdropKeyFor, posterKeyFor, posterKeyIsValid } from "../src/catalog/posters";
 import { emptyIndex } from "./index-fixture";
 
 /** A directory holding the given poster files, as either mode would have it. */

@@ -7,10 +7,18 @@ use crate::media::prepare::plan::Verdict;
 use crate::paths::file_name;
 
 pub(super) fn print_table(planned: &[Candidate], limit: u64) {
-    println!(
+    for line in table(planned, limit) {
+        println!("{line}");
+    }
+}
+
+/// [`print_table`]'s lines: a header, a row per file, then what the whole
+/// run saves.
+fn table(planned: &[Candidate], limit: u64) -> Vec<String> {
+    let mut out = vec![format!(
         "{:<44} {:>9} {:>6} {:>5} {:>11}  verdict",
         "file", "size", "audio", "subs", "estimated"
-    );
+    )];
     for Candidate {
         file, size, plan, ..
     } in planned
@@ -21,7 +29,7 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
             Verdict::Prepare => "prepare".to_string(),
             Verdict::PrepareStillOversized => "prepare, still needs 2 parts".to_string(),
         };
-        println!(
+        out.push(format!(
             "{:<44} {:>8.2}G {:>6} {:>5} {:>10.2}G  {}",
             truncate(&file_name(file), 44),
             *size as f64 / 1e9,
@@ -29,7 +37,7 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
             plan.dropped_subtitles,
             plan.estimated_bytes as f64 / 1e9,
             verdict
-        );
+        ));
     }
     let total: u64 = planned.iter().map(|c| c.size).sum();
     let after: u64 = planned
@@ -39,13 +47,14 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
             _ => c.size,
         })
         .sum();
-    println!(
+    out.push(format!(
         "\n{:.1} GB -> {:.1} GB, saving {:.1} GB. One part is {:.2} GB.",
         total as f64 / 1e9,
         after as f64 / 1e9,
         (total - after) as f64 / 1e9,
         limit as f64 / 1e9
-    );
+    ));
+    out
 }
 
 /// Says which files `--mp4` cannot make direct-playable, and why.
@@ -54,6 +63,13 @@ pub(super) fn print_table(planned: &[Candidate], limit: u64) {
 /// it on every play regardless, because the picture itself is what a browser
 /// will not open. Better to say so before an hour of encoding than after.
 pub(super) fn warn_about_video_codecs(planned: &[Candidate]) {
+    if let Some(warning) = codec_warning(planned) {
+        println!("{warning}");
+    }
+}
+
+/// [`warn_about_video_codecs`]'s warning, if any file needs one.
+fn codec_warning(planned: &[Candidate]) -> Option<String> {
     let mut names: Vec<String> = planned
         .iter()
         .flat_map(|c| direct_play::blockers(&c.file, &c.plan.keep))
@@ -62,16 +78,16 @@ pub(super) fn warn_about_video_codecs(planned: &[Candidate]) {
         .collect();
     let count = names.len();
     if count == 0 {
-        return;
+        return None;
     }
     names.sort_unstable();
     names.dedup();
-    println!(
+    Some(format!(
         "\nwarning: {count} file(s) carry {}, which a browser will not open. \
          Changing the wrapper does not change that — the picture itself would \
          have to be re-encoded, so these will still be converted on every play.",
         names.join(" / ")
-    );
+    ))
 }
 
 pub(super) fn truncate(s: &str, max: usize) -> String {
@@ -80,3 +96,7 @@ pub(super) fn truncate(s: &str, max: usize) -> String {
     }
     s.chars().take(max - 1).collect::<String>() + "…"
 }
+
+#[cfg(test)]
+#[path = "report_tests.rs"]
+mod tests;

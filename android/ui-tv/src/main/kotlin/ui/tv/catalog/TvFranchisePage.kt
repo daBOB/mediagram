@@ -20,6 +20,7 @@ import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvPagePadding
+import ui.tv.rememberStableRequester
 
 /**
  * One franchise's own page — the television twin of the web's
@@ -96,9 +97,7 @@ internal fun TvFranchisePage(
             },
             headings = mapOf(0 to "In release order"),
             plate = { set, modifier, onOpen ->
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val own = remember { FocusRequester() }
-                val stop = modifier.focusRequester(if (set.setId == franchise.films.first().setId) firstFilm else own)
+                val stop = modifier.focusRequester(rememberStableRequester(firstFilm.takeIf { set.setId == franchise.films.first().setId }))
                 TvEntryPlate(Entry.Film(set), positions, watchedIds, onOpen, stop, heldIds)
             },
         )

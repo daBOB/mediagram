@@ -3,7 +3,7 @@
  * an uploader has not re-published since — the legacy `assets` rows every
  * reader already knew how to serve.
  *
- * Both layouts are read until phase 09 removes the older one: a v13 row wins
+ * Both layouts are read while older indexes are still out there: a v13 row wins
  * outright for a set that has one, an inline set is numbered `0..n` by
  * `ORDER BY lang` the way it always was, and every read tolerates the table
  * itself being absent, the same way `catalog/assets.ts` already does for
@@ -11,6 +11,7 @@
  */
 
 import type { Database } from "bun:sqlite";
+import { hasTable } from "../catalog";
 import { languageLabel } from "../../public/lib/language-label.js";
 
 /** One subtitle track the catalog offers for a set, API-shaped. */
@@ -29,15 +30,6 @@ export interface BundleRef {
   sha256: string;
 }
 
-function tolerate<T>(table: string, read: () => T, fallback: T): T {
-  try {
-    return read();
-  } catch (error) {
-    if (error instanceof Error && error.message === `no such table: ${table}`) return fallback;
-    throw error;
-  }
-}
-
 /**
  * Every set's tracks, built once per router.
  *
@@ -49,7 +41,7 @@ function tolerate<T>(table: string, read: () => T, fallback: T): T {
 export function subtitleTracksBySet(db: Database): Map<string, SubtitleTrack[]> {
   const bySet = new Map<string, SubtitleTrack[]>();
 
-  tolerate("subtitle_tracks", () => {
+  if (hasTable(db, "subtitle_tracks")) {
     const rows = db
       .query(
         `SELECT set_id AS setId, track, lang, forced, sdh, label
@@ -61,7 +53,7 @@ export function subtitleTracksBySet(db: Database): Map<string, SubtitleTrack[]> 
       list.push({ track: row.track, lang: row.lang, forced: row.forced !== 0, sdh: row.sdh !== 0, label: row.label });
       bySet.set(row.setId, list);
     }
-  }, undefined);
+  }
 
   // A bundled set's inline rows are stale leftovers `merge_copy.rs` refuses
   // to refill, but a hand-made or half-migrated database is not promised
@@ -69,7 +61,7 @@ export function subtitleTracksBySet(db: Database): Map<string, SubtitleTrack[]> 
   // against the sets v13 covered *before* this loop started, since the loop
   // itself is filling `bySet` too.
   const bundled = new Set(bySet.keys());
-  tolerate("assets", () => {
+  if (hasTable(db, "assets")) {
     const rows = db
       .query("SELECT set_id AS setId, lang FROM assets WHERE kind = 'subtitle' ORDER BY set_id, lang")
       .all() as { setId: string; lang: string }[];
@@ -79,27 +71,24 @@ export function subtitleTracksBySet(db: Database): Map<string, SubtitleTrack[]> 
       list.push({ track: list.length, lang: row.lang, forced: false, sdh: false, label: languageLabel(row.lang, row.lang) });
       bySet.set(row.setId, list);
     }
-  }, undefined);
+  }
 
   return bySet;
 }
 
 /** Where `setId`'s bundle lives, or `null` for a set with no v13 bundle. */
 export function bundleRef(db: Database, setId: string): BundleRef | null {
-  return tolerate("subtitle_files", () => {
-    const row = db
-      .query("SELECT message_id AS messageId, bytes, sha256 FROM subtitle_files WHERE set_id = ?1")
-      .get(setId) as BundleRef | null;
-    return row;
-  }, null);
+  if (!hasTable(db, "subtitle_files")) return null;
+  return db
+    .query("SELECT message_id AS messageId, bytes, sha256 FROM subtitle_files WHERE set_id = ?1")
+    .get(setId) as BundleRef | null;
 }
 
 /** One legacy inline track's body, by its position in `ORDER BY lang`. */
 export function legacyBody(db: Database, setId: string, track: number): string | null {
-  return tolerate("assets", () => {
-    const rows = db
-      .query("SELECT body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' ORDER BY lang")
-      .all(setId) as { body: string }[];
-    return rows[track]?.body ?? null;
-  }, null);
+  if (!hasTable(db, "assets")) return null;
+  const rows = db
+    .query("SELECT body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' ORDER BY lang")
+    .all(setId) as { body: string }[];
+  return rows[track]?.body ?? null;
 }

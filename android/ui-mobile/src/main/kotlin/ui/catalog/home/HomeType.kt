@@ -30,7 +30,7 @@ internal val WideBreakpoint = 1180.dp
 
 /**
  * An extent, spelled the way the web's own `countOf` does: `"three shows"`,
- * `"one show"`, `"170 lessons"` (`format.js:171-175`). [ui.catalog.countOf]
+ * `"one show"`, `"170 lessons"` (`format.js:171-175`). [ui.common.catalog.countOf]
  * (ui-common) is the rest of this app's own, plainer `"$count $noun"` — this
  * one is only for the captions the web's own `collectionGrid` spells the
  * same way (Latest series, Latest courses); [catalog.spelledCountOf]

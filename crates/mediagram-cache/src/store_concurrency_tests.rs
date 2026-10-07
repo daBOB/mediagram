@@ -1,3 +1,5 @@
+use std::fs;
+
 use tempfile::tempdir;
 
 use super::*;
@@ -136,4 +138,84 @@ fn concurrent_first_puts_with_equal_totals_never_error() {
             "run {i}: {outcomes:?}"
         );
     }
+}
+
+/// Whether `.tmp` holds a fully staged body of `len` bytes.
+fn staged_body(root: &std::path::Path, len: u64) -> bool {
+    fs::read_dir(root.join(".tmp"))
+        .unwrap()
+        .any(|entry| entry.unwrap().metadata().unwrap().len() == len)
+}
+
+/// Eviction runs under the index lock and removes a set's directory once it
+/// holds no chunk file. A PUT that created the directory, recorded the total
+/// or linked its chunk outside that lock could have all three removed under
+/// it: a 500 for the link, or a 201 for a chunk already gone. Holding the
+/// lock here stands in for an eviction in progress; the PUT may stage its
+/// body, but must not touch its set until the lock is free.
+#[test]
+fn a_put_leaves_its_set_alone_while_eviction_holds_the_index_lock() {
+    let dir = tempdir().expect("temp dir");
+    let root = dir.path().to_path_buf();
+    let store = std::sync::Arc::new(ChunkStore::open(root.clone(), 1 << 30).expect("open"));
+
+    let evicting = store.lock_index();
+    let writer = {
+        let store = store.clone();
+        std::thread::spawn(move || store.put("set1", 0, 100, &[b'x'; 100]))
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !root.join("set1").exists() && !staged_body(&root, 100) {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the PUT never staged its body"
+        );
+        std::thread::yield_now();
+    }
+    assert!(
+        !root.join("set1").exists(),
+        "the PUT wrote into its set while eviction held the lock"
+    );
+    drop(evicting);
+
+    assert_eq!(writer.join().unwrap().unwrap(), PutOutcome::Created);
+    assert_eq!(store.head("set1", 0).unwrap(), Some(100));
+}
+
+/// A refused PUT leaves nothing in `.tmp`: the directory is swept only at
+/// startup, so a staged body left behind would hold its space until then.
+#[test]
+fn a_refused_put_leaves_no_staged_body() {
+    let dir = tempdir().expect("temp dir");
+    let store = ChunkStore::open(dir.path().to_path_buf(), 1 << 30).expect("open");
+    store.put("set1", 0, 200, &[b'x'; 100]).unwrap();
+
+    let outcome = store.put("set1", 1, 300, &[b'y'; 100]).unwrap();
+
+    assert_eq!(outcome, PutOutcome::TotalMismatch { held: 200 });
+    assert_eq!(fs::read_dir(dir.path().join(".tmp")).unwrap().count(), 0);
+}
+
+/// The race end to end: a budget of two chunks, one thread filling set
+/// `s` while another fills other sets, so `s` keeps losing its oldest
+/// chunk to eviction while its next one is being written.
+#[test]
+fn puts_racing_eviction_of_their_own_set_never_error() {
+    let dir = tempdir().expect("temp dir");
+    let store = std::sync::Arc::new(ChunkStore::open(dir.path().to_path_buf(), 200).expect("open"));
+    let others = {
+        let store = store.clone();
+        std::thread::spawn(move || {
+            for i in 0..2000 {
+                store
+                    .put(&format!("other{i}"), 0, 100, &[b'o'; 100])
+                    .unwrap();
+            }
+        })
+    };
+    for n in 0..2000 {
+        let outcome = store.put("s", n, 30_000, &[b's'; 100]);
+        assert!(outcome.is_ok(), "chunk {n}: {outcome:?}");
+    }
+    others.join().unwrap();
 }

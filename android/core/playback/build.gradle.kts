@@ -1,5 +1,7 @@
-// Media3 lives here, not in feature:player: MlibDataSource, the disk cache
-// and the player factory are the only code that touches ExoPlayer directly.
+// Media3 construction, the byte path (Telegram, LAN, disk cache),
+// preloading, and the pure player rules both surfaces share (AudioOptions,
+// CueStyle, Framing) live here; the media3 Tracks/Player glue and the
+// controllers that drive a player live in feature:player.
 // `api`, not `implementation`, for the media3 artifacts — feature:player and
 // the mobile UI both need `ExoPlayer`/`Player`/`PlayerSurface` on their own
 // compile classpath, and a project dependency only forwards a module's own

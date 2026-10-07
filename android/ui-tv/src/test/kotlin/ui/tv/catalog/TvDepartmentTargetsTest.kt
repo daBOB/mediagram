@@ -11,7 +11,6 @@ import catalog.Underway
 import model.Kind
 import model.MediaSet
 import org.junit.Test
-import ui.tv.TvMoviesPageEntryKey
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -37,30 +36,30 @@ class TvDepartmentTargetsTest {
 
     @Test
     fun theAllFilmsSentinelKeyLandsOnTheAllLink() {
-        assertEquals("all" to 0, moviesDeptTargetOf(dept, TvMoviesPageEntryKey))
+        assertEquals(SectionStop(MoviesSection.ALL, 0), moviesDeptTargetOf(dept, TvMoviesPageEntryKey))
     }
 
     @Test
     fun aGenreNameRestoreKeyLandsOnItsOwnTileNotTheFirstRow() {
-        assertEquals("genres" to 1, moviesDeptTargetOf(dept, "Drama"))
+        assertEquals(SectionStop(MoviesSection.GENRES, 1), moviesDeptTargetOf(dept, "Drama"))
     }
 
     @Test
     fun aFilmIdRestoreKeyStillLandsOnTheRowThatHoldsIt() {
-        assertEquals("acclaimed" to 0, moviesDeptTargetOf(dept, "a0"))
+        assertEquals(SectionStop(MoviesSection.ACCLAIMED, 0), moviesDeptTargetOf(dept, "a0"))
     }
 
     @Test
     fun noOrUnmatchedRestoreKeyFallsBackToTheFirstNonEmptyRow() {
-        assertEquals("featured" to 0, moviesDeptTargetOf(dept, null))
-        assertEquals("featured" to 0, moviesDeptTargetOf(dept, "no-such-id"))
+        assertEquals(SectionStop(MoviesSection.FEATURED, 0), moviesDeptTargetOf(dept, null))
+        assertEquals(SectionStop(MoviesSection.FEATURED, 0), moviesDeptTargetOf(dept, "no-such-id"))
     }
 
     /** "f0" sits in both Featured and Recently added; [lastSection] breaks the tie. */
     @Test
     fun aKeyCarriedByTwoRowsGoesBackToTheRowTheRemoteWasLastIn() {
-        assertEquals("featured" to 0, moviesDeptTargetOf(dept, "f0", lastSection = null))
-        assertEquals("recentlyAdded" to 1, moviesDeptTargetOf(dept, "f0", lastSection = "recentlyAdded"))
+        assertEquals(SectionStop(MoviesSection.FEATURED, 0), moviesDeptTargetOf(dept, "f0", lastSection = null))
+        assertEquals(SectionStop(MoviesSection.RECENTLY_ADDED, 1), moviesDeptTargetOf(dept, "f0", lastSection = MoviesSection.RECENTLY_ADDED))
     }
 
     @Test
@@ -68,7 +67,7 @@ class TvDepartmentTargetsTest {
         val popular = listOf(collection("SHOW/A", "A"))
         val dept = showsDeptOf(popular = popular)
 
-        assertEquals("popular" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
+        assertEquals(SectionStop("popular", 0), showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
     }
 
     @Test
@@ -76,7 +75,7 @@ class TvDepartmentTargetsTest {
         val popular = listOf(collection("SHOW/A", "A"), collection("SHOW/B", "B"))
         val dept = showsDeptOf(popular = popular)
 
-        assertEquals("popular" to 1, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "SHOW/B"))
+        assertEquals(SectionStop("popular", 1), showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "SHOW/B"))
     }
 
     @Test
@@ -94,7 +93,7 @@ class TvDepartmentTargetsTest {
         val categories = listOf(CategoryRow("Trading", listOf(collection("COURSE/B", "B"))))
         val dept = showsDeptOf(popular = popular, categories = categories)
 
-        assertEquals("category:0" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
+        assertEquals(SectionStop("category:0", 0), showsDeptTargetOf(dept, underway = emptyList(), restoreKey = null))
     }
 
     @Test
@@ -107,18 +106,18 @@ class TvDepartmentTargetsTest {
             )
         val dept = showsDeptOf(popular = popular, categories = categories)
 
-        assertEquals("category:1" to 0, showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "COURSE/C"))
+        assertEquals(SectionStop("category:1", 0), showsDeptTargetOf(dept, underway = emptyList(), restoreKey = "COURSE/C"))
     }
 
     @Test
     fun aResumeCardRestoreKeyLandsOnTheUnderwayRow() {
         val cards = listOf(card("s0"), card("s1"))
-        assertEquals("underway" to 1, showsDeptTargetOf(showsDeptOf(), underway = cards, restoreKey = "s1"))
+        assertEquals(SectionStop("underway", 1), showsDeptTargetOf(showsDeptOf(), underway = cards, restoreKey = "s1"))
     }
 
     @Test
     fun animeContinueWinsArrivalWhenItHasCards() {
-        assertEquals("continue" to 0, animeDeptTargetOf(listOf(card("s0")), restoreKey = null))
+        assertEquals(SectionStop("continue", 0), animeDeptTargetOf(listOf(card("s0")), restoreKey = null))
     }
 
     @Test
@@ -130,13 +129,13 @@ class TvDepartmentTargetsTest {
     @Test
     fun documentariesFallsBackToTheFirstNonEmptySectionInOrder() {
         val sections = listOf(DeptSection("continue", emptyList()), DeptSection("recentlyAdded", listOf("d0")))
-        assertEquals("recentlyAdded" to 0, documentariesDeptTargetOf(sections, restoreKey = null))
+        assertEquals(SectionStop("recentlyAdded", 0), documentariesDeptTargetOf(sections, restoreKey = null))
     }
 
     @Test
     fun documentariesRestoreKeyWinsOverTheFallbackSection() {
         val sections = listOf(DeptSection("continue", listOf("d1")), DeptSection("recentlyAdded", listOf("d0", "d1")))
-        assertEquals("continue" to 0, documentariesDeptTargetOf(sections, restoreKey = "d1"))
+        assertEquals(SectionStop("continue", 0), documentariesDeptTargetOf(sections, restoreKey = "d1"))
     }
 
     private fun showsDeptOf(

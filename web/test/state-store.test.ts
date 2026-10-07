@@ -133,6 +133,14 @@ describe("collections", () => {
     expect(state.addToCollection(me, list.id, "01B")).toBe(false);
   });
 
+  test("a name of nothing is refused for a list that is there, and the old name stays", () => {
+    const { state, me } = stateIn();
+    const list = state.createCollection(me, "Bleibt")!;
+
+    expect(state.renameCollection(me, list.id, "   ")).toBeNull();
+    expect(state.snapshot(me).collections[0]).toMatchObject({ name: "Bleibt" });
+  });
+
   test("a list that is not there says so rather than inventing one", () => {
     const { state, me } = stateIn();
     expect(state.renameCollection(me, "nope", "x")).toBe(false);
@@ -163,6 +171,12 @@ describe("a player that cannot remember", () => {
     state.setWatchlisted("nobody", "01SET", true);
     expect(state.createCollection("nobody", "x")).toBeNull();
     expect(state.addToCollection("nobody", "x", "01SET")).toBe(false);
+  });
+
+  test("keeps one device id for the run, or its own document reads as a stranger's", () => {
+    const state = new WatchState(null);
+
+    expect(state.deviceId()).toBe(state.deviceId());
   });
 
   test("a path that cannot be created is that, not a crash", () => {
@@ -462,10 +476,21 @@ describe("what a viewer chose", () => {
     // Rather than storing "" for every reader to recognise as meaning nothing.
     const { state, me } = stateIn();
 
-    state.setPreference(me, "show:X", "subtitle", "de");
-    state.setPreference(me, "show:X", "subtitle", "");
+    state.setPreference(me, "show:X", "audio", "de");
+    expect(state.setPreference(me, "show:X", "audio", "")).toBe(true);
 
     expect(state.snapshot(me).preferences).toEqual([]);
+  });
+
+  test("an empty value for a synced name is refused and the choice stays", () => {
+    // A synced row has no tombstone: deleted here, it would come back from
+    // every other device that still holds it.
+    const { state, me } = stateIn();
+
+    state.setPreference(me, "show:X", "subtitle", "de");
+
+    expect(state.setPreference(me, "show:X", "subtitle", "")).toBe(false);
+    expect(state.snapshot(me).preferences).toEqual([{ scope: "show:X", name: "subtitle", value: "de" }]);
   });
 
   test("one profile's choice is not another's", () => {

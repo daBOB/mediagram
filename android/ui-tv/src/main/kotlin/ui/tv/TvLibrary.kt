@@ -12,17 +12,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
+import catalog.Department
 import catalog.Entry
 import catalog.everyFilm
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import player.TitlePreloadViewModel
 import system.FetchViewModel
-import ui.FrameKind
-import ui.LibraryPositions
-import ui.rememberLibraryPositions
-import ui.resolve
-import ui.settings.SettingsOutcomes
+import ui.common.FrameKind
+import ui.common.LibraryPositions
+import ui.common.rememberLibraryPositions
+import ui.common.resolve
+import ui.common.settings.SettingsOutcomes
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvMenuEntryKey
 import ui.tv.profile.TvChosenProfile
@@ -90,7 +91,7 @@ internal fun TvLibrary(
     // pool: "All N films" is the Movies shelf's own wall, not a lookup.
     val allFilms = remember(shelves) { everyFilm(shelves) }
     val movieFilms = remember(shelves) {
-        shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
+        shelves.firstOrNull { it.department == Department.MOVIES }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
     }
     val allShows = remember(shelves) {
         shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
@@ -124,10 +125,10 @@ internal fun TvLibrary(
         FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
         FrameKind.PERSON ->
-            TvPersonFrame(at, catalogState, at.personId?.toLongOrNull(), watch, heldIds, shelves, restore, here, browse, leave)
+            TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
 
         FrameKind.FRANCHISE ->
-            TvFranchiseFrame(at, catalogState, at.franchiseId?.toLongOrNull(), watch, heldIds, allFilms, restore, here, browse, leave)
+            TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
 
         FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 

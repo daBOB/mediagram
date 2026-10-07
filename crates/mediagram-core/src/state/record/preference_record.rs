@@ -52,3 +52,7 @@ pub(super) fn preference_row(raw: &Value) -> Option<SyncPreference> {
         updated_at,
     })
 }
+
+#[cfg(test)]
+#[path = "preference_record_tests.rs"]
+mod tests;

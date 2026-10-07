@@ -19,11 +19,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Credit
 import model.TitleCredits
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 /** How wide a cast member's card is, its round portrait spanning it — narrower than a poster, since a face is square. */
 private val CastCardWidth = 130.dp
@@ -62,7 +64,7 @@ private val CastCardWidth = 130.dp
 internal fun TvCastRow(
     credits: TitleCredits,
     onOpenPerson: (personId: Long) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
     restoreKey: String? = null,
 ) {
@@ -103,17 +105,15 @@ internal fun TvCastRow(
         }
         LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
             itemsIndexed(credits.cast, key = { _, credit -> credit.personId }) { index, credit ->
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 TvPersonCard(
                     personId = credit.personId,
                     name = credit.name,
                     portraitPath = credit.portraitPath,
                     sub = credit.role,
                     onOpenPerson = onOpenPerson,
-                    shouldRequestPortrait = shouldRequestPortrait,
+                    portraits = portraits,
                     fetchPortrait = fetchPortrait,
-                    modifier = Modifier.width(CastCardWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    modifier = Modifier.width(CastCardWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                 )
             }
         }

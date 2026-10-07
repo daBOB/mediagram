@@ -7,11 +7,12 @@ use grammers_client::client::DownloadIter;
 use grammers_client::media::Document;
 use mediagram_core::transport::document::message_document;
 
-use super::download_hash::{ChunkSource, fetch_messages};
+use super::download_hash::ChunkSource;
 use super::{other_chat, report::ObservedMessage};
 use crate::index::parts::PartRow;
 use crate::index::status::PartStatus;
 use crate::telegram::client::Tg;
+use crate::telegram::messages::fetch_messages;
 
 pub(super) enum RemoteMessage<D> {
     NoDocument,

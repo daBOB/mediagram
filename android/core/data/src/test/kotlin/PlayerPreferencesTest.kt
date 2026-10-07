@@ -2,7 +2,7 @@ package data
 
 import kotlinx.coroutines.test.runTest
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +16,7 @@ class PlayerPreferencesTest {
     @Test
     fun loadFiltersToTheAskedScope() = runTest {
         val core = coreWithProfile()
-        val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(core))
+        val preferences = DefaultPlayerPreferences(FakeCoreProvider(core))
         core.setPreference("p1", "key:tmdb-tv-1399", "speed", "1.5")
         core.setPreference("p1", "set:01FILM", "speed", "1")
 
@@ -27,7 +27,7 @@ class PlayerPreferencesTest {
 
     @Test
     fun nothingRememberedForAScopeAnswersAnEmptyMap() = runTest {
-        val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(coreWithProfile()))
+        val preferences = DefaultPlayerPreferences(FakeCoreProvider(coreWithProfile()))
 
         assertEquals(emptyMap(), preferences.load("p1", "set:01FILM"))
     }
@@ -35,7 +35,7 @@ class PlayerPreferencesTest {
     @Test
     fun rememberingNullForgetsTheChoice() = runTest {
         val core = coreWithProfile()
-        val preferences = DefaultPlayerPreferences(ResolvedCoreProvider(core))
+        val preferences = DefaultPlayerPreferences(FakeCoreProvider(core))
         preferences.remember("p1", "show:Geldhochschule", "speed", "1.5")
         assertEquals(mapOf("speed" to "1.5"), preferences.load("p1", "show:Geldhochschule"))
 

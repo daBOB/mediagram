@@ -25,6 +25,8 @@ const TOUCHED = [
   "MEDIAGRAM_LIBRARY_DB",
   "MEDIAGRAM_PACKAGE_URL",
   "MEDIAGRAM_PACKAGE_KEY",
+  "MEDIAGRAM_STATE_DB",
+  "MEDIAGRAM_SYNC_EVERY_MS",
 ];
 
 let saved: Record<string, string | undefined>;
@@ -72,5 +74,33 @@ describe("where the catalog comes from", () => {
     process.env.MEDIAGRAM_PACKAGE_KEY = "a".repeat(44);
 
     expect(load().libraryDb).toBe("/srv/library.db");
+  });
+});
+
+describe("settings that are set but unusable", () => {
+  beforeEach(() => {
+    process.env.MEDIAGRAM_LIBRARY_DB = "/srv/library.db";
+  });
+
+  test("an empty state database path means the default, not a throwaway database", () => {
+    // `MEDIAGRAM_STATE_DB=${UNSET}` in a unit or compose file expands to "",
+    // which SQLite opens as a temporary database that forgets every profile.
+    const unset = load().stateDb;
+    process.env.MEDIAGRAM_STATE_DB = "";
+
+    expect(load().stateDb).toBe(unset);
+  });
+
+  test("a sync interval that is not a number means the default", () => {
+    // NaN would get past the floor and make setInterval fire every millisecond.
+    process.env.MEDIAGRAM_SYNC_EVERY_MS = "5m";
+
+    expect(load().syncEveryMs).toBe(300_000);
+  });
+
+  test("a sync interval below a minute is raised to one", () => {
+    process.env.MEDIAGRAM_SYNC_EVERY_MS = "1000";
+
+    expect(load().syncEveryMs).toBe(60_000);
   });
 });

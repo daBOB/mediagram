@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreHandle
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals

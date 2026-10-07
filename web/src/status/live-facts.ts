@@ -1,22 +1,22 @@
 /**
  * Assembles the figures that can only be read at the moment of asking.
  *
- * Moved out of `index.ts`, which wired every dependency by hand inline. The
- * shape returned matches `LiveFacts` minus the fields `routes.ts` fills in
- * from its own memoized scans (`cacheHeldBytes`, `transcodeBytes`, `now`).
+ * Moved out of `index.ts`, which wired every dependency by hand inline. What
+ * it returns is `PolledFacts`; `routes.ts` adds the rest of `LiveFacts`.
  */
 
 import { diskFree } from "./disk-free";
 import { countSegments } from "./dir-bytes";
 import type { LoopLag } from "./loop-lag";
-import type { LiveFacts, TranscodeSession } from "./snapshot";
-import type { TranscodeMode } from "../transcode/registry";
+import type { LiveFacts, PolledFacts, TranscodeSession } from "./snapshot";
+import type { TranscodeMode } from "../transcode/session-identity";
 import type { TranscodeProgress } from "../transcode/progress";
 import type { PlaybackRow } from "./playback-reports";
 import { LinkStats } from "../telegram/link-stats";
 
 interface CacheStats {
   stats(): { hits: number; misses: number; evicted: number };
+  readonly budget: number;
 }
 
 interface ReaderStats {
@@ -69,13 +69,12 @@ export function currentLink(connection: { current(): LiveTelegram | null }): Liv
   };
 }
 
-export async function readLiveFacts(
-  deps: LiveFactsDeps,
-): Promise<Omit<LiveFacts, "cacheHeldBytes" | "transcodeBytes" | "now">> {
+export async function readLiveFacts(deps: LiveFactsDeps): Promise<PolledFacts> {
   const cacheStats = deps.cache?.stats();
   const [disks, sessions] = await Promise.all([diskFree(deps.diskDirs), transcodeSessions(deps.transcodes)]);
 
   return {
+    cacheBudget: deps.cache?.budget ?? 0,
     cacheHits: cacheStats?.hits ?? 0,
     cacheMisses: cacheStats?.misses ?? 0,
     cacheEvicted: cacheStats?.evicted ?? 0,

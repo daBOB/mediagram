@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreHandle
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test

@@ -62,10 +62,12 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tar.workspace = true
 thiserror = { workspace = true }
-# NFC normalisation for viewer names: `André` typed as a composed character on
-# one device and as an `e` plus a combining accent on another must match, the
-# same way `sync-record.ts`'s `normalName` normalises before comparing.
-unicode-normalization = "0.1.25"
+# NFC for viewer names: `André` typed as a composed character on one device
+# and as an `e` plus a combining accent on another must match, the same way
+# `sync-record.ts`'s `normalName` normalises before comparing. NFD for search
+# folding, which splits an umlaut so its mark can be dropped. The same ICU4X
+# data `icu_collator` below already links, not a second Unicode table.
+icu_normalizer = "2.2.0"
 # Same generator `add.rs`/`add_document.rs` already use for `set_id`: opaque,
 # unique, no reason to add a second id scheme for profile/collection/device
 # ids here.
@@ -105,3 +107,5 @@ rusqlite.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+# A paused clock, so the update listener's five-second windows pass instantly.
+tokio = { workspace = true, features = ["test-util"] }

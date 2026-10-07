@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionName = "0.117.4"
+        versionName = "0.118.0"
         versionCode = versionCodeOf(versionName!!)
         // Only a release build updates itself; debug and benchmark builds are installed by adb.
         resValue("bool", "self_update", "false")
@@ -103,11 +103,13 @@ dependencies {
     implementation(project(":ui-tv"))
     implementation(project(":core:model"))
     // Provides the CoreProvider DI wiring in di/CoreModule.kt and the
-    // PackageSettings field MainActivity injects to route between screens.
+    // WatchSync field MainActivity injects to sync as the app comes and goes.
     implementation(project(":core:data"))
     // The self-updater, and the player whose state it waits on.
     implementation(project(":core:update"))
     implementation(project(":feature:player"))
+    // Binds the shared playback singletons in di/SharedPlaybackModule.kt.
+    implementation(project(":core:playback"))
     // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.
     implementation(libs.findLibrary("androidx.media3.exoplayer").get())
     // Installs the Baseline Profile packaged in the APK on first launch, so

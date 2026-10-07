@@ -54,6 +54,12 @@ export interface CatalogSet {
   rating: number | null;
   /** TMDB popularity as of when the entry was cached; ranks "trending". */
   popularity: number | null;
+  /** The film franchise it belongs to, e.g. the Star Trek films. */
+  collectionId: number | null;
+  collectionName: string | null;
+  /** A show's form (`Miniseries`, `Scripted`, …) and its run (`Ended`, `Returning Series`, …). */
+  seriesType: string | null;
+  showStatus: string | null;
   offline: boolean;
   hasSummary: boolean;
   subtitles: SubtitleTrack[];
@@ -110,12 +116,6 @@ export function collections(sets: CatalogSet[], fallbackName: string): Collectio
 
 /** The first *playable* set under these divisions, in display order. */
 export function firstItemOf(divisions: Division[]): CatalogSet | null;
-
-/** How many lessons sit under `division`, at whatever depth. */
-export function lessonsUnder(division: Pick<Division, "items" | "children">): number;
-
-/** How many documents sit under `division`, at whatever depth. */
-export function documentsUnder(division: Pick<Division, "items" | "children">): number;
 
 /** Both content counts under this division, including nested folders. */
 export function countsUnder(division: Pick<Division, "items" | "children">): {

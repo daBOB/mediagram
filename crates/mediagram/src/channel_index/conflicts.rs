@@ -5,7 +5,7 @@ use anyhow::Result;
 use rusqlite::Connection;
 
 use super::remote::ChannelRemote;
-use crate::index::merge_conflicts::resolve_from_captions;
+use crate::index::merge::conflicts::resolve_from_captions;
 use crate::index::parts;
 use crate::index::sets_pending::SkippedKind;
 
@@ -45,7 +45,7 @@ pub(super) async fn resolve(
             // One set's captions out of reach leaves that set as it was;
             // the next pull tries it again.
             Err(err) => {
-                tracing::warn!(set_id, error = %err, "could not re-read captions; left as it was");
+                tracing::warn!(set_id, error = %format_args!("{err:#}"), "could not re-read captions; left as it was");
                 continue;
             }
         };
@@ -66,3 +66,7 @@ pub(super) async fn resolve(
     }
     Ok(summary)
 }
+
+#[cfg(test)]
+#[path = "conflicts_tests.rs"]
+mod tests;

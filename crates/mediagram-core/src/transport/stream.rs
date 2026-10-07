@@ -1,9 +1,11 @@
 //! Turning planned reads into bytes: the half that talks to Telegram.
 //!
 //! [`StepCursor`] is pure and holds the arithmetic that trims a download to
-//! the requested range. [`pump_step`] drives the transport and is
-//! deliberately thin around it, so the part that can corrupt a video is the
-//! part under test.
+//! the requested range. `pump_chunks` is the loop that feeds a part's chunks
+//! through it, and is deliberately thin around it, so the part that can
+//! corrupt a video is the part under test. `fetch_step` in [`super::fetch`]
+//! drives that loop over its `PartIo` seam, whose Telegram side opens the
+//! `iter_download`.
 
 use std::pin::Pin;
 
@@ -90,26 +92,6 @@ pub async fn part_document(client: &Client, channel: PeerRef, message_id: i64) -
     }
 }
 
-/// Downloads one step and sends its bytes to `out`, in order, advancing
-/// `cursor` as they go — so after a failure it says how much was delivered.
-///
-/// Stops as soon as the step is satisfied, so a range near the start of a
-/// 3.5 GiB part costs one chunk rather than the part. Returns an error if the
-/// download ends early: a short body would be served as a complete one and
-/// the player would show a truncated file rather than a failure.
-pub async fn pump_step(
-    client: &Client,
-    document: &Document,
-    step: &Step,
-    cursor: &mut StepCursor,
-    out: &mpsc::Sender<Result<Vec<u8>>>,
-) -> Result<()> {
-    let chunks = client
-        .iter_download(document)
-        .skip_chunks(i32::try_from(step.skip_chunks).unwrap_or(i32::MAX));
-    pump_chunks(chunks, step, cursor, out).await
-}
-
 /// Raw chunk IO, kept apart from range trimming and delivery for local tests.
 pub(super) trait ChunkSource {
     fn next(&mut self) -> impl Future<Output = Result<Option<Vec<u8>>>> + Send;
@@ -121,6 +103,13 @@ impl ChunkSource for DownloadIter {
     }
 }
 
+/// Downloads one step and sends its bytes to `out`, in order, advancing
+/// `cursor` as they go — so after a failure it says how much was delivered.
+///
+/// Stops as soon as the step is satisfied, so a range near the start of a
+/// 3.5 GiB part costs one chunk rather than the part. Returns an error if the
+/// download ends early: a short body would be served as a complete one and
+/// the player would show a truncated file rather than a failure.
 pub(super) async fn pump_chunks(
     mut chunks: impl ChunkSource,
     step: &Step,

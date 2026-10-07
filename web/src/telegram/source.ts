@@ -22,8 +22,6 @@ import type { ByteSource } from "../http/stream";
 import type { TelegramConnection } from "./connection";
 import { connectionFetcher, isFileReferenceExpired } from "./part-fetch";
 
-export { partFetcher, connectionFetcher, backgroundFetcher } from "./part-fetch";
-
 export class TelegramSource implements ByteSource {
   /**
    * Reads that ended in an error rather than in bytes.
@@ -140,8 +138,9 @@ export class TelegramSource implements ByteSource {
 
       for (;;) {
         try {
+          // partMedia answers TypeMessageMedia, wider than iterDownload accepts.
           for await (const chunk of telegram.client.iterDownload(media as never, {
-            offset: helpers.returnBigInt(step.offset) as never,
+            offset: helpers.returnBigInt(step.offset),
             requestSize: requestSizeFor(headDrop + step.take),
           })) {
             let piece: Uint8Array = chunk;

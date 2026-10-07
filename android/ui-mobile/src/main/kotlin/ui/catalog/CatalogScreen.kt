@@ -1,59 +1,33 @@
 package ui.catalog
 
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import catalog.ShelfViewModel
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import catalog.ANIME
-import catalog.CatalogTabs
+import catalog.CatalogTab
 import catalog.CatalogUiState
-import catalog.DOCUMENTARIES
-import catalog.Entry
+import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.KeptKind
-import catalog.Shelf
 import catalog.allSetsById
-import catalog.catalogTabsOf
 import catalog.continueWall
 import catalog.everyFilm
-import catalog.HOME_POSTER_ROW_LIMIT
 import catalog.franchisesIn
 import catalog.hasContent
-import catalog.homeRowsOf
+import catalog.latestOf
 import catalog.magazineHomeOf
-import catalog.moviesDepartmentOf
-import catalog.showsDepartmentOf
 import catalog.watchlistWall
 import designsystem.Spacing
-import model.Kind
-import model.WatchSnapshot
+import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
 import ui.chrome.LocalTopChrome
-
-/**
- * Which of [tabs]'s own, full index space (Home, each shelf, then Continue,
- * Watchlist and Collections) the masthead draws — every index except
- * Continue and Watchlist, which moved to the overflow menu's own utilities
- * (`ui.BrowseActions`) and land on the same index they always had rather
- * than needing a tab of their own; Collections keeps its own, now
- * department, slot at the end.
- */
-internal fun visibleTabIndices(tabs: CatalogTabs): List<Int> {
-    val firstKept = tabs.firstKept
-    return tabs.titles.indices.filterNot { it == firstKept || it == firstKept + 1 }
-}
 
 /**
  * The shelves, and one line above them while the library is being worked
@@ -63,20 +37,18 @@ internal fun visibleTabIndices(tabs: CatalogTabs): List<Int> {
  * something happen should not have to learn a second vocabulary for it
  * depending on which menu item started it.
  *
- * [chosenTab]/[onTabChange] name a position over [catalogTabsOf]'s own,
- * full index space — Home, each shelf, then Continue, Watchlist and
- * Collections — even though the departments bar itself (`ui.chrome.DepartmentsBar`,
- * built from the same [visibleTabIndices]) draws only the departments:
- * Continue and Watchlist moved to the rail's own rows (`ui.BrowseActions`),
- * and jump here to the same index they always had rather than needing a
- * frame of their own.
+ * [chosenTab] is any [CatalogTab], not only one the departments bar
+ * (`ui.chrome.DepartmentsBar`) draws a pill for: Continue and My List are the
+ * rail's own rows (`ui.chrome.BrowseActions`) and land here as tabs of their own,
+ * rather than needing a frame of their own. [onTabChange] is Home's "See
+ * all", which opens the tab its row is a window onto.
  */
 @Composable
 internal fun CatalogScreen(
     state: CatalogUiState,
     fetching: Boolean,
-    chosenTab: Int,
-    onTabChange: (Int) -> Unit,
+    chosenTab: CatalogTab,
+    onTabChange: (CatalogTab) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
@@ -116,27 +88,28 @@ internal fun CatalogScreen(
         is CatalogUiState.KidsEmpty -> CenteredMessage(state.message)
         is CatalogUiState.Failed -> CenteredMessage(state.message)
         is CatalogUiState.Ready -> Shelves(
-            state, fetching, chosenTab, onTabChange, onOpenTitle, onOpenCollection, onOpenList, onCreateList,
-            onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish,
-            onToggleWatchlist, homeListState, deptScroll, now, titleInfo,
+            state = state, fetching = fetching, chosenTab = chosenTab, onTabChange = onTabChange,
+            onOpenTitle = onOpenTitle, onOpenCollection = onOpenCollection, onOpenList = onOpenList,
+            onCreateList = onCreateList, onOpenGenre = onOpenGenre, onOpenGenresIndex = onOpenGenresIndex,
+            onOpenLatest = onOpenLatest, onOpenMoviesPage = onOpenMoviesPage, onOpenFranchise = onOpenFranchise,
+            onPlayRun = onPlayRun, onFinish = onFinish, onToggleWatchlist = onToggleWatchlist,
+            homeListState = homeListState, deptScroll = deptScroll, now = now, titleInfo = titleInfo,
         )
     }
 }
 
 /**
- * One department on screen, chosen from the bar above it — Home, then
- * Movies, Series and Tutorials as their own department pages (see
- * [MoviesDepartmentScreen], [ShowsDepartmentScreen]), then Collections
- * (see [CollectionsScreen]). Continue and Watchlist still draw with
- * [KeptWall], reached from the rail's own rows (`ui.BrowseActions`) rather
- * than a visible pill.
+ * One tab on screen, chosen from the bar above it — Home, then each
+ * department as its own page ([DepartmentTab]), then Collections (see
+ * [CollectionsScreen]). Continue and My List draw with [KeptWall], reached
+ * from the rail's own rows (`ui.chrome.BrowseActions`) rather than a visible pill.
  */
 @Composable
 private fun Shelves(
     state: CatalogUiState.Ready,
     fetching: Boolean,
-    chosenTab: Int,
-    onTabChange: (Int) -> Unit,
+    chosenTab: CatalogTab,
+    onTabChange: (CatalogTab) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onOpenList: (id: String) -> Unit,
@@ -154,17 +127,11 @@ private fun Shelves(
     now: Long,
     titleInfo: suspend (String) -> TitleInfo?,
 ) {
-    val shelfViewModel: ShelfViewModel = hiltViewModel()
-    val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
-    val shelfView = ShelfViewChoice(chosenView, shelfViewModel::choose)
     val shelves = state.shelves
     if (!shelves.hasContent()) {
         CenteredMessage("The library is empty.")
         return
     }
-    val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
-    val firstKept = fullTabs.firstKept
-    val selected = chosenTab.coerceIn(0, fullTabs.titles.lastIndex)
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
     // Home, and a department whose own hero drew lead art, both draw under
     // the bar — everything else, and a hero with nothing to lead with, is
@@ -183,93 +150,57 @@ private fun Shelves(
                 modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small).padding(top = topChrome),
             )
         }
-        when {
-            selected == 0 -> HomeScreen(
+        when (chosenTab) {
+            CatalogTab.Home -> HomeScreen(
                 magazine = remember(shelves, state.watch, state.heldIds, now) {
                     magazineHomeOf(
                         shelves, state.watch, editorsChoice = state.watch.editorsChoice, now = now, heldIds = state.heldIds,
                         recentLimit = HOME_POSTER_ROW_LIMIT,
                     )
                 },
-                rows = remember(shelves, state.watch, state.heldIds) {
-                    homeRowsOf(shelves, state.watch, state.heldIds, posterLimit = HOME_POSTER_ROW_LIMIT)
-                        .filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
-                },
+                latest = remember(shelves) { latestOf(shelves) },
                 watch = state.watch,
                 listState = homeListState,
                 onPlay = { id -> onPlayRun(id, emptyList()) },
                 onOpenTitle = onOpenTitle,
                 onOpenCollection = onOpenCollection,
                 onToggleWatchlist = onToggleWatchlist,
-                onSeeAll = { shelf -> onTabChange(fullTabs.titles.indexOf(shelf).coerceAtLeast(0)) },
+                onSeeAll = onTabChange,
             )
 
-            selected == firstKept -> KeptWall(KeptKind.CONTINUE, continueWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds, onFinish)
-            selected == firstKept + 1 -> KeptWall(KeptKind.WATCHLIST, watchlistWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds)
-
-            selected == fullTabs.titles.lastIndex -> {
-                val movies = remember(shelves) { everyFilm(shelves) }
-                CollectionsScreen(
-                    franchises = remember(movies) { franchisesIn(movies) },
-                    lists = state.watch.collections,
-                    setsById = remember(shelves) { allSetsById(shelves) },
-                    onOpenFranchise = onOpenFranchise,
-                    onOpenList = onOpenList,
-                    onCreateList = onCreateList,
-                    onOpenTitle = onOpenTitle,
-                )
-            }
-
-            else -> {
-                val shelf = shelves[selected - 1]
-                when (shelf.title) {
-                    "Movies" -> {
-                        val films = remember(shelf) { filmsOf(shelf) }
-                        val department = remember(films, state.watch) { moviesDepartmentOf(films) { id -> state.watch.watched.any { it.setId == id } } }
-                        department?.let {
-                            MoviesDepartmentScreen(
-                                department = it,
-                                films = films,
-                                watch = state.watch,
-                                onOpenTitle = onOpenTitle,
-                                onOpenGenre = onOpenGenre,
-                                onOpenGenresIndex = onOpenGenresIndex,
-                                onOpenLatest = onOpenLatest,
-                                onSeeAllFilms = onOpenMoviesPage,
-                                onPlay = { id -> onPlayRun(id, emptyList()) },
-                                titleInfo = titleInfo,
-                                state = deptScroll.movies,
-                            )
-                        }
-                    }
-                    "Series" -> ShowsDepartment(Kind.EPISODE, "Series", "episode", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.series) { id -> onPlayRun(id, emptyList()) }
-                    ANIME -> AnimeDepartment(shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.anime) { id -> onPlayRun(id, emptyList()) }
-                    "Tutorials" -> ShowsDepartment(Kind.TUTORIAL, "Tutorials", "lesson", shelf, state, columns, onOpenTitle, onOpenCollection, deptScroll.tutorials) { id -> onPlayRun(id, emptyList()) }
-                    DOCUMENTARIES -> DocumentariesDepartment(shelf, state, onOpenCollection, listState = deptScroll.documentaries) { id -> onPlayRun(id, emptyList()) }
-                    else -> ShelfWall(shelf, state.watch, state.heldIds, columns, shelfView, onOpenTitle, onOpenCollection)
+            is CatalogTab.Kept -> when (chosenTab.kind) {
+                KeptKind.CONTINUE -> KeptWall(KeptKind.CONTINUE, continueWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds, onFinish)
+                KeptKind.WATCHLIST -> KeptWall(KeptKind.WATCHLIST, watchlistWall(shelves, state.watch), state.watch, columns, onOpenTitle, state.heldIds)
+                KeptKind.COLLECTIONS -> {
+                    val movies = remember(shelves) { everyFilm(shelves) }
+                    CollectionsScreen(
+                        franchises = remember(movies) { franchisesIn(movies) },
+                        lists = state.watch.collections,
+                        setsById = remember(shelves) { allSetsById(shelves) },
+                        onOpenFranchise = onOpenFranchise,
+                        onOpenList = onOpenList,
+                        onCreateList = onCreateList,
+                        onOpenTitle = onOpenTitle,
+                    )
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun ShowsDepartment(
-    kind: Kind,
-    label: String,
-    unit: String,
-    shelf: Shelf,
-    state: CatalogUiState.Ready,
-    columns: Int,
-    onOpenTitle: (String) -> Unit,
-    onOpenCollection: (String) -> Unit,
-    listState: LazyGridState,
-    onPlay: (String) -> Unit,
-) {
-    val shows = remember(shelf) { shelf.entries.filterIsInstance<Entry.Collection>() }
-    val byId = remember(state.shelves) { allSetsById(state.shelves) }
-    val department = remember(shows, byId, state.watch) { showsDepartmentOf(kind, shows, byId, state.watch) }
-    department?.let {
-        ShowsDepartmentScreen(label, unit, it, state.watch, state.heldIds, columns, onOpenTitle, onOpenCollection, onPlay, listState)
+            is CatalogTab.Dept -> shelves.firstOrNull { it.department == chosenTab.department }?.let { shelf ->
+                DepartmentTab(
+                    shelf = shelf,
+                    state = state,
+                    columns = columns,
+                    deptScroll = deptScroll,
+                    onOpenTitle = onOpenTitle,
+                    onOpenCollection = onOpenCollection,
+                    onOpenGenre = onOpenGenre,
+                    onOpenGenresIndex = onOpenGenresIndex,
+                    onOpenLatest = onOpenLatest,
+                    onOpenMoviesPage = onOpenMoviesPage,
+                    onPlay = { id -> onPlayRun(id, emptyList()) },
+                    titleInfo = titleInfo,
+                )
+            }
+        }
     }
 }

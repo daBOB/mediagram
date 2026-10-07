@@ -18,6 +18,7 @@
 import { randomBytes, timingSafeEqual, createHash } from "node:crypto";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { errorCode } from "../failure-message";
 
 const COOKIE_NAME = "mediagram_admin";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -31,7 +32,9 @@ const MAX_TRACKED_ADDRESSES = 256;
  *
  * Only the path is ever logged. A file already there is trusted as written by
  * a previous run; nothing here re-derives or validates its contents beyond
- * trimming the trailing newline a shell redirect would leave.
+ * trimming the trailing newline a shell redirect would leave. Only a missing
+ * file is replaced: one that is there but cannot be read fails startup, since
+ * writing a new token over it would sign the admin out of every browser.
  */
 export async function resolveAdminToken(
   env: Record<string, string | undefined>,
@@ -40,7 +43,10 @@ export async function resolveAdminToken(
   const fromEnv = env.MEDIAGRAM_ADMIN_TOKEN;
   if (fromEnv) return fromEnv;
 
-  const existing = await readFile(tokenPath, "utf8").catch(() => null);
+  const existing = await readFile(tokenPath, "utf8").catch((error: unknown) => {
+    if (errorCode(error) === "ENOENT") return null;
+    throw error;
+  });
   if (existing !== null) return existing.trim();
 
   const token = randomBytes(32).toString("base64url");

@@ -18,7 +18,7 @@ pub(crate) use charset::is_lower_hex;
 
 pub use artwork_key::{
     BACKDROP_SUFFIX, backdrop_key, is_backdrop_key, poster_key_is_valid, season_poster_key,
-    title_art_key,
+    title_art_key, tmdb_key, tmdb_title_of,
 };
 pub use naming::package_file_name;
 
@@ -128,7 +128,7 @@ pub fn key_id(key: &[u8; 32]) -> String {
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum PointerError {
-    #[error("package format {0} is newer than this reader understands")]
+    #[error("unsupported package format {0} (this reader reads {PACKAGE_FORMAT})")]
     UnsupportedFormat(u32),
     #[error("package holds schema {0}, which this reader does not support")]
     UnsupportedSchema(i64),
@@ -141,15 +141,18 @@ pub enum PointerError {
 }
 
 /// Whether a reader can use the package a pointer names, decided before any
-/// download. `supported_schema` is the set of `library.db` layouts the caller
-/// can read.
+/// download. `oldest_schema` is the oldest `library.db` layout the caller
+/// can read; every newer one is accepted too, because schema changes only
+/// add columns every reader treats as optional, and a breaking change moves
+/// `format` instead, which is checked exactly. Refusing newer schemas cut
+/// every installed reader off at each bump.
 ///
 /// # Errors
 /// Rejects unsupported formats, ciphers or schemas; malformed fingerprints,
 /// timestamps or lengths; and packages exceeding [`MAX_PACKAGE_BYTES`].
 pub fn pointer_is_readable(
     pointer: &LatestPointer,
-    supported_schema: &[i64],
+    oldest_schema: i64,
 ) -> Result<(), PointerError> {
     if pointer.format != PACKAGE_FORMAT {
         return Err(PointerError::UnsupportedFormat(pointer.format));
@@ -157,12 +160,7 @@ pub fn pointer_is_readable(
     if pointer.cipher != CIPHER {
         return Err(PointerError::UnsupportedCipher(pointer.cipher.clone()));
     }
-    // At least the oldest layout this reader queries, and anything newer:
-    // schema changes only add columns every reader treats as optional, and a
-    // breaking change moves `format` instead, which is checked exactly above.
-    // Refusing newer schemas cut every installed reader off at each bump.
-    let oldest = supported_schema.iter().min();
-    if oldest.is_none_or(|oldest| pointer.schema < *oldest) {
+    if pointer.schema < oldest_schema {
         return Err(PointerError::UnsupportedSchema(pointer.schema));
     }
     // Everything below arrives in a plaintext file from a public URL, so it

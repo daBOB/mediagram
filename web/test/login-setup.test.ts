@@ -179,6 +179,14 @@ test.each(["client", "connect", "phone", "qr", "dialogs", "save", "close", "disc
   },
 );
 
+test("a failure that cannot be printed is still reported, and login exits 1 rather than rejecting", async () => {
+  const fixture = boundary();
+  fixture.client.connect = async () => { throw Object.create(null); };
+  expect(await runLogin(options(), fixture.io)).toBe(1);
+  expect(fixture.calls.slice(-3)).toEqual(["close", "disconnect", "destroy"]);
+  expect(fixture.stderr.join("")).toContain("Login failed: unprintable rejection");
+});
+
 test("a failed initial prompt is closed without constructing a client", async () => {
   const fixture = boundary();
   fixture.fail.add("ask");

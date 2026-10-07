@@ -195,6 +195,6 @@ class PlayerViewModel @Inject constructor(
     override fun onCleared() {
         session.stopTicking()
         choicesController.release()
-        handle.release()
+        handle.setListener(null)
     }
 }

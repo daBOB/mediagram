@@ -13,7 +13,7 @@ import { join } from "node:path";
 import type { ByteSource } from "../src/http/stream";
 import { createRouter } from "../src/routes";
 import type { Achievements } from "../src/state/achievements";
-import type { MergedProfile } from "../src/state/merge";
+import type { MergedProfile } from "../src/state/merged";
 import { utcOffsetMinutes } from "../src/state/stats-recorder";
 import { WatchState } from "../src/state/store";
 import { emptyIndex } from "./index-fixture";

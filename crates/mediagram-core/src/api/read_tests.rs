@@ -8,7 +8,7 @@ async fn playback_refusals_only_revoke_the_originating_login() {
     use session::fixture::{Fixture, rpc};
     for code in [401, 500] {
         let fixture = Fixture::new().await;
-        let error = failed(
+        let error = revoked::failed(
             &fixture.core,
             &fixture.owner,
             INTERRUPTED,
@@ -25,7 +25,7 @@ async fn playback_refusals_only_revoke_the_originating_login() {
     }
     let fixture = Fixture::new().await;
     let replacement = fixture.replace().await;
-    let error = failed(
+    let error = revoked::failed(
         &fixture.core,
         &fixture.owner,
         INTERRUPTED,

@@ -57,25 +57,15 @@ pub async fn run(cfg: &Config, args: MetadataArgs) -> Result<()> {
             titles.len(),
             started.elapsed(),
         ));
-        match title_details::fetch(&api, *kind, *id, &cfg.tmdb_language).await {
-            Ok(row) => {
-                shows::upsert(&conn, &row)?;
+        match title_details::record_for_title(&conn, &api, *kind, *id, &cfg.tmdb_language).await? {
+            Some((c, f)) => {
                 recorded += 1;
-                if title_details::backfill_credits(&conn, &api, *kind, *id).await? {
-                    credited += 1;
-                }
-                if let Some(collection_id) = row.collection_id
-                    && title_details::backfill_franchise(&conn, &api, collection_id).await?
-                {
-                    franchised += 1;
-                }
+                credited += usize::from(c);
+                franchised += usize::from(f);
             }
             // One title the provider will not answer for costs that title its
             // description and nothing else.
-            Err(err) => {
-                tracing::warn!(id, error = %err, "no description for this title");
-                skipped += 1;
-            }
+            None => skipped += 1,
         }
     }
 

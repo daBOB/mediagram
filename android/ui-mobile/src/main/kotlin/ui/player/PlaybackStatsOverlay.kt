@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import designsystem.Spacing
 import playback.PlaybackTotals
+import ui.common.player.SCRIM_ALPHA
+import ui.common.player.playbackStats
 
 /**
  * Wide enough for `dropped`, the longest label, so every value starts at the

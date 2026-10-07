@@ -1,11 +1,12 @@
 /**
- * A position write, and the watching it adds up to — in one transaction.
+ * Positions: a write and the watching it adds up to, in one transaction, and
+ * the rows this device trades with the others on the sync record.
  *
- * `WatchState.setProgress` calls this rather than writing the position
- * itself, so a position and the minutes it implies can never land apart.
- * Only this device's own writes come through here: positions merged in from
- * other devices (`importMerged`) are never counted, or every sync round would
- * count another device's evening again.
+ * `WatchState.setProgress` calls `writeProgress` rather than writing the
+ * position itself, so a position and the minutes it implies can never land
+ * apart. Only this device's own writes come through there: positions merged
+ * in from other devices (`importProgress`) are written but never counted, or
+ * every sync round would count another device's evening again.
  *
  * The last write per title is held in memory by the caller and never stored
  * or synced: a restarted server starts empty, and its first write per title
@@ -14,6 +15,7 @@
 
 import type { Database } from "bun:sqlite";
 import { againNow, stepSeconds, type LastTick } from "./stats-step";
+import type { ProgressRow } from "./sync-record";
 
 /** Each title's last position write, keyed by `tickKey`. */
 export type Ticks = Map<string, LastTick>;
@@ -35,12 +37,37 @@ export function localDay(ms: number): string {
  */
 export const utcOffsetMinutes = (ms: number) => 0 - new Date(ms).getTimezoneOffset();
 
-export const UPSERT_PROGRESS = `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
+const UPSERT_PROGRESS = `INSERT INTO progress(profile_id, set_id, at_seconds, duration, updated_at)
   VALUES (?1, ?2, ?3, ?4, ?5)
   ON CONFLICT(profile_id, set_id) DO UPDATE SET
     at_seconds = excluded.at_seconds,
     duration = excluded.duration,
     updated_at = excluded.updated_at`;
+
+/** This profile's positions, as the sync record carries them. */
+export function exportProgress(db: Database | null, profileId: string): ProgressRow[] {
+  return (db
+    ?.query("SELECT set_id AS setId, at_seconds AS at, duration, updated_at AS updatedAt FROM progress WHERE profile_id = ?1")
+    .all(profileId) ?? []) as ProgressRow[];
+}
+
+/** Takes in the merged positions, corrective like everything `importMerged`
+ * calls, and answers how many it changed. */
+export function importProgress(db: Database, profileId: string, rows: ProgressRow[]): number {
+  let changed = 0;
+  for (const row of rows) {
+    const standing = db
+      .query("SELECT at_seconds AS at, duration, updated_at AS updatedAt FROM progress WHERE profile_id = ?1 AND set_id = ?2")
+      .get(profileId, row.setId) as Omit<ProgressRow, "setId"> | null;
+    // The merge already broke equal-time ties by device. Keep strictly
+    // newer local news, but apply a changed winner with the same clock.
+    if (standing !== null && (standing.updatedAt > row.updatedAt ||
+      (standing.updatedAt === row.updatedAt && standing.at === row.at && standing.duration === row.duration))) continue;
+    db.query(UPSERT_PROGRESS).run(profileId, row.setId, row.at, row.duration, row.updatedAt);
+    changed += 1;
+  }
+  return changed;
+}
 
 // `started_at` is written once, by the insert; `again_at` only ever moves
 // forward to a later restart, never back to null. `updated_at` never moves

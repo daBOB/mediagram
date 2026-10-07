@@ -21,6 +21,7 @@ import catalog.filmOverviewFacts
 import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.similarTo
+import data.PortraitRequestLog
 import data.ProgressPoint
 import data.ResumePoint
 import designsystem.Spacing
@@ -30,6 +31,8 @@ import model.WatchSnapshot
 import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
+import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.rememberTitleCredits
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
@@ -44,10 +47,8 @@ private val POSTER_WIDTH = 120.dp
  * provider entry, and a library assembled without a TMDB key has no rows at
  * all. Every block it would fill is left out instead of being shown empty.
  *
- * Every parameter beyond [set]/[info]/[onPlay]/[onOpenGenre] defaults to
- * something inert, so a caller not yet wired for credits, franchises or a
- * person page keeps compiling — a real `titleCredits`/`fetchPortrait`/
- * watchlist-toggle wiring is what turns the Cast tab and "My List" pill on.
+ * Parameters past [onOpenGenre] default to inert values so a test composes
+ * the page with only what it checks; `LibraryTitleBranches` wires every one.
  */
 @Composable
 fun TitleDetailScreen(
@@ -65,7 +66,7 @@ fun TitleDetailScreen(
     onToggleWatchlist: () -> Unit = {},
     titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
     fetchPortrait: suspend (Long) -> String? = { null },
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     preload: TitlePreloadUi? = null,
 ) {
     val resumeAt =
@@ -131,7 +132,7 @@ fun TitleDetailScreen(
         TitleTabs(labels, modifier = Modifier.padding(top = Spacing.small)) { tab ->
             Box(modifier = Modifier.padding(Spacing.large)) {
                 when (tab) {
-                    "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)
+                    "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
                     "Similar" -> FilmSimilarTab(set, watch, shelves, onOpenTitle)
                     "Details" -> FactSheet(factRows(filmDetailFacts(set)))
                     else -> FilmOverviewTab(set, info, franchise, onOpenGenre, onOpenFranchise)

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readlink, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../src/package/catalog-versions";
+import { cleanupCatalogDirectory, removeOtherVersions, swapCurrent } from "../src/catalog/catalog-versions";
 
 let root: string;
 beforeEach(async () => {

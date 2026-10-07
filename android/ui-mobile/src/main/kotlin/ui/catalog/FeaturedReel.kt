@@ -42,6 +42,7 @@ import catalog.stepFrom
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import model.MediaSet
+import ui.common.catalog.rememberTitleInfo
 import uniffi.mediagram_core.TitleInfo
 
 /** How long a slide holds before the next — the web's `HOLD_MS`. */

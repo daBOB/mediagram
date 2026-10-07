@@ -1,5 +1,5 @@
 use mlib_spec::caption_codec::{CAPTION_BUDGET, MARKER};
-use mlib_spec::{Caption, Episode, Kind, Part, ProviderIds, parse, to_text};
+use mlib_spec::{Caption, CaptionError, Episode, Kind, Part, ProviderIds, parse, to_text};
 
 fn movie() -> Caption {
     Caption {
@@ -78,6 +78,24 @@ fn roundtrip_all_kinds_with_human_lines_and_crlf() {
         assert_eq!(parse(&text).unwrap(), c);
         assert_eq!(parse(&text.replace('\n', "\r\n")).unwrap(), c);
     }
+}
+
+/// A caption from a newer uploader still ends in the human line every part
+/// carries; its set id must be readable past that line, or a resume cannot
+/// tell that the part is already in the channel.
+#[test]
+fn a_newer_rendered_caption_still_names_its_set() {
+    let text = to_text(&movie(), "Dune human line")
+        .unwrap()
+        .replacen(MARKER, "#mlib v=99", 1);
+    assert!(matches!(
+        parse(&text),
+        Err(CaptionError::UnsupportedVersion(_))
+    ));
+    assert_eq!(
+        mlib_spec::caption_codec::set_id_any_version(&text).as_deref(),
+        Some("01JQ8F2K9M4XZ")
+    );
 }
 
 #[test]

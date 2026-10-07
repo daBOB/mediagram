@@ -13,16 +13,13 @@ use super::get;
 /// kind is keyed `tv`, so a series key reads back as `Kind::Ep` and finds the
 /// same row any of them would.
 pub fn title_of(poster_key: &str) -> Option<(Kind, u64)> {
-    if !mlib_spec::package::poster_key_is_valid(poster_key) {
-        return None;
-    }
-    let (kind, id) = poster_key.strip_prefix("tmdb-")?.split_once('-')?;
+    let (kind, id) = mlib_spec::package::tmdb_title_of(poster_key)?;
     let kind = match kind {
         "movie" => Kind::Movie,
         "tv" => Kind::Ep,
         _ => return None,
     };
-    Some((kind, id.parse().ok()?))
+    Some((kind, id))
 }
 
 /// The entry for the title a poster key names.
@@ -32,3 +29,7 @@ pub fn read(conn: &Connection, poster_key: &str) -> rusqlite::Result<Option<Titl
         None => Ok(None),
     }
 }
+
+#[cfg(test)]
+#[path = "poster_key_tests.rs"]
+mod tests;

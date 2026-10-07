@@ -175,7 +175,7 @@ function required(name: string): string {
 export const DEFAULT_MAX_BITRATE = 8_000_000;
 
 export function load(): Config {
-  const addr = process.env.MEDIAGRAM_PLAYER_ADDR ?? "127.0.0.1:8770";
+  const addr = process.env.MEDIAGRAM_PLAYER_ADDR || "127.0.0.1:8770";
   // Both, or neither: a URL without a key cannot open anything, so a
   // half-configured package reads the local index rather than serving nothing.
   const fromPackage =
@@ -193,48 +193,48 @@ export function load(): Config {
     libraryDb: fromPackage
       ? (process.env.MEDIAGRAM_LIBRARY_DB || null)
       : required("MEDIAGRAM_LIBRARY_DB"),
-    cacheDir: process.env.MEDIAGRAM_CACHE_DIR ?? `${process.env.HOME}/.cache/mediagram-player`,
-    cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX ?? "8G"),
-    cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD ?? "4"),
-    transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR ?? `${process.env.HOME}/.cache/mediagram-hls`,
+    cacheDir: process.env.MEDIAGRAM_CACHE_DIR || `${process.env.HOME}/.cache/mediagram-player`,
+    cacheMaxBytes: parseSize(process.env.MEDIAGRAM_CACHE_MAX || "8G"),
+    cacheReadahead: Number(process.env.MEDIAGRAM_CACHE_READAHEAD || "4"),
+    transcodeDir: process.env.MEDIAGRAM_TRANSCODE_DIR || `${process.env.HOME}/.cache/mediagram-hls`,
     stateDb:
-      process.env.MEDIAGRAM_STATE_DB ??
+      process.env.MEDIAGRAM_STATE_DB ||
       `${process.env.HOME}/.local/share/mediagram-player/state.db`,
-    thumbsDir: process.env.MEDIAGRAM_THUMBS_DIR ?? `${process.env.HOME}/.cache/mediagram-thumbs`,
+    thumbsDir: process.env.MEDIAGRAM_THUMBS_DIR || `${process.env.HOME}/.cache/mediagram-thumbs`,
     syncState: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_SYNC_STATE ?? ""),
     // Five minutes: often enough that moving from one machine to another feels
     // immediate, rare enough that a player left open all day is not a burst of
     // uploads. Nothing is sent when nothing changed, so an idle player is
     // quiet however short this is.
-    syncEveryMs: Math.max(60_000, Number(process.env.MEDIAGRAM_SYNC_EVERY_MS ?? 300_000)),
-    transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE ?? String(DEFAULT_MAX_BITRATE)),
+    syncEveryMs: Math.max(60_000, Number(process.env.MEDIAGRAM_SYNC_EVERY_MS) || 300_000),
+    transcodeMaxrate: parseSize(process.env.MEDIAGRAM_TRANSCODE_MAXRATE || String(DEFAULT_MAX_BITRATE)),
     packageUrl: process.env.MEDIAGRAM_PACKAGE_URL || null,
     packageKey: process.env.MEDIAGRAM_PACKAGE_KEY || null,
     catalogDir:
-      process.env.MEDIAGRAM_CATALOG_DIR ?? `${process.env.HOME}/.cache/mediagram-catalog`,
+      process.env.MEDIAGRAM_CATALOG_DIR || `${process.env.HOME}/.cache/mediagram-catalog`,
     channelIndexDir:
-      process.env.MEDIAGRAM_CHANNEL_INDEX_DIR ?? `${process.env.HOME}/.cache/mediagram-channel-index`,
+      process.env.MEDIAGRAM_CHANNEL_INDEX_DIR || `${process.env.HOME}/.cache/mediagram-channel-index`,
     postersCommand: process.env.MEDIAGRAM_POSTERS_COMMAND || "mediagram",
     trustProxy: /^(1|true|yes)$/i.test(process.env.MEDIAGRAM_TRUST_PROXY ?? ""),
     seriesPreload: !/^(0|false|no|off)$/i.test(process.env.MEDIAGRAM_SERIES_PRELOAD ?? ""),
     hostname: addr.slice(0, colon) || "127.0.0.1",
     port: Number(addr.slice(colon + 1)),
     telegramFilePath:
-      process.env.MEDIAGRAM_TELEGRAM_FILE ??
+      process.env.MEDIAGRAM_TELEGRAM_FILE ||
       `${process.env.HOME}/.local/share/mediagram-player/telegram.json`,
     adminTokenPath:
-      process.env.MEDIAGRAM_ADMIN_TOKEN_PATH ??
+      process.env.MEDIAGRAM_ADMIN_TOKEN_PATH ||
       `${process.env.HOME}/.local/share/mediagram-player/admin-token`,
     channelCatalogDir:
-      process.env.MEDIAGRAM_CHANNEL_CATALOG_DIR ?? `${process.env.HOME}/.cache/mediagram-channel-catalog`,
+      process.env.MEDIAGRAM_CHANNEL_CATALOG_DIR || `${process.env.HOME}/.cache/mediagram-channel-catalog`,
   };
 }
 
 /**
- * Safe to print: everything except the two secrets. Used by startup logging,
- * which must never be the thing that leaks a session.
+ * Safe to print: the operational settings, with the three secrets (apiHash,
+ * session, packageKey) redacted. Used by startup logging, which must never leak one.
  */
-export function describe(config: Config): Record<string, unknown> {
+export function redactedConfig(config: Config): Record<string, unknown> {
   return {
     apiId: config.apiId,
     apiHash: "<redacted>",

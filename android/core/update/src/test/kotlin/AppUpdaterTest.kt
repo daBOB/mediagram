@@ -2,16 +2,17 @@ package update
 
 import android.content.pm.PackageInstaller
 import data.CoreProvider
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.AppRelease
+import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import java.io.File
 import java.nio.file.Files
@@ -29,7 +30,7 @@ class AppUpdaterTest {
     private suspend fun updater(
         handle: String? = "library",
         enabled: Boolean = true,
-        provider: CoreProvider = ResolvedCoreProvider(core),
+        provider: CoreProvider = FakeCoreProvider(core),
     ): AppUpdater {
         val settings = InMemoryLibrarySettings().apply { handle?.let { write(it) } }
         return AppUpdater(
@@ -87,13 +88,14 @@ class AppUpdaterTest {
             assertEquals(UpdateStatus.Ready("0.93.0"), updater.status.value)
         }
 
+    /** The row says what the core said: for a signed-out device, that it was signed out. */
     @Test
     fun aFailedDownloadSaysWhyAndInstallsNothing() =
         runTest {
-            core.downloadFailure = IllegalStateException("no network")
+            core.downloadFailure = CoreException.NotAuthorized("this device was signed out of Telegram")
             val updater = updater()
             updater.checkAndDownload()
-            assertEquals(UpdateStatus.Failed("no network"), updater.status.value)
+            assertEquals(UpdateStatus.Failed("this device was signed out of Telegram"), updater.status.value)
             updater.installIfReady()
             assertTrue(installer.installed.isEmpty())
         }
@@ -122,12 +124,12 @@ class AppUpdaterTest {
     fun aCoreThatCannotBeBuiltFailsTheCheckInsteadOfCrashing() =
         runTest {
             val broken =
-                object : CoreProvider by ResolvedCoreProvider(core) {
+                object : CoreProvider by FakeCoreProvider(core) {
                     override suspend fun coreOrNull(): CoreInterface? = throw IllegalStateException("no core")
                 }
             val updater = updater(provider = broken)
             updater.checkAndDownload()
-            assertEquals(UpdateStatus.Failed("no core"), updater.status.value)
+            assertEquals(UpdateStatus.Failed("the update check did not finish"), updater.status.value)
         }
 
     @Test
@@ -137,7 +139,7 @@ class AppUpdaterTest {
             val updater = updater()
             updater.checkAndDownload()
             updater.installIfReady()
-            assertEquals(UpdateStatus.Failed("session failed"), updater.status.value)
+            assertEquals(UpdateStatus.Failed("the installer did not take the download"), updater.status.value)
             assertTrue(!File(dir, "93000.apk").exists())
             updater.installIfReady()
             assertEquals(1, installer.attempts)
@@ -188,7 +190,7 @@ class AppUpdaterTest {
             core.downloadFailure = IllegalStateException("no network")
             updater.now = { 5_000_000L }
             updater.checkAndDownload()
-            assertEquals(UpdateStatus.Failed("no network"), updater.status.value)
+            assertEquals(UpdateStatus.Failed("the update check did not finish"), updater.status.value)
             updater.installIfReady()
             assertTrue(installer.installed.isEmpty())
         }

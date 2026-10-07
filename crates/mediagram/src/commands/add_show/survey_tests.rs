@@ -1,13 +1,13 @@
 use super::*;
-use crate::media::test_fixtures;
+use crate::test_fakes::media::{ffmpeg_required, make_faststart_mp4};
 
 #[tokio::test]
 async fn probing_a_season_keeps_only_files_needing_conversion_in_input_order() {
-    if !test_fixtures::ffmpeg_required("show conversion survey") {
+    if !ffmpeg_required("show conversion survey") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
-    let playable = test_fixtures::make_faststart_mp4(dir.path());
+    let playable = make_faststart_mp4(dir.path());
     let blocked = dir.path().join("Show.S01E02.mkv");
     let status = tokio::process::Command::new("ffmpeg")
         .args(["-v", "error", "-y", "-i"])

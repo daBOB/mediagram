@@ -8,8 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Asks the UI layer to move to a different title, and the gate a countdown's
- * own switch waits on before it may actually start — split out of
- * [UpNextController] to keep that file under the project's line guideline.
+ * own switch waits on before it may actually start.
  *
  * Never opens the title itself: only the UI layer holds `LibraryPositions`,
  * and a switch that reopened the title through the handle without moving

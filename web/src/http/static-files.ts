@@ -5,6 +5,7 @@ import { join, normalize } from "node:path";
 import type { PlayerRequest, PlayerResponse } from "./contracts";
 import { negotiatedResponse } from "./compression";
 import { bodiless } from "../response";
+import { errorCode } from "../failure-message";
 
 /** The page and its script, served from `web/public`. */
 const PUBLIC_DIR = new URL("../../public/", import.meta.url).pathname;
@@ -61,7 +62,7 @@ function staticFile(urlPath: string): { body: Uint8Array; type: string } | null 
     const type = CONTENT_TYPES[resolved.slice(dot)] ?? "application/octet-stream";
     return { body: new Uint8Array(readFileSync(resolved)), type };
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
+    const code = errorCode(error);
     if (code === "ENOENT" || code === "ENOTDIR" || code === "EISDIR") return null;
     throw error;
   }

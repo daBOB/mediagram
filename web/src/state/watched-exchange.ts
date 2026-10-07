@@ -62,8 +62,7 @@ export function exportWatched(
  * standing check below decides whether the mark itself is written — the
  * position's fate and the mark's are not the same question.
  */
-export function importWatched(db: Database | null, profileId: string, rows: WatchedRow[]): number {
-  if (!db) return 0;
+export function importWatched(db: Database, profileId: string, rows: WatchedRow[]): number {
   let changed = 0;
   for (const row of rows) {
     changed += db
@@ -86,8 +85,7 @@ export function importWatched(db: Database | null, profileId: string, rows: Watc
  * supersedes a stale local position the same way a live completion's own
  * time would — `merge.ts` already decided a rewatch made since survives.
  */
-export function importUnwatched(db: Database | null, profileId: string, rows: UnwatchedRow[]): number {
-  if (!db) return 0;
+export function importUnwatched(db: Database, profileId: string, rows: UnwatchedRow[]): number {
   let changed = 0;
   for (const row of rows) {
     changed += db

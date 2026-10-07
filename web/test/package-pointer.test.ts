@@ -27,7 +27,7 @@ const GOOD = {
 };
 
 const readable = (over: Record<string, unknown> = {}) =>
-  pointerReadabilityRefusal(parsePointer(JSON.stringify({ ...GOOD, ...over })), [4]);
+  pointerReadabilityRefusal(parsePointer(JSON.stringify({ ...GOOD, ...over })), 4);
 
 describe("reading a pointer", () => {
   test("a well-formed one is accepted", () => {
@@ -51,6 +51,9 @@ describe("reading a pointer", () => {
 
   test("a format this reader does not know is refused", () => {
     expect(readable({ format: 2 })?.reason).toMatch(/format/i);
+    // An older format is just as unreadable, and calling it "newer" sent
+    // whoever read the error looking for an update that does not exist.
+    expect(readable({ format: 0 })?.reason).toBe("unsupported package format 0 (this reader reads 1)");
   });
 
   test("a cipher this format does not define is refused", () => {

@@ -13,7 +13,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.EarnedAchievement
@@ -31,13 +32,13 @@ class AchievementDotViewModelTest {
             profiles = listOf(Profile("a", "Ada"), Profile("b", "Ben"))
             chosen = "a"
         }
-    private val watch = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+    private val watch = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
     private val seen = InMemoryAchievementsSeen()
 
     private fun earned(vararg ids: String) = Achievements(earned = ids.map { EarnedAchievement(id = it, earnedAt = 1L) }, next = emptyList())
 
     /** The dot as the rail holds it: subscribed, so the reads run. */
-    private fun TestScope.dot(provider: CoreProvider = ResolvedCoreProvider(core)): StateFlow<Boolean> {
+    private fun TestScope.dot(provider: CoreProvider = FakeCoreProvider(core)): StateFlow<Boolean> {
         val model = AchievementDotViewModel(provider, watch, seen).apply { now = { Now } }
         backgroundScope.launch { model.newAchievement.collect {} }
         advanceUntilIdle()
@@ -158,7 +159,7 @@ class AchievementDotViewModelTest {
                     }
                 }
             watch.reload()
-            val dot = dot(ResolvedCoreProvider(slow))
+            val dot = dot(FakeCoreProvider(slow))
             assertTrue(dot.value)
 
             watch.chooseProfile("b")
@@ -184,7 +185,7 @@ class AchievementDotViewModelTest {
             core.achievementsByProfile = mapOf("a" to earned("films-1"))
             val flaky = Flaky()
             watch.reload()
-            val dot = dot(ResolvedCoreProvider(flaky))
+            val dot = dot(FakeCoreProvider(flaky))
             assertTrue(dot.value)
 
             flaky.failing = true
@@ -201,7 +202,7 @@ class AchievementDotViewModelTest {
             core.achievementsByProfile = mapOf("a" to earned("films-1"))
             val flaky = Flaky()
             watch.reload()
-            val model = AchievementDotViewModel(ResolvedCoreProvider(flaky), watch, seen).apply { now = { Now } }
+            val model = AchievementDotViewModel(FakeCoreProvider(flaky), watch, seen).apply { now = { Now } }
             val rail = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
             advanceUntilIdle()
             assertTrue(model.newAchievement.value)
@@ -221,7 +222,7 @@ class AchievementDotViewModelTest {
             core.achievementsByProfile = mapOf("a" to earned("films-1"), "b" to earned("streak-7"))
             val flaky = Flaky()
             watch.reload()
-            val model = AchievementDotViewModel(ResolvedCoreProvider(flaky), watch, seen).apply { now = { Now } }
+            val model = AchievementDotViewModel(FakeCoreProvider(flaky), watch, seen).apply { now = { Now } }
             val rail = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.newAchievement.collect {} }
             advanceUntilIdle()
             assertTrue(model.newAchievement.value)

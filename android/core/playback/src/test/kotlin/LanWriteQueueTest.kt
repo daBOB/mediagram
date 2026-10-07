@@ -4,8 +4,10 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import java.io.IOException
+import java.security.GeneralSecurityException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 private val SERVER = LanServer("http://192.168.1.5:7788", "192.168.1.5:7788")
@@ -165,6 +167,34 @@ class LanWriteQueueTest {
             queue.enqueue("s1", 1, 100, chunk(1))
             testScheduler.advanceUntilIdle()
             assertEquals(listOf(1L), puts.puts)
+        }
+
+    /** The encrypted token store throws a GeneralSecurityException, not an IOException, once its key is gone. */
+    @Test
+    fun anUnreadableTokenStoreNeverEscapesTheWorker() =
+        runTest {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val puts = RecordingPuts()
+            val tokenStatus = LanCacheTokenStatus()
+            var keyGone = true
+            val queue =
+                LanWriteQueue(
+                    scope = TestScope(dispatcher),
+                    dispatcher = dispatcher,
+                    client = puts,
+                    server = { SERVER },
+                    token = { if (keyGone) throw GeneralSecurityException("key invalidated") else "token" },
+                    tokenStatus = tokenStatus,
+                )
+
+            queue.enqueue("s1", 0, 100, chunk(0))
+            testScheduler.advanceUntilIdle()
+
+            keyGone = false
+            queue.enqueue("s1", 1, 100, chunk(1))
+            testScheduler.advanceUntilIdle()
+            assertEquals(listOf(1L), puts.puts)
+            assertFalse(tokenStatus.rejected.value)
         }
 
     @Test

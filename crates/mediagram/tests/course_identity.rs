@@ -179,7 +179,7 @@ fn the_summary_tells_the_user_what_to_do_about_unfinished_lessons() {
         documents: Counts::default(),
     };
 
-    let lines = summary.lines().join("\n");
+    let lines = summary.lines(Kind::Tut).join("\n");
     assert!(lines.contains("1 lesson(s) uploaded, 1 already done, 1 failed"));
     assert!(lines.contains("resume"), "{lines}");
     assert!(
@@ -204,7 +204,7 @@ fn the_summary_counts_documents_separately() {
         },
     };
 
-    let lines = summary.lines().join("\n");
+    let lines = summary.lines(Kind::Tut).join("\n");
     assert!(lines.contains("1 lesson(s) uploaded"), "{lines}");
     assert!(
         lines.contains("1 document(s) uploaded, 0 already done, 1 failed"),
@@ -227,7 +227,7 @@ fn the_dry_run_table_shows_the_id_that_identity_is_built_from() {
         lessons,
         documents: vec![],
     };
-    let table = dry_run_table("Rust Course", "rust-course", &walked).join("\n");
+    let table = dry_run_table("Rust Course", "rust-course", &walked, Kind::Tut).join("\n");
     assert!(table.contains("rust-course"));
     assert!(table.contains("Install"));
     // Folders, not chapter numbers: the numbers are made unique across a
@@ -274,4 +274,48 @@ fn a_movie_row_still_rebuilds_without_course_fields() {
     assert_eq!(rebuilt.t, Kind::Movie);
     assert_eq!(rebuilt.cid, None);
     assert_eq!(rebuilt.chap, None);
+}
+
+/// Every caption field the row mirrors, filled, survives both trips — through
+/// the row alone and through the index — so a field one of the three
+/// hand-written conversions drops fails here rather than on the channel.
+#[test]
+fn every_caption_field_survives_the_row_and_the_index() {
+    let mut caption = lesson_caption("01SET0000000000000000003", "rust-course", 3, 4);
+    caption.ids = ProviderIds {
+        tmdb: Some(603),
+        tvdb: Some(81189),
+        imdb: Some("tt0133093".into()),
+    };
+    caption.path = Some("Part One/Basics".into());
+    caption.year = Some(2021);
+    caption.e = Some(Episode::Range([4, 5]));
+    caption.abs = Some(12);
+    caption.q = Some("1080p".into());
+    caption.hdr = Some("HDR10".into());
+    caption.vcodec = Some("hevc".into());
+    caption.acodec = Some("aac".into());
+    caption.alang = vec!["deu".into(), "eng".into()];
+    caption.slang = vec!["eng".into()];
+    caption.dur = Some(1_234);
+    caption.variant = Some("Director's Cut".into());
+    let expected = Caption {
+        part: Part {
+            i: 0,
+            n: caption.part.n,
+            off: 0,
+            len: 0,
+            sha256: String::new(),
+        },
+        ..caption.clone()
+    };
+
+    let row = SetRow::from_caption(&caption, 1_700_000_000);
+    assert_eq!(row.caption_template(), expected, "through the row");
+
+    let dir = tempfile::tempdir().unwrap();
+    let conn = db::open(dir.path()).unwrap();
+    sets::insert_set(&conn, &row).unwrap();
+    let stored = sets::get_set(&conn, &caption.set).unwrap().unwrap();
+    assert_eq!(stored.caption_template(), expected, "through the index");
 }

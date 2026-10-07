@@ -2,9 +2,8 @@
 //! preferring explicit ids, then a TMDB search seeded by the filename guess,
 //! prompting only when the search is ambiguous. `--manual` bypasses TMDB.
 
-use anyhow::{Context, Result, bail};
+use anyhow::Result;
 use mediagram_tmdb::tmdb_client::TmdbApi;
-use mediagram_tmdb::tmdb_types::DetailsResponse;
 use mlib_spec::filename::{Guess, parse_filename};
 use mlib_spec::ids::normalize_imdb;
 use mlib_spec::{Episode, Kind, ProviderIds};
@@ -113,17 +112,7 @@ fn determine_kind(input: &ResolveInput, guess: &Guess) -> Kind {
 
 /// Fetches `/movie/{id}` or `/tv/{id}` with `external_ids` appended.
 pub(super) async fn fetch_details(api: &impl TmdbApi, id: u64, kind: Kind) -> Result<ResolvedItem> {
-    let path = match kind {
-        Kind::Movie => format!("/movie/{id}"),
-        Kind::Ep => format!("/tv/{id}"),
-        Kind::Tut | Kind::Doc | Kind::Docu => {
-            bail!("a course has no TMDB entry; courses are described by hand")
-        }
-    };
-    let query = [("append_to_response", "external_ids".to_string())];
-    let value = api.get_json(&path, &query).await?;
-    let details: DetailsResponse = serde_json::from_value(value)
-        .with_context(|| format!("invalid tmdb response for {path}"))?;
+    let details = mediagram_tmdb::details::details(api, kind, id).await?;
     let ext = details.external_ids.clone().unwrap_or_default();
 
     // A film is its own title; an episode's title is its show's name, and

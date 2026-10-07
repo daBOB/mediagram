@@ -1,9 +1,3 @@
-/*
- * Convention plugin for Android application modules
- * Configures: Android, Lint, Dependency Guard
- * Note: AGP 9+ has built-in Kotlin support, no need for kotlin-android plugin
- */
-
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import org.gradle.api.Plugin

@@ -1,10 +1,9 @@
 /**
- * The only file that knows what speaks MTProto.
+ * One signed-in Telegram client and the channel it reads parts from.
  *
- * Everything else in the player deals in parts, ranges and bytes. If
- * `teleproto` — a single-maintainer fork of the archived GramJS — ever needs
- * replacing, this is the file to port, along with `measured-client.ts`,
- * which is the same client subclassed to count requests.
+ * Replacing `teleproto` — a single-maintainer fork of the archived GramJS —
+ * means porting every file that imports it, in `telegram/`, `login/`,
+ * `settings/` and `channel-index/`.
  */
 
 import { Api, sessions } from "teleproto";
@@ -30,10 +29,14 @@ export function bareChannelId(chatId: number): number {
  */
 function channelOf(chatId: number, accessHash: bigint): Api.InputChannel {
   return new Api.InputChannel({
+    // teleproto types longs as big-integer, but accepts a native bigint.
     channelId: BigInt(bareChannelId(chatId)) as never,
     accessHash: accessHash as never,
   });
 }
+
+/** The account and channel `Telegram.open` connects with — all it reads of `Config`. */
+export type TelegramAccount = Pick<Config, "session" | "apiId" | "apiHash" | "chatId" | "channelAccessHash">;
 
 export class Telegram {
   private readonly media: MediaCache<Api.TypeMessageMedia>;
@@ -67,11 +70,9 @@ export class Telegram {
    * `null` covers both a `session` never set and one Telegram no longer
    * honours — neither is a reason to refuse to start: the catalog, cached
    * chunks and state on this disk are all still servable, and only an
-   * uncached read needs a live client. A caller that instead wants the old
-   * throwing behaviour (the CLI, which has nothing useful to serve without
-   * one) is `connect`, below.
+   * uncached read needs a live client.
    */
-  static async open(config: Config): Promise<Telegram | null> {
+  static async open(config: TelegramAccount): Promise<Telegram | null> {
     if (config.session === null) return null;
 
     // Unbounded: teleproto spends this budget on every reconnect too, so a cap of
@@ -93,13 +94,6 @@ export class Telegram {
     }
 
     return new Telegram(client, channelOf(config.chatId, config.channelAccessHash));
-  }
-
-  /** `open`, but a signed-out result is a startup failure rather than a mode. */
-  static async connect(config: Config): Promise<Telegram> {
-    const telegram = await Telegram.open(config);
-    if (!telegram) throw new Error("the configured session is not authorized; log in again with `bun run login`");
-    return telegram;
   }
 
   /**
@@ -187,7 +181,7 @@ export class Telegram {
    * reach `getMe` is not a reason to hide the rest of the page.
    */
   async account(): Promise<{ name: string | null; username: string | null; dcId: number | null }> {
-    const dcId = (this.client.session as unknown as { dcId?: number }).dcId ?? null;
+    const dcId = this.client.session.dcId ?? null;
     try {
       const me = await this.client.getMe();
       const user = me as { firstName?: string; lastName?: string; username?: string };

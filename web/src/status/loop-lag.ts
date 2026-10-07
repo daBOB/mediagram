@@ -8,7 +8,7 @@
 
 import { monitorEventLoopDelay } from "node:perf_hooks";
 
-/** p50, p99 and max, all in whole milliseconds. */
+/** p50, p99 and max, in milliseconds. */
 export interface LoopLagReading {
   p50: number;
   p99: number;

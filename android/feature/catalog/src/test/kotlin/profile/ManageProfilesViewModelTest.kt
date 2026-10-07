@@ -1,12 +1,12 @@
 package catalog.profile
 
-import catalog.MainDispatcherRule
 import data.DefaultWatchStateRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +31,7 @@ class ManageProfilesViewModelTest {
             roles.pins["a"] = "1234"
             roles.pins["b"] = "5678"
         }
-    private val repository = DefaultWatchStateRepository(CatalogCoreProvider(core), Dispatchers.Unconfined)
+    private val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
 
     // Lazy: the view model reaches Dispatchers.Main as it is built, and the
     // rule installs the test one only once the test itself starts.

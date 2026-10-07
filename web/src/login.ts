@@ -16,6 +16,4 @@
  */
 import { runLogin } from "./login/setup";
 
-export { runLogin };
-
 if (import.meta.main) process.exitCode = await runLogin();

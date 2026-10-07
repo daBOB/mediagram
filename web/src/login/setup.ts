@@ -1,9 +1,11 @@
 /** Credential-producing setup orchestration, with external IO supplied at its boundary. */
 import { Api, TelegramClient, sessions } from "teleproto";
 import { Logger } from "teleproto/extensions";
+import { LogLevel } from "teleproto/extensions/Logger";
 import { closeSync, fchmodSync, openSync, writeFileSync } from "node:fs";
 import { env as environment } from "node:process";
 import { sessionName } from "../telegram/session-name";
+import { failureMessage } from "../failure-message";
 import { authenticate, type LoginClient } from "./authenticate";
 import { loginPrompts, type LoginPrompts } from "./prompts";
 
@@ -53,7 +55,7 @@ export async function runLogin(
     for (const secret of secrets) if (secret) text = text.split(secret).join("[redacted]");
     io.stderr(text);
   };
-  const logger = new Logger("error" as never);
+  const logger = new Logger(LogLevel.ERROR);
   logger.log = (level, message) => {
     if (logger.canSend(level)) report(`[${level}] ${message}\n`);
   };
@@ -99,7 +101,7 @@ export async function runLogin(
         `Channels it can see: ${seen.length ? seen.join(", ") : "(none)"}\n` +
         "If the player uses a dedicated account, invite it to the channel first.\n");
     } else {
-      const session = remember(client.session.save() as unknown as string);
+      const session = remember(client.session.save() as string);
       ready = { title: found.title, settings: [
         `MEDIAGRAM_API_ID=${apiId}`, `MEDIAGRAM_API_HASH=${apiHash}`, `MEDIAGRAM_SESSION=${session}`,
         `MEDIAGRAM_CHAT_ID=${found.chatId}`, `MEDIAGRAM_CHANNEL_ACCESS_HASH=${found.accessHash}`,
@@ -114,7 +116,7 @@ export async function runLogin(
     await cleanup(() => client?.destroy());
   }
   if (failures.length) {
-    for (const error of failures) report(`\nLogin failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    for (const error of failures) report(`\nLogin failed: ${failureMessage(error)}\n`);
     return 1;
   }
   if (!ready) return 1;
@@ -128,7 +130,7 @@ export async function runLogin(
     }
     return 0;
   } catch (error) {
-    report(`\nLogin failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    report(`\nLogin failed: ${failureMessage(error)}\n`);
     return 1;
   }
 }

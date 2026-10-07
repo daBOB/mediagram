@@ -65,24 +65,10 @@ pub(crate) async fn apply_removals(
     let mut affected = 0;
     for removal in removals {
         affected += delete(removal).await?;
-        delete_rows(conn, &removal.set_id)?;
+        crate::index::lifecycle::delete_rows(conn, &removal.set_id)?;
         println!("removed {}", removal.set_id);
     }
     Ok(affected)
-}
-
-/// Removes a set's rows. `parts` and `assets` cascade from `sets`.
-///
-/// Runs after the messages are gone, so the index never claims to hold
-/// something the channel no longer has.
-pub fn delete_rows(conn: &Connection, set_id: &str) -> Result<()> {
-    conn.execute("PRAGMA foreign_keys = ON", [])
-        .context("enabling foreign keys")?;
-    conn.execute("DELETE FROM sets WHERE set_id = ?1", [set_id])
-        .with_context(|| format!("deleting the index rows of {set_id}"))?;
-    // The source path is remembered for `resume`; with the set gone it is
-    // just a stale pointer.
-    crate::index::lifecycle::forget(conn, set_id)
 }
 
 #[cfg(test)]

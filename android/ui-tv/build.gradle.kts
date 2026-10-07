@@ -32,11 +32,6 @@ dependencies {
     // whether artwork is being fetched, and what the fetch reported, needs
     // that type on the classpath, as it does for ui-mobile.
     implementation(project(":core:data"))
-    // A show's header takes the index's TitleInfo, core:rust's type, the
-    // same one ui-common's rememberTitleInfo returns. Only the bindings'
-    // types: nothing here calls into the core, which stays behind the
-    // ViewModels.
-    implementation(project(":core:rust"))
     implementation(libs.findLibrary("androidx.tv.material").get())
     implementation(libs.findLibrary("coil.compose").get())
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())

@@ -3,11 +3,10 @@
  * removal is the more recent fact, once `merge.ts`'s `keep` has already
  * picked the winner within each kind on its own.
  *
- * Split out of `merge.ts` to keep it under the line limit, and because this
- * is the one place the cross-kind rule lives: a tie goes to the removal, not
- * to a device-id tie-break. The two rows came from different devices making
- * unrelated claims about the same title, not two writes of the same kind
- * where a tie-break has to pick one consistently everywhere. Picking the
+ * This is the one place the cross-kind rule lives: a tie goes to the removal,
+ * not to a device-id tie-break. The two rows came from different devices
+ * making unrelated claims about the same title, not two writes of the same
+ * kind where a tie-break has to pick one consistently everywhere. Picking the
  * removal specifically, rather than either one arbitrarily-but-consistently,
  * is what makes an old device's unchanging live mark unable to outrun a
  * removal it will never understand — see `sync-record.ts`'s `UnwatchedRow`.

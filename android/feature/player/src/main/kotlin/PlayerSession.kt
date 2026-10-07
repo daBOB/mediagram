@@ -6,9 +6,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The ten-second save ticker and the bookkeeping of which set is open —
- * split out of [PlayerViewModel] to keep that file under the project's
- * line guideline. Knows nothing about audio, subtitles or speed; only
+ * The ten-second save ticker and the bookkeeping of which set is open.
+ * Knows nothing about audio, subtitles or speed; only
  * which set is open and when to save where playback is.
  */
 class PlayerSession(
