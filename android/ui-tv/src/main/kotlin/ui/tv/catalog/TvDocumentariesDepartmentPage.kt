@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.dp
+import catalog.Department
 import catalog.DocumentariesDepartment
 import catalog.documentariesLineOf
 import catalog.keyOf
@@ -96,7 +97,7 @@ internal fun TvDocumentariesDepartmentPage(
         ) {
             item(key = "hero") {
                 Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvDepartmentHero(title = "Documentaries", line = documentariesLineOf(dept), lead = dept.lead)
+                    TvDepartmentHero(title = Department.DOCUMENTARIES.label, line = documentariesLineOf(dept), lead = dept.lead)
                 }
             }
             item(key = "continue") {

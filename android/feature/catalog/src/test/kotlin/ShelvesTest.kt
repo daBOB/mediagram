@@ -166,7 +166,35 @@ class ShelvesTest {
             ),
         )
 
-        assertEquals(listOf("Movies", "Series", ANIME, "Documentaries"), shelves.map { it.title })
+        assertEquals(listOf(Department.MOVIES, Department.SERIES, Department.ANIME, Department.DOCUMENTARIES), shelves.map { it.department })
+    }
+
+    /** Each shelf is told apart by its department, so every one must carry the department its titles belong to. */
+    @Test
+    fun everyShelfCarriesTheDepartmentItsTitlesBelongTo() {
+        val shelves = shelvesOf(
+            listOf(
+                film("Alien"),
+                episode("30 Rock", season = 1, episode = 1, title = "Pilot"),
+                anime(Kind.MOVIE, show = null, season = null, episode = null, title = "Your Name"),
+                set(Kind.DOCUMENTARY, "Baraka"),
+                lesson("Steuerkurs", path = "Grundlagen", title = "Lektion 1"),
+            ),
+        )
+
+        val names = shelves.associate { shelf ->
+            shelf.department to shelf.entries.map { if (it is Entry.Collection) it.name else (it as Entry.Film).set.title }
+        }
+        assertEquals(
+            mapOf(
+                Department.MOVIES to listOf("Alien"),
+                Department.SERIES to listOf("30 Rock"),
+                Department.ANIME to listOf("Your Name"),
+                Department.DOCUMENTARIES to listOf("Baraka"),
+                Department.TUTORIALS to listOf("Steuerkurs"),
+            ),
+            names,
+        )
     }
 
     /** An anime title leaves Movies and Series entirely, the same exclusivity Documentaries already has. */
@@ -181,7 +209,7 @@ class ShelvesTest {
 
         assertNull(shelves.find { it.title == "Movies" })
         assertNull(shelves.find { it.title == "Series" })
-        val animeShelf = shelves.single { it.title == ANIME }
+        val animeShelf = shelves.single { it.department == Department.ANIME }
         assertEquals(2, animeShelf.entries.size)
     }
 
@@ -190,7 +218,7 @@ class ShelvesTest {
     fun anAnimeShowIsKeyedUnderItsOwnAnimePrefix() {
         val shelves = shelvesOf(listOf(anime(Kind.EPISODE, show = "Dragonball", season = 1, episode = 1, title = "One")))
 
-        val show = shelves.single { it.title == ANIME }.entries.single() as Entry.Collection
+        val show = shelves.single { it.department == Department.ANIME }.entries.single() as Entry.Collection
         assertEquals("ANIME/Dragonball", show.key)
     }
 
@@ -250,7 +278,7 @@ class ShelvesTest {
 
         val series = shelves.single { it.title == "Series" }.entries.single() as Entry.Collection
         assertEquals(1, series.count, "the documentary must not be counted as a second episode of Show A")
-        val documentaries = shelves.single { it.title == DOCUMENTARIES }
+        val documentaries = shelves.single { it.department == Department.DOCUMENTARIES }
         assertEquals(1, documentaries.entries.size)
     }
 

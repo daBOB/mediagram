@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
-import catalog.DOCUMENTARIES
+import catalog.Department
 import catalog.Entry
 import catalog.Shelf
 import catalog.allSetsById
@@ -42,7 +42,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         val shows = (0 until 13).map { i -> set("s$i", Kind.EPISODE, "Ep", show = "Show %02d".format(i), addedAt = i.toLong(), episode = 1) }
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
+        show { TvShowsDepartmentPage(Department.SERIES, dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         for (i in 0..7) {
             compose.onAllNodesWithText("Show %02d".format(i)).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Show %02d missing".format(i) } }
@@ -57,7 +57,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         val shows = listOf(lead, other)
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
+        show { TvShowsDepartmentPage(Department.SERIES, dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         compose.onNodeWithText("Lead Show").assertIsFocused()
     }
@@ -110,7 +110,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
     fun anEmptyDocumentariesWallShowsTheUploadHintRatherThanNothing() {
         show {
             DepartmentOrShelfWall(
-                shelf = Shelf(DOCUMENTARIES, emptyList()),
+                shelf = Shelf(Department.DOCUMENTARIES, emptyList()),
                 watch = WatchSnapshot.Empty,
                 heldIds = emptySet(),
                 byId = emptyMap(),
@@ -157,7 +157,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
 
         show {
             TvShowsDepartmentPage(
-                "Series", "episode", dept, WatchSnapshot.Empty,
+                Department.SERIES, dept, WatchSnapshot.Empty,
                 onOpenTitle = {}, onOpenCollection = {}, onPlay = {}, restoreKey = "SHOW/Show 2",
             )
         }

@@ -8,11 +8,10 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
-import catalog.Entry
 import catalog.EditorialPicks
-import catalog.HomeRow
+import catalog.Entry
+import catalog.Latest
 import catalog.MagazineHome
-import catalog.RowContent
 import catalog.SetCard
 import model.Kind
 import model.WatchSnapshot
@@ -34,11 +33,11 @@ import org.junit.runner.RunWith
 class TvHomeStateTest : TvScreenStateTest() {
     @Test
     fun withNoCoverArrivalLandsOnTheFirstSectionWithAnythingInIt() {
-        val series = seriesRow("A Show")
+        val series = latestSeries("A Show")
         show {
             TvHome(
                 magazine = emptyMagazine(),
-                rows = listOf(series),
+                latest = series,
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -55,11 +54,11 @@ class TvHomeStateTest : TvScreenStateTest() {
 
     @Test
     fun aRestoreKeyLandsOnThatSeriesPosterRatherThanTheDefault() {
-        val series = seriesRow("A Show", "Another Show")
+        val series = latestSeries("A Show", "Another Show")
         show {
             TvHome(
                 magazine = emptyMagazine(),
-                rows = listOf(series),
+                latest = series,
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -77,12 +76,12 @@ class TvHomeStateTest : TvScreenStateTest() {
 
     @Test
     fun aSectionArrivingAboveTheRestoredOneDoesNotPullTheRemoteBackToIt() {
-        val series = seriesRow("A Show")
+        val series = latestSeries("A Show")
         val magazine = mutableStateOf(emptyMagazine())
         show {
             TvHome(
                 magazine = magazine.value,
-                rows = listOf(series),
+                latest = series,
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -123,12 +122,12 @@ class TvHomeStateTest : TvScreenStateTest() {
     fun aReorderAfterArrivalMovesTheCardNotTheRemote() {
         val a = SetCard(set = film("a", "Card A"), caption = "", progress = 0.3f, watched = false)
         val b = SetCard(set = film("b", "Card B"), caption = "", progress = 0.3f, watched = false)
-        val series = seriesRow("A Show")
+        val series = latestSeries("A Show")
         val magazine = mutableStateOf(continueMagazine(listOf(b, a)))
         show {
             TvHome(
                 magazine = magazine.value,
-                rows = listOf(series),
+                latest = series,
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -169,7 +168,7 @@ class TvHomeStateTest : TvScreenStateTest() {
         show {
             TvHome(
                 magazine = magazine.value,
-                rows = listOf(seriesRow("A Show")),
+                latest = latestSeries("A Show"),
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -213,7 +212,7 @@ class TvHomeStateTest : TvScreenStateTest() {
         show {
             TvHome(
                 magazine = magazine.value,
-                rows = listOf(seriesRow("A Show")),
+                latest = latestSeries("A Show"),
                 watch = WatchSnapshot.Empty,
                 listState = rememberLazyListState(),
                 onPlay = {},
@@ -243,30 +242,30 @@ class TvHomeStateTest : TvScreenStateTest() {
             editorial = EditorialPicks(cover = emptyList(), features = emptyList(), quote = null, thisMonth = emptyList()),
             resumeCards = cards,
             recentlyAdded = emptyList(),
-            recentlyAddedRow = HomeRow(title = "Recently added", seeAll = "Movies", total = 0, content = RowContent.Entries(emptyList())),
+            recentlyAddedTotal = 0,
         )
 
     private fun emptyMagazine() = continueMagazine(emptyList())
 
-    private fun seriesRow(vararg names: String) =
-        HomeRow(
-            title = "Latest series",
-            seeAll = "Series",
-            total = names.size,
-            content =
-                RowContent.Entries(
-                    names.map { name ->
-                        Entry.Collection(
-                            key = "show-${name.lowercase().replace(" ", "-")}",
-                            kind = catalog.CollectionKind.SHOW,
-                            name = name,
-                            posterPath = null,
-                            posterKey = null,
-                            count = 1,
-                            chapters = 1,
-                            divisions = emptyList(),
-                        )
-                    },
-                ),
+    private fun latestSeries(vararg names: String) =
+        Latest(
+            movies = emptyList(),
+            series =
+                names.map { name ->
+                    Entry.Collection(
+                        key = "show-${name.lowercase().replace(" ", "-")}",
+                        kind = catalog.CollectionKind.SHOW,
+                        name = name,
+                        posterPath = null,
+                        posterKey = null,
+                        count = 1,
+                        chapters = 1,
+                        divisions = emptyList(),
+                    )
+                },
+            courses = emptyList(),
+            moviesTotal = 0,
+            seriesTotal = names.size,
+            coursesTotal = 0,
         )
 }

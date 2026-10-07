@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import catalog.Department
 import catalog.Entry
 import catalog.GenreIndexEntry
 import catalog.MoviesDepartment
@@ -74,7 +75,7 @@ internal fun MoviesDepartmentScreen(
     LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
             DepartmentHero(
-                title = "Movies",
+                title = Department.MOVIES.label,
                 line = moviesLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,

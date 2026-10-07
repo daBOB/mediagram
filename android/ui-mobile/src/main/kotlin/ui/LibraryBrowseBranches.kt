@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
+import catalog.Department
 import catalog.Destination
 import catalog.Entry
 import catalog.ShelfViewModel
@@ -118,7 +119,7 @@ internal fun MoviesPageFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.title == "Movies" }
+    val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.department == Department.MOVIES }
     LibraryBranch(Destination.MoviesPage, menuActions, profileBar, browse, at, at::pop) {
         if (shelf == null) {
             CenteredMessage("Loading your library…")

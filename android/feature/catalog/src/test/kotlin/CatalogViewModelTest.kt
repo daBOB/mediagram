@@ -746,7 +746,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                val documentaries = kidsView.shelves.single { it.title == DOCUMENTARIES }
+                val documentaries = kidsView.shelves.single { it.department == Department.DOCUMENTARIES }
                 assertEquals(emptyList(), documentaries.entries)
             }
         }
@@ -772,7 +772,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                assertNull(kidsView.shelves.find { it.title == ANIME }, "Anime is omitted at zero, the same as Movies/Series/Tutorials")
+                assertNull(kidsView.shelves.find { it.department == Department.ANIME }, "Anime is omitted at zero, the same as Movies/Series/Tutorials")
             }
         }
 
@@ -791,7 +791,7 @@ class CatalogViewModelTest {
             vm.state.test {
                 awaitItem()
                 val kidsView = awaitItem() as CatalogUiState.Ready
-                val animeIds = kidsView.shelves.single { it.title == ANIME }.entries.filterIsInstance<Entry.Film>().map { it.set.setId }
+                val animeIds = kidsView.shelves.single { it.department == Department.ANIME }.entries.filterIsInstance<Entry.Film>().map { it.set.setId }
                 assertEquals(setOf("Kids Anime"), animeIds.toSet())
             }
         }

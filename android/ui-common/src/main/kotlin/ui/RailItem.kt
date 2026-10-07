@@ -1,5 +1,7 @@
 package ui
 
+import catalog.CatalogTab
+import catalog.KeptKind
 import com.mediagram.android.core.designsystem.R
 
 /**
@@ -18,3 +20,15 @@ enum class RailItem(val label: String, val icon: Int) {
     SETTINGS("Settings", R.drawable.core_designsystem_ic_rail_settings),
     SYSTEM("System", R.drawable.core_designsystem_ic_settings_system),
 }
+
+/** The rail row [tab] is, on both surfaces: Continue and My List are rail rows rather than pills, and every other tab has none. */
+fun railItemOf(tab: CatalogTab): RailItem? =
+    when (tab) {
+        is CatalogTab.Kept ->
+            when (tab.kind) {
+                KeptKind.CONTINUE -> RailItem.CONTINUE_WATCHING
+                KeptKind.WATCHLIST -> RailItem.MY_LIST
+                KeptKind.COLLECTIONS -> null
+            }
+        CatalogTab.Home, is CatalogTab.Dept -> null
+    }

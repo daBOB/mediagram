@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import catalog.CategoryRow
 import catalog.CollectionKind
+import catalog.Department
 import catalog.Division
 import catalog.Entry
 import catalog.ShowsDepartment
@@ -74,7 +75,7 @@ class ShowsDepartmentScreenTest {
         )
 
     private fun render(
-        label: String,
+        dept: Department,
         department: ShowsDepartment,
         onPlay: (String) -> Unit = {},
         onOpenTitle: (String) -> Unit = {},
@@ -85,7 +86,7 @@ class ShowsDepartmentScreenTest {
             controller.get().setContent {
                 MaterialTheme {
                     ShowsDepartmentScreen(
-                        label = label, unit = if (label == "Series") "episode" else "lesson",
+                        dept = dept,
                         department = department, watch = WatchSnapshot.Empty, heldIds = emptySet(), columns = 3,
                         onOpenTitle = onOpenTitle, onOpenCollection = onOpenCollection, onPlay = onPlay,
                     )
@@ -99,7 +100,7 @@ class ShowsDepartmentScreenTest {
         var played: String? = null
         var opened: String? = null
         render(
-            "Series",
+            Department.SERIES,
             department(Underway(listOf(ep("s1")), emptyList(), 1, 0)),
             onPlay = { played = it },
             onOpenTitle = { opened = it },
@@ -111,7 +112,7 @@ class ShowsDepartmentScreenTest {
     @Test fun aCategoryRowDrawsItsHeadingAndOpensItsCourseOnTap() {
         var opened: String? = null
         render(
-            "Tutorials",
+            Department.TUTORIALS,
             department(
                 Underway(emptyList(), emptyList(), 0, 0),
                 categories = listOf(CategoryRow("Trading", listOf(course("Forex", "Trading")))),
@@ -124,7 +125,7 @@ class ShowsDepartmentScreenTest {
     }
 
     @Test fun noCategoryHeadingDrawsWhenNothingIsFiled() {
-        render("Tutorials", department(Underway(emptyList(), emptyList(), 0, 0)))
+        render(Department.TUTORIALS, department(Underway(emptyList(), emptyList(), 0, 0)))
         compose.onAllNodes(hasText("Other")).assertCountEquals(0)
     }
 
@@ -135,7 +136,7 @@ class ShowsDepartmentScreenTest {
      */
     @Test fun allShowsKeepsThePagesSideGutterWithEveryPlateOneWidth() {
         val shows = listOf("A", "B", "C").map { name -> course(name, null).copy(key = "SHOW/$name", kind = CollectionKind.SHOW) }
-        render("Series", department(Underway(emptyList(), emptyList(), 0, 0)).copy(all = shows))
+        render(Department.SERIES, department(Underway(emptyList(), emptyList(), 0, 0)).copy(all = shows))
 
         val plates = shows.map { compose.onNode(hasText(it.name) and hasClickAction()).getUnclippedBoundsInRoot() }
         assertEquals(16f, plates.first().left.value, 0.5f)
@@ -150,7 +151,7 @@ class ShowsDepartmentScreenTest {
     @Test fun allCoursesIsAListOfRowsAcrossThePage() {
         var opened: String? = null
         render(
-            "Tutorials",
+            Department.TUTORIALS,
             department(Underway(emptyList(), emptyList(), 0, 0)).copy(all = listOf(course("Forex", null))),
             onOpenCollection = { opened = it },
         )

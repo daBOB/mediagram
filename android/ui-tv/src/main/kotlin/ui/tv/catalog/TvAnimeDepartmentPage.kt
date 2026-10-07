@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.AnimeDepartment
+import catalog.Department
 import catalog.Entry
 import catalog.animeLineOf
 import catalog.keyOf
@@ -79,7 +80,7 @@ internal fun TvAnimeDepartmentPage(
                 header = {
                     Column {
                         Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                            TvDepartmentHero(title = "Anime", line = animeLineOf(dept), lead = dept.lead)
+                            TvDepartmentHero(title = Department.ANIME.label, line = animeLineOf(dept), lead = dept.lead)
                         }
                         Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.medium)) {
                             DeptResumeRow(

@@ -6,9 +6,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
-import catalog.ANIME
-import catalog.CatalogTabs
-import catalog.DOCUMENTARIES
+import catalog.CatalogTab
+import catalog.Department
 import catalog.Shelf
 import catalog.heroArtOf
 import designsystem.Backdrop
@@ -33,8 +32,7 @@ import ui.tv.chrome.TvDepartmentsBarHeight
  */
 @Composable
 internal fun rememberTvCatalogBlend(
-    selected: Int,
-    tabs: CatalogTabs,
+    selected: CatalogTab,
     shelves: List<Shelf>,
     byId: Map<String, MediaSet>,
     watch: WatchSnapshot?,
@@ -42,20 +40,20 @@ internal fun rememberTvCatalogBlend(
     homeHasCover: Boolean,
     deptScroll: TvDepartmentScrollStates,
 ): Float {
-    // The department this tab is (`null` on Home, a kept wall, Collections,
-    // or a plain shelf with no front page) — the one thing [heroArtOf] and
-    // [deptScroll] both need to tell whether *this* tab's own hero, not
-    // Home's cover, is what the bar should bleed under.
-    val activeShelfTitle = remember(shelves, selected, tabs) { shelves.getOrNull(selected - 1)?.title.takeIf { selected in 1 until tabs.firstKept } }
+    // The department this tab is (`null` on Home, a kept wall or
+    // Collections) — the one thing [heroArtOf] and [deptScroll] both need to
+    // tell whether *this* tab's own hero, not Home's cover, is what the bar
+    // should bleed under.
+    val department = (selected as? CatalogTab.Dept)?.department
     val soldOut = LocalBackdrop.current == Backdrop.SOLID
     val hasHeroArt =
-        remember(shelves, byId, watch, activeShelfTitle, soldOut) {
-            !soldOut && activeShelfTitle != null && heroArtOf(activeShelfTitle, shelves, byId, watch ?: WatchSnapshot.Empty) != null
+        remember(shelves, byId, watch, department, soldOut) {
+            !soldOut && department != null && heroArtOf(department, shelves, byId, watch ?: WatchSnapshot.Empty) != null
         }
     val density = LocalDensity.current
     val barHeightPx = remember(density) { with(density) { (TvDepartmentsBarHeight + Overscan.vertical).toPx() } }
     val deptHeroHeightPx = remember(density) { with(density) { TvDepartmentHeroHeight.toPx() } }
-    val blend by remember(homeHasCover, activeShelfTitle, hasHeroArt) {
+    val blend by remember(selected, homeHasCover, hasHeroArt) {
         derivedStateOf {
             // A department's own hero is always this one fixed height —
             // unlike Home's cover, nothing here ever measures it live.
@@ -63,17 +61,17 @@ internal fun rememberTvCatalogBlend(
                 if (!hasHeroArt) {
                     null
                 } else {
-                    when (activeShelfTitle) {
-                        "Movies" -> deptScroll.movies.firstVisibleItemIndex to deptScroll.movies.firstVisibleItemScrollOffset
-                        "Series" -> deptScroll.series.firstVisibleItemIndex to deptScroll.series.firstVisibleItemScrollOffset
-                        ANIME -> deptScroll.anime.firstVisibleItemIndex to deptScroll.anime.firstVisibleItemScrollOffset
-                        "Tutorials" -> deptScroll.tutorials.firstVisibleItemIndex to deptScroll.tutorials.firstVisibleItemScrollOffset
-                        DOCUMENTARIES -> deptScroll.documentaries.firstVisibleItemIndex to deptScroll.documentaries.firstVisibleItemScrollOffset
-                        else -> null
+                    when (department) {
+                        Department.MOVIES -> deptScroll.movies.firstVisibleItemIndex to deptScroll.movies.firstVisibleItemScrollOffset
+                        Department.SERIES -> deptScroll.series.firstVisibleItemIndex to deptScroll.series.firstVisibleItemScrollOffset
+                        Department.ANIME -> deptScroll.anime.firstVisibleItemIndex to deptScroll.anime.firstVisibleItemScrollOffset
+                        Department.TUTORIALS -> deptScroll.tutorials.firstVisibleItemIndex to deptScroll.tutorials.firstVisibleItemScrollOffset
+                        Department.DOCUMENTARIES -> deptScroll.documentaries.firstVisibleItemIndex to deptScroll.documentaries.firstVisibleItemScrollOffset
+                        null -> null
                     }
                 }
             when {
-                selected == 0 && homeHasCover -> {
+                selected == CatalogTab.Home && homeHasCover -> {
                     val hero = homeListState.asHeroListState()
                     coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx)
                 }

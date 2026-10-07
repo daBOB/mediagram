@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -19,17 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.ChromeCounts
 import catalog.HOME_POSTER_ROW_LIMIT
+import catalog.KeptKind
 import catalog.allSetsById
-import catalog.catalogTabsOf
+import catalog.catalogTabOf
 import catalog.chromeCountsOf
 import catalog.hasContent
-import catalog.homeRowsOf
 import catalog.libraryTallyLines
 import catalog.magazineHomeOf
-import catalog.mastheadSplitOf
+import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
 import designsystem.Spacing
 import designsystem.TvTypeScale
@@ -98,44 +99,32 @@ fun TvCatalogScreen(
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.hasContent() }
     val shelves = ready?.shelves.orEmpty()
-    // Ordering, index-to-tab mapping and the labels themselves are
-    // catalogTabsOf's, the same function the phone's chrome reads — the
-    // full 8-wide index space (Home, shelves, Continue, Watchlist,
-    // Collections) that `chosen` still lives in, unchanged by the
-    // department split below: only what the bar *draws* narrows, not what
-    // a tab index means.
-    val tabs = remember(shelves) { catalogTabsOf(shelves) }
-    // What the bar itself draws — departments only: Continue and Watchlist
-    // are the rail's own two kept rows now, chosen directly rather than
-    // through a sentinel restore key; Collections moves from the third
-    // kept tab into the department row's own last entry.
-    val masthead = remember(shelves) { mastheadSplitOf(shelves) }
+    // What the bar draws — Home, the departments, Collections — the same
+    // function the phone's chrome reads. Continue and My List are the
+    // rail's own two rows, chosen directly rather than through a pill.
+    val mastheadTabs = remember(shelves) { mastheadTabsOf(shelves) }
     // Every set on any shelf, by id — a Continue/Popular row on a
     // department front page resolves a progress row to its set before
     // narrowing to one kind, and a progress row can name a set of any kind.
     val byId = remember(shelves) { allSetsById(shelves) }
-    val continueIndex = tabs.firstKept
-    val watchlistIndex = tabs.firstKept + 1
-    val collectionsIndex = tabs.firstKept + 2
-    var chosen by rememberSaveable { mutableIntStateOf(0) }
-    // A refresh can return a library with fewer shelves than the one that
-    // was on screen when it started.
-    val selected = chosen.coerceIn(0, tabs.titles.lastIndex)
-    val choose = { index: Int ->
-        if (index != selected) {
-            chosen = index
+    // Saved by key, not by position: a refresh can return a library with
+    // more or fewer departments than the one on screen when it started,
+    // which moves every later tab, and a saved position would then reopen
+    // on whichever tab now sits there. A department the refresh dropped
+    // opens Home.
+    var chosenKey by rememberSaveable { mutableStateOf(CatalogTab.Home.key) }
+    val selected = catalogTabOf(chosenKey, shelves)
+    val choose = { tab: CatalogTab ->
+        if (tab != selected) {
+            chosenKey = tab.key
             onTabChanged()
         }
     }
 
     val nav =
         rememberTvCatalogRestore(
-            masthead = masthead,
+            mastheadTabs = mastheadTabs,
             selected = selected,
-            shelfCount = shelves.size,
-            collectionsIndex = collectionsIndex,
-            continueIndex = continueIndex,
-            watchlistIndex = watchlistIndex,
             ready = ready != null,
             restoreKey = restoreKey,
             choose = choose,
@@ -145,13 +134,13 @@ fun TvCatalogScreen(
     val counts = remember(shelves, ready?.watch) { ready?.let { chromeCountsOf(shelves, it.watch) } ?: ChromeCounts.Empty }
     val tally = remember(shelves) { libraryTallyLines(shelves) }
     val pills =
-        remember(masthead, counts) {
-            masthead.departments.map { title -> TvDepartmentPill(title, counts.departmentCount(title)) }
+        remember(mastheadTabs, counts) {
+            mastheadTabs.map { tab -> TvDepartmentPill(tab.label, counts.departmentCount(tab)) }
         }
     val onRailSelect: (RailItem) -> Unit = { item ->
         when (item) {
-            RailItem.MY_LIST -> choose(watchlistIndex)
-            RailItem.CONTINUE_WATCHING -> choose(continueIndex)
+            RailItem.MY_LIST -> choose(CatalogTab.Kept(KeptKind.WATCHLIST))
+            RailItem.CONTINUE_WATCHING -> choose(CatalogTab.Kept(KeptKind.CONTINUE))
             RailItem.LATEST -> onOpenLatest()
             RailItem.GENRES -> onOpenGenresIndex()
             RailItem.STATS -> onOpenStats()
@@ -167,7 +156,7 @@ fun TvCatalogScreen(
     // right on a day boundary.
     val homeMagazine =
         remember(shelves, ready?.watch, ready?.heldIds, selected) {
-            ready?.takeIf { selected == 0 }?.let {
+            ready?.takeIf { selected == CatalogTab.Home }?.let {
                 magazineHomeOf(
                     shelves,
                     it.watch,
@@ -178,19 +167,6 @@ fun TvCatalogScreen(
                 )
             }
         }
-    // The magazine header already carries Continue, Next up (as
-    // `resumeCards`) and "Recently added" over the Movies shelf — dropped
-    // here so Home never shows any of the three twice, the same filter the
-    // phone's own `CatalogScreen` applies.
-    val homeRows =
-        remember(shelves, ready?.watch, ready?.heldIds, selected) {
-            if (selected == 0 && ready != null) {
-                homeRowsOf(shelves, ready.watch, ready.heldIds, posterLimit = HOME_POSTER_ROW_LIMIT)
-                    .filterNot { it.title in setOf("Continue", "Next up", "Latest films") }
-            } else {
-                emptyList()
-            }
-        }
     val homeListState =
         rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = HomeCacheWindow, behind = HomeCacheWindow) })
     val deptScroll = rememberTvDepartmentScrollStates()
@@ -198,7 +174,6 @@ fun TvCatalogScreen(
     val blend =
         rememberTvCatalogBlend(
             selected = selected,
-            tabs = tabs,
             shelves = shelves,
             byId = byId,
             watch = ready?.watch,
@@ -256,16 +231,13 @@ fun TvCatalogScreen(
                             ready = ready,
                             shelves = shelves,
                             byId = byId,
-                            tabs = tabs,
-                            selected = selected,
-                            collectionsIndex = collectionsIndex,
+                            tab = selected,
                             wallKey = nav.wallKey,
                             railActive = nav.railActive,
                             railRowFocus = nav.chromeFocus.railRowFocus,
                             selectedPillFocus = nav.chromeFocus.selectedPillFocus,
                             homeListState = homeListState,
                             homeMagazine = homeMagazine,
-                            homeRows = homeRows,
                             deptScroll = deptScroll,
                             onOpenTitle = onOpenTitle,
                             onPlay = onPlay,

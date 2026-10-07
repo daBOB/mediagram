@@ -15,10 +15,9 @@ data class NextUpEntry(
 )
 
 /**
- * Continue and Next up, before [homeRowsOf] turns them into rows with
- * captions. Ported from the underway half of `home-shelves.js`'s
- * `homeShelves` — [homeRowsOf] owns the rest: captions, the Latest shelves,
- * and wrapping this in [HomeRow].
+ * Continue and Next up, before [resumeCardsOf] turns them into captioned
+ * cards. Ported from the underway half of `home-shelves.js`'s `homeShelves`
+ * — [latestOf] is the other half.
  */
 data class Underway(
     val continues: List<MediaSet>,

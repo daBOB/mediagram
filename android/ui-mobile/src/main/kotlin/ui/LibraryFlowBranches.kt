@@ -11,13 +11,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import catalog.CatalogTabs
+import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Destination
-import catalog.HOME
-import catalog.catalogTabsOf
+import catalog.KeptKind
+import catalog.catalogTabOf
 import catalog.libraryTallyLines
+import catalog.mastheadTabsOf
 import catalog.mediaSet
 import catalog.runFor
 import data.CatalogEnrichmentState
@@ -30,7 +31,6 @@ import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
 import ui.catalog.posterColumnsFor
 import ui.catalog.rememberDepartmentScrollStates
-import ui.catalog.visibleTabIndices
 import catalog.chromeCountsOf
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
@@ -67,30 +67,26 @@ internal fun LibraryBranches(
     val frameState = rememberSaveableStateHolder()
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)
 
-    // Which of catalogTabsOf's full index space the shelves screen shows —
-    // lifted up here (rather than kept inside CatalogScreen) so the rail's
-    // own My List/Continue rows can land on it from anywhere, the
-    // same way the web's rail-nav can. See [BrowseActions].
+    // Which tab the shelves screen shows — lifted up here (rather than kept
+    // inside CatalogScreen) so the rail's own My List/Continue rows can land
+    // on it from anywhere, the same way the web's rail-nav can. See
+    // [BrowseActions].
     //
-    // Persisted by title, not by the plain index a tab sits at: a shelf list
-    // gaining or losing a department shifts every later tab's index, and an
-    // index saved across a process restart (a rotation, or the OS reclaiming
+    // Persisted by key, not by the position a tab sits at: a shelf list
+    // gaining or losing a department shifts every later tab, and a position
+    // saved across a process restart (a rotation, or the OS reclaiming
     // memory while this task sits in recents) would then restore onto
-    // whichever tab now sits at that number rather than the one that was
-    // actually left open.
-    var chosenTabTitle by rememberSaveable { mutableStateOf(HOME) }
+    // whichever tab now sits there rather than the one that was actually
+    // left open. A key the library no longer has opens Home.
+    var chosenTabKey by rememberSaveable { mutableStateOf(CatalogTab.Home.key) }
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()
     val watch = (catalogState as? CatalogUiState.Ready)?.watch ?: WatchSnapshot.Empty
-    // firstKept, not a hand-counted offset: a shelf list gaining or losing a
-    // department must not silently point My List and Continue at
-    // the wrong tab.
-    val fullTabs = remember(shelves) { catalogTabsOf(shelves) }
-    val visible = remember(fullTabs) { visibleTabIndices(fullTabs) }
-    val chosenTab = restoredTabIndex(fullTabs, chosenTabTitle)
-    val chooseTab = { index: Int -> chosenTabTitle = fullTabs.titles.getOrElse(index) { HOME } }
+    val mastheadTabs = remember(shelves) { mastheadTabsOf(shelves) }
+    val chosenTab = catalogTabOf(chosenTabKey, shelves)
+    val chooseTab = { tab: CatalogTab -> chosenTabKey = tab.key }
     val browse = BrowseActions(
-        onMyList = { at.toCatalog(); chooseTab(fullTabs.firstKept + 1) },
-        onContinueWatching = { at.toCatalog(); chooseTab(fullTabs.firstKept) },
+        onMyList = { at.toCatalog(); chooseTab(CatalogTab.Kept(KeptKind.WATCHLIST)) },
+        onContinueWatching = { at.toCatalog(); chooseTab(CatalogTab.Kept(KeptKind.CONTINUE)) },
         onLatest = at::openLatest,
         onGenres = at::openGenresIndex,
         onStats = at::openStats,
@@ -101,7 +97,7 @@ internal fun LibraryBranches(
     // every branch below that never otherwise needs them.
     val railData =
         remember(shelves, watch, newAchievement) {
-            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chooseTab(0) }, newAchievement = newAchievement)
+            RailData(chromeCountsOf(shelves, watch), libraryTallyLines(shelves), onHome = { at.toCatalog(); chooseTab(CatalogTab.Home) }, newAchievement = newAchievement)
         }
 
     // Home's own list state, hoisted here rather than kept inside
@@ -120,8 +116,7 @@ internal fun LibraryBranches(
     // CatalogScreen's own note on `now`.
     val now = remember { System.currentTimeMillis() }
     val heldIds = catalogState.heldIdsOrEmpty()
-    val activeShelfTitle = fullTabs.titles.getOrNull(chosenTab)
-    val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, activeShelfTitle, homeListState, deptScroll)
+    val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, homeListState, deptScroll)
 
     CompositionLocalProvider(LocalRailData provides railData) {
     frameState.keyedFrame(at.frameKey, at::holdsFrameKey) {
@@ -216,8 +211,7 @@ internal fun LibraryBranches(
         // Nothing open: the shelves, under the rail/departments-bar chrome
         // rather than LibraryScaffold — see [ui.chrome.LibraryHome].
         null -> LibraryHome(
-            tabs = fullTabs,
-            visible = visible,
+            tabs = mastheadTabs,
             chosenTab = chosenTab,
             onTabChange = chooseTab,
             browse = browse,

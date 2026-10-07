@@ -19,8 +19,8 @@ data class MagazineHome(
     val editorial: EditorialPicks,
     val resumeCards: List<SetCard>,
     val recentlyAdded: List<MediaSet>,
-    /** [recentlyAdded], wrapped as the row the magazine layout's grid draws — the web's "Recently added", not the plain shelf's "Latest films". */
-    val recentlyAddedRow: HomeRow,
+    /** How many films "Recently added" is a window onto — the whole Movies shelf, for its heading. */
+    val recentlyAddedTotal: Int,
 )
 
 fun magazineHomeOf(
@@ -38,7 +38,7 @@ fun magazineHomeOf(
 
     // Films only, the way the web's `library.movies` is: the household
     // decided parity over a series-eligible cover when the plan asked.
-    val movieEntries = shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>()
+    val movieEntries = shelves.firstOrNull { it.department == Department.MOVIES }?.entries.orEmpty().filterIsInstance<Entry.Film>()
     val movies = movieEntries.map { it.set }
     val recentlyAdded = movies.sortedByDescending(MediaSet::addedAt).take(recentLimit)
     val onRow = recentlyAdded.mapTo(HashSet(), MediaSet::setId)
@@ -56,18 +56,10 @@ fun magazineHomeOf(
     val underway = underwayOf(collectionsForNextUp(shelves), byId, watch, limit)
     val resumeCards = resumeCardsOf(underway.continues, underway.nextUp, watch, heldIds)
 
-    val recentlyAddedRow =
-        HomeRow(
-            title = "Recently added",
-            seeAll = "Movies",
-            total = movieEntries.size,
-            content = RowContent.Entries(recentlyAdded.map(Entry::Film)),
-        )
-
     return MagazineHome(
         editorial = editorial,
         resumeCards = resumeCards,
         recentlyAdded = recentlyAdded,
-        recentlyAddedRow = recentlyAddedRow,
+        recentlyAddedTotal = movieEntries.size,
     )
 }

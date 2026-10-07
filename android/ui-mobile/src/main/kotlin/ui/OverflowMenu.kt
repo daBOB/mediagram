@@ -21,8 +21,7 @@ import androidx.compose.ui.semantics.semantics
 
 /**
  * The browsing utilities the web keeps in its own rail-nav — My List,
- * Continue, Latest, Genres and Stats — moved into this menu by
- * [ui.catalog.mastheadSplitOf]'s own split (Settings was already here).
+ * Continue, Latest, Genres and Stats (Settings was already here).
  * Reachable from anywhere, the same as the web's rail: a viewer does not
  * first have to be on the shelves to ask for Latest.
  */

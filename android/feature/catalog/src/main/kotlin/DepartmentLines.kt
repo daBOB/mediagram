@@ -14,17 +14,19 @@ import java.text.NumberFormat
  */
 fun moviesLineOf(department: MoviesDepartment): String =
     listOfNotNull(
-        spelledCountOf(department.filmCount, "film"),
+        spelledCountOf(department.filmCount, Department.MOVIES.extent),
         department.hours.takeIf { it > 0 }?.let { "${NumberFormat.getIntegerInstance().format(it)} hours" },
     ).joinToString(" · ")
 
-/** "N shows · M episodes" ("four courses · 37 lessons") — [label] is "Series" or "Tutorials", [unit] "episode" or "lesson". */
+/** "N shows · M episodes" ("four courses · 37 lessons") — counted in [dept]'s own extent and noun. */
 fun showsLineOf(
     department: ShowsDepartment,
-    label: String,
-    unit: String,
+    dept: Department,
 ): String =
-    "${spelledCountOf(department.showCount, if (label == "Series") "show" else "course")} · ${spelledCountOf(department.itemCount, unit)}"
+    listOfNotNull(
+        spelledCountOf(department.showCount, dept.extent),
+        dept.noun?.let { spelledCountOf(department.itemCount, it) },
+    ).joinToString(" · ")
 
 /** "N shows · M films", either half dropped while its own count is zero. */
 fun animeLineOf(department: AnimeDepartment): String =
@@ -34,7 +36,7 @@ fun animeLineOf(department: AnimeDepartment): String =
     ).joinToString(" · ")
 
 /** "N documentaries" — already spelled before this file existed; kept here so every department's line lives beside the others. */
-fun documentariesLineOf(department: DocumentariesDepartment): String = spelledCountOf(department.itemCount, "documentary")
+fun documentariesLineOf(department: DocumentariesDepartment): String = spelledCountOf(department.itemCount, Department.DOCUMENTARIES.extent)
 
 /** "N franchises · M lists", the franchise half dropped while there are none. */
 fun collectionsLineOf(

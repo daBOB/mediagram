@@ -12,10 +12,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import catalog.CatalogUiState
 import catalog.CategoryRow
 import catalog.CollectionKind
+import catalog.Department
+import catalog.DocumentariesDepartment
 import catalog.DocumentaryGroupRow
 import catalog.Entry
+import catalog.Shelf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -66,10 +70,7 @@ class DocumentariesDepartmentScreenTest {
         preview = listOf(docSet("ep-1"), docSet("ep-2")),
     )
 
-    // Fully qualified: catalog.DocumentariesDepartment is the pure data
-    // class this fixture builds; the unqualified name in this file's own
-    // package is DocumentariesDepartmentScreen.kt's composable wrapper.
-    private val department = catalog.DocumentariesDepartment(
+    private val department = DocumentariesDepartment(
         itemCount = 24,
         lead = docSet("lead", backdrop = "lead-bg", tagline = "A quotable line."),
         continuing = listOf(docSet("resuming")),
@@ -201,9 +202,9 @@ class DocumentariesDepartmentScreenTest {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
-                    DocumentariesDepartment(
-                        shelf = catalog.Shelf(catalog.DOCUMENTARIES, emptyList()),
-                        state = catalog.CatalogUiState.Ready(emptyList()),
+                    DocumentariesDepartmentTab(
+                        shelf = Shelf(Department.DOCUMENTARIES, emptyList()),
+                        state = CatalogUiState.Ready(emptyList()),
                         onOpenCollection = {},
                         onPlay = {},
                     )

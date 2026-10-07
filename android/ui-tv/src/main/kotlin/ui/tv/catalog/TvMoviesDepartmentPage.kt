@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import catalog.Department
 import catalog.MoviesDepartment
 import catalog.moviesLineOf
 import designsystem.Spacing
@@ -108,7 +109,7 @@ internal fun TvMoviesDepartmentPage(
         ) {
             item(key = "hero") {
                 Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvDepartmentHero(title = "Movies", line = moviesLineOf(dept), lead = dept.lead)
+                    TvDepartmentHero(title = Department.MOVIES.label, line = moviesLineOf(dept), lead = dept.lead)
                 }
             }
             item(key = "featured") {

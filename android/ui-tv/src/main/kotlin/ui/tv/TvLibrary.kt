@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
+import catalog.Department
 import catalog.Entry
 import catalog.everyFilm
 import catalog.fetchResultMessage
@@ -90,7 +91,7 @@ internal fun TvLibrary(
     // pool: "All N films" is the Movies shelf's own wall, not a lookup.
     val allFilms = remember(shelves) { everyFilm(shelves) }
     val movieFilms = remember(shelves) {
-        shelves.firstOrNull { it.title == "Movies" }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
+        shelves.firstOrNull { it.department == Department.MOVIES }?.entries.orEmpty().filterIsInstance<Entry.Film>().map { it.set }
     }
     val allShows = remember(shelves) {
         shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()

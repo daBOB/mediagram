@@ -5,14 +5,6 @@ import model.MediaSet
 import model.WatchSnapshot
 
 /**
- * The title the Anime shelf carries — named once here for the same reason
- * [DOCUMENTARIES] is (`TitlePageCandidates.kt`): routing a department to its
- * own page, the home rows that leave it out of "Latest", and the hero/scroll
- * plumbing that needs to tell it apart from a plain shelf.
- */
-const val ANIME = "Anime"
-
-/**
  * Anime series (seasons kept, grouped by show) and anime films, pulled out
  * of the catalog ahead of [shelvesOf]'s own split — a pure Kotlin port of
  * the web's `groupAnime` (`departments.js`).

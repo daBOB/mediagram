@@ -25,10 +25,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
-import catalog.Entry
-import catalog.HomeRow
+import catalog.CatalogTab
+import catalog.Department
+import catalog.KeptKind
+import catalog.Latest
 import catalog.MagazineHome
-import catalog.RowContent
 import designsystem.Overscan
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
@@ -71,22 +72,22 @@ import ui.tv.chrome.LocalTvPagePadding
  * still carries, the first section with anything in it takes the arrival
  * stop instead (the cover's own Watch now, when there is a cover).
  *
- * [rows] carries only the plain shelf rows this page still draws as such —
- * Latest series and Latest courses; [magazine] already carries the cover,
- * the features and its own "Recently added" row, so the caller must not
- * hand this Continue, Next up or the Movies shelf here too.
+ * [latest] gives the two bands that follow the magazine header — Latest
+ * series and Latest courses; [magazine] already carries the cover, the
+ * features and its own "Recently added" row. [onSeeAll] opens the tab a
+ * band is a window onto.
  */
 @Composable
 internal fun TvHome(
     magazine: MagazineHome,
-    rows: List<HomeRow>,
+    latest: Latest,
     watch: WatchSnapshot,
     listState: LazyListState,
     onPlay: (setId: String) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit,
-    onSeeAll: (shelf: String) -> Unit,
+    onSeeAll: (CatalogTab) -> Unit,
     // Where Up from the cover's own action row leads — the bar's own
     // selected pill, the same stop Back already reaches from anywhere on
     // this page ([ui.tv.chrome.TvLibraryChrome]'s own `BackHandler`).
@@ -95,10 +96,8 @@ internal fun TvHome(
 ) {
     val editorial = magazine.editorial
     val watchlist = remember(watch) { watch.watchlist.toSet() }
-    val series = remember(rows) { collectionsOf(rows, "Latest series") }
-    val courses = remember(rows) { collectionsOf(rows, "Latest courses") }
-    val seriesTotal = remember(rows) { rows.firstOrNull { it.title == "Latest series" }?.total ?: 0 }
-    val coursesTotal = remember(rows) { rows.firstOrNull { it.title == "Latest courses" }?.total ?: 0 }
+    val series = latest.series
+    val courses = latest.courses
 
     val sections =
         remember(editorial, magazine, series, courses) {
@@ -307,7 +306,7 @@ internal fun TvHome(
                                 quote = editorial.quote,
                                 onPlay = onPlay,
                                 onOpenTitle = onOpenTitle,
-                                onSeeAllContinue = { onSeeAll("Continue") },
+                                onSeeAllContinue = { onSeeAll(CatalogTab.Kept(KeptKind.CONTINUE)) },
                                 focusAt = stopAt(TvHomeSection.CONTINUE)?.takeIf { it < magazine.resumeCards.size },
                                 focus = continueFocus,
                             )
@@ -321,10 +320,10 @@ internal fun TvHome(
                         CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                             TvRecentBand(
                                 recentlyAdded = magazine.recentlyAdded,
-                                totalFilms = magazine.recentlyAddedRow.total,
+                                totalFilms = magazine.recentlyAddedTotal,
                                 thisMonth = editorial.thisMonth,
                                 onOpenTitle = onOpenTitle,
-                                onSeeAllMovies = { onSeeAll("Movies") },
+                                onSeeAllMovies = { onSeeAll(CatalogTab.Dept(Department.MOVIES)) },
                                 focusAt = stopAt(TvHomeSection.RECENT)?.takeIf { it < magazine.recentlyAdded.size },
                                 focus = recentFocus,
                             )
@@ -336,7 +335,7 @@ internal fun TvHome(
                 item(key = "series") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.SERIES)) {
                         Column {
-                            TvBandHeading(title = "Latest series", count = seriesTotal)
+                            TvBandHeading(title = "Latest series", count = latest.seriesTotal)
                             CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                                 TvPosterStrip(
                                     shows = series,
@@ -353,7 +352,7 @@ internal fun TvHome(
                 item(key = "courses") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.COURSES)) {
                         Column {
-                            TvBandHeading(title = "Latest courses", count = coursesTotal)
+                            TvBandHeading(title = "Latest courses", count = latest.coursesTotal)
                             TvCourseList(
                                 courses = courses,
                                 onOpen = onOpenCollection,
@@ -367,13 +366,3 @@ internal fun TvHome(
         }
     }
 }
-
-/** [row]'s own entries, narrowed to the collections a poster row or a course list actually draws — [HomeRow] can also carry [catalog.SetCard]s (Continue, Next up), which never reach here. */
-private fun collectionsOf(
-    rows: List<HomeRow>,
-    title: String,
-): List<Entry.Collection> =
-    (rows.firstOrNull { it.title == title }?.content as? RowContent.Entries)
-        ?.entries
-        ?.filterIsInstance<Entry.Collection>()
-        .orEmpty()

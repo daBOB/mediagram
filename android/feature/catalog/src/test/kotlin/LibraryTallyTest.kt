@@ -5,9 +5,9 @@ import kotlin.test.assertEquals
 
 class LibraryTallyTest {
     private fun shelf(
-        title: String,
+        department: Department,
         count: Int,
-    ) = Shelf(title, List(count) { Entry.Film(film(it)) })
+    ) = Shelf(department, List(count) { Entry.Film(film(it)) })
 
     private fun film(n: Int) =
         model.MediaSet(
@@ -27,18 +27,18 @@ class LibraryTallyTest {
         )
 
     @Test fun countsPastTwentyAreFigures() {
-        assertEquals(listOf("911 films", "43 shows"), libraryTallyLines(listOf(shelf("Movies", 911), shelf("Series", 43))))
+        assertEquals(listOf("911 films", "43 shows"), libraryTallyLines(listOf(shelf(Department.MOVIES, 911), shelf(Department.SERIES, 43))))
     }
 
     @Test fun countsUpToTwentyAreSpelledWords() {
-        assertEquals(listOf("four courses"), libraryTallyLines(listOf(shelf("Tutorials", 4))))
+        assertEquals(listOf("four courses"), libraryTallyLines(listOf(shelf(Department.TUTORIALS, 4))))
     }
 
     @Test fun aSingleEntryIsSaidInTheSingular() {
-        assertEquals(listOf("one show"), libraryTallyLines(listOf(shelf("Series", 1))))
+        assertEquals(listOf("one show"), libraryTallyLines(listOf(shelf(Department.SERIES, 1))))
     }
 
-    @Test fun aShelfThisFunctionDoesNotNameIsLeftOut() {
-        assertEquals(emptyList(), libraryTallyLines(listOf(shelf("Documentaries", 5))))
+    @Test fun animeAndDocumentariesAreLeftOutAsTheWebRailLeavesThem() {
+        assertEquals(emptyList(), libraryTallyLines(listOf(shelf(Department.ANIME, 3), shelf(Department.DOCUMENTARIES, 5))))
     }
 }

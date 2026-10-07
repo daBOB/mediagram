@@ -46,15 +46,18 @@ sealed interface CatalogUiState {
 }
 
 /**
- * One row of the library: films, shows or courses, one card each.
+ * One department of the library: films, shows or courses, one card each.
  *
- * A shelf holds [Entry] rather than sets, because two of the three shelves
- * are not lists of sets at all — a show and a course are cards that open.
+ * A shelf holds [Entry] rather than sets, because most shelves are not lists
+ * of sets at all — a show and a course are cards that open.
  */
 data class Shelf(
-    val title: String,
+    val department: Department,
     val entries: List<Entry>,
-)
+) {
+    /** What the masthead calls this shelf — for display only; [department] is what tells shelves apart. */
+    val title: String get() = department.label
+}
 
 /**
  * The collection a key names, or `null` when the shelves are not here yet

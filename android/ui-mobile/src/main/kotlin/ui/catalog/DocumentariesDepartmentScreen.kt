@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import catalog.CatalogUiState
+import catalog.Department
 import catalog.DocumentariesDepartment
 import catalog.DocumentaryLibrary
 import catalog.Entry
@@ -42,7 +43,7 @@ internal const val DOCUMENTARIES_DEPT_TEST_TAG = "documentaries-department"
  * whose own empty state actually has to be drawn rather than never reached.
  */
 @Composable
-internal fun DocumentariesDepartment(
+internal fun DocumentariesDepartmentTab(
     shelf: Shelf,
     state: CatalogUiState.Ready,
     onOpenCollection: (String) -> Unit,
@@ -103,7 +104,7 @@ internal fun DocumentariesDepartmentScreen(
     ) {
         item {
             DepartmentHero(
-                title = "Documentaries",
+                title = Department.DOCUMENTARIES.label,
                 line = documentariesLineOf(department),
                 lead = department.lead,
                 // The web never links a documentaries hero anywhere

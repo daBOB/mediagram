@@ -79,7 +79,7 @@ fun barTitleFor(destination: Destination): String =
         is Destination.Genre -> destination.name
         is Destination.Person -> destination.name
         is Destination.Franchise -> destination.name
-        Destination.MoviesPage -> "Movies"
+        Destination.MoviesPage -> Department.MOVIES.label
         Destination.Genres -> "Genres"
         Destination.Latest -> "Latest"
         Destination.Preloads -> "Preloads"

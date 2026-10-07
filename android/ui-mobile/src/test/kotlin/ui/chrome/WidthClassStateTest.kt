@@ -26,8 +26,10 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import catalog.CatalogTab
 import catalog.Destination
-import catalog.catalogTabsOf
+import catalog.KeptKind
+import catalog.mastheadTabsOf
 import designsystem.MediagramTheme
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -102,8 +104,8 @@ class WidthClassStateTest {
     @Test fun rootKeepsScrollAcrossWidthClass() {
         host {
             val holder = rememberSaveableStateHolder()
-            val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) {
+            val tabs = mastheadTabsOf(emptyList())
+            LibraryHome(tabs, CatalogTab.Kept(KeptKind.COLLECTIONS), {}, browse, menu, profile, {}, heroState = null) {
                 holder.SaveableStateProvider("shelves") { rows() }
             }
         }
@@ -113,8 +115,8 @@ class WidthClassStateTest {
     @Test fun compactHeaderHidingLeavesContentWhereItWas() {
         widthDp = 400
         host {
-            val tabs = catalogTabsOf(emptyList())
-            LibraryHome(tabs, listOf(0, 3), 3, {}, browse, menu, profile, {}, heroState = null) { rows() }
+            val tabs = mastheadTabsOf(emptyList())
+            LibraryHome(tabs, CatalogTab.Kept(KeptKind.COLLECTIONS), {}, browse, menu, profile, {}, heroState = null) { rows() }
         }
         val before = compose.onNodeWithTag("rows").getUnclippedBoundsInRoot()
         val wordBefore = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()

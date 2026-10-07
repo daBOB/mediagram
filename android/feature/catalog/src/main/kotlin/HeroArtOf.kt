@@ -5,14 +5,14 @@ import model.MediaSet
 import model.WatchSnapshot
 
 /**
- * The backdrop the department at [title] would lead its own hero with right
- * now — the same lead each department screen picks for itself
- * ([moviesDepartmentOf], [showsDepartmentOf], [documentariesDepartmentOf]),
+ * The backdrop [department] would lead its own hero with right now — the
+ * same lead each department screen picks for itself ([moviesDepartmentOf],
+ * [showsDepartmentOf], [animeDepartmentOf], [documentariesDepartmentOf]),
  * recomputed here rather than read back from whichever one is on screen —
  * the same reason `ui.LibraryBranches`' own `hasCover` is recomputed rather
- * than threaded down and back up. `null` for a title that names no
- * department at all (a kept wall, Collections, a plain shelf) or one with
- * nothing to lead with.
+ * than threaded down and back up. `null` for no department at all (Home, a
+ * kept wall, Collections), one not on [shelves], or one with nothing to lead
+ * with.
  *
  * Public rather than internal, unlike its own first home: both the tablet's
  * `LibraryBranchSupport` and the television's `TvCatalogScreen` read this to
@@ -20,22 +20,22 @@ import model.WatchSnapshot
  * Gradle modules that only ever share this one through `feature:catalog`.
  */
 fun heroArtOf(
-    title: String?,
+    department: Department?,
     shelves: List<Shelf>,
     byId: Map<String, MediaSet>,
     watch: WatchSnapshot,
 ): String? {
-    val shelf = shelves.firstOrNull { it.title == title } ?: return null
-    return when (title) {
-        "Movies" -> {
+    val shelf = shelves.firstOrNull { it.department == department } ?: return null
+    return when (shelf.department) {
+        Department.MOVIES -> {
             val films = shelf.entries.filterIsInstance<Entry.Film>().map { it.set }
             moviesDepartmentOf(films) { id -> watch.watched.any { it.setId == id } }?.lead?.backdropPath
         }
-        "Series" -> showsDepartmentOf(Kind.EPISODE, shelf.entries.filterIsInstance<Entry.Collection>(), byId, watch)
+        Department.SERIES -> showsDepartmentOf(Kind.EPISODE, shelf.entries.filterIsInstance<Entry.Collection>(), byId, watch)
             ?.lead?.let { firstItemOf(it.divisions) }?.backdropPath
-        "Tutorials" -> showsDepartmentOf(Kind.TUTORIAL, shelf.entries.filterIsInstance<Entry.Collection>(), byId, watch)
+        Department.TUTORIALS -> showsDepartmentOf(Kind.TUTORIAL, shelf.entries.filterIsInstance<Entry.Collection>(), byId, watch)
             ?.lead?.let { firstItemOf(it.divisions) }?.backdropPath
-        ANIME -> animeDepartmentOf(
+        Department.ANIME -> animeDepartmentOf(
             AnimeLibrary(
                 shows = shelf.entries.filterIsInstance<Entry.Collection>(),
                 films = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
@@ -43,7 +43,7 @@ fun heroArtOf(
             byId,
             watch,
         )?.lead?.backdropPath
-        DOCUMENTARIES -> documentariesDepartmentOf(
+        Department.DOCUMENTARIES -> documentariesDepartmentOf(
             DocumentaryLibrary(
                 collections = shelf.entries.filterIsInstance<Entry.Collection>(),
                 singles = shelf.entries.filterIsInstance<Entry.Film>().map { it.set },
@@ -51,6 +51,5 @@ fun heroArtOf(
             byId,
             watch,
         )?.lead?.backdropPath
-        else -> null
     }
 }

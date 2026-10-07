@@ -6,9 +6,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import catalog.MastheadSplit
+import catalog.CatalogTab
 import catalog.MenuScreen
 import ui.RailItem
+import ui.railItemOf
 import ui.tv.chrome.TvChromeFocus
 import ui.tv.chrome.rememberTvChromeFocus
 import ui.tv.system.menuRestoreKey
@@ -34,8 +35,8 @@ internal const val TvStatsRailKey = "rail:stats"
  * [TvStatsRailKey], and Settings'/System's own `menu:*` keys once either is
  * left) leave the remote once [TvCatalogScreen] knows what is selected —
  * split out of it so that composable reads as "what shows below the bar",
- * not also "which of eight index slots that is and where Back from seven
- * different sentinels sends the remote".
+ * not also "which pill that is and where Back from seven different
+ * sentinels sends the remote".
  */
 internal class TvCatalogRestore(
     val selectedPill: Int,
@@ -48,33 +49,18 @@ internal class TvCatalogRestore(
 
 @Composable
 internal fun rememberTvCatalogRestore(
-    masthead: MastheadSplit,
-    selected: Int,
-    shelfCount: Int,
-    collectionsIndex: Int,
-    continueIndex: Int,
-    watchlistIndex: Int,
+    mastheadTabs: List<CatalogTab>,
+    selected: CatalogTab,
     ready: Boolean,
     restoreKey: String?,
-    choose: (Int) -> Unit,
+    choose: (CatalogTab) -> Unit,
     onEntryRestored: () -> Unit,
 ): TvCatalogRestore {
-    // The bar's own tab index space is departments-only: Home, the
-    // shelves, then Collections at the end — Continue/Watchlist have no
-    // pill of their own any more, so a viewer on either sees no pill
-    // selected (`-1`, which every entry in the row simply is not).
-    val selectedPill =
-        when {
-            selected <= shelfCount -> selected
-            selected == collectionsIndex -> masthead.departments.lastIndex
-            else -> -1
-        }
-    val railActive =
-        when (selected) {
-            continueIndex -> RailItem.CONTINUE_WATCHING
-            watchlistIndex -> RailItem.MY_LIST
-            else -> null
-        }
+    // Continue and My List have no pill of their own, so a viewer on
+    // either sees no pill selected (`-1`, which every entry in the row
+    // simply is not) and that row of the rail active instead.
+    val selectedPill = mastheadTabs.indexOf(selected)
+    val railActive = railItemOf(selected)
 
     val chromeFocus = rememberTvChromeFocus()
 
@@ -88,10 +74,10 @@ internal fun rememberTvCatalogRestore(
     // suddenly let arrival focus back in on a page the viewer deliberately
     // left the remote above.
     var pillPressed by rememberSaveable { mutableStateOf(false) }
-    val onSelectPill = { visiblePosition: Int ->
-        val index = if (visiblePosition == masthead.departments.lastIndex) collectionsIndex else visiblePosition
-        if (index != selected) pillPressed = true
-        choose(index)
+    val onSelectPill = { position: Int ->
+        val tab = mastheadTabs[position]
+        if (tab != selected) pillPressed = true
+        choose(tab)
     }
 
     val backFromSearch = restoreKey == TvSearchEntryKey

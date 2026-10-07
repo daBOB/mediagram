@@ -37,8 +37,8 @@ fun spelledCountOf(
     return "${spellCount(count)} $plural"
 }
 
-/** The noun each of [shelvesOf]'s own shelves counts in — the web's `SECTIONS[…].extent` (`sections.js`). */
-private val EXTENT_NOUNS = mapOf("Movies" to "film", "Series" to "show", "Tutorials" to "course")
+/** The departments the web rail's masthead tallies (`app.js`) — Anime and Documentaries are not among them. */
+private val TALLIED = setOf(Department.MOVIES, Department.SERIES, Department.TUTORIALS)
 
 /**
  * Settings index's tablet-only tally lines: the library's own shelves,
@@ -46,4 +46,4 @@ private val EXTENT_NOUNS = mapOf("Movies" to "film", "Series" to "show", "Tutori
  * "four courses" (`round2/b-telegram.html`'s `.masthead`).
  */
 fun libraryTallyLines(shelves: List<Shelf>): List<String> =
-    shelves.mapNotNull { shelf -> EXTENT_NOUNS[shelf.title]?.let { noun -> spelledCountOf(shelf.entries.size, noun) } }
+    shelves.filter { it.department in TALLIED }.map { spelledCountOf(it.entries.size, it.department.extent) }
