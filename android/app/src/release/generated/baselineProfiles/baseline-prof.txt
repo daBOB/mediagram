@@ -26002,8 +26002,8 @@ PLui/tv/catalog/TvSectionTabsKt$$ExternalSyntheticLambda5;-><init>()V
 PLui/tv/catalog/TvSectionTabsKt$$ExternalSyntheticLambda6;-><init>(Lkotlin/jvm/functions/Function1;I)V
 PLui/tv/catalog/TvSectionTabsKt$$ExternalSyntheticLambda7;-><init>(Ljava/lang/String;)V
 PLui/tv/catalog/TvSectionTabsKt$$ExternalSyntheticLambda7;->invoke(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
-PLui/tv/catalog/TvTitleDetailsKt;-><clinit>()V
-PLui/tv/catalog/TvTitleDetailsKt;->TvFilmOverview(Lmodel/MediaSet;Luniffi/mediagram_core/TitleInfo;Lcatalog/Franchise;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Landroidx/compose/runtime/Composer;I)V
+PLui/tv/catalog/TvFilmOverviewKt;-><clinit>()V
+PLui/tv/catalog/TvFilmOverviewKt;->TvFilmOverview(Lmodel/MediaSet;Luniffi/mediagram_core/TitleInfo;Lcatalog/Franchise;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Landroidx/compose/runtime/Composer;I)V
 PLui/tv/catalog/TvTitlePageKt;->$r8$lambda$FROOGceqAf51HkuDyzyKlWHHJdw(Ljava/lang/Double;Landroidx/compose/ui/focus/FocusRequester;Lkotlin/jvm/functions/Function0;Lui/tv/catalog/TvTitlePreloadUi;ZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Ljava/lang/String;Lmodel/MediaSet;Landroidx/compose/ui/focus/FocusRequester;Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 PLui/tv/catalog/TvTitlePageKt;->$r8$lambda$VNj_pJZ45naNb7_fnAZevWP3qr0(I)Landroidx/compose/runtime/MutableIntState;
 PLui/tv/catalog/TvTitlePageKt;->$r8$lambda$YGvZLGiX2SHsST0pvw4DPoTQNDY(Lui/tv/catalog/TvTitlePreloadUi;Ljava/lang/Double;Landroidx/compose/ui/focus/FocusRequester;Lkotlin/jvm/functions/Function0;ZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Ljava/lang/String;Lmodel/MediaSet;Landroidx/compose/ui/focus/FocusRequester;Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
