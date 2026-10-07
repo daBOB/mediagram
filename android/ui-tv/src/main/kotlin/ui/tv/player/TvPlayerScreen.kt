@@ -158,7 +158,7 @@ fun TvPlayerScreen(
                 // one that holds the remote must never be an ancestor.
                 .onPreviewKeyEvent { event ->
                     if (event.type == KeyEventType.KeyDown) presses++
-                    remote.onKey(event, player, barShown, onSeekBar, controlsMayShow(state), panelOpen, upNextShown, notesOpen)
+                    remote.onKey(event, player, controlsShowing = barShown, onSeekBar = onSeekBar, canControl = controlsMayShow(state), panelOpen = panelOpen, upNextShown = upNextShown, notesOpen = notesOpen)
                 },
     ) {
         TvPlayerKeyHolder(root, canHold = !barShown)

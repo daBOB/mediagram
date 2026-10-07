@@ -73,7 +73,7 @@ internal fun TvPlayerBack(
     onLeave: () -> Unit,
 ) {
     BackHandler {
-        val action = tvKeyAction(Key.Back, barShown, onSeekBar, panelOpen = panelOpen, upNextShown = upNextShown, notesOpen = notesOpen, statsShown = statsShown)
+        val action = tvKeyAction(Key.Back, controlsShowing = barShown, focusInControls = onSeekBar, panelOpen = panelOpen, upNextShown = upNextShown, notesOpen = notesOpen, statsShown = statsShown)
         when (action) {
             TvKeyAction.ClosePanel -> onClosePanel()
             TvKeyAction.CancelUpNext -> onCancelUpNext()

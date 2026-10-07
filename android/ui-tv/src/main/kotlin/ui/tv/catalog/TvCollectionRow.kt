@@ -24,6 +24,7 @@ import designsystem.TvTypeScale
 import model.Kind
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 /**
  * One of [TvCollectionRows]' rows — a folder's heading, or an episode or
@@ -97,13 +98,11 @@ private fun DocumentRow(
     // on arrival never hears a focus interaction and would hold the remote
     // while drawn as if it did not.
     var focused by remember { mutableStateOf(false) }
-    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-    val ownRequester = remember { FocusRequester() }
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .focusRequester(focus ?: ownRequester)
+                .focusRequester(rememberStableRequester(focus))
                 .onFocusChanged { focused = it.isFocused }
                 .focusable()
                 .semantics(mergeDescendants = true) { disabled() },

@@ -87,10 +87,10 @@ internal fun TvAnimeDepartmentPage(
                                 "Continue watching",
                                 resumeCards,
                                 onPlay,
-                                focusAt = target?.second?.takeIf { target.first == "continue" },
+                                focusAt = target?.stopAt(ContinueSection),
                                 focus = rowFocus,
                                 takesFocus = takesFocus,
-                                onSectionFocused = { lastSection = "continue" },
+                                onSectionFocused = { lastSection = ContinueSection },
                             )
                         }
                     }

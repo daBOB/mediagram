@@ -47,6 +47,7 @@ import player.setSubtitleBacking
 import player.setSubtitleSize
 import ui.player.cardMenuOffset
 import ui.player.playerCard
+import ui.tv.rememberStableRequester
 
 /** The controls' menus — one open at a time, each above the tool that opens it. */
 internal enum class TvCardMenu { Subtitles, SubtitleStyle, Speed, Audio, Framing }
@@ -148,14 +149,12 @@ private fun TvSubtitleMenu(
         TvSubtitleSection(options = choices.subtitleOptions, onChosen = { viewModel.chooseSubtitleLanguage(it); onClose() }, current = current)
     }
     if (choices.subtitleStyleVisible) {
-        // Never omitted — a requester swapped in and out would rebuild a focused node.
-        val own = remember { FocusRequester() }
         TvOverlayButton(
             text = "Style…",
             style = TvTypeScale.body,
             enabled = true,
             onClick = { onSwitch(TvCardMenu.SubtitleStyle) },
-            modifier = Modifier.fillMaxWidth().focusRequester(if (languages) own else current),
+            modifier = Modifier.fillMaxWidth().focusRequester(rememberStableRequester(current.takeUnless { languages })),
             padding = Spacing.medium,
         )
     }

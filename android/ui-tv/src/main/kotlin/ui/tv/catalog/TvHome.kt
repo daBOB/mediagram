@@ -111,15 +111,15 @@ internal fun TvHome(
                 // reaches `homeTargetOf`'s own graceful default instead —
                 // exactly the "missing key" case this function already
                 // documents, not a silent dead end.
-                TvHomeSection.COVER to editorial.cover.map { it.setId },
-                TvHomeSection.FEATURES to editorial.features.map { it.set.setId },
-                TvHomeSection.CONTINUE to magazine.resumeCards.map { it.set.setId },
-                TvHomeSection.RECENT to magazine.recentlyAdded.map { it.setId },
-                TvHomeSection.SERIES to series.map { it.key },
-                TvHomeSection.COURSES to courses.map { it.key },
+                DeptSection(TvHomeSection.COVER, editorial.cover.map { it.setId }),
+                DeptSection(TvHomeSection.FEATURES, editorial.features.map { it.set.setId }),
+                DeptSection(TvHomeSection.CONTINUE, magazine.resumeCards.map { it.set.setId }),
+                DeptSection(TvHomeSection.RECENT, magazine.recentlyAdded.map { it.setId }),
+                DeptSection(TvHomeSection.SERIES, series.map { it.key }),
+                DeptSection(TvHomeSection.COURSES, courses.map { it.key }),
             )
         }
-    val included = remember(sections) { sections.filter { (_, keys) -> keys.isNotEmpty() }.map { it.first } }
+    val included = remember(sections) { sections.filter { it.stops.isNotEmpty() }.map { it.id } }
     // Every section the list below draws an item for, in its order — the
     // one place that decides which items exist, so the arrival below scrolls
     // to, and waits for, the item that really holds its stop. Not `included`:

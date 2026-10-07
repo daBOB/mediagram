@@ -44,6 +44,7 @@ import model.MediaSet
 import ui.catalog.DESTINATION_ASPECT
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.rememberStableRequester
 
 /**
  * Three cards across — the web's `.destinations` (`repeat(auto-fill,
@@ -180,10 +181,8 @@ internal fun TvCollectionsPage(
                 }
             }
             item(key = NEW) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val own = remember { FocusRequester() }
                 Box(modifier = Modifier.padding(top = 20.dp)) {
-                    TvPagePill(text = "＋ New list", onClick = { naming = true }, modifier = Modifier.focusRequester(if (target.item == NEW) focus else own))
+                    TvPagePill(text = "＋ New list", onClick = { naming = true }, modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.item == NEW })))
                 }
             }
         }
@@ -194,10 +193,9 @@ internal fun TvCollectionsPage(
  * One section's cards, a line of [DestinationColumns] per item; a short last
  * line keeps the others' widths, as the web's `auto-fill` tracks do.
  *
- * [card]'s modifier carries [focus] on the one card [arrival] names and a
- * requester of the card's own on every other — never
- * omitted, see the same doc on `TvResumeCard`'s own `ownRequester` — so a
- * card's modifier chain is the same shape whichever card the target moves to.
+ * [card]'s modifier carries [focus] on the one card [arrival] names and
+ * [rememberStableRequester]'s own requester on every other, so a card's
+ * modifier chain is the same shape whichever card the target moves to.
  */
 private fun <T> LazyListScope.destinationRows(
     section: String,
@@ -217,8 +215,7 @@ private fun <T> LazyListScope.destinationRows(
                 // reorder never leaves focus on whichever card moved into it.
                 for (item in row) {
                     key(id(item)) {
-                        val own = remember { FocusRequester() }
-                        card(item, Modifier.weight(1f).focusRequester(if (arrival.item == "$section:${id(item)}") focus else own))
+                        card(item, Modifier.weight(1f).focusRequester(rememberStableRequester(focus.takeIf { arrival.item == "$section:${id(item)}" })))
                     }
                 }
                 repeat(DestinationColumns - row.size) { Spacer(Modifier.weight(1f)) }

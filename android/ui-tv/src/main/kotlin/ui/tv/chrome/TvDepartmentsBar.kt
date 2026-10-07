@@ -99,12 +99,7 @@ internal fun TvDepartmentsBar(
         ) {
             pills.forEachIndexed { index, pill ->
                 key(pill.title) {
-                    // Never omitted — see the same doc on `TvResumeCard`'s
-                    // own `ownRequester`: a pill that is not the selected
-                    // one right now still needs exactly one `focusRequester`
-                    // in its own modifier chain on every recomposition, or
-                    // the pill the remote is actually on resets the moment
-                    // a different one becomes selected.
+                    // One requester on every pill, every recomposition: [ui.tv.rememberStableRequester]'s KDoc says why.
                     val pillModifier = downModifier.focusRequester(requesterOf(index))
                     TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
                 }

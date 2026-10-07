@@ -88,7 +88,17 @@ internal class TvPlayerRemote(
         if (event.type == KeyEventType.KeyUp) return taken.remove(event.key)
         if (event.type != KeyEventType.KeyDown || event.key == Key.Back) return false
         val repeat = event.nativeKeyEvent.repeatCount
-        val took = apply(tvKeyAction(event.key, controlsShowing, onSeekBar, canControl, panelOpen, upNextShown, notesOpen), repeat, player)
+        val action =
+            tvKeyAction(
+                event.key,
+                controlsShowing = controlsShowing,
+                focusInControls = onSeekBar,
+                canControl = canControl,
+                panelOpen = panelOpen,
+                upNextShown = upNextShown,
+                notesOpen = notesOpen,
+            )
+        val took = apply(action, repeat, player)
         val heldOver = repeat > 0 && event.key in taken
         if (took) taken += event.key
         return took || heldOver

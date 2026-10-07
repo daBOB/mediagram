@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -36,6 +35,7 @@ import designsystem.TvTypeScale
 import java.io.File
 import model.Kind
 import ui.tv.TvFocus
+import ui.tv.rememberStableRequester
 
 /** The first card's own height, full width — the phone's own two-tier shape (`home.css:342-344`) at TV's one width. */
 private val LeadCardHeight = 300.dp
@@ -61,13 +61,11 @@ internal fun TvHomeFeatures(
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         features.getOrNull(0)?.let { feature ->
             key(feature.set.setId) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 TvFeatureCard(
                     feature = feature,
                     index = 0,
                     onOpenTitle = onOpenTitle,
-                    modifier = Modifier.fillMaxWidth().height(LeadCardHeight).focusRequester(if (focusAt == 0) focus ?: ownRequester else ownRequester),
+                    modifier = Modifier.fillMaxWidth().height(LeadCardHeight).focusRequester(rememberStableRequester(focus?.takeIf { focusAt == 0 })),
                 )
             }
         }
@@ -75,8 +73,6 @@ internal fun TvHomeFeatures(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
                 for (index in 1 until features.size) {
                     key(features[index].set.setId) {
-                        // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                        val ownRequester = remember { FocusRequester() }
                         TvFeatureCard(
                             feature = features[index],
                             index = index,
@@ -85,7 +81,7 @@ internal fun TvHomeFeatures(
                                 Modifier
                                     .weight(1f)
                                     .height(PairCardHeight)
-                                    .focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
+                                    .focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                         )
                     }
                 }

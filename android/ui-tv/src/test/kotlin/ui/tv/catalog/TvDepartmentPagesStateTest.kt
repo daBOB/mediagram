@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
@@ -82,21 +83,24 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
 
     /**
      * Featured, Genres and Acclaimed all empty (every film watched, none
-     * carries a genre) — three rows in a row skipped, two of them still
-     * their own zero-height `item()` in the outer list rather than absent
-     * from it. Recently added ignores watched status, so it alone is left
-     * to take arrival; this pins the scroll-to-item math staying correct
-     * across more than one skipped row, not just the one row the other test
-     * above already covers.
+     * carries a genre) — three rows in a row skipped. Recently added ignores
+     * watched status, so it alone is left to take arrival; this pins the
+     * scroll-to-item math staying correct across more than one skipped row,
+     * not just the one row the other test above already covers. The list
+     * holds no item for a skipped row, or the arrival's scroll index, which
+     * counts only the rows drawn, would land short of its row.
      */
     @Test
     fun recentlyAddedTakesArrivalFocusWhenEveryEarlierRowIsEmpty() {
         val films = (0 until 3).map { i -> set("f$i", Kind.MOVIE, "Film $i", addedAt = i.toLong()) }
         val dept = moviesDepartmentOf(films) { true }!!
+        val listState = LazyListState()
 
-        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}) }
+        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}, listState = listState) }
 
         compose.onNodeWithText("Film 2").assertIsFocused()
+        // The hero, Recently added and the "All N films" link.
+        assertEquals(3, listState.layoutInfo.totalItemsCount)
     }
 
     /**

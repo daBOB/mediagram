@@ -31,6 +31,7 @@ import ui.catalog.SearchResultsView
 import ui.catalog.countOf
 import ui.catalog.searchResultsView
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 /**
  * What the search screen says under its field, in the phone's words: nothing
@@ -136,17 +137,17 @@ internal fun TvSearchResults(
                                 // Keyed by the entry, not its slot, so a new answer never
                                 // leaves the remote on whichever entry moved into it.
                                 key(keyOf(entry)) {
-                                    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                                    val own = remember { FocusRequester() }
                                     TvSearchCell(
                                         entry = entry,
                                         layout = line.layout,
                                         requester =
-                                            when (at) {
-                                                0 -> first
-                                                ask?.index -> focus
-                                                else -> own
-                                            },
+                                            rememberStableRequester(
+                                                when (at) {
+                                                    0 -> first
+                                                    ask?.index -> focus
+                                                    else -> null
+                                                },
+                                            ),
                                         marks = marks,
                                         modifier = modifier,
                                         onPlay = onPlay,

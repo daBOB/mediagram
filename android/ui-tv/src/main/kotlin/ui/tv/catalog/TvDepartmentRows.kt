@@ -33,6 +33,7 @@ import model.Progress
 import ui.catalog.GENRE_ROW_TILE_ASPECT
 import ui.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
+import ui.tv.rememberStableRequester
 
 /** How wide a poster is on a department page's film and entry rows. */
 internal val DeptTileWidth = 160.dp
@@ -89,13 +90,11 @@ internal fun DeptRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
-            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-            val ownRequester = remember { FocusRequester() }
             TvPlate(
                 title = set.title,
                 posterPath = set.posterPath?.let(::File),
                 onOpen = { onOpenTitle(set.setId) },
-                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
+                modifier = Modifier.width(DeptTileWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                 caption = factsLine(set.year, set.durationSecs),
                 held = set.setId in heldIds,
             )
@@ -136,14 +135,12 @@ internal fun DeptEntryRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
-            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-            val ownRequester = remember { FocusRequester() }
             TvEntryPlate(
                 entry = entry,
                 positions = positions,
                 watchedIds = watchedIds,
                 onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
-                modifier = Modifier.width(DeptTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
+                modifier = Modifier.width(DeptTileWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                 heldIds = heldIds,
             )
         }
@@ -177,15 +174,13 @@ internal fun GenreTileRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         itemsIndexed(genres, key = { _, genre -> genre.name }) { index, genre ->
-            // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-            val ownRequester = remember { FocusRequester() }
             TvArtTile(
                 name = genre.name,
                 meta = spelledCountOf(genre.count, "title"),
                 art = genre.art,
                 aspectRatio = GENRE_ROW_TILE_ASPECT,
                 onOpen = { onOpenGenre(genre.name) },
-                modifier = Modifier.width(GenreRowTileWidth).focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester),
+                modifier = Modifier.width(GenreRowTileWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
             )
         }
     }

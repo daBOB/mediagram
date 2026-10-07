@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
@@ -178,4 +180,18 @@ object TvFocus {
         } else {
             base
         }
+}
+
+/**
+ * [wanted] when a caller names a requester for this focus target, else one
+ * of the target's own. A focus target's modifier chain must carry exactly
+ * one `focusRequester` on every recomposition: a requester appearing or
+ * disappearing as a row's arrival target moves between cards makes Compose
+ * treat the node as new and drop the focus it held, and the remote falls
+ * back to the bar. Call it unconditionally, in the same place as the target.
+ */
+@Composable
+internal fun rememberStableRequester(wanted: FocusRequester?): FocusRequester {
+    val own = remember { FocusRequester() }
+    return wanted ?: own
 }

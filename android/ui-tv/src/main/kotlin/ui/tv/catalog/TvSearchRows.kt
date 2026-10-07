@@ -46,6 +46,7 @@ import ui.catalog.locationOf
 import ui.catalog.rememberPortrait
 import ui.catalog.searchMetaLineOf
 import ui.tv.TvFocus
+import ui.tv.rememberStableRequester
 
 /**
  * One episode, documentary or lesson hit, as the phone's `SearchResultRow` draws it: the title, where it
@@ -74,14 +75,12 @@ internal fun TvSearchRow(
     // Read from the focus state itself, as TvTextRow does: a row focused on
     // arrival never hears a focus interaction.
     var focused by remember { mutableStateOf(false) }
-    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-    val ownRequester = remember { FocusRequester() }
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .focusRequester(focus ?: ownRequester)
+                .focusRequester(rememberStableRequester(focus))
                 .onFocusChanged { focused = it.isFocused }
                 .let {
                     if (playable) {

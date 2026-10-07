@@ -82,12 +82,17 @@ internal fun rememberTvCatalogRestore(
 
     val backFromSearch = restoreKey == TvSearchEntryKey
     val backFromMenu = restoreKey == TvMenuEntryKey
-    val backFromLatestRail = restoreKey == TvLatestRailKey
-    val backFromGenresRail = restoreKey == TvGenresRailKey
-    val backFromStatsRail = restoreKey == TvStatsRailKey
-    val backFromSettings = restoreKey == menuRestoreKey(MenuScreen.Settings)
-    val backFromSystem = restoreKey == menuRestoreKey(MenuScreen.System)
-    val redirectsFocus = backFromSearch || backFromMenu || backFromLatestRail || backFromGenresRail || backFromStatsRail || backFromSettings || backFromSystem
+    // The rail row a page opened from the rail hands the remote back to.
+    val railTarget =
+        when (restoreKey) {
+            TvLatestRailKey -> RailItem.LATEST
+            TvGenresRailKey -> RailItem.GENRES
+            TvStatsRailKey -> RailItem.STATS
+            menuRestoreKey(MenuScreen.Settings) -> RailItem.SETTINGS
+            menuRestoreKey(MenuScreen.System) -> RailItem.SYSTEM
+            else -> null
+        }
+    val redirectsFocus = backFromSearch || backFromMenu || railTarget != null
     val wallKey = restoreKey.takeUnless { redirectsFocus }
     // Content never takes arrival focus while a sentinel is sending the
     // remote to one specific bar or rail control instead (`wallKey` is
@@ -116,33 +121,9 @@ internal fun rememberTvCatalogRestore(
             onEntryRestored()
         }
     }
-    LaunchedEffect(backFromLatestRail, ready) {
-        if (backFromLatestRail && ready) {
-            chromeFocus.railRowFocus.getValue(RailItem.LATEST).requestFocus()
-            onEntryRestored()
-        }
-    }
-    LaunchedEffect(backFromGenresRail, ready) {
-        if (backFromGenresRail && ready) {
-            chromeFocus.railRowFocus.getValue(RailItem.GENRES).requestFocus()
-            onEntryRestored()
-        }
-    }
-    LaunchedEffect(backFromStatsRail, ready) {
-        if (backFromStatsRail && ready) {
-            chromeFocus.railRowFocus.getValue(RailItem.STATS).requestFocus()
-            onEntryRestored()
-        }
-    }
-    LaunchedEffect(backFromSettings, ready) {
-        if (backFromSettings && ready) {
-            chromeFocus.railRowFocus.getValue(RailItem.SETTINGS).requestFocus()
-            onEntryRestored()
-        }
-    }
-    LaunchedEffect(backFromSystem, ready) {
-        if (backFromSystem && ready) {
-            chromeFocus.railRowFocus.getValue(RailItem.SYSTEM).requestFocus()
+    LaunchedEffect(railTarget, ready) {
+        if (railTarget != null && ready) {
+            chromeFocus.railRowFocus.getValue(railTarget).requestFocus()
             onEntryRestored()
         }
     }

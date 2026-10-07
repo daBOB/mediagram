@@ -36,6 +36,7 @@ import designsystem.TvTypeScale
 import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.TvFocus
+import ui.tv.rememberStableRequester
 
 /**
  * One of a title spread's pills — `.pill` in `title-page.css`: fully round,
@@ -143,15 +144,13 @@ internal fun TvMorePill(
         TvSpreadPill(text = "⋯", onClick = { open = !open }, modifier = Modifier.focusRequester(button), description = "More")
         if (open) {
             choices.forEachIndexed { index, (label, choose) ->
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val own = remember { FocusRequester() }
                 TvSpreadPill(
                     text = label,
                     onClick = {
                         close()
                         choose()
                     },
-                    modifier = Modifier.focusRequester(if (index == 0) first else own),
+                    modifier = Modifier.focusRequester(rememberStableRequester(first.takeIf { index == 0 })),
                 )
             }
         }

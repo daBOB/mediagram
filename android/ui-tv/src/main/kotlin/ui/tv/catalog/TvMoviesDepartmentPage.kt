@@ -30,6 +30,7 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first as firstOf
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.rememberStableRequester
 
 /** How far past the page's own viewport a section stays composed — one section further either way, generous enough on a page this short. */
 private val MoviesCacheWindow = 900.dp
@@ -68,24 +69,16 @@ internal fun TvMoviesDepartmentPage(
     // The band the remote was last in, the same rule Home keeps: a film
     // Featured also carries in Recently added (unlikely, but not excluded
     // the way the lead itself is) comes back to the row it was opened from.
-    var lastSection by rememberSaveable { mutableStateOf<String?>(null) }
+    var lastSection by rememberSaveable { mutableStateOf<MoviesSection?>(null) }
     val target = remember(dept, restoreKey, lastSection) { moviesDeptTargetOf(dept, restoreKey, lastSection) }
-    val included =
-        remember(dept) {
-            buildList {
-                if (dept.featured.isNotEmpty()) add("featured")
-                if (dept.genres.isNotEmpty()) add("genres")
-                if (dept.acclaimed.isNotEmpty()) add("acclaimed")
-                if (dept.recentlyAdded.isNotEmpty()) add("recentlyAdded")
-                add("all")
-            }
-        }
+    // Exactly the rows the list below draws, in order, so the arrival's scroll index lands on its row.
+    val included = remember(dept) { moviesSections(dept).filter { it.stops.isNotEmpty() }.map { it.id } + MoviesSection.ALL }
     val takesFocus = LocalTakesArrivalFocus.current
     var sectionInView by remember { mutableStateOf(false) }
     LaunchedEffect(target, takesFocus) {
         sectionInView = false
         if (!takesFocus) return@LaunchedEffect
-        val itemIndex = included.indexOf(target.first) + 1 // the hero is item 0.
+        val itemIndex = included.indexOf(target.section) + 1 // the hero is item 0.
         listState.scrollToItem(itemIndex)
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.firstOf { info -> info.any { it.index == itemIndex } }
         sectionInView = true
@@ -93,7 +86,7 @@ internal fun TvMoviesDepartmentPage(
     // The "all films" pill is not a row of its own with a scroll to wait on
     // — once the outer list above has it on screen, its own `focusRequester`
     // is already attached and ready.
-    LaunchedEffect(sectionInView, target) { if (sectionInView && target.first == "all") focus.requestFocus() }
+    LaunchedEffect(sectionInView, target) { if (sectionInView && target.section == MoviesSection.ALL) focus.requestFocus() }
     val rowTakesFocus = takesFocus && sectionInView
 
     val pagePadding = LocalTvPagePadding.current
@@ -112,73 +105,77 @@ internal fun TvMoviesDepartmentPage(
                     TvDepartmentHero(title = Department.MOVIES.label, line = moviesLineOf(dept), lead = dept.lead)
                 }
             }
-            item(key = "featured") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptRow(
-                        "Featured",
-                        dept.featured,
-                        onOpenTitle,
-                        focusAt = target.second.takeIf { target.first == "featured" },
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        heldIds = heldIds,
-                        onSectionFocused = { lastSection = "featured" },
-                    )
+            if (MoviesSection.FEATURED in included) {
+                item(key = MoviesSection.FEATURED) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptRow(
+                            "Featured",
+                            dept.featured,
+                            onOpenTitle,
+                            focusAt = target.stopAt(MoviesSection.FEATURED),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            heldIds = heldIds,
+                            onSectionFocused = { lastSection = MoviesSection.FEATURED },
+                        )
+                    }
                 }
             }
-            if (dept.genres.isNotEmpty()) {
-                item(key = "genres") {
+            if (MoviesSection.GENRES in included) {
+                item(key = MoviesSection.GENRES) {
                     Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
                         Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = "Genres", count = null) }
                         GenreTileRow(
                             dept.genres,
                             onOpenGenre,
-                            focusAt = target.second.takeIf { target.first == "genres" },
+                            focusAt = target.stopAt(MoviesSection.GENRES),
                             focus = focus,
                             takesFocus = rowTakesFocus,
-                            onSectionFocused = { lastSection = "genres" },
+                            onSectionFocused = { lastSection = MoviesSection.GENRES },
                         )
                     }
                 }
             }
-            item(key = "acclaimed") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptRow(
-                        "Acclaimed, not yet seen",
-                        dept.acclaimed,
-                        onOpenTitle,
-                        focusAt = target.second.takeIf { target.first == "acclaimed" },
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        heldIds = heldIds,
-                        onSectionFocused = { lastSection = "acclaimed" },
-                    )
+            if (MoviesSection.ACCLAIMED in included) {
+                item(key = MoviesSection.ACCLAIMED) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptRow(
+                            "Acclaimed, not yet seen",
+                            dept.acclaimed,
+                            onOpenTitle,
+                            focusAt = target.stopAt(MoviesSection.ACCLAIMED),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            heldIds = heldIds,
+                            onSectionFocused = { lastSection = MoviesSection.ACCLAIMED },
+                        )
+                    }
                 }
             }
-            item(key = "recentlyAdded") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptRow(
-                        "Recently added",
-                        dept.recentlyAdded,
-                        onOpenTitle,
-                        focusAt = target.second.takeIf { target.first == "recentlyAdded" },
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        heldIds = heldIds,
-                        onSectionFocused = { lastSection = "recentlyAdded" },
-                    )
+            if (MoviesSection.RECENTLY_ADDED in included) {
+                item(key = MoviesSection.RECENTLY_ADDED) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptRow(
+                            "Recently added",
+                            dept.recentlyAdded,
+                            onOpenTitle,
+                            focusAt = target.stopAt(MoviesSection.RECENTLY_ADDED),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            heldIds = heldIds,
+                            onSectionFocused = { lastSection = MoviesSection.RECENTLY_ADDED },
+                        )
+                    }
                 }
             }
-            item(key = "all") {
+            item(key = MoviesSection.ALL) {
                 // The web's `.dept-all` and the phone's `PagePill`: a round
                 // outline link at the page's foot, 56dp under the last row.
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val own = remember { FocusRequester() }
                 Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.dp, bottom = Spacing.medium)) {
                     TvPagePill(
                         text = "All ${dept.filmCount} films →",
                         onClick = onOpenAllFilms,
-                        modifier = Modifier.focusRequester(if (target.first == "all") focus else own),
+                        modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.section == MoviesSection.ALL })),
                     )
                 }
             }
