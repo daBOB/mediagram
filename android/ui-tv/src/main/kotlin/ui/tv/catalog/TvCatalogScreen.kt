@@ -36,6 +36,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.MenuActions
 import ui.RailItem
+import ui.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
 import ui.tv.chrome.TvLibraryChrome
@@ -169,7 +170,7 @@ fun TvCatalogScreen(
         }
     val homeListState =
         rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = HomeCacheWindow, behind = HomeCacheWindow) })
-    val deptScroll = rememberTvDepartmentScrollStates()
+    val deptScroll = rememberDepartmentScrollStates()
     val hasCover = homeMagazine?.editorial?.cover?.isNotEmpty() == true
     val blend =
         rememberTvCatalogBlend(

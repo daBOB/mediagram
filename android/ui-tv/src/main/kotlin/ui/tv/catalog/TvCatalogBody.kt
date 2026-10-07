@@ -14,6 +14,7 @@ import catalog.franchisesIn
 import catalog.latestOf
 import model.MediaSet
 import ui.RailItem
+import ui.catalog.DepartmentScrollStates
 
 /**
  * What shows below the bar once a tab is chosen — Home, a shelf's wall (or
@@ -35,7 +36,7 @@ internal fun TvCatalogBody(
     selectedPillFocus: FocusRequester,
     homeListState: LazyListState,
     homeMagazine: MagazineHome?,
-    deptScroll: TvDepartmentScrollStates,
+    deptScroll: DepartmentScrollStates,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,

@@ -129,14 +129,3 @@ internal fun TvPreloadDetailLines(state: FilmPreloadState, serverLine: String?, 
         serverLine?.let { TvQuietLine(it, modifier = Modifier.padding(top = Spacing.small)) }
     }
 }
-
-/** What [TvTitlePage] needs to draw a film's Preload control — the television twin of [ui.catalog.TitlePreloadUi]. */
-data class TvTitlePreloadUi(
-    val state: FilmPreloadState,
-    val serverLine: String?,
-    val onToggle: () -> Unit,
-    val onRemove: () -> Unit,
-    val onOpenStorage: () -> Unit,
-    val queuedAheadLabel: String? = null,
-    val needsSpaceBudgetBytes: Long? = null,
-)

@@ -22,6 +22,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import ui.catalog.TitlePreloadUi
 import uniffi.mediagram_core.TitleInfo
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -156,7 +157,7 @@ class TvTitlePageStateTest : TvScreenStateTest() {
         show {
             TvTitlePage(
                 set = film.copy(backdropPath = "/nowhere/backdrop.jpg"), info = info, progress = null, onPlay = {},
-                preload = TvTitlePreloadUi(FilmPreloadState.Done, serverLine = null, onToggle = {}, onRemove = {}, onOpenStorage = {}),
+                preload = TitlePreloadUi(FilmPreloadState.Done, serverLine = null, onToggle = {}, onRemove = {}, onOpenStorage = {}),
                 onToggleEditorsChoice = {},
             )
         }

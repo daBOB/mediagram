@@ -14,6 +14,7 @@ import catalog.showsDepartmentOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
+import ui.catalog.DepartmentScrollStates
 
 /**
  * Every film the Movies shelf holds, one flat wall — "All N films" from the
@@ -73,7 +74,7 @@ internal fun DepartmentOrShelfWall(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     byId: Map<String, MediaSet>,
-    deptScroll: TvDepartmentScrollStates,
+    deptScroll: DepartmentScrollStates,
     onOpenTitle: (setId: String) -> Unit,
     onPlay: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,

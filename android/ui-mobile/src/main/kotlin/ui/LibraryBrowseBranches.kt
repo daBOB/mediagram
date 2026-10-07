@@ -4,9 +4,7 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.BrowseViewModel
@@ -35,7 +33,7 @@ import ui.catalog.PreloadsScreen
 import ui.catalog.ShelfViewChoice
 import ui.catalog.ShelfWall
 import ui.catalog.rememberFranchiseOverviews
-import ui.catalog.rememberPerson
+import ui.catalog.rememberPersonLookup
 import ui.catalog.rememberPortrait
 
 /**
@@ -179,10 +177,11 @@ internal fun PreloadsFrame(
 
 /**
  * A person's page — resolved in two steps, unlike [ResolvedBranch]'s one:
- * [catalog.Person] itself is an async lookup ([rememberPerson]), not
+ * the person itself is an async lookup ([rememberPersonLookup]), not
  * something [catalogState] already has synchronously the way a title or a
  * collection is, so "still fetching" and "asked and nobody by that id"
- * cannot both read as the same `null`. [attempted] is what tells them apart.
+ * cannot both read as the same `null`. [ui.catalog.PersonLookup.loading] is
+ * what tells them apart.
  */
 @Composable
 internal fun PersonFrame(
@@ -200,18 +199,12 @@ internal fun PersonFrame(
     }
     val columns = posterColumnsForCurrentWindow()
     val browseViewModel: BrowseViewModel = hiltViewModel()
-    var attempted by remember(id) { mutableStateOf(false) }
-    val person = rememberPerson(id) { personId ->
-        try {
-            browseViewModel.person(personId)
-        } finally {
-            attempted = true
-        }
-    }
+    val lookup = rememberPersonLookup(id, browseViewModel::person)
+    val person = lookup.person
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
 
     when {
-        !attempted || shelves == null -> LibraryBranch(Destination.Person(LOADING), menuActions, profileBar, browse, at, at::pop) {
+        lookup.loading || shelves == null -> LibraryBranch(Destination.Person(LOADING), menuActions, profileBar, browse, at, at::pop) {
             CenteredMessage("Loading your library…")
         }
         else -> {

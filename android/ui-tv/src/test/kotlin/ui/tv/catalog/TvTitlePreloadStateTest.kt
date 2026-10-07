@@ -24,6 +24,7 @@ import playback.FilmPreloadState
 import playback.PauseReason
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import ui.catalog.TitlePreloadUi
 
 /**
  * [TvTitlePage]'s own Preload control: a plate beside Play carrying the
@@ -44,7 +45,7 @@ class TvTitlePreloadStateTest : TvScreenStateTest() {
         onOpenStorage: () -> Unit = {},
         queuedAheadLabel: String? = null,
         needsSpaceBudgetBytes: Long? = null,
-    ) = TvTitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
+    ) = TitlePreloadUi(state, serverLine, onToggle, onRemove, onOpenStorage, queuedAheadLabel, needsSpaceBudgetBytes)
 
     @Test
     fun withNoPreloadWiredPlayStillTakesFocusAlone() {

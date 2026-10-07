@@ -30,6 +30,7 @@ import model.TitleCredits
 import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
+import ui.catalog.TitlePreloadUi
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -83,7 +84,7 @@ internal fun TvTitlePage(
     onOpenFranchise: (id: Long) -> Unit = {},
     editorsChoice: String? = null,
     onToggleEditorsChoice: (() -> Unit)? = null,
-    preload: TvTitlePreloadUi? = null,
+    preload: TitlePreloadUi? = null,
     watchlisted: Boolean = false,
     onToggleWatchlist: () -> Unit = {},
 ) {

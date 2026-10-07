@@ -27,26 +27,6 @@ import ui.settings.LinePill
 import ui.settings.QuietPill
 
 /**
- * What [TitleDetailScreen] needs to draw a film's Preload control — plain
- * data and callbacks, the same "no ViewModel inside the screen" shape
- * [TitleDetailScreen]'s other optional parameters already take (see
- * `onToggleEditorsChoice`). The wiring layer ([ui.LibraryFlowBranches])
- * collects [playback.FilmPreloading] and builds this; the screen itself
- * never touches Hilt or the engine.
- */
-data class TitlePreloadUi(
-    val state: FilmPreloadState,
-    val serverLine: String?,
-    val onToggle: () -> Unit,
-    val onRemove: () -> Unit,
-    val onOpenStorage: () -> Unit,
-    /** What a [FilmPreloadState.Queued] film's own label adds beyond "Queued" — see [player.queuedAheadLabel]. */
-    val queuedAheadLabel: String? = null,
-    /** The live cache budget a [FilmPreloadState.NeedsSpace] film's own label names — see [player.TitlePreloadViewModel.needsSpaceBudget]. */
-    val needsSpaceBudgetBytes: Long? = null,
-)
-
-/**
  * A film's own Preload control — the pill beside Play, the thin bar under
  * the button row while it runs, and the quiet line naming a paired home
  * server. Android-only by decision (2026-09-27): the web player has no

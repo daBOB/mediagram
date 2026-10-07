@@ -25,6 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.catalog.rememberDepartmentScrollStates
 import ui.tv.TvMoviesPageEntryKey
 import kotlin.test.assertEquals
 
@@ -118,7 +119,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
                 watch = WatchSnapshot.Empty,
                 heldIds = emptySet(),
                 byId = emptyMap(),
-                deptScroll = rememberTvDepartmentScrollStates(),
+                deptScroll = rememberDepartmentScrollStates(),
                 onOpenTitle = {},
                 onPlay = {},
                 onOpenCollection = {},

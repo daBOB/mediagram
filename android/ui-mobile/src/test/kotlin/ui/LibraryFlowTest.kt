@@ -12,10 +12,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.runBlocking
+import model.Credit
+import model.Person
+import model.TitleCredits
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -216,6 +222,31 @@ class LibraryFlowTest {
         collection()
         // A stale season must not turn this new collection visit into its episode list.
         compose.onNodeWithText("Second episode").assertDoesNotExist()
+    }
+
+    /**
+     * A person page says it is still asking until the lookup answers, and
+     * only then says nobody by that id is credited here — never the empty
+     * sentence first.
+     */
+    @Test fun aPersonPageWaitsForItsLookupBeforeSayingNobodyIsCredited() {
+        // Credits are looked up by poster key, which the fixture's films lack:
+        // give the film one and reload the library so its page asks.
+        val sets = runBlocking { fixture.repository.sets() }.map { if (it.setId == "film-1") it.copy(posterKey = "poster-film-1") else it }
+        coEvery { fixture.repository.sets() } returns sets
+        menu("Update library")
+        val answer = CompletableDeferred<Person?>()
+        coEvery { fixture.repository.titleCredits("poster-film-1") } returns TitleCredits(cast = listOf(Credit(7, "Lead Actor", "Hero", null)), crew = emptyList())
+        coEvery { fixture.repository.person(7) } coAnswers { answer.await() }
+        title()
+        compose.onNodeWithText("Cast").performScrollTo().performClick()
+        compose.onNode(hasText("Lead Actor") and hasClickAction()).performScrollTo().performClick()
+
+        compose.onNodeWithText("Loading your library…").assertIsDisplayed()
+        compose.onNodeWithText("Nobody by that number is credited on anything in your library.").assertDoesNotExist()
+
+        compose.runOnUiThread { answer.complete(null) }
+        compose.onNodeWithText("Nobody by that number is credited on anything in your library.").assertIsDisplayed()
     }
 
     @Test fun playingFromAHandBuiltListReturnsToThatList() {

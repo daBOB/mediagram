@@ -1,4 +1,4 @@
-package ui
+package ui.catalog
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,13 +10,30 @@ import catalog.resolvableQueueRows
 import kotlinx.coroutines.flow.map
 import model.MediaSet
 import player.TitlePreloadViewModel
-import ui.catalog.TitlePreloadUi
+import playback.FilmPreloadState
 
 /**
- * A film's own Preload state, plus the actions its control needs — built
- * here rather than inside [ui.catalog.TitleDetailScreen] so that screen
- * stays free of Hilt, the same reason [catalog.BrowseViewModel] is
- * resolved in [LibraryFlowBranches] rather than in the screen it feeds.
+ * What a title page needs to draw a film's Preload control — plain data
+ * and callbacks, so the page itself (the phone's `TitleDetailScreen`, the
+ * TV's `TvTitlePage`) never touches Hilt or the engine. The wiring layer
+ * (the phone's `LibraryTitleBranches`, the TV's `TvLibraryCatalogFrames`)
+ * builds it through [rememberFilmPreloadUi].
+ */
+data class TitlePreloadUi(
+    val state: FilmPreloadState,
+    val serverLine: String?,
+    val onToggle: () -> Unit,
+    val onRemove: () -> Unit,
+    val onOpenStorage: () -> Unit,
+    /** What a [FilmPreloadState.Queued] film's own label adds beyond "Queued" — see [player.queuedAheadLabel]. */
+    val queuedAheadLabel: String? = null,
+    /** The live cache budget a [FilmPreloadState.NeedsSpace] film's own label names — see [player.TitlePreloadViewModel.needsSpaceBudget]. */
+    val needsSpaceBudgetBytes: Long? = null,
+)
+
+/**
+ * A film's own Preload state, plus the actions its control needs, for both
+ * surfaces' title pages.
  *
  * `null` while a film's size is not yet known ([MediaSet.totalBytes] `<= 0`
  * — the control has nothing to preload towards) and, once, for the one
@@ -25,7 +42,7 @@ import ui.catalog.TitlePreloadUi
  * flash "Preload · x GB" on every page open, even for a film already
  * `Done` or mid-`Running`.
  *
- * [viewModel], [set]'s own id and its own size key the two `remember`
+ * The view model, [set]'s own id and its own size key the `remember`
  * blocks below — without them, `stateOf`/`serverLine` (both plain cold
  * `Flow`s, a fresh one on every call) would be invoked again on every
  * recomposition, and `collectAsStateWithLifecycle` restarts its collection
@@ -38,7 +55,7 @@ import ui.catalog.TitlePreloadUi
  * a grown-up's own queued title through "Queued · after …" either.
  */
 @Composable
-internal fun rememberFilmPreloadUi(set: MediaSet, catalogState: CatalogUiState, onOpenStorage: () -> Unit): TitlePreloadUi? {
+fun rememberFilmPreloadUi(set: MediaSet, catalogState: CatalogUiState, onOpenStorage: () -> Unit): TitlePreloadUi? {
     if (set.totalBytes <= 0) return null
     val viewModel: TitlePreloadViewModel = hiltViewModel()
     val state by

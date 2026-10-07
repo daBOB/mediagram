@@ -15,6 +15,7 @@ import designsystem.LocalBackdrop
 import designsystem.Overscan
 import model.MediaSet
 import model.WatchSnapshot
+import ui.catalog.DepartmentScrollStates
 import ui.chrome.asHeroListState
 import ui.chrome.coverBlend
 import ui.tv.chrome.TvDepartmentsBarHeight
@@ -38,7 +39,7 @@ internal fun rememberTvCatalogBlend(
     watch: WatchSnapshot?,
     homeListState: LazyListState,
     homeHasCover: Boolean,
-    deptScroll: TvDepartmentScrollStates,
+    deptScroll: DepartmentScrollStates,
 ): Float {
     // The department this tab is (`null` on Home, a kept wall or
     // Collections) — the one thing [heroArtOf] and [deptScroll] both need to

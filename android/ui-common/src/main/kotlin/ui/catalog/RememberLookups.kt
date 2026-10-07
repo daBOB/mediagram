@@ -1,13 +1,12 @@
 package ui.catalog
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import model.FranchiseInfo
 import model.Person
 import model.TitleCredits
@@ -26,21 +25,7 @@ import uniffi.mediagram_core.TitleInfo
 fun rememberTitleInfo(
     posterKey: String?,
     lookup: suspend (String) -> TitleInfo?,
-): TitleInfo? {
-    var info by remember(posterKey) { mutableStateOf<TitleInfo?>(null) }
-    LaunchedEffect(posterKey) {
-        try {
-            info = posterKey?.let { lookup(it) }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load title details", e)
-        }
-    }
-    return info
-}
+): TitleInfo? = rememberLookup(posterKey, null, "title details lookup") { key -> key?.let { lookup(it) } }.first
 
 /**
  * A title's cast and crew, looked up once per key — the same shape as
@@ -51,73 +36,24 @@ fun rememberTitleInfo(
 fun rememberTitleCredits(
     key: String?,
     lookup: suspend (String) -> TitleCredits,
-): TitleCredits {
-    var credits by remember(key) { mutableStateOf(TitleCredits.Empty) }
-    LaunchedEffect(key) {
-        try {
-            credits = key?.let { lookup(it) } ?: TitleCredits.Empty
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load credits", e)
-        }
-    }
-    return credits
-}
+): TitleCredits = rememberLookup(key, TitleCredits.Empty, "credits lookup") { k -> k?.let { lookup(it) } ?: TitleCredits.Empty }.first
 
-/** One person, looked up once per id — the same shape as [rememberTitleInfo]. */
-@Composable
-fun rememberPerson(
-    personId: Long,
-    lookup: suspend (Long) -> Person?,
-): Person? {
-    var person by remember(personId) { mutableStateOf<Person?>(null) }
-    LaunchedEffect(personId) {
-        try {
-            person = lookup(personId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load a person", e)
-        }
-    }
-    return person
-}
-
-/** [rememberPerson]'s answer, plus whether it is still on its way. */
+/** [rememberPersonLookup]'s answer, plus whether it is still on its way. */
 data class PersonLookup(val person: Person?, val loading: Boolean)
 
 /**
- * [rememberPerson], with [PersonLookup.loading] alongside its answer — a
- * person page needs the two told apart: nobody by that id and "still
- * asking" both start as a `null` [Person], and only one of them is the page's
- * own empty sentence to show.
+ * One person, looked up once per id — the same shape as [rememberTitleInfo],
+ * with [PersonLookup.loading] alongside its answer: a person page needs the
+ * two told apart, since nobody by that id and "still asking" both start as
+ * a `null` [Person], and only one of them is the page's own empty sentence
+ * to show.
  */
 @Composable
 fun rememberPersonLookup(
     personId: Long,
     lookup: suspend (Long) -> Person?,
 ): PersonLookup {
-    var person by remember(personId) { mutableStateOf<Person?>(null) }
-    var loading by remember(personId) { mutableStateOf(true) }
-    LaunchedEffect(personId) {
-        loading = true
-        try {
-            person = lookup(personId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load a person", e)
-        } finally {
-            loading = false
-        }
-    }
+    val (person, loading) = rememberLookup(personId, null, "person lookup", lookup)
     return PersonLookup(person, loading)
 }
 
@@ -127,18 +63,26 @@ fun rememberPersonLookup(
  * both read the same list rather than each asking the index again.
  */
 @Composable
-fun rememberFranchiseOverviews(lookup: suspend () -> List<FranchiseInfo>): List<FranchiseInfo> {
-    var overviews by remember { mutableStateOf<List<FranchiseInfo>>(emptyList()) }
-    LaunchedEffect(Unit) {
-        try {
-            overviews = lookup()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (
-            @Suppress("TooGenericExceptionCaught") e: Exception,
-        ) {
-            Log.w("CatalogMetadata", "Could not load franchise overviews", e)
-        }
+fun rememberFranchiseOverviews(lookup: suspend () -> List<FranchiseInfo>): List<FranchiseInfo> =
+    rememberLookup(Unit, emptyList(), "franchise overviews lookup") { lookup() }.first
+
+/**
+ * [lookup]'s answer for [key], and whether it is still on its way. Starts
+ * at [initial] for each key; a failure is logged as "[what] failed" and
+ * leaves [initial] in place, and a cancellation stays a cancellation.
+ */
+@Composable
+private fun <K, T> rememberLookup(
+    key: K,
+    initial: T,
+    what: String,
+    lookup: suspend (K) -> T,
+): Pair<T, Boolean> {
+    var value by remember(key) { mutableStateOf(initial) }
+    var loading by remember(key) { mutableStateOf(true) }
+    LaunchedEffect(key) {
+        value = orDefault(initial, what) { lookup(key) }
+        loading = false
     }
-    return overviews
+    return value to loading
 }

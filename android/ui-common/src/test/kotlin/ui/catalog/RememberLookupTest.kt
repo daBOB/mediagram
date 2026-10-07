@@ -49,8 +49,17 @@ class RememberLookupTest {
     fun unreadableTitleInfoReportsTheFailedLookup() {
         val failure = IllegalStateException("unreadable title row")
         show { rememberTitleInfo("tmdb-movie-1") { throw failure } }
-        assertEquals(failure, ShadowLog.getLogsForTag("CatalogMetadata").single().throwable)
-        assertTrue(ShadowLog.getLogsForTag("CatalogMetadata").single().msg.contains("title details"))
+        assertEquals(failure, ShadowLog.getLogsForTag(FallbackTag).single().throwable)
+        assertTrue(ShadowLog.getLogsForTag(FallbackTag).single().msg.contains("title details"))
+    }
+
+    /** A failed person lookup is an answer: the page stops saying "loading" and shows its empty sentence. */
+    @Test
+    fun aFailedPersonLookupFinishesLoadingWithNobody() {
+        var lookup: PersonLookup? = null
+        show { lookup = rememberPersonLookup(PersonId) { throw IllegalStateException("unreadable person row") } }
+        assertEquals(PersonLookup(person = null, loading = false), lookup)
+        assertTrue(ShadowLog.getLogsForTag(FallbackTag).single().msg.contains("person lookup"))
     }
 
     @Test
@@ -63,7 +72,7 @@ class RememberLookupTest {
             }
         }
         assertTrue(requireNotNull(job).isCancelled)
-        assertTrue(ShadowLog.getLogsForTag("CatalogMetadata").isEmpty())
+        assertTrue(ShadowLog.getLogsForTag(FallbackTag).isEmpty())
     }
 
     /**
@@ -148,6 +157,9 @@ class RememberLookupTest {
         assertEquals("portrait.jpg", result)
     }
 }
+
+/** The tag `data.orDefault` logs a failed lookup under. */
+private const val FallbackTag = "fallback"
 
 /** Distinct from any personId another test in this class or module might use, so the process-wide portrait sets never collide across tests. */
 private const val PersonId = 90210001L
