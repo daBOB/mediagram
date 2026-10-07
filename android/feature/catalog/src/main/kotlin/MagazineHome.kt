@@ -33,7 +33,7 @@ fun magazineHomeOf(
     /** Overrides [limit] for "Recently added" only — Continue/Next up's own underway cards still use [limit] alone. */
     recentLimit: Int = limit,
 ): MagazineHome {
-    val byId = indexById(shelves)
+    val byId = allSetsById(shelves)
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
 
     // Films only, the way the web's `library.movies` is: the household

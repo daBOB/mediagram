@@ -34,10 +34,9 @@ import uniffi.mediagram_core.TitleInfo
  * ([CoursePage]) — its chapters and lessons, flattened once and shown as
  * one indented list.
  *
- * Every parameter beyond the first six defaults to something inert, so
- * a caller not yet wired for credits, similar shows or a person page keeps
- * compiling — see [TitleDetailScreen]'s own doc comment for the same rule
- * on the film side.
+ * Parameters past [onOpenGenre] default to inert values so a test composes
+ * the page with only what it checks; `LibraryTitleBranches` wires every
+ * one — the same rule as [TitleDetailScreen]'s on the film side.
  */
 @Composable
 fun CollectionScreen(

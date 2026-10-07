@@ -145,15 +145,6 @@ private fun laterOf(
         else -> maxOf(a, b)
     }
 
-/** What follows [setId] in [order], or `null` at the end. Ported from `nextInQueue`/`nextAfter` in library.js. */
-fun nextAfter(
-    order: List<MediaSet>,
-    setId: String,
-): MediaSet? {
-    val at = order.indexOfFirst { it.setId == setId }
-    return if (at == -1 || at == order.lastIndex) null else order[at + 1]
-}
-
 /**
  * Every playable set in a collection, in the order Android's own screens
  * render it: a level's lessons and folders interleaved by their leading

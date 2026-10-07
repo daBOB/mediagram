@@ -116,9 +116,12 @@ internal fun CatalogScreen(
         is CatalogUiState.KidsEmpty -> CenteredMessage(state.message)
         is CatalogUiState.Failed -> CenteredMessage(state.message)
         is CatalogUiState.Ready -> Shelves(
-            state, fetching, chosenTab, onTabChange, onOpenTitle, onOpenCollection, onOpenList, onCreateList,
-            onOpenGenre, onOpenGenresIndex, onOpenLatest, onOpenMoviesPage, onOpenFranchise, onPlayRun, onFinish,
-            onToggleWatchlist, homeListState, deptScroll, now, titleInfo,
+            state = state, fetching = fetching, chosenTab = chosenTab, onTabChange = onTabChange,
+            onOpenTitle = onOpenTitle, onOpenCollection = onOpenCollection, onOpenList = onOpenList,
+            onCreateList = onCreateList, onOpenGenre = onOpenGenre, onOpenGenresIndex = onOpenGenresIndex,
+            onOpenLatest = onOpenLatest, onOpenMoviesPage = onOpenMoviesPage, onOpenFranchise = onOpenFranchise,
+            onPlayRun = onPlayRun, onFinish = onFinish, onToggleWatchlist = onToggleWatchlist,
+            homeListState = homeListState, deptScroll = deptScroll, now = now, titleInfo = titleInfo,
         )
     }
 }

@@ -20,8 +20,8 @@ import catalog.catalogTabsOf
 import catalog.libraryTallyLines
 import catalog.mediaSet
 import catalog.runFor
+import data.CatalogEnrichmentState
 import model.WatchSnapshot
-import system.FetchUiState
 import system.FetchViewModel
 import ui.catalog.CatalogScreen
 import ui.catalog.DepartmentScrollStates
@@ -50,7 +50,7 @@ internal fun LibraryBranches(
     at: LibraryPositions,
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
-    fetchState: FetchUiState,
+    fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
     profileBar: ProfileBarState,

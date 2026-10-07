@@ -154,8 +154,7 @@ internal fun TvLibraryChrome(
 
     // "Back: page -> the selected pill (no pill selected, i.e. a kept wall
     // -> its rail row)" — enabled only while the remote is actually inside
-    // content, the same guard `TvCatalogRoot` once put on its own single
-    // Back-to-masthead step.
+    // content.
     BackHandler(enabled = contentHasFocus) {
         if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
     }

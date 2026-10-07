@@ -60,7 +60,7 @@ fun homeRowsOf(
     /** Overrides [limit] for the Latest shelves' own poster rows only — Continue/Next up still use [limit] alone. */
     posterLimit: Int = limit,
 ): List<HomeRow> {
-    val underway = underwayOf(collectionsForNextUp(shelves), indexById(shelves), watch, limit)
+    val underway = underwayOf(collectionsForNextUp(shelves), allSetsById(shelves), watch, limit)
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
 
@@ -138,11 +138,14 @@ internal fun setCard(
 
 /**
  * Every set anywhere in [shelves], keyed by id — a film as much as an
- * episode or a lesson. Internal rather than private: [continueWall],
- * [watchlistWall] and [kidsWall] in `KeptShelves.kt` resolve the same ids
- * the same way, against the same shelves.
+ * episode or a lesson. [continueWall], [watchlistWall] and [kidsWall] in
+ * `KeptShelves.kt` resolve the same ids the same way, against the same
+ * shelves. A department page needs it for the same reason [homeRowsOf]
+ * does: a Continue row resolves a progress row to its set before the
+ * department's own [showsDepartmentOf] narrows it to one kind, and a
+ * progress row can name a set of any kind.
  */
-internal fun indexById(shelves: List<Shelf>): Map<String, MediaSet> {
+fun allSetsById(shelves: List<Shelf>): Map<String, MediaSet> {
     val byId = HashMap<String, MediaSet>()
     for (shelf in shelves) {
         for (entry in shelf.entries) {

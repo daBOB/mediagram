@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.catalog.films
 import ui.tv.profile.TvChosenProfile
@@ -18,21 +19,21 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * [TvCatalogRoot]'s own `onPlay` — the cover story's "Watch now"
+ * [TvCatalogScreen]'s own `onPlay` — the cover story's "Watch now"
  * (`web/home-cover.js:137`) plays straight away rather than opening the
  * title page every other plate on this screen leads to, which is what
  * `onPlay`'s own default (`= onOpenTitle`) would otherwise do.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
-class TvCatalogRootPlayStateTest : TvScreenStateTest() {
+class TvCatalogScreenPlayStateTest : TvScreenStateTest() {
     @Test
     fun watchNowPlaysStraightAwayRatherThanOpeningTheTitlePage() {
         val featured = films(4).map { it.copy(backdropPath = "/bd${it.setId}", posterPath = "/p${it.setId}") }
         var opened: String? = null
         var played: String? = null
         show {
-            TvCatalogRoot(
+            TvCatalogScreen(
                 state = CatalogUiState.Ready(shelvesOf(featured), watch = WatchSnapshot.Empty),
                 profile = TvChosenProfile(name = "Ada", onChoose = {}),
                 fetching = false,

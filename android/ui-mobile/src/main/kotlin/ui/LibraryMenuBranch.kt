@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
 import catalog.MenuScreen
 import catalog.libraryTallyLines
-import system.FetchUiState
+import data.CatalogEnrichmentState
 import system.FetchViewModel
 import ui.settings.SettingsScreen
 import ui.settings.SettingsSection
@@ -23,7 +23,7 @@ internal fun MenuBranch(
     menuScreen: MenuScreen,
     at: LibraryPositions,
     catalogState: CatalogUiState,
-    fetchState: FetchUiState,
+    fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     menuActions: MenuActions,
     profileBar: ProfileBarState,

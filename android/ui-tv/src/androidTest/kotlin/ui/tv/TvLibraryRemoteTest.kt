@@ -34,6 +34,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvTitlePage
 import ui.tv.profile.TvChosenProfile
@@ -147,7 +148,7 @@ class TvLibraryRemoteTest {
         compose.setContent {
             TvTheme {
                 TvShell {
-                    TvCatalogRoot(
+                    TvCatalogScreen(
                         state = CatalogUiState.Ready(shelvesOf((0 until 10).map(::film))),
                         profile = TvChosenProfile(name = "Ada", onChoose = {}),
                         fetching = false,

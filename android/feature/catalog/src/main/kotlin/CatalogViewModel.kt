@@ -260,7 +260,7 @@ class CatalogViewModel
 
         /** Which of these sets this device holds in full, asked of the cache alone. */
         private suspend fun heldIdsOf(shelves: List<Shelf>): Set<String> =
-            heldSets.heldIds(indexById(shelves).values.map { it.setId to it.totalBytes })
+            heldSets.heldIds(allSetsById(shelves).values.map { it.setId to it.totalBytes })
 
         private fun heldEventApplied(setId: String) {
             val kept = lastReady ?: return

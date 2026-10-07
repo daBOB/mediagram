@@ -44,10 +44,8 @@ private val POSTER_WIDTH = 120.dp
  * provider entry, and a library assembled without a TMDB key has no rows at
  * all. Every block it would fill is left out instead of being shown empty.
  *
- * Every parameter beyond [set]/[info]/[onPlay]/[onOpenGenre] defaults to
- * something inert, so a caller not yet wired for credits, franchises or a
- * person page keeps compiling — a real `titleCredits`/`fetchPortrait`/
- * watchlist-toggle wiring is what turns the Cast tab and "My List" pill on.
+ * Parameters past [onOpenGenre] default to inert values so a test composes
+ * the page with only what it checks; `LibraryTitleBranches` wires every one.
  */
 @Composable
 fun TitleDetailScreen(
