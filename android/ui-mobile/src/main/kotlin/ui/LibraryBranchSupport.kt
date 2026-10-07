@@ -10,7 +10,6 @@ import androidx.compose.runtime.saveable.SaveableStateHolder
 import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.Department
-import catalog.Destination
 import catalog.Shelf
 import catalog.allSetsById
 import catalog.heroArtOf

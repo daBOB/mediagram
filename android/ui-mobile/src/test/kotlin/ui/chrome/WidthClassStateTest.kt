@@ -27,7 +27,7 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import catalog.CatalogTab
-import catalog.Destination
+import ui.Destination
 import catalog.KeptKind
 import catalog.mastheadTabsOf
 import designsystem.MediagramTheme

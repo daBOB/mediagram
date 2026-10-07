@@ -1,5 +1,6 @@
-package catalog
+package ui
 
+import catalog.MenuScreen
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -98,8 +99,8 @@ class DestinationTest {
     @Test
     fun everyMenuScreenIsNamedAndCanBeLeft() {
         for (screen in MenuScreen.entries) {
-            assertTrue(barTitleFor(screen.destination).isNotEmpty(), "${screen.name} has no name in the bar")
-            assertEquals("Back", backLabelFor(screen.destination))
+            assertTrue(barTitleFor(destinationOf(screen)).isNotEmpty(), "${screen.name} has no name in the bar")
+            assertEquals("Back", backLabelFor(destinationOf(screen)))
         }
     }
 

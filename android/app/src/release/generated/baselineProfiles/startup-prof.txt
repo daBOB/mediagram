@@ -17093,16 +17093,6 @@ PLcatalog/DepartmentsKt$moviesDepartmentOf$$inlined$sortedByDescending$2;-><init
 PLcatalog/DepartmentsKt$moviesDepartmentOf$$inlined$sortedByDescending$2;->compare(Ljava/lang/Object;Ljava/lang/Object;)I
 PLcatalog/DepartmentsKt$moviesDepartmentOf$$inlined$sortedByDescending$3;-><init>()V
 PLcatalog/DepartmentsKt$moviesDepartmentOf$$inlined$sortedByDescending$3;->compare(Ljava/lang/Object;Ljava/lang/Object;)I
-Lcatalog/Destination;
-Lcatalog/Destination$Settings;
-HSPLcatalog/Destination$Settings;-><clinit>()V
-HSPLcatalog/Destination$Settings;-><init>()V
-Lcatalog/Destination$System;
-HSPLcatalog/Destination$System;-><clinit>()V
-HSPLcatalog/Destination$System;-><init>()V
-Lcatalog/Destination$TmdbKey;
-HSPLcatalog/Destination$TmdbKey;-><clinit>()V
-HSPLcatalog/Destination$TmdbKey;-><init>()V
 PLcatalog/Division;-><init>(Ljava/lang/String;Ljava/lang/Integer;Ljava/util/List;Ljava/util/List;)V
 PLcatalog/Division;->getChildren()Ljava/util/List;
 PLcatalog/Division;->getItems()Ljava/util/List;
@@ -17275,7 +17265,7 @@ HSPLcatalog/MastheadSplit;->getDepartments()Ljava/util/List;
 Lcatalog/MenuScreen;
 HSPLcatalog/MenuScreen;->$values()[Lcatalog/MenuScreen;
 HSPLcatalog/MenuScreen;-><clinit>()V
-HSPLcatalog/MenuScreen;-><init>(Ljava/lang/String;ILcatalog/Destination;)V
+HSPLcatalog/MenuScreen;-><init>(Ljava/lang/String;I)V
 PLcatalog/MoviesDepartment;-><init>(IILmodel/MediaSet;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
 PLcatalog/MoviesDepartment;->equals(Ljava/lang/Object;)Z
 PLcatalog/MoviesDepartment;->getAcclaimed()Ljava/util/List;

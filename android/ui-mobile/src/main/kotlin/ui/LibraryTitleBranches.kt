@@ -8,7 +8,6 @@ import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.CollectionKind
-import catalog.Destination
 import catalog.MenuScreen
 import catalog.firstItemOf
 import model.Kind

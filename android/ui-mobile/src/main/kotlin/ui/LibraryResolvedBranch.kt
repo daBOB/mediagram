@@ -3,7 +3,6 @@ package ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
-import catalog.Destination
 import ui.catalog.CenteredMessage
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState

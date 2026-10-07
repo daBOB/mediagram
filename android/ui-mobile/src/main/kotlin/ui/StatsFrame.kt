@@ -2,7 +2,6 @@ package ui
 
 import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
-import catalog.Destination
 import ui.catalog.StatsScreen
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState

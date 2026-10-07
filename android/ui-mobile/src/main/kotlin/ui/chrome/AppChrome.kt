@@ -27,10 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.window.core.layout.WindowWidthSizeClass
-import catalog.Destination
-import catalog.backLabelFor
-import catalog.barTitleFor
-import catalog.showsSearchAction
+import ui.Destination
+import ui.backLabelFor
+import ui.barTitleFor
+import ui.showsSearchAction
 import ui.MenuActions
 import ui.RailItem
 import ui.pageGround

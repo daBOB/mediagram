@@ -60,8 +60,16 @@ internal fun MenuBranch(
             )
 
         MenuScreen.TmdbKey ->
-            LibraryBranch(menuScreen.destination, menuActions, profileBar, browse, at, at::pop) {
+            LibraryBranch(destinationOf(menuScreen), menuActions, profileBar, browse, at, at::pop) {
                 TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)
             }
     }
 }
+
+/** The bar's own destination for a menu screen: Storage is Settings opened at one section, so the bar names it Settings. */
+internal fun destinationOf(screen: MenuScreen): Destination =
+    when (screen) {
+        MenuScreen.System -> Destination.System
+        MenuScreen.TmdbKey -> Destination.TmdbKey
+        MenuScreen.Settings, MenuScreen.Storage -> Destination.Settings
+    }

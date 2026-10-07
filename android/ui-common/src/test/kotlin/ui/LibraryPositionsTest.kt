@@ -1,7 +1,6 @@
 package ui
 
 import androidx.compose.runtime.MutableState
-import catalog.Destination
 import catalog.MenuScreen
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -80,7 +79,7 @@ class LibraryPositionsTest {
 
         at.openMenu(MenuScreen.TmdbKey)
 
-        assertEquals(Destination.TmdbKey, at.menuScreen?.destination)
+        assertEquals(MenuScreen.TmdbKey, at.menuScreen)
         assertEquals(FrameKind.MENU, at.top)
 
         // Moved, not stacked: one leave clears the menu entirely.

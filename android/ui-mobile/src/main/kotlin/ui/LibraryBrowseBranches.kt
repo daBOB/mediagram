@@ -11,7 +11,6 @@ import catalog.BrowseViewModel
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.Department
-import catalog.Destination
 import catalog.Entry
 import catalog.ShelfViewModel
 import catalog.allTitles

@@ -1,4 +1,6 @@
-package catalog
+package ui
+
+import catalog.Department
 
 /**
  * Where in the library a viewer currently is. The catalog is the root; a
