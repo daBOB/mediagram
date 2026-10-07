@@ -39,7 +39,7 @@ async fn publish<L: Link>(session: &mut Session<'_, L>, no_push: bool) -> Result
     if no_push || pins::publish_owed(&session.conn)?.is_none() {
         return Ok(());
     }
-    if lock::is_held(&session.data_dir) {
+    if lock::any_held(&session.data_dir, session.cfg.upload_slots) {
         println!(
             "index not pushed yet: another upload is running; the next upload or \
              `mediagram push-index` publishes it"

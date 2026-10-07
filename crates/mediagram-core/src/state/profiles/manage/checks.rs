@@ -60,10 +60,8 @@ impl ProfileManager<'_> {
         if actor.kids {
             return Ok(Some(NotAllowed));
         }
-        if !unproven {
-            if let Some(refused) = self.prove(actor, pin)? {
-                return Ok(Some(refused));
-            }
+        if !unproven && let Some(refused) = self.prove(actor, pin)? {
+            return Ok(Some(refused));
         }
         let views: Vec<_> = rows.iter().map(Stored::view).collect();
         let allowed = rules::allowed(&views, actor_id, action, target_id.unwrap_or_default());

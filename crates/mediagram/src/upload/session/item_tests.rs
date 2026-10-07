@@ -84,6 +84,27 @@ async fn a_held_set_whose_original_is_still_being_read_keeps_its_source() {
     assert!(source.exists());
 }
 
+/// When the index cannot say whether the original is still being read, the
+/// file is kept: deleting it is the one step that cannot be taken back.
+#[tokio::test]
+async fn a_held_set_whose_original_cannot_be_checked_keeps_its_source() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg = config_in(dir.path());
+    let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
+    let (mut item, source) = planned(dir.path(), "01J000000000000000000ITEM1");
+    item.delete_source = Some(source.clone());
+    let conn = db::open(dir.path()).unwrap();
+    sets::set_status(&conn, "01J000000000000000000ITEM1", SetStatus::Complete).unwrap();
+    let mut session = Session::new(&cfg, FakeLink::new(&transport, &channel, &connects)).unwrap();
+    session.conn.execute_batch("DROP TABLE meta").unwrap();
+
+    let (outcome, starts) = run_one(&mut session, &item).await;
+
+    assert!(matches!(outcome, Some(Outcome::AlreadyHeld)));
+    assert_eq!(starts, 0);
+    assert!(source.exists());
+}
+
 /// Only a set `add` planned for exactly this file vouches for the file. A
 /// walked item found complete was uploaded from some other copy, so the
 /// file named here is not deleted on its account.

@@ -33,6 +33,10 @@ struct Body {
 }
 
 /// The caption for a snapshot pushed at `pushed_at` holding `sets` sets.
+///
+/// # Panics
+/// Never, in practice: the body is only strings and integers, which always
+/// serialize.
 #[must_use]
 pub fn render(pushed_at: i64, sets: i64) -> String {
     let body = Body {

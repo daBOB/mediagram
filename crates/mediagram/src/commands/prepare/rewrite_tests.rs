@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use super::{Candidate, PrepareArgs, plan_prepare, rewrite::rewrite_all};
 use crate::media::prepare::paths::working_path;
 use crate::media::streams::{self, StreamKind};
-use crate::media::test_fixtures::{ffmpeg_required, make_faststart_mp4};
+use crate::test_fakes::media::{ffmpeg_required, make_faststart_mp4};
 
 struct Fixture {
     _dir: tempfile::TempDir,

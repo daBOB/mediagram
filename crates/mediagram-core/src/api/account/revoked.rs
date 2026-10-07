@@ -103,6 +103,18 @@ pub(in crate::api) async fn checked_for<T, E: Error + Send + Sync + 'static>(
     }
 }
 
+/// What Kotlin is told when a Telegram call fails: `what`, with the cause
+/// logged in Rust — or `NotAuthorized` when the login itself was refused.
+pub(in crate::api) async fn failed(
+    core: &Core,
+    owner: &SenderPoolFatHandle,
+    what: &str,
+    err: anyhow::Error,
+) -> CoreError {
+    let fallback = CoreError::network(what)(&err);
+    unless_revoked_for(core, owner, err.as_ref(), fallback).await
+}
+
 #[cfg(test)]
 mod tests {
     use grammers_mtsender::RpcError;

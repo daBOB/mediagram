@@ -9,18 +9,7 @@ use std::collections::HashSet;
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-/// Whether this snapshot's `library.db` has ever recorded a custom image —
-/// `false` for any snapshot older than the table, or one the uploader has
-/// never written to. [`keys`] answers the more useful "which keys", read the
-/// same way; this stays for [`get`]'s own single-key form, which has no set
-/// of keys to check a key against.
-pub fn table_exists(conn: &Connection) -> rusqlite::Result<bool> {
-    conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name = 'artwork')",
-        [],
-        |row| row.get(0),
-    )
-}
+use crate::sqlite_schema::table_exists;
 
 /// Every key this snapshot's `artwork` table holds bytes for, read once so a
 /// listing can ask "is there art for this key" against an in-memory set
@@ -28,7 +17,7 @@ pub fn table_exists(conn: &Connection) -> rusqlite::Result<bool> {
 /// `artworkKeys` reads once per catalog (`web/src/catalog/artwork-routes.ts`).
 /// Empty, not an error, for a snapshot with no such table.
 pub fn keys(conn: &Connection) -> rusqlite::Result<HashSet<String>> {
-    if !table_exists(conn)? {
+    if !table_exists(conn, "artwork")? {
         return Ok(HashSet::new());
     }
     let mut stmt = conn.prepare("SELECT key FROM artwork")?;
@@ -48,7 +37,7 @@ pub fn keys(conn: &Connection) -> rusqlite::Result<HashSet<String>> {
 pub fn get(conn: &Connection, key: &str) -> rusqlite::Result<Option<(String, Vec<u8>)>> {
     #[cfg(test)]
     GET_CALLS.with(|calls| calls.set(calls.get() + 1));
-    if !table_exists(conn)? {
+    if !table_exists(conn, "artwork")? {
         return Ok(None);
     }
     conn.query_row(

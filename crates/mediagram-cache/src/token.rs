@@ -10,6 +10,8 @@ use std::path::Path;
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::{Digest, Sha256};
 
+use crate::store::publish::{publish_new, temp_name};
+
 type HmacSha256 = Hmac<Sha256>;
 
 /// The header value's scheme: `Authorization: MGC1 <hex>`.
@@ -21,9 +23,10 @@ pub const SCHEME: &str = "MGC1";
 /// unpair every device.
 ///
 /// Refuses to start rather than run with anything short of a well-formed
-/// token: a partial write a crash or a full disk left behind (`create_new`
-/// then `write_all`, non-atomically, was the earlier design) would
-/// otherwise become a real, if empty or truncated, HMAC key.
+/// token: a partial write a crash or a full disk left behind would
+/// otherwise become a real, if empty or truncated, HMAC key. So the token
+/// is written whole to a temp file and only then published under its name,
+/// never written in place.
 pub fn ensure(state_dir: &Path) -> io::Result<String> {
     let path = state_dir.join("token");
     if let Some(token) = read_valid(&path)? {
@@ -40,21 +43,12 @@ pub fn ensure(state_dir: &Path) -> io::Result<String> {
     getrandom::fill(&mut buf).expect("the OS random source is available");
     let token = hex::encode(buf);
 
-    // Staged under a name unique to this call, then published with a
-    // no-overwrite link — the same publish scheme a chunk body and a set's
-    // total use — so the file that ends up at `path` is always either
-    // absent or complete, never briefly empty for a racing reader to see.
     let tmp_path = state_dir.join(temp_name());
     write_private(&tmp_path, &token)?;
-    let publish = fs::hard_link(&tmp_path, &path);
-    let _ = fs::remove_file(&tmp_path);
-    match publish {
-        Ok(()) => Ok(token),
-        Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
-            read_valid(&path)?.ok_or_else(|| invalid_token_error(&path))
-        }
-        Err(e) => Err(e),
+    if publish_new(&tmp_path, &path)? {
+        return Ok(token);
     }
+    read_valid(&path)?.ok_or_else(|| invalid_token_error(&path))
 }
 
 /// `Ok(None)` for "no token file yet"; `Err` for one that exists but is not
@@ -90,12 +84,6 @@ fn is_valid_token(token: &str) -> bool {
         && token
             .bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-}
-
-fn temp_name() -> String {
-    let mut buf = [0u8; 16];
-    getrandom::fill(&mut buf).expect("the OS random source is available");
-    hex::encode(buf)
 }
 
 #[cfg(unix)]

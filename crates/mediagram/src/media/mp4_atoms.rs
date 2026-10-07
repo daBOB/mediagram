@@ -110,9 +110,7 @@ fn is_mp4_family(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::media::test_fixtures::{
-        ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4,
-    };
+    use crate::test_fakes::media::{ffmpeg_required, make_faststart_mp4, make_trailing_moov_mp4};
 
     #[test]
     fn non_mp4_extension_is_never_scanned() {

@@ -5,7 +5,6 @@
 use std::io::Cursor;
 
 use grammers_client::Client;
-use grammers_client::client::{DownloadIter, SearchIter};
 use grammers_client::media::{Document, Uploaded};
 use grammers_client::message::{InputMessage, Message};
 use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
@@ -15,6 +14,7 @@ use grammers_tl_types::enums::MessagesFilter;
 use super::publish::{self, DocumentWriter};
 use crate::api::account::revoked::checked_for;
 use crate::api::channel::index::channel_error;
+use crate::api::channel::responses::Responses;
 use crate::api::{Core, CoreError};
 use crate::state::channel::device_from_caption;
 use crate::state::sync::{ChannelDocument, StateChannel};
@@ -115,26 +115,6 @@ impl DocumentWriter for TelegramStateChannel<'_> {
             .delete_messages(self.peer, &[id])
             .await
             .map(|_| ())
-    }
-}
-
-/// Raw streaming IO shared by grammers' message and document iterators.
-trait Responses {
-    type Item;
-    async fn next_response(&mut self) -> Result<Option<Self::Item>, InvocationError>;
-}
-
-impl Responses for SearchIter {
-    type Item = Message;
-    async fn next_response(&mut self) -> Result<Option<Message>, InvocationError> {
-        self.next().await
-    }
-}
-
-impl Responses for DownloadIter {
-    type Item = Vec<u8>;
-    async fn next_response(&mut self) -> Result<Option<Vec<u8>>, InvocationError> {
-        self.next().await
     }
 }
 

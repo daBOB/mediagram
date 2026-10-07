@@ -40,12 +40,31 @@ pub fn poster_key_is_valid(key: &str) -> bool {
         return false;
     };
     let season_ok = match (parts.next(), parts.next()) {
-        (None, _) => true,
-        (Some(BACKDROP_SUFFIX), None) => true,
+        (None, _) | (Some(BACKDROP_SUFFIX), None) => true,
         (Some(season), None) => season.strip_prefix('s').is_some_and(is_digits),
         _ => false,
     };
     is_lower_alpha(source) && is_lower_alpha(kind) && is_digits(id) && season_ok
+}
+
+/// The key a TMDB title or person is stored under: `tmdb-{kind}-{id}`, with
+/// `kind` spelled `movie`, `tv` or `person`. TMDB numbers films, series and
+/// people independently, so the kind is what tells film 550 from series 550.
+#[must_use]
+pub fn tmdb_key(kind: &str, id: impl std::fmt::Display) -> String {
+    format!("tmdb-{kind}-{id}")
+}
+
+/// The `(kind, id)` a [`tmdb_key`] names, read back. `None` for any other
+/// key: a season's or a backdrop's (`tmdb-tv-1396-s2`, `tmdb-movie-550-bg`),
+/// a `title-` key, another provider's, or a malformed one.
+#[must_use]
+pub fn tmdb_title_of(key: &str) -> Option<(&str, u64)> {
+    if !poster_key_is_valid(key) {
+        return None;
+    }
+    let (kind, id) = key.strip_prefix("tmdb-")?.split_once('-')?;
+    Some((kind, id.parse().ok()?))
 }
 
 /// Whether `s` is exactly what [`crate::slug::slug`] would produce: nonempty,

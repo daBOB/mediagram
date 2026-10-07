@@ -41,3 +41,12 @@ pub fn open(path: impl AsRef<Path>) -> rusqlite::Result<Connection> {
     configure();
     Connection::open(path)
 }
+
+/// [`open`] with `flags`, for the same reason.
+pub fn open_with_flags(
+    path: impl AsRef<Path>,
+    flags: rusqlite::OpenFlags,
+) -> rusqlite::Result<Connection> {
+    configure();
+    Connection::open_with_flags(path, flags)
+}

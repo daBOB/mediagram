@@ -7,7 +7,6 @@
 [![Rust](https://img.shields.io/badge/uploader-Rust%202024-b7410e?logo=rust)](crates/mediagram)
 [![Bun](https://img.shields.io/badge/web%20player-Bun-f9f1e1?logo=bun&logoColor=black)](web)
 [![Android](https://img.shields.io/badge/app-Android%20%26%20Google%20TV-3ddc84?logo=android&logoColor=white)](android)
-[![Version](https://img.shields.io/badge/version-0.66.2-informational)](Cargo.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](Cargo.toml)
 
 [How it works](#how-it-works) ·
@@ -100,7 +99,7 @@ The format is specified in [`docs/mlib-spec.md`](docs/mlib-spec.md).
 
 | | |
 |---|---|
-| Rust | 1.87+ (edition 2024); `rust-toolchain.toml` pins `stable` |
+| Rust | 1.88+ (edition 2024); `rust-toolchain.toml` pins `stable` |
 | ffmpeg | `ffmpeg` and `ffprobe` on `PATH`, for inspection and remuxing |
 | SQLite | a system `libsqlite3`. `rusqlite` links against it, because grammers already statically links its own copy and two bundled copies collide at link time |
 | Telegram | an `api_id`/`api_hash` from <https://my.telegram.org>, and a private broadcast channel where your account is an admin. Premium is needed for the 3.5 GiB parts |
@@ -283,7 +282,7 @@ de-duplicates across machines until the next merge.
 | `remove <set-id>` | Permanently delete a set: its channel messages and its index rows. |
 | `rescan` | Rebuild `library.db` from channel captions. Additive only: it never demotes or deletes a set the index already has. |
 | `export-package [--publish] [--dry-run]` | Build the encrypted prebuilt package a player can read from a plain URL. See [publishing a package](#publishing-a-package-for-a-player). |
-| `serve` | Serve this machine's library over HTTP (Range requests over a set's parts). |
+| `serve` | Serve a set's bytes over HTTP Range from this machine's session — kept as the reference twin of the web player's routes and Range responses. The web player and the Android app read Telegram themselves. |
 
 `--full` re-downloads every byte, 512 KiB per request, so a multi-terabyte
 library takes hours; it prints the total and an estimate before it starts.

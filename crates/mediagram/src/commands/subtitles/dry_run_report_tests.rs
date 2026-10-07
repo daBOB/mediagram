@@ -83,11 +83,14 @@ fn subtitle_tracks_are_counted_as_de_en_text_or_picture_only() {
 }
 
 #[test]
-fn an_episode_is_titled_by_show_and_numbers_anything_else_by_its_title() {
+fn a_numbered_set_is_titled_by_show_and_position_code_anything_else_by_its_title() {
     let single = episode("e1", "Dark", 1, Episode::Single(3));
     assert_eq!(display_title(&single), "Dark S01E03");
     let double = episode("e2", "Dark", 2, Episode::Range([4, 5]));
-    assert_eq!(display_title(&double), "Dark S02E04");
+    assert_eq!(display_title(&double), "Dark S02E04-E05");
+    let mut lesson = episode("t", "Rust Course", 1, Episode::Single(2));
+    lesson.kind = Kind::Tut;
+    assert_eq!(display_title(&lesson), "Rust Course C01L02");
 
     assert_eq!(display_title(&set("m", Kind::Movie, "Heat", &[])), "Heat");
     let mut untitled = set("s", Kind::Ep, "x", &[]);

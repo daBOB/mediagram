@@ -11,8 +11,8 @@ use grammers_session::types::PeerRef;
 use super::message_gone::message_is_gone;
 use super::remote::{Candidate, ChannelRemote, Unpin};
 use crate::telegram::client::Tg;
+use crate::telegram::messages::fetch_messages;
 use crate::telegram::retry::{with_flood_wait_only, with_retry};
-use crate::verify::download_hash::fetch_messages;
 use mediagram_core::transport::document::message_document;
 
 /// How many pins, and how many marker-search hits, to read: the same bounds

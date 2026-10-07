@@ -342,3 +342,54 @@ mod reshelving {
         assert_eq!(parsed.show, None);
     }
 }
+
+/// `--refresh` re-asks the provider for the words. The year it brings back
+/// only fills a gap: a year set by hand is a correction a refresh run for
+/// another reason (a new `tmdb_language`, say) must not undo.
+mod refresh {
+    use super::*;
+    use mediagram::edit::plan::{Clearable, Fetched, apply_checked, merge_refreshed};
+
+    fn fetched() -> Fetched {
+        Fetched {
+            title: Some("Verlassen".into()),
+            show: Some("Spartacus: Das Haus des Ashur".into()),
+            year: Some(2011),
+        }
+    }
+
+    #[test]
+    fn a_year_already_on_the_row_survives_a_refresh() {
+        let mut edits = Edits::default();
+        merge_refreshed(&row(), &mut edits, fetched());
+
+        let edited = apply_checked(&row(), &edits).unwrap();
+        assert_eq!(edited.year, Some(2025));
+        assert_eq!(edited.title.as_deref(), Some("Verlassen"));
+        assert_eq!(
+            edited.show.as_deref(),
+            Some("Spartacus: Das Haus des Ashur")
+        );
+    }
+
+    #[test]
+    fn a_missing_year_is_filled_from_the_refresh() {
+        let mut yearless = row();
+        yearless.year = None;
+        let mut edits = Edits::default();
+        merge_refreshed(&yearless, &mut edits, fetched());
+
+        assert_eq!(apply_checked(&yearless, &edits).unwrap().year, Some(2011));
+    }
+
+    #[test]
+    fn a_refresh_can_clear_the_year_in_the_same_command() {
+        let mut edits = Edits {
+            clear: vec![Clearable::Year],
+            ..Edits::default()
+        };
+        merge_refreshed(&row(), &mut edits, fetched());
+
+        assert_eq!(apply_checked(&row(), &edits).unwrap().year, None);
+    }
+}

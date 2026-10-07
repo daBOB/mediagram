@@ -14,6 +14,7 @@ use serde_json::{Value, json};
 use mediagram_tmdb::disk_cache::DiskCachedApi;
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use support::tmdb::metadata::resolve::{ResolveInput, ResolvedItem, resolve};
+use support::tmdb::metadata::title_details::record_for_title;
 use support::tmdb::{FixtureApi, ScriptedPrompter, StubApi};
 
 use mlib_spec::{Episode, Kind, ProviderIds};
@@ -337,4 +338,36 @@ async fn explicit_imdb_id_resolves_via_find_endpoint() {
 
     assert_eq!(item.ids.tmdb, Some(603));
     assert_eq!(item.title.as_deref(), Some("The Matrix"));
+}
+
+/// A title the provider will not describe is skipped, not an error: the
+/// upload or the `metadata` run goes on, and nothing is recorded for it.
+#[tokio::test]
+async fn a_title_the_provider_will_not_describe_records_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = mediagram::index::db::open(dir.path()).unwrap();
+    let api = FixtureApi::new(&[]);
+
+    let recorded = record_for_title(&conn, &api, Kind::Movie, 603, "en-US")
+        .await
+        .unwrap();
+
+    assert_eq!(recorded, None);
+    assert_eq!(mediagram::index::shows::count(&conn).unwrap(), 0);
+}
+
+/// A described title is recorded even when its credits cannot be had; a film
+/// with no collection has no franchise to fetch.
+#[tokio::test]
+async fn a_described_title_is_recorded_without_its_credits() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = mediagram::index::db::open(dir.path()).unwrap();
+    let api = FixtureApi::new(&[("/movie/603", "movie_603.json")]);
+
+    let recorded = record_for_title(&conn, &api, Kind::Movie, 603, "en-US")
+        .await
+        .unwrap();
+
+    assert_eq!(recorded, Some((false, false)));
+    assert_eq!(mediagram::index::shows::count(&conn).unwrap(), 1);
 }

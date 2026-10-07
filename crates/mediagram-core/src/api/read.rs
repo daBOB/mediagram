@@ -2,7 +2,6 @@
 //! and download loop `mediagram serve` uses, collected into a buffer rather
 //! than streamed into an HTTP response body.
 
-use grammers_mtsender::SenderPoolFatHandle;
 use std::collections::HashMap;
 
 use grammers_session::types::{PeerId, PeerRef};
@@ -104,7 +103,7 @@ pub(super) async fn read(
     };
     let (fetched, drained) = tokio::join!(fetch, drain);
     if let Err(err) = fetched.and(drained) {
-        return Err(failed(core, &owner, INTERRUPTED, err).await);
+        return Err(revoked::failed(core, &owner, INTERRUPTED, err).await);
     }
     Ok(out)
 }
@@ -125,18 +124,6 @@ const MAX_RESERVATION: u64 = 4 * 1024 * 1024;
 /// `offset` and `end` are positions in a film that can run past 4 GiB.
 fn reservation(offset: u64, end: u64) -> usize {
     usize::try_from((end - offset + 1).min(MAX_RESERVATION)).unwrap_or(0)
-}
-
-/// What Kotlin is told when a Telegram call fails: `what`, with the cause
-/// logged in Rust — or `NotAuthorized` when the login itself was refused.
-async fn failed(
-    core: &Core,
-    owner: &SenderPoolFatHandle,
-    what: &str,
-    err: anyhow::Error,
-) -> CoreError {
-    let fallback = CoreError::network(what)(&err);
-    revoked::unless_revoked_for(core, owner, err.as_ref(), fallback).await
 }
 
 /// How to address the channel a part lives in.

@@ -150,34 +150,41 @@ async fn rewrite(
         command.args(["-c", "copy"]);
     }
     command.arg(&working);
-    if let Err(err) = ffmpeg_progress::run(command, &job)
-        .await
-        .with_context(|| format!("running ffmpeg on {}", source.display()))
-    {
-        let _ = std::fs::remove_file(&working);
-        return Err(err);
-    }
+    // Every failure from here to the check leaves an unverified copy, often
+    // gigabytes, beside the source; one exit path removes it whichever step
+    // failed.
+    let new_size = async {
+        ffmpeg_progress::run(command, &job)
+            .await
+            .with_context(|| format!("running ffmpeg on {}", source.display()))?;
+        let probed = streams::probe(&working).await?;
+        let new_size = std::fs::metadata(&working)
+            .with_context(|| format!("sizing {}", working.display()))?
+            .len();
+        let expected = plan.expected_audio_languages(keep_audio);
 
-    let probed = streams::probe(&working).await?;
-    let new_size = std::fs::metadata(&working)
-        .with_context(|| format!("sizing {}", working.display()))?
-        .len();
-    let expected = plan.expected_audio_languages(keep_audio);
-
-    let prepared = Measured {
-        size: new_size,
-        duration: probed.duration,
-    };
-    let original = Measured {
-        size: source_size,
-        duration: job.duration,
-    };
-    // Re-encoding the audio can round upwards on a file that had little to
-    // drop, so growth is only suspicious when tracks were merely cut.
-    if let Err(rejection) = check_prepared(&probed.streams, prepared, original, &expected, to_mp4) {
-        let _ = std::fs::remove_file(&working);
-        bail!("prepared file rejected: {rejection:?}");
+        let prepared = Measured {
+            size: new_size,
+            duration: probed.duration,
+        };
+        let original = Measured {
+            size: source_size,
+            duration: job.duration,
+        };
+        // Growth is tolerated on every MP4 run: rewrapping as MP4 (mov_text
+        // subtitles, MP4 indexes, faststart) and re-encoding the audio can
+        // both enlarge a file, while a remux that only drops tracks cannot.
+        if let Err(rejection) =
+            check_prepared(&probed.streams, prepared, original, &expected, to_mp4)
+        {
+            bail!("prepared file rejected: {rejection:?}");
+        }
+        Ok::<_, anyhow::Error>(new_size)
     }
+    .await
+    .inspect_err(|_| {
+        let _ = std::fs::remove_file(&working);
+    })?;
 
     // Same directory as the destination, so this is atomic: either the old
     // file or the finished one is in place, never a half-written one.

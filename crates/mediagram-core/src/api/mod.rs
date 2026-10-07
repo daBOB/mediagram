@@ -121,9 +121,9 @@ impl Core {
         channel::refresh_library(&self, handle).await
     }
 
-    /// Installs the encrypted package named by `pointer_url`, including its
-    /// poster art. Unlike [`Core::refresh_library`], this source is not used
-    /// by the first-run flow.
+    /// Installs the encrypted package named by `pointer_url`, with its poster art. No Android
+    /// code calls this; the app installs from the channel ([`Core::refresh_library`]). Kept so a
+    /// library published as a package stays installable.
     pub async fn refresh_catalog(
         &self,
         pointer_url: String,
@@ -132,15 +132,15 @@ impl Core {
         refresh::refresh_catalog(self, pointer_url, key_b64).await
     }
 
-    /// Every playable set in the current catalog, or an empty list before
-    /// the first catalog is loaded. Calls for a named set use `NotFound`.
+    /// Every playable set in the current catalog, or an empty list before the first catalog is
+    /// loaded. Of the calls for one set, [`Core::media_set`] answers `None` for a set the catalog
+    /// does not hold, while [`Core::total_size`] and [`Core::read`] answer `NotFound`.
     pub async fn list_sets(self: Arc<Self>) -> Result<Vec<crate::dto::SetSummary>, CoreError> {
         self.blocking(store::list_sets).await
     }
 
-    /// One set by id, resolved the same as [`Core::list_sets`] resolves
-    /// every row — `None` for an id the catalog does not hold, including
-    /// before any catalog is loaded.
+    /// One set by id, resolved as [`Core::list_sets`] resolves every row — `None` for an id the
+    /// catalog does not hold, including before any catalog is loaded.
     pub async fn media_set(self: Arc<Self>, set_id: String) -> Result<Option<crate::dto::SetSummary>, CoreError> {
         self.blocking(move |core| store::media_set(core, &set_id)).await
     }

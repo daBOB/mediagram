@@ -41,8 +41,16 @@ fn the_fixture_decodes_to_three_tracks_and_round_trips() {
     assert_eq!(fixture.v, BUNDLE_VERSION);
     assert_eq!(fixture.tracks.len(), 3);
     assert_eq!(
-        fixture.tracks.iter().map(|t| (t.lang.as_str(), t.forced, t.sdh)).collect::<Vec<_>>(),
-        [("de", true, false), ("de", false, false), ("en", false, true)]
+        fixture
+            .tracks
+            .iter()
+            .map(|t| (t.lang.as_str(), t.forced, t.sdh))
+            .collect::<Vec<_>>(),
+        [
+            ("de", true, false),
+            ("de", false, false),
+            ("en", false, true)
+        ]
     );
 
     assert_eq!(decode(&encode(&fixture)).unwrap(), fixture);
@@ -51,7 +59,10 @@ fn the_fixture_decodes_to_three_tracks_and_round_trips() {
 #[test]
 fn compressed_bytes_over_the_cap_are_refused_before_decompression() {
     let oversized = vec![0u8; MAX_COMPRESSED_BYTES + 1];
-    assert_eq!(decode(&oversized), Err(BundleError::TooLarge(oversized.len())));
+    assert_eq!(
+        decode(&oversized),
+        Err(BundleError::TooLarge(oversized.len()))
+    );
 }
 
 #[test]
@@ -60,7 +71,10 @@ fn decompressing_past_the_cap_is_a_bomb() {
     // form alone crosses the cap.
     let oversized = vec![0u8; usize::try_from(MAX_DECOMPRESSED_BYTES).unwrap() + 1];
     let bytes = gzip(&oversized);
-    assert!(bytes.len() < MAX_COMPRESSED_BYTES, "fixture assumption: zeros compress small");
+    assert!(
+        bytes.len() < MAX_COMPRESSED_BYTES,
+        "fixture assumption: zeros compress small"
+    );
 
     assert_eq!(decode(&bytes), Err(BundleError::Bomb));
 }
@@ -86,6 +100,11 @@ fn a_newer_bundle_version_is_refused() {
     let bytes = gzip(br#"{"v":2,"set":"S1","tracks":[]}"#);
 
     assert_eq!(decode(&bytes), Err(BundleError::UnsupportedVersion(2)));
+    assert_eq!(
+        BundleError::UnsupportedVersion(0).to_string(),
+        format!("unsupported bundle version 0 (this reader reads {BUNDLE_VERSION})"),
+        "an older version is not called newer"
+    );
 }
 
 #[test]
@@ -99,7 +118,9 @@ fn valid_sha256_accepts_only_lowercase_64_hex() {
     assert!(valid_sha256(&real));
     assert!(!valid_sha256(&"A".repeat(64)), "uppercase is refused");
     assert!(!valid_sha256(&"a".repeat(63)), "too short is refused");
-    assert!(!valid_sha256("not hex at all, but sixty-four chars long padded out"));
+    assert!(!valid_sha256(
+        "not hex at all, but sixty-four chars long padded out"
+    ));
 }
 
 #[test]
@@ -107,8 +128,14 @@ fn the_caption_prefix_collides_with_neither_other_marker() {
     let caption = render_caption("01JQ8F2K9M4XZ00000000042");
 
     assert!(caption.starts_with(SUBS_CAPTION_PREFIX));
-    assert!(!crate::caption_codec::is_mlib(&caption), "must not read as a part caption");
-    assert!(!crate::index_caption::is_index(&caption), "must not read as an index snapshot");
+    assert!(
+        !crate::caption_codec::is_mlib(&caption),
+        "must not read as a part caption"
+    );
+    assert!(
+        !crate::index_caption::is_index(&caption),
+        "must not read as an index snapshot"
+    );
 }
 
 #[test]

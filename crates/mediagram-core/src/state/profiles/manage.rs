@@ -147,10 +147,10 @@ impl ProfileManager<'_> {
             return Ok(NotAllowed);
         }
         let first_pin = target.pin_hash.is_none().then_some(pin);
-        if first_pin.is_none() {
-            if let Some(refused) = self.prove(target, pin)? {
-                return Ok(refused);
-            }
+        if first_pin.is_none()
+            && let Some(refused) = self.prove(target, pin)?
+        {
+            return Ok(refused);
         }
         role_rows::claim_admin(self.conn, id, first_pin, self.now)?;
         Ok(Done)

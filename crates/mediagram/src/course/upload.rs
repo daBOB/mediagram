@@ -21,11 +21,17 @@ pub struct Walk<'a> {
     pub no_remux: bool,
 }
 
-pub async fn upload<L: Link>(session: &mut Session<'_, L>, walk: &Walk<'_>) -> Summary {
-    let (mark, noun) = match walk.kind {
+/// The caption letter and the word for one of a walk's videos: a
+/// documentary's are episodes (`C01E01`), anything else's are lessons.
+pub(crate) fn video_words(kind: Kind) -> (char, &'static str) {
+    match kind {
         Kind::Docu => ('e', "episode"),
         _ => ('l', "lesson"),
-    };
+    }
+}
+
+pub async fn upload<L: Link>(session: &mut Session<'_, L>, walk: &Walk<'_>) -> Summary {
+    let (mark, noun) = video_words(walk.kind);
     let videos = walk.course.lessons.iter().map(|lesson| video(walk, lesson));
     let lessons = session
         .upload(videos, |lesson: &&Lesson, step| match step {

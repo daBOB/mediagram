@@ -20,7 +20,7 @@ use crate::index::set_row::SetRow;
 /// Clearing is separate from setting because the wrong kind leaves fields
 /// behind that no value would fix: a film filed as a lesson carries a course
 /// name and a lesson number, and what it needs is for them to be gone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(clap::ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Clearable {
     Show,
     Chap,
@@ -31,18 +31,6 @@ pub enum Clearable {
 }
 
 impl Clearable {
-    pub fn parse(name: &str) -> Option<Clearable> {
-        match name {
-            "show" => Some(Clearable::Show),
-            "chap" => Some(Clearable::Chap),
-            "path" => Some(Clearable::Path),
-            "year" => Some(Clearable::Year),
-            "season" => Some(Clearable::Season),
-            "episode" => Some(Clearable::Episode),
-            _ => None,
-        }
-    }
-
     fn name(self) -> &'static str {
         match self {
             Clearable::Show => "show",
@@ -90,6 +78,34 @@ impl Edits {
             Clearable::Season => self.season.is_some(),
             Clearable::Episode => self.episode.is_some(),
         }
+    }
+}
+
+/// Parses one `--clear` item, trimmed so `--clear "show, chap"` clears both.
+pub fn clearable(spelling: &str) -> Result<Clearable> {
+    match <Clearable as clap::ValueEnum>::from_str(spelling.trim(), false) {
+        Ok(field) => Ok(field),
+        Err(_) => bail!("cannot clear {spelling:?}; see --help for the field names"),
+    }
+}
+
+/// What `--refresh` brought back from the provider.
+#[derive(Debug, Default)]
+pub struct Fetched {
+    pub title: Option<String>,
+    pub show: Option<String>,
+    /// A release year the row may be missing, taken from the same answer.
+    pub year: Option<u16>,
+}
+
+/// Folds a refresh into `edits`. A value given on the command line wins; the
+/// fetched words replace the row's; the fetched year only fills a gap, so a
+/// year set by hand, or cleared in the same command, stays as asked.
+pub fn merge_refreshed(row: &SetRow, edits: &mut Edits, fetched: Fetched) {
+    edits.title = edits.title.take().or(fetched.title);
+    edits.show = edits.show.take().or(fetched.show);
+    if row.year.is_none() && !edits.clear.contains(&Clearable::Year) {
+        edits.year = edits.year.or(fetched.year);
     }
 }
 

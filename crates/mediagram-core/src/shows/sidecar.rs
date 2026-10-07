@@ -11,6 +11,7 @@ use mlib_spec::schema;
 use rusqlite::{Connection, OptionalExtension};
 
 use crate::error::CoreError;
+use crate::sqlite_schema::table_exists;
 
 const PREPARING: &str = "preparing the description store";
 
@@ -57,13 +58,7 @@ impl Recorded {
 /// A read that fails is a real fault, never a new file: replaying every
 /// migration over a populated store would only fail later, less usefully.
 fn recorded_version(conn: &Connection) -> Result<Recorded, CoreError> {
-    let has_meta: bool = conn
-        .query_row(
-            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'meta')",
-            [],
-            |row| row.get(0),
-        )
-        .map_err(CoreError::io(PREPARING))?;
+    let has_meta = table_exists(conn, "meta").map_err(CoreError::io(PREPARING))?;
     if has_meta {
         let in_meta: Option<String> = conn
             .query_row(

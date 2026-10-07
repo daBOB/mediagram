@@ -54,7 +54,7 @@ pub fn facts(conn: &Connection) -> rusqlite::Result<HashMap<String, ShowFacts>> 
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         Ok((
-            format!("tmdb-{kind}-{id}"),
+            mlib_spec::package::tmdb_key(&kind, id),
             ShowFacts {
                 tagline: row.get(2)?,
                 rating: row.get(3)?,

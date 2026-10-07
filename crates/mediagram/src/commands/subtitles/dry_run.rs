@@ -7,6 +7,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use crate::config::Config;
@@ -92,16 +93,23 @@ pub async fn survey(conn: &Connection, folders: &[PathBuf]) -> Result<Survey> {
 }
 
 /// Every complete `movie`/`ep`/`docu` set, whether or not it already has a
-/// subtitle bundle: the red team's fix for a candidate pool that used to
-/// shrink as sets got bundles, letting a later run's fallback drift onto
-/// the wrong title.
+/// subtitle bundle, so the candidate pool does not shrink between runs and
+/// a later run's fallback cannot drift onto the wrong title.
 fn load_candidate_sets(conn: &Connection) -> Result<Vec<SetRow>> {
     let mut stmt = conn.prepare(
-        "SELECT * FROM sets WHERE status = ?1 AND kind IN ('movie', 'ep', 'docu')
+        "SELECT * FROM sets WHERE status = ?1 AND kind IN (?2, ?3, ?4)
          ORDER BY set_id",
     )?;
     let rows = stmt
-        .query_map([SetStatus::Complete], SetRow::from_row)?
+        .query_map(
+            rusqlite::params![
+                SetStatus::Complete,
+                Kind::Movie.as_str(),
+                Kind::Ep.as_str(),
+                Kind::Docu.as_str()
+            ],
+            SetRow::from_row,
+        )?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }

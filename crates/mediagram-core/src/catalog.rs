@@ -150,13 +150,13 @@ pub fn list_searchable(conn: &Connection) -> Result<Vec<SearchableSet>> {
     let sql = format!(
         "SELECT set_id, title, show, chap, path,
                 (SELECT body FROM assets a
-                  WHERE a.set_id = s.set_id AND a.kind = 'summary' AND a.lang = '') AS summary
+                  WHERE a.set_id = s.set_id AND a.kind = ?1 AND a.lang = '') AS summary
            FROM sets s WHERE {}",
         mlib_spec::schema::PLAYABLE_SQL
     );
     let mut stmt = conn.prepare(&sql).context("preparing the search query")?;
     let rows = stmt
-        .query_map([], |row| {
+        .query_map([mlib_spec::schema::ASSET_SUMMARY], |row| {
             Ok(SearchableSet {
                 set_id: row.get("set_id")?,
                 title: row.get("title")?,

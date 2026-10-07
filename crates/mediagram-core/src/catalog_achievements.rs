@@ -5,7 +5,7 @@
 //!
 //! Genres are the index's own `shows` rows only, not the ones this device
 //! fetched into its sidecar that the Android shelves also show
-//! (`api::store::editorial`): the web player has no sidecar, and an
+//! (`api::store::listing`): the web player has no sidecar, and an
 //! achievement one surface shows and the other does not would be exactly the
 //! divergence the two are held together against.
 
@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use crate::state::stats::achievements::{LibraryCollection, LibraryTitle};
 
 /// Every playable set as the rules read it, and the collections they form.
-pub fn library_facts(
+pub(crate) fn library_facts(
     conn: &Connection,
 ) -> anyhow::Result<(Vec<LibraryTitle>, Vec<LibraryCollection>)> {
     let genres = crate::shows::genres(conn)?;
@@ -60,7 +60,7 @@ pub fn library_facts(
 /// finish.
 pub fn collection_of(kind: &str, show: Option<&str>) -> Option<String> {
     let show = show.filter(|show| !show.is_empty())?;
-    matches!(kind, "ep" | "tut").then(|| format!("{kind}:{show}"))
+    (kind == Kind::Ep.as_str() || kind == Kind::Tut.as_str()).then(|| format!("{kind}:{show}"))
 }
 
 #[cfg(test)]

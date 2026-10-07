@@ -24,13 +24,13 @@ fn quiet<T>(_: &T, _: Step<'_>) {}
 /// then found held by the same item.
 #[tokio::test]
 async fn a_planned_video_is_found_again_by_what_its_planning_recorded() {
-    if !mediagram::media::test_fixtures::ffmpeg_required("upload session identity round trip") {
+    if !support::media::ffmpeg_required("upload session identity round trip") {
         return;
     }
     let dir = tempfile::tempdir().unwrap();
     let cfg = config_in(dir.path());
     let (transport, channel, connects) = (FakeTransport::new(), FakeChannel::new(), Cell::new(0));
-    let video = mediagram::media::test_fixtures::make_faststart_mp4(dir.path());
+    let video = support::media::make_faststart_mp4(dir.path());
     let item = |kind: Kind| Item {
         tag: (),
         set: Set::File(NewSet {

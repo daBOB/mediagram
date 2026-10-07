@@ -4,9 +4,10 @@
 //! Keeping that true means remembering which one is current — and that memory
 //! lives in `library.db`, which `rescan` exists precisely because people lose.
 //!
-//! Found by the live gate: after `rm library.db && rescan`, the next
-//! `push-index` pinned a new snapshot and left the previous one pinned too,
-//! because the id it would have unpinned went with the database.
+//! The case pinned here: after `rm library.db && rescan`, the next
+//! `push-index` must unpin the previous snapshot rather than leave it pinned
+//! beside the new one, although the id it would have unpinned went with the
+//! database.
 
 use mediagram::index::db;
 use mediagram::index::pins::{

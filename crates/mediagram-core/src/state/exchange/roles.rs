@@ -1,7 +1,7 @@
 //! A profile's role between its `profiles` row and the wire: the admin
 //! claim, a kid's limit and parent, a grown-up's PIN. A port of
 //! `web/src/state/roles-exchange.ts`, split out of `exchange.rs` for the
-//! reason `lists_exchange.rs` is.
+//! reason `exchange/lists.rs` is.
 //!
 //! Corrective, like everything `import_merged` calls: local news the merge
 //! ranks higher is kept — newer for a limit, by the PIN order for a PIN —

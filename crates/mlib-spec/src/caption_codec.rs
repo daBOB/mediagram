@@ -189,8 +189,8 @@ pub fn parse(text: &str) -> Result<Caption, CaptionError> {
 /// versions only add fields, so `set` keeps its name. For a caller that must
 /// recognise which set an otherwise-unreadable caption belongs to.
 #[must_use]
-pub fn unread_set(text: &str) -> Option<String> {
-    let (_, json) = text.trim_start().split_once('\n')?;
+pub fn set_id_any_version(text: &str) -> Option<String> {
+    let json = text.trim_start().lines().nth(1)?;
     let value: serde_json::Value = serde_json::from_str(json.trim()).ok()?;
     value.get("set")?.as_str().map(str::to_string)
 }

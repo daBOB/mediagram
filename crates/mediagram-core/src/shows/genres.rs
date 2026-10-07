@@ -20,7 +20,7 @@ pub fn genres(conn: &Connection) -> rusqlite::Result<HashMap<String, Vec<String>
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         let genres: Option<String> = row.get(2)?;
-        Ok((format!("tmdb-{kind}-{id}"), genres))
+        Ok((mlib_spec::package::tmdb_key(&kind, id), genres))
     })?;
 
     let mut by_key = HashMap::new();

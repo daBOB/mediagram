@@ -144,7 +144,7 @@ async fn a_search_hits_portrait_already_on_disk_resolves_on_the_record() {
 }
 
 /// A cast member's portrait, already on disk, arrives on the `CreditRecord`
-/// itself — Kotlin no longer resolves it with a call of its own per member.
+/// itself, so a caller needs no call of its own per member to resolve it.
 #[tokio::test]
 async fn a_cast_members_portrait_already_on_disk_resolves_on_the_record() {
     let dir = tempfile::tempdir().unwrap();

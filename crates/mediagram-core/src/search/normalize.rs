@@ -5,8 +5,8 @@
 
 use std::sync::LazyLock;
 
+use icu_normalizer::{ComposingNormalizerBorrowed, DecomposingNormalizerBorrowed};
 use regex::Regex;
-use unicode_normalization::UnicodeNormalization;
 
 /// Letters with no decomposed form, so NFD cannot strip them the way it does
 /// an umlaut — they have to be written out instead. Mirrors `SPELLED_OUT` in
@@ -42,7 +42,7 @@ static NOT_LETTER_OR_NUMBER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^\
 /// composed umlaut into its base letter and a combining mark, which is what
 /// lets the diacritic strip below drop the mark and keep the letter.
 fn flatten(text: &str) -> String {
-    let decomposed: String = text.nfd().collect();
+    let decomposed = DecomposingNormalizerBorrowed::new_nfd().normalize(text);
     let stripped = DIACRITIC.replace_all(&decomposed, "");
     NOT_LETTER_OR_NUMBER.replace_all(&stripped, " ").trim().to_string()
 }
@@ -71,7 +71,9 @@ pub fn spell_out(text: Option<&str>) -> String {
     if is_plain(text) {
         return text.to_lowercase();
     }
-    let mut spelled = text.to_lowercase().nfc().collect::<String>();
+    let mut spelled = ComposingNormalizerBorrowed::new_nfc()
+        .normalize(&text.to_lowercase())
+        .into_owned();
     for (pattern, replacement) in UMLAUTS {
         spelled = spelled.replace(pattern, replacement);
     }

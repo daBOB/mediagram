@@ -89,10 +89,10 @@ impl Staging {
 
 impl Drop for Staging {
     fn drop(&mut self) {
-        if let Err(err) = std::fs::remove_dir_all(&self.path) {
-            if err.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!(path = %self.path.display(), error = %err, "staging dir left behind");
-            }
+        if let Err(err) = std::fs::remove_dir_all(&self.path)
+            && err.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!(path = %self.path.display(), error = %err, "staging dir left behind");
         }
     }
 }

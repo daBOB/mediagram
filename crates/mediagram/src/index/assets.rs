@@ -1,11 +1,16 @@
-//! Text that belongs to a set: subtitles, and a summary when there is one.
+//! Text that belongs to a set, kept in the index rather than uploaded as
+//! separate channel messages so a player can show it with no Telegram round
+//! trip.
 //!
-//! Kept in the index rather than uploaded as separate channel messages. A
-//! whole course's subtitles come to about 2 MB, which rides the published
-//! package without noticing, and it lets a player show a summary or attach a
-//! subtitle track with no Telegram round trip at all.
+//! Today that is a set's summary, which `course::sidecars` stores. Rows of
+//! kind `subtitle` are legacy inline subtitles from before subtitles travelled
+//! as a bundle (`crate::subtitles`): only `subtitles move-inline` still reads
+//! them ([`inline_subtitles`], [`sets_with_inline_subtitles`]), and recording
+//! a bundle or merging the channel's index drops or skips them for any set
+//! that has one.
 
 use anyhow::{Context, Result, bail};
+use mlib_spec::schema::{ASSET_SUBTITLE, ASSET_SUMMARY};
 use rusqlite::{Connection, OptionalExtension, params};
 
 /// Largest single asset. Generous for a subtitle track or a written summary,
@@ -22,8 +27,8 @@ pub enum Kind {
 impl Kind {
     pub fn as_str(self) -> &'static str {
         match self {
-            Kind::Subtitle => "subtitle",
-            Kind::Summary => "summary",
+            Kind::Subtitle => ASSET_SUBTITLE,
+            Kind::Summary => ASSET_SUMMARY,
         }
     }
 }
@@ -58,29 +63,17 @@ pub fn get(conn: &Connection, set_id: &str, kind: Kind, lang: &str) -> Result<Op
     .with_context(|| format!("reading the {} for {set_id}", kind.as_str()))
 }
 
-/// Subtitle languages held for a set, in a stable order.
-pub fn languages(conn: &Connection, set_id: &str) -> Result<Vec<String>> {
-    let mut stmt = conn
-        .prepare("SELECT lang FROM assets WHERE set_id = ?1 AND kind = 'subtitle' ORDER BY lang")
-        .context("preparing the subtitle language query")?;
-    let rows = stmt
-        .query_map([set_id], |row| row.get(0))
-        .with_context(|| format!("listing subtitle languages for {set_id}"))?;
-    rows.collect::<rusqlite::Result<Vec<String>>>()
-        .context("reading a subtitle language")
-}
-
 /// A set's inline subtitle rows as `(lang, body)`, in `lang` order: the order
 /// the readers' inline fallback numbers them in, which a bundle must keep so
 /// nothing a viewer remembered changes meaning.
 pub fn inline_subtitles(conn: &Connection, set_id: &str) -> Result<Vec<(String, String)>> {
     let mut stmt = conn
-        .prepare(
-            "SELECT lang, body FROM assets WHERE set_id = ?1 AND kind = 'subtitle' ORDER BY lang",
-        )
+        .prepare("SELECT lang, body FROM assets WHERE set_id = ?1 AND kind = ?2 ORDER BY lang")
         .context("preparing the inline subtitle query")?;
     let rows = stmt
-        .query_map([set_id], |row| Ok((row.get(0)?, row.get(1)?)))
+        .query_map([set_id, ASSET_SUBTITLE], |row| {
+            Ok((row.get(0)?, row.get(1)?))
+        })
         .with_context(|| format!("listing the inline subtitles of {set_id}"))?;
     rows.collect::<rusqlite::Result<_>>()
         .context("reading an inline subtitle")
@@ -90,12 +83,12 @@ pub fn inline_subtitles(conn: &Connection, set_id: &str) -> Result<Vec<(String, 
 pub fn sets_with_inline_subtitles(conn: &Connection) -> Result<Vec<String>> {
     let mut stmt = conn
         .prepare(
-            "SELECT DISTINCT set_id FROM assets WHERE kind = 'subtitle'
+            "SELECT DISTINCT set_id FROM assets WHERE kind = ?1
                AND set_id NOT IN (SELECT set_id FROM subtitle_files) ORDER BY set_id",
         )
         .context("preparing the inline subtitle set query")?;
     let rows = stmt
-        .query_map([], |row| row.get(0))
+        .query_map([ASSET_SUBTITLE], |row| row.get(0))
         .context("listing sets with inline subtitles")?;
     rows.collect::<rusqlite::Result<_>>()
         .context("reading a set id")
@@ -105,8 +98,8 @@ pub fn sets_with_inline_subtitles(conn: &Connection) -> Result<Vec<String>> {
 pub fn has_summary(conn: &Connection, set_id: &str) -> Result<bool> {
     let found: Option<i64> = conn
         .query_row(
-            "SELECT 1 FROM assets WHERE set_id = ?1 AND kind = 'summary'",
-            [set_id],
+            "SELECT 1 FROM assets WHERE set_id = ?1 AND kind = ?2",
+            [set_id, ASSET_SUMMARY],
             |row| row.get(0),
         )
         .optional()
@@ -114,7 +107,7 @@ pub fn has_summary(conn: &Connection, set_id: &str) -> Result<bool> {
     Ok(found.is_some())
 }
 
-/// Every asset in the index. Used by the export budget and by tests.
+/// Every asset in the index, for tests that check what a write left behind.
 pub fn count(conn: &Connection) -> Result<i64> {
     conn.query_row("SELECT COUNT(*) FROM assets", [], |row| row.get(0))
         .context("counting assets")

@@ -200,7 +200,7 @@ hash anywhere in the spec.
 
 The local SQLite database is the **canonical** record; the channel only
 ever holds a periodically pushed, read-only snapshot of it (§8). Schema
-(`crates/mlib-spec/src/schema.rs`, applied as idempotent
+(`crates/mlib-spec/src/schema/mod.rs`, applied as idempotent
 `CREATE ... IF NOT EXISTS` migrations):
 
 ```sql
@@ -462,7 +462,7 @@ is the original codec (`subrip`, `ass`, `mov_text`, `webvtt`, `srt`, `vtt`),
 kept for reference, though every reader plays the `vtt` field regardless.
 A reader decodes the bundle through capped reads at every stage — compressed
 size, decompressed size, and each track's cue text — before trusting any of
-it, and refuses a `v` newer than it understands. `mlib_spec::subtitle_bundle`
+it, and refuses any `v` but the one it reads. `mlib_spec::subtitle_bundle`
 is the one place this shape is written down; the uploader and every reader
 share it from there.
 
@@ -528,8 +528,9 @@ caption:
 table at snapshot time, `schema` is `mlib_spec::schema::SCHEMA_VERSION`
 (the `library.db` table layout version — distinct from the caption spec
 version `v=2`, which carries `v=2` or `v=3` captions on parts). The index
-caption's `schema` field reads current on every push; READABLE_SCHEMAS
-(in the crate) defines which index versions this reader accepts. This marker
+caption's `schema` field reads current on every push; OLDEST_READABLE_SCHEMA
+(in the crate) is the floor: a reader accepts that index version and every
+newer one. This marker
 (`#mlib-index v=`) never collides with a part caption's marker (`#mlib v=`),
 so a reader can tell the two apart by prefix alone. Each push pins the new
 index message and unpins whatever index message it replaces. A reader

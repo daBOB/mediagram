@@ -144,8 +144,10 @@ pub fn certifications(conn: &Connection) -> rusqlite::Result<HashMap<String, Str
         let kind: String = row.get(0)?;
         let id: i64 = row.get(1)?;
         let rating: String = row.get(2)?;
-        // Spelled as `mediagram_tmdb::posters::poster_key` spells it.
-        Ok((format!("tmdb-{kind}-{id}"), rating.trim().to_string()))
+        Ok((
+            mlib_spec::package::tmdb_key(&kind, id),
+            rating.trim().to_string(),
+        ))
     })?;
     rows.collect()
 }

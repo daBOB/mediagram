@@ -139,3 +139,12 @@ fn an_empty_query_has_no_terms() {
     assert!(terms(Some("   ")).is_empty());
     assert!(terms(Some("!!!")).is_empty());
 }
+
+#[test]
+fn a_decomposed_umlaut_spells_out_like_a_composed_one() {
+    // "Ü" as a `U` plus a combining diaeresis, the way some keyboards and
+    // file systems hand it over: composed before the umlauts are spelled
+    // out, decomposed before the diacritics are dropped.
+    assert_eq!(spell_out(Some("U\u{308}berblick")), "ueberblick");
+    assert_eq!(fold(Some("U\u{308}berblick")), "uberblick");
+}

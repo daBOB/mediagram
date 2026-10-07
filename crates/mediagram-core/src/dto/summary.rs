@@ -50,8 +50,8 @@ pub struct SetSummary {
     /// its show's. Named as the web player names it.
     pub fsk: Option<String>,
     /// The provider's genres for this title. A series carries its show's,
-    /// the way `fsk` does — see `store::list_sets`, which attaches all four
-    /// of these by poster key rather than storing them on the row.
+    /// the way `fsk` does — see `store::listing::enrich`, which attaches
+    /// these by poster key rather than storing them on the row.
     pub genres: Vec<String>,
     /// Subtitle tracks this set offers, from its bundle once it has one, or
     /// its inline rows until then. See `catalog_subtitles::tracks_by_set`.
@@ -165,11 +165,11 @@ pub fn summary_from(set: &PlayableSet) -> SetSummary {
         collection_id: None,
         collection_name: None,
         series_type: None,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's genres, original language and overrides, none of which
         // this flattening step reads.
         anime: false,
-        // Resolved by `store::editorial::enrich`, not here: it needs the
+        // Resolved by `store::listing::enrich`, not here: it needs the
         // index's own `categories` table, which this flattening step never
         // opens.
         category: None,

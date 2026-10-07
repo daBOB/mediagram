@@ -7,7 +7,7 @@
 //!
 //! `category` is `NULL` for "cleared", not a deleted row: a merge needs a
 //! timestamped row to carry that clear to the other machine (see
-//! `index::merge_categories`), and a deleted row carries nothing.
+//! `index::merge::categories`), and a deleted row carries nothing.
 
 use rusqlite::{Connection, OptionalExtension, params};
 

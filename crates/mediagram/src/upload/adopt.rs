@@ -42,7 +42,9 @@ pub fn adoption_map(set_id: &str, recent: &[Seen]) -> AdoptionScan {
         let caption = match mlib_spec::parse(&seen.caption) {
             Ok(caption) => caption,
             Err(CaptionError::UnsupportedVersion(_)) => {
-                if mlib_spec::caption_codec::unread_set(&seen.caption).as_deref() == Some(set_id) {
+                if mlib_spec::caption_codec::set_id_any_version(&seen.caption).as_deref()
+                    == Some(set_id)
+                {
                     blocked_by_newer_caption = true;
                 }
                 continue;
@@ -86,6 +88,18 @@ mod tests {
     #[test]
     fn a_newer_caption_naming_this_set_blocks_the_scan() {
         let recent = vec![seen(1, "#mlib v=99\n{\"set\":\"S1\"}")];
+
+        let scan = adoption_map("S1", &recent);
+
+        assert!(scan.adopted.is_empty());
+        assert!(scan.blocked_by_newer_caption);
+    }
+
+    /// Real part captions end in a human line after the JSON; the guard must
+    /// still see the set id there, or resume resends a part already posted.
+    #[test]
+    fn a_newer_caption_with_a_human_line_still_blocks_the_scan() {
+        let recent = vec![seen(1, "#mlib v=99\n{\"set\":\"S1\"}\nMovie human line")];
 
         let scan = adoption_map("S1", &recent);
 

@@ -14,6 +14,4 @@ pub mod probe;
 pub mod remux;
 pub mod show_episodes;
 pub mod streams;
-/// ffmpeg-built fixtures shared by unit and integration tests; unused at runtime.
-pub mod test_fixtures;
 pub mod video_files;

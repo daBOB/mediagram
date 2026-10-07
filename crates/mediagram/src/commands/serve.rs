@@ -1,8 +1,9 @@
-//! `mediagram serve`: the local playback API.
+//! `mediagram serve`: the reference Range server.
 //!
 //! One process holds the Telegram session and a read-only index, and answers
-//! Range requests for a set's bytes. Everything downstream — a browser, an
-//! ffmpeg transcode — is a client of this and never talks to Telegram itself.
+//! Range requests for a set's bytes — the twin the web player's own routes
+//! and Range responses are kept in step with. The web player and the Android
+//! app read Telegram themselves rather than through this.
 
 use anyhow::{Context, Result};
 use mediagram_core::catalog;

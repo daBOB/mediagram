@@ -14,11 +14,9 @@ mod telegram_channel;
 
 use std::sync::Arc;
 
-use grammers_session::types::PeerRef;
-
+use super::Core;
 use super::account::session;
 use super::channel::library;
-use super::{Core, CoreError};
 use crate::state::sync::{self, SyncOutcome};
 use telegram_channel::TelegramStateChannel;
 
@@ -54,8 +52,8 @@ impl Core {
     pub async fn sync_state(self: Arc<Self>, handle: String) -> SyncOutcome {
         let device = Arc::clone(&self).state_device_id().await;
 
-        match peer_for(&self, &handle) {
-            Ok(peer) => {
+        match library::peer_of(&self, &handle) {
+            Ok((_, peer)) => {
                 let (client, owner) = session::connection(&self).await;
                 let channel = TelegramStateChannel::new(&self, client, owner, peer);
                 sync::serialized(&self.sync_memo, &handle, &self.state_db, &channel, &device).await
@@ -67,13 +65,4 @@ impl Core {
             },
         }
     }
-}
-
-/// The channel `handle`'s library lives in — the same one its index does,
-/// found the same way `next_library_event` finds it.
-fn peer_for(core: &Core, handle: &str) -> Result<PeerRef, CoreError> {
-    let entry = library::lookup(core, handle)?;
-    entry
-        .peer()
-        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
 }

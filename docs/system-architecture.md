@@ -2,7 +2,7 @@
 
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
-it. It is split into four crates so the wire format, the TMDB client and the
+it. It is split into five crates so the wire format, the TMDB client and the
 byte path can be reused by other clients — the Android app among them (see
 [§9](#9-backend-portability)).
 
@@ -37,7 +37,9 @@ is put together around it.
 ## 2. Module map (`crates/mediagram/src`)
 
 ```
-main.rs            clap CLI surface; parses args, loads config, dispatches
+main.rs            parses args, loads config, dispatches
+cli.rs             clap's argument struct and subcommand enum: the whole CLI
+                   surface, a module of the binary only
 lib.rs             re-exports every module below for the binary and tests
 config.rs          TOML config + MEDIAGRAM_* env overrides, secret redaction,
                    and the one TMDB client every command builds from it
@@ -55,9 +57,10 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                      the episodes to an upload session
   add_course.rs      walk a course folder and hand it to course::upload
   add_docu/          upload a documentary: one file (a one-item upload
-                     session), or a folder walked and grouped exactly like
-                     add_course.rs (collection.rs, through course::upload),
-                     `Kind::Docu` instead of `Kind::Tut`
+                     session), or a folder that collection.rs hands to
+                     add_course.rs's own run, so it is walked and grouped
+                     exactly as a course is — `Kind::Docu` episodes instead
+                     of `Kind::Tut` lessons
   artwork.rs         set or clear a title's custom poster/backdrop
                      (index/artwork.rs), resolved from a set id or a title
   finish_set.rs      a one-item upload session over the set `add` planned,
@@ -79,12 +82,23 @@ commands/          one module per subcommand, each exposing `run(...)`; thin
                      library.db for a local player
   export_package.rs  build, encrypt and optionally publish the metadata
                      package (see export/)
-  serve.rs           the local playback API (see serve/)
+  publish_app.rs     send a signed APK to the channel as the newest app
+                     release and pin it (see app_release/)
+  subtitles/         give titles their German and English subtitle bundles:
+                     move_inline (lessons' inline rows into bundles),
+                     backfill (sources matched in local folders, by
+                     match_source), backfill_channel (read from the copy in
+                     the channel, through loopback: the player's streaming
+                     router on a loopback port), dry_run with its report and
+                     totals (measures only), and session (the lock, the one
+                     connection and the publish every sending run shares)
+  serve.rs           the reference Range server (see serve/)
   setup.rs           first-run config: prompts for api_id/api_hash/channel/tmdb_key
   accept_login.rs    approve the player's QR login from this session
   login_code.rs      read the login code Telegram just sent to the account
   login.rs / whoami.rs / smoke_upload.rs
-  args.rs            clap argument structs for the larger subcommands
+  args/              clap argument structs for the larger subcommands, with
+                     docu and edit as children
 
 channel_index/     pulling the channel index into the local index and
                    publishing the local index as the channel index, the
@@ -143,14 +157,31 @@ index/             library.db: open/migrate (after letting the session store
                    pending set uploads from, the remux to delete, and
                    completing it in one transaction that forgets both),
                    rescan folding, snapshot/vacuum, custom poster/backdrop
-                   bytes (artwork.rs)
+                   bytes (artwork.rs), provider facts per title (shows.rs),
+                   hand-set department categories (categories.rs) and anime
+                   decisions (anime_overrides.rs), and recorded subtitle
+                   bundles (subtitles.rs). merge/ brings a channel snapshot
+                   into the local index: mod.rs runs it over children that
+                   find the channel-only sets (candidates), copy rows over
+                   the columns both sides have (copy, columns), detect
+                   shared sets that differ (diff), and merge the shows,
+                   credits, artwork, anime_overrides, categories and
+                   subtitles tables; conflicts rewrites a set the two sides
+                   disagree on from its own captions
 edit/              planning and applying a metadata correction: one caption
                    rewrite per part
 remove/            planning and applying a set's destruction
 export/            staging, posters, archive, pointer and publishing of the
                    metadata package
-serve/             the playback HTTP API: routes and Range responses
-telegram/          grammers client construction + login flow, retry policy
+app_release/       the Android app's releases in the library channel (spec
+                   §7a): badging (what `aapt2 dump badging` says about an
+                   APK) and publish (sending a signed APK as the newest
+                   release)
+serve/             the reference twin of the web player's routes and Range
+                   responses; its router also backs the loopback server of
+                   `subtitles backfill --channel`
+telegram/          grammers client construction + login flow, retry policy,
+                   batched message retrieval by id (messages)
 verify/            report (pure verdict logic) + download_hash (Telegram
                    download → SHA-256 streaming)
 ```
@@ -287,7 +318,8 @@ Two modes, selected on one set (by id) or `--all`:
 
 The pure comparison logic (`verify::report`) takes no Telegram types.
 `verify::source` supplies message metadata and chunk streams;
-`verify::download_hash` batches retrieval and hashes streamed bytes. Tests
+`telegram::messages` batches the retrieval and `verify::download_hash`
+hashes the streamed bytes. Tests
 exercise the production session against injected streams and temporary SQLite
 rows, including failed downloads and stale-success removal. See
 [`docs/code-standards.md`](code-standards.md) for module boundaries.
@@ -1025,7 +1057,7 @@ All paths come from `directories::ProjectDirs::from("", "", "mediagram")`
 | `$XDG_DATA_HOME/mediagram/tmdb-cache/*.json` | Disk-cached TMDB responses, keyed by `sha256(path + sorted query)`. |
 | `$XDG_DATA_HOME/mediagram/upload.lock` | Held (`flock`) by whichever process is uploading, so the others queue behind it. |
 | `$XDG_DATA_HOME/mediagram/publish.lock` | Held (`flock`) by whichever process is publishing the index, so two uploads finishing together publish one after the other. |
-| `$XDG_DATA_HOME/mediagram/upload-progress.json` | How far the part in flight has got, for `status` to read. Rewritten every 2s, meaningless once stale. |
+| `$XDG_DATA_HOME/mediagram/upload-progress-<set>.json` | How far each upload's part in flight has got, one file per set because uploads can run side by side, for `status` to read. Rewritten every 2s, meaningless once stale. |
 | `$XDG_DATA_HOME/mediagram/background.log` | Output of the detached uploads `add` starts. |
 
 Both `config.toml` and `data_dir` can be overridden (`--config`,
@@ -1084,7 +1116,7 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   and Android both get them with no extra Telegram round trip. On Android, one
   function resolves it either way: `store::resolve_with`
   (`crates/mediagram-core/src/api/store/resolve.rs`). `store::list_sets`/
-  `store::media_set` (`.../store/editorial.rs`) call it once per set for the
+  `store::media_set` (`.../store/listing.rs`) call it once per set for the
   poster, backdrop and (for an episode) season poster a listing carries,
   after reading which keys the table actually holds once for the whole pass
   (`crate::artwork::keys`) and remembering each key's answer, so a few
@@ -1128,7 +1160,7 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
 player's own `isAnime` (`web/src/catalog/anime.ts`), held to the same
 fixture cases (`shared_anime_fixtures.rs`) — decides `SetSummary.anime`
 (`MediaSet.anime` on Android) from a title's genres, `original_language` and
-`anime_overrides`, computed once per listing in `store::editorial::enrich`
+`anime_overrides`, computed once per listing in `store::listing::enrich`
 the same way `genres`/`fsk`/`tagline` are: the index's own facts first, this
 device's fetched sidecar filling in what the index does not have. Only the
 index's own overrides apply — a device never overrides on its own.
@@ -1144,8 +1176,8 @@ there is nothing for a sidecar to fetch. The web player reads the table
 directly (`web/src/catalog/categories.ts`); the two are held to the same key
 fixture (`web/test/fixtures/categories/keys.json`).
 
-Version tracking: `SCHEMA_VERSION=12`, `READABLE_SCHEMAS=[6,7,8,9,10,11,12]`,
-`OLDEST_READABLE_SCHEMA=6`. Readers tolerant of v11 and earlier (optional
+Version tracking: `SCHEMA_VERSION=12`, `OLDEST_READABLE_SCHEMA=6` (the floor
+a reader checks; every newer schema is read too). Readers tolerant of v11 and earlier (optional
 columns/tables); writers from the release introducing this table produce v12.
 Both uploaders and Android installs must run that release or later before any
 push/export; older Android builds refuse v12 packages.

@@ -32,7 +32,7 @@ fn channel_of(core: &Core, handle: &str) -> Result<i64, CoreError> {
     let entry = library::lookup(core, handle)?;
     PeerId::from_bot_api_dialog_id(entry.chat)
         .and_then(PeerId::bare_id)
-        .ok_or_else(|| CoreError::NotFound("this device no longer has that library stored".into()))
+        .ok_or_else(|| CoreError::NotFound(library::NO_LONGER_STORED.into()))
 }
 
 /// A raw update in the shape [`classify`] reads, or `None` for the kinds it

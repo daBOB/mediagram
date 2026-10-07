@@ -33,27 +33,29 @@ pub(super) async fn current(remote: &impl ChannelRemote) -> Result<Option<Candid
         .map(|p| (p.caption.as_str(), i64::from(p.id)))
         .collect();
     let chosen = mlib_spec::index_caption::newest(&candidates, now_unix()).map(|i| own[i].clone());
-    if let Some(candidate) = &chosen {
-        if let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption) {
-            ensure!(
-                schema <= mlib_spec::schema::SCHEMA_VERSION,
-                "the channel index is schema v{schema}, newer than this build (v{}); \
-                 reinstall mediagram before pulling or publishing",
-                mlib_spec::schema::SCHEMA_VERSION
-            );
-        }
+    if let Some(candidate) = &chosen
+        && let Some(schema) = mlib_spec::index_caption::schema(&candidate.caption)
+    {
+        ensure!(
+            schema <= mlib_spec::schema::SCHEMA_VERSION,
+            "the channel index is schema v{schema}, newer than this build (v{}); \
+             reinstall mediagram before pulling or publishing",
+            mlib_spec::schema::SCHEMA_VERSION
+        );
     }
     Ok(chosen)
 }
 
 /// Merges `current` into the local index and records it as pulled; with
-/// `dry_run`, reports what that would do and writes nothing.
+/// `dry_run`, reports what that would do and writes nothing. Returns whether
+/// the channel index lacks the subtitle tables, which only a publish can
+/// restore; never on a dry run.
 pub(super) async fn pull_from(
     remote: &impl ChannelRemote,
     data_dir: &Path,
     current: Option<&Candidate>,
     dry_run: bool,
-) -> Result<()> {
+) -> Result<bool> {
     let document = match current {
         Some(pinned) => remote
             .download(pinned.id)
@@ -66,33 +68,44 @@ pub(super) async fn pull_from(
         if !dry_run {
             pins::record_pulled(&db::open(data_dir)?, None)?;
         }
-        return Ok(());
+        return Ok(false);
     };
     // Per process, so two commands pulling at once cannot collide.
     let path = data_dir.join(format!("library.channel.{}.db", std::process::id()));
     std::fs::write(&path, &bytes).with_context(|| format!("writing {}", path.display()))?;
     let outcome = if dry_run {
-        dry_run_merge(remote, data_dir, &path).await.map(|()| false)
+        dry_run_merge(remote, data_dir, &path)
+            .await
+            .map(|()| Merged::default())
     } else {
         merge_in(remote, data_dir, &path).await
     };
     let _ = std::fs::remove_file(&path);
+    let merged = outcome?;
     // Recorded only once the local index holds all of it: a publish that
     // finds this id still current skips the pull, so a conflict left
     // unresolved must leave it unrecorded, for the next publish to retry.
-    if outcome? {
+    if merged.resolved {
         pins::record_pulled(&db::open(data_dir)?, current.map(|c| c.id))?;
     }
-    Ok(())
+    Ok(merged.lacks_subtitles)
 }
 
-/// Merges, then re-reads the conflicts from their captions. Returns whether
-/// every conflict was resolved.
+/// What a merge found.
+#[derive(Default)]
+struct Merged {
+    /// Every conflict was settled from its caption.
+    resolved: bool,
+    /// The channel index has no subtitle tables.
+    lacks_subtitles: bool,
+}
+
+/// Merges, then re-reads the conflicts from their captions.
 async fn merge_in(
     remote: &impl ChannelRemote,
     data_dir: &Path,
     channel_path: &Path,
-) -> Result<bool> {
+) -> Result<Merged> {
     let local = db::open(data_dir)?;
     let backup_path = free_backup_path(data_dir, &backup_timestamp(now_unix()));
     snapshot::copy_to(&local, &backup_path).context("backing up the local index before merging")?;
@@ -109,7 +122,10 @@ async fn merge_in(
     report::print(&merged, false);
     let summary = conflicts::resolve(&local, remote, &merged.conflicts).await?;
     report::print_conflicts(merged.conflicts.len(), &summary);
-    Ok(summary.resolved == merged.conflicts.len())
+    Ok(Merged {
+        resolved: summary.resolved == merged.conflicts.len(),
+        lacks_subtitles: merged.channel_lacks_subtitles,
+    })
 }
 
 /// Runs the merge against a throwaway copy of the local index, so a dry run

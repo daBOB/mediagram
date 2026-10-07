@@ -1,7 +1,10 @@
-//! One module per subcommand, each exposing `run`, plus `args` (their clap
-//! structs) and `background` (handing an upload to a detached process).
-//! Logic another command or module needs lives in the domain modules
-//! (`index`, `upload`, `media`, ...), not here.
+//! One module per subcommand, each exposing `run`, plus `args` (the clap
+//! structs of the larger subcommands) and `background` (handing an upload
+//! to a detached process). The top-level `Cli` and `Cmd` live in the
+//! binary's `cli.rs`, and a few commands (`push_index`, `pull_index`,
+//! `sync_index`, `metadata`, `subtitles`) define their own clap structs
+//! beside their `run`. Logic another command or module needs lives in the
+//! domain modules (`index`, `upload`, `media`, ...), not here.
 
 pub mod accept_login;
 pub mod add;

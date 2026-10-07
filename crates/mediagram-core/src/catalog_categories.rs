@@ -8,6 +8,8 @@ use std::collections::HashMap;
 
 use rusqlite::Connection;
 
+use crate::sqlite_schema::table_exists;
+
 /// Every hand-set category already filed, by `(department, item_key)` — the
 /// same pair [`mlib_spec::category_key::category_key`] returns.
 ///
@@ -19,12 +21,7 @@ use rusqlite::Connection;
 /// same as absent.
 pub fn categories(conn: &Connection) -> rusqlite::Result<HashMap<(String, String), String>> {
     let mut map = HashMap::new();
-    let present: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'categories')",
-        [],
-        |row| row.get(0),
-    )?;
-    if !present {
+    if !table_exists(conn, "categories")? {
         return Ok(map);
     }
     let mut stmt =

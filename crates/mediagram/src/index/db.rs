@@ -73,8 +73,7 @@ pub fn open_snapshot(path: &Path) -> Result<Connection> {
 }
 
 fn open_at_least(path: &Path, oldest: i64) -> Result<Connection> {
-    super::sqlite_init::configure();
-    let conn = Connection::open_with_flags(
+    let conn = super::sqlite_init::open_with_flags(
         path,
         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )

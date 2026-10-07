@@ -53,8 +53,22 @@ pub(super) fn open(core: &Core) -> Result<Connection, CoreError> {
     open_ro(&path)
 }
 
-mod editorial;
-pub(super) use editorial::{list_sets, media_set};
+/// The current catalog for a read that has an empty answer of its own:
+/// `None` when no catalog is installed yet, which is ordinary, and also when
+/// one will not open, which is logged naming `what` the read was for.
+pub(super) fn open_installed(core: &Core, what: &str) -> Option<Connection> {
+    match open(core) {
+        Ok(conn) => Some(conn),
+        Err(CoreError::NotFound(_)) => None,
+        Err(err) => {
+            tracing::warn!(error = %err, "the index could not be opened for {what}");
+            None
+        }
+    }
+}
+
+mod listing;
+pub(super) use listing::{list_sets, media_set};
 
 mod resolve;
 pub(super) use resolve::{poster_path, resolve_with};

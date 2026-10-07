@@ -5,7 +5,7 @@
 
 use mediagram_tmdb::details::{details, from_details};
 use mediagram_tmdb::poster_files::{already_held, download_into};
-use mediagram_tmdb::posters::{kind_key, resolve_backdrops, resolve_posters};
+use mediagram_tmdb::posters::{poster_key, resolve_backdrops, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 use rusqlite::Connection;
@@ -63,7 +63,7 @@ pub async fn fetch_into(
     let written = download_into(http, &refs, artwork_dir)
         .await
         .unwrap_or_else(|err| {
-            tracing::warn!(error = %err, "the artwork directory is unavailable");
+            tracing::warn!(error = %format_args!("{err:#}"), "the artwork directory is unavailable");
             Vec::new()
         });
     // What the run added is what is held now beyond what was held before: a
@@ -130,7 +130,7 @@ async fn record_descriptions(
     let mut described = Described::default();
     let mut opened: Option<Connection> = None;
     for (kind, id) in titles {
-        let key = format!("tmdb-{}-{id}", kind_key(*kind));
+        let key = poster_key(*kind, *id);
         if store::title_info(core, key.clone()).is_some() {
             described.already_known += 1;
             continue;
@@ -138,7 +138,7 @@ async fn record_descriptions(
         let payload = match details(api, *kind, *id).await {
             Ok(payload) => payload,
             Err(err) => {
-                tracing::warn!(id, error = %err, "no description for this title");
+                tracing::warn!(id, error = %format_args!("{err:#}"), "no description for this title");
                 described.lost.push(key);
                 continue;
             }

@@ -45,15 +45,7 @@ pub(in crate::api) fn title_info(core: &Core, poster_key: String) -> Option<Titl
 
 /// The row the downloaded index carries, if it carries one.
 fn in_index(core: &Core, poster_key: &str) -> Option<TitleDetailsRow> {
-    let conn = match store::open(core) {
-        Ok(conn) => conn,
-        // No catalog installed yet: nothing to describe, and nothing wrong.
-        Err(CoreError::NotFound(_)) => return None,
-        Err(err) => {
-            tracing::warn!(error = %err, "the index could not be opened for a description");
-            return None;
-        }
-    };
+    let conn = store::open_installed(core, "a description")?;
     read_logged(&conn, poster_key, "the index")
 }
 
