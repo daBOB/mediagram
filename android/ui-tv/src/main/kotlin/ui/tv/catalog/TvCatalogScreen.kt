@@ -34,9 +34,9 @@ import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.MenuActions
-import ui.RailItem
-import ui.catalog.rememberDepartmentScrollStates
+import ui.common.MenuActions
+import ui.common.RailItem
+import ui.common.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.chrome.TvDepartmentPill
 import ui.tv.chrome.TvLibraryChrome

@@ -31,6 +31,8 @@ import model.WatchSnapshot
 import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
+import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.rememberTitleCredits
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */

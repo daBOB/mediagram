@@ -30,7 +30,7 @@ import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
-import ui.catalog.HeroArtwork
+import ui.common.catalog.HeroArtwork
 import ui.tv.chrome.LocalTvPagePadding
 
 /**
@@ -179,7 +179,7 @@ private const val ArtWidthFraction = 0.7f
  * 360dp — see [TvDepartmentHero]'s own doc on why this stands in for the
  * web's fluid clamp here. Internal, not private: every department hero is
  * this one fixed height, so [TvCatalogScreen]'s own bar blend reads it
- * directly rather than a live measurement [ui.chrome.HeroListState] would
+ * directly rather than a live measurement [ui.common.chrome.HeroListState] would
  * otherwise exist to take — the same simplification a *fixed* height, unlike
  * Home's own cover, affords.
  */

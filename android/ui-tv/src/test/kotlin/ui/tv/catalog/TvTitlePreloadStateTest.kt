@@ -22,9 +22,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import playback.FilmPreloadState
 import playback.PauseReason
+import ui.common.catalog.TitlePreloadUi
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import ui.catalog.TitlePreloadUi
 
 /**
  * [TvTitlePage]'s own Preload control: a plate beside Play carrying the

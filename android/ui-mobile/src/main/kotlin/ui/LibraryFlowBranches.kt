@@ -24,18 +24,22 @@ import data.CatalogEnrichmentState
 import model.WatchSnapshot
 import system.FetchViewModel
 import ui.catalog.CatalogScreen
-import ui.catalog.DepartmentScrollStates
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
 import ui.catalog.posterColumnsFor
-import ui.catalog.rememberDepartmentScrollStates
 import catalog.chromeCountsOf
 import ui.chrome.BrowseActions
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
 import ui.chrome.ProfileBarState
 import ui.chrome.RailData
+import ui.common.FrameKind
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.catalog.DepartmentScrollStates
+import ui.common.catalog.rememberDepartmentScrollStates
+import ui.common.resolve
 import ui.player.PlayerScreen
 
 /**

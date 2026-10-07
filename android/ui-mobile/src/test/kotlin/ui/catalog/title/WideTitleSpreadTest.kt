@@ -28,9 +28,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.catalog.CollectionScreen
-import ui.catalog.HERO_ARTWORK_TEST_TAG
 import ui.catalog.TitleDetailScreen
 import ui.catalog.WIDE_TITLE_SPREAD_TEST_TAG
+import ui.common.catalog.HERO_ARTWORK_TEST_TAG
 import uniffi.mediagram_core.TitleInfo
 import kotlin.math.abs
 import kotlin.test.assertTrue

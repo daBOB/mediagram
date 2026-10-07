@@ -28,6 +28,7 @@ import catalog.showsLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
 import ui.catalog.home.CourseList
+import ui.common.catalog.rememberRowState
 
 private val DEPT_CARD_WIDTH = 140.dp
 

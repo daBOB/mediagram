@@ -23,6 +23,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import playback.FilmPreloadState
 import playback.PauseReason
+import ui.common.catalog.TitlePreloadUi
 import kotlin.test.assertTrue
 
 /**

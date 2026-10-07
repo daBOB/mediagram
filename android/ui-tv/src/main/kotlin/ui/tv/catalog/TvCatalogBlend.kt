@@ -15,15 +15,15 @@ import designsystem.LocalBackdrop
 import designsystem.Overscan
 import model.MediaSet
 import model.WatchSnapshot
-import ui.catalog.DepartmentScrollStates
-import ui.chrome.asHeroListState
-import ui.chrome.coverBlend
+import ui.common.catalog.DepartmentScrollStates
+import ui.common.chrome.asHeroListState
+import ui.common.chrome.coverBlend
 import ui.tv.chrome.TvDepartmentsBarHeight
 
 /**
  * How solid [TvLibraryChrome]'s own bar should read over whatever the
  * selected tab draws under it — Home's own cover, read live through
- * [homeListState] the way [ui.chrome.HeroListState] already does for the
+ * [homeListState] the way [ui.common.chrome.HeroListState] already does for the
  * tablet's own hero pages, or the selected department's own hero, read
  * through [deptScroll] at its own fixed height ([TvDepartmentHeroHeight] —
  * unlike Home's cover, no department hero ever measures differently).

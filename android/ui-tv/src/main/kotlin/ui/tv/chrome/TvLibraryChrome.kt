@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.Overscan
-import ui.RailItem
+import ui.common.RailItem
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own row height, before its top inset — the tablet's own `DepartmentsBarHeight` (`ChromeControls.kt`), reused since both draw the same pills. */

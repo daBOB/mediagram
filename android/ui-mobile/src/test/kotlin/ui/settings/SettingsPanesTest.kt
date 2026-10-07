@@ -32,6 +32,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
+import ui.common.settings.SettingsSection
 import ui.profileSettingsModel
 import setup.SettingsUiState
 import setup.SettingsViewModel

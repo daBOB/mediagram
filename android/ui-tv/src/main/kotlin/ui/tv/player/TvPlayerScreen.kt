@@ -30,9 +30,9 @@ import player.UpNextPhase
 import player.controlsMayShow
 import player.previous
 import player.retry
-import ui.player.KeepScreenOnWhile
-import ui.player.PlayerLifecycle
-import ui.player.PlayerNavigationEffects
+import ui.common.player.KeepScreenOnWhile
+import ui.common.player.PlayerLifecycle
+import ui.common.player.PlayerNavigationEffects
 
 /**
  * A title playing on a television, driven by the remote — the phone's

@@ -20,8 +20,8 @@ import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.player.TransportIcon
-import ui.player.TransportIcons
+import ui.common.player.TransportIcon
+import ui.common.player.TransportIcons
 import ui.tv.TvFocus
 
 /**

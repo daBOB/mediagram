@@ -143,7 +143,7 @@ class LibraryFlowTest {
     /**
      * A second title pushed straight over the first, from its own Similar
      * row, opens fresh rather than inheriting the first one's tab — and back
-     * finds the first as it was left ([ui.LibraryPositions.frameKey]).
+     * finds the first as it was left ([ui.common.LibraryPositions.frameKey]).
      */
     @Test fun aSimilarTitleOpensFreshAndBackRestoresTheFirstTitlesOwnTab() {
         title()
@@ -197,7 +197,7 @@ class LibraryFlowTest {
      * Season 2 — chosen by [season] rather than the default — survives a
      * killed-and-recreated process the same way the collection's own key
      * already did: both ride the same saved frame payload
-     * ([ui.LibraryPositions.setCollectionSeason]).
+     * ([ui.common.LibraryPositions.setCollectionSeason]).
      */
     @Test fun aSavedSeasonResolvesAfterLoadingAndBackUncoversItsCollection() {
         season()

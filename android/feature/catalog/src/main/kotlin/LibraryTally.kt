@@ -5,7 +5,7 @@ package catalog
  * rail masthead's own three lines (`app.js:121-123`), spelled the way
  * `format.js`'s `spellCount`/`countOf` do: a count small enough to read
  * faster as a word than as a figure is one, everything past twenty is
- * figures. `ui.catalog.countOf` (ui-common) is figures-only on purpose —
+ * figures. `ui.common.catalog.countOf` (ui-common) is figures-only on purpose —
  * a search result count is never small enough for the distinction to
  * matter — so this is its own small port rather than a shared function.
  */

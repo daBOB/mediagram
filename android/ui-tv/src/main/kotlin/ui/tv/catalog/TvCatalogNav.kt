@@ -8,8 +8,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import catalog.CatalogTab
 import catalog.MenuScreen
-import ui.RailItem
-import ui.railItemOf
+import ui.common.RailItem
+import ui.common.railItemOf
 import ui.tv.chrome.TvChromeFocus
 import ui.tv.chrome.rememberTvChromeFocus
 import ui.tv.system.menuRestoreKey

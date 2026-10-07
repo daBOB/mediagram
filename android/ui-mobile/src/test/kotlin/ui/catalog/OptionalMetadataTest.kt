@@ -19,6 +19,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import ui.common.catalog.rememberTitleCredits
+import ui.common.catalog.rememberTitleInfo
 import kotlin.test.assertTrue
 
 /**

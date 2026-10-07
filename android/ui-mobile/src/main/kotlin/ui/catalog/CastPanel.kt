@@ -36,6 +36,7 @@ import data.PortraitRequestLog
 import designsystem.Spacing
 import model.Credit
 import model.TitleCredits
+import ui.common.catalog.rememberPortrait
 import java.io.File
 
 private val FACE_SIZE = 64.dp

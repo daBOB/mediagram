@@ -38,6 +38,7 @@ import org.robolectric.annotation.Config
 import designsystem.InMemoryAppearanceSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
+import ui.common.settings.SettingsSection
 import ui.profileSettingsModel
 import setup.Libraries
 import setup.SettingsViewModel

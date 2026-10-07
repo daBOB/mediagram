@@ -187,7 +187,7 @@ fun MediagramTheme(
     }
 }
 
-/** Same shape as `ui.player.findActivity` in ui-common — duplicated rather than depended on, since neither module depends on the other. */
+/** Same shape as `ui.common.player.findActivity` in ui-common — duplicated rather than depended on, since neither module depends on the other. */
 private tailrec fun Context.findActivity(): Activity? =
     when (this) {
         is Activity -> this

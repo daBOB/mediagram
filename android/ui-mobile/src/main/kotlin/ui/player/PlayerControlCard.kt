@@ -36,6 +36,7 @@ import player.PlayerChoices
 import player.READOUT_TICK_MS
 import player.UpNextUiState
 import player.endsLine
+import ui.common.player.playerCard
 
 /** Finds the card in a test. */
 internal const val PlayerCardTag = "player-card"

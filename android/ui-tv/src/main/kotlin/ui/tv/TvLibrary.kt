@@ -19,11 +19,11 @@ import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import player.TitlePreloadViewModel
 import system.FetchViewModel
-import ui.FrameKind
-import ui.LibraryPositions
-import ui.rememberLibraryPositions
-import ui.resolve
-import ui.settings.SettingsOutcomes
+import ui.common.FrameKind
+import ui.common.LibraryPositions
+import ui.common.rememberLibraryPositions
+import ui.common.resolve
+import ui.common.settings.SettingsOutcomes
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvMenuEntryKey
 import ui.tv.profile.TvChosenProfile

@@ -11,6 +11,8 @@ import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
 import ui.chrome.ProfileBarState
+import ui.common.profile.ForgetManageWhenAway
+import ui.common.profile.manageActions
 
 /**
  * Gates [content] on a chosen profile: a viewer, not the setup step the app

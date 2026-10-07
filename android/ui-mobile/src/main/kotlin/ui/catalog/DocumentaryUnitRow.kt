@@ -14,6 +14,7 @@ import catalog.extentOf
 import catalog.factsLine
 import catalog.keyOf
 import designsystem.Spacing
+import ui.common.catalog.rememberRowState
 
 private val DEPT_CARD_WIDTH = 140.dp
 

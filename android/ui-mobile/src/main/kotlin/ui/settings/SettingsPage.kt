@@ -24,6 +24,7 @@ import designsystem.PageHead
 import designsystem.ThemeChoice
 import model.Profile
 import setup.SettingsUiState
+import ui.common.settings.SettingsSection
 import ui.system.SystemScreen
 
 // Margins sized to the screen a tablet actually has (≈1160dp), not the

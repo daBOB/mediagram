@@ -3,7 +3,7 @@ package ui.tv
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
-import ui.rememberStatsPage
+import ui.common.rememberStatsPage
 import ui.tv.catalog.TvStatsPage
 
 /**

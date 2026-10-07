@@ -45,8 +45,8 @@ import player.resetSubtitleOffset
 import player.setSpeed
 import player.setSubtitleBacking
 import player.setSubtitleSize
-import ui.player.cardMenuOffset
-import ui.player.playerCard
+import ui.common.player.cardMenuOffset
+import ui.common.player.playerCard
 import ui.tv.rememberStableRequester
 
 /** The controls' menus — one open at a time, each above the tool that opens it. */

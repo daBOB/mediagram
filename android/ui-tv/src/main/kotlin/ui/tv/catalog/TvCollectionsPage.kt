@@ -41,7 +41,7 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import model.ListOfSets
 import model.MediaSet
-import ui.catalog.DESTINATION_ASPECT
+import ui.common.catalog.DESTINATION_ASPECT
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.rememberStableRequester

@@ -10,9 +10,9 @@ import catalog.franchiseHref
 import catalog.mediaSet
 import model.ListOfSets
 import model.WatchSnapshot
-import ui.FrameResolution
-import ui.LibraryPositions
-import ui.resolveFrame
+import ui.common.FrameResolution
+import ui.common.LibraryPositions
+import ui.common.resolveFrame
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvList
 import ui.tv.catalog.TvPlayAllKey

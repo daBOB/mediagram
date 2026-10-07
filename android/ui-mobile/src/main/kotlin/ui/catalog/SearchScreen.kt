@@ -29,6 +29,9 @@ import catalog.franchisesIn
 import catalog.searchGroupsOf
 import designsystem.Spacing
 import model.WatchSnapshot
+import ui.common.catalog.SearchResultsView
+import ui.common.catalog.searchResultsView
+import ui.common.catalog.searchVisitState
 
 /**
  * A hundred and seventy lessons named "Definition" are not browsable, only

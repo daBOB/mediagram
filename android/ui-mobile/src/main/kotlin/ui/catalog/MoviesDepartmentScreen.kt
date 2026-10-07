@@ -32,6 +32,8 @@ import catalog.spelledCountOf
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
+import ui.common.catalog.GENRE_ROW_TILE_ASPECT
+import ui.common.catalog.rememberRowState
 import uniffi.mediagram_core.TitleInfo
 import kotlin.random.Random
 

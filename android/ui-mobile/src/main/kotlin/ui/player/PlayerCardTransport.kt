@@ -18,6 +18,7 @@ import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
 import designsystem.Spacing
 import player.UpNextUiState
+import ui.common.player.TransportIcons
 
 /**
  * The card's bottom row: ↺ ⏮ −15 ▶/❚❚ +15 ⏭, then ⓘ and ☰.

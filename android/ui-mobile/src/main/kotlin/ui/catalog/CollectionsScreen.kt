@@ -19,6 +19,7 @@ import catalog.spelledCountOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
+import ui.common.catalog.DESTINATION_ASPECT
 
 /**
  * Collections as destinations — a Compose port of

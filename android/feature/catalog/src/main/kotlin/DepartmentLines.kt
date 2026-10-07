@@ -10,7 +10,7 @@ import java.text.NumberFormat
  * count reads the same word or figure on both: before this, only
  * [documentariesDepartmentOf]'s own line spelled at all, and Movies',
  * Series'/Tutorials', Anime's and Collections' each built their own
- * figures-only line with `ui.catalog.countOf` (ui-mobile) instead.
+ * figures-only line with `ui.common.catalog.countOf` (ui-mobile) instead.
  */
 fun moviesLineOf(department: MoviesDepartment): String =
     listOfNotNull(

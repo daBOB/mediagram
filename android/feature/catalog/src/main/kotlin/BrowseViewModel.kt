@@ -24,7 +24,7 @@ class BrowseViewModel
     @Inject
     constructor(
         private val repository: CatalogRepository,
-        /** Which people this session has already fetched a portrait for; the screens hand it to `ui.catalog.rememberPortrait`. */
+        /** Which people this session has already fetched a portrait for; the screens hand it to `ui.common.catalog.rememberPortrait`. */
         val portraits: PortraitRequestLog,
     ) : ViewModel() {
         suspend fun person(personId: Long): Person? = repository.person(personId)

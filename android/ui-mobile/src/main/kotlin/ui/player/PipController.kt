@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.lifecycle.Lifecycle
 import androidx.media3.common.Player
+import ui.common.player.findActivity
 
 /**
  * Whether the activity is currently shrunk into picture-in-picture —

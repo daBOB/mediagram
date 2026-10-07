@@ -22,7 +22,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import ui.catalog.TitlePreloadUi
+import ui.common.catalog.TitlePreloadUi
 import uniffi.mediagram_core.TitleInfo
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

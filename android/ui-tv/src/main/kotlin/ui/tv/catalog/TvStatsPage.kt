@@ -32,7 +32,7 @@ import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
 import stats.STATS_HEADING
 import stats.StatsUiState
-import ui.StatsBars
+import ui.common.StatsBars
 import ui.tv.TvFocus
 
 private val ChartHeight = 120.dp

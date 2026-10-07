@@ -30,11 +30,11 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import ui.Destination
 import ui.backLabelFor
 import ui.barTitleFor
-import ui.showsSearchAction
-import ui.MenuActions
-import ui.RailItem
+import ui.common.MenuActions
+import ui.common.RailItem
 import ui.pageGround
 import ui.setup.StartOverConfirmation
+import ui.showsSearchAction
 
 /**
  * Whose shelves these are, and the way to become somebody else — the bar's

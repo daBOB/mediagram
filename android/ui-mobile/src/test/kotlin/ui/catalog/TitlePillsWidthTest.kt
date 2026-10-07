@@ -19,6 +19,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import playback.FilmPreloadState
+import ui.common.catalog.TitlePreloadUi
 import kotlin.test.assertTrue
 
 /**

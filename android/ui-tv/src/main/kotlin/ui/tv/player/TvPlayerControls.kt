@@ -30,8 +30,8 @@ import model.MediaSet
 import player.READOUT_TICK_MS
 import player.UpNextPhase
 import player.endsLine
-import ui.player.SCRIM_ALPHA
-import ui.player.playerCard
+import ui.common.player.SCRIM_ALPHA
+import ui.common.player.playerCard
 
 /** Finds the controls' two bands in a test: what is playing along the top, and the card along the bottom. */
 internal const val TvTopBandTag = "tv-player-top-band"

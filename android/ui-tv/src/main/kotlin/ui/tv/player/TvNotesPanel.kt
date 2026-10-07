@@ -49,8 +49,8 @@ import designsystem.TvTypeScale
 import kotlinx.coroutines.launch
 import model.markdown.Block
 import model.markdown.Span
-import ui.player.notesHeadingLevel
-import ui.player.rememberNotesText
+import ui.common.player.notesHeadingLevel
+import ui.common.player.rememberNotesText
 import ui.tv.TvFocus
 
 /** Finds the notes column in a test: the region the remote pages through. */

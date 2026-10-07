@@ -13,8 +13,8 @@ import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.latestOf
 import model.MediaSet
-import ui.RailItem
-import ui.catalog.DepartmentScrollStates
+import ui.common.RailItem
+import ui.common.catalog.DepartmentScrollStates
 
 /**
  * What shows below the bar once a tab is chosen — Home, a shelf's wall (or

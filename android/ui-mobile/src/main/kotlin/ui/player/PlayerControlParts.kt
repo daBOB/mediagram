@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ui.common.player.TransportIcon
+import ui.common.player.TransportIcons
 
 /*
  * The pieces the card is drawn from that hold none of its state: each is

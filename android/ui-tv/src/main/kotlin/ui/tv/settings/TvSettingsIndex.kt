@@ -24,8 +24,8 @@ import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import designsystem.StatusDot
 import designsystem.TvTypeScale
-import ui.settings.IndexStatus
-import ui.settings.SettingsSection
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 import ui.tv.TvIndexRow
 
 /** The index pane's own width on a television — narrower than the phone's 320dp EXPANDED pane; there is no wordmark or tally competing with it here. */

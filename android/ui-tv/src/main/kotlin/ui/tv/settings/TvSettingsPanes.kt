@@ -30,8 +30,8 @@ import designsystem.Overscan
 import designsystem.PageHead
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.settings.IndexStatus
-import ui.settings.SettingsSection
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 import ui.tv.catalog.TvPage
 
 /**

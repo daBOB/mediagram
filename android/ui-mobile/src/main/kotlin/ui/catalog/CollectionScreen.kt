@@ -27,6 +27,7 @@ import data.PortraitRequestLog
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.rememberTitleCredits
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -116,7 +117,7 @@ private fun CoursePage(
  * first) and asks the caller to remember whichever one is actually shown
  * ([shownSeason] below) once the picker changes it. Kept outside so a title
  * opened from Similar, Cast or an episode and left again still finds the
- * same season — [ui.LibraryPositions.setCollectionSeason] is the caller
+ * same season — [ui.common.LibraryPositions.setCollectionSeason] is the caller
  * every real screen wires this to.
  */
 @Composable

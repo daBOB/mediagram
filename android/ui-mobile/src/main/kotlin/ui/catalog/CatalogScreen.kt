@@ -25,6 +25,7 @@ import catalog.latestOf
 import catalog.magazineHomeOf
 import catalog.watchlistWall
 import designsystem.Spacing
+import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
 import ui.chrome.LocalTopChrome
 

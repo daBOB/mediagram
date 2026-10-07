@@ -6,6 +6,8 @@ import kotlinx.coroutines.delay
 import player.CONTROLS_LINGER_MS
 import player.PlayerViewModel
 import player.controlsShouldFade
+import ui.common.player.KeepScreenOnWhile
+import ui.common.player.PlayerLifecycle
 
 /**
  * The side effects [PlayerScreen] runs for its own lifecycle rather than for

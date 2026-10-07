@@ -26,9 +26,9 @@ import setup.SetupUiState
 import setup.SetupViewModel
 import setup.login.LoginViewModel
 import ui.chrome.LibraryScaffold
+import ui.common.setup.SignInCompletion
 import ui.setup.LibraryScreen
 import ui.setup.LoginScreen
-import ui.setup.SignInCompletion
 import ui.setup.StartOverAction
 import ui.setup.TelegramApplicationScreen
 

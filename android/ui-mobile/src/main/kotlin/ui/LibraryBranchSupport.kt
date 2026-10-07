@@ -17,12 +17,14 @@ import catalog.magazineHomeOf
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import model.WatchSnapshot
-import ui.catalog.DepartmentScrollStates
 import ui.chrome.BrowseActions
-import ui.chrome.HeroListState
 import ui.chrome.LibraryScaffold
 import ui.chrome.ProfileBarState
-import ui.chrome.asHeroListState
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.catalog.DepartmentScrollStates
+import ui.common.chrome.HeroListState
+import ui.common.chrome.asHeroListState
 
 /**
  * One screen of the library under the app's chrome, and what leaving it

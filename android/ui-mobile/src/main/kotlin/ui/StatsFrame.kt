@@ -5,6 +5,9 @@ import catalog.CatalogUiState
 import ui.catalog.StatsScreen
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.rememberStatsPage
 
 /**
  * The Stats page as one frame of its own on [at]'s stack, opened from the

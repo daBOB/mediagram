@@ -27,7 +27,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import designsystem.TvTypeScale
 import java.io.File
-import ui.catalog.ArtTileScrim
+import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
 import ui.tv.catalog.home.OnImage
 

@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.catalog.rememberDepartmentScrollStates
+import ui.common.catalog.rememberDepartmentScrollStates
 import kotlin.test.assertEquals
 
 /**

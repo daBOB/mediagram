@@ -29,6 +29,7 @@ import catalog.resumeCardsOf
 import designsystem.Spacing
 import model.MediaSet
 import model.WatchSnapshot
+import ui.common.catalog.rememberRowState
 
 private val DEPT_CARD_WIDTH = 140.dp
 

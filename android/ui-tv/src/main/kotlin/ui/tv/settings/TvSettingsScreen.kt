@@ -19,8 +19,8 @@ import system.LanCacheViewModel
 import system.SystemViewModel
 import system.storageStatus
 import system.systemStatus
-import ui.settings.IndexStatus
-import ui.settings.SettingsSection
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 import ui.tv.setup.TvConfirmDialog
 import ui.tv.system.TvSystemSection
 

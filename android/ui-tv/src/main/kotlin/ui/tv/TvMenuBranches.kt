@@ -9,9 +9,9 @@ import catalog.MenuScreen
 import catalog.updateDisabledReason
 import data.CatalogEnrichmentState
 import system.FetchViewModel
-import ui.LibraryPositions
-import ui.MenuActions
-import ui.settings.SettingsSection
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.settings.SettingsSection
 import ui.tv.settings.TvSettingsScreen
 import ui.tv.settings.TvTmdbKeyScreen
 import ui.tv.system.menuRestoreKey

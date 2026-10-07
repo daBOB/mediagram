@@ -31,7 +31,7 @@ import model.TitleCredits
 import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
-import ui.catalog.TitlePreloadUi
+import ui.common.catalog.TitlePreloadUi
 import uniffi.mediagram_core.TitleInfo
 
 /**

@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.LocalCatalogueTones
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 
 /**
  * Two panes on EXPANDED width — the index beside the page, both always on

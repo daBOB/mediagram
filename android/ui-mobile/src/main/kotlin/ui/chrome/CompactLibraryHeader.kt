@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mediagram.android.core.designsystem.R
 import designsystem.LocalCatalogueTones
-import ui.MenuActions
-import ui.RailItem
+import ui.common.MenuActions
+import ui.common.RailItem
 
 /** The wordmark's own narrow-width sizes — the web's `.brand` at ≤900px, then ≤480px (`shell.css:184, 199`). */
 private val CompactWordmarkBreakpoint = 480.dp

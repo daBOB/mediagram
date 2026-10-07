@@ -31,11 +31,14 @@ import ui.catalog.PersonScreen
 import ui.catalog.PreloadsScreen
 import ui.catalog.ShelfViewChoice
 import ui.catalog.ShelfWall
-import ui.catalog.rememberFranchiseOverviews
-import ui.catalog.rememberPersonLookup
-import ui.catalog.rememberPortrait
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
+import ui.common.FrameKind
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.catalog.rememberFranchiseOverviews
+import ui.common.catalog.rememberPersonLookup
+import ui.common.catalog.rememberPortrait
 
 /**
  * The five browse frames — [FrameKind.PERSON],
@@ -181,7 +184,7 @@ internal fun PreloadsFrame(
  * the person itself is an async lookup ([rememberPersonLookup]), not
  * something [catalogState] already has synchronously the way a title or a
  * collection is, so "still fetching" and "asked and nobody by that id"
- * cannot both read as the same `null`. [ui.catalog.PersonLookup.loading] is
+ * cannot both read as the same `null`. [ui.common.catalog.PersonLookup.loading] is
  * what tells them apart.
  */
 @Composable

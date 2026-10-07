@@ -9,8 +9,8 @@ import catalog.factsLine
 import catalog.spelledCountOf
 import catalog.watchedFractionOf
 import data.PortraitRequestLog
+import ui.common.catalog.DESTINATION_ASPECT
 import java.io.File
-import ui.catalog.DESTINATION_ASPECT
 
 /**
  * One search result, drawn the way `search-view.js` draws its kind: a film

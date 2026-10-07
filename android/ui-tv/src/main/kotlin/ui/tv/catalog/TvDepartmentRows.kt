@@ -30,8 +30,8 @@ import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
 import model.Progress
-import ui.catalog.GENRE_ROW_TILE_ASPECT
-import ui.catalog.rememberRowState
+import ui.common.catalog.GENRE_ROW_TILE_ASPECT
+import ui.common.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.rememberStableRequester
 

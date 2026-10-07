@@ -41,10 +41,10 @@ import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
-import ui.catalog.isPlayable
-import ui.catalog.locationOf
-import ui.catalog.rememberPortrait
-import ui.catalog.searchMetaLineOf
+import ui.common.catalog.isPlayable
+import ui.common.catalog.locationOf
+import ui.common.catalog.rememberPortrait
+import ui.common.catalog.searchMetaLineOf
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 

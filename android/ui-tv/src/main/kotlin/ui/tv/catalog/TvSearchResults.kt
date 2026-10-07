@@ -28,9 +28,9 @@ import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
-import ui.catalog.SearchResultsView
-import ui.catalog.countOf
-import ui.catalog.searchResultsView
+import ui.common.catalog.SearchResultsView
+import ui.common.catalog.countOf
+import ui.common.catalog.searchResultsView
 import ui.tv.TvTextRow
 import ui.tv.rememberStableRequester
 

@@ -15,10 +15,10 @@ import catalog.similarTo
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
-import ui.LibraryPositions
-import ui.catalog.rememberFilmPreloadUi
-import ui.catalog.rememberTitleCredits
-import ui.catalog.rememberTitleInfo
+import ui.common.LibraryPositions
+import ui.common.catalog.rememberFilmPreloadUi
+import ui.common.catalog.rememberTitleCredits
+import ui.common.catalog.rememberTitleInfo
 import ui.tv.catalog.TvCollection
 import ui.tv.catalog.TvTitlePage
 import ui.tv.catalog.franchiseRestoreKey

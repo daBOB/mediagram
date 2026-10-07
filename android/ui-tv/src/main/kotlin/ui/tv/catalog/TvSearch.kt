@@ -27,7 +27,7 @@ import catalog.searchGroupsOf
 import data.PortraitRequestLog
 import designsystem.Overscan
 import model.WatchSnapshot
-import ui.catalog.searchVisitState
+import ui.common.catalog.searchVisitState
 import ui.tv.TvTextField
 
 /** The search field's own tag — it carries no text of its own to be found by until something is typed. */

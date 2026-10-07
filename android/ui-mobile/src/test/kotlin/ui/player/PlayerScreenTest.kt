@@ -3,6 +3,7 @@ package ui.player
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import ui.common.player.shouldStopOnDispose
 
 /**
  * Only the decision function is testable without a real Activity and a

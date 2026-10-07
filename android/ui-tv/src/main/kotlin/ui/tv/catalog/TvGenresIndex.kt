@@ -3,7 +3,7 @@ package ui.tv.catalog
 import androidx.compose.runtime.Composable
 import catalog.GenreIndexEntry
 import catalog.spelledCountOf
-import ui.catalog.GENRE_TILE_ASPECT
+import ui.common.catalog.GENRE_TILE_ASPECT
 
 /**
  * Four tiles across: at a pushed frame's 864dp between the overscan

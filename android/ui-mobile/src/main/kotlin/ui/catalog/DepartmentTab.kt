@@ -11,6 +11,7 @@ import catalog.allSetsById
 import catalog.moviesDepartmentOf
 import catalog.showsDepartmentOf
 import model.Kind
+import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
 
 /**

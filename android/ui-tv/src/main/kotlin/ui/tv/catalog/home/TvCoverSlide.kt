@@ -25,8 +25,8 @@ import designsystem.LocalBackdrop
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
-import ui.catalog.CoverScrim
-import ui.catalog.HeroArtwork
+import ui.common.catalog.CoverScrim
+import ui.common.catalog.HeroArtwork
 import ui.tv.catalog.TvBarClearance
 
 /** Past this many characters the title steps down a size, the phone cover's own rule (`HOME_COVER`, `CoverSlide.kt`). */

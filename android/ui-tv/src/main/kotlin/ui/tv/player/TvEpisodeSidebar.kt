@@ -30,7 +30,7 @@ import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import player.EpisodeList
-import ui.player.playerCard
+import ui.common.player.playerCard
 
 /** Finds the episode list in a test. */
 internal const val TvEpisodeSidebarTag = "tv-episode-sidebar"

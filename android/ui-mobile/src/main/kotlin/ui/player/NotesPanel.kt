@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import model.markdown.Block
 import model.markdown.Span
+import ui.common.player.notesHeadingLevel
+import ui.common.player.rememberNotesText
 
 /**
  * The notes column — `#notes-panel` in the web's `index.html`: a "Notes"

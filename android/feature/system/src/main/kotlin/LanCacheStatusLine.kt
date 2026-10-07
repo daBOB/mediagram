@@ -36,7 +36,7 @@ private fun heldAgainstServerBudget(
 /**
  * Settings index's Storage row: held against the budget, and — only when it
  * means something — that the home cache server is connected, with the held
- * dot [ui.settings.IndexStatus] draws for it.
+ * dot [ui.common.settings.IndexStatus] draws for it.
  */
 fun storageStatus(
     occupancy: CacheOccupancy?,

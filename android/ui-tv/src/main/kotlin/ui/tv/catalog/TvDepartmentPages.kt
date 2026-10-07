@@ -14,7 +14,7 @@ import catalog.showsDepartmentOf
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
-import ui.catalog.DepartmentScrollStates
+import ui.common.catalog.DepartmentScrollStates
 
 /**
  * Every film the Movies shelf holds, one flat wall — "All N films" from the

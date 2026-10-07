@@ -11,8 +11,8 @@ import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
 import stats.AchievementDotViewModel
-import ui.LibraryPositions
-import ui.MenuActions
+import ui.common.LibraryPositions
+import ui.common.MenuActions
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey

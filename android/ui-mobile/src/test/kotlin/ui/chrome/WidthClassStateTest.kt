@@ -27,7 +27,6 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import catalog.CatalogTab
-import ui.Destination
 import catalog.KeptKind
 import catalog.mastheadTabsOf
 import designsystem.MediagramTheme
@@ -38,7 +37,8 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.MenuActions
+import ui.Destination
+import ui.common.MenuActions
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

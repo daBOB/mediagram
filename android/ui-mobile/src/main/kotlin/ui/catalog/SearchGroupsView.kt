@@ -34,6 +34,8 @@ import catalog.spelledCountOf
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
+import ui.common.catalog.DESTINATION_ASPECT
+import ui.common.catalog.rememberPortrait
 
 private val SEARCH_CARD_WIDTH = 120.dp
 
