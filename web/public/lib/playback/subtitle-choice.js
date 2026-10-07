@@ -1,7 +1,7 @@
 /**
  * Which subtitle tracks show, and what the picker and 'c' key do about it.
  *
- * Pure and DOM-free on purpose: `plan.md`'s "Playback rule" is exercised here
+ * Pure and DOM-free on purpose: the playback rule below is exercised here
  * against `web/test/fixtures/subtitles/choice-cases.json`, the same fixture
  * every surface (web, phone, TV) is tested against, so the rule is proved
  * once rather than once per player.
@@ -59,7 +59,7 @@ function cascadeMatch(key, regularTracks) {
 
 /**
  * The regular track showing passively — before any 'c' press this session —
- * or `null` for none. `plan.md`: `wanted = remembered ?? preferred ?? off`;
+ * or `null` for none. The rule: `wanted = remembered ?? preferred ?? off`;
  * `regular = wanted off ? none : same key -> same lang plain -> same lang
  * SDH -> profile preference -> none`.
  */

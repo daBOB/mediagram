@@ -190,8 +190,8 @@ export const GROUPS: readonly (readonly string[])[] = [
   // every reader shares) would see nothing but rows it already understood.
   //
   // `collections` alone also gains `updated_at`: a list is one row on the
-  // wire, merged whole rather than item by item (`plan.md`'s decision on
-  // collections), so renaming it or changing its membership has to move a
+  // wire, merged whole rather than item by item (a list's name and members
+  // only make sense together), so renaming it or changing its membership has to move a
   // timestamp `created_at` was never meant to carry. Backfilled from
   // `created_at` — the oldest fact this file has about a list already made.
   [
