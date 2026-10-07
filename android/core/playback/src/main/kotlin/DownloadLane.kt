@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.withLock
  * The one write slot the series and film preloaders share, so their writes
  * into the same disk cache — and the same home cache server, over the same
  * LAN write path — never race each other for bandwidth. Both preloaders are
- * handed the same instance (see `PlaybackModule`); each `SeriesPreloader`
+ * handed the same instance (see `PreloadModule`); each `SeriesPreloader`
  * test that does not pass one gets its own, private lane instead, since
  * nothing there writes concurrently with anything else.
  *

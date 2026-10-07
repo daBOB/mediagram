@@ -2,6 +2,7 @@ package player
 
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import data.AUDIO_PREFERENCE
 import data.PlayerPreferences
 import data.orDefault
 import kotlinx.coroutines.CoroutineScope
@@ -102,7 +103,7 @@ class AudioChoiceController(
 
     /**
      * Called once [PlayerChoicesController.resolve] knows the scope, with
-     * whatever it loaded under `"audio"` — `null` for nothing remembered.
+     * whatever it loaded under [AUDIO_PREFERENCE] — `null` for nothing remembered.
      * A pick already made by hand wins: this only re-tries persisting it
      * now that there is a scope to write it under, the same as
      * [PlayerChoicesController] does for a speed chosen before its own
@@ -134,7 +135,7 @@ class AudioChoiceController(
     private fun rememberLanguage(language: String?) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, "audio", language) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, AUDIO_PREFERENCE, language) } }
     }
 
     /** Detaches [trackListener] — called once this controller's own [PlayerViewModel] is cleared. */

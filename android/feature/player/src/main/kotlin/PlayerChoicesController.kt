@@ -1,6 +1,9 @@
 package player
 
+import data.AUDIO_PREFERENCE
+import data.FRAMING_PREFERENCE
 import data.PROFILE_SCOPE
+import data.SPEED_PREFERENCE
 import data.SUBTITLE_PREFERENCE
 import data.CatalogRepository
 import data.PlayerPreferences
@@ -149,15 +152,15 @@ class PlayerChoicesController(
         if (userChoseSpeed) {
             rememberSpeed(scope, _choices.value.speed)
         } else {
-            val speed = speedOrDefault(loaded["speed"])
+            val speed = speedOrDefault(loaded[SPEED_PREFERENCE])
             _choices.value = _choices.value.copy(speed = speed)
             handle.setPlaybackSpeed(speed)
         }
 
-        audioChoice.onPreferencesLoaded(scope, profileId, loaded["audio"])
-        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded["subtitle"], profileSubtitle)
+        audioChoice.onPreferencesLoaded(scope, profileId, loaded[AUDIO_PREFERENCE])
+        subtitleChoice.onPreferencesLoaded(scope, profileId, loaded[SUBTITLE_PREFERENCE], profileSubtitle)
         subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
-        framingChoice.onPreferencesLoaded(scope, profileId, loaded["framing"])
+        framingChoice.onPreferencesLoaded(scope, profileId, loaded[FRAMING_PREFERENCE])
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -191,7 +194,7 @@ class PlayerChoicesController(
     private fun rememberSpeed(scope: String, rate: Float) {
         val profileId = repository.chosenProfileId.value ?: return
         launchScope.launch {
-            orDefault(Unit) { preferences.remember(profileId, scope, "speed", speedPreferenceValue(rate)) }
+            orDefault(Unit) { preferences.remember(profileId, scope, SPEED_PREFERENCE, speedPreferenceValue(rate)) }
         }
     }
 }

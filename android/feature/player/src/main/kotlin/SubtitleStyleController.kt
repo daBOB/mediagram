@@ -1,5 +1,8 @@
 package player
 
+import data.CUE_BACKING_PREFERENCE
+import data.CUE_OFFSET_PREFERENCE
+import data.CUE_SIZE_PREFERENCE
 import data.PlayerPreferences
 import data.orDefault
 import kotlinx.coroutines.CoroutineScope
@@ -57,12 +60,12 @@ class SubtitleStyleController(
     fun onPreferencesLoaded(scope: String, profileId: String?, loaded: Map<String, String>) {
         this.scope = scope
         this.profileId = profileId
-        if (userChoseSize) rememberSize() else sizePercent = cueSizePercentOrDefault(loaded["cue-size"])
-        if (userChoseBacking) rememberBacking() else backing = cueBackingOrDefault(loaded["cue-backing"])
+        if (userChoseSize) rememberSize() else sizePercent = cueSizePercentOrDefault(loaded[CUE_SIZE_PREFERENCE])
+        if (userChoseBacking) rememberBacking() else backing = cueBackingOrDefault(loaded[CUE_BACKING_PREFERENCE])
         if (userChoseOffset) {
             rememberOffset()
         } else {
-            offsetSeconds = cueOffsetSecondsOrDefault(loaded["cue-offset"])
+            offsetSeconds = cueOffsetSecondsOrDefault(loaded[CUE_OFFSET_PREFERENCE])
         }
         publish()
     }
@@ -100,11 +103,11 @@ class SubtitleStyleController(
     // number the moment `cueOffsetLabel` divides it back by 1000.
     private fun publish() = onChanged(sizePercent, backing, Math.round(offsetSeconds * 1000))
 
-    private fun rememberSize() = remember("cue-size", sizePercent.toString())
+    private fun rememberSize() = remember(CUE_SIZE_PREFERENCE, sizePercent.toString())
 
-    private fun rememberBacking() = remember("cue-backing", backing)
+    private fun rememberBacking() = remember(CUE_BACKING_PREFERENCE, backing)
 
-    private fun rememberOffset() = remember("cue-offset", offsetSeconds.toString())
+    private fun rememberOffset() = remember(CUE_OFFSET_PREFERENCE, offsetSeconds.toString())
 
     /** Saves one value for this show; a no-op until [onPreferencesLoaded] has named the scope and profile. */
     private fun remember(key: String, value: String) {

@@ -23,8 +23,8 @@ import kotlinx.coroutines.launch
  * player it wraps), so [playerListener] is attached exactly once, the
  * moment the player becomes available, and never removed: whichever
  * [PlayerViewModel] is current is only ever the *subscriber* ([listener]),
- * swapped in and out by [setListener]/[release]. Removing [playerListener]
- * from the player itself on [release] would permanently silence every
+ * swapped in and out by [setListener]. Removing [playerListener] from the
+ * player itself on `setListener(null)` would permanently silence every
  * future subscriber, since this setup never runs a second time to
  * re-attach it.
  *
@@ -142,10 +142,6 @@ class DefaultPlayerHandle(
         pendingOpen = null
         currentSetId = null
         _player.value?.stop()
-    }
-
-    override fun release() {
-        listener = null
     }
 
     override fun positionMs(): Long? = _player.value?.trustedPositionMs()

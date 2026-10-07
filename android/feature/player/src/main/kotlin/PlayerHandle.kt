@@ -32,9 +32,6 @@ interface PlayerHandle {
     /** Stops playback and releases the decoder/audio focus the player is holding. */
     fun stop()
 
-    /** Detaches whichever listener is currently subscribed. Safe to call more than once. */
-    fun release()
-
     /**
      * The playhead, or `null` when there is nothing to trust it against — no
      * player yet, or one sitting in `STATE_IDLE` (never prepared, stopped,
@@ -77,7 +74,8 @@ interface PlayerHandle {
     /**
      * Updates the open title's metadata — what `PlaybackService`'s
      * `MediaSession` publishes to the lock screen, the notification and a
-     * headset's own display. A no-op with nothing open.
+     * headset's own display. Applied to the open title now, and remembered
+     * for every later load until replaced.
      */
     fun setMetadata(metadata: MediaMetadata)
 

@@ -1,6 +1,7 @@
 package player
 
 import data.PlayerPreferences
+import data.SUBTITLE_PREFERENCE
 import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -177,6 +178,6 @@ class SubtitleChoiceController(
     private fun rememberChoice(value: String) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, "subtitle", value) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, SUBTITLE_PREFERENCE, value) } }
     }
 }

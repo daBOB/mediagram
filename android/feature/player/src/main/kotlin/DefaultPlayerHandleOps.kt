@@ -44,8 +44,8 @@ internal fun Player.republishTo(notifyPlaying: (Boolean) -> Unit) {
  * it twice for a set that's already loaded. The URI is unchanged, so this
  * only ever swaps the item's metadata, never its own source. A no-op with
  * nothing open: a title not yet open has nothing on a lock screen to
- * update either way, and [openReal] carries whatever metadata is current
- * the moment it does.
+ * update either way, and [DefaultPlayerHandle] reapplies the remembered
+ * metadata after every open ([PendingMetadata]).
  */
 internal fun Player.setMetadataReal(metadata: MediaMetadata) {
     val current = currentMediaItem ?: return
