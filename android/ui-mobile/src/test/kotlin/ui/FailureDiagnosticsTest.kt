@@ -7,6 +7,7 @@ import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
 import data.CoreProvider
 import data.LibraryUpdateCoordinator
+import data.settings.InMemoryTmdbSettings
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -25,7 +26,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
-import settings.InMemoryTmdbSettings
 import setup.login.LoginStep
 import setup.login.LoginUiState
 import setup.login.LoginViewModel

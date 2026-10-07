@@ -1,12 +1,12 @@
 package data
 
+import data.settings.InMemoryTelegramSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryTelegramSettings
 import testing.FakeCore
 import kotlin.test.Test
 import kotlin.test.assertEquals

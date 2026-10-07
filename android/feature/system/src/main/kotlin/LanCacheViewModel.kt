@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +25,6 @@ import playback.LanCacheTokenStatus
 import playback.LanChunkProtocol
 import playback.LanServer
 import playback.LanServerSource
-import settings.LanCacheTokenSettings
 import javax.inject.Inject
 
 /**

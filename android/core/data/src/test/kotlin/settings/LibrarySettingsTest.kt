@@ -1,4 +1,4 @@
-package settings
+package data.settings
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

@@ -1,7 +1,7 @@
 package setup
 
 import data.CoreProvider
-import settings.LibrarySettings
+import data.settings.LibrarySettings
 import javax.inject.Inject
 
 /**

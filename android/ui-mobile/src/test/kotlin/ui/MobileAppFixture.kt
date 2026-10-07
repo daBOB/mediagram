@@ -6,12 +6,12 @@ import androidx.lifecycle.ViewModelStoreOwner
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
+import data.settings.InMemoryLibrarySettings
+import data.settings.InMemoryTelegramSettings
+import data.settings.InMemoryTmdbSettings
 import designsystem.InMemoryAppearanceSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import settings.InMemoryLibrarySettings
-import settings.InMemoryTelegramSettings
-import settings.InMemoryTmdbSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.Libraries

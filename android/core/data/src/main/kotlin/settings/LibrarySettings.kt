@@ -1,4 +1,4 @@
-package settings
+package data.settings
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher

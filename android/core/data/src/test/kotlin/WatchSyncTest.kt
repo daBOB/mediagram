@@ -1,5 +1,7 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -14,8 +16,6 @@ import kotlinx.coroutines.test.runTest
 import model.ListOfSets
 import model.Profile
 import model.WatchSnapshot
-import settings.InMemoryLibrarySettings
-import settings.LibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface

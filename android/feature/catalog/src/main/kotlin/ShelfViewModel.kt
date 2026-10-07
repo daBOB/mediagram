@@ -2,9 +2,9 @@ package catalog
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import data.settings.ShelfView
+import data.settings.ShelfViewSettings
 import kotlinx.coroutines.flow.StateFlow
-import settings.ShelfView
-import settings.ShelfViewSettings
 import javax.inject.Inject
 
 /**

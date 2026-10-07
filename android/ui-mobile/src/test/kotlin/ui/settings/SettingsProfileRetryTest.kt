@@ -18,6 +18,8 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
+import data.settings.InMemoryLibrarySettings
+import data.settings.InMemoryTelegramSettings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -34,8 +36,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import designsystem.InMemoryAppearanceSettings
-import settings.InMemoryLibrarySettings
-import settings.InMemoryTelegramSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import ui.profileSettingsModel

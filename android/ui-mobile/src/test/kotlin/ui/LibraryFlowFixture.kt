@@ -14,6 +14,8 @@ import data.CoreProvider
 import data.LibraryUpdateCoordinator
 import data.PortraitRequestLog
 import data.WatchSync
+import data.settings.InMemoryShelfViewSettings
+import data.settings.InMemoryTmdbSettings
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
@@ -29,7 +31,6 @@ import playback.InMemoryLanCacheSettings
 import playback.LanServer
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
-import settings.InMemoryTmdbSettings
 import stats.AchievementDotViewModel
 import stats.InMemoryAchievementsSeen
 import stats.NO_ACHIEVEMENTS
@@ -55,7 +56,6 @@ import uniffi.mediagram_core.StatsSummary
 import java.time.ZonedDateTime
 import catalog.ShelfViewModel
 import catalog.SearchViewModel
-import settings.InMemoryShelfViewSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 

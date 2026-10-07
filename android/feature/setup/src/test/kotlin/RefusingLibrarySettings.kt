@@ -1,7 +1,7 @@
 package setup
 
+import data.settings.LibrarySettings
 import kotlinx.coroutines.flow.flow
-import settings.LibrarySettings
 
 /**
  * A library store that answers but will not be written to, which is what

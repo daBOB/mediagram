@@ -1,11 +1,11 @@
 package setup.login
 
 import data.StoredCoreProvider
+import data.settings.InMemoryTelegramSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import settings.InMemoryTelegramSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.MainDispatcherRule

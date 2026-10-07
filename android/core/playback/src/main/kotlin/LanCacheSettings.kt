@@ -8,8 +8,8 @@ import android.content.SharedPreferences
  * that is not a secret: whether to use it at all, and an address typed in
  * by hand for when discovery does not find it. The pairing token itself is
  * the one secret here, and lives in its own encrypted store
- * (`settings.LanCacheTokenSettings`, `:core:data`) the same way
- * [PackageSettings][settings.PackageSettings]' key does.
+ * (`data.settings.LanCacheTokenSettings`, `:core:data`) the same way
+ * [PackageSettings][data.settings.PackageSettings]' key does.
  */
 interface LanCacheSettings {
     /**

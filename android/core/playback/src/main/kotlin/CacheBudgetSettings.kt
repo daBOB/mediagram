@@ -15,8 +15,8 @@ const val MIN_CACHE_BYTES = 512L * 1024 * 1024 // 512 MiB
 
 /**
  * How large the on-disk media cache is allowed to grow, as a plain number
- * a viewer picks — not the encrypted stores [settings.TmdbSettings] and
- * [settings.LibrarySettings] use, because a byte count is not a secret the
+ * a viewer picks — not the encrypted stores [data.settings.TmdbSettings] and
+ * [data.settings.LibrarySettings] use, because a byte count is not a secret the
  * way a key or a session is.
  */
 interface CacheBudgetSettings {

@@ -9,6 +9,7 @@ import data.CoreStorage
 import data.WatchStateRepository
 import data.coreSentence
 import data.orDefault
+import data.settings.TelegramSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import settings.TelegramSettings
 import javax.inject.Inject
 
 private const val TAG = "settings"

@@ -4,12 +4,12 @@ import data.BackdropWidth
 import data.CatalogEnrichmentFetcher
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
+import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryTmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface

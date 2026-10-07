@@ -8,6 +8,7 @@ import data.CoreProvider
 import data.CoreStorage
 import data.WatchStateRepository
 import data.coreSentence
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import settings.TmdbSettings
 import javax.inject.Inject
 
 private const val TAG = "setup"

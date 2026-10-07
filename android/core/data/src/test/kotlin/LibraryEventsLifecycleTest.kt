@@ -1,5 +1,6 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -12,7 +13,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface

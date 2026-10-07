@@ -1,5 +1,7 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
+import data.settings.LibrarySettings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,8 +15,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryLibrarySettings
-import settings.LibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface

@@ -1,8 +1,8 @@
 package system
 
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import update.AppUpdater

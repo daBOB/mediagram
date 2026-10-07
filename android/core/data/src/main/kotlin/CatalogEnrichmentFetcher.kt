@@ -1,12 +1,12 @@
 package data
 
 import android.util.Log
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
-import settings.TmdbSettings
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale
 import javax.inject.Inject

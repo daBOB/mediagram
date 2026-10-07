@@ -1,6 +1,7 @@
 package system
 
 import androidx.lifecycle.viewModelScope
+import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -14,7 +15,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import settings.LanCacheTokenSettings
 import java.security.GeneralSecurityException
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

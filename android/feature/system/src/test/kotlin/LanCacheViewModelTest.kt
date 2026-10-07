@@ -3,6 +3,8 @@ package system
 import android.content.Context
 import androidx.lifecycle.viewModelScope
 import androidx.test.core.app.ApplicationProvider
+import data.settings.InMemoryLanCacheTokenSettings
+import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +28,6 @@ import playback.LanPutResult
 import playback.LanServer
 import playback.LanServerSource
 import playback.LanServerStatus
-import settings.InMemoryLanCacheTokenSettings
-import settings.LanCacheTokenSettings
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 

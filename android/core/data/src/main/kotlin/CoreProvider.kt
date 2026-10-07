@@ -1,5 +1,7 @@
 package data
 
+import data.settings.TelegramCredentials
+import data.settings.TelegramSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -11,8 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import settings.TelegramCredentials
-import settings.TelegramSettings
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.CoreInterface
 

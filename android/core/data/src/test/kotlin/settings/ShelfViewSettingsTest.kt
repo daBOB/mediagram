@@ -1,4 +1,4 @@
-package settings
+package data.settings
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

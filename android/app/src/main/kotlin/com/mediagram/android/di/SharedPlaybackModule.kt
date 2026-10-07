@@ -7,6 +7,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.di.MainThreadScope
+import data.settings.LanCacheTokenSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import playback.HeldSets
@@ -22,7 +23,6 @@ import playback.LanWriteQueue
 import playback.PlainLanCacheSettings
 import playback.PlaybackCounters
 import playback.SystemUnmeteredNetworkCheck
-import settings.LanCacheTokenSettings
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 

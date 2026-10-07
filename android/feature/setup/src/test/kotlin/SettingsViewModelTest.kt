@@ -2,12 +2,12 @@ package setup
 
 import app.cash.turbine.test
 import data.InMemoryCoreStorage
+import data.settings.TelegramCredentials
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Rule
-import settings.TelegramCredentials
 import testing.FakeCore
 import testing.MainDispatcherRule
 import uniffi.mediagram_core.LibraryChoice

@@ -1,9 +1,9 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.CreditRecord

@@ -1,8 +1,8 @@
 package catalog
 
+import data.settings.ShelfView
 import model.Kind
 import model.MediaSet
-import settings.ShelfView
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -23,20 +23,20 @@ import data.RefreshLog
 import data.SharedLibraryEvents
 import data.WatchStateRepository
 import data.WatchSync
+import data.settings.EncryptedLanCacheTokenSettings
+import data.settings.EncryptedLibrarySettings
+import data.settings.EncryptedTelegramSettings
+import data.settings.EncryptedTmdbSettings
+import data.settings.LanCacheTokenSettings
+import data.settings.LibrarySettings
+import data.settings.SharedPreferencesShelfViewSettings
+import data.settings.ShelfViewSettings
+import data.settings.TelegramSettings
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import settings.EncryptedLanCacheTokenSettings
-import settings.EncryptedLibrarySettings
-import settings.EncryptedTelegramSettings
-import settings.EncryptedTmdbSettings
-import settings.LanCacheTokenSettings
-import settings.LibrarySettings
-import settings.SharedPreferencesShelfViewSettings
-import settings.ShelfViewSettings
-import settings.TelegramSettings
-import settings.TmdbSettings
 import javax.inject.Singleton
 
 @Module

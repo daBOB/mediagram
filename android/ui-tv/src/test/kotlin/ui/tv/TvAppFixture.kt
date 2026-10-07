@@ -18,6 +18,9 @@ import data.PortraitRequestLog
 import data.StoredCoreProvider
 import data.WatchStateRepository
 import data.WatchSync
+import data.settings.InMemoryLibrarySettings
+import data.settings.InMemoryTelegramSettings
+import data.settings.InMemoryTmdbSettings
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
@@ -35,9 +38,6 @@ import playback.INTERNAL_VOLUME_ID
 import playback.InMemoryLanCacheSettings
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
-import settings.InMemoryLibrarySettings
-import settings.InMemoryTelegramSettings
-import settings.InMemoryTmdbSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.Libraries

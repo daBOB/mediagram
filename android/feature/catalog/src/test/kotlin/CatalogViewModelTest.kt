@@ -6,6 +6,7 @@ import data.CatalogRepository
 import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.WatchStateRepository
+import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,6 @@ import model.ProfileRequest
 import model.WatchSnapshot
 import org.junit.After
 import playback.FilmPreloading
-import settings.InMemoryTmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.FakeFilmPreloading

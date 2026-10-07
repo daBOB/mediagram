@@ -6,6 +6,7 @@ import android.util.Log
 import data.CoreProvider
 import data.coreSentence
 import data.di.AppScope
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import settings.LibrarySettings
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.CoreInterface
 import java.io.File

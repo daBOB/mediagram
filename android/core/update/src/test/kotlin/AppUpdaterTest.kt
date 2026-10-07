@@ -2,13 +2,13 @@ package update
 
 import android.content.pm.PackageInstaller
 import data.CoreProvider
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.AppRelease
