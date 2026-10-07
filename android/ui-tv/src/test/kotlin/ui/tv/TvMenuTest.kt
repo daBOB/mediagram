@@ -404,7 +404,7 @@ class TvMenuTest {
 
     /**
      * The Telegram index row, specifically — its own label collides with
-     * [ui.tv.system.TvTelegramSection]'s own "Telegram" ledger heading,
+     * [ui.tv.settings.TvTelegramSection]'s own "Telegram" ledger heading,
      * which is always in the tree once Telegram is the section shown, not
      * only once entered; only the row carries a click action.
      */

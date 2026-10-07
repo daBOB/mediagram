@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable

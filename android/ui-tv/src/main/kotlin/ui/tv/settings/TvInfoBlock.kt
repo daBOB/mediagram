@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable

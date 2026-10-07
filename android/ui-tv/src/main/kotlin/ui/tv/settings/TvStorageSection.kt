@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,7 +11,7 @@ import designsystem.Spacing
  * lives — then the home cache server, stacked in one column rather than the
  * phone's own two side by side, since a ten-foot page reads top to bottom.
  * [entryFocusRequester] lands on [TvCacheBudgetBlock]'s own heading, the
- * same "always there, loading or not" stop [TvSystemContent] uses for
+ * same "always there, loading or not" stop [TvSystemSection] uses for
  * Catalogue — [returningFrom] a home-cache-server panel is [TvLanCacheBlock]'s
  * own business, further down.
  */

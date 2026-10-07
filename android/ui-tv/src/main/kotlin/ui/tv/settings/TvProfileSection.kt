@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,7 +27,7 @@ import ui.tv.catalog.TvQuietLine
  * ready to be entered.
  */
 @Composable
-internal fun TvProfileBlock(
+internal fun TvProfileSection(
     profile: Profile?,
     subtitle: String,
     focusInContent: Boolean,

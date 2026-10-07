@@ -12,8 +12,8 @@ import system.FetchViewModel
 import ui.LibraryPositions
 import ui.MenuActions
 import ui.settings.SettingsSection
-import ui.tv.system.TvSettingsScreen
-import ui.tv.system.TvTmdbKeyScreen
+import ui.tv.settings.TvSettingsScreen
+import ui.tv.settings.TvTmdbKeyScreen
 import ui.tv.system.menuRestoreKey
 
 /**

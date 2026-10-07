@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import android.Manifest
 import android.os.Build

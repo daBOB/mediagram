@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,7 +24,7 @@ import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
-class TvAppearanceBlockTest {
+class TvAppearanceSectionTest {
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var controller: ActivityController<ComponentActivity>
     private var pickedAccent: Accent? = null
@@ -37,7 +37,7 @@ class TvAppearanceBlockTest {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
-                TvAppearanceBlock(
+                TvAppearanceSection(
                     accent = accent,
                     backdrop = backdrop,
                     focusInContent = true,

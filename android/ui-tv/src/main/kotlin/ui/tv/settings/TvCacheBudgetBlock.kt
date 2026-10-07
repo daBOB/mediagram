@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +30,7 @@ import ui.tv.catalog.TvQuietLine
  *
  * The "Cache" heading is [entryFocusRequester]'s own target — it draws
  * whether the read has finished or not, so [TvStorageSection] always has a
- * stop ready the moment it is entered, the same reason [TvSystemContent]
+ * stop ready the moment it is entered, the same reason [TvSystemSection]
  * lands on its own Catalogue heading rather than a row further down. The
  * read itself is triggered once, by the hub on entry — see that comment on
  * [TvSettingsScreen] for why a second trigger here would read it twice.

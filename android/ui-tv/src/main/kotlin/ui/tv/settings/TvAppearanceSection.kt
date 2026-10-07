@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,7 +40,7 @@ import ui.tv.rememberStableRequester
  *
  * [entryFocusRequester] lands on the first accent swatch — both rows are
  * static lists, always ready the moment this section mounts, so there is no
- * loading state to wait on the way [TvCacheBudgetBlock]/[TvSystemContent]
+ * loading state to wait on the way [TvCacheBudgetBlock]/[TvSystemSection]
  * do for their own first control.
  *
  * Square, not the web's and the phone's rounded swatches: [TvFocus] draws
@@ -48,7 +48,7 @@ import ui.tv.rememberStableRequester
  * bent that rule would be a second shape for the remote to learn.
  */
 @Composable
-internal fun TvAppearanceBlock(
+internal fun TvAppearanceSection(
     accent: Accent,
     backdrop: Backdrop,
     focusInContent: Boolean,

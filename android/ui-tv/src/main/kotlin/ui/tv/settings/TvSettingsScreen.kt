@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,8 +11,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
-import setup.profileStatus
 import setup.SettingsViewModel
+import setup.profileStatus
 import setup.telegramStatus
 import system.CacheBudgetViewModel
 import system.LanCacheViewModel
@@ -22,6 +22,7 @@ import system.systemStatus
 import ui.settings.IndexStatus
 import ui.settings.SettingsSection
 import ui.tv.setup.TvConfirmDialog
+import ui.tv.system.TvSystemSection
 
 /**
  * Settings and System, one hub, television-side: an index (Telegram ·
@@ -143,7 +144,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                     )
 
                 SettingsSection.APPEARANCE ->
-                    TvAppearanceBlock(
+                    TvAppearanceSection(
                         accent = appearance.accent,
                         backdrop = appearance.backdrop,
                         focusInContent = entered,
@@ -153,7 +154,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                     )
 
                 SettingsSection.PROFILE ->
-                    TvProfileBlock(
+                    TvProfileSection(
                         profile = profile,
                         subtitle = profileSubtitle,
                         focusInContent = entered,
@@ -162,7 +163,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                     )
 
                 SettingsSection.SYSTEM ->
-                    TvSystemContent(
+                    TvSystemSection(
                         focusInContent = entered,
                         current = systemState,
                         failure = systemFailure,

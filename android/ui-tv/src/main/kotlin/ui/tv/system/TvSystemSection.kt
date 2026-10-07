@@ -20,6 +20,7 @@ import system.catalogueRows
 import system.thisAppRows
 import system.upstreamRows
 import ui.tv.TvTextRow
+import ui.tv.settings.TvInfoBlock
 
 /** How often System re-reads while its section stays shown — the web's own `status-lines.js:14` poll, matched rather than left a per-visit snapshot. */
 private const val POLL_INTERVAL_MS = 2_000L
@@ -46,7 +47,7 @@ private const val POLL_INTERVAL_MS = 2_000L
  * control), pulling focus back off a row the viewer had since moved to.
  */
 @Composable
-internal fun TvSystemContent(
+internal fun TvSystemSection(
     focusInContent: Boolean,
     current: SystemUiState?,
     failure: String?,

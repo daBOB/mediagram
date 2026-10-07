@@ -1,4 +1,4 @@
-package ui.tv.system
+package ui.tv.settings
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
