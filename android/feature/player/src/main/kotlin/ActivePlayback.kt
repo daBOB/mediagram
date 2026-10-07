@@ -1,4 +1,4 @@
-package player.di
+package player
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player

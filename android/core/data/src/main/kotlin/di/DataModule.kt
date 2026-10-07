@@ -117,8 +117,8 @@ object DataModule {
         dispatcher: CoroutineDispatcher,
     ): CatalogRepository = DefaultCatalogRepository(coreProvider, settings, refreshes, dispatcher)
 
-    // Process-lifetime work that is not the player: see AppScope's own doc
-    // for why it is a second scope rather than the one PlaybackModule binds.
+    // Process-lifetime work that is not playback: see AppScope's own doc
+    // for why it is a second scope rather than the MainThreadScope one.
     @Provides
     @Singleton
     @AppScope

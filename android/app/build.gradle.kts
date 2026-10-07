@@ -108,6 +108,8 @@ dependencies {
     // The self-updater, and the player whose state it waits on.
     implementation(project(":core:update"))
     implementation(project(":feature:player"))
+    // Binds the shared playback singletons in di/SharedPlaybackModule.kt.
+    implementation(project(":core:playback"))
     // PlayerHandle.player is a media3 Player; isPlaying is read in di/UpdateModule.kt.
     implementation(libs.findLibrary("androidx.media3.exoplayer").get())
     // Installs the Baseline Profile packaged in the APK on first launch, so

@@ -17,8 +17,6 @@ import ui.catalog.TitlePreloadUi
  * here rather than inside [ui.catalog.TitleDetailScreen] so that screen
  * stays free of Hilt, the same reason [catalog.BrowseViewModel] is
  * resolved in [LibraryFlowBranches] rather than in the screen it feeds.
- * Split out of that file purely to keep it under the project's line
- * guideline, the same reason `di/ActivePlayback.kt` exists.
  *
  * `null` while a film's size is not yet known ([MediaSet.totalBytes] `<= 0`
  * — the control has nothing to preload towards) and, once, for the one

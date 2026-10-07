@@ -18,9 +18,7 @@ import ui.tv.catalog.TvPreloadsPage
  * only, follows [TvGenresFrame]/[TvLatestFrame]'s own shape: one frame of
  * its own on [at]'s stack. [TitlePreloadViewModel] is the same instance a
  * film page resolves through `hiltViewModel()`, so this reads the one
- * engine every other screen already does. Split out of
- * `TvLibraryExtraFrames.kt` purely to keep that file under the project's
- * line guideline, the same reason `di/ActivePlayback.kt` exists.
+ * engine every other screen already does.
  *
  * [catalogState] filters the engine's own rows to what this profile's
  * catalogue can resolve before they reach the page — a kids profile must

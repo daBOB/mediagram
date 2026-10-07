@@ -1,4 +1,4 @@
-package player.di
+package com.mediagram.android.di
 
 import android.content.Context
 import dagger.Module
@@ -6,8 +6,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import data.di.MainThreadScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
+import playback.HeldSets
+import playback.HeldSetsQuery
 import playback.LanCacheRuntime
 import playback.LanCacheSettings
 import playback.LanCacheTokenStatus
@@ -17,19 +20,34 @@ import playback.LanServerLocator
 import playback.LanServerSource
 import playback.LanWriteQueue
 import playback.PlainLanCacheSettings
+import playback.PlaybackCounters
 import playback.SystemUnmeteredNetworkCheck
 import settings.LanCacheTokenSettings
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 
 /**
- * Wiring for reading and sharing chunks through a home LAN cache server —
- * kept apart from [PlaybackModule] only so neither file grows past what
- * fits on one screen; both install into the same [SingletonComponent].
+ * The core:playback singletons more than one feature injects: the LAN
+ * cache (feature:system's LanCacheViewModel reads its settings, status and
+ * server; the player and the preloaders read and share chunks through it),
+ * the playback counters (feature:system's SystemViewModel and the player),
+ * and which sets are already held (feature:catalog's CatalogViewModel, the
+ * player and the preloaders). Bound here, at the composition root, rather
+ * than in any one feature — core:playback carries no Hilt plugin of its own.
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object LanCacheModule {
+object SharedPlaybackModule {
+    @Provides
+    @Singleton
+    fun playbackCounters(): PlaybackCounters = PlaybackCounters()
+
+    @Provides
+    @Singleton
+    fun provideHeldSets(
+        @ApplicationContext context: Context,
+    ): HeldSetsQuery = HeldSets(context)
+
     @Provides
     @Singleton
     fun provideLanCacheSettings(
@@ -50,7 +68,7 @@ object LanCacheModule {
         @ApplicationContext context: Context,
         client: LanChunkProtocol,
         settings: LanCacheSettings,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): LanServerLocator =
         // One pass starts as soon as this singleton is first resolved —
         // effectively app start, since the player and Settings both pull
@@ -67,7 +85,7 @@ object LanCacheModule {
     fun provideLanServerSource(locator: LanServerLocator): LanServerSource = locator
 
     /**
-     * Shared by the player and the preloader (`PlaybackModule.provideSeriesPreloader`)
+     * Shared by the player and the preloader (`PreloadModule.provideSeriesPreloader`)
      * — one discovery, one write queue, so a preload filling the LAN server
      * and playback reading from it never race two independent instances of
      * either.
@@ -81,10 +99,10 @@ object LanCacheModule {
         settings: LanCacheSettings,
         tokenSettings: LanCacheTokenSettings,
         tokenStatus: LanCacheTokenStatus,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): LanCacheRuntime {
         // Its own dedicated thread, apart from Dispatchers.IO's shared pool —
-        // the same reasoning PlaybackModule gives the preloader's own worker.
+        // the same reasoning PreloadModule gives the preloader's own worker.
         val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         val writes =
             LanWriteQueue(

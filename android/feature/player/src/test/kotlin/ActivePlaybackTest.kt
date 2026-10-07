@@ -1,4 +1,4 @@
-package player.di
+package player
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -16,7 +16,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import playback.OpenTitle
 import playback.setUri
-import player.fakeMediaSet
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

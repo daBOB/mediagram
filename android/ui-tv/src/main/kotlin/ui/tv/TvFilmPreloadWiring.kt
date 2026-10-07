@@ -17,9 +17,6 @@ import ui.tv.catalog.TvTitlePreloadUi
  * ViewModel, this surface's own plain-data shape. `null` while [set]'s own
  * size is not yet known, and once for the frame before `stateOf`'s first
  * real emission — see that function's own doc for both reasons in full.
- * Split out of `TvLibraryCatalogFrames.kt` purely to keep that file under
- * the project's line guideline, the same reason `di/ActivePlayback.kt`
- * exists.
  *
  * [viewModel]/[set]'s id/[set]'s own size key both `remember` blocks below:
  * without them the same over-polling bug the phone's own doc names would

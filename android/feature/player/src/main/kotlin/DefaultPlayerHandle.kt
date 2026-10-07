@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * Wraps the app's single [ExoPlayer], translating its events into
@@ -32,7 +31,7 @@ import javax.inject.Inject
  * Subscribers therefore come and go for reasons unrelated to playback, and
  * ask to [open] sets that are already open; [open] works out what that means.
  */
-class DefaultPlayerHandle @Inject constructor(
+class DefaultPlayerHandle(
     private val playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
     private val scope: CoroutineScope,
 ) : PlayerHandle {
