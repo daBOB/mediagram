@@ -81,7 +81,8 @@ interface CatalogRepository {
 
     /**
      * Fetches and caches this lesson's own subtitle bundle plus a few that
-     * follow it in its course — fire-and-forget; a fake need not implement
+     * follow it in its course, suspending until the core's fetch finishes;
+     * a caller that must not wait launches it. A fake need not implement
      * it. See [uniffi.mediagram_core.CoreInterface.holdCourseSubtitles].
      */
     suspend fun holdCourseSubtitles(setId: String) {}

@@ -51,7 +51,7 @@ class TvFocusShapesTest {
         }
     }
 
-    /** The plate shape stays the default with no [shape] argument at all — every existing call site before this phase relied on exactly this. */
+    /** The plate shape stays the default with no [shape] argument at all — every call site that passes none relies on exactly this. */
     @Test
     fun fieldBorderDefaultsToTheSquarePlateShape() {
         lateinit var border: Border

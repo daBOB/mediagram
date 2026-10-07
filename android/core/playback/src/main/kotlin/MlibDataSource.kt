@@ -104,8 +104,8 @@ class MlibDataSource(
      *
      * ExoPlayer asks in buffer segments — 64 KiB at most — and a fetch that
      * reached Telegram costs a round trip to resolve the part plus a whole
-     * 512 KiB chunk, of which a 64 KiB answer keeps an eighth and throws
-     * the rest away. Holding a whole chunk and handing it out a segment at
+     * [CHUNK_BYTES] chunk, most of which a 64 KiB answer would throw away.
+     * Holding a whole chunk and handing it out a segment at
      * a time is what keeps a parser reading a few bytes at a time to one
      * round trip instead of hundreds.
      */

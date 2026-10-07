@@ -11,8 +11,7 @@ import playback.SeriesPreloading
 
 /**
  * Whether the open title plays with no network at all — the player's own
- * "cached" readout, matching the web's `preloadReadout`. Split out of
- * [PlayerViewModel] to keep that file under the project's line guideline.
+ * "cached" readout, matching the web's `preloadReadout`.
  *
  * Driven by [openSet] rather than by explicit start/stop calls: a rescan
  * runs whenever the resolved title changes (including back to `null`, on

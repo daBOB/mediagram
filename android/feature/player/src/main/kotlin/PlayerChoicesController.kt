@@ -24,10 +24,9 @@ import playback.TimedCue
 
 /**
  * What this viewer has chosen for the open title, and how a choice made
- * for one show is kept from leaking into the next — split out of
- * [PlayerViewModel] to keep that file under the project's line guideline.
- * Speed is resolved here directly; the audio menu's own races (it depends
- * on the file's tracks as well as a remembered preference) are guarded by
+ * for one show is kept from leaking into the next. Speed is resolved here
+ * directly; the audio menu's own races (it depends on the file's tracks as
+ * well as a remembered preference) are guarded by
  * [audioChoice] instead, which this controller only feeds the scope and
  * the stored value it loads for it.
  */
@@ -179,7 +178,7 @@ class PlayerChoicesController(
     /** The viewer picked a subtitle row by hand — "off" or one of the offered tracks' keys. */
     fun chooseSubtitleLanguage(trackKeyOrOff: String) = subtitleChoice.choose(trackKeyOrOff)
 
-    /** The captions key or CC control: on turns the toggle-on rule's own pick on, on turns it off. */
+    /** The captions key or CC control: off turns the toggle-on rule's own pick on, on turns it off. */
     fun toggleSubtitles() = subtitleChoice.toggle()
 
     fun setSubtitleSize(percent: Int) = subtitleStyle.setSize(percent)

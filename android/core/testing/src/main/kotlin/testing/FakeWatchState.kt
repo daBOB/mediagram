@@ -28,8 +28,7 @@ fun monotonicClock(): () -> Long {
 
 /**
  * [FakeCore]'s watch-state half — progress, watched marks, the watchlist,
- * Kids, the editor's choice, collections and per-show preferences — split
- * into its own file only to keep `FakeCore.kt` under the line limit. Mirrors
+ * Kids, the editor's choice, collections and per-show preferences. Mirrors
  * the rules `crates/mediagram-core/src/state/rows.rs`, `editors_choice.rs`,
  * `lists.rs` and `preferences.rs` apply to the real core's SQLite tables,
  * against [now] standing in for their `now_ms()`.

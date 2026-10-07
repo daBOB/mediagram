@@ -6,8 +6,7 @@ import androidx.media3.common.Player
 import playback.setUri
 
 /**
- * The two things [DefaultPlayerHandle] does directly to the real player —
- * split out to keep that file under the project's line guideline.
+ * The two things [DefaultPlayerHandle] does directly to the real player.
  */
 
 /**

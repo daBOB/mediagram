@@ -147,10 +147,10 @@ internal fun LibraryHome(
                     .then(if (expanded) Modifier else Modifier.nestedScroll(headerConnection))
             // One call site for `content()` below, whichever branch this
             // is — only the modifier that positions it depends on
-            // [expanded]. Two call sites (one per branch) would be the
-            // same H1 defect over again: a width-class change would move
-            // `content()` itself to a different slot in the composition
-            // and lose every `remember`/`rememberSaveable` under it.
+            // [expanded]. Two call sites (one per branch) would mean a
+            // width-class change moves `content()` itself to a different
+            // slot in the composition and loses every
+            // `remember`/`rememberSaveable` under it.
             val contentModifier =
                 if (expanded) {
                     Modifier.padding(top = if (bleed) 0.dp else expandedChromeHeight)

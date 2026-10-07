@@ -48,8 +48,7 @@ private val SEARCH_CARD_WIDTH = 120.dp
  * Every section wraps in a [FlowRow] rather than a nested lazy grid: this
  * whole view already sits inside one scrolling [LazyColumn], and a lazy
  * grid nested inside another lazy container of unbounded height cannot be
- * measured — the same reason every other department page in this phase
- * keeps its own sections to one [LazyVerticalGrid] or one [FlowRow], never
+ * measured — the same reason every other department page keeps its own sections to one [LazyVerticalGrid] or one [FlowRow], never
  * both nested.
  */
 @Composable
@@ -206,9 +205,8 @@ private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> U
         Text("People", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
             for (person in people) {
-                // Fetched lazily, at most once per session per person — this
-                // phase's own portrait rule, the same [rememberPortrait] a
-                // person's own page asks with.
+                // Fetched lazily, at most once per session per person — the
+                // same [rememberPortrait] a person's own page asks with.
                 val portrait = rememberPortrait(person.personId, person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
                 Column(
                     modifier = Modifier.clickable(role = Role.Button) { onOpenPerson(person.personId) }.padding(Spacing.small),

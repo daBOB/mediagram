@@ -45,8 +45,7 @@ import javax.inject.Singleton
  * The series and film preloaders' own wiring — which shares this same
  * deferred player, behind [dagger.Lazy] so asking for it does not itself
  * force the build (see `ActivePlayback`'s own doc) — lives in
- * `di/PreloadModule`, split out to keep this file to the player's own
- * concerns and under the project's line guideline.
+ * `di/PreloadModule`, so this file keeps to the player's own concerns.
  */
 @Module
 @InstallIn(SingletonComponent::class)

@@ -11,8 +11,7 @@ import model.MediaSet
 
 /**
  * The loops [UpNextController] runs — its phase ticker and countdown, and
- * the async work behind them — split out to keep that file under the
- * project's line guideline. None reads or writes its state directly; each
+ * the async work behind them. None reads or writes its state directly; each
  * reports back through a callback instead.
  */
 

@@ -96,7 +96,7 @@ class SubtitleChoiceLifecycleTest {
      * Nothing here ever listens to a `Player` for the subtitle choice
      * itself; this documents that as a standing guarantee rather than an
      * accident, since the audio menu's own equivalent state was corrupted
-     * by exactly this event (`AudioChoiceControllerTest`'s C1). A future
+     * by exactly this event (see `AudioChoiceControllerTest`). A future
      * change that wired subtitle state to `Player.Listener` would
      * reintroduce that bug class; this fails first.
      */

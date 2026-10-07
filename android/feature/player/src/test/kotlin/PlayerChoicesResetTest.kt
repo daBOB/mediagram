@@ -15,7 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * The rule the whole phase depends on: the player is an app-scoped
+ * The rule every per-show choice depends on: the player is an app-scoped
  * singleton that never resets its own playback rate, so a speed remembered
  * for one show must never leak into the next title opened after it — and,
  * the other way round, a rotation or a Retry reopening the *same* title
@@ -86,7 +86,7 @@ class PlayerChoicesResetTest {
     }
 
     /**
-     * H1: a rotation destroys and recreates `PlayerScreen`, which re-runs
+     * A rotation destroys and recreates `PlayerScreen`, which re-runs
      * `LaunchedEffect(setId)` — calling `open` again for the *same* set.
      * With no profile chosen, a hand-picked speed is never written to
      * `preferences`, so nothing survives a real re-resolution; it has to
@@ -136,7 +136,7 @@ class PlayerChoicesResetTest {
     }
 
     /**
-     * L2: opening a fresh title starts resolving the remembered speed for
+     * Opening a fresh title starts resolving the remembered speed for
      * it asynchronously (a core round trip). A speed picked by hand before
      * that resolution lands must win over it, not be overwritten the
      * moment it finally does — and, since the resolution is also where the

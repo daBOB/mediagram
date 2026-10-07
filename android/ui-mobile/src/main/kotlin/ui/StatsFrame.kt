@@ -8,8 +8,6 @@ import ui.catalog.StatsScreen
 /**
  * The Stats page as one frame of its own on [at]'s stack, opened from the
  * rail, the header's icon row or a pushed frame's ⋮ the way Latest is.
- * Kept out of `LibraryBrowseBranches.kt`, which is already past the line
- * guideline.
  */
 @Composable
 internal fun StatsFrame(

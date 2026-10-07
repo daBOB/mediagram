@@ -16,8 +16,7 @@ import playback.SeriesPreloading
  * reference: only a series episode preloads, only the next two positions
  * (those that are episodes), and nothing when the run was picked by hand —
  * a list or the Kids wall. The preload fetches in the background from a
- * flood-limited account; widening it is its own decision. Split out of
- * [PlayerViewModel] to keep that file under the project's line guideline.
+ * flood-limited account; widening it is its own decision.
  */
 class PlayerPreloadController(
     private val scope: CoroutineScope,

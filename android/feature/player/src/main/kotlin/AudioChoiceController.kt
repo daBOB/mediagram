@@ -35,7 +35,7 @@ class AudioChoiceController(
     private val handle: PlayerHandle,
     private val preferences: PlayerPreferences,
     private val onOptionsChanged: (List<AudioOption>) -> Unit,
-    /** The language now playing, once ExoPlayer's own tracks (or a manual pick) say — `null` before either has. [SubtitleChoiceController] follows it for `plan.md`'s `audio` fallback. */
+    /** The language now playing, once ExoPlayer's own tracks (or a manual pick) say — `null` before either has. [SubtitleChoiceController] follows it for the subtitle rule's `audio` fallback ([audioLanguage]). */
     private val onLanguageChanged: (String?) -> Unit = {},
 ) {
     private val trackListener = object : Player.Listener {

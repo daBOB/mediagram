@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
  * `CancellationException`. A fake writer that merely suspended
  * (`CompletableDeferred.await()`) would prove nothing about whether a
  * real blocking write can actually be interrupted, which is the one thing
- * every test in this file is about — see also R1: this fake throws
+ * every test in this file is about. This fake also throws
  * `InterruptedIOException` on a deliberate cancel, an ordinary exception,
  * not a `CancellationException`, exactly like the real `CacheWriter` does.
  */
@@ -91,12 +91,11 @@ private class BlockingTestOpenTitleSource(initial: OpenTitle? = null) : OpenTitl
 }
 
 /**
- * Real threads, real dispatchers, real (short) waits — these prove the
- * fix for the concurrency review's C1/H1/H2/H3, which the suspending-fake
- * tests in `FilmPreloaderTest` structurally cannot: a `CacheWriter.cache()`
- * that blocks its own thread is exactly what starved the pause/cancel/
- * remove paths before `CacheDataSourceWriter.write` moved to its own
- * dispatcher, and R1: a watchdog's own cancel throws an ordinary
+ * Real threads, real dispatchers, real (short) waits — these prove what the
+ * suspending-fake tests in `FilmPreloaderTest` structurally cannot: that a
+ * `CacheWriter.cache()` blocking its own thread does not starve the pause,
+ * cancel and remove paths, because `CacheDataSourceWriter.write` runs it on
+ * its own dispatcher. And a watchdog's own cancel throws an ordinary
  * `InterruptedIOException`, not a `CancellationException`, so only a
  * writer shaped like this one can prove that is not counted as a failure.
  */
@@ -123,7 +122,7 @@ class FilmPreloaderBlockingWriterTest {
         log = { line, _ -> logs += line },
     )
 
-    /** R1: a watchdog pausing the write must never be logged or counted as a write failure. */
+    /** A watchdog pausing the write must never be logged or counted as a write failure. */
     @Test
     fun anOpenTitlePausesARealBlockingWriteRatherThanFailingIt() =
         runBlocking {
@@ -145,7 +144,7 @@ class FilmPreloaderBlockingWriterTest {
 
             val paused = waitUntil(timeoutMs = 1_000) { preloader.stateOf("f1", 10_000L).first() is FilmPreloadState.Paused }
             assertTrue(paused, "the pause must actually reach FilmPreloadState.Paused, not stay Running or go to Failed")
-            assertFalse(logs.any { "write failed" in it }, "R1: a watchdog pause must never be logged as a write failure: $logs")
+            assertFalse(logs.any { "write failed" in it }, "a watchdog pause must never be logged as a write failure: $logs")
             scope.cancel()
         }
 
@@ -256,7 +255,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R2: the fits check must not treat a transient open-title reserve as a permanent verdict. */
+    /** The fits check must not treat a transient open-title reserve as a permanent verdict. */
     @Test
     fun openingATitleThatOnlyTransientlyExceedsTheBudgetPausesRatherThanNeedsSpace() =
         runBlocking {
@@ -312,7 +311,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R3: the queue slot must be free the instant cancel() returns, not only once the cancelled write has fully unwound. */
+    /** The queue slot must be free the instant cancel() returns, not only once the cancelled write has fully unwound. */
     @Test
     fun cancelThenImmediateReEnqueueIsNotLost() =
         runBlocking {
@@ -337,7 +336,7 @@ class FilmPreloaderBlockingWriterTest {
             scope.cancel()
         }
 
-    /** R10: Android's own time limit on the foreground service pauses every queued film, not only the one actually writing. */
+    /** Android's own time limit on the foreground service pauses every queued film, not only the one actually writing. */
     @Test
     fun pauseForTimeLimitPausesEveryQueuedFilmNotJustTheActiveOne() =
         runBlocking {

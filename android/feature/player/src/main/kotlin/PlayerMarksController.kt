@@ -18,10 +18,9 @@ import model.kidsVerdictOf
 
 /**
  * The Watchlist, Kids and Add-to-list controls — ported from `player.js`'s
- * `watchlistButton`/`kidsButton`/`addToButton` click handlers — split out
- * of [PlayerViewModel] to keep that file under the project's line
- * guideline. Reads [PlayerSession.openSetId] rather than holding a copy of
- * its own, so there is exactly one place that decides which set is open.
+ * `watchlistButton`/`kidsButton`/`addToButton` click handlers. Reads
+ * [PlayerSession.openSetId] rather than holding a copy of its own, so there
+ * is exactly one place that decides which set is open.
  */
 class PlayerMarksController(
     private val scope: CoroutineScope,

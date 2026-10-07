@@ -17,8 +17,7 @@ import playback.SummarySource
 data class PlayerNotes(val blocks: List<Block>, val open: Boolean)
 
 /**
- * The notes panel's state — `showSummary` in the web's `player.js`, split
- * out of [PlayerViewModel] to keep that file under the line guideline.
+ * The notes panel's state — `showSummary` in the web's `player.js`.
  *
  * Driven by [openSet], like [PlayerHeldController]: a panel belongs to the
  * title it was opened on, so every change of title — an up-next switch

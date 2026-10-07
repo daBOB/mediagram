@@ -92,9 +92,8 @@ internal fun KeptWall(
 }
 
 /**
- * "Title · n", the same heading the start page's own rows use — asked for
- * explicitly in the phase's requirements rather than the web's spelled-out
- * `countOf` wording (`heading()` in app.js), so a viewer reading both
+ * "Title · n", the same heading the start page's own rows use, rather than
+ * the web's spelled-out `countOf` wording (`heading()` in app.js), so a viewer reading both
  * Continue's row on the start page and its own tab sees one convention, not
  * two.
  */

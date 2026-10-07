@@ -332,10 +332,11 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:update` | self-update from the channel's pinned `#mlib-app` release (release builds on televisions only) |
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
-| `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
+| `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
 | `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
+| `baselineprofile` | the D-pad journey from launch to a title page that generates the app's baseline profile, run on a signed-in TV |
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
@@ -348,8 +349,9 @@ The `setup.login` package owns the phone, code, and password sign-in state
 machine; catalog owns profile selection and library browsing.
 Inside `ui-mobile`, screens live in `ui.catalog`, `ui.player`, `ui.profile`,
 `ui.setup`, `ui.settings`, and `ui.system`. App composition and navigation
-remain in `ui`; shared row presentation and byte formatting live in
-`ui.components` and `ui.formatting`.
+remain in `ui`; the library's top chrome (departments bar, rail, header)
+lives in `ui.chrome`, and shared row presentation in `ui.components`. Byte
+formatting is `core:model`'s `ByteSize.kt`, shared with the TV.
 
 ### Where the catalog comes from
 

@@ -12,9 +12,9 @@ import playback.TimedCue
 
 /**
  * Which subtitle track is on for the open title — regular and forced both —
- * and its cues once fetched. Ports `plan.md`'s playback rule
- * ([chooseSubtitles], [toggleOn]) rather than the simple per-language
- * default this replaced; see [SubtitleChoice] for the pure rule itself.
+ * and its cues once fetched, by the subtitle rule every surface shares
+ * ([chooseSubtitles], [toggleOn]); see [SubtitleChoice] for the pure rule
+ * itself.
  *
  * The audio language the rule needs is not this controller's own: it
  * follows [AudioChoiceController]'s own language callback through

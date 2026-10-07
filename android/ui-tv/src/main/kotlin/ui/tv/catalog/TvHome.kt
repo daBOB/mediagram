@@ -51,10 +51,9 @@ import ui.tv.chrome.LocalTvPagePadding
  * and, through it, the web's own `home-view.js`: cover story, features,
  * Continue watching beside a pull-quote, Recently added beside This month,
  * then Latest series and Latest courses. A `LazyColumn` of sections, only
- * the ones near the viewport ever composed — unlike the plain rows this
- * page used to draw, which a `Column` + `verticalScroll` always composed in
- * full — so a heavy section (a poster strip's `AsyncImage`s, a course
- * list's own cards) never builds before the remote is anywhere near it.
+ * the ones near the viewport ever composed, so a heavy section (a poster
+ * strip's `AsyncImage`s, a course list's own cards) never builds before the
+ * remote is anywhere near it.
  *
  * A `LazyColumn` this short (at most six items) can still afford a
  * generous cache window either side of the viewport, wide enough to keep
@@ -99,18 +98,11 @@ internal fun TvHome(
     val series = latest.series
     val courses = latest.courses
 
+    // Only stops with a focus requester of their own are restorable; any other
+    // key (the quote, This month's rows) falls back to homeTargetOf's default.
     val sections =
         remember(editorial, magazine, series, courses) {
             listOf(
-                // Only stops with a focus requester of their own are
-                // restorable — the quote and This month's own rows draw
-                // through `onOpenTitle` too but carry none, so a restore
-                // key naming one of them would otherwise match a section
-                // with nowhere left to send the remote. Left out of the key
-                // lists below, such a key falls through every section and
-                // reaches `homeTargetOf`'s own graceful default instead —
-                // exactly the "missing key" case this function already
-                // documents, not a silent dead end.
                 DeptSection(TvHomeSection.COVER, editorial.cover.map { it.setId }),
                 DeptSection(TvHomeSection.FEATURES, editorial.features.map { it.set.setId }),
                 DeptSection(TvHomeSection.CONTINUE, magazine.resumeCards.map { it.set.setId }),

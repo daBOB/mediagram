@@ -99,7 +99,7 @@ class DefaultPlayerHandleTest {
     }
 
     /**
-     * L5: a speed asked for before the player exists is queued the same
+     * A speed asked for before the player exists is queued the same
      * way a start position is — [aStartPositionQueuedBeforeThePlayerIsReadyIsAppliedOnceItArrives]
      * above — but it must land *after* the queued open's own floor to 1x
      * (`openOn`), not before it: applied in the other order, the real

@@ -47,11 +47,10 @@ import java.util.concurrent.Executors
 import javax.inject.Singleton
 
 /**
- * The series and film preloaders, and everything they share — split out
- * of `PlaybackModule` to keep both under the project's line guideline.
- * They stay in feature:player though the catalogue injects them too: the
- * film preloader is built on [ActivePlayback] and starts [PreloadService],
- * both this module's own.
+ * The series and film preloaders, and everything they share. They stay in
+ * feature:player though the catalogue injects them too: the film preloader
+ * is built on [ActivePlayback] and starts [PreloadService], both this
+ * module's own.
  */
 @Module
 @InstallIn(SingletonComponent::class)

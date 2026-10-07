@@ -8,7 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** PUT, `/v1/status`, and `verify` — split from [LanChunkClientTest] to keep each file under the line limit. */
+/** PUT, `/v1/status`, and `verify` — [LanChunkClientTest] covers the reads. */
 class LanChunkClientWriteTest {
     private val server = MockWebServer()
     private val client = LanChunkClient(connectTimeoutMs = 200, readTimeoutMs = 200)

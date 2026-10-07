@@ -37,7 +37,7 @@ import ui.catalog.rememberPersonLookup
 import ui.catalog.rememberPortrait
 
 /**
- * The five browse frames this phase adds — [FrameKind.PERSON],
+ * The five browse frames — [FrameKind.PERSON],
  * [FrameKind.FRANCHISE], [FrameKind.GENRES], [FrameKind.LATEST] and
  * [FrameKind.MOVIES_PAGE] — split out of [LibraryBranches] once its own
  * `when` outgrew that file the same way [ResolvedBranch] once did.

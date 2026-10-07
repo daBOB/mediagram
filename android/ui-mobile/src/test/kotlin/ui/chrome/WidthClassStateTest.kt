@@ -48,10 +48,10 @@ import kotlin.test.assertTrue
 /**
  * The chrome's own two width-dependent defects a real rotation surfaces:
  * losing a scroll position because the width class change moved [content]
- * to a different slot in the composition (H1 — [ui.LibraryScaffold],
- * [LibraryHome] each now have exactly one call site for it, with only the
+ * to a different slot in the composition ([ui.LibraryScaffold] and
+ * [LibraryHome] each have exactly one call site for it, with only the
  * rail conditional beside it), and a hidden compact header leaving a blank
- * band instead of the space it just gave up (H2). A fake [WindowInfo]
+ * band instead of the space it just gave up. A fake [WindowInfo]
  * flips the width class in place, the way a real rotation does — the
  * manifest handles `orientation|screenSize`, so nothing here recreates the
  * activity either.

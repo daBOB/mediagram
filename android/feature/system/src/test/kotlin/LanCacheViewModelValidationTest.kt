@@ -20,7 +20,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-/** Token and manual-address save validation — split from [LanCacheViewModelTest] to keep both files under the line limit. */
+/** Token and manual-address save validation; the rest of the ViewModel is [LanCacheViewModelTest]'s. */
 @RunWith(RobolectricTestRunner::class)
 class LanCacheViewModelValidationTest {
     @Before

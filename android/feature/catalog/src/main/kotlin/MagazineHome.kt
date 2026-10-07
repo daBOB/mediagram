@@ -10,8 +10,8 @@ import model.WatchSnapshot
  * `resumeCards` to the library.
  *
  * [resumeCards] merges Continue and Next up into the one landscape strip
- * the web draws, rather than the plain grid's two separate rows — see
- * `plans/260925-2245-android-magazine-parity`'s decision to match the web.
+ * the web draws, rather than the plain grid's two separate rows, so the
+ * home reads the same on every surface.
  * [recentlyAdded] is what "Recently added" shows; it is also `onRow` for
  * [editorial], so "This month" never repeats it.
  */

@@ -6,8 +6,8 @@ import kotlin.test.assertEquals
 /**
  * The dispatch-level rule behind [ResolvedBranch]: a frame whose own key
  * does not resolve reads differently depending on whether the catalog has
- * answered yet. Pure, so it is tested without a `Composable` — what used
- * to draw nothing at all (N1) was exactly this decision missing.
+ * answered yet. Pure, so it is tested without a `Composable` — a frame
+ * that drew nothing at all was exactly this decision missing.
  */
 class FrameResolutionTest {
 

@@ -54,8 +54,7 @@ class LibraryPositionsEncodingTest {
      * A stack a build before [FrameKind.PERSON] and its siblings wrote is
      * still exactly the stack it was: encoding keys every frame by
      * [FrameKind.name], never by its ordinal, so widening the enum after the
-     * fact — the whole point of this phase's own frames — never shifts what
-     * an already-saved token names.
+     * fact never shifts what an already-saved token names.
      */
     @Test
     fun aStackSavedBeforeTheNewFramesExistedRestoresUnchanged() {

@@ -125,7 +125,7 @@ class TvPreloadsPageTest : TvScreenStateTest() {
         assertEquals(row, resumed)
     }
 
-    /** M4: Back's own restoreKey lands the remote on the row a title was opened from, not on whatever now leads the list. */
+    /** Back's own restoreKey lands the remote on the row a title was opened from, not on whatever now leads the list. */
     @Test
     fun restoreKeyLandsFocusOnTheNamedRowRatherThanTheFirst() {
         val rows = listOf(FilmPreloadRow.Waiting("f2", "The Green Mile", TOTAL), FilmPreloadRow.Waiting("f3", "Le Mans 66", TOTAL))
@@ -133,7 +133,7 @@ class TvPreloadsPageTest : TvScreenStateTest() {
         compose.onNodeWithText("Le Mans 66").assertIsFocused()
     }
 
-    /** M4: a remote sitting on a row that is still present must not be pulled back to the front merely because some other row's own content changed. */
+    /** A remote sitting on a row that is still present must not be pulled back to the front merely because some other row's own content changed. */
     @Test
     fun focusIsNotStolenWhenAnUnrelatedRowChangesUnderTheRemote() {
         var rows by mutableStateOf<List<FilmPreloadRow>>(

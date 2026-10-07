@@ -51,43 +51,24 @@ private val CacheAhead = 320.dp
 private val CacheBehind = 320.dp
 
 /**
- * One catalogue wall, for every television screen a grid of plates is built
- * from — a shelf, a kept wall, a franchise, a person's page.
- * Generic over the item type so each of those can hand it whatever it
- * already has ([model.MediaSet], an entry, a genre) without this file
- * needing to know the difference.
+ * One catalogue wall of plates — a shelf, a kept wall, a franchise, a
+ * person's page — generic over whatever item type each of those already has.
  *
- * [key] is a stable identity per item, the same reason `catalog.keyOf` exists
- * on the phone: a grid that keys by position rather than identity loses
- * scroll and focus state under a reorder.
+ * [key] is a stable identity per item: a grid keyed by position loses scroll
+ * and focus state under a reorder.
  *
- * [ui.tv.chrome.LocalTvPagePadding] is applied as `contentPadding` rather
- * than a wrapping `Modifier.padding`, for the reason [ui.tv.TvShell]
- * documents on every other lazy wall this app draws: a focused plate
- * against the grid's edge grows under [ui.tv.TvFocus.Scale] into the
- * padding the grid itself reserves for it, instead of being clipped by a
- * fixed inset outside the scrollable viewport. Reading the ambient value
- * rather than the plain [designsystem.Overscan] it defaults to is what
- * lets this same wall draw both under the root catalogue's own chrome
- * (its content column's own start/top inset) and as a pushed frame's own
- * full-screen wall (plain [designsystem.Overscan] on every side) without
- * either caller having to say which one it is.
+ * [ui.tv.chrome.LocalTvPagePadding] is applied as `contentPadding`, so a
+ * focused plate scaled up at the grid's edge grows into it instead of being
+ * clipped by an inset outside the viewport.
  *
- * Focus restoration is the one thing this wall does that the web reference
- * never had to: television has no pointer to remember a hover position for,
- * so a viewer who opened a title from partway down this wall and pressed
- * Back needs the remote to still be sitting on that same plate rather than
- * back at the top. [restoreKey] names that plate; when it isn't found (there
- * is none yet, or it no longer exists) focus falls back to the first plate,
- * so this wall is never left with nothing focused at all.
+ * [restoreKey] names the plate Back returns the remote to, since television
+ * has no pointer position to remember; when it is not found focus falls
+ * back to the first plate, so the wall is never left with nothing focused.
  *
- * [header] is whatever stands above the plates and scrolls with them — a
- * kept wall's "Title · n", a show's name and facts. [headings] start a new
- * line of plates under a label of its own before the item at each index — a
- * genre page's Movies, then its Series.
- *
- * [columns] is [Columns] for a wall of posters; a wall of wider art tiles
- * (the Genres page's) asks for fewer.
+ * [header] stands above the plates and scrolls with them; [headings] start a
+ * labelled line of plates before the item at each index (a genre page's
+ * Movies, then its Series); [columns] is fewer than [Columns] for a wall of
+ * wider art tiles.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -108,24 +89,10 @@ fun <T> TvWall(
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
-    // Read once here, above the grid, and provided around it below —
-    // `TvHome`'s own vertical list wraps its whole `LazyColumn` the same
-    // way, not each item inside it: the grid's own scroll-into-view
-    // machinery (what actually moves it up or down to keep a newly focused
-    // cell visible) reads whatever spec is ambient at the grid's *own*
-    // position in composition, not at each item's — a provider nested
-    // inside `items { }` sits below that point and the grid's own
-    // machinery never sees it, which is why an earlier version of this fix
-    // (wrapping each cell instead) left Up still landing plates behind the
-    // bar while Down happened to look clear by accident (a downward reveal
-    // settles with the target's own bottom flush against the viewport's
-    // bottom, which is nowhere near the bar to begin with). [header]'s own
-    // cell resets back to [defaultBringIntoView] below, captured here
-    // before the override exists: a horizontal row inside it (Anime's own
-    // Continue watching) reads the vertical clearance as a horizontal
-    // offset otherwise, reserving blank space on its own left the bar
-    // never touches, for no reason — `TvHome`'s own doc on why it resets
-    // the same way for its own bands.
+    // Provided around the grid, not inside `items { }`: the grid's own
+    // scroll-into-view reads the spec ambient at its own composition position.
+    // [header]'s cell resets to [defaultBringIntoView], or a horizontal row
+    // inside it reads the bar clearance as a sideways offset.
     val defaultBringIntoView = LocalBringIntoViewSpec.current
     val barClearance = rememberTvBarClearanceBringIntoView()
     val cells = remember(items, header != null, headings) { cellsOf(items, header != null, headings) }

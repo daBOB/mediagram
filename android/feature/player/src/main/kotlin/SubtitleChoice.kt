@@ -9,7 +9,7 @@ const val SUBTITLES_OFF: String = data.SUBTITLE_OFF
 /** One row the Subtitles section offers: "Off", or a track marked selected against whichever is shown. */
 data class SubtitleOption(val value: String, val label: String, val selected: Boolean)
 
-/** What [chooseSubtitles] resolved: a regular track's key, and/or a forced track's language — see `plan.md`'s playback rule, which this ports line for line. */
+/** What [chooseSubtitles] resolved: a regular track's key, and/or a forced track's language. */
 data class SubtitleSelection(val regular: String?, val forced: String?)
 
 /** Whether the CC control and the style/offset controls have anything to act on. */
@@ -40,7 +40,8 @@ private fun resolveCandidate(candidate: String?, regular: List<SubtitleTrackInfo
 
 /**
  * The regular track key to show and the forced language beside — or instead
- * of — it. Ports `plan.md`'s rule exactly:
+ * of — it. Ports the web's `subtitle-choice.js` exactly, and is held to the
+ * same shared `choice-cases.json` fixture:
  * `regular = wanted off ? none : same key → same lang plain → same lang SDH → profile preference → none`;
  * `forced = no regular showing && audio known ? forced track in the audio language : none` — shown even when subtitles are off.
  */

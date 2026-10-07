@@ -5,8 +5,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 
 /**
- * The bridge between the real player's events and [DefaultPlayerHandle] —
- * split out to keep that file under the project's line guideline. This is
+ * The bridge between the real player's events and [DefaultPlayerHandle]. This is
  * itself process-lifetime, attached exactly once to the app's singleton
  * player; see [DefaultPlayerHandle]'s own doc for why.
  *

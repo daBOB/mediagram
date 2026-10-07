@@ -31,10 +31,10 @@ import model.MediaSet
 /**
  * One list's titles, in the order they were filed — `renderList` and
  * `listView` in collections-view.js, opened by the same shelf head the web
- * gives the list (its name, how many titles it names). Titles are added from the player's "Add to list"
- * dialog: `collection-add.js`'s in-list search picker is out of scope for
- * this phase, per the Requirements — only rename, delete and taking a title
- * back off the list are asked for here.
+ * gives the list (its name, how many titles it names). Titles are added
+ * from the player's "Add to list" dialog: `collection-add.js`'s in-list
+ * search picker is not ported, so this screen only renames, deletes and
+ * takes a title back off the list.
  */
 @Composable
 internal fun ListScreen(

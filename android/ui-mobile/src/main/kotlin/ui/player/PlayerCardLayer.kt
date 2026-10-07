@@ -21,9 +21,8 @@ import player.UpNextUiState
 import player.playFromRun
 
 /**
- * The card and the menu that opens above it, as the screen lays them out —
- * split out of `PlayerScreen` to keep that file under the project's line
- * guideline. While the episode sidebar stands beside the picture the card is
+ * The card and the menu that opens above it, as the screen lays them out.
+ * While the episode sidebar stands beside the picture the card is
  * laid out in the width it leaves, so the two never overlap: it ends short of
  * the sidebar by its own margin, centred in what remains, and goes back to
  * the window's width when the sidebar closes.

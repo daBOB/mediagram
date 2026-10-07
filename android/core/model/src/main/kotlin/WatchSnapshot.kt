@@ -22,8 +22,7 @@ data class Watched(
 
 /**
  * A named group of sets a profile collected — a collection's contents.
- * `id` is the core's own row id; renaming or deleting one by it is
- * deferred to the phase that first shows collections in the UI.
+ * `id` is the core's own row id, the one renaming or deleting it goes by.
  */
 data class ListOfSets(
     val id: String,

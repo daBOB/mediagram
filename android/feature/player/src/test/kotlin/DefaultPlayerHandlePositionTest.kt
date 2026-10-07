@@ -13,9 +13,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * [DefaultPlayerHandle.positionMs] and [DefaultPlayerHandle.durationMs] —
- * split out of [DefaultPlayerHandleTest] to keep that file under the
- * project's line guideline.
+ * [DefaultPlayerHandle.positionMs] and [DefaultPlayerHandle.durationMs];
+ * the rest of the handle is [DefaultPlayerHandleTest]'s.
  */
 @RunWith(RobolectricTestRunner::class)
 class DefaultPlayerHandlePositionTest {

@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.dp
  * surviving recomposition and rotation ([rememberSaveable]) — a page
  * rebuilt once a watch-state update lands, or once Cast arrives and inserts
  * itself ahead of a later tab, must not throw the viewer back to the first
- * tab, the finding `tabs.js`'s own doc comment records and this phase was
- * asked to port. [labels] missing the chosen one (Cast disappearing because
+ * tab, as `tabs.js`'s own doc comment records for the web. [labels] missing the chosen one (Cast disappearing because
  * credits came back empty) falls back to the first tab rather than nothing.
  *
  * Split from the row that reads it ([TitleTabRow]) so a page whose Episodes

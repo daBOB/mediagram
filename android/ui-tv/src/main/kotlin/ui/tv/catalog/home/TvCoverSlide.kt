@@ -126,8 +126,8 @@ internal fun TvCoverSlide(
  * web's `--on-image`/`--on-image-2` (`theme.css:99-100`), the phone
  * cover's own `OnImage`/`OnImage2`. Redeclared here rather than shared:
  * both are `internal` to ui-mobile's own module, and lifting two colour
- * constants across a module boundary for this alone was not worth the
- * coupling — see this phase's own report for the calls it did lift.
+ * constants across a module boundary for this alone is not worth the
+ * coupling.
  */
 internal val OnImage = androidx.compose.ui.graphics.Color(0xFFF6F2EA)
 internal val OnImage2 = androidx.compose.ui.graphics.Color(0xD1F6F2EA)

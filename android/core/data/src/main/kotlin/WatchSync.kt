@@ -118,6 +118,7 @@ class DefaultWatchSync(
     override suspend fun awaitFirstRound() {
         try {
             if (settings.read() == null) return
+            // Builds the core, so the combine below has one to start a round on.
             coreProvider.coreOrNull()
             combine(coreProvider.core, settings.selections()) { core, handle -> core to handle }
                 .mapLatest { (core, handle) ->
