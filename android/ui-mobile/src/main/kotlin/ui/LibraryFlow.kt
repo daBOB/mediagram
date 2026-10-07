@@ -14,6 +14,7 @@ import player.TitlePreloadViewModel
 import stats.AchievementDotViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
+import ui.chrome.ProfileBarState
 import ui.profile.ProfileGate
 import ui.settings.SettingsOutcomes
 

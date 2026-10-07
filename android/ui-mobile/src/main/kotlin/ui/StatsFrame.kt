@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import catalog.CatalogUiState
 import catalog.Destination
 import ui.catalog.StatsScreen
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
 
 /**
  * The Stats page as one frame of its own on [at]'s stack, opened from the

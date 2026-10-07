@@ -32,8 +32,10 @@ import ui.catalog.SearchBranch
 import ui.catalog.posterColumnsFor
 import ui.catalog.rememberDepartmentScrollStates
 import catalog.chromeCountsOf
+import ui.chrome.BrowseActions
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
+import ui.chrome.ProfileBarState
 import ui.chrome.RailData
 import ui.player.PlayerScreen
 

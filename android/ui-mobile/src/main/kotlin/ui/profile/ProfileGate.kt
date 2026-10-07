@@ -10,7 +10,7 @@ import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
-import ui.ProfileBarState
+import ui.chrome.ProfileBarState
 
 /**
  * Gates [content] on a chosen profile: a viewer, not the setup step the app
@@ -19,7 +19,7 @@ import ui.ProfileBarState
  *
  * Shows [ProfilePickerScreen] in place of [content] while there is nobody
  * chosen yet, and hands [content] the bar state for whoever is once there is
- * — the name [ui.LibraryScaffold] shows, and what tapping it reopens.
+ * — the name [ui.chrome.LibraryScaffold] shows, and what tapping it reopens.
  *
  * Manage profiles, opened from the picker, takes the picker's place until
  * Done; once a profile is chosen it cannot be reached, so a phone left on a

@@ -38,17 +38,14 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.BrowseActions
-import ui.LibraryScaffold
 import ui.MenuActions
-import ui.ProfileBarState
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
  * The chrome's own two width-dependent defects a real rotation surfaces:
  * losing a scroll position because the width class change moved [content]
- * to a different slot in the composition ([ui.LibraryScaffold] and
+ * to a different slot in the composition ([ui.chrome.LibraryScaffold] and
  * [LibraryHome] each have exactly one call site for it, with only the
  * rail conditional beside it), and a hidden compact header leaving a blank
  * band instead of the space it just gave up. A fake [WindowInfo]

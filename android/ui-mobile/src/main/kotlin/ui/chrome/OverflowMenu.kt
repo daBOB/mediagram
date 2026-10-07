@@ -1,4 +1,4 @@
-package ui
+package ui.chrome
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import ui.MenuActions
 
 /**
  * The browsing utilities the web keeps in its own rail-nav — My List,

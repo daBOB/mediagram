@@ -35,6 +35,8 @@ import ui.catalog.ShelfWall
 import ui.catalog.rememberFranchiseOverviews
 import ui.catalog.rememberPersonLookup
 import ui.catalog.rememberPortrait
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
 
 /**
  * The five browse frames — [FrameKind.PERSON],

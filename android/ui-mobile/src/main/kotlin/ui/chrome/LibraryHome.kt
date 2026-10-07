@@ -37,12 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogTab
 import kotlin.math.roundToInt
-import ui.BrowseActions
 import ui.MenuActions
-import ui.ProfileBarState
 import ui.RailItem
 import ui.railItemOf
-import ui.railSelect
 import ui.setup.StartOverConfirmation
 
 /**

@@ -6,6 +6,9 @@ import catalog.MenuScreen
 import catalog.libraryTallyLines
 import data.CatalogEnrichmentState
 import system.FetchViewModel
+import ui.chrome.BrowseActions
+import ui.chrome.LibraryScaffold
+import ui.chrome.ProfileBarState
 import ui.settings.SettingsScreen
 import ui.settings.SettingsSection
 import ui.settings.TmdbKeyScreen

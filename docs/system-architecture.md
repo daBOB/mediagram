@@ -349,8 +349,9 @@ The `setup.login` package owns the phone, code, and password sign-in state
 machine; catalog owns profile selection and library browsing.
 Inside `ui-mobile`, screens live in `ui.catalog`, `ui.player`, `ui.profile`,
 `ui.setup`, `ui.settings`, and `ui.system`. App composition and navigation
-remain in `ui`; the library's top chrome (departments bar, rail, header)
-lives in `ui.chrome`, and shared row presentation in `ui.components`. Byte
+remain in `ui`; the library's chrome (departments bar, rail, header, a pushed
+frame's bar and the overflow menu) lives in `ui.chrome`, and shared row
+presentation in `ui.components`. Byte
 formatting is `core:model`'s `ByteSize.kt`, shared with the TV.
 
 ### Where the catalog comes from

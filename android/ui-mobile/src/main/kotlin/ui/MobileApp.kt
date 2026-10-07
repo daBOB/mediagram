@@ -25,6 +25,7 @@ import setup.AppearanceViewModel
 import setup.SetupUiState
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import ui.chrome.LibraryScaffold
 import ui.setup.LibraryScreen
 import ui.setup.LoginScreen
 import ui.setup.SignInCompletion

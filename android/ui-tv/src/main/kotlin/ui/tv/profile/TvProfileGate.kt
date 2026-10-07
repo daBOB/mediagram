@@ -19,7 +19,7 @@ import ui.profile.manageActions
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
  * and what selecting that entry does. The television twin of the phone's
- * `ui.ProfileBarState`, declared here rather than shared because that one
+ * `ui.chrome.ProfileBarState`, declared here rather than shared because that one
  * lives in `:ui-mobile`, which this module never sees.
  */
 data class TvChosenProfile(

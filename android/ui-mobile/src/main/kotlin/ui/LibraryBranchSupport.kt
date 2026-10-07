@@ -19,7 +19,10 @@ import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import model.WatchSnapshot
 import ui.catalog.DepartmentScrollStates
+import ui.chrome.BrowseActions
 import ui.chrome.HeroListState
+import ui.chrome.LibraryScaffold
+import ui.chrome.ProfileBarState
 import ui.chrome.asHeroListState
 
 /**

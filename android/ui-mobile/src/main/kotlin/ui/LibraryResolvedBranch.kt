@@ -5,6 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
 import catalog.Destination
 import ui.catalog.CenteredMessage
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
 
 /** What the bar says while a frame's own key has not resolved to anything yet. */
 internal const val LOADING = "…"

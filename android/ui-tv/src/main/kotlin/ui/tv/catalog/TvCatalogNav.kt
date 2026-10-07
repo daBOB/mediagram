@@ -20,6 +20,9 @@ internal const val TvSearchEntryKey = "masthead:search"
 /** The catalogue's restore key for "the trimmed menu page was opened from the bar's own ⋮" — [TvSearchEntryKey]'s counterpart. */
 internal const val TvMenuEntryKey = "masthead:menu"
 
+/** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
+internal const val TvMoviesPageEntryKey = "movies:all"
+
 /** The catalogue's restore key for "Latest was opened from the rail" — the rail row itself, not a plate on the page it opens. */
 internal const val TvLatestRailKey = "rail:latest"
 

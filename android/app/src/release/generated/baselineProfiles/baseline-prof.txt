@@ -25242,7 +25242,7 @@ Lui/tv/TvAppKt;
 HSPLui/tv/TvAppKt;->$r8$lambda$zHpEti4F0oPy_EfV-ccUk10g9D8(Landroidx/compose/ui/semantics/SemanticsPropertyReceiver;)Lkotlin/Unit;
 HSPLui/tv/TvAppKt;->TvApp$lambda$0(Landroidx/compose/runtime/State;)Ldesignsystem/Appearance;
 HSPLui/tv/TvAppKt;->TvApp(Landroidx/compose/runtime/Composer;I)V
-HSPLui/tv/TvAppKt;->TvSafeArea(Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V
+HSPLui/tv/TvThemeKt;->TvSafeArea(Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V
 HSPLui/tv/TvAppKt;->TvShell$lambda$0$0(Landroidx/compose/ui/semantics/SemanticsPropertyReceiver;)Lkotlin/Unit;
 HSPLui/tv/TvAppKt;->TvShell$lambda$1(Lkotlin/jvm/functions/Function2;Landroidx/compose/foundation/layout/BoxScope;Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 HSPLui/tv/TvAppKt;->TvShell(Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V

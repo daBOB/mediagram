@@ -16,6 +16,7 @@ import ui.MenuActions
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
+import ui.tv.catalog.TvMoviesPageEntryKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
@@ -142,6 +143,3 @@ internal fun TvLibraryHomeFrame(
 
 /** Where [TvCatalogScreen]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
 private const val CatalogStateKey = "catalog"
-
-/** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
-internal const val TvMoviesPageEntryKey = "movies:all"

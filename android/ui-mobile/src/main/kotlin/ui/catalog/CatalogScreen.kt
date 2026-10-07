@@ -38,7 +38,7 @@ import ui.chrome.LocalTopChrome
  *
  * [chosenTab] is any [CatalogTab], not only one the departments bar
  * (`ui.chrome.DepartmentsBar`) draws a pill for: Continue and My List are the
- * rail's own rows (`ui.BrowseActions`) and land here as tabs of their own,
+ * rail's own rows (`ui.chrome.BrowseActions`) and land here as tabs of their own,
  * rather than needing a frame of their own. [onTabChange] is Home's "See
  * all", which opens the tab its row is a window onto.
  */
@@ -101,7 +101,7 @@ internal fun CatalogScreen(
  * One tab on screen, chosen from the bar above it — Home, then each
  * department as its own page ([DepartmentTab]), then Collections (see
  * [CollectionsScreen]). Continue and My List draw with [KeptWall], reached
- * from the rail's own rows (`ui.BrowseActions`) rather than a visible pill.
+ * from the rail's own rows (`ui.chrome.BrowseActions`) rather than a visible pill.
  */
 @Composable
 private fun Shelves(

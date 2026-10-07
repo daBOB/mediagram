@@ -16,6 +16,8 @@ import ui.catalog.CollectionScreen
 import ui.catalog.TitleDetailScreen
 import ui.catalog.rememberFilmPreloadUi
 import ui.catalog.rememberTitleInfo
+import ui.chrome.BrowseActions
+import ui.chrome.ProfileBarState
 
 /**
  * A title's own page and a show or course's own page — split out of

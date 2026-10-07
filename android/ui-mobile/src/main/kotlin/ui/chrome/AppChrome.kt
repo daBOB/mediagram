@@ -1,4 +1,4 @@
-package ui
+package ui.chrome
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -31,15 +31,15 @@ import catalog.Destination
 import catalog.backLabelFor
 import catalog.barTitleFor
 import catalog.showsSearchAction
-import ui.chrome.ChromeAvatar
-import ui.chrome.LibraryRail
-import ui.chrome.LocalRailData
+import ui.MenuActions
+import ui.RailItem
+import ui.pageGround
 import ui.setup.StartOverConfirmation
 
 /**
  * Whose shelves these are, and the way to become somebody else — the bar's
  * counterpart to the web's `#who` button. Shown as the chosen name; tapping
- * it reopens [ui.ProfilePickerScreen] over whatever is on screen.
+ * it reopens [ui.profile.ProfilePickerScreen] over whatever is on screen.
  */
 data class ProfileBarState(val name: String, val onChoose: () -> Unit)
 

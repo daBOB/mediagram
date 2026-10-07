@@ -27,9 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
-import ui.AndroidOnlyMenu
 import ui.MenuActions
-import ui.ProfileBarState
 
 /** The bar's own height, before the status-bar inset — the web's `--masthead-height` (`theme.css:114`, `76px` on the wide layout). */
 internal val DepartmentsBarHeight = 76.dp
