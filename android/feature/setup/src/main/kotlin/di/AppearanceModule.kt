@@ -1,4 +1,4 @@
-package setup
+package setup.di
 
 import android.content.Context
 import dagger.Module
@@ -11,7 +11,7 @@ import designsystem.SharedPreferencesAppearanceSettings
 import javax.inject.Singleton
 
 /**
- * One [AppearanceSettings] for the whole process: [AppearanceViewModel] is
+ * One [AppearanceSettings] for the whole process: [setup.AppearanceViewModel] is
  * asked for at both the root theme composition and Settings' own screen,
  * on the phone and the television, and all of them must see the same
  * live choice the moment one of them changes it.
