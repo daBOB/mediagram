@@ -72,6 +72,16 @@ class LibraryPositionsEncodingTest {
         assertEquals(FrameKind.COLLECTION, at.top)
     }
 
+    /** A person or franchise id is saved as its decimal text, the same as before the id was typed, so a stack saved by an older build still opens the same page. */
+    @Test
+    fun aPersonOrFranchiseSavedAsTextRestoresAsItsId() {
+        val at = positions("TITLE\u001Fset-1\u001EPERSON\u001F42\u001EFRANCHISE\u001F7")
+
+        assertEquals(7L, at.franchiseId)
+        at.pop()
+        assertEquals(42L, at.personId)
+    }
+
     /**
      * A season had a frame of its own before a show's page picked its season
      * itself. A stack saved with one still restores: the season's frame is

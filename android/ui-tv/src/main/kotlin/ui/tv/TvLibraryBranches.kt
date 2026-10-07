@@ -121,7 +121,7 @@ internal fun TvLibraryHomeFrame(
                 },
                 onOpenFranchise = { id ->
                     restore.opened(here, id.toString())
-                    at.openFranchise(id.toString())
+                    at.openFranchise(id)
                 },
                 onOpenMoviesPage = {
                     restore.opened(here, TvMoviesPageEntryKey)

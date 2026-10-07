@@ -54,7 +54,7 @@ internal fun FranchiseFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val id = at.franchiseId?.toLongOrNull()
+    val id = at.franchiseId
     if (id == null) {
         LaunchedEffect(Unit) { at.pop() }
         return
@@ -193,7 +193,7 @@ internal fun PersonFrame(
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val id = at.personId?.toLongOrNull()
+    val id = at.personId
     if (id == null) {
         LaunchedEffect(Unit) { at.pop() }
         return

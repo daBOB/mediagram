@@ -8,13 +8,25 @@ import uniffi.mediagram_core.SearchHit
 /** Which part of a grouped search result a viewer has narrowed the page to. */
 enum class SearchFilter { ALL, MOVIES, SERIES, ANIME, DOCUMENTARIES, TUTORIALS, PEOPLE, COLLECTIONS }
 
-/** A franchise or a hand-built list matched by name — ported from `destination` in `collections-page.js`. */
-data class SearchDestination(val filter: SearchFilter, val name: String, val itemCount: Int, val art: String?, val href: String) {
-    /** The franchise this opens, read back from [href] where [searchGroupsOf] wrote it — `null` for a viewer's own list. */
-    val franchiseId: Long? get() = href.takeIf { it.startsWith(FRANCHISE_HREF) }?.removePrefix(FRANCHISE_HREF)?.toLongOrNull()
-}
+/**
+ * A franchise or a hand-built list matched by name — ported from
+ * `destination` in `collections-page.js`. [franchiseId] is the franchise it
+ * opens, `null` for a viewer's own list; [href] only keys it, and a list's
+ * own id can look like anything, a franchise's included.
+ */
+data class SearchDestination(
+    val filter: SearchFilter,
+    val name: String,
+    val itemCount: Int,
+    val art: String?,
+    val href: String,
+    val franchiseId: Long? = null,
+)
 
 private const val FRANCHISE_HREF = "tmdb-"
+
+/** A franchise's [SearchDestination.href] — the web's own `tmdb-` address for it. */
+fun franchiseHref(id: Long): String = "$FRANCHISE_HREF$id"
 
 /**
  * Search grouped the way the web's `search-view.js` groups it: films as
@@ -79,7 +91,7 @@ fun searchGroupsOf(
     fun named(name: String): Boolean = words.isNotEmpty() && words.all { name.lowercase().contains(it) }
     val collections = buildList {
         franchises.filter { named(it.name) }.forEach {
-            add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.films.size, it.art, "$FRANCHISE_HREF${it.id}"))
+            add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.films.size, it.art, franchiseHref(it.id), franchiseId = it.id))
         }
         lists.filter { named(it.name) }.forEach {
             add(SearchDestination(SearchFilter.COLLECTIONS, it.name, it.items.size, null, it.id))

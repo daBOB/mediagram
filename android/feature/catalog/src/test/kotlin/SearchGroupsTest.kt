@@ -101,10 +101,12 @@ class SearchGroupsTest {
     fun aFranchiseDestinationKnowsItsFranchiseAndAListsDoesNotEvenWhenItsIdIsANumber() {
         val franchise = Franchise(42, "Dune Collection", listOf(film("dune")), null)
         val list = ListOfSets("7", "Dune night", listOf("f1"))
+        val franchiseLookingList = ListOfSets("tmdb-7", "Dune marathon", listOf("f1"))
 
-        val groups = searchGroupsOf("dune", readyState(emptyList()), emptyList(), emptyList(), listOf(franchise), listOf(list))
+        val groups =
+            searchGroupsOf("dune", readyState(emptyList()), emptyList(), emptyList(), listOf(franchise), listOf(list, franchiseLookingList))
 
-        assertEquals(listOf(42L, null), groups.collections.map(SearchDestination::franchiseId))
+        assertEquals(listOf(42L, null, null), groups.collections.map(SearchDestination::franchiseId))
     }
 
     /**

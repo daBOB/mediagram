@@ -144,9 +144,9 @@ class LibraryPositions(frames: MutableState<String>) {
     val genre: String? get() = payloadOf(FrameKind.GENRE)
     val menuScreen: MenuScreen? get() = payloadOf(FrameKind.MENU)?.let { runCatching { MenuScreen.valueOf(it) }.getOrNull() }
     /** The person a cast row or a search result opened, by their id. */
-    val personId: String? get() = payloadOf(FrameKind.PERSON)
+    val personId: Long? get() = payloadOf(FrameKind.PERSON)?.toLongOrNull()
     /** The franchise a collection card opened, by its id. */
-    val franchiseId: String? get() = payloadOf(FrameKind.FRANCHISE)
+    val franchiseId: Long? get() = payloadOf(FrameKind.FRANCHISE)?.toLongOrNull()
 
     /**
      * A key unique to the screen on top: where it sits, what kind it is,
@@ -208,8 +208,8 @@ class LibraryPositions(frames: MutableState<String>) {
     fun openTitle(id: String) = push(FrameKind.TITLE, id)
     fun openCollection(key: String) = push(FrameKind.COLLECTION, key)
     fun openList(id: String) = push(FrameKind.LIST, id)
-    fun openPerson(id: String) = push(FrameKind.PERSON, id)
-    fun openFranchise(id: String) = push(FrameKind.FRANCHISE, id)
+    fun openPerson(id: Long) = push(FrameKind.PERSON, id.toString())
+    fun openFranchise(id: Long) = push(FrameKind.FRANCHISE, id.toString())
     /** The Genres index — every department, not [openGenre]'s one shelf. */
     fun openGenresIndex() = push(FrameKind.GENRES, "")
     fun openLatest() = push(FrameKind.LATEST, "")

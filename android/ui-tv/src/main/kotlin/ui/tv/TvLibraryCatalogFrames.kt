@@ -63,7 +63,7 @@ internal fun TvTitleFrame(
             credits = credits,
             onOpenPerson = { personId ->
                 restore.opened(here, personId.toString())
-                at.openPerson(personId.toString())
+                at.openPerson(personId)
             },
             shouldRequestPortrait = browse::shouldRequestPortrait,
             fetchPortrait = browse::fetchPortrait,
@@ -75,7 +75,7 @@ internal fun TvTitleFrame(
             allFilms = allFilms,
             onOpenFranchise = { id ->
                 restore.opened(here, franchiseRestoreKey(id))
-                at.openFranchise(id.toString())
+                at.openFranchise(id)
             },
             editorsChoice = watch.editorsChoice,
             onToggleEditorsChoice =
@@ -135,7 +135,7 @@ internal fun TvCollectionFrame(
             credits = credits,
             onOpenPerson = { personId ->
                 restore.opened(here, personId.toString())
-                at.openPerson(personId.toString())
+                at.openPerson(personId)
             },
             shouldRequestPortrait = browse::shouldRequestPortrait,
             fetchPortrait = browse::fetchPortrait,

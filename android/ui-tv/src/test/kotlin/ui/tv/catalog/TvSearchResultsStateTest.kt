@@ -171,7 +171,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 SearchSection(
                     "Collections",
                     listOf(
-                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Saga", 3, null, "tmdb-9")),
+                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Saga", 3, null, "tmdb-9", franchiseId = 9)),
                         SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Sunday", 1, null, "list-a")),
                     ),
                     SearchLayout.CARDS,

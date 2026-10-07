@@ -116,17 +116,17 @@ class LibraryPositionsTest {
     fun openingAPersonOrAFranchiseLeavesToWhateverOpenedThem() {
         val at = positions()
         at.openTitle("set-1")
-        at.openPerson("42")
+        at.openPerson(42L)
 
         assertEquals(FrameKind.PERSON, at.top)
-        assertEquals("42", at.personId)
+        assertEquals(42L, at.personId)
 
         at.pop()
         assertEquals(FrameKind.TITLE, at.top)
 
-        at.openFranchise("7")
+        at.openFranchise(7L)
         assertEquals(FrameKind.FRANCHISE, at.top)
-        assertEquals("7", at.franchiseId)
+        assertEquals(7L, at.franchiseId)
     }
 
     @Test

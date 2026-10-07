@@ -22,10 +22,19 @@ internal sealed interface SearchEntry {
 internal fun keyOf(entry: SearchEntry): String =
     when (entry) {
         is SearchEntry.Title -> entry.row.set.setId
-        is SearchEntry.Show -> "show:${entry.entry.key}"
-        is SearchEntry.Person -> "person:${entry.person.personId}"
-        is SearchEntry.Destination -> "dest:${entry.destination.href}"
+        is SearchEntry.Show -> showKey(entry.entry.key)
+        is SearchEntry.Person -> personKey(entry.person.personId)
+        is SearchEntry.Destination -> destinationKey(entry.destination.href)
     }
+
+/** [keyOf] a show, by its collection key — also what the library records when one is opened, so Back finds it. */
+internal fun showKey(key: String): String = "show:$key"
+
+/** [keyOf] a person, by their id. */
+internal fun personKey(id: Long): String = "person:$id"
+
+/** [keyOf] a franchise or a list, by its [SearchDestination.href]. */
+internal fun destinationKey(href: String): String = "dest:$href"
 
 /**
  * How a section lays its entries out, as `search-view.js` draws each part:

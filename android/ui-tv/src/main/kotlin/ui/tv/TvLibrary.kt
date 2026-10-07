@@ -125,10 +125,10 @@ internal fun TvLibrary(
         FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
         FrameKind.PERSON ->
-            TvPersonFrame(at, catalogState, at.personId?.toLongOrNull(), watch, heldIds, shelves, restore, here, browse, leave)
+            TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
 
         FrameKind.FRANCHISE ->
-            TvFranchiseFrame(at, catalogState, at.franchiseId?.toLongOrNull(), watch, heldIds, allFilms, restore, here, browse, leave)
+            TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
 
         FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 

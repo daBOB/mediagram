@@ -63,7 +63,7 @@ class LibraryPositionsFrameKeyTest {
     fun leavingAndReturningToTheSameTitleReadsTheSameKeyAgain() {
         val at = positions()
         at.openTitle("film-a")
-        at.openPerson("42")
+        at.openPerson(42L)
         at.pop()
 
         assertEquals("1${FIELD_SEP}TITLE${FIELD_SEP}film-a", at.frameKey)

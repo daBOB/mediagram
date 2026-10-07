@@ -156,8 +156,8 @@ internal fun LibraryBranches(
                     onPlay = at::openPlayer,
                     onOpenTitle = at::openTitle,
                     onOpenCollection = at::openCollection,
-                    onOpenPerson = { id -> at.openPerson(id.toString()) },
-                    onOpenFranchise = { id -> at.openFranchise(id.toString()) },
+                    onOpenPerson = { id -> at.openPerson(id) },
+                    onOpenFranchise = { id -> at.openFranchise(id) },
                     onOpenList = at::openList,
                 )
             }
@@ -233,7 +233,7 @@ internal fun LibraryBranches(
                 onOpenGenresIndex = at::openGenresIndex,
                 onOpenLatest = at::openLatest,
                 onOpenMoviesPage = at::openMoviesPage,
-                onOpenFranchise = { id -> at.openFranchise(id.toString()) },
+                onOpenFranchise = { id -> at.openFranchise(id) },
                 onPlayRun = at::openPlayer,
                 onFinish = { catalogViewModel.markFinished(it) },
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
