@@ -49,7 +49,7 @@ internal fun TvPersonFrame(
     BackHandler(onBack = leave)
     val lookup = rememberPersonLookup(personId, browse::person)
     val page = remember(lookup.person, shelves) { personPageOf(lookup.person, shelves) }
-    val portrait = rememberPortrait(personId, lookup.person?.portraitPath, browse::shouldRequestPortrait, browse::fetchPortrait)
+    val portrait = rememberPortrait(personId, lookup.person?.portraitPath, browse.portraits, browse::fetchPortrait)
     TvPersonPage(
         page = page,
         // "Still asking" outlives the person fetch itself on a cold restore:

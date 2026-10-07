@@ -71,8 +71,8 @@ internal fun buildPipParams(context: Context, player: Player?, isPlaying: Boolea
     val builder = PictureInPictureParams.Builder()
         .setAspectRatio(pipAspectRational(videoSize?.width ?: 0, videoSize?.height ?: 0))
         .setActions(pipRemoteActions(context, isPlaying))
-    // Below API 31 there is no such flag; MainActivity.onUserLeaveHint is
-    // the only way to enter on a home gesture there, through PipEntryPoint.
+    // Below API 31 there is no such flag; PipController's user-leave hint
+    // listener is the only way to enter on a home gesture there.
     if (Build.VERSION.SDK_INT >= 31) builder.setAutoEnterEnabled(pipAutoEnterEligible(isPlaying, player?.playWhenReady == true))
     return builder.build()
 }

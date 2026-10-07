@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.LocalCatalogueTones
-import designsystem.Palette
 import designsystem.Radius
 import designsystem.Spacing
 import designsystem.StatusDot
@@ -115,7 +114,7 @@ internal fun TvIndexRow(
             Image(
                 painter = icon,
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(if (focused) Palette.Imprint else baseColor),
+                colorFilter = ColorFilter.tint(if (focused) MaterialTheme.colorScheme.primary else baseColor),
                 modifier = Modifier.size(22.dp),
             )
             dot?.let {

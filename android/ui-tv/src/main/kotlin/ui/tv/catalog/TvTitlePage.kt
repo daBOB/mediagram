@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import catalog.factsLine
 import catalog.filmDetailFacts
 import catalog.franchisesIn
+import data.PortraitRequestLog
 import data.ProgressPoint
 import data.ResumePoint
 import designsystem.Overscan
@@ -76,7 +77,7 @@ internal fun TvTitlePage(
     restoreKey: String? = null,
     credits: TitleCredits = TitleCredits.Empty,
     onOpenPerson: (personId: Long) -> Unit = {},
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
     similar: List<MediaSet> = emptyList(),
     onOpenTitle: (setId: String) -> Unit = {},
@@ -168,7 +169,7 @@ internal fun TvTitlePage(
             )
             Box(modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium)) {
                 when (tabs[selected]) {
-                    "Cast" -> TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey)
+                    "Cast" -> TvCastRow(credits, onOpenPerson, portraits, fetchPortrait, restoreKey)
                     "Similar" -> TvSimilarFilms(similar, onOpenTitle, restoreKey)
                     "Details" -> TvFactSheet(filmDetailFacts(set))
                     else -> TvFilmOverview(set, info, franchise, onOpenGenre, onOpenFranchise, restoreKey = restoreKey)

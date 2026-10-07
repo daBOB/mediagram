@@ -21,6 +21,7 @@ import catalog.filmOverviewFacts
 import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.similarTo
+import data.PortraitRequestLog
 import data.ProgressPoint
 import data.ResumePoint
 import designsystem.Spacing
@@ -63,7 +64,7 @@ fun TitleDetailScreen(
     onToggleWatchlist: () -> Unit = {},
     titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
     fetchPortrait: suspend (Long) -> String? = { null },
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     preload: TitlePreloadUi? = null,
 ) {
     val resumeAt =
@@ -129,7 +130,7 @@ fun TitleDetailScreen(
         TitleTabs(labels, modifier = Modifier.padding(top = Spacing.small)) { tab ->
             Box(modifier = Modifier.padding(Spacing.large)) {
                 when (tab) {
-                    "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)
+                    "Cast" -> CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
                     "Similar" -> FilmSimilarTab(set, watch, shelves, onOpenTitle)
                     "Details" -> FactSheet(factRows(filmDetailFacts(set)))
                     else -> FilmOverviewTab(set, info, franchise, onOpenGenre, onOpenFranchise)

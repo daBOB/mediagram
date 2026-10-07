@@ -73,7 +73,7 @@ internal fun TvSearchBranch(
             restore.opened(here, destinationKey(id))
             at.openList(id)
         },
-        shouldRequestPortrait = browse::shouldRequestPortrait,
+        portraits = browse.portraits,
         fetchPortrait = browse::fetchPortrait,
     )
 }

@@ -23,6 +23,7 @@ import catalog.showsOf
 import catalog.similarShows
 import catalog.summarize
 import catalog.walk
+import data.PortraitRequestLog
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
@@ -55,7 +56,7 @@ fun CollectionScreen(
     onToggleWatchlist: () -> Unit = {},
     titleCredits: suspend (String) -> TitleCredits = { TitleCredits.Empty },
     fetchPortrait: suspend (Long) -> String? = { null },
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     season: String? = null,
     onSelectSeason: (String) -> Unit = {},
 ) {
@@ -63,7 +64,7 @@ fun CollectionScreen(
         SeriesPage(
             collection, info, watch, heldIds, onOpenTitle, onOpenGenre, shelves, onOpenCollection,
             onOpenPerson, onPlay, editorsChoice, onToggleEditorsChoice, onToggleWatchlist,
-            titleCredits, fetchPortrait, shouldRequestPortrait, season, onSelectSeason,
+            titleCredits, fetchPortrait, portraits, season, onSelectSeason,
         )
         return
     }
@@ -135,7 +136,7 @@ private fun SeriesPage(
     onToggleWatchlist: () -> Unit,
     titleCredits: suspend (String) -> TitleCredits,
     fetchPortrait: suspend (Long) -> String?,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     season: String?,
     onSelectSeason: (String) -> Unit,
 ) {
@@ -203,7 +204,7 @@ private fun SeriesPage(
             "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay)
             "Cast" ->
                 item(key = "cast") {
-                    CastPanel(credits, onOpenPerson, fetchPortrait, shouldRequestPortrait)
+                    CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
                 }
             "Similar" ->
                 item(key = "similar") {

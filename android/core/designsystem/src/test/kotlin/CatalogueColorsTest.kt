@@ -29,12 +29,12 @@ class CatalogueColorsTest {
                 Palette.Figures,
                 Palette.Rule,
                 Palette.RuleStrong,
-                Palette.Imprint,
+                Accent.Default.dark,
                 Palette.Ochre,
                 Palette.Sage,
             )
 
-        val strangers = rolesOf(catalogueColorScheme(dark = true, accent = Palette.Imprint)).filterNot { (_, colour) -> colour in ours }
+        val strangers = rolesOf(catalogueColorScheme(dark = true, accent = Accent.Default.dark)).filterNot { (_, colour) -> colour in ours }
 
         assertTrue(
             strangers.isEmpty(),
@@ -90,7 +90,7 @@ class CatalogueColorsTest {
     /** The exact value that was on screen, so the bug cannot come back unnoticed. */
     @Test
     fun theProgressTrackIsNotMaterialsLavender() {
-        assertTrue(catalogueColorScheme(dark = true, accent = Palette.Imprint).secondaryContainer != Color(0xFF4A4458))
+        assertTrue(catalogueColorScheme(dark = true, accent = Accent.Default.dark).secondaryContainer != Color(0xFF4A4458))
     }
 
     /**
@@ -102,13 +102,13 @@ class CatalogueColorsTest {
      */
     @Test
     fun paletteExposesTheSameValuesCatalogueColorSchemeUses() {
-        val scheme = catalogueColorScheme(dark = true, accent = Palette.Imprint)
+        val scheme = catalogueColorScheme(dark = true, accent = Accent.Default.dark)
         assertEquals(Palette.Ground, scheme.background)
         assertEquals(Palette.Page, scheme.surface)
         assertEquals(Palette.Sunk, scheme.surfaceVariant)
         assertEquals(Palette.Text, scheme.onBackground)
         assertEquals(Palette.Figures, scheme.onSurfaceVariant)
-        assertEquals(Palette.Imprint, scheme.primary)
+        assertEquals(Accent.Default.dark, scheme.primary)
         assertEquals(Palette.Ochre, scheme.error)
         assertEquals(Palette.Sage, scheme.tertiary)
         assertEquals(Palette.Rule, scheme.outlineVariant)

@@ -37,7 +37,7 @@ import catalog.SearchRow
 import catalog.initialsOf
 import catalog.searchWhy
 import coil3.compose.AsyncImage
-import designsystem.Palette
+import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
@@ -125,11 +125,11 @@ internal fun TvPersonCard(
     portraitPath: String?,
     sub: String?,
     onOpenPerson: (personId: Long) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    val portrait = rememberPortrait(personId, portraitPath, shouldRequestPortrait, fetchPortrait)
+    val portrait = rememberPortrait(personId, portraitPath, portraits, fetchPortrait)
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) TvFocus.Scale else 1f, label = "person-card-scale")
     Column(
@@ -152,7 +152,7 @@ internal fun TvPersonCard(
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
-                    }.border(TvFocus.BorderWidth, if (focused) Palette.Imprint else Color.Transparent, CircleShape),
+                    }.border(TvFocus.BorderWidth, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, CircleShape),
         )
         Text(
             text = name,

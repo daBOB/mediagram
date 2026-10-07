@@ -7,9 +7,9 @@ import androidx.compose.ui.graphics.Color
  * per-theme hex values (`styles/appearance.css`) rather than approximated
  * for Android: an accent is a colour a viewer picked by eye, and this
  * catalogue re-deriving it would be a second colour behind the same name.
- * [CORAL] is the accent every surface drew before this setting existed —
- * [Palette.Imprint]'s own default — so a device that never opens Settings
- * looks unchanged.
+ * [CORAL] is the accent every surface drew before this setting existed,
+ * and stays [Default], so a device that never opens Settings looks
+ * unchanged.
  */
 enum class Accent(
     val storageKey: String,

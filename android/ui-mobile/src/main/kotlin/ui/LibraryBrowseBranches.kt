@@ -214,7 +214,7 @@ internal fun PersonFrame(
                     CenteredMessage("Nobody by that number is credited on anything in your library.")
                 }
             } else {
-                val portrait = rememberPortrait(id, page.person.portraitPath, browseViewModel::shouldRequestPortrait, browseViewModel::fetchPortrait)
+                val portrait = rememberPortrait(id, page.person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
                 LibraryBranch(Destination.Person(page.person.name), menuActions, profileBar, browse, at, at::pop) {
                     PersonScreen(page, portrait, watch, columns, at::openTitle, at::openCollection)
                 }

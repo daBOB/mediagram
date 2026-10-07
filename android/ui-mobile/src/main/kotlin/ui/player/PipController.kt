@@ -4,12 +4,16 @@ import android.app.PictureInPictureParams
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
+import androidx.lifecycle.Lifecycle
 import androidx.media3.common.Player
 
 /**
@@ -22,42 +26,17 @@ import androidx.media3.common.Player
  */
 val LocalIsInPictureInPicture: ProvidableCompositionLocal<Boolean> = compositionLocalOf { false }
 
-/**
- * What `MainActivity` needs to hand `ui-mobile` for two moments it alone
- * sees — `ui-mobile` cannot import `MainActivity` back (the module graph
- * runs the other way), so these two settable slots are what cross instead.
- * There is only ever one player screen mounted at a time, so one held
- * reference each is enough; [PipController] sets both while composed,
- * clears both on disposal. Public, deliberately: `internal` would shut
- * `:app`, a different Gradle module, out of reading them.
- */
-object PipEntryPoint {
-    /** API 26..30 only, where `setAutoEnterEnabled` does not exist and `onUserLeaveHint` is the only offer to enter picture-in-picture on the home gesture. */
-    @Volatile
-    var onUserLeaveHint: (() -> Unit)? = null
-
-    /**
-     * The system dismissed the picture-in-picture window (the ✕, or the
-     * swipe-away gesture) rather than the viewer expanding it back —
-     * `MainActivity` tells the two apart by whether its own lifecycle has
-     * already dropped to `CREATED` by the time `onPictureInPictureModeChanged(false)`
-     * lands (dismissal stops the activity first; expanding back does not).
-     */
-    @Volatile
-    var onDismissed: (() -> Unit)? = null
-}
-
 /** What the top bar's own picture-in-picture button needs — `null`/no button when this device or API level has no support for it, or with no activity to enter it on. */
 internal class PipButtonState(val supported: Boolean, val enterPip: () -> Unit)
 
 /**
  * Keeps the activity's `PictureInPictureParams` in step with [player] and
- * [isPlaying], wires the home-gesture auto-enter path for API 26..30 and
- * the dismissal callback through [PipEntryPoint], and registers
- * [PipActionReceiver] for the window's own play/pause/seek buttons — all
- * for as long as a player screen is composed. [onDismissed] is asked to
- * pause and save (never a full stop) the moment [PipEntryPoint.onDismissed]
- * fires; see `PlayerViewModel.pauseForPipDismissal`.
+ * [isPlaying], listens on the activity for the home gesture (API 26..30,
+ * where there is no auto-enter) and for the picture-in-picture window
+ * being dismissed, and registers [PipActionReceiver] for the window's own
+ * play/pause/seek buttons — all for as long as a player screen is
+ * composed. [onDismissed] is asked to pause and save (never a full stop)
+ * the moment the window is dismissed; see `PlayerViewModel.pauseForPipDismissal`.
  *
  * [supported] gates every picture-in-picture API this touches, including
  * [enterPip] below: `Build.VERSION.SDK_INT >= 26` alone is not enough —
@@ -83,13 +62,22 @@ internal fun PipController(player: Player?, isPlaying: Boolean, onDismissed: () 
         val currentActivity = activity // Non-null: `supported` (above) already required it.
         val params = buildPipParams(currentActivity, player, isPlaying)
         currentActivity.setPictureInPictureParams(params)
-        PipEntryPoint.onUserLeaveHint = {
-            if (pipAutoEnterEligible(isPlaying, player?.playWhenReady == true)) currentActivity.enterPictureInPictureMode(params)
-        }
-        PipEntryPoint.onDismissed = onDismissed
+        val host = currentActivity as? ComponentActivity
+        // Below API 31 there is no auto-enter, and the user-leave hint is the
+        // only moment the system offers to enter on a home gesture.
+        val leaveHint =
+            Runnable {
+                if (pipAutoEnterEligible(isPlaying, player?.playWhenReady == true)) currentActivity.enterPictureInPictureMode(params)
+            }.takeIf { Build.VERSION.SDK_INT <= 30 }
+        val modeChanged =
+            Consumer<PictureInPictureModeChangedInfo> { info ->
+                if (host != null && isPipDismissal(info.isInPictureInPictureMode, host.lifecycle.currentState)) onDismissed()
+            }
+        leaveHint?.let { host?.addOnUserLeaveHintListener(it) }
+        host?.addOnPictureInPictureModeChangedListener(modeChanged)
         onDispose {
-            PipEntryPoint.onUserLeaveHint = null
-            PipEntryPoint.onDismissed = null
+            leaveHint?.let { host?.removeOnUserLeaveHintListener(it) }
+            host?.removeOnPictureInPictureModeChangedListener(modeChanged)
             // Otherwise this stays armed on the activity itself after the
             // player screen is gone: a viewer who backs out mid-film and
             // then swipes home would shrink the catalog into a picture
@@ -121,3 +109,14 @@ internal fun PipController(player: Player?, isPlaying: Boolean, onDismissed: () 
         }
     }
 }
+
+/**
+ * Told apart from expanding picture-in-picture back to full screen (the
+ * activity is already `STARTED`/`RESUMED` again by the time the mode change
+ * lands, as part of that same transition) by whether the activity's own
+ * lifecycle has already dropped to `CREATED` — dismissal (the ✕, or swiping
+ * the window away) stops the activity *first* and moves its task to the
+ * back. A pure function so a test can call it without a real Activity.
+ */
+internal fun isPipDismissal(isInPictureInPictureMode: Boolean, lifecycleState: Lifecycle.State): Boolean =
+    !isInPictureInPictureMode && lifecycleState == Lifecycle.State.CREATED

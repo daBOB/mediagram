@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import data.PortraitRequestLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -76,24 +77,18 @@ class RememberLookupTest {
     }
 
     /**
-     * [rememberPortrait] marks a person's reservation reserved-not-done the
-     * moment it starts a fetch; a fetch cut short (here, by cancelling it
-     * outright, the same shape as the composable being disposed mid-fetch)
-     * is retried the next time something asks, even though [shouldRequest]
-     * — standing in for `data.PortraitRequestLog`'s own shared "already
-     * asked" answer — says no a second time.
+     * A fetch cut short (here, by cancelling it outright, the same shape as
+     * the composable being disposed mid-fetch) never finishes, so the next
+     * card to ask for that person fetches again.
      */
     @Test
     fun aPortraitFetchCutShortIsRetriedLaterInTheSession() {
         var attempts = 0
         var result: String? = null
-        // A fake with the same shape as the real `PortraitRequestLog.shouldRequest`:
-        // true only the first time this session, never again after that.
-        val reserved = mutableSetOf<Long>()
-        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
+        val portraits = PortraitRequestLog()
         show {
             result =
-                rememberPortrait(personId = PersonId, known = null, shouldRequest = shouldRequest) {
+                rememberPortrait(personId = PersonId, known = null, portraits = portraits) {
                     attempts++
                     throw CancellationException("left mid-fetch")
                 }
@@ -101,11 +96,9 @@ class RememberLookupTest {
         assertEquals(1, attempts)
         assertEquals(null, result)
 
-        // The shared log still says no — already reserved on the first ask
-        // — proving the retry does not wait for it to say yes again.
         show {
             result =
-                rememberPortrait(personId = PersonId, known = null, shouldRequest = shouldRequest) {
+                rememberPortrait(personId = PersonId, known = null, portraits = portraits) {
                     attempts++
                     "portrait.jpg"
                 }
@@ -114,16 +107,15 @@ class RememberLookupTest {
         assertEquals("portrait.jpg", result)
     }
 
-    /** A fetch that ran to completion, successfully or not, is never retried — [shouldRequest] alone still gates it. */
+    /** A fetch that ran to completion, successfully or not, is never retried. */
     @Test
     fun aFinishedPortraitFetchIsNotRetried() {
         var attempts = 0
-        val reserved = mutableSetOf<Long>()
-        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
-        show { rememberPortrait(personId = PersonId + 1, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" } }
+        val portraits = PortraitRequestLog()
+        show { rememberPortrait(personId = PersonId, known = null, portraits = portraits) { attempts++; "portrait.jpg" } }
         assertEquals(1, attempts)
 
-        show { rememberPortrait(personId = PersonId + 1, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" } }
+        show { rememberPortrait(personId = PersonId, known = null, portraits = portraits) { attempts++; "portrait.jpg" } }
         assertEquals(1, attempts)
     }
 
@@ -133,17 +125,16 @@ class RememberLookupTest {
      * the same shape [aFinishedPortraitFetchIsNotRetried] exercises but
      * checking its returned portrait too, not just that no second fetch ran:
      * the found path must survive that remount, not fall back to initials
-     * because the shared log already says no.
+     * because the log already says no fetch is needed.
      */
     @Test
     fun aRemountedCardKeepsThePortraitAFinishedFetchFound() {
         var attempts = 0
         var result: String? = null
-        val reserved = mutableSetOf<Long>()
-        val shouldRequest: (Long) -> Boolean = { id -> reserved.add(id) }
+        val portraits = PortraitRequestLog()
         show {
             result =
-                rememberPortrait(personId = PersonId + 2, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" }
+                rememberPortrait(personId = PersonId, known = null, portraits = portraits) { attempts++; "portrait.jpg" }
         }
         assertEquals(1, attempts)
         assertEquals("portrait.jpg", result)
@@ -151,7 +142,7 @@ class RememberLookupTest {
         result = null
         show {
             result =
-                rememberPortrait(personId = PersonId + 2, known = null, shouldRequest = shouldRequest) { attempts++; "portrait.jpg" }
+                rememberPortrait(personId = PersonId, known = null, portraits = portraits) { attempts++; "portrait.jpg" }
         }
         assertEquals(1, attempts)
         assertEquals("portrait.jpg", result)
@@ -161,5 +152,4 @@ class RememberLookupTest {
 /** The tag `data.orDefault` logs a failed lookup under. */
 private const val FallbackTag = "fallback"
 
-/** Distinct from any personId another test in this class or module might use, so the process-wide portrait sets never collide across tests. */
 private const val PersonId = 90210001L

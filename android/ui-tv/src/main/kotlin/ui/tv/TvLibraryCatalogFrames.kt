@@ -66,7 +66,7 @@ internal fun TvTitleFrame(
                 restore.opened(here, personId.toString())
                 at.openPerson(personId)
             },
-            shouldRequestPortrait = browse::shouldRequestPortrait,
+            portraits = browse.portraits,
             fetchPortrait = browse::fetchPortrait,
             similar = similar,
             onOpenTitle = { setId ->
@@ -138,7 +138,7 @@ internal fun TvCollectionFrame(
                 restore.opened(here, personId.toString())
                 at.openPerson(personId)
             },
-            shouldRequestPortrait = browse::shouldRequestPortrait,
+            portraits = browse.portraits,
             fetchPortrait = browse::fetchPortrait,
             similar = similar,
             onOpenCollection = { key ->

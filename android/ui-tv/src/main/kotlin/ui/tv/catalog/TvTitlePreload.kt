@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
 import designsystem.Palette
 import designsystem.Spacing
 import playback.FilmPreloadState
@@ -87,6 +88,7 @@ internal fun TvPreloadStorageRow(onClick: () -> Unit, modifier: Modifier = Modif
  */
 @Composable
 private fun TvPreloadBar(fraction: Float, modifier: Modifier = Modifier) {
+    val accent = MaterialTheme.colorScheme.primary
     Box(
         modifier
             .fillMaxWidth()
@@ -94,7 +96,7 @@ private fun TvPreloadBar(fraction: Float, modifier: Modifier = Modifier) {
             .semantics { progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f) }
             .drawBehind {
                 drawRect(color = Palette.RuleStrong, size = size)
-                drawRect(color = Palette.Imprint, size = Size(size.width * fraction, size.height))
+                drawRect(color = accent, size = Size(size.width * fraction, size.height))
             },
     )
 }

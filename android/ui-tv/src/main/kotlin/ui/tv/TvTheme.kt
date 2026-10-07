@@ -2,7 +2,6 @@ package ui.tv
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.ColorScheme
 import androidx.tv.material3.MaterialTheme
@@ -99,9 +98,6 @@ fun TvTheme(
     content: @Composable () -> Unit,
 ) {
     val accentColor = accent.dark
-    // The one place this module is allowed to write Palette.Imprint: see
-    // designsystem.MediagramTheme's own SideEffect for why.
-    SideEffect { Palette.Imprint = accentColor }
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
         MaterialTheme(
             colorScheme = tvColorScheme(accentColor),

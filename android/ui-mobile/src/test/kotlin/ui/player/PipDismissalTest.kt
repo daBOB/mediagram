@@ -1,4 +1,4 @@
-package com.mediagram.android
+package ui.player
 
 import androidx.lifecycle.Lifecycle
 import kotlin.test.Test

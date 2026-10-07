@@ -56,7 +56,7 @@ internal fun TitleFrame(
             onToggleWatchlist = { catalogViewModel.toggleWatchlist(title.setId) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
-            shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+            portraits = browseViewModel.portraits,
             // Films only — a show's episodes preload two at a time on
             // their own already; kids profiles get it too, unlike the
             // editor's-choice pin above, since it is not a household mark.
@@ -105,7 +105,7 @@ internal fun CollectionFrame(
             onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
-            shouldRequestPortrait = browseViewModel::shouldRequestPortrait,
+            portraits = browseViewModel.portraits,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
         )

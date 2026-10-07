@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.focusProperties
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
+import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -73,7 +74,7 @@ internal fun TvSearchResults(
     onOpenCollection: (key: String) -> Unit,
     onOpenPerson: (personId: Long) -> Unit,
     onOpenDestination: (SearchDestination) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
 ) {
     if (state is SearchUiState.Failed) {
@@ -155,7 +156,7 @@ internal fun TvSearchResults(
                                         onOpenCollection = onOpenCollection,
                                         onOpenPerson = onOpenPerson,
                                         onOpenDestination = onOpenDestination,
-                                        shouldRequestPortrait = shouldRequestPortrait,
+                                        portraits = portraits,
                                         fetchPortrait = fetchPortrait,
                                     )
                                 }

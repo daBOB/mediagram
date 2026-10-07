@@ -55,7 +55,7 @@ internal fun TvProgressRule(
                     .testTag(TvPlateProgressFillTag)
                     .fillMaxHeight()
                     .fillMaxWidth(fraction = fraction.coerceIn(0f, 1f))
-                    .background(Palette.Imprint),
+                    .background(MaterialTheme.colorScheme.primary),
         )
     }
 }

@@ -30,7 +30,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.SeriesResumePick
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.MediaSet
@@ -58,8 +57,8 @@ internal fun TvSpreadPill(
 ) {
     val ink = MaterialTheme.colorScheme.onSurface
     val container = if (solid) ink else ink.copy(alpha = 0.05f)
-    val content = if (solid) MaterialTheme.colorScheme.background else if (accent) Palette.Imprint else ink
-    val line = if (accent) Palette.Imprint else MaterialTheme.colorScheme.border
+    val content = if (solid) MaterialTheme.colorScheme.background else if (accent) MaterialTheme.colorScheme.primary else ink
+    val line = if (accent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.border
     Surface(
         onClick = onClick,
         modifier =
@@ -80,7 +79,7 @@ internal fun TvSpreadPill(
         border =
             ClickableSurfaceDefaults.border(
                 border = if (solid) Border.None else Border(BorderStroke(1.dp, line), shape = TvFocus.PillShape),
-                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, Palette.Imprint), shape = TvFocus.PillShape),
+                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, MaterialTheme.colorScheme.primary), shape = TvFocus.PillShape),
             ),
         glow = TvFocus.surfaceGlow(),
     ) {

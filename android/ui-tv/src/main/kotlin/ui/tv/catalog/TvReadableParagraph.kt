@@ -12,8 +12,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.TvTypeScale
 import ui.tv.TvFocus
 
@@ -35,6 +35,7 @@ internal fun TvReadableParagraph(
     style: TextStyle = TvTypeScale.body,
 ) {
     var focused by remember { mutableStateOf(false) }
+    val accent = MaterialTheme.colorScheme.primary
     Text(
         text = text,
         style = style,
@@ -45,7 +46,7 @@ internal fun TvReadableParagraph(
                 .drawBehind {
                     if (focused) {
                         val x = -ReadingRuleGap.toPx()
-                        drawLine(Palette.Imprint, Offset(x, 0f), Offset(x, size.height), TvFocus.BorderWidth.toPx())
+                        drawLine(accent, Offset(x, 0f), Offset(x, size.height), TvFocus.BorderWidth.toPx())
                     }
                 },
     )

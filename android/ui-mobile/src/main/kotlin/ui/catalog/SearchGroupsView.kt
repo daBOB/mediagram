@@ -209,7 +209,7 @@ private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> U
                 // Fetched lazily, at most once per session per person — this
                 // phase's own portrait rule, the same [rememberPortrait] a
                 // person's own page asks with.
-                val portrait = rememberPortrait(person.personId, person.portraitPath, browseViewModel::shouldRequestPortrait, browseViewModel::fetchPortrait)
+                val portrait = rememberPortrait(person.personId, person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
                 Column(
                     modifier = Modifier.clickable(role = Role.Button) { onOpenPerson(person.personId) }.padding(Spacing.small),
                     horizontalAlignment = Alignment.CenterHorizontally,

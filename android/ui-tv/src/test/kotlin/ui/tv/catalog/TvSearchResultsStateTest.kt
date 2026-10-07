@@ -18,6 +18,7 @@ import catalog.SearchGroups
 import catalog.SearchRow
 import catalog.SearchUiState
 import catalog.VisiblePerson
+import data.PortraitRequestLog
 import model.Kind
 import model.WatchSnapshot
 import org.junit.Test
@@ -212,7 +213,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 onOpenCollection = onOpenCollection,
                 onOpenPerson = {},
                 onOpenDestination = onOpenDestination,
-                shouldRequestPortrait = { false },
+                portraits = PortraitRequestLog(),
                 fetchPortrait = { null },
             )
         }

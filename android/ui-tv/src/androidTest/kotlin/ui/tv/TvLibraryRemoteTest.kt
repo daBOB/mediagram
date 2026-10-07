@@ -12,7 +12,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.captureToImage
-import designsystem.Palette
+import designsystem.Accent
 import ui.tv.catalog.TvPlate
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.hasText
@@ -126,7 +126,7 @@ class TvLibraryRemoteTest {
         compose.waitForIdle()
 
         val pixels = compose.onNodeWithText("▶ Play").captureToImage().toPixelMap()
-        val accent = (0 until pixels.width).any { x -> (0 until pixels.height).any { y -> pixels[x, y] == Palette.Imprint } }
+        val accent = (0 until pixels.width).any { x -> (0 until pixels.height).any { y -> pixels[x, y] == Accent.Default.dark } }
         assertTrue("Play is drawn in the focus accent", accent)
     }
 

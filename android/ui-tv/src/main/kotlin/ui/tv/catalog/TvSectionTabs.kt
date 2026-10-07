@@ -21,7 +21,6 @@ import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 
@@ -92,8 +91,8 @@ internal fun TvSectionTabs(
                         TabDefaults.underlinedIndicatorTabColors(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             selectedContentColor = MaterialTheme.colorScheme.onSurface,
-                            focusedContentColor = Palette.Imprint,
-                            focusedSelectedContentColor = Palette.Imprint,
+                            focusedContentColor = MaterialTheme.colorScheme.primary,
+                            focusedSelectedContentColor = MaterialTheme.colorScheme.primary,
                         ),
                 ) {
                     Text(

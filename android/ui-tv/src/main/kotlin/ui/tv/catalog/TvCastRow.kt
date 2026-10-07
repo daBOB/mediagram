@@ -19,6 +19,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import model.Credit
@@ -63,7 +64,7 @@ private val CastCardWidth = 130.dp
 internal fun TvCastRow(
     credits: TitleCredits,
     onOpenPerson: (personId: Long) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
     restoreKey: String? = null,
 ) {
@@ -110,7 +111,7 @@ internal fun TvCastRow(
                     portraitPath = credit.portraitPath,
                     sub = credit.role,
                     onOpenPerson = onOpenPerson,
-                    shouldRequestPortrait = shouldRequestPortrait,
+                    portraits = portraits,
                     fetchPortrait = fetchPortrait,
                     modifier = Modifier.width(CastCardWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                 )
