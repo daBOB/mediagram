@@ -33,6 +33,7 @@ import coil3.compose.AsyncImage
 import designsystem.Radius
 import ui.catalog.home.OnImage
 import ui.catalog.home.fluid
+import ui.common.catalog.ArtTileScrim
 import java.io.File
 import kotlin.math.roundToInt
 

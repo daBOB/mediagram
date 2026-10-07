@@ -67,7 +67,7 @@ class SeriesPreloader(
     private val writer: PreloadWriter,
     private val isHeld: suspend (PreloadItem) -> Boolean,
     private val fits: suspend (candidateBytes: Long, currentBytes: Long) -> Boolean,
-    private val log: (String) -> Unit = {},
+    private val log: (line: String, failure: Throwable?) -> Unit = { _, _ -> },
     /** Shared with `FilmPreloader` in production; a private one by default, since no test here writes concurrently with anything else. */
     private val lane: DownloadLane = DownloadLane(),
 ) : SeriesPreloading {
@@ -124,16 +124,16 @@ class SeriesPreloader(
         try {
             if (isHeld(item)) return
             if (!fits(item.totalBytes, currentPlayingBytes)) {
-                log("preload: ${item.title} skipped (budget or network)")
+                log("preload: ${item.title} skipped (budget or network)", null)
                 return
             }
             lane.withLane { writer.write(item) }
             _heldEvents.emit(item.setId)
-            log("preload: ${item.title} held")
+            log("preload: ${item.title} held", null)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            log("preload: ${item.title} stopped: ${e.message}")
+            log("preload: ${item.title} stopped", e)
         }
     }
 }

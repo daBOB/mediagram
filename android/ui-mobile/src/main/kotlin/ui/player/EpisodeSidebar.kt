@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import player.EpisodeList
+import ui.common.player.playerCard
 
 /** Finds the sidebar in a test. */
 internal const val EpisodeSidebarTag = "episode-sidebar"

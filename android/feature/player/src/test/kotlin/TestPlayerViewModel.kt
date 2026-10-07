@@ -2,6 +2,8 @@ package player
 
 import data.WatchSync
 import playback.PlaybackCounters
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
 
 /**

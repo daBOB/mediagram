@@ -10,8 +10,7 @@ import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.junit.Assume.assumeTrue
-import java.io.File
+import testing.webFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,10 +24,9 @@ import kotlin.test.assertTrue
 class ResumePointFixtureTest {
     @Test
     fun matchesTheWebsFixtures() {
-        val file = locateFixture("resume-point.json")
-        assumeTrue("resume-point.json not found above this module; is the web checkout present?", file != null)
+        val file = webFixture("watch-state/resume-point.json")
 
-        val cases = Json.parseToJsonElement(file!!.readText()).jsonArray
+        val cases = Json.parseToJsonElement(file.readText()).jsonArray
         assertTrue(cases.isNotEmpty(), "resume-point.json holds no cases")
 
         for (case in cases) {
@@ -102,14 +100,3 @@ private fun JsonElement?.asNullableJsNumber(): Double? =
         null, is JsonNull -> null
         else -> asJsNumber()
     }
-
-/** Walks up from the working directory until it finds the web's fixture directory, or gives up at the filesystem root. */
-private fun locateFixture(name: String): File? {
-    var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-    while (dir != null) {
-        val candidate = File(dir, "web/test/fixtures/watch-state/$name")
-        if (candidate.isFile) return candidate
-        dir = dir.parentFile
-    }
-    return null
-}

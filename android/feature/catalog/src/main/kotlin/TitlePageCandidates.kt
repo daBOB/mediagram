@@ -15,8 +15,15 @@ import model.MediaSet
  * than walking the shelves again for the second.
  */
 fun everyFilm(shelves: List<Shelf>): List<MediaSet> =
-    shelves.filter { it.title == "Movies" || it.title == ANIME }
-        .flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set }
+    shelves
+        .filter {
+            when (it.department) {
+                Department.MOVIES, Department.ANIME -> true
+                Department.SERIES, Department.DOCUMENTARIES, Department.TUTORIALS -> false
+            }
+        }.flatMap { it.entries }
+        .filterIsInstance<Entry.Film>()
+        .map { it.set }
 
 /** Every show across every shelf — what a show's own page ranks Similar against. */
 fun showsOf(shelves: List<Shelf>): List<Entry.Collection> =

@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 /**
  * Exercises [SubtitleChoiceController] through [PlayerViewModel], the same
- * way [AudioChoiceControllerTest] does for audio — `plan.md`'s playback
+ * way [AudioChoiceControllerTest] does for audio — the shared subtitle
  * rule: off by default, a forced track in the audio language showing
  * regardless, a profile default and a per-show remembered choice, and the
  * toggle-on rule. What survives a reopen lives in [SubtitleChoiceLifecycleTest].

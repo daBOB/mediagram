@@ -37,8 +37,7 @@ internal fun CenteredSpinner() {
 
 /**
  * The back arrow, the title, the marks and Notes beside it, and the
- * statistics — split out of `PlayerScreen` to keep that file under the
- * project's line guideline. Absent entirely in picture-in-picture: there
+ * statistics. Absent entirely in picture-in-picture: there
  * is no touch surface of this app's own inside that window, and no room
  * for the statistics either.
  *

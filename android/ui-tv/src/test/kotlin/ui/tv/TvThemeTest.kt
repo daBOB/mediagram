@@ -49,9 +49,10 @@ class TvThemeTest {
     }
 
     @Test
-    fun choosingAnAccentSetsPaletteImprintSoEveryOtherWidgetFollowsIt() {
-        show(accent = Accent.TEAL) {}
-        assertEquals(Accent.TEAL.dark, Palette.Imprint)
+    fun choosingAnAccentSetsThePrimaryColour() {
+        var primary: Color? = null
+        show(accent = Accent.TEAL) { primary = MaterialTheme.colorScheme.primary }
+        assertEquals(Accent.TEAL.dark, primary)
     }
 
     @Test

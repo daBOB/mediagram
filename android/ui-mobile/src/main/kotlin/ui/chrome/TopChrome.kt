@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
  * showing it — the seam [LibraryHome] hands down so its own content can draw
  * under it (Home, over the cover) or pad below it (every other department),
  * without either reaching back up for the bar's own layout. Zero away from
- * the root library, where [ui.LibraryScaffold]'s pushed-frame bar already
+ * the root library, where [ui.chrome.LibraryScaffold]'s pushed-frame bar already
  * reserves its own space the ordinary way.
  */
 val LocalTopChrome = compositionLocalOf { 0.dp }

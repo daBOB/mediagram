@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performFirstLinkClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.LinkAnnotation
+import catalog.Department
 import catalog.Entry
 import catalog.Shelf
 import model.Credit
@@ -134,7 +135,7 @@ class FilmPageTest {
     }
 
     @Test fun noFranchiseLinkWithFewerThanTwoHeldFilms() {
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film("a", collectionId = 7, collectionName = "Dune Franchise")))))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("a", collectionId = 7, collectionName = "Dune Franchise")))))
         show {
             TitleDetailScreen(film("a", collectionId = 7, collectionName = "Dune Franchise"), null, {}, onOpenGenre = {}, shelves = shelves)
         }
@@ -144,7 +145,7 @@ class FilmPageTest {
     @Test fun aFranchiseLinkAppearsOnceTheLibraryHoldsTwoOfItsFilms() {
         val a = film("a", collectionId = 7, collectionName = "Dune Franchise")
         val b = film("b", collectionId = 7, collectionName = "Dune Franchise")
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(a), Entry.Film(b))))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(a), Entry.Film(b))))
         var openedFranchise: Long? = null
         show {
             TitleDetailScreen(a, null, {}, onOpenGenre = {}, shelves = shelves, onOpenFranchise = { openedFranchise = it })

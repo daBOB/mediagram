@@ -28,7 +28,7 @@ sealed interface SearchUiState {
      */
     data class Ready(val hits: List<SearchHit>, val people: List<PersonHit> = emptyList()) : SearchUiState
 
-    /** The core could not be asked at all — a round that raised rather than answering. */
+    /** The core could not be asked at all — a round that raised rather than answering. [message] is the whole sentence shown. */
     data class Failed(val message: String) : SearchUiState
 }
 

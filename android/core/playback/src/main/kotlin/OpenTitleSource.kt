@@ -14,9 +14,10 @@ data class OpenTitle(val setId: String, val totalBytes: Long)
  *
  * [openTitle] is `null` whenever nothing is open — playing, buffering, or
  * merely paused by the viewer all count as open; only closing the player
- * (`stop()`) or never having opened anything answers `null`. Never read or
- * written off the platform's own main thread; see `ActivePlayback`'s own
- * doc for why touching `ExoPlayer` from a preload's worker thread crashes.
+ * (`stop()`) or never having opened anything answers `null`. Written only
+ * on the player's own thread (main); a [StateFlow] snapshot any thread may
+ * read, which is how the preloader's worker reads it without touching
+ * `ExoPlayer` — see `ActivePlayback`'s own doc for why that would crash.
  */
 interface OpenTitleSource {
     val openTitle: StateFlow<OpenTitle?>

@@ -9,8 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CoreProvider
 import data.StoredCoreProvider
+import data.settings.TelegramSettings
 import kotlinx.coroutines.CoroutineDispatcher
-import settings.TelegramSettings
 import uniffi.mediagram_core.Core
 import javax.inject.Singleton
 

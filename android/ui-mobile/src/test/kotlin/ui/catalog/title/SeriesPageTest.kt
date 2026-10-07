@@ -90,7 +90,7 @@ class SeriesPageTest {
      * Wires `season`/`onSelectSeason` the way a real screen does — a saved
      * choice fed back in, not this composable's own state — so a test that
      * clicks the picker exercises the same round trip
-     * [ui.LibraryPositions.setCollectionSeason] does, rather than a
+     * [ui.common.LibraryPositions.setCollectionSeason] does, rather than a
      * component-local `remember` this file would be the only caller of.
      */
     private fun renderCollection(
@@ -191,7 +191,7 @@ class SeriesPageTest {
     }
 
     /**
-     * A season already chosen (what [ui.LibraryPositions.collectionSeason]
+     * A season already chosen (what [ui.common.LibraryPositions.collectionSeason]
      * hands back after a title opened from this page and left again) is
      * shown as-is — the page never falls back to its own default once a
      * caller names one.

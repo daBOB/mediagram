@@ -32,9 +32,11 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import catalog.initialsOf
 import coil3.compose.AsyncImage
+import data.PortraitRequestLog
 import designsystem.Spacing
 import model.Credit
 import model.TitleCredits
+import ui.common.catalog.rememberPortrait
 import java.io.File
 
 private val FACE_SIZE = 64.dp
@@ -51,7 +53,7 @@ internal fun CastPanel(
     credits: TitleCredits,
     onOpenPerson: (Long) -> Unit,
     fetchPortrait: suspend (Long) -> String?,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
 ) {
     Column {
         crewLine(credits.crew, onOpenPerson)?.let {
@@ -63,7 +65,7 @@ internal fun CastPanel(
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.medium), contentPadding = PaddingValues(vertical = Spacing.small)) {
             items(items = credits.cast, key = Credit::personId) { person ->
-                PersonCard(person, onClick = { onOpenPerson(person.personId) }, fetchPortrait, shouldRequestPortrait)
+                PersonCard(person, onClick = { onOpenPerson(person.personId) }, fetchPortrait, portraits)
             }
         }
     }
@@ -101,9 +103,9 @@ private fun PersonCard(
     person: Credit,
     onClick: () -> Unit,
     fetchPortrait: suspend (Long) -> String?,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
 ) {
-    val portrait = rememberPortrait(person.personId, person.portraitPath, shouldRequestPortrait, fetchPortrait)
+    val portrait = rememberPortrait(person.personId, person.portraitPath, portraits, fetchPortrait)
     Column(
         modifier = Modifier.width(PERSON_WIDTH).clickable(role = Role.Button, onClick = onClick),
     ) {

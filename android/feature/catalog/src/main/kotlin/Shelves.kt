@@ -6,16 +6,6 @@ import model.MediaSet
 private const val UNKNOWN_SHOW = "Unknown show"
 private const val UNKNOWN_COURSE = "Unknown course"
 
-/**
- * The title the Documentaries shelf carries — named once here rather than
- * spelled out at each of the handful of places that treat it differently
- * from an ordinary shelf: routing a department to its own page (`CatalogScreen.kt`,
- * `TvDepartmentPages.kt`), the pill count that sums a folder's own items
- * rather than counting folders (`ChromeCounts.kt`), and the home rows that
- * leave it out of "Latest" and "what is underway" (`HomeShelves.kt`).
- */
-const val DOCUMENTARIES = "Documentaries"
-
 /** The kinds that belong to a show or a course rather than standing alone. */
 private val COLLECTED = setOf(Kind.EPISODE, Kind.TUTORIAL, Kind.DOCUMENT)
 
@@ -60,14 +50,14 @@ fun shelvesOf(sets: List<MediaSet>): List<Shelf> {
     val animeLibrary = groupAnime(anime)
 
     return listOfNotNull(
-        Shelf("Movies", films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
+        Shelf(Department.MOVIES, films.sortedWith(compareBy(NATURAL) { it.title }).map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
-        Shelf("Series", collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW))
+        Shelf(Department.SERIES, collections(episodes, CollectionKind.SHOW, UNKNOWN_SHOW))
             .takeIf { it.entries.isNotEmpty() },
-        Shelf(ANIME, animeLibrary.shows + animeLibrary.films.map(Entry::Film))
+        Shelf(Department.ANIME, animeLibrary.shows + animeLibrary.films.map(Entry::Film))
             .takeIf { it.entries.isNotEmpty() },
-        Shelf(DOCUMENTARIES, documentaries.collections + documentaries.singles.map(Entry::Film)),
-        Shelf("Tutorials", collections(course, CollectionKind.COURSE, UNKNOWN_COURSE))
+        Shelf(Department.DOCUMENTARIES, documentaries.collections + documentaries.singles.map(Entry::Film)),
+        Shelf(Department.TUTORIALS, collections(course, CollectionKind.COURSE, UNKNOWN_COURSE))
             .takeIf { it.entries.isNotEmpty() },
     )
 }

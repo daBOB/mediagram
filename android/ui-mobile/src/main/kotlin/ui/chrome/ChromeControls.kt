@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import catalog.profileInitial
 import designsystem.StatusDot
-import ui.ProfileBarState
 
 /**
  * A department pill's own count. Bundled with the title rather than kept as

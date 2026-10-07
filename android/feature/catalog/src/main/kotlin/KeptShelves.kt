@@ -37,7 +37,7 @@ fun continueWall(
     shelves: List<Shelf>,
     watch: WatchSnapshot,
 ): List<MediaSet> {
-    val byId = indexById(shelves)
+    val byId = allSetsById(shelves)
     return watch.progress
         .sortedByDescending(Progress::updatedAt)
         .filter { ResumePoint.resumeAt(it.toProgressPoint()) != null }
@@ -59,7 +59,7 @@ private fun setsFor(
     shelves: List<Shelf>,
     ids: List<String>,
 ): List<MediaSet> {
-    val byId = indexById(shelves)
+    val byId = allSetsById(shelves)
     return ids.mapNotNull { byId[it] }
 }
 

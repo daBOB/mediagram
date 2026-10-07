@@ -2,13 +2,10 @@ package catalog
 
 import model.Kind
 import model.MediaSet
-import model.Progress
 import model.WatchSnapshot
 import model.Watched
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * The start page answers two questions: what was already underway, and what
@@ -19,10 +16,9 @@ import kotlin.test.assertTrue
 class HomeShelvesTest {
     @Test
     fun filmsAreNewestFirst() {
-        val rows = homeRowsOf(shelvesOf(listOf(film("Old", at = 100), film("New", at = 900))), WatchSnapshot.Empty)
+        val latest = latestOf(shelvesOf(listOf(film("Old", at = 100), film("New", at = 900))))
 
-        val films = rows.single { it.title == "Latest films" }.entries()
-        assertEquals(listOf("New", "Old"), films.map { (it as Entry.Film).set.title })
+        assertEquals(listOf("New", "Old"), latest.movies.map { it.set.title })
     }
 
     /**
@@ -31,8 +27,8 @@ class HomeShelvesTest {
      */
     @Test
     fun aShowIsDatedByItsNewestEpisode() {
-        val rows =
-            homeRowsOf(
+        val latest =
+            latestOf(
                 shelvesOf(
                     listOf(
                         episode("Started long ago", episode = 1, at = 100),
@@ -40,40 +36,43 @@ class HomeShelvesTest {
                         episode("Arrived whole", episode = 1, at = 900),
                     ),
                 ),
-                WatchSnapshot.Empty,
             )
 
-        val shows = rows.single { it.title == "Latest series" }.entries()
         assertEquals(
             listOf("Started long ago", "Arrived whole"),
-            shows.map { (it as Entry.Collection).name },
+            latest.series.map { it.name },
             "the show that gained an episode most recently leads",
         )
     }
 
     @Test
-    fun aRowHoldsSixAndLeavesTheRestToItsShelf() {
+    fun aRowHoldsItsLimitAndLeavesTheRestToItsShelf() {
         val many = (1..20).map { film("Film $it", at = it.toLong()) }
 
-        val row = homeRowsOf(shelvesOf(many), WatchSnapshot.Empty).single()
-        assertEquals(HOME_ROW_LIMIT, row.entries().size)
-        assertEquals(20, row.total, "the heading counts the whole shelf")
-        assertEquals("Film 20", (row.entries().first() as Entry.Film).set.title, "newest leads")
+        val latest = latestOf(shelvesOf(many))
+        assertEquals(HOME_POSTER_ROW_LIMIT, latest.movies.size)
+        assertEquals(20, latest.moviesTotal, "the heading counts the whole shelf")
+        assertEquals("Film 20", latest.movies.first().set.title, "newest leads")
     }
 
-    /** The row names the shelf it is a window onto, so "See all" can open it. */
+    /** As the web's `homeShelves` cuts them: a course row is a list and keeps the shorter limit, while series take the poster row's. */
     @Test
-    fun everyRowNamesTheShelfBehindIt() {
-        val rows = homeRowsOf(shelvesOf(listOf(film("Alien", at = 1), lesson("Steuerkurs", at = 2))), WatchSnapshot.Empty)
+    fun coursesTakeTheRowLimitWhileSeriesTakeThePosterLimit() {
+        val shows = (1..10).map { episode("Show $it", episode = 1, at = it.toLong()) }
+        val courses = (1..10).map { lesson("Course $it", at = it.toLong()) }
 
-        assertEquals(setOf("Movies", "Tutorials"), rows.map { it.seeAll }.toSet())
-        assertTrue(rows.all { it.title.startsWith("Latest ") }, "rows read Latest, same as the web's own row titles")
+        val latest = latestOf(shelvesOf(shows + courses), posterLimit = 8, limit = 6)
+
+        assertEquals(8, latest.series.size)
+        assertEquals(6, latest.courses.size)
+        assertEquals(10, latest.seriesTotal)
+        assertEquals(10, latest.coursesTotal)
     }
 
     /** An empty library has nothing to say, and says nothing. */
     @Test
-    fun anEmptyLibraryProducesNoRows() {
-        assertTrue(homeRowsOf(emptyList(), WatchSnapshot.Empty).isEmpty())
+    fun anEmptyLibraryHasNothingLatest() {
+        assertEquals(Latest(emptyList(), emptyList(), emptyList(), 0, 0, 0), latestOf(emptyList()))
     }
 
     /**
@@ -83,53 +82,21 @@ class HomeShelvesTest {
      */
     @Test
     fun aSetWithNoArrivalTimeStillAppears() {
-        val rows = homeRowsOf(shelvesOf(listOf(film("Undated", at = 0), film("Dated", at = 10))), WatchSnapshot.Empty)
+        val latest = latestOf(shelvesOf(listOf(film("Undated", at = 0), film("Dated", at = 10))))
 
-        val films = rows.single().entries().map { (it as Entry.Film).set.title }
-        assertEquals(listOf("Dated", "Undated"), films)
-        assertNull(films.firstOrNull { it == "Missing" })
+        assertEquals(listOf("Dated", "Undated"), latest.movies.map { it.set.title })
     }
 
-    /** A film half-watched leads Continue, and carries the whole library's started count. */
-    @Test
-    fun aStartedFilmLeadsContinue() {
-        val alien = film("Alien", at = 1)
-        val watch =
-            WatchSnapshot(
-                progress = listOf(Progress(alien.setId, at = 1_800.0, duration = 3_600.0, updatedAt = 10)),
-                watched = emptyList(),
-                watchlist = emptyList(),
-                kids = emptyList(),
-                collections = emptyList(),
-            )
-
-        val rows = homeRowsOf(shelvesOf(listOf(alien)), watch)
-        val continueRow = rows.single { it.title == "Continue" }
-        val cards = (continueRow.content as RowContent.Sets).cards
-        assertEquals(listOf(alien.setId), cards.map { it.set.setId })
-        assertEquals(1, continueRow.total)
-        assertEquals("Continue", continueRow.seeAll, "See all opens the Continue tab")
-    }
-
-    /** A finished episode offers the next one under Next up, whose "See all" opens Series. */
+    /** A finished episode offers the next one under Next up. */
     @Test
     fun aFinishedEpisodeOffersNextUp() {
         val e1 = episode("Show", episode = 1, at = 1)
         val e2 = episode("Show", episode = 2, at = 1)
-        val watch =
-            WatchSnapshot(
-                progress = emptyList(),
-                watched = listOf(Watched(e1.setId, finishedAt = 100)),
-                watchlist = emptyList(),
-                kids = emptyList(),
-                collections = emptyList(),
-            )
+        val watch = WatchSnapshot.Empty.copy(watched = listOf(Watched(e1.setId, finishedAt = 100)))
 
-        val rows = homeRowsOf(shelvesOf(listOf(e1, e2)), watch)
-        val nextUpRow = rows.single { it.title == "Next up" }
-        val cards = (nextUpRow.content as RowContent.Sets).cards
-        assertEquals(listOf(e2.setId), cards.map { it.set.setId })
-        assertEquals("Series", nextUpRow.seeAll)
+        val cards = magazineHomeOf(shelvesOf(listOf(e1, e2)), watch, editorsChoice = null, now = 0).resumeCards
+
+        assertEquals(listOf(e2.setId to "Next up"), cards.map { it.set.setId to it.caption })
     }
 
     /** An anime series feeds Next up the same way a plain one does — [collectionsForNextUp] walks every shelf but Documentaries, Anime included. */
@@ -139,25 +106,24 @@ class HomeShelvesTest {
         val e2 = set(Kind.EPISODE, "Two", show = "Dragonball", season = 1, episodeFirst = 2, anime = true)
         val watch = WatchSnapshot.Empty.copy(watched = listOf(Watched(e1.setId, finishedAt = 100)))
 
-        val rows = homeRowsOf(shelvesOf(listOf(e1, e2)), watch)
-        val nextUpRow = rows.single { it.title == "Next up" }
-        val cards = (nextUpRow.content as RowContent.Sets).cards
+        val cards = magazineHomeOf(shelvesOf(listOf(e1, e2)), watch, editorsChoice = null, now = 0).resumeCards
+
         assertEquals(listOf(e2.setId), cards.map { it.set.setId })
     }
 
-    /** No "Latest anime" — `home-shelves.js` never names one, so this port draws none either. */
+    /** No Latest anime or documentaries — `home-shelves.js` never names either, so this port has no field for them and keeps them off the film row. */
     @Test
-    fun thereIsNoLatestAnimeRow() {
+    fun animeAndDocumentariesStayOffTheLatestRows() {
         val filmSet = film("Alien", at = 1)
         val animeFilm = set(Kind.MOVIE, "Your Name", addedAt = 2, anime = true)
+        val documentary = set(Kind.DOCUMENTARY, "Baraka", addedAt = 3)
 
-        val rows = homeRowsOf(shelvesOf(listOf(filmSet, animeFilm)), WatchSnapshot.Empty)
+        val latest = latestOf(shelvesOf(listOf(filmSet, animeFilm, documentary)))
 
-        assertTrue(rows.none { it.title == "Latest anime" })
+        assertEquals(listOf("Alien"), latest.movies.map { it.set.title })
+        assertEquals(1, latest.moviesTotal)
     }
 }
-
-private fun HomeRow.entries(): List<Entry> = (content as RowContent.Entries).entries
 
 private fun film(
     title: String,

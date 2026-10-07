@@ -8,6 +8,7 @@ import catalog.Entry
 import catalog.SeriesResumePick
 import catalog.courseExtentOf
 import catalog.rowsOf
+import data.PortraitRequestLog
 import model.TitleCredits
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
@@ -41,7 +42,7 @@ fun TvCollection(
     heldIds: Set<String> = emptySet(),
     credits: TitleCredits = TitleCredits.Empty,
     onOpenPerson: (personId: Long) -> Unit = {},
-    shouldRequestPortrait: (Long) -> Boolean = { false },
+    portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
     similar: List<Entry.Collection> = emptyList(),
     onOpenCollection: (key: String) -> Unit = {},
@@ -55,7 +56,7 @@ fun TvCollection(
 ) {
     if (collection.kind == CollectionKind.SHOW) {
         TvSeriesPage(
-            collection, info, watch, onPlay, onOpenGenre, restoreKey, heldIds, credits, onOpenPerson, shouldRequestPortrait,
+            collection, info, watch, onPlay, onOpenGenre, restoreKey, heldIds, credits, onOpenPerson, portraits,
             fetchPortrait, similar, onOpenCollection, resume, onResume, season, onSelectSeason, onToggleWatchlist,
             editorsChoice, onToggleEditorsChoice,
         )

@@ -31,7 +31,7 @@ class SearchRowsOfTest {
         posterPath = null,
         totalBytes = 0,
     )
-    private val ready = CatalogUiState.Ready(shelves = listOf(Shelf("Movies", listOf(Entry.Film(set)))), watch = WatchSnapshot.Empty)
+    private val ready = CatalogUiState.Ready(shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(set)))), watch = WatchSnapshot.Empty)
 
     @Test
     fun aHitIsJoinedToTheSetItNamed() {

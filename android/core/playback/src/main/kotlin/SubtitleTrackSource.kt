@@ -38,7 +38,7 @@ class DefaultSubtitleTrackSource(
     } catch (e: CancellationException) {
         throw e
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        Log.w(TAG, "load($setId, $track): ${e.message}")
+        Log.w(TAG, "subtitle load($setId, $track) failed", e)
         emptyList()
     }
 

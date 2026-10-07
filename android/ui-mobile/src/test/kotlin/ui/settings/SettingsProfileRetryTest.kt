@@ -18,6 +18,8 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
+import data.settings.InMemoryLibrarySettings
+import data.settings.InMemoryTelegramSettings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -34,10 +36,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import designsystem.InMemoryAppearanceSettings
-import settings.InMemoryLibrarySettings
-import settings.InMemoryTelegramSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
+import ui.common.settings.SettingsSection
 import ui.profileSettingsModel
 import setup.Libraries
 import setup.SettingsViewModel
@@ -80,7 +81,7 @@ class SettingsProfileRetryTest {
                 builds++
                 core
             }
-        val library = Libraries(provider, InMemoryLibrarySettings(), Dispatchers.Main.immediate)
+        val library = Libraries(provider, InMemoryLibrarySettings())
         val watch = DefaultWatchStateRepository(provider, Dispatchers.Main.immediate)
         compose.runOnUiThread {
             model = SettingsViewModel(provider, library, InMemoryCoreStorage(), settings, Dispatchers.Main.immediate, watch)
@@ -99,6 +100,7 @@ class SettingsProfileRetryTest {
             every { cacheModel.chosenVolumeId } returns MutableStateFlow(null)
             val lanModel = mockk<LanCacheViewModel>(relaxed = true)
             every { lanModel.state } returns MutableStateFlow(null)
+            every { lanModel.failure } returns MutableStateFlow(null)
             val systemModel = mockk<SystemViewModel>(relaxed = true)
             every { systemModel.state } returns MutableStateFlow(null)
             every { systemModel.failure } returns MutableStateFlow(null)

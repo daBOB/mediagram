@@ -3,7 +3,7 @@ package data
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CoreInterface
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +20,7 @@ class RefreshLogTest {
     private fun repositoryOver(
         core: CoreInterface,
         log: RefreshLog,
-    ) = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+    ) = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), log)
 
     @Test
     fun unknownRefreshFailuresKeepTheirCauseButDoNotExposeItInTheDisplayedLog() =
@@ -31,7 +31,7 @@ class RefreshLogTest {
                     override suspend fun refreshLibrary(handle: String): ULong = throw refusal
                 }
             val log = RefreshLog()
-            val repository = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), log)
+            val repository = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), log)
             val outcome = repository.refresh()
             kotlin.test.assertSame(refusal, outcome.exceptionOrNull())
             assertEquals(RefreshOutcome.Refused("Could not refresh the library"), log.last())

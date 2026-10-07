@@ -11,76 +11,17 @@ import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
 import stats.AchievementDotViewModel
-import ui.LibraryPositions
-import ui.MenuActions
+import ui.common.LibraryPositions
+import ui.common.MenuActions
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
+import ui.tv.catalog.TvMoviesPageEntryKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
-
-/**
- * The catalogue at the top of the library — a thin pass-through onto
- * [TvCatalogScreen], kept apart from [TvLibraryHomeFrame] for the same
- * reason that composable already is: a dispatcher of its own. Back at the
- * catalogue's own root is [TvCatalogScreen]'s own chrome's business now —
- * content leaves for the selected pill, the bar leaves for the rail, the
- * rail is left unhandled so the app closes — not a step this composable
- * has to add on top of it.
- */
-@Composable
-internal fun TvCatalogRoot(
-    state: CatalogUiState,
-    profile: TvChosenProfile,
-    fetching: Boolean,
-    restoreKey: String?,
-    onOpenTitle: (setId: String) -> Unit,
-    onOpenCollection: (key: String) -> Unit,
-    onOpenList: (id: String) -> Unit,
-    onCreateList: (name: String) -> Unit,
-    onFinish: (setId: String) -> Unit,
-    menu: MenuActions = MenuActions(onSystem = {}, onSettings = {}, onUpdate = {}, onTmdbKey = {}, onStartOver = {}),
-    onTabChanged: () -> Unit = {},
-    onOpenSearch: () -> Unit = {},
-    onOpenMenu: () -> Unit = {},
-    onOpenLatest: () -> Unit = {},
-    onOpenGenresIndex: () -> Unit = {},
-    onOpenStats: () -> Unit = {},
-    onEntryRestored: () -> Unit = {},
-    onOpenGenre: (name: String) -> Unit = {},
-    onOpenFranchise: (id: Long) -> Unit = {},
-    onOpenMoviesPage: () -> Unit = {},
-    onPlay: (setId: String) -> Unit = onOpenTitle,
-    onToggleWatchlist: (setId: String, listed: Boolean) -> Unit = { _, _ -> },
-) {
-    TvCatalogScreen(
-        state = state,
-        profile = profile,
-        onOpenTitle = onOpenTitle,
-        onOpenCollection = onOpenCollection,
-        onOpenList = onOpenList,
-        onCreateList = onCreateList,
-        menu = menu,
-        fetching = fetching,
-        restoreKey = restoreKey,
-        onTabChanged = onTabChanged,
-        onOpenSearch = onOpenSearch,
-        onOpenMenu = onOpenMenu,
-        onOpenLatest = onOpenLatest,
-        onOpenGenresIndex = onOpenGenresIndex,
-        onOpenStats = onOpenStats,
-        onEntryRestored = onEntryRestored,
-        onFinish = onFinish,
-        onOpenGenre = onOpenGenre,
-        onOpenFranchise = onOpenFranchise,
-        onOpenMoviesPage = onOpenMoviesPage,
-        onPlay = onPlay,
-        onToggleWatchlist = onToggleWatchlist,
-    )
-}
 
 /**
  * The player, over the run its title belongs to — the phone's own rule:
@@ -109,11 +50,10 @@ internal fun TvPlayerBranch(
 
 /**
  * The shelves, with nothing open over them — [TvLibrary]'s own "nothing
- * else is showing" frame, kept apart from its dispatcher for the same
- * reason [TvCatalogRoot] already is. [saved] holds [TvCatalogRoot]'s own
- * state — which tab was chosen, how far its wall had scrolled — apart from
- * the rest of the library's, so Back finds the tab it left rather than
- * Home once whatever covered it is gone.
+ * else is showing" frame, kept apart from its dispatcher. [saved] holds
+ * [TvCatalogScreen]'s own state — which tab was chosen, how far its wall
+ * had scrolled — apart from the rest of the library's, so Back finds the
+ * tab it left rather than Home once whatever covered it is gone.
  */
 @Composable
 internal fun TvLibraryHomeFrame(
@@ -134,7 +74,7 @@ internal fun TvLibraryHomeFrame(
     val newAchievement by achievementDot.newAchievement.collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalNewAchievement provides newAchievement) {
         saved.SaveableStateProvider(CatalogStateKey) {
-            TvCatalogRoot(
+            TvCatalogScreen(
                 state = catalogState,
                 profile = profile,
                 fetching = fetching,
@@ -182,7 +122,7 @@ internal fun TvLibraryHomeFrame(
                 },
                 onOpenFranchise = { id ->
                     restore.opened(here, id.toString())
-                    at.openFranchise(id.toString())
+                    at.openFranchise(id)
                 },
                 onOpenMoviesPage = {
                     restore.opened(here, TvMoviesPageEntryKey)
@@ -201,8 +141,5 @@ internal fun TvLibraryHomeFrame(
     }
 }
 
-/** Where [TvCatalogRoot]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
+/** Where [TvCatalogScreen]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
 private const val CatalogStateKey = "catalog"
-
-/** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
-internal const val TvMoviesPageEntryKey = "movies:all"

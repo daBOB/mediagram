@@ -67,9 +67,9 @@ class GenreIndexTest {
             count = 1, chapters = 1, divisions = listOf(Division("Course", null, listOf(lesson), emptyList())),
         )
         val shelves = listOf(
-            Shelf("Movies", listOf(Entry.Film(film))),
-            Shelf("Series", listOf(show)),
-            Shelf("Tutorials", listOf(course)),
+            Shelf(Department.MOVIES, listOf(Entry.Film(film))),
+            Shelf(Department.SERIES, listOf(show)),
+            Shelf(Department.TUTORIALS, listOf(course)),
         )
 
         assertEquals(listOf("f1", "e1"), allTitles(shelves).map(MediaSet::setId))

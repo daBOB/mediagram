@@ -35,13 +35,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
-import catalog.CatalogTabs
+import catalog.CatalogTab
 import kotlin.math.roundToInt
-import ui.BrowseActions
-import ui.MenuActions
-import ui.ProfileBarState
-import ui.RailItem
-import ui.railSelect
+import ui.common.MenuActions
+import ui.common.RailItem
+import ui.common.chrome.HeroListState
+import ui.common.chrome.coverBlend
+import ui.common.railItemOf
 import ui.setup.StartOverConfirmation
 
 /**
@@ -65,17 +65,15 @@ import ui.setup.StartOverConfirmation
  * tracking scroll deltas of its own. `null` is also what turns bleeding off:
  * with nothing to bleed over, a tab is padded clear of the bar instead.
  *
- * [chosenTab]/[tabs]/[visible] are [ui.LibraryBranches]'s own full index
- * space; this only reads [chosenTab] against [tabs.firstKept] to know
- * whether Continue or Watchlist is the rail's own active row, and against
- * `0` to know whether [content] is Home.
+ * [tabs] are the pills the bar draws; [chosenTab] can also be Continue or
+ * My List, which are the rail's own rows rather than pills — no pill is the
+ * current one then.
  */
 @Composable
 internal fun LibraryHome(
-    tabs: CatalogTabs,
-    visible: List<Int>,
-    chosenTab: Int,
-    onTabChange: (Int) -> Unit,
+    tabs: List<CatalogTab>,
+    chosenTab: CatalogTab,
+    onTabChange: (CatalogTab) -> Unit,
     browse: BrowseActions,
     menu: MenuActions,
     profile: ProfileBarState,
@@ -90,16 +88,11 @@ internal fun LibraryHome(
     // bar never itself moves — everywhere else the chrome is opaque from the
     // start and content is padded clear of it instead of drawn under it.
     val bleed = expanded && heroState != null
-    val pills = remember(tabs, visible, rail.counts) { visible.map { i -> DepartmentPill(tabs.titles[i], rail.counts.departmentCount(tabs.titles[i])) } }
+    val pills = remember(tabs, rail.counts) { tabs.map { DepartmentPill(it.label, rail.counts.departmentCount(it)) } }
     // -1 when chosenTab is a kept wall (My List/Continue) rather than a
     // department — no pill is the current one then, not Home by default.
-    val selectedPill = visible.indexOf(chosenTab)
-    val activeRailItem =
-        when (chosenTab) {
-            tabs.firstKept -> RailItem.CONTINUE_WATCHING
-            tabs.firstKept + 1 -> RailItem.MY_LIST
-            else -> null
-        }
+    val selectedPill = tabs.indexOf(chosenTab)
+    val activeRailItem = railItemOf(chosenTab)
     val onRailSelect: (RailItem) -> Unit = { item -> railSelect(item, browse, menu) }
     val onAskStartOver = { askingStartOver = true }
 
@@ -153,10 +146,10 @@ internal fun LibraryHome(
                     .then(if (expanded) Modifier else Modifier.nestedScroll(headerConnection))
             // One call site for `content()` below, whichever branch this
             // is — only the modifier that positions it depends on
-            // [expanded]. Two call sites (one per branch) would be the
-            // same H1 defect over again: a width-class change would move
-            // `content()` itself to a different slot in the composition
-            // and lose every `remember`/`rememberSaveable` under it.
+            // [expanded]. Two call sites (one per branch) would mean a
+            // width-class change moves `content()` itself to a different
+            // slot in the composition and loses every
+            // `remember`/`rememberSaveable` under it.
             val contentModifier =
                 if (expanded) {
                     Modifier.padding(top = if (bleed) 0.dp else expandedChromeHeight)
@@ -178,13 +171,13 @@ internal fun LibraryHome(
                     Box(contentModifier) { content() }
                     if (expanded) {
                         DepartmentsBar(
-                            pills = pills, selected = selectedPill, onSelect = { onTabChange(visible[it]) }, onSearch = onSearch,
+                            pills = pills, selected = selectedPill, onSelect = { onTabChange(tabs[it]) }, onSearch = onSearch,
                             profile = profile, menu = menu, onAskStartOver = onAskStartOver, blend = blend,
                             modifier = Modifier.align(Alignment.TopStart),
                         )
                     } else {
                         CompactLibraryHeader(
-                            pills = pills, selectedPill = selectedPill, onSelectPill = { onTabChange(visible[it]) }, onHome = rail.onHome,
+                            pills = pills, selectedPill = selectedPill, onSelectPill = { onTabChange(tabs[it]) }, onHome = rail.onHome,
                             activeRailItem = activeRailItem, onRailSelect = onRailSelect, onSearch = onSearch,
                             profile = profile, menu = menu, onAskStartOver = onAskStartOver,
                             modifier =

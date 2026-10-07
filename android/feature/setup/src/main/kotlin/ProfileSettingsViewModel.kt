@@ -8,7 +8,7 @@ import data.PlayerPreferences
 import data.SUBTITLE_OFF
 import data.SUBTITLE_PREFERENCE
 import data.WatchStateRepository
-import kotlinx.coroutines.CancellationException
+import data.orDefault
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,25 +56,16 @@ class ProfileSettingsViewModel
             if (ProfileSubtitleChoices.none { it.first == value }) return
             viewModelScope.launch {
                 // Shown only once written: the row never claims a choice a refused write lost.
-                val written = attempt { preferences.remember(id, PROFILE_SCOPE, SUBTITLE_PREFERENCE, value) } == true
+                val written = orDefault(false, "subtitle default write") { preferences.remember(id, PROFILE_SCOPE, SUBTITLE_PREFERENCE, value) }
                 if (written && watchState.chosenProfileId.value == id) _subtitle.value = value
             }
         }
 
-        private suspend fun storedSubtitle(id: String): String? =
-            attempt { preferences.load(id, PROFILE_SCOPE)[SUBTITLE_PREFERENCE] }?.takeIf { v -> ProfileSubtitleChoices.any { it.first == v } }
-
         // A row that cannot be read or written falls back to its default; it never takes Settings down.
-        private suspend fun <T> attempt(block: suspend () -> T): T? =
-            try {
-                block()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (
-                @Suppress("TooGenericExceptionCaught") e: Exception,
-            ) {
-                null
-            }
+        private suspend fun storedSubtitle(id: String): String? =
+            orDefault(null, "subtitle default read") {
+                preferences.load(id, PROFILE_SCOPE)[SUBTITLE_PREFERENCE]
+            }?.takeIf { v -> ProfileSubtitleChoices.any { it.first == v } }
     }
 
 /** The index row's line under "Profile" — the web's own: a kid's limit is its own, so it is named. */

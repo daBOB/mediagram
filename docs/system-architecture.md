@@ -364,10 +364,11 @@ in the core stay `u64` throughout; only in-memory buffer lengths narrow.
 | `core:update` | self-update from the channel's pinned `#mlib-app` release (release builds on televisions only) |
 | `core:designsystem` | theme and spacing |
 | `core:testing` | `FakeCore`, the one fake of the generated core's `CoreInterface`, and the contract suite run against it and against the real core |
-| `feature:{catalog,player,setup,system}` | view models and UI state, surface-independent |
+| `feature:{catalog,player,setup,stats,system}` | view models and UI state, surface-independent |
 | `ui-mobile` | every screen the phone has |
 | `ui-common` | composables and pure rules shared by phone and TV (formatters, position model, player lifecycle) |
 | `ui-tv` | television surface: rail, departments bar, home, catalog, player, system and settings, driven by remote |
+| `baselineprofile` | the D-pad journey from launch to a title page that generates the app's baseline profile, run on a signed-in TV |
 
 Direction is `ui → feature → core:data → core:rust`, with
 `core:playback → core:data`. A feature module never imports another.
@@ -380,8 +381,12 @@ The `setup.login` package owns the phone, code, and password sign-in state
 machine; catalog owns profile selection and library browsing.
 Inside `ui-mobile`, screens live in `ui.catalog`, `ui.player`, `ui.profile`,
 `ui.setup`, `ui.settings`, and `ui.system`. App composition and navigation
-remain in `ui`; shared row presentation and byte formatting live in
-`ui.components` and `ui.formatting`.
+remain in `ui`; the library's chrome (departments bar, rail, header, a pushed
+frame's bar and the overflow menu) lives in `ui.chrome`, and shared row
+presentation in `ui.components`. Byte
+formatting is `core:model`'s `ByteSize.kt`, shared with the TV. `ui-common`
+declares `ui.common.*` and `ui-tv` declares `ui.tv.*`, so a package names the
+module that owns it: a bare `ui.*` is always the phone's.
 
 ### Where the catalog comes from
 
@@ -826,7 +831,7 @@ library's own tally) beside a departments bar across the top (Home, the shelves,
 Collections, search, the viewer's avatar, ⋮) — see § Television differs, above, for
 where the two surfaces deliberately part. Home draws the web's own magazine layout
 (`ui-tv/.../catalog/home/`) as a `LazyColumn`: a cover story bleeding under the bar
-(which reads translucent-to-opaque from the same list, through `ui.chrome.coverBlend`,
+(which reads translucent-to-opaque from the same list, through `ui.common.chrome.coverBlend`,
 shared with the tablet's own hero pages), three feature cards, Continue watching beside
 a pull-quote, Recently added beside This month, then Latest series and Latest courses —
 each poster or resume-card row a plain, always-composed row (at most eight items, or

@@ -1,5 +1,6 @@
 package playback
 
+import data.orDefault
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -70,7 +71,7 @@ internal class FilmWriteAttempt(
                     }
                 val watchMetered =
                     launch {
-                        safely(Unit) {
+                        orDefault(Unit) {
                             while (isActive) {
                                 delay(METERED_RECHECK_MS)
                                 if (!network.isUnmetered()) {

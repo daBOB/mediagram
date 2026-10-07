@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -36,6 +35,7 @@ import designsystem.Spacing
 import designsystem.TvTypeScale
 import java.io.File
 import ui.tv.TvFocus
+import ui.tv.rememberStableRequester
 
 private val PosterWidth = 160.dp
 
@@ -68,8 +68,6 @@ internal fun TvPosterStrip(
     ) {
         shows.forEachIndexed { index, show ->
             key(show.key) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 // Poster, name and caption all inside the one `Card` — the same
                 // shape [ui.tv.TvPlate] draws — rather than a caption sitting
                 // outside it as a layout sibling: `mergeDescendants` below only
@@ -84,7 +82,7 @@ internal fun TvPosterStrip(
                             .keepsInViewWhenMoved(index)
                             .width(PosterWidth)
                             .semantics(mergeDescendants = true) {}
-                            .focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester)
+                            .focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt }))
                             .let { if (index == shows.lastIndex) it.then(lastStop) else it },
                     shape = TvFocus.cardShape(),
                     scale = TvFocus.cardScale(),

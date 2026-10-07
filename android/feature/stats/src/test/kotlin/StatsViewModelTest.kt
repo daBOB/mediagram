@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreProvider
-import testing.ResolvedCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.EarnedAchievement
@@ -55,11 +55,11 @@ class StatsViewModelTest {
             answers["a"] = summary(all = 600.0)
             answers["b"] = summary(all = 1_800.0)
         }
-    private val watch = DefaultWatchStateRepository(ResolvedCoreProvider(core), Dispatchers.Unconfined)
+    private val watch = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
 
     private val seen = InMemoryAchievementsSeen()
 
-    private fun model() = StatsViewModel(ResolvedCoreProvider(core), watch, seen).apply { now = { Now } }
+    private fun model() = StatsViewModel(FakeCoreProvider(core), watch, seen).apply { now = { Now } }
 
     private fun allSeconds(read: StatsRead) = assertIs<StatsRead.Done>(read).summary.allSeconds
 
@@ -126,15 +126,16 @@ class StatsViewModelTest {
             assertTrue(core.asked.isEmpty())
         }
 
+    /** An exception's own text names internals; only a sentence the core wrote is ever shown. */
     @Test
-    fun aCoreThatCannotBeReachedFailsWithItsReason() =
+    fun aCoreThatCannotBeReachedFailsWithoutAnExceptionsText() =
         runTest {
             watch.reload()
             // The core itself never throws from stats() (a storage failure answers an
             // empty summary); what can fail is reaching a core at all.
             val model = StatsViewModel(FakeCoreProvider(null), watch, seen).apply { now = { Now } }
 
-            assertEquals(StatsRead.Failed("no core built for this fixture"), model.state.first { it != StatsRead.Loading })
+            assertEquals(StatsRead.Failed(null), model.state.first { it != StatsRead.Loading })
         }
 
     @Test

@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Palette
@@ -48,8 +49,8 @@ import designsystem.TvTypeScale
 import kotlinx.coroutines.launch
 import model.markdown.Block
 import model.markdown.Span
-import ui.player.notesHeadingLevel
-import ui.player.rememberNotesText
+import ui.common.player.notesHeadingLevel
+import ui.common.player.rememberNotesText
 import ui.tv.TvFocus
 
 /** Finds the notes column in a test: the region the remote pages through. */
@@ -118,7 +119,7 @@ internal fun TvNotesPanel(
                         }
                         true
                     }.focusable()
-                    .border(TvFocus.BorderWidth, if (focused) Palette.Imprint else Color.Transparent)
+                    .border(TvFocus.BorderWidth, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .verticalScroll(scroll)
                     .padding(Spacing.medium),
         ) {
@@ -179,7 +180,7 @@ private fun TvNotesLine(spans: List<Span>) {
 
 /** No link handler: nothing on a remote can point at one word of a paragraph, so a link keeps only its words. */
 @Composable
-private fun tvNotesText(spans: List<Span>) = rememberNotesText(spans, linkColor = Palette.Imprint, codeBackground = Palette.Sunk, uriHandler = null)
+private fun tvNotesText(spans: List<Span>) = rememberNotesText(spans, linkColor = MaterialTheme.colorScheme.primary, codeBackground = Palette.Sunk, uriHandler = null)
 
 /** By [notesHeadingLevel]'s floor; a size between the body and the head, so a section heading never outranks "Notes". */
 private fun headingStyle(level: Int): TextStyle =

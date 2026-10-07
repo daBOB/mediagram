@@ -11,14 +11,14 @@ import setup.login.LoginStep
 import setup.login.LoginUiState
 import setup.login.LoginViewModel
 import setup.login.promptFor
-import ui.setup.SignInCompletion
+import ui.common.setup.SignInCompletion
 
 /**
  * Sign-in on television: the same [LoginViewModel] `ui.MobileApp`'s private
  * `SignIn` composable drives, rendered one [TvTextQuestion] at a time
  * instead of the phone's single screen holding phone/code/password in
  * whichever field [setup.login.promptFor] names next.
- * [ui.setup.SignInCompletion] is reused as-is: both surfaces wait on the
+ * [ui.common.setup.SignInCompletion] is reused as-is: both surfaces wait on the
  * same "is this authorized yet" rather than each watching its own copy of
  * it.
  */

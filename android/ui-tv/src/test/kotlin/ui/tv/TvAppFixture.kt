@@ -18,6 +18,9 @@ import data.PortraitRequestLog
 import data.StoredCoreProvider
 import data.WatchStateRepository
 import data.WatchSync
+import data.settings.InMemoryLibrarySettings
+import data.settings.InMemoryTelegramSettings
+import data.settings.InMemoryTmdbSettings
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
@@ -35,9 +38,6 @@ import playback.INTERNAL_VOLUME_ID
 import playback.InMemoryLanCacheSettings
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
-import settings.InMemoryLibrarySettings
-import settings.InMemoryTelegramSettings
-import settings.InMemoryTmdbSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.Libraries
@@ -60,6 +60,9 @@ import system.SystemUiState
 import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.FakeFilmPreloading
+import testing.FakeLanChunkProtocol
+import testing.FakeLanServerSource
 import testing.WatchStateFixture
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.Achievements
@@ -174,7 +177,7 @@ internal class TvAppFixture(
         val library = InMemoryLibrarySettings()
         val dispatcher = Dispatchers.Main.immediate
         val provider = StoredCoreProvider(telegram, dispatcher) { core }
-        val libraries = Libraries(provider, library, dispatcher)
+        val libraries = Libraries(provider, library)
         val watchState = DefaultWatchStateRepository(provider, dispatcher)
         runBlocking {
             if (stage != TvSetupStage.APPLICATION) telegram.write(1234, "0123456789abcdef0123456789abcdef")
@@ -280,6 +283,7 @@ internal class TvAppFixture(
             )
         every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
         every { lanCache.state } returns lanCacheState
+        every { lanCache.failure } returns MutableStateFlow(null)
         // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the
         // same reason as every entry below.
         every { stats.state } returns

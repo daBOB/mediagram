@@ -8,10 +8,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
@@ -155,6 +157,58 @@ class SystemViewModelTest {
                 vm.viewModelScope.cancel()
             }
         }
+
+    /** The row says whether Telegram answers now, not whether a login once completed. */
+    @Test fun theTelegramRowIsConnectedWhenTelegramAnswers() =
+        runTest {
+            assertEquals(true, firstSnapshot().connected)
+        }
+
+    @Test fun theTelegramRowIsDisconnectedWhenTelegramRefusesTheProbe() =
+        runTest {
+            core.accountFailure = IOException("no route to Telegram")
+
+            assertEquals(false, firstSnapshot().connected)
+        }
+
+    /** An unreachable Telegram that never answers costs the snapshot the probe's timeout, not the whole screen. */
+    @Test fun theTelegramRowIsDisconnectedWhenTelegramDoesNotAnswerInTime() =
+        runTest {
+            core.accountGate = CompletableDeferred()
+            val vm = model()
+            try {
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
+                runCurrent()
+                assertNull(vm.state.value)
+                advanceTimeBy(3_001)
+                runCurrent()
+
+                assertEquals(false, assertNotNull(vm.state.value).connected)
+                assertNull(vm.failure.value)
+            } finally {
+                vm.viewModelScope.cancel()
+            }
+        }
+
+    /** A published package has no live session for the row to report on, so Telegram is not asked. */
+    @Test fun aPackageLibraryHasNoTelegramRow() =
+        runTest {
+            core.catalogFactsAnswer = { CatalogFacts("package", 4u, 2u, 3u, 10) }
+            core.accountGate = CompletableDeferred()
+
+            assertNull(firstSnapshot().connected)
+        }
+
+    private fun TestScope.firstSnapshot(): SystemUiState {
+        val vm = model()
+        try {
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
+            runCurrent()
+            return assertNotNull(vm.state.value)
+        } finally {
+            vm.viewModelScope.cancel()
+        }
+    }
 
     private fun model(): SystemViewModel {
         val provider = FakeCoreProvider(core)

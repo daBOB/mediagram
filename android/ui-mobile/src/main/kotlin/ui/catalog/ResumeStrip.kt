@@ -30,6 +30,7 @@ import coil3.compose.AsyncImage
 import designsystem.Spacing
 import model.Kind
 import model.episodeLabel
+import ui.common.catalog.rememberRowState
 import java.io.File
 
 private val CARD_WIDTH = 220.dp

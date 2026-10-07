@@ -11,7 +11,7 @@
             </intent-filter>
         </service>
 
-        <!-- Started by PlaybackModule while FilmPreloading.hasWork is true;
+        <!-- Started by PreloadModule while FilmPreloading.hasWork is true;
              stops itself once it isn't. No intent-filter: nothing starts
              this but that one explicit Intent. -->
         <service

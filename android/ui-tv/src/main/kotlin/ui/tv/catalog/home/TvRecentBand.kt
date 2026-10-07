@@ -39,6 +39,7 @@ import java.io.File
 import model.MediaSet
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 private val RecentPosterWidth = 160.dp
 
@@ -107,8 +108,6 @@ private fun TvRecentPosterRow(
     ) {
         films.forEachIndexed { index, set ->
             key(set.setId) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 Card(
                     onClick = { onOpenTitle(set.setId) },
                     modifier =
@@ -116,7 +115,7 @@ private fun TvRecentPosterRow(
                             .keepsInViewWhenMoved(index)
                             .width(RecentPosterWidth)
                             .semantics(mergeDescendants = true) {}
-                            .focusRequester(if (index == focusAt) focus ?: ownRequester else ownRequester)
+                            .focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt }))
                             .let { if (index == films.lastIndex) it.then(lastStop) else it },
                     shape = TvFocus.cardShape(),
                     scale = TvFocus.cardScale(),

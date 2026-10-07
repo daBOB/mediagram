@@ -28,19 +28,18 @@ import ui.tv.profile.TvChosenProfile
 /** One pill's own title and count, bundled so a caller cannot hand [TvPill] one out of step with the other. */
 internal data class TvDepartmentPill(val title: String, val count: Int?)
 
-/** The bar's own ink over a hero — unused while nothing calls this with `blend < 1`; see [blend]'s own doc below. */
+/** The bar's own ink over a hero, while [blend] is below `1f`. */
 private val TvOverCoverInk = Color(0xFFF6F2EA)
 
 /**
  * The departments pill bar across the top of [TvLibraryChrome]: Home, the
  * shelves, Collections — [pills], the web's `nav.departments` in this
  * catalogue's ten-foot form — then search, the viewer's own avatar and the
- * trimmed menu's ⋮. Drawn opaque over the content below it, the tablet's
- * own `DepartmentsBar` (`ui-mobile/.../ChromeControls.kt`) without its
- * translucent-over-a-hero opening state: Home has no cover on this surface
- * yet to bleed under it, so every caller passes [blend] as `1f` for now —
- * the parameter stays so whoever draws that cover only has to pass a real
- * value here rather than add one.
+ * trimmed menu's ⋮. The tablet's own `DepartmentsBar`
+ * (`ui-mobile/.../ChromeControls.kt`) in tv-material: [blend] runs from
+ * translucent over a hero (`0f`) to opaque (`1f`), and comes from
+ * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
+ * under the bar, every other tab draws it opaque.
  *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
@@ -99,12 +98,7 @@ internal fun TvDepartmentsBar(
         ) {
             pills.forEachIndexed { index, pill ->
                 key(pill.title) {
-                    // Never omitted — see the same doc on `TvResumeCard`'s
-                    // own `ownRequester`: a pill that is not the selected
-                    // one right now still needs exactly one `focusRequester`
-                    // in its own modifier chain on every recomposition, or
-                    // the pill the remote is actually on resets the moment
-                    // a different one becomes selected.
+                    // One requester on every pill, every recomposition: [ui.tv.rememberStableRequester]'s KDoc says why.
                     val pillModifier = downModifier.focusRequester(requesterOf(index))
                     TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
                 }
@@ -134,5 +128,5 @@ internal fun TvDepartmentsBar(
     }
 }
 
-/** The bar's own translucent opening state over a hero — unused while every caller passes `blend = 1f`; see its own doc above. */
+/** The bar's own translucent background over a hero, while [blend] is below `1f`. */
 private val TvBarOverCoverBg = Color(0x590A0A0B)

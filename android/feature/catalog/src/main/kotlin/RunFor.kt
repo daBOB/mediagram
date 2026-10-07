@@ -8,7 +8,7 @@ import model.MediaSet
  * collection's flattened order, or nothing for a film. Ported from the
  * web's `playsNext` (`web/public/lib/playback/plays-next.js`): the
  * collection is found by matching [MediaSet.show] against the library's
- * shows and courses, the same lookup the web player runs before `nextAfter`.
+ * shows and courses, the same lookup the web player runs before `nextInQueue`.
  *
  * Set and catalog state in, a run of ids out — never a [MediaSet] — because
  * `:feature:player` may not import `:feature:catalog` (feature modules do

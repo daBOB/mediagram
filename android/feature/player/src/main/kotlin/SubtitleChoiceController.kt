@@ -1,6 +1,8 @@
 package player
 
 import data.PlayerPreferences
+import data.SUBTITLE_PREFERENCE
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -10,9 +12,9 @@ import playback.TimedCue
 
 /**
  * Which subtitle track is on for the open title — regular and forced both —
- * and its cues once fetched. Ports `plan.md`'s playback rule
- * ([chooseSubtitles], [toggleOn]) rather than the simple per-language
- * default this replaced; see [SubtitleChoice] for the pure rule itself.
+ * and its cues once fetched, by the subtitle rule every surface shares
+ * ([chooseSubtitles], [toggleOn]); see [SubtitleChoice] for the pure rule
+ * itself.
  *
  * The audio language the rule needs is not this controller's own: it
  * follows [AudioChoiceController]'s own language callback through
@@ -160,7 +162,7 @@ class SubtitleChoiceController(
         val openSetId = setId ?: return
         val forTrack = wanted.track
         loadJob = launchScope.launch {
-            val loaded = safely(emptyList()) { trackSource.load(openSetId, forTrack) }
+            val loaded = orDefault(emptyList()) { trackSource.load(openSetId, forTrack) }
             if (activeTrack?.track == forTrack) {
                 cues = loaded
                 publish()
@@ -176,6 +178,6 @@ class SubtitleChoiceController(
     private fun rememberChoice(value: String) {
         val scope = scope ?: return
         val profileId = profileId ?: return
-        launchScope.launch { safely(Unit) { preferences.remember(profileId, scope, "subtitle", value) } }
+        launchScope.launch { orDefault(Unit) { preferences.remember(profileId, scope, SUBTITLE_PREFERENCE, value) } }
     }
 }

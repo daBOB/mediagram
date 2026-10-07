@@ -3,6 +3,7 @@ package setup
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreException
 import kotlin.test.Test
 import kotlin.test.assertEquals

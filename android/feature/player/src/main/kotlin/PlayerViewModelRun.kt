@@ -3,9 +3,7 @@ package player
 import androidx.media3.common.Player
 
 /*
- * The card's own steps through the run and back to the top of the title —
- * split out of [PlayerViewModel] to keep that file under the project's line
- * guideline, as `PlayerViewModelDelegates.kt` is.
+ * The card's own steps through the run and back to the top of the title.
  */
 
 /**

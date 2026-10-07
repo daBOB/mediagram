@@ -31,7 +31,7 @@ import designsystem.LocalBackdrop
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.catalog.HeroArtwork
+import ui.common.catalog.HeroArtwork
 import ui.tv.catalog.home.OnImage
 
 /**

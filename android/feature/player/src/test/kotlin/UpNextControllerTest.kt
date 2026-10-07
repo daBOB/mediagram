@@ -14,8 +14,7 @@ import kotlin.test.assertTrue
 
 /**
  * [UpNextController]'s phase ticker and countdown — the switch it drives is
- * [UpNextSwitchTest]'s own file, split apart to keep both under the
- * project's line guideline; [buildController] is shared between them.
+ * [UpNextSwitchTest]'s own file; [buildController] is shared between them.
  */
 class UpNextControllerTest {
 

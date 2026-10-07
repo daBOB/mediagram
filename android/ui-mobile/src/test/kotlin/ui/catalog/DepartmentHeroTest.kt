@@ -27,6 +27,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import ui.common.catalog.HERO_ARTWORK_TEST_TAG
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

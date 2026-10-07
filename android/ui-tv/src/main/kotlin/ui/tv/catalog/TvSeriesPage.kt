@@ -27,6 +27,7 @@ import catalog.seriesAboutFacts
 import catalog.seriesFactsLine
 import catalog.summarize
 import catalog.walk
+import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
 import model.TitleCredits
@@ -62,7 +63,7 @@ internal fun TvSeriesPage(
     heldIds: Set<String>,
     credits: TitleCredits,
     onOpenPerson: (personId: Long) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
     similar: List<Entry.Collection>,
     onOpenCollection: (key: String) -> Unit,
@@ -145,7 +146,7 @@ internal fun TvSeriesPage(
             val panel = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small)
             when (tabs[selected]) {
                 "About" -> item(key = "about") { TvFactSheet(seriesAboutFacts(facts, info, genres), panel, onOpenGenre = onOpenGenre, restoreKey = restoreKey) }
-                "Cast" -> item(key = "cast") { Box(panel) { TvCastRow(credits, onOpenPerson, shouldRequestPortrait, fetchPortrait, restoreKey) } }
+                "Cast" -> item(key = "cast") { Box(panel) { TvCastRow(credits, onOpenPerson, portraits, fetchPortrait, restoreKey) } }
                 "Similar" -> item(key = "similar") { Box(panel) { TvSimilarShows(similar, onOpenCollection, restoreKey) } }
                 else -> {
                     if (picker) item(key = "season-picker") { TvSeasonPicker(collection.divisions, shown, onSelectSeason, panel) }

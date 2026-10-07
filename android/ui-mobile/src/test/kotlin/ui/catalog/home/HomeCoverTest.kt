@@ -25,7 +25,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
-import ui.catalog.HERO_ARTWORK_TEST_TAG
+import ui.common.catalog.HERO_ARTWORK_TEST_TAG
 
 /**
  * The cover's own actions and type, the parts a screenshot cannot check on

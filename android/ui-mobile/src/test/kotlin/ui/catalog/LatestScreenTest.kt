@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import catalog.CollectionKind
+import catalog.Department
 import catalog.Entry
 import catalog.Shelf
 import model.WatchSnapshot
@@ -26,9 +27,9 @@ import kotlin.test.assertTrue
 class LatestScreenTest : BrowsePageTest() {
     private val shelves =
         listOf(
-            Shelf("Movies", listOf(Entry.Film(film("old", addedAt = 1)), Entry.Film(film("new", addedAt = 2)))),
-            Shelf("Series", listOf(collection("Engines", CollectionKind.SHOW))),
-            Shelf("Tutorials", listOf(collection("Forex", CollectionKind.COURSE))),
+            Shelf(Department.MOVIES, listOf(Entry.Film(film("old", addedAt = 1)), Entry.Film(film("new", addedAt = 2)))),
+            Shelf(Department.SERIES, listOf(collection("Engines", CollectionKind.SHOW))),
+            Shelf(Department.TUTORIALS, listOf(collection("Forex", CollectionKind.COURSE))),
         )
 
     private fun render(onOpenTitle: (String) -> Unit = {}, onOpenCollection: (String) -> Unit = {}) =

@@ -10,7 +10,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import playback.Mode
 import playback.displayModeToApply
-import ui.player.findActivity
+import ui.common.player.findActivity
 
 /**
  * Asks the television to switch to a refresh rate the film divides into

@@ -1,6 +1,5 @@
 package catalog.profile
 
-import catalog.MainDispatcherRule
 import data.DefaultWatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.CompletableDeferred
@@ -11,8 +10,9 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.Profile
 import org.junit.Rule
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.StateSnapshot
 import kotlin.test.Test
@@ -68,7 +68,7 @@ class ProfileOwnershipTest {
     fun aLateReloadErrorCannotReplaceANewerChoice() =
         runTest {
             val core = ProfileCore()
-            val repository = DefaultWatchStateRepository(CatalogCoreProvider(core), Dispatchers.Unconfined)
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
             val vm = ProfileViewModel(repository, SettledSync)
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
             runCurrent()
@@ -92,7 +92,7 @@ class ProfileOwnershipTest {
         returnToFirst: Boolean,
     ) = runTest {
         val core = ProfileCore()
-        val repository = DefaultWatchStateRepository(CatalogCoreProvider(core), Dispatchers.Unconfined)
+        val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
         val vm = ProfileViewModel(repository, SettledSync)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         runCurrent()

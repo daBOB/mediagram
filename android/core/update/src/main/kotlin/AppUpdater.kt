@@ -2,8 +2,11 @@ package update
 
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.util.Log
 import data.CoreProvider
+import data.coreSentence
 import data.di.AppScope
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -14,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import settings.LibrarySettings
 import uniffi.mediagram_core.AppRelease
 import uniffi.mediagram_core.CoreInterface
 import java.io.File
@@ -23,6 +25,7 @@ import javax.inject.Singleton
 
 /** How often a running download looks at the player. */
 private const val PLAYBACK_POLL_MS = 2_000L
+private const val TAG = "update"
 
 /**
  * Keeps a release build current with the newest release pinned in the
@@ -113,7 +116,8 @@ class AppUpdater
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _status.value = UpdateStatus.Failed(e.message ?: e.javaClass.simpleName)
+                Log.w(TAG, "update check failed", e)
+                _status.value = UpdateStatus.Failed(e.coreSentence() ?: "the update check did not finish")
             }
         }
 
@@ -130,7 +134,9 @@ class AppUpdater
             try {
                 installer.install(apk.file)
             } catch (e: Exception) {
-                dropReady(e.message ?: e.javaClass.simpleName)
+                // An installer's own message names file paths, not anything a person can act on.
+                Log.w(TAG, "update install failed", e)
+                dropReady("the installer did not take the download")
             }
         }
 

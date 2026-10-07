@@ -13,10 +13,10 @@ import catalog.genreIndex
 import catalog.personPageOf
 import model.MediaSet
 import model.WatchSnapshot
-import ui.LibraryPositions
-import ui.catalog.rememberFranchiseOverviews
-import ui.catalog.rememberPersonLookup
-import ui.catalog.rememberPortrait
+import ui.common.LibraryPositions
+import ui.common.catalog.rememberFranchiseOverviews
+import ui.common.catalog.rememberPersonLookup
+import ui.common.catalog.rememberPortrait
 import ui.tv.catalog.TvFranchisePage
 import ui.tv.catalog.TvGenresIndex
 import ui.tv.catalog.TvLatestPage
@@ -26,7 +26,7 @@ import ui.tv.catalog.TvPersonPage
 /**
  * The person, franchise, Genres, Latest and "All N films" frames — five of
  * [TvLibrary]'s smaller branches, kept apart from its own dispatcher so that
- * file reads as a table of what each [ui.FrameKind] draws, not as five more
+ * file reads as a table of what each [ui.common.FrameKind] draws, not as five more
  * pages' worth of wiring.
  */
 @Composable
@@ -49,7 +49,7 @@ internal fun TvPersonFrame(
     BackHandler(onBack = leave)
     val lookup = rememberPersonLookup(personId, browse::person)
     val page = remember(lookup.person, shelves) { personPageOf(lookup.person, shelves) }
-    val portrait = rememberPortrait(personId, lookup.person?.portraitPath, browse::shouldRequestPortrait, browse::fetchPortrait)
+    val portrait = rememberPortrait(personId, lookup.person?.portraitPath, browse.portraits, browse::fetchPortrait)
     TvPersonPage(
         page = page,
         // "Still asking" outlives the person fetch itself on a cold restore:

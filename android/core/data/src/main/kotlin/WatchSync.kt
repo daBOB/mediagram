@@ -1,6 +1,7 @@
 package data
 
 import android.util.Log
+import data.settings.LibrarySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import settings.LibrarySettings
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.LibraryEvent
 import kotlin.time.Duration
@@ -118,6 +118,7 @@ class DefaultWatchSync(
     override suspend fun awaitFirstRound() {
         try {
             if (settings.read() == null) return
+            // Builds the core, so the combine below has one to start a round on.
             coreProvider.coreOrNull()
             combine(coreProvider.core, settings.selections()) { core, handle -> core to handle }
                 .mapLatest { (core, handle) ->
@@ -126,7 +127,7 @@ class DefaultWatchSync(
         } catch (failure: CancellationException) {
             throw failure
         } catch (failure: Exception) {
-            Log.w(TAG, "picker: ${failure.message}")
+            Log.w(TAG, "picker sync failed", failure)
         }
     }
 
@@ -155,7 +156,7 @@ class DefaultWatchSync(
         } catch (failure: CancellationException) {
             throw failure
         } catch (failure: Exception) {
-            Log.w(TAG, "$why: ${failure.message}")
+            Log.w(TAG, "$why sync failed", failure)
         }
     }
 
@@ -181,7 +182,7 @@ class DefaultWatchSync(
                         } catch (failure: CancellationException) {
                             throw failure
                         } catch (failure: Exception) {
-                            Log.w(TAG, "$why: ${failure.message}")
+                            Log.w(TAG, "$why sync failed", failure)
                         }
                     } while (roundLock.withLock {
                             val again = running === current && current.again

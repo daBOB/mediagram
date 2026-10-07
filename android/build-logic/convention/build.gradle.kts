@@ -80,9 +80,5 @@ gradlePlugin {
             id = "app.jvm.library"
             implementationClass = "JvmLibraryConventionPlugin"
         }
-        register("kotlinSerialization") {
-            id = "app.kotlin.serialization"
-            implementationClass = "KotlinSerializationConventionPlugin"
-        }
     }
 }

@@ -18,8 +18,8 @@ import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import playback.PlaybackTotals
-import ui.player.SCRIM_ALPHA
-import ui.player.playbackStats
+import ui.common.player.SCRIM_ALPHA
+import ui.common.player.playbackStats
 
 /** Finds the statistics in a test without depending on what they read. */
 internal const val TvStatsOverlayTag = "tv-stats-overlay"

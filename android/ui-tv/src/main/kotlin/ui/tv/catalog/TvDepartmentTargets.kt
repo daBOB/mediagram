@@ -4,70 +4,91 @@ import catalog.Entry
 import catalog.MoviesDepartment
 import catalog.SetCard
 import catalog.ShowsDepartment
-import ui.tv.TvMoviesPageEntryKey
+
+/** One stop on a page: which section, and which of its own stops in order. */
+internal data class SectionStop<S>(val section: S, val stop: Int) {
+    /** [stop] when this target is in [section], else `null` — what a row reads as its own `focusAt`. */
+    fun stopAt(section: S): Int? = stop.takeIf { this.section == section }
+}
 
 /**
- * One named section of a department page's own arrival/restore map: its own
- * stops' keys, in the order they draw down (or across) the page. A section
- * with no stops was never drawn at all — the same "nothing to show" every
- * row already skips.
+ * One section of a page's own arrival/restore map: its stops' keys, in the
+ * order they draw down (or across) the page. A section with no stops was
+ * never drawn at all — the same "nothing to show" every row already skips.
  */
-internal data class DeptSection(val name: String, val stops: List<String>)
+internal data class DeptSection<S>(val id: S, val stops: List<String>)
+
+/** The rows of the Movies page that can hold the remote, in the order they draw. */
+internal enum class MoviesSection { FEATURED, GENRES, ACCLAIMED, RECENTLY_ADDED, ALL }
+
+// The Series/Tutorials, Anime and Documentaries pages grow a row per
+// category or folder, so their sections are named by these strings rather
+// than an enum; the targets below and the pages that draw the rows share them.
+internal const val UnderwaySection = "underway"
+internal const val PopularSection = "popular"
+internal const val NewEpisodesSection = "newEpisodes"
+internal const val ContinueSection = "continue"
+internal const val RecentlyAddedSection = "recentlyAdded"
+internal const val StandaloneSection = "standalone"
+
+internal fun categorySection(index: Int) = "category:$index"
+
+internal fun groupSection(index: Int) = "group:$index"
 
 /**
- * Where a [restoreKey] found in some [sections] lands — [ui.tv.catalog.home.homeTargetOf]'s
- * own rule, generalised over a page's own named rows rather than one fixed
- * enum, so Home and every department page share the one search rather than
- * each keeping a copy of it. A key carried by two rows at once goes to
- * [lastSection] when that row still has it, else the first row down the page
- * that does; `null` [restoreKey], or one no row carries, answers `null` —
- * each page's own arrival default decides what happens then, since that
- * default differs between Movies (falls through to its own first row) and
- * Series/Tutorials/Anime/Documentaries (defers to the wall beneath their own
- * header rows instead).
+ * Where a [restoreKey] lands among [sections], the one rule Home and every
+ * department page share: a key in [lastSection] — the row the remote was
+ * last in — wins while that row still carries it, else the first section
+ * down the page that does. `null` [restoreKey], or one no section carries,
+ * answers `null`, and the caller's own default decides.
  */
-internal fun restoreTargetOf(
-    sections: List<DeptSection>,
+internal fun <S> restoreTargetOf(
+    sections: List<DeptSection<S>>,
     restoreKey: String?,
-    lastSection: String? = null,
-): Pair<String, Int>? {
+    lastSection: S? = null,
+): SectionStop<S>? {
     if (restoreKey == null) return null
     lastSection?.let { last ->
-        val stop = sections.firstOrNull { it.name == last }?.stops?.indexOf(restoreKey) ?: -1
-        if (stop >= 0) return last to stop
+        val stop = sections.firstOrNull { it.id == last }?.stops?.indexOf(restoreKey) ?: -1
+        if (stop >= 0) return SectionStop(last, stop)
     }
     for (section in sections) {
         val stop = section.stops.indexOf(restoreKey)
-        if (stop >= 0) return section.name to stop
+        if (stop >= 0) return SectionStop(section.id, stop)
     }
     return null
 }
 
+/** The first section with any stops, at its first one; `null` when every section is empty. */
+internal fun <S> firstStopOf(sections: List<DeptSection<S>>): SectionStop<S>? = sections.firstOrNull { it.stops.isNotEmpty() }?.let { SectionStop(it.id, 0) }
+
+/** The Movies page's rows that carry stops of their own, in page order; the "All N films" link is not one of them. */
+internal fun moviesSections(dept: MoviesDepartment): List<DeptSection<MoviesSection>> =
+    listOf(
+        DeptSection(MoviesSection.FEATURED, dept.featured.map { it.setId }),
+        DeptSection(MoviesSection.GENRES, dept.genres.map { it.name }),
+        DeptSection(MoviesSection.ACCLAIMED, dept.acclaimed.map { it.setId }),
+        DeptSection(MoviesSection.RECENTLY_ADDED, dept.recentlyAdded.map { it.setId }),
+    )
+
 /**
- * Where [TvMoviesDepartmentPage] sends the remote — a row name and a stop
- * along it — on arrival, or restoring [restoreKey]: a film on Featured,
- * Acclaimed or Recently added, a genre tile, [TvMoviesPageEntryKey] naming
- * the "All N films" link itself (the key opening the full `MOVIES_PAGE` wall
- * is recorded under, so Back from it lands back on the link rather than the
+ * Where [TvMoviesDepartmentPage] sends the remote — a row and a stop along
+ * it — on arrival, or restoring [restoreKey]: a film on Featured, Acclaimed
+ * or Recently added, a genre tile, [TvMoviesPageEntryKey] naming the "All N
+ * films" link itself (the key opening the full `MOVIES_PAGE` wall is
+ * recorded under, so Back from it lands back on the link rather than the
  * page's own first row), or — nothing named, or named but not found here —
  * the first non-empty row in the page's reading order. The hero is never a
- * candidate: it carries no focusable stop of its own any more.
+ * candidate: it carries no focusable stop of its own.
  */
 internal fun moviesDeptTargetOf(
     dept: MoviesDepartment,
     restoreKey: String?,
-    lastSection: String? = null,
-): Pair<String, Int> {
-    if (restoreKey == TvMoviesPageEntryKey) return "all" to 0
-    val sections =
-        listOf(
-            DeptSection("featured", dept.featured.map { it.setId }),
-            DeptSection("genres", dept.genres.map { it.name }),
-            DeptSection("acclaimed", dept.acclaimed.map { it.setId }),
-            DeptSection("recentlyAdded", dept.recentlyAdded.map { it.setId }),
-        )
-    restoreTargetOf(sections, restoreKey, lastSection)?.let { return it }
-    return sections.firstOrNull { it.stops.isNotEmpty() }?.let { it.name to 0 } ?: ("all" to 0)
+    lastSection: MoviesSection? = null,
+): SectionStop<MoviesSection> {
+    if (restoreKey == TvMoviesPageEntryKey) return SectionStop(MoviesSection.ALL, 0)
+    val sections = moviesSections(dept)
+    return restoreTargetOf(sections, restoreKey, lastSection) ?: firstStopOf(sections) ?: SectionStop(MoviesSection.ALL, 0)
 }
 
 /**
@@ -83,21 +104,21 @@ internal fun showsDeptTargetOf(
     underway: List<SetCard>,
     restoreKey: String?,
     lastSection: String? = null,
-): Pair<String, Int>? {
+): SectionStop<String>? {
     val sections = showsSections(dept, underway)
     if (restoreKey != null) return restoreTargetOf(sections, restoreKey, lastSection)
-    return sections.firstOrNull { it.stops.isNotEmpty() }?.let { it.name to 0 }
+    return firstStopOf(sections)
 }
 
 private fun showsSections(
     dept: ShowsDepartment,
     underway: List<SetCard>,
-): List<DeptSection> =
+): List<DeptSection<String>> =
     buildList {
-        add(DeptSection("underway", underway.map { it.set.setId }))
-        dept.categories.forEachIndexed { i, row -> add(DeptSection("category:$i", row.units.map(Entry.Collection::key))) }
-        add(DeptSection("popular", dept.popular.map(Entry.Collection::key)))
-        add(DeptSection("newEpisodes", dept.newEpisodes.map(Entry.Collection::key)))
+        add(DeptSection(UnderwaySection, underway.map { it.set.setId }))
+        dept.categories.forEachIndexed { i, row -> add(DeptSection(categorySection(i), row.units.map(Entry.Collection::key))) }
+        add(DeptSection(PopularSection, dept.popular.map(Entry.Collection::key)))
+        add(DeptSection(NewEpisodesSection, dept.newEpisodes.map(Entry.Collection::key)))
     }
 
 /**
@@ -110,10 +131,10 @@ internal fun animeDeptTargetOf(
     resumeCards: List<SetCard>,
     restoreKey: String?,
     lastSection: String? = null,
-): Pair<String, Int>? {
-    val sections = listOf(DeptSection("continue", resumeCards.map { it.set.setId }))
+): SectionStop<String>? {
+    val sections = listOf(DeptSection(ContinueSection, resumeCards.map { it.set.setId }))
     if (restoreKey != null) return restoreTargetOf(sections, restoreKey, lastSection)
-    return sections.firstOrNull { it.stops.isNotEmpty() }?.let { it.name to 0 }
+    return firstStopOf(sections)
 }
 
 /**
@@ -127,10 +148,7 @@ internal fun animeDeptTargetOf(
  * on this page.
  */
 internal fun documentariesDeptTargetOf(
-    sections: List<DeptSection>,
+    sections: List<DeptSection<String>>,
     restoreKey: String?,
     lastSection: String? = null,
-): Pair<String, Int> {
-    restoreTargetOf(sections, restoreKey, lastSection)?.let { return it }
-    return sections.firstOrNull { it.stops.isNotEmpty() }?.let { it.name to 0 } ?: ("continue" to 0)
-}
+): SectionStop<String> = restoreTargetOf(sections, restoreKey, lastSection) ?: firstStopOf(sections) ?: SectionStop(ContinueSection, 0)

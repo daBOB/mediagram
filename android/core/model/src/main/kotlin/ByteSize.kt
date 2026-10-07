@@ -21,15 +21,12 @@ fun humanSize(bytes: Long): String {
 }
 
 /**
- * What the cache holds against its ceiling: `1.0 GB of 2.0 GB (50%)`, or
- * `nothing yet of 2.0 GB` while it is empty.
+ * What a cache holds against its ceiling: `1.0 GB of 2.0 GB (50%)`, or
+ * `nothing yet of 2.0 GB` while it is empty — this device's own budget or a
+ * LAN cache server's.
  *
  * [humanSize], the same spelling every other byte count on this screen and
- * in the playback overlay uses. A second formatter here held its decimal
- * past ten, on the argument that the Held row is read from one visit to the
- * next and a figure losing its decimal at "10.0 GB" would look like a
- * change of precision. That reading cannot happen: the budget is a fixed
- * 2 GiB, so the two spellings only ever differed above the ceiling.
+ * in the playback overlay uses.
  */
 fun heldOfBudget(
     held: Long,

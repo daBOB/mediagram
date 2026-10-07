@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import catalog.GenreIndexEntry
 import catalog.spelledCountOf
 import designsystem.Spacing
+import ui.common.catalog.GENRE_TILE_ASPECT
 
 /** `.genre-tiles{grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))}`. */
 private val GENRE_TILE_MIN_WIDTH = 208.dp

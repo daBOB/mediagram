@@ -6,8 +6,7 @@ import playback.AudioOption
 import playback.Framing
 
 /**
- * Thin pass-throughs onto [PlayerViewModel]'s controllers, plus [retry] —
- * split out to keep that file under the project's line guideline.
+ * Thin pass-throughs onto [PlayerViewModel]'s controllers, plus [retry].
  */
 
 /**

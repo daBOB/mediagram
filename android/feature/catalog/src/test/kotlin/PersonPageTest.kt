@@ -30,8 +30,8 @@ class PersonPageTest {
     @Test
     fun collectsFilmsAndShowsCreditedUnderThePersonsTitleKeys() {
         val shelves = listOf(
-            Shelf("Movies", listOf(Entry.Film(film("f1", "tmdb-movie-1")), Entry.Film(film("f2", "tmdb-movie-2")))),
-            Shelf("Series", listOf(show("Breaking Bad", "tmdb-tv-1"))),
+            Shelf(Department.MOVIES, listOf(Entry.Film(film("f1", "tmdb-movie-1")), Entry.Film(film("f2", "tmdb-movie-2")))),
+            Shelf(Department.SERIES, listOf(show("Breaking Bad", "tmdb-tv-1"))),
         )
         val person = Person(personId = 1, name = "Bryan Cranston", portraitPath = null, titleKeys = listOf("tmdb-movie-1", "tmdb-tv-1"))
 
@@ -43,7 +43,7 @@ class PersonPageTest {
 
     @Test
     fun nobodyVisibleAnswersNullRatherThanAnEmptyPage() {
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film("f1", "tmdb-movie-1")))))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f1", "tmdb-movie-1")))))
         val person = Person(personId = 1, name = "Nobody Here", portraitPath = null, titleKeys = listOf("tmdb-movie-9"))
         assertNull(personPageOf(person, shelves))
     }

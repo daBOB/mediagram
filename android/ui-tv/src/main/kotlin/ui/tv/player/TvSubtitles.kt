@@ -18,9 +18,9 @@ import androidx.media3.common.Player
 import designsystem.Overscan
 import playback.TimedCue
 import player.PlayerChoices
-import ui.player.SubtitleLayer
-import ui.player.SubtitleMetrics
-import ui.player.Video
+import ui.common.player.SubtitleLayer
+import ui.common.player.SubtitleMetrics
+import ui.common.player.Video
 
 /**
  * How much bigger the television draws a cue than the phone does, before

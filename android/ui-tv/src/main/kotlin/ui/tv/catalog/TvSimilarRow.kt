@@ -19,6 +19,7 @@ import catalog.factsLine
 import designsystem.Spacing
 import java.io.File
 import model.MediaSet
+import ui.tv.rememberStableRequester
 
 /** A similar row's own plate width — a poster's width, the same every wall on this surface uses. */
 private val SimilarPlateWidth = 140.dp
@@ -54,13 +55,11 @@ internal fun TvSimilarFilms(
     ) {
         films.forEachIndexed { index, set ->
             key(set.setId) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 TvPlate(
                     title = set.title,
                     posterPath = set.posterPath?.let(::File),
                     onOpen = { onOpenTitle(set.setId) },
-                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                     caption = factsLine(set.year, set.durationSecs),
                 )
             }
@@ -89,13 +88,11 @@ internal fun TvSimilarShows(
     ) {
         shows.forEachIndexed { index, entry ->
             key(entry.key) {
-                // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                val ownRequester = remember { FocusRequester() }
                 TvPlate(
                     title = entry.name,
                     posterPath = entry.posterPath?.let(::File),
                     onOpen = { onOpenCollection(entry.key) },
-                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(if (index == focusIndex) focusRequester else ownRequester),
+                    modifier = Modifier.width(SimilarPlateWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                     caption = extentOf(entry),
                 )
             }

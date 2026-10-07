@@ -10,8 +10,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import model.MediaSet
-import org.junit.Assume.assumeTrue
-import java.io.File
+import testing.webFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -28,10 +27,9 @@ import kotlin.test.assertTrue
 class EditorialPicksFixtureTest {
     @Test
     fun matchesTheWebsFixtures() {
-        val file = locateFixture("home-editorial.json")
-        assumeTrue("home-editorial.json not found above this module; is the web checkout present?", file != null)
+        val file = webFixture("editorial-picks/home-editorial.json")
 
-        val cases = Json.parseToJsonElement(file!!.readText()).jsonArray
+        val cases = Json.parseToJsonElement(file.readText()).jsonArray
         assertTrue(cases.isNotEmpty(), "home-editorial.json holds no cases")
 
         for (case in cases) {
@@ -106,15 +104,4 @@ private fun JsonObject.toFilm(): MediaSet {
         rating = get("rating")?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,
         popularity = get("popularity")?.takeUnless { it is JsonNull }?.jsonPrimitive?.double,
     )
-}
-
-/** Walks up from the working directory until it finds the web's fixture directory, or gives up at the filesystem root. */
-private fun locateFixture(name: String): File? {
-    var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-    while (dir != null) {
-        val candidate = File(dir, "web/test/fixtures/editorial-picks/$name")
-        if (candidate.isFile) return candidate
-        dir = dir.parentFile
-    }
-    return null
 }

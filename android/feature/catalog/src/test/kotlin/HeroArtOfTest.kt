@@ -33,38 +33,39 @@ class HeroArtOfTest {
     }
 
     @Test
-    fun aTitleNamingNoShelfAnswersNull() {
-        assertNull(heroArtOf("Nothing here", emptyList(), emptyMap(), WatchSnapshot.Empty))
+    fun aDepartmentNotOnTheShelvesAnswersNull() {
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg", popularity = 1.0)))))
+        assertNull(heroArtOf(Department.SERIES, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun aKeptWallOrCollectionsNamesNoDepartmentAtAll() {
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film("f", backdropPath = "bg")))))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg")))))
         assertNull(heroArtOf(null, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun moviesReadsTheDepartmentsOwnLeadBackdrop() {
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film("f", backdropPath = "bg", popularity = 1.0)))))
-        assertEquals("bg", heroArtOf("Movies", shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f", backdropPath = "bg", popularity = 1.0)))))
+        assertEquals("bg", heroArtOf(Department.MOVIES, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun seriesReadsTheLeadShowsFirstEpisodeBackdrop() {
-        val shelves = listOf(Shelf("Series", listOf(show("Breaking Bad", backdropPath = "bd-bg"))))
-        assertEquals("bd-bg", heroArtOf("Series", shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.SERIES, listOf(show("Breaking Bad", backdropPath = "bd-bg"))))
+        assertEquals("bd-bg", heroArtOf(Department.SERIES, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun tutorialsReadsTheLeadCoursesFirstLessonBackdrop() {
-        val shelves = listOf(Shelf("Tutorials", listOf(show("Forex", backdropPath = "tut-bg"))))
-        assertEquals("tut-bg", heroArtOf("Tutorials", shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.TUTORIALS, listOf(show("Forex", backdropPath = "tut-bg"))))
+        assertEquals("tut-bg", heroArtOf(Department.TUTORIALS, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun animeReadsItsOwnDepartmentsLeadBackdrop() {
-        val shelves = listOf(Shelf(ANIME, listOf(Entry.Film(film("your-name", backdropPath = "anime-bg", popularity = 1.0)))))
-        assertEquals("anime-bg", heroArtOf(ANIME, shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.ANIME, listOf(Entry.Film(film("your-name", backdropPath = "anime-bg", popularity = 1.0)))))
+        assertEquals("anime-bg", heroArtOf(Department.ANIME, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
@@ -74,13 +75,13 @@ class HeroArtOfTest {
             season = null, episodeFirst = null, episodeLast = null, year = null, durationSecs = null,
             posterPath = null, totalBytes = 0, backdropPath = "doc-bg", addedAt = 1,
         )
-        val shelves = listOf(Shelf(DOCUMENTARIES, listOf(Entry.Film(doc))))
-        assertEquals("doc-bg", heroArtOf(DOCUMENTARIES, shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.DOCUMENTARIES, listOf(Entry.Film(doc))))
+        assertEquals("doc-bg", heroArtOf(Department.DOCUMENTARIES, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 
     @Test
     fun aDepartmentWithNothingToLeadWithAnswersNull() {
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film("f")))))
-        assertNull(heroArtOf("Movies", shelves, emptyMap(), WatchSnapshot.Empty))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film("f")))))
+        assertNull(heroArtOf(Department.MOVIES, shelves, emptyMap(), WatchSnapshot.Empty))
     }
 }

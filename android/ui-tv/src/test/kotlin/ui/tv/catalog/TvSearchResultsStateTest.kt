@@ -18,6 +18,7 @@ import catalog.SearchGroups
 import catalog.SearchRow
 import catalog.SearchUiState
 import catalog.VisiblePerson
+import data.PortraitRequestLog
 import model.Kind
 import model.WatchSnapshot
 import org.junit.Test
@@ -171,7 +172,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 SearchSection(
                     "Collections",
                     listOf(
-                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Saga", 3, null, "tmdb-9")),
+                        SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Saga", 3, null, "tmdb-9", franchiseId = 9)),
                         SearchEntry.Destination(SearchDestination(SearchFilter.COLLECTIONS, "Sunday", 1, null, "list-a")),
                     ),
                     SearchLayout.CARDS,
@@ -212,7 +213,7 @@ class TvSearchResultsStateTest : TvScreenStateTest() {
                 onOpenCollection = onOpenCollection,
                 onOpenPerson = {},
                 onOpenDestination = onOpenDestination,
-                shouldRequestPortrait = { false },
+                portraits = PortraitRequestLog(),
                 fetchPortrait = { null },
             )
         }

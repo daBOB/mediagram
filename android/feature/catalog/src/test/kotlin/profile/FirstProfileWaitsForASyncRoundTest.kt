@@ -1,6 +1,5 @@
 package catalog.profile
 
-import catalog.MainDispatcherRule
 import data.DefaultWatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.Dispatchers
@@ -9,8 +8,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +40,7 @@ class FirstProfileWaitsForASyncRoundTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
     private val core = FakeCore().apply { syncedOnce = false }
-    private val repository = DefaultWatchStateRepository(CatalogCoreProvider(core), Dispatchers.Unconfined)
+    private val repository = DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined)
 
     private fun picker(round: suspend () -> Unit = {}) = ProfileViewModel(repository, OneRound(round))
 

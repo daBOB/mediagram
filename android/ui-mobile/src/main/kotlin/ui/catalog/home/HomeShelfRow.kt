@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.sp
 import catalog.Entry
 import catalog.initialsOf
 import coil3.compose.AsyncImage
+import ui.common.catalog.rememberRowState
 import java.io.File
-import ui.catalog.rememberRowState
 
 /**
  * Latest series: one scrolling row of poster cards, each captioned with its

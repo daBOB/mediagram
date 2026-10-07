@@ -1,6 +1,8 @@
 package system
 
 import data.CatalogEnrichmentFetcher
+import data.settings.InMemoryTmdbSettings
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancelAndJoin
@@ -8,10 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import settings.InMemoryTmdbSettings
-import settings.TmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -4,6 +4,8 @@ import data.WatchStateRepository
 import data.WatchSync
 import playback.PlaybackCounters
 import playback.SummarySource
+import testing.FakeHeldSets
+import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
 
 /** Records `soon()` calls rather than doing anything with them — shared by every [PlayerViewModel] test that does not care about sync itself. */
@@ -19,7 +21,7 @@ internal class FakeWatchSync : WatchSync {
     override suspend fun awaitFirstRound() = Unit
 }
 
-/** A [PlayerViewModel] wired with fakes a test can inspect — shared across `PlayerViewModelTest`, `PlayerResumePositionTest` and `PlayerSaveTickerTest`, split apart to keep each file under the project's line guideline. */
+/** A [PlayerViewModel] wired with fakes a test can inspect — shared across `PlayerViewModelTest`, `PlayerResumePositionTest` and `PlayerSaveTickerTest`. */
 internal fun buildViewModel(
     handle: FakePlayerHandle = FakePlayerHandle(),
     repository: WatchStateRepository = WatchStateFixture().repository,

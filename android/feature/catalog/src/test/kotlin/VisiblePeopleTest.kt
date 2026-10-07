@@ -37,7 +37,7 @@ class VisiblePeopleTest {
             key = "series/Show", kind = CollectionKind.SHOW, name = "Show", posterPath = null, posterKey = "tmdb-tv-1",
             count = 1, chapters = 1, divisions = listOf(Division("Show", 1, listOf(episode), emptyList())),
         )
-        val shelves = listOf(Shelf("Movies", listOf(Entry.Film(film))), Shelf("Series", listOf(show)))
+        val shelves = listOf(Shelf(Department.MOVIES, listOf(Entry.Film(film))), Shelf(Department.SERIES, listOf(show)))
         val isVisible = titlesByKey(shelves)
 
         assertTrue(isVisible("tmdb-movie-1"))

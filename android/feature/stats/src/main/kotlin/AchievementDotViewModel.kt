@@ -99,7 +99,7 @@ class AchievementDotViewModel
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
-                Log.w(TAG, "achievements: ${e.message}")
+                Log.w(TAG, "achievements read failed", e)
                 null
             }
         }

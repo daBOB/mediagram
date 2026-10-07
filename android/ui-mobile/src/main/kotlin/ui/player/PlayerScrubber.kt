@@ -20,8 +20,7 @@ private val BAR_MIN_WIDTH = 160.dp
 
 /**
  * The card's first row: where the film is, the scrub bar, and how long it runs
- * with when it ends — split out of [PlayerControlCard] to keep that file
- * under the project's line guideline.
+ * with when it ends.
  *
  * Wraps rather than squeezes: when the times would leave the bar under
  * [BAR_MIN_WIDTH] (a narrow phone, a large font) the length and end time drop

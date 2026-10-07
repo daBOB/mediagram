@@ -37,8 +37,8 @@ import designsystem.ThemeChoice
  * Settings › Appearance: theme, accent colour, and the web's own Artwork
  * setting — three questions, one column, the approved mockup's own
  * `round2/b-appearance.html`. Unlike the mockup's own "not yet on Android"
- * tag, Artwork is live here: phase 02 ported [Backdrop] and
- * [designsystem.AppearanceViewModel.chooseBackdrop] already.
+ * tag, Artwork is live here: [Backdrop] and
+ * [designsystem.AppearanceViewModel.chooseBackdrop] already carry it.
  */
 @Composable
 internal fun AppearanceSection(

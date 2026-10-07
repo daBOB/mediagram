@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -24,6 +23,7 @@ import playback.Framing
 import player.PLAYBACK_SPEEDS
 import player.SubtitleOption
 import player.speedLabel
+import ui.tv.rememberStableRequester
 
 /**
  * The card menus' radio-choice sections — Speed, Audio, Subtitles and
@@ -111,15 +111,13 @@ internal fun TvChoiceRow(
     onClick: () -> Unit,
     focusRequester: FocusRequester? = null,
 ) {
-    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-    val ownRequester = remember { FocusRequester() }
     TvOverlaySurface(
         onClick = onClick,
         enabled = true,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .focusRequester(focusRequester ?: ownRequester)
+                .focusRequester(rememberStableRequester(focusRequester))
                 .semantics {
                     this.selected = selected
                     role = Role.RadioButton

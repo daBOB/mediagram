@@ -28,8 +28,7 @@ import java.io.File
 
 /**
  * The artwork alone, at a poster's proportions, with initials where there
- * is no artwork — split out of [PosterCard] to keep that file under the
- * project's line guideline.
+ * is no artwork.
  *
  * A plate rather than a card: square corners, no elevation, and a hairline
  * around the edge. On paper the web player gives this a short drop shadow

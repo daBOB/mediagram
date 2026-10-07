@@ -56,8 +56,7 @@ private class RecordingDispatcher(
 }
 
 /**
- * [CacheBudgetViewModel.refresh]'s own dispatcher contract — split out of
- * `CacheBudgetBlockTest` so that file stays under the line limit.
+ * [CacheBudgetViewModel.refresh]'s own dispatcher contract.
  * `cacheVolumes(context)` walks `StorageManager` and stats every candidate
  * volume, and reading the stored choice is a prefs read; neither belongs
  * on `viewModelScope`'s main dispatcher.

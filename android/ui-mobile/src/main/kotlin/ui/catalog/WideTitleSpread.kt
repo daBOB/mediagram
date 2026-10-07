@@ -33,6 +33,7 @@ import designsystem.PageTitle
 import ui.catalog.home.OnImage
 import ui.catalog.home.fluid
 import ui.catalog.home.gutterFor
+import ui.common.catalog.HeroArtwork
 import ui.pageGround
 
 /** The wide spread's own bounds, for a test to tell it from the phone's stacked one. */

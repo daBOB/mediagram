@@ -1,11 +1,11 @@
 package system
 
 import data.CatalogEnrichmentFetcher
+import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import settings.InMemoryTmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
 import uniffi.mediagram_core.FetchReport

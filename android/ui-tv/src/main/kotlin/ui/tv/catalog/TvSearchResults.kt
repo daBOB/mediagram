@@ -24,13 +24,15 @@ import androidx.compose.ui.focus.focusProperties
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
+import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
-import ui.catalog.SearchResultsView
-import ui.catalog.countOf
-import ui.catalog.searchResultsView
+import ui.common.catalog.SearchResultsView
+import ui.common.catalog.countOf
+import ui.common.catalog.searchResultsView
 import ui.tv.TvTextRow
+import ui.tv.rememberStableRequester
 
 /**
  * What the search screen says under its field, in the phone's words: nothing
@@ -72,11 +74,11 @@ internal fun TvSearchResults(
     onOpenCollection: (key: String) -> Unit,
     onOpenPerson: (personId: Long) -> Unit,
     onOpenDestination: (SearchDestination) -> Unit,
-    shouldRequestPortrait: (Long) -> Boolean,
+    portraits: PortraitRequestLog,
     fetchPortrait: suspend (Long) -> String?,
 ) {
     if (state is SearchUiState.Failed) {
-        Said("Search failed: ${state.message}")
+        Said(state.message)
         return
     }
     if (state !is SearchUiState.Ready) return
@@ -136,17 +138,17 @@ internal fun TvSearchResults(
                                 // Keyed by the entry, not its slot, so a new answer never
                                 // leaves the remote on whichever entry moved into it.
                                 key(keyOf(entry)) {
-                                    // Never omitted — see the same doc on `TvResumeCard`'s own `ownRequester`.
-                                    val own = remember { FocusRequester() }
                                     TvSearchCell(
                                         entry = entry,
                                         layout = line.layout,
                                         requester =
-                                            when (at) {
-                                                0 -> first
-                                                ask?.index -> focus
-                                                else -> own
-                                            },
+                                            rememberStableRequester(
+                                                when (at) {
+                                                    0 -> first
+                                                    ask?.index -> focus
+                                                    else -> null
+                                                },
+                                            ),
                                         marks = marks,
                                         modifier = modifier,
                                         onPlay = onPlay,
@@ -154,7 +156,7 @@ internal fun TvSearchResults(
                                         onOpenCollection = onOpenCollection,
                                         onOpenPerson = onOpenPerson,
                                         onOpenDestination = onOpenDestination,
-                                        shouldRequestPortrait = shouldRequestPortrait,
+                                        portraits = portraits,
                                         fetchPortrait = fetchPortrait,
                                     )
                                 }

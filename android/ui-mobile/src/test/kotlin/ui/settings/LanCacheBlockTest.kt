@@ -57,6 +57,7 @@ class LanCacheBlockTest {
 
     private fun show(
         state: LanCacheUiState?,
+        failure: String? = null,
         onSetEnabled: (Boolean) -> Unit = {},
         onSaveManualAddress: (String) -> Unit = {},
         onSaveToken: (String) -> Unit = {},
@@ -66,7 +67,7 @@ class LanCacheBlockTest {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
-                    LanCacheBlockContent(state, onSetEnabled, onSaveManualAddress, onSaveToken, onGrantPermission)
+                    LanCacheBlockContent(state, failure, onSetEnabled, onSaveManualAddress, onSaveToken, onGrantPermission)
                 }
             }
         }
@@ -76,6 +77,15 @@ class LanCacheBlockTest {
     @Test
     fun aNullStateRendersNothing() {
         show(null)
+        compose.onNodeWithText("Home cache server").assertDoesNotExist()
+    }
+
+    /** An unreadable token store leaves no state to draw, and the block still says why it is missing. */
+    @Test
+    fun aFailureIsSaidWhenThereIsNoStateToShow() {
+        val failure = "Home cache server settings could not be read or saved. Try again."
+        show(null, failure = failure)
+        compose.onNodeWithText(failure).assertIsDisplayed()
         compose.onNodeWithText("Home cache server").assertDoesNotExist()
     }
 

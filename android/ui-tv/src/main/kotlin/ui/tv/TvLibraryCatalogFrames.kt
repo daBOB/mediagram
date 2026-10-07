@@ -15,9 +15,10 @@ import catalog.similarTo
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
-import ui.LibraryPositions
-import ui.catalog.rememberTitleCredits
-import ui.catalog.rememberTitleInfo
+import ui.common.LibraryPositions
+import ui.common.catalog.rememberFilmPreloadUi
+import ui.common.catalog.rememberTitleCredits
+import ui.common.catalog.rememberTitleInfo
 import ui.tv.catalog.TvCollection
 import ui.tv.catalog.TvTitlePage
 import ui.tv.catalog.franchiseRestoreKey
@@ -63,9 +64,9 @@ internal fun TvTitleFrame(
             credits = credits,
             onOpenPerson = { personId ->
                 restore.opened(here, personId.toString())
-                at.openPerson(personId.toString())
+                at.openPerson(personId)
             },
-            shouldRequestPortrait = browse::shouldRequestPortrait,
+            portraits = browse.portraits,
             fetchPortrait = browse::fetchPortrait,
             similar = similar,
             onOpenTitle = { setId ->
@@ -75,20 +76,20 @@ internal fun TvTitleFrame(
             allFilms = allFilms,
             onOpenFranchise = { id ->
                 restore.opened(here, franchiseRestoreKey(id))
-                at.openFranchise(id.toString())
+                at.openFranchise(id)
             },
             editorsChoice = watch.editorsChoice,
             onToggleEditorsChoice =
                 if (kidsProfile) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(set.setId, watch.editorsChoice != set.setId) }
+                    { catalogViewModel.toggleEditorsChoice(set.setId) }
                 },
             // Films only, same as the phone's own TitleDetailScreen — a
             // show's episodes preload two at a time on their own already.
-            preload = if (set.kind == Kind.MOVIE) rememberTvFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
+            preload = if (set.kind == Kind.MOVIE) rememberFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             watchlisted = set.setId in watch.watchlist,
-            onToggleWatchlist = { catalogViewModel.setWatchlisted(set.setId, set.setId !in watch.watchlist) },
+            onToggleWatchlist = { catalogViewModel.toggleWatchlist(set.setId) },
         )
     }
 }
@@ -135,9 +136,9 @@ internal fun TvCollectionFrame(
             credits = credits,
             onOpenPerson = { personId ->
                 restore.opened(here, personId.toString())
-                at.openPerson(personId.toString())
+                at.openPerson(personId)
             },
-            shouldRequestPortrait = browse::shouldRequestPortrait,
+            portraits = browse.portraits,
             fetchPortrait = browse::fetchPortrait,
             similar = similar,
             onOpenCollection = { key ->
@@ -151,13 +152,13 @@ internal fun TvCollectionFrame(
             },
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
-            onToggleWatchlist = { firstEpisodeId?.let { catalogViewModel.setWatchlisted(it, it !in watch.watchlist) } },
+            onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
             editorsChoice = watch.editorsChoice,
             onToggleEditorsChoice =
                 if (kidsProfile || firstEpisodeId == null) {
                     null
                 } else {
-                    { catalogViewModel.setEditorsChoice(firstEpisodeId, watch.editorsChoice != firstEpisodeId) }
+                    { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
         )
     }

@@ -14,13 +14,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.LocalContentColor
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import ui.player.TransportIcon
-import ui.player.TransportIcons
+import ui.common.player.TransportIcon
+import ui.common.player.TransportIcons
 import ui.tv.TvFocus
 
 /**
@@ -141,9 +142,9 @@ internal fun TvOverlaySurface(
                 containerColor = Color.Transparent,
                 contentColor = Palette.Text,
                 focusedContainerColor = Palette.Sunk,
-                focusedContentColor = Palette.Imprint,
+                focusedContentColor = MaterialTheme.colorScheme.primary,
                 pressedContainerColor = Palette.Sunk,
-                pressedContentColor = Palette.Imprint,
+                pressedContentColor = MaterialTheme.colorScheme.primary,
                 disabledContainerColor = Color.Transparent,
                 disabledContentColor = Palette.Figures,
             ),

@@ -7,8 +7,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Opens [setId], keeps its run current, and carries out an up-next switch
- * once the VM asks for one — split out of [PlayerViewModel] to keep that
- * file under the project's line guideline.
+ * once the VM asks for one.
  *
  * [fsk] is the title's age rating as the catalog listed it, handed in
  * rather than looked up: the screen that opened this already has the

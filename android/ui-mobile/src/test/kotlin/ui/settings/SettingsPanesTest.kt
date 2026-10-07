@@ -32,6 +32,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
+import ui.common.settings.SettingsSection
 import ui.profileSettingsModel
 import setup.SettingsUiState
 import setup.SettingsViewModel
@@ -86,6 +87,7 @@ class SettingsPanesTest {
         every { cacheModel.chosenVolumeId } returns MutableStateFlow(null)
         val lanModel = mockk<LanCacheViewModel>(relaxed = true)
         every { lanModel.state } returns MutableStateFlow(null)
+        every { lanModel.failure } returns MutableStateFlow(null)
         val systemModel = mockk<SystemViewModel>(relaxed = true)
         every { systemModel.state } returns
             MutableStateFlow(SystemUiState("channel", 4, 2, 3, null, null, 12, 100, "Internal storage", false, 0, 0, 0, 0, true, "test", 0))

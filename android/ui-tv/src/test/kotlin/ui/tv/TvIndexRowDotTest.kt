@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import stats.NEW_ACHIEVEMENT
-import ui.RailItem
+import ui.common.RailItem
 
 /** [TvIndexRow]'s dot: on the icon, so the collapsed rail — icon only — still shows it and says it. */
 @RunWith(RobolectricTestRunner::class)

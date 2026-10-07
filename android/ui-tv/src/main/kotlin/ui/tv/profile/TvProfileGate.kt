@@ -13,13 +13,13 @@ import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
-import ui.profile.ForgetManageWhenAway
-import ui.profile.manageActions
+import ui.common.profile.ForgetManageWhenAway
+import ui.common.profile.manageActions
 
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
  * and what selecting that entry does. The television twin of the phone's
- * `ui.ProfileBarState`, declared here rather than shared because that one
+ * `ui.chrome.ProfileBarState`, declared here rather than shared because that one
  * lives in `:ui-mobile`, which this module never sees.
  */
 data class TvChosenProfile(
@@ -36,7 +36,7 @@ data class TvChosenProfile(
  * behind competes for the remote. Manage cannot be reached once a profile is
  * chosen: entering a profile never hands a child the controls, and Manage
  * closes, forgetting its PIN, when the library shows again or the app is
- * left (`ui.profile.ForgetManageWhenAway`).
+ * left (`ui.common.profile.ForgetManageWhenAway`).
  *
  * Once a viewer is chosen, [content] is handed it the way the phone's gate
  * hands its bar a `ProfileBarState`: the name, and [ProfileViewModel.reopen]

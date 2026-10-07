@@ -36,7 +36,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import stats.NEW_ACHIEVEMENT
-import ui.RailItem
+import ui.common.RailItem
 import ui.tv.TvIndexRow
 
 /** Collapsed: the web's own icons-only form of the rail, `shell.css:184-216`; open: the tablet's full rail. */

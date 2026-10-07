@@ -1,6 +1,5 @@
 package catalog.profile
 
-import catalog.MainDispatcherRule
 import data.DefaultWatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.Dispatchers
@@ -9,8 +8,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import testing.CatalogCoreProvider
 import testing.FakeCore
+import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,7 +45,7 @@ class ProfilePinTest {
                 this.profiles = profiles
                 if (profiles.any { it.id == "a" }) roles.pins["a"] = "1234"
             }
-        return core to ProfileViewModel(DefaultWatchStateRepository(CatalogCoreProvider(core), Dispatchers.Unconfined), sync)
+        return core to ProfileViewModel(DefaultWatchStateRepository(FakeCoreProvider(core), Dispatchers.Unconfined), sync)
     }
 
     private fun household(admin: Boolean = true) =

@@ -4,7 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Profile
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -17,7 +17,7 @@ class WatchStateChosenProfileTest {
         FakeCore().apply {
             profiles = listOf(CoreProfile("a", "Ana"), CoreProfile("k", "Mia", kids = true))
         }
-    private val repository = DefaultWatchStateRepository(ResolvedCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+    private val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
 
     @Test
     fun reloadPublishesTheChosenProfileWithItsKidsFlagAndLimit() =

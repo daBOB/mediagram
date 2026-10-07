@@ -25,10 +25,10 @@ import catalog.keyOf
 import catalog.offersViewChoice
 import catalog.shelfViewFor
 import catalog.watchedFractionOf
+import data.settings.ShelfView
 import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
-import settings.ShelfView
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableIntStateOf

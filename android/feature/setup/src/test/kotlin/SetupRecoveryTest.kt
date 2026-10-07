@@ -4,6 +4,7 @@ import data.InMemoryCoreStorage
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import testing.FakeCore
+import testing.MainDispatcherRule
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull

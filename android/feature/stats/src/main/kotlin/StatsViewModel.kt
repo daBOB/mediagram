@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.CoreProvider
 import data.WatchStateRepository
+import data.coreSentence
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -81,8 +82,8 @@ class StatsViewModel
                     ) {
                         // stats() itself never throws (a storage failure answers an
                         // empty summary); this is the core not being reachable at all.
-                        Log.w(TAG, "stats: ${e.message}")
-                        StatsRead.Failed(e.message)
+                        Log.w(TAG, "stats read failed", e)
+                        StatsRead.Failed(e.coreSentence())
                     }
                 emit(read)
             }

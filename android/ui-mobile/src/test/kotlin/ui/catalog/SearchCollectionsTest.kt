@@ -30,7 +30,7 @@ class SearchCollectionsTest : BrowsePageTest() {
             people = emptyList(),
             collections =
                 listOf(
-                    SearchDestination(SearchFilter.COLLECTIONS, "Dune", 2, "dune.jpg", "tmdb-5"),
+                    SearchDestination(SearchFilter.COLLECTIONS, "Dune", 2, "dune.jpg", "tmdb-5", franchiseId = 5),
                     SearchDestination(SearchFilter.COLLECTIONS, "Dune night", 1, null, "l1"),
                 ),
             filters = listOf(SearchFilter.COLLECTIONS to 2),

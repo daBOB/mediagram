@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import catalog.AnimeDepartment
 import catalog.AnimeLibrary
 import catalog.CatalogUiState
+import catalog.Department
 import catalog.Entry
 import catalog.Shelf
 import catalog.allSetsById
@@ -30,11 +31,11 @@ internal const val ANIME_DEPT_TEST_TAG = "anime-department"
 
 /**
  * The Anime shelf, as its own tab — omitted from the shelf list entirely
- * while it holds nothing, so unlike [DocumentariesDepartment] this builder
+ * while it holds nothing, so unlike [DocumentariesDepartmentTab] this builder
  * never runs on an empty one.
  */
 @Composable
-internal fun AnimeDepartment(
+internal fun AnimeDepartmentTab(
     shelf: Shelf,
     state: CatalogUiState.Ready,
     columns: Int,
@@ -99,7 +100,7 @@ internal fun AnimeDepartmentScreen(
     ) {
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
-                title = "Anime",
+                title = Department.ANIME.label,
                 line = animeLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,

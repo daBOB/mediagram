@@ -31,7 +31,7 @@ import kotlin.test.assertEquals
  * the same `NoSuchMethodException` `TvAppFixture` needed fixing for).
  *
  * Two things only a real recomposition loop can catch: the server line's
- * own poll rate (H1 — a cold `Flow` rebuilt every recomposition restarts
+ * own poll rate (a cold `Flow` rebuilt every recomposition restarts
  * its 5s wait on every progress tick instead of keeping it), and the
  * NeedsSpace → Settings › Storage → back-to-the-film route in full.
  */

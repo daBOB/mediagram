@@ -42,6 +42,8 @@ import designsystem.Radius
 import designsystem.Spacing
 import designsystem.StatusDot
 import ui.chrome.Wordmark
+import ui.common.settings.IndexStatus
+import ui.common.settings.SettingsSection
 
 /**
  * Settings/System's left pane on every width, and the whole screen in one

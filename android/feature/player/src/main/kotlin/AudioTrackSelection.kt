@@ -8,8 +8,7 @@ import androidx.media3.common.TrackSelectionOverride
 import playback.AudioTrackFacts
 
 /**
- * The real-`Player` mechanics [AudioChoiceController] drives — split out to
- * keep that file under the project's line guideline. Nothing here decides
+ * The real-`Player` mechanics [AudioChoiceController] drives. Nothing here decides
  * *which* track to pick; that is `playback.audioTrackForLanguage`, plain
  * enough to test without any of this.
  */
@@ -17,10 +16,9 @@ import playback.AudioTrackFacts
 /**
  * This open's audio tracks, read off a real `Tracks` the moment ExoPlayer
  * reports it. A track the device cannot decode is left out entirely —
- * this app carries no FFmpeg extension, so `DefaultTrackSelector` already
- * knows a DTS or TrueHD stream on a stock build has nothing to play it
- * with, and offering a choice this app cannot honour would be worse than
- * not offering it.
+ * `DefaultTrackSelector` already knows which streams neither the device
+ * nor core:ffmpeg's decoder (DTS and TrueHD) can play, and offering a
+ * choice this app cannot honour would be worse than not offering it.
  */
 internal fun extractAudioFacts(tracks: Tracks): List<AudioTrackFacts> {
     val result = mutableListOf<AudioTrackFacts>()

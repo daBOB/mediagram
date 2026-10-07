@@ -1,7 +1,8 @@
 package setup
 
-import settings.TelegramCredentials
-import settings.TelegramSettings
+import data.settings.TelegramCredentials
+import data.settings.TelegramSettings
+
 
 /**
  * A store that will not answer, standing in for the keystore refusing after

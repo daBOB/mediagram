@@ -132,7 +132,7 @@ private fun TvCoverPill(
 
 /**
  * One film's own bar in the cover's pager — a focused dot shows its film
- * (focus-selects, the Settings-index rule [ui.tv.system.TvSettingsIndex]
+ * (focus-selects, the Settings-index rule [ui.tv.settings.TvSettingsIndex]
  * already draws for a section row): [onFocused] alone drives the picture
  * shown, before OK is ever pressed. A [Surface], like every other stop
  * here, so the same accent ring reads across the whole action row — OK

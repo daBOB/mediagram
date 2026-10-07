@@ -79,8 +79,6 @@ class FakePlayerHandle : PlayerHandle {
         stopCalled = true
     }
 
-    override fun release() = Unit
-
     override fun positionMs(): Long? = fakePositionMs
 
     override fun durationMs(): Long? = fakeDurationMs

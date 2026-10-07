@@ -24,6 +24,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import ui.common.profile.ManageActions
 import kotlin.test.assertEquals
 
 /** Manage profiles drawn from its state, section for section as `profile-manage.js` draws it. */

@@ -62,9 +62,9 @@ class TvCatalogScreenStateTest {
     }
 
     /**
-     * `mastheadSplitOf`'s own split: the bar's own pill row is departments
-     * only — Home, the shelves, Collections — and Continue/Watchlist are
-     * the rail's own two kept rows now, never pills.
+     * `mastheadTabsOf`: the bar's own pill row is departments only — Home,
+     * the shelves, Collections — and Continue/My List are the rail's own two
+     * kept rows, never pills.
      */
     @Test
     fun theBarCarriesHomeTheShelvesCollectionsAndTheViewerButNotContinueOrWatchlist() {
@@ -208,6 +208,51 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithText("A Show").assertIsFocused()
         compose.onNodeWithText("Movies").assertIsNotFocused()
         compose.onNodeWithText("Series").assertIsNotFocused()
+    }
+
+    /** Home's Latest courses holds six, as the web's Home does: a course row is a list and keeps the shorter row limit, not the poster rows' eight. */
+    @Test
+    fun homesLatestCoursesHoldsTheNewestSix() {
+        show(ready(courses(8)))
+
+        (2..7).forEach { compose.onNodeWithText("Course $it").assertExists() }
+        (0..1).forEach { compose.onNodeWithText("Course $it").assertDoesNotExist() }
+    }
+
+    /**
+     * The chosen tab is kept by its department, not by its position: a
+     * refresh that brings Movies in ahead of Tutorials must leave Tutorials
+     * on screen, not whichever department now sits where it used to.
+     */
+    @Test
+    @Config(qualifiers = "w960dp-h540dp")
+    fun aRefreshThatAddsADepartmentAheadKeepsTheChosenOneOnScreen() {
+        val state = mutableStateOf<CatalogUiState>(ready(courses(1)))
+        compose.runOnUiThread {
+            val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
+                TvTheme {
+                    TvCatalogScreen(
+                        state = state.value,
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenTitle = {},
+                        onOpenCollection = {},
+                        onOpenList = {},
+                        onCreateList = {},
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Tutorials").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onAllNodesWithText("Course 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Tutorials never opened" } }
+
+        compose.runOnUiThread { state.value = ready(films(2) + courses(1)) }
+        compose.waitForIdle()
+
+        compose.onAllNodesWithText("Course 0").fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "the refresh moved the screen off Tutorials" } }
+        compose.onNodeWithText("No documentaries yet", substring = true).assertDoesNotExist()
     }
 
     @Test

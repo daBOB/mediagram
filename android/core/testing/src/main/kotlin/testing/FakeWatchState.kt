@@ -10,6 +10,12 @@ import uniffi.mediagram_core.WatchedRow
 private const val MAX_PREFERENCE = 200
 
 /**
+ * The core's `SYNCED_NAMES` (`state/record/preference_record.rs`): the names
+ * that travel between devices, which `preferences::set` refuses to forget.
+ */
+private val SYNCED_PREFERENCES = setOf("subtitle", "cue-size", "cue-backing", "cue-offset")
+
+/**
  * A counter that only ever goes up, one tick per call. [FakeCore]'s default
  * clock: every write gets its own later "now" without a test having to wait
  * on the wall clock, and two writes in the same test can never tie the way
@@ -22,8 +28,7 @@ fun monotonicClock(): () -> Long {
 
 /**
  * [FakeCore]'s watch-state half — progress, watched marks, the watchlist,
- * Kids, the editor's choice, collections and per-show preferences — split
- * into its own file only to keep `FakeCore.kt` under the line limit. Mirrors
+ * Kids, the editor's choice, collections and per-show preferences. Mirrors
  * the rules `crates/mediagram-core/src/state/rows.rs`, `editors_choice.rs`,
  * `lists.rs` and `preferences.rs` apply to the real core's SQLite tables,
  * against [now] standing in for their `now_ms()`.
@@ -260,17 +265,22 @@ class FakeWatchState(
             .sortedWith(compareBy({ it.scope }, { it.name }))
 
     /**
-     * As `preferences::set`: `false` only when [scope] or [name] trims to
-     * nothing, or when a value is written for a profile nobody created (the
-     * real insert breaks the foreign key, which the API answers as `false`).
-     * Forgetting — a `null` or blank [value] — is a plain delete, which no
-     * foreign key refuses, so it answers `true` for any profile.
+     * As `preferences::set`: `false` when [scope] or [name] trims to nothing,
+     * or when a value is written for a profile nobody created (the real insert
+     * breaks the foreign key, which the API answers as `false`).
+     *
+     * Forgetting — a `null` or blank [value] — answers `false` and keeps the
+     * row for a synced name ([SYNCED_PREFERENCES]): that row carries no
+     * tombstone, so a delete would come back from every device still holding
+     * it. Any other name is a plain delete, which no foreign key refuses, so
+     * it answers `true` for any profile.
      */
     @Synchronized
     fun setPreference(profileId: String, scope: String, name: String, value: String?): Boolean {
         val key = (shortPreference(scope) ?: return false) to (shortPreference(name) ?: return false)
         val clean = value?.let(::shortPreference)
         if (clean == null) {
+            if (key.second in SYNCED_PREFERENCES) return false
             preferencesByProfile[profileId]?.remove(key)
             return true
         }

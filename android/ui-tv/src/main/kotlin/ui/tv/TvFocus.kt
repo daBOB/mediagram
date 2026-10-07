@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
@@ -22,7 +24,6 @@ import androidx.tv.material3.ClickableSurfaceGlow
 import androidx.tv.material3.ClickableSurfaceScale
 import androidx.tv.material3.ClickableSurfaceShape
 import androidx.tv.material3.MaterialTheme
-import designsystem.Palette
 import designsystem.Radius
 
 /**
@@ -98,7 +99,7 @@ object TvFocus {
     @Composable
     fun cardBorder(shape: Shape = Shape): CardBorder =
         CardDefaults.border(
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
         )
 
     /** Explicit, not just the tv-material default: this catalogue never glows. */
@@ -143,7 +144,7 @@ object TvFocus {
                 } else {
                     Border.None
                 },
-            focusedBorder = Border(border = BorderStroke(BorderWidth, Palette.Imprint), shape = shape),
+            focusedBorder = Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
             focusedDisabledBorder =
                 Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.border), shape = shape),
         )
@@ -164,7 +165,7 @@ object TvFocus {
     @Composable
     fun fieldBorder(focused: Boolean, shape: Shape = Shape): Border =
         Border(
-            border = BorderStroke(BorderWidth, if (focused) Palette.Imprint else MaterialTheme.colorScheme.border),
+            border = BorderStroke(BorderWidth, if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.border),
             shape = shape,
         )
 
@@ -172,10 +173,25 @@ object TvFocus {
      * A text-only row's focus state: the catalogue's accent colour, plus an
      * underline standing in for the border a card would have worn instead.
      */
+    @Composable
     fun textStyle(base: TextStyle, focused: Boolean): TextStyle =
         if (focused) {
-            base.copy(color = Palette.Imprint, textDecoration = TextDecoration.Underline)
+            base.copy(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
         } else {
             base
         }
+}
+
+/**
+ * [wanted] when a caller names a requester for this focus target, else one
+ * of the target's own. A focus target's modifier chain must carry exactly
+ * one `focusRequester` on every recomposition: a requester appearing or
+ * disappearing as a row's arrival target moves between cards makes Compose
+ * treat the node as new and drop the focus it held, and the remote falls
+ * back to the bar. Call it unconditionally, in the same place as the target.
+ */
+@Composable
+internal fun rememberStableRequester(wanted: FocusRequester?): FocusRequester {
+    val own = remember { FocusRequester() }
+    return wanted ?: own
 }

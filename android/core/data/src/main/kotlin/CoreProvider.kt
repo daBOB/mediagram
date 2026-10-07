@@ -1,5 +1,7 @@
 package data
 
+import data.settings.TelegramCredentials
+import data.settings.TelegramSettings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -11,8 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import settings.TelegramCredentials
-import settings.TelegramSettings
 import uniffi.mediagram_core.Core
 import uniffi.mediagram_core.CoreInterface
 
@@ -43,7 +43,11 @@ interface CoreProvider {
     /** The core, once there are credentials to build it from. Suspends until then. */
     suspend fun awaitCore(): CoreInterface
 
-    /** The core if the credentials are already stored, `null` if they are not. */
+    /**
+     * The core, built on the first ask when credentials are stored (after
+     * first retrying a close still pending from the previous one); `null`
+     * when none are stored.
+     */
     suspend fun coreOrNull(): CoreInterface?
 
     /** Installs the initial identity. Throws if a core is already published; use [replace] to change it. */
@@ -175,7 +179,7 @@ class StoredCoreProvider<T>(
                         build(TelegramCredentials(apiId, apiHash)).also { candidate = it }
                     }
                 client.account()
-                withContext(NonCancellable + dispatcher) { settings.write(apiId, apiHash) }
+                withContext(NonCancellable) { settings.write(apiId, apiHash) }
                 built.value = client
             } catch (
                 @Suppress("TooGenericExceptionCaught") failure: Throwable,

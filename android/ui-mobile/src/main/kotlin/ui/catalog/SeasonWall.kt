@@ -43,9 +43,8 @@ import model.WatchSnapshot
  *
  * [season]/[onSelectSeason] are the caller's own [androidx.compose.runtime.saveable.rememberSaveable]
  * state rather than this function's own: the same season must still be
- * shown once a watch-state update recomposes the whole series page, the
- * finding this phase's tab work was asked to carry over to the season
- * choice too.
+ * shown once a watch-state update recomposes the whole series page, as
+ * the chosen tab is ([rememberChosenTab]).
  */
 internal fun LazyListScope.seriesEpisodes(
     collection: Entry.Collection,

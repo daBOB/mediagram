@@ -8,8 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import model.SubtitleTrackInfo
-import org.junit.Assume.assumeTrue
-import java.io.File
+import testing.webFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -23,10 +22,9 @@ import kotlin.test.assertEquals
 class SubtitleChoiceTest {
     @Test
     fun matchesTheWebsFixtures() {
-        val file = locateSubtitlesFixture("choice-cases.json")
-        assumeTrue("choice-cases.json not found above this module; is the web checkout present?", file != null)
+        val file = webFixture("subtitles/choice-cases.json")
 
-        val cases = Json.parseToJsonElement(file!!.readText()).jsonArray
+        val cases = Json.parseToJsonElement(file.readText()).jsonArray
         for (case in cases) {
             val obj = case.jsonObject
             val name = obj.getValue("name").jsonPrimitive.content
@@ -67,14 +65,3 @@ private fun JsonObject.toTrack() =
 
 private fun JsonObject.text(key: String): String? =
     this[key]?.takeUnless { it is JsonNull }?.jsonPrimitive?.content
-
-/** Walks up from the working directory until it finds the web's subtitle fixtures, or gives up at the filesystem root. */
-private fun locateSubtitlesFixture(name: String): File? {
-    var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
-    while (dir != null) {
-        val candidate = File(dir, "web/test/fixtures/subtitles/$name")
-        if (candidate.isFile) return candidate
-        dir = dir.parentFile
-    }
-    return null
-}

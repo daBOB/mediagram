@@ -81,6 +81,8 @@ class FakeCore(
     var accountAnswer: AccountSummary? = AccountSummary("A Viewer", "viewer"),
     /** What [account] throws instead of [accountAnswer], or `null` to answer normally. */
     var accountFailure: Throwable? = null,
+    /** Holds [account] suspended until completed — a Telegram that does not answer at all. */
+    var accountGate: CompletableDeferred<Unit>? = null,
     var searchHits: List<SearchHit> = emptyList(),
     var creditsAnswer: TitleCreditsRecord = TitleCreditsRecord(cast = emptyList(), crew = emptyList()),
     /** What [person] answers, keyed by the id asked. */
@@ -405,6 +407,7 @@ class FakeCore(
     }
 
     override suspend fun account(): AccountSummary {
+        accountGate?.await()
         accountFailure?.let { throw it }
         return accountAnswer ?: error("no account behind this core")
     }

@@ -29,7 +29,7 @@ class DefaultSummarySource(private val coreProvider: CoreProvider) : SummarySour
     } catch (e: CancellationException) {
         throw e
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        Log.w(TAG, "load($setId): ${e.message}")
+        Log.w(TAG, "summary load($setId) failed", e)
         null
     }
 

@@ -17,6 +17,9 @@ import catalog.searchWhy
 import catalog.watchedFractionOf
 import designsystem.Spacing
 import model.Progress
+import ui.common.catalog.isPlayable
+import ui.common.catalog.locationOf
+import ui.common.catalog.searchMetaLineOf
 
 /**
  * One hit: title, where it sits, why it matched, what it is, and — if this

@@ -1,11 +1,8 @@
 package ui.tv
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
@@ -101,22 +98,6 @@ internal fun TvShell(content: @Composable () -> Unit) {
                 containerColor = MaterialTheme.colorScheme.background,
                 contentColor = MaterialTheme.colorScheme.onBackground,
             ),
-    ) {
-        content()
-    }
-}
-
-/**
- * The safe area a screen reaches for when it has nothing of its own to
- * lay out: padded by [Overscan] and centred, the way a message standing in
- * for a wall needs to be drawn. A real lazy wall or a full-bleed player does not use
- * this — see [TvShell] for why each of those owns a different safe area.
- */
-@Composable
-internal fun TvSafeArea(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-        contentAlignment = Alignment.Center,
     ) {
         content()
     }

@@ -1,11 +1,12 @@
 package setup
 
+import data.settings.InMemoryTelegramSettings
+import data.settings.TelegramCredentials
+import data.settings.TelegramSettings
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import settings.InMemoryTelegramSettings
-import settings.TelegramCredentials
-import settings.TelegramSettings
 import testing.FakeCore
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreException
 import kotlin.test.Test
 import kotlin.test.assertEquals

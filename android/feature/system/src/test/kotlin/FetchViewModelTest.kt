@@ -2,14 +2,15 @@ package system
 
 import data.CatalogEnrichmentFetcher
 import data.CoreProvider
+import data.settings.InMemoryTmdbSettings
+import data.settings.TmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import settings.InMemoryTmdbSettings
-import settings.TmdbSettings
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.MainDispatcherRule
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale

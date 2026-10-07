@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import data.CoreProvider
+import data.di.MainThreadScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +16,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import playback.DefaultSubtitleTrackSource
 import playback.DefaultSummarySource
-import playback.HeldSets
-import playback.HeldSetsQuery
 import playback.LanCacheRuntime
 import playback.PlaybackCounters
 import playback.SubtitleTrackSource
@@ -45,20 +44,16 @@ import javax.inject.Singleton
  *
  * The series and film preloaders' own wiring — which shares this same
  * deferred player, behind [dagger.Lazy] so asking for it does not itself
- * force the build (see `di/ActivePlayback`'s own doc) — lives in
- * `di/PreloadModule`, split out to keep this file to the player's own
- * concerns and under the project's line guideline.
+ * force the build (see `ActivePlayback`'s own doc) — lives in
+ * `di/PreloadModule`, so this file keeps to the player's own concerns.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object PlaybackModule {
     @Provides
     @Singleton
+    @MainThreadScope
     fun providePlaybackScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
-    @Provides
-    @Singleton
-    fun playbackCounters(): PlaybackCounters = PlaybackCounters()
 
     // Deferred<out T>'s declaration-site variance compiles to Java's
     // Deferred<? extends ExoPlayer>, which Dagger's binding graph treats
@@ -71,7 +66,7 @@ object PlaybackModule {
         coreProvider: CoreProvider,
         counters: PlaybackCounters,
         lan: LanCacheRuntime,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): @JvmSuppressWildcards Deferred<ExoPlayer> =
         scope.async {
             // Awaited once so the cache is not built on a device that has never
@@ -85,7 +80,7 @@ object PlaybackModule {
     @Singleton
     fun providePlayerHandle(
         playerDeferred: @JvmSuppressWildcards Deferred<ExoPlayer>,
-        scope: CoroutineScope,
+        @MainThreadScope scope: CoroutineScope,
     ): PlayerHandle = DefaultPlayerHandle(playerDeferred, scope)
 
     @Provides
@@ -104,8 +99,4 @@ object PlaybackModule {
     @Provides
     @Singleton
     fun providePlaybackServiceController(controller: AndroidPlaybackServiceController): PlaybackServiceController = controller
-
-    @Provides
-    @Singleton
-    fun provideHeldSets(@ApplicationContext context: Context): HeldSetsQuery = HeldSets(context)
 }

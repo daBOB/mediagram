@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import catalog.Department
 import catalog.Entry
 import catalog.ShowsDepartment
 import catalog.extentOf
@@ -27,6 +28,7 @@ import catalog.showsLineOf
 import designsystem.Spacing
 import model.WatchSnapshot
 import ui.catalog.home.CourseList
+import ui.common.catalog.rememberRowState
 
 private val DEPT_CARD_WIDTH = 140.dp
 
@@ -38,14 +40,13 @@ private val DEPT_CARD_WIDTH = 140.dp
  * big enough Series shelf only — a course is never categorised and never
  * gets these rows either), then every show or course.
  *
- * @param label "Series" or "Tutorials", both the hero's title and what the
- *   Continue row and the foot section call it.
- * @param unit "episode" or "lesson", for the hero's own count line.
+ * @param dept [Department.SERIES] or [Department.TUTORIALS]: the hero's
+ *   title and count line, and what the Continue row and the foot section
+ *   call it.
  */
 @Composable
 internal fun ShowsDepartmentScreen(
-    label: String,
-    unit: String,
+    dept: Department,
     department: ShowsDepartment,
     watch: WatchSnapshot,
     heldIds: Set<String>,
@@ -62,6 +63,7 @@ internal fun ShowsDepartmentScreen(
     }
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
+    val series = dept == Department.SERIES
 
     LazyVerticalGrid(
         columns = GutteredCells(columns, Spacing.medium),
@@ -73,8 +75,8 @@ internal fun ShowsDepartmentScreen(
     ) {
         item(key = "hero", span = { GridItemSpan(maxLineSpan) }) {
             DepartmentHero(
-                title = label,
-                line = showsLineOf(department, label, unit),
+                title = dept.label,
+                line = showsLineOf(department, dept),
                 lead = leadTitle,
                 // The show's own name, not whichever episode happened to
                 // lead — the web's own `lead?.show` (`department-pages.js`).
@@ -88,7 +90,7 @@ internal fun ShowsDepartmentScreen(
         }
         if (resumeCards.isNotEmpty()) {
             item(key = "continue-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = if (label == "Series") "Continue your series" else "Continue your courses")
+                DeptRowHeading(title = if (series) "Continue your series" else "Continue your courses")
             }
             item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
                 ResumeStrip(cards = resumeCards, onOpenTitle = onPlay)
@@ -119,9 +121,9 @@ internal fun ShowsDepartmentScreen(
             }
         }
         item(key = "all-heading", span = { GridItemSpan(maxLineSpan) }) {
-            DeptRowHeading(title = if (label == "Series") "All shows" else "All courses")
+            DeptRowHeading(title = if (series) "All shows" else "All courses")
         }
-        if (label == "Series") {
+        if (series) {
             itemsIndexed(items = department.all, key = { _, entry -> "all/${entry.key}" }) { index, entry ->
                 Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
                     EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)

@@ -7,13 +7,13 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.MenuScreen
 import catalog.updateDisabledReason
-import system.FetchUiState
+import data.CatalogEnrichmentState
 import system.FetchViewModel
-import ui.LibraryPositions
-import ui.MenuActions
-import ui.settings.SettingsSection
-import ui.tv.system.TvSettingsScreen
-import ui.tv.system.TvTmdbKeyScreen
+import ui.common.LibraryPositions
+import ui.common.MenuActions
+import ui.common.settings.SettingsSection
+import ui.tv.settings.TvSettingsScreen
+import ui.tv.settings.TvTmdbKeyScreen
 import ui.tv.system.menuRestoreKey
 
 /**
@@ -31,7 +31,7 @@ internal fun tvMenuActions(
     depth: Int,
     catalogState: CatalogUiState,
     catalogViewModel: CatalogViewModel,
-    fetchState: FetchUiState,
+    fetchState: CatalogEnrichmentState,
     onLeavePage: () -> Unit,
     onStartOver: () -> Unit,
     preloadCount: Int = 0,
@@ -78,7 +78,7 @@ internal fun tvMenuActions(
 @Composable
 internal fun TvMenuScreenBranch(
     at: LibraryPositions,
-    fetchState: FetchUiState,
+    fetchState: CatalogEnrichmentState,
     fetchViewModel: FetchViewModel,
     leave: () -> Unit,
 ) {

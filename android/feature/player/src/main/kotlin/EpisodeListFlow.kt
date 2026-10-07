@@ -1,6 +1,7 @@
 package player
 
 import data.CatalogRepository
+import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -50,7 +51,7 @@ internal fun CoroutineScope.episodeListFlow(
             loaded.value = when {
                 ids.isEmpty() -> null
                 before != null && ids.all { it in before } -> ids to before
-                else -> safely(null) { catalogRepository.sets() }?.let { ids to runSetsOf(it, ids) } ?: before?.let { ids to it }
+                else -> orDefault(null) { catalogRepository.sets() }?.let { ids to runSetsOf(it, ids) } ?: before?.let { ids to it }
             }
         }
     }

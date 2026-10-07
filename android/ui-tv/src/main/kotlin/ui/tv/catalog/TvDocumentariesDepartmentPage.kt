@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.unit.dp
+import catalog.Department
 import catalog.DocumentariesDepartment
 import catalog.documentariesLineOf
 import catalog.keyOf
@@ -62,21 +63,22 @@ internal fun TvDocumentariesDepartmentPage(
     val sections =
         remember(dept, resumeCards) {
             buildList {
-                add(DeptSection("continue", resumeCards.map { it.set.setId }))
-                dept.categories.forEachIndexed { i, row -> add(DeptSection("category:$i", row.units.map(::keyOf))) }
-                add(DeptSection("recentlyAdded", dept.recentlyAdded.map { it.setId }))
-                dept.collections.forEachIndexed { i, group -> add(DeptSection("group:$i", group.preview.map { it.setId })) }
-                add(DeptSection("standalone", dept.singles.map { it.setId }))
+                add(DeptSection(ContinueSection, resumeCards.map { it.set.setId }))
+                dept.categories.forEachIndexed { i, row -> add(DeptSection(categorySection(i), row.units.map(::keyOf))) }
+                add(DeptSection(RecentlyAddedSection, dept.recentlyAdded.map { it.setId }))
+                dept.collections.forEachIndexed { i, group -> add(DeptSection(groupSection(i), group.preview.map { it.setId })) }
+                add(DeptSection(StandaloneSection, dept.singles.map { it.setId }))
             }
         }
     val target = remember(sections, restoreKey, lastSection) { documentariesDeptTargetOf(sections, restoreKey, lastSection) }
-    val included = remember(sections) { sections.filter { it.stops.isNotEmpty() }.map { it.name } }
+    // Exactly the rows the list below draws, in order, so the arrival's scroll index lands on its row.
+    val included = remember(sections) { sections.filter { it.stops.isNotEmpty() }.map { it.id } }
     val takesFocus = LocalTakesArrivalFocus.current
     var sectionInView by remember { mutableStateOf(false) }
     LaunchedEffect(target, takesFocus) {
         sectionInView = false
         if (!takesFocus) return@LaunchedEffect
-        val itemIndex = included.indexOf(target.first) + 1 // the hero is item 0.
+        val itemIndex = included.indexOf(target.section) + 1 // the hero is item 0.
         listState.scrollToItem(itemIndex)
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }.firstOf { info -> info.any { it.index == itemIndex } }
         sectionInView = true
@@ -84,8 +86,6 @@ internal fun TvDocumentariesDepartmentPage(
     val rowTakesFocus = takesFocus && sectionInView
 
     val pagePadding = LocalTvPagePadding.current
-    fun stopAt(section: String): Int? = target.second.takeIf { target.first == section }
-
     TvPage(takesArrivalFocus = takesFocus) {
         LazyColumn(
             state = listState,
@@ -96,89 +96,101 @@ internal fun TvDocumentariesDepartmentPage(
         ) {
             item(key = "hero") {
                 Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvDepartmentHero(title = "Documentaries", line = documentariesLineOf(dept), lead = dept.lead)
+                    TvDepartmentHero(title = Department.DOCUMENTARIES.label, line = documentariesLineOf(dept), lead = dept.lead)
                 }
             }
-            item(key = "continue") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptResumeRow(
-                        "Continue watching",
-                        resumeCards,
-                        onPlay,
-                        focusAt = stopAt("continue"),
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        onSectionFocused = { lastSection = "continue" },
-                    )
+            if (ContinueSection in included) {
+                item(key = ContinueSection) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptResumeRow(
+                            "Continue watching",
+                            resumeCards,
+                            onPlay,
+                            focusAt = target.stopAt(ContinueSection),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            onSectionFocused = { lastSection = ContinueSection },
+                        )
+                    }
                 }
             }
             for ((i, row) in dept.categories.withIndex()) {
-                item(key = "category:$i") {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        DeptEntryRow(
-                            row.title,
-                            row.units,
-                            positions,
-                            watchedIds,
-                            onOpenTitle = onPlay,
-                            onOpenCollection = onOpenCollection,
-                            heldIds = heldIds,
-                            focusAt = stopAt("category:$i"),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            onSectionFocused = { lastSection = "category:$i" },
-                        )
+                val section = categorySection(i)
+                if (section in included) {
+                    item(key = section) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            DeptEntryRow(
+                                row.title,
+                                row.units,
+                                positions,
+                                watchedIds,
+                                onOpenTitle = onPlay,
+                                onOpenCollection = onOpenCollection,
+                                heldIds = heldIds,
+                                focusAt = target.stopAt(section),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                onSectionFocused = { lastSection = section },
+                            )
+                        }
                     }
                 }
             }
-            item(key = "recentlyAdded") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptRow(
-                        "Recently added",
-                        dept.recentlyAdded,
-                        onPlay,
-                        focusAt = stopAt("recentlyAdded"),
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        heldIds = heldIds,
-                        onSectionFocused = { lastSection = "recentlyAdded" },
-                    )
+            if (RecentlyAddedSection in included) {
+                item(key = RecentlyAddedSection) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptRow(
+                            "Recently added",
+                            dept.recentlyAdded,
+                            onPlay,
+                            focusAt = target.stopAt(RecentlyAddedSection),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            heldIds = heldIds,
+                            onSectionFocused = { lastSection = RecentlyAddedSection },
+                        )
+                    }
                 }
             }
             for ((i, group) in dept.collections.withIndex()) {
+                val section = groupSection(i)
                 val hasMore = group.collection.count > group.preview.size
-                item(key = "group:$i") {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        DeptRow(
-                            group.collection.name,
-                            group.preview,
-                            onPlay,
-                            focusAt = stopAt("group:$i"),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            heldIds = heldIds,
-                            onSectionFocused = { lastSection = "group:$i" },
-                            trailing = {
-                                if (hasMore) {
-                                    TvTextRow(text = "All ${group.collection.count} →", onClick = { onOpenCollection(group.collection.key) })
-                                }
-                            },
-                        )
+                if (section in included) {
+                    item(key = section) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            DeptRow(
+                                group.collection.name,
+                                group.preview,
+                                onPlay,
+                                focusAt = target.stopAt(section),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                heldIds = heldIds,
+                                onSectionFocused = { lastSection = section },
+                                trailing = {
+                                    if (hasMore) {
+                                        TvTextRow(text = "All ${group.collection.count} →", onClick = { onOpenCollection(group.collection.key) })
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
-            item(key = "standalone") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    DeptRow(
-                        "Standalone documentaries",
-                        dept.singles,
-                        onPlay,
-                        focusAt = stopAt("standalone"),
-                        focus = focus,
-                        takesFocus = rowTakesFocus,
-                        heldIds = heldIds,
-                        onSectionFocused = { lastSection = "standalone" },
-                    )
+            if (StandaloneSection in included) {
+                item(key = StandaloneSection) {
+                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                        DeptRow(
+                            "Standalone documentaries",
+                            dept.singles,
+                            onPlay,
+                            focusAt = target.stopAt(StandaloneSection),
+                            focus = focus,
+                            takesFocus = rowTakesFocus,
+                            heldIds = heldIds,
+                            onSectionFocused = { lastSection = StandaloneSection },
+                        )
+                    }
                 }
             }
         }

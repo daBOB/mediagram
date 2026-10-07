@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.profile.ManageActions
+import ui.common.profile.ManageActions
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals

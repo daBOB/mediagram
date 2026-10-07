@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
@@ -10,7 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
-import catalog.DOCUMENTARIES
+import catalog.Department
 import catalog.Entry
 import catalog.Shelf
 import catalog.allSetsById
@@ -24,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.tv.TvMoviesPageEntryKey
+import ui.common.catalog.rememberDepartmentScrollStates
 import kotlin.test.assertEquals
 
 /**
@@ -42,7 +43,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         val shows = (0 until 13).map { i -> set("s$i", Kind.EPISODE, "Ep", show = "Show %02d".format(i), addedAt = i.toLong(), episode = 1) }
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
+        show { TvShowsDepartmentPage(Department.SERIES, dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         for (i in 0..7) {
             compose.onAllNodesWithText("Show %02d".format(i)).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "Show %02d missing".format(i) } }
@@ -57,7 +58,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
         val shows = listOf(lead, other)
         val dept = showsDepartmentOf(Kind.EPISODE, seriesEntriesOf(shows), allSetsById(shelvesOf(shows)), WatchSnapshot.Empty)!!
 
-        show { TvShowsDepartmentPage("Series", "episode", dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
+        show { TvShowsDepartmentPage(Department.SERIES, dept, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         compose.onNodeWithText("Lead Show").assertIsFocused()
     }
@@ -82,21 +83,24 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
 
     /**
      * Featured, Genres and Acclaimed all empty (every film watched, none
-     * carries a genre) — three rows in a row skipped, two of them still
-     * their own zero-height `item()` in the outer list rather than absent
-     * from it. Recently added ignores watched status, so it alone is left
-     * to take arrival; this pins the scroll-to-item math staying correct
-     * across more than one skipped row, not just the one row the other test
-     * above already covers.
+     * carries a genre) — three rows in a row skipped. Recently added ignores
+     * watched status, so it alone is left to take arrival; this pins the
+     * scroll-to-item math staying correct across more than one skipped row,
+     * not just the one row the other test above already covers. The list
+     * holds no item for a skipped row, or the arrival's scroll index, which
+     * counts only the rows drawn, would land short of its row.
      */
     @Test
     fun recentlyAddedTakesArrivalFocusWhenEveryEarlierRowIsEmpty() {
         val films = (0 until 3).map { i -> set("f$i", Kind.MOVIE, "Film $i", addedAt = i.toLong()) }
         val dept = moviesDepartmentOf(films) { true }!!
+        val listState = LazyListState()
 
-        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}) }
+        show { TvMoviesDepartmentPage(dept = dept, onOpenTitle = {}, onPlay = {}, onOpenGenre = {}, onOpenAllFilms = {}, listState = listState) }
 
         compose.onNodeWithText("Film 2").assertIsFocused()
+        // The hero, Recently added and the "All N films" link.
+        assertEquals(3, listState.layoutInfo.totalItemsCount)
     }
 
     /**
@@ -110,11 +114,11 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
     fun anEmptyDocumentariesWallShowsTheUploadHintRatherThanNothing() {
         show {
             DepartmentOrShelfWall(
-                shelf = Shelf(DOCUMENTARIES, emptyList()),
+                shelf = Shelf(Department.DOCUMENTARIES, emptyList()),
                 watch = WatchSnapshot.Empty,
                 heldIds = emptySet(),
                 byId = emptyMap(),
-                deptScroll = rememberTvDepartmentScrollStates(),
+                deptScroll = rememberDepartmentScrollStates(),
                 onOpenTitle = {},
                 onPlay = {},
                 onOpenCollection = {},
@@ -157,7 +161,7 @@ class TvDepartmentPagesStateTest : TvScreenStateTest() {
 
         show {
             TvShowsDepartmentPage(
-                "Series", "episode", dept, WatchSnapshot.Empty,
+                Department.SERIES, dept, WatchSnapshot.Empty,
                 onOpenTitle = {}, onOpenCollection = {}, onPlay = {}, restoreKey = "SHOW/Show 2",
             )
         }

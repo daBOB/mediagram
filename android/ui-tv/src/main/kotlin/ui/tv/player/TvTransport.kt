@@ -22,7 +22,7 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
 import designsystem.Spacing
-import ui.player.TransportIcons
+import ui.common.player.TransportIcons
 
 /**
  * The card's bottom row: ↺, ⏮, back fifteen, play/pause, forward fifteen,

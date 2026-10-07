@@ -1,11 +1,11 @@
 package data
 
+import data.settings.InMemoryLibrarySettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import model.Kind
-import settings.InMemoryLibrarySettings
 import testing.FakeCore
-import testing.ResolvedCoreProvider
+import testing.FakeCoreProvider
 import uniffi.mediagram_core.CreditRecord
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.SetSummary
@@ -19,7 +19,7 @@ class CatalogRepositoryTest {
     @Test
     fun refreshBeforeALibraryIsChosenFails() =
         runTest {
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(FakeCore()), InMemoryLibrarySettings(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(FakeCore()), InMemoryLibrarySettings(), RefreshLog())
             assertTrue(repo.refresh().isFailure)
         }
 
@@ -32,7 +32,7 @@ class CatalogRepositoryTest {
     fun refreshReadsTheLibraryThisDeviceChose() =
         runTest {
             val core = FakeCore(refreshResult = 12L)
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary("chosen"), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary("chosen"), RefreshLog())
 
             assertEquals(12, repo.refresh().getOrThrow())
             assertEquals("chosen", core.refreshedHandle)
@@ -42,7 +42,7 @@ class CatalogRepositoryTest {
     fun setsMapKindFromTheCoreSurface() =
         runTest {
             val core = FakeCore(sets = listOf(summary(kind = "ep", episodeFirst = 3, episodeLast = 3)))
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(Kind.EPISODE, repo.sets().single().kind)
         }
 
@@ -63,7 +63,7 @@ class CatalogRepositoryTest {
                     ),
                 ),
             )
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
             val set = repo.sets().single()
             assertEquals("/cache/tmdb-tv-1396.jpg", set.posterPath)
@@ -79,7 +79,7 @@ class CatalogRepositoryTest {
     fun aSetKeepsTheTimeItArrived() =
         runTest {
             val core = FakeCore(sets = listOf(summary(kind = "movie", addedAt = 1_781_568_000)))
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(1_781_568_000, repo.sets().single().addedAt)
         }
 
@@ -91,7 +91,7 @@ class CatalogRepositoryTest {
     fun aDocumentKeepsItsOwnKind() =
         runTest {
             val core = FakeCore(sets = listOf(summary(kind = "doc")))
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
             assertEquals(Kind.DOCUMENT, repo.sets().single().kind)
         }
 
@@ -104,7 +104,7 @@ class CatalogRepositoryTest {
     fun unrecognisedKindIsShelvedWithFilmsRatherThanDropped() =
         runTest {
             val core = FakeCore(sets = listOf(summary(kind = "short-film")))
-            val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+            val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
             val set = repo.sets().single()
             assertEquals(Kind.MOVIE, set.kind)
@@ -115,7 +115,7 @@ class CatalogRepositoryTest {
     fun searchDelegatesToTheCoreUnjoined() = runTest {
         val hit = SearchHit(setId = "set-1", matched = "title", excerpt = null)
         val core = FakeCore(searchHits = listOf(hit))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         assertEquals(listOf(hit), repo.search("steuer"))
         assertEquals("steuer", core.searchedFor)
@@ -135,7 +135,7 @@ class CatalogRepositoryTest {
                 summary(setId = "s3", posterKey = "key-3"),
             ),
         )
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
 
         val found = repo.mediaSet("s2")
 
@@ -147,7 +147,7 @@ class CatalogRepositoryTest {
     @Test
     fun mediaSetAnswersNothingForAnUnknownId() = runTest {
         val core = FakeCore(sets = listOf(summary(setId = "s1")))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog(), dispatcher = Dispatchers.Unconfined)
 
         assertEquals(null, repo.mediaSet("nobody"))
     }
@@ -166,7 +166,7 @@ class CatalogRepositoryTest {
                 ),
             ),
         )
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val set = repo.sets().single()
         assertEquals(7L, set.collectionId)
@@ -179,7 +179,7 @@ class CatalogRepositoryTest {
     @Test
     fun aSetFromAV8IndexHasNoFranchiseOrSeriesFacts() = runTest {
         val core = FakeCore(sets = listOf(summary(setId = "plain")))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val set = repo.sets().single()
         assertEquals(null, set.collectionId)
@@ -192,7 +192,7 @@ class CatalogRepositoryTest {
     @Test
     fun aSetSaysWhetherItIsAnime() = runTest {
         val core = FakeCore(sets = listOf(summary(setId = "spirited-away", anime = true), summary(setId = "dune", anime = false)))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val sets = repo.sets().associateBy { it.setId }
         assertEquals(true, sets["spirited-away"]?.anime)
@@ -203,7 +203,7 @@ class CatalogRepositoryTest {
     @Test
     fun aSetCarriesItsCategory() = runTest {
         val core = FakeCore(sets = listOf(summary(setId = "rust-course", category = "Programming"), summary(setId = "dune")))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val sets = repo.sets().associateBy { it.setId }
         assertEquals("Programming", sets["rust-course"]?.category)
@@ -216,7 +216,7 @@ class CatalogRepositoryTest {
         val cast = CreditRecord(personId = 5uL, name = "Zendaya", role = "Chani", portraitPath = "/cache/person-5.jpg")
         val crew = CreditRecord(personId = 9uL, name = "Denis Villeneuve", role = "Director", portraitPath = null)
         val core = FakeCore(creditsAnswer = TitleCreditsRecord(cast = listOf(cast), crew = listOf(crew)))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
 
         val credits = repo.titleCredits("tmdb-movie-1")
         assertEquals("/cache/person-5.jpg", credits.cast.single().portraitPath)
@@ -225,14 +225,14 @@ class CatalogRepositoryTest {
 
     @Test
     fun personAnswersNothingForAnUnknownId() = runTest {
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(FakeCore()), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(FakeCore()), settingsWithAChosenLibrary(), RefreshLog())
         assertEquals(null, repo.person(1))
     }
 
     @Test
     fun fetchPortraitDelegatesStraightToTheCore() = runTest {
         val core = FakeCore(portraits = mapOf(5L to "/cache/person-5.jpg"))
-        val repo = DefaultCatalogRepository(ResolvedCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
+        val repo = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), RefreshLog())
         assertEquals("/cache/person-5.jpg", repo.fetchPortrait(5))
         assertEquals(null, repo.fetchPortrait(6))
     }

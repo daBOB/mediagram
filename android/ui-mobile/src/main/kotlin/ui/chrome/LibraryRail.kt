@@ -46,7 +46,7 @@ import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.StatusDot
 import stats.NEW_ACHIEVEMENT
-import ui.RailItem
+import ui.common.RailItem
 
 /**
  * What the rail needs beside its own click handlers — computed once where
