@@ -32,8 +32,9 @@ fun List<Profile>.ownerOf(kid: Profile): String? =
 /**
  * The household's one rule — the web's `profiles-rules.ts` and the core's
  * `rules.rs`, all three held to `profile-rules.json`. The core enforces it on
- * every change; a screen asks it only to offer what the core will allow, so
- * a button left showing still cannot do the thing.
+ * every change, so a button left showing still cannot do the thing. Manage
+ * profiles draws its own lists, as the web's panel does, and
+ * `ManageOffersFixtureTest` holds them to the same fixture.
  */
 fun List<Profile>.allowed(
     actorId: String,
