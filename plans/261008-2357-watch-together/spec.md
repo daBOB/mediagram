@@ -38,7 +38,7 @@ Each session is one **unpinned** text message in the library channel:
 - **Screen id.** A screen id is random and lasts for one player instance: one player on an Android device, or one browser tab. It is not the device id. One web server can serve several tabs, and each tab is its own screen.
 - **The message is pinned nowhere.** Telegram's pin flood limit stays out of the way, and index readers already skip any caption that doesn't start with `#mlib-index`.
 - **Writing.** Every change is an edit to the same message, and the last edit wins. A seek scrub sends its edit 300 ms after the last movement, never one edit per frame.
-- **Finding a session.** A screen searches the channel for `#mlib-together` (newest first, at most 5). It also keeps any session it heard about through a push. A message whose marker isn't exactly `#mlib-together v=1`, or whose JSON lacks a field, is not a session.
+- **Finding a session.** A screen reads the newest 100 messages of the channel (one history read) and takes the newest live session among them. It also keeps any session it heard about through a push. A message whose marker isn't exactly `#mlib-together v=1`, or whose JSON lacks a field, is not a session. Telegram search is not used: it has been measured never to find a freshly sent message (`web/src/telegram/state-channel.ts:18-26`), and it reads `#mlib-together` as the hashtag `#mlib`, which matches every part caption.
 - **What stays on each screen:** the profile, the audio track, subtitles, volume and framing. Each screen also records Continue and stats for its own profile, as normal playback does.
 - **Kids.** A kids profile is offered Join only for a title its age limit allows, which is the catalog's own visibility rule. If the session moves on to a title that profile may not see, that screen leaves.
 - **One live session per library.** While a session is live, the player's Watch together button becomes Join for that session. No second session can be started next to it.
@@ -100,7 +100,7 @@ The wording and layout come from the web, and the two Android surfaces match it.
 
 **Format.** `docs/mlib-spec.md` gains a §7b for `#mlib-together v=1`.
 
-**Shared logic** is written once per language and pinned by fixtures. The web module is the reference, and the core ports it. Both are checked against `web/test/fixtures/together/`, which covers:
+**Shared logic** is written once per language and pinned by fixtures. The web module is the reference, and the core ports it. On the web it is plain JavaScript in `web/public/lib/together/` with `.d.ts` files beside it, because the browser loads it directly and the server imports it, the way it already imports `playable.js`. Both are checked against `web/test/fixtures/together/`, which covers:
 
 - parse and write, including rejected markers and missing fields;
 - the expected position;
@@ -109,7 +109,6 @@ The wording and layout come from the web, and the two Android surfaces match it.
 - join and leave on `members`, including the last screen to leave.
 
 **Web**
-- `web/src/together/`: the pure logic.
 - `web/src/telegram/together-channel.ts`: send, edit, delete and search through teleproto.
 - The push path:
   - `updates.ts` classifies `#mlib-together` new and edit updates as `together`, and the `channel-updates` fixtures gain those cases;
@@ -153,10 +152,8 @@ On the box, follow the standing rule: navigate only, never change a setting.
 
 The first plan phase checks two assumptions against the real channel, using a throwaway message that is never pinned and deleted afterwards:
 
-- a channel search for `#mlib-together` finds a message sent seconds earlier;
+- a history read of the newest 100 messages includes a message sent a second earlier;
 - other sessions of the account hear an edit to an unpinned text message as fast as they hear the `#mlib-state` edits today.
-
-If search lags, the fallback is a short `getHistory` scan of recent messages.
 
 ## Out of scope
 
