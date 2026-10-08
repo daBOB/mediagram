@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.119.2 — "Stay as I am" hands the TV remote back to the avatar
+
+**Fixed** (Android TV)
+
+- **After "Stay as I am" the remote rests on the avatar that opened the picker**, as Back from search rests on the search button. 0.119.1 kept the library's tab across the picker, but a pill pressed before it still held the page off its arrival focus, so nothing held the remote until a key was pressed (`fdce2d78`).
+
 ## 0.119.1 — three remote-control fixes from the TV box walk
 
 **Fixed** (Android TV, and the phone for the last)

@@ -1674,7 +1674,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram"
-version = "0.119.1"
+version = "0.119.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -1711,7 +1711,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-cache"
-version = "0.119.1"
+version = "0.119.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -1736,7 +1736,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-core"
-version = "0.119.1"
+version = "0.119.2"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "mediagram-tmdb"
-version = "0.119.1"
+version = "0.119.2"
 dependencies = [
  "anyhow",
  "hex",
@@ -1844,7 +1844,7 @@ dependencies = [
 
 [[package]]
 name = "mlib-spec"
-version = "0.119.1"
+version = "0.119.2"
 dependencies = [
  "flate2",
  "hex",
