@@ -97,7 +97,7 @@ internal fun TvMoviesDepartmentPage(
             // naming no row of its own, is what this is for; every
             // restore-key arrival above already requests a named plate
             // directly, which never defers to this restorer's own search.
-            modifier = Modifier.fillMaxSize().testTag(TvMoviesDepartmentPageTestTag).focusRestorer(fallback = focus),
+            modifier = Modifier.fillMaxSize().testTag(TvMoviesDepartmentPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
             contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
         ) {
             item(key = "hero") {

@@ -91,7 +91,7 @@ internal fun TvDocumentariesDepartmentPage(
             state = listState,
             // Scoped to this list alone — [TvMoviesDepartmentPage]'s own
             // doc on why this coexists with the explicit requests above.
-            modifier = Modifier.fillMaxSize().focusRestorer(fallback = focus),
+            modifier = Modifier.fillMaxSize().toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
             contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
         ) {
             item(key = "hero") {

@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.118.2 — the TV hero comes back
+
+**Fixed** (Android TV)
+
+- **Leaving a page for the bar scrolls it back to its top.** Up off the first row, or Back from anywhere, now brings back the hero on Movies, Series, Tutorials, Anime, Documentaries and Collections, and the cover on Home. Before, the page stayed scrolled down under the bar. The hero has nothing the remote can focus, and the TV only scrolls a page to show what takes focus, so nothing ever scrolled it back. Going Left onto the rail or opening a title keeps the page where it is.
+- **Anime can be entered with nothing underway.** Its header is then the hero alone, taller than the screen, so no plate was laid out when Down from the bar (or Right from the rail) asked the page to take the remote, and the remote stayed on the bar. A wall whose header holds no stop now takes the entry itself and passes it to the first plate. Found on the 0.118.2 box walk; it predates this release.
+
 ## 0.118.1 — Back on a tab returns Home
 
 **Fixed** (Android phone and tablet)

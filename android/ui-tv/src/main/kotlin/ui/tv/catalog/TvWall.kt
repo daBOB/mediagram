@@ -3,6 +3,7 @@ package ui.tv.catalog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -15,12 +16,14 @@ import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import kotlinx.coroutines.flow.first
@@ -65,7 +68,8 @@ private val CacheBehind = 320.dp
  * has no pointer position to remember; when it is not found focus falls
  * back to the first plate, so the wall is never left with nothing focused.
  *
- * [header] stands above the plates and scrolls with them; [headings] start a
+ * [header] stands above the plates and scrolls with them ([headerHoldsNoStop]:
+ * see [passesEntryOn]); [headings] start a
  * labelled line of plates before the item at each index (a genre page's
  * Movies, then its Series); [columns] is fewer than [Columns] for a wall of
  * wider art tiles.
@@ -78,6 +82,7 @@ fun <T> TvWall(
     restoreKey: String?,
     onOpen: (T) -> Unit,
     header: (@Composable () -> Unit)? = null,
+    headerHoldsNoStop: Boolean = false,
     headings: Map<Int, String> = emptyMap(),
     columns: Int = Columns,
     // Hoisted by a caller that also needs this wall's own scroll position —
@@ -89,6 +94,7 @@ fun <T> TvWall(
 ) {
     val takesFocus = LocalTakesArrivalFocus.current
     val focusRequester = remember { FocusRequester() }
+    val wallHasFocus = remember { mutableStateOf(false) }
     // Provided around the grid, not inside `items { }`: the grid's own
     // scroll-into-view reads the spec ambient at its own composition position.
     // [header]'s cell resets to [defaultBringIntoView], or a horizontal row
@@ -137,7 +143,12 @@ fun <T> TvWall(
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    // Only a wall with a hero over it: a kept wall leaves for the rail and keeps its place.
+                    .toTopWhenLeftForTheBar { if (header != null) gridState.animateScrollToItem(0) }
+                    .onFocusChanged { wallHasFocus.value = it.hasFocus },
             contentPadding = LocalTvPagePadding.current.asPaddingValues(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium),
@@ -159,7 +170,11 @@ fun <T> TvWall(
             ) { cell ->
                 when (cell) {
                     WallCell.Header ->
-                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) { header?.invoke() }
+                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
+                            val plate = focusIndex?.let { cells.indexOf(WallCell.Plate(it)) } ?: -1
+                            val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
+                            Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
+                        }
                     is WallCell.Heading -> TvBandHeading(title = cell.label, count = null)
                     is WallCell.Plate -> {
                         val item = items[cell.index]

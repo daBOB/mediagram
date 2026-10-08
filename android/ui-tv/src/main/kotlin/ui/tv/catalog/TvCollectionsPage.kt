@@ -144,7 +144,7 @@ internal fun TvCollectionsPage(
             state = listState,
             // Scoped to this list alone — [TvMoviesDepartmentPage]'s own doc on
             // why this coexists with the explicit request above.
-            modifier = Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag).focusRestorer(fallback = focus),
+            modifier = Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
             contentPadding = PaddingValues(start = pagePadding.start, top = pagePadding.top, end = pagePadding.end, bottom = pagePadding.bottom),
         ) {
             item(key = HERO) {

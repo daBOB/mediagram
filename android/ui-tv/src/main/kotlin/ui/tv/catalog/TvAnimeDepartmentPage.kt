@@ -76,6 +76,7 @@ internal fun TvAnimeDepartmentPage(
                 restoreKey = restoreKey,
                 onOpen = { entry -> openEntry(entry, onOpenTitle, onOpenCollection) },
                 gridState = gridState,
+                headerHoldsNoStop = resumeCards.isEmpty(),
                 headings = headings,
                 header = {
                     Column {

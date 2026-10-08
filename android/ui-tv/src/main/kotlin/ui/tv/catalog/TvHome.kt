@@ -247,6 +247,7 @@ internal fun TvHome(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }
                     .focusRestorer(fallback = enterFallback),
             contentPadding = PaddingValues(top = if (hasCover) 0.dp else pagePadding.top, bottom = pagePadding.bottom + Overscan.horizontal),
         ) {
