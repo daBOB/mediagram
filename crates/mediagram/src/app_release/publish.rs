@@ -1,7 +1,7 @@
 //! Sending a signed APK to the channel as the newest app release (spec §7a).
 
 use anyhow::{Result, bail};
-use mlib_spec::app_caption::{self, AppRelease};
+use mlib_spec::app_caption::{self, AppProfile, AppRelease};
 use sha2::{Digest, Sha256};
 
 use super::badging::Badging;
@@ -12,11 +12,22 @@ pub const APP_PACKAGE: &str = "com.mediagram.android";
 
 const APK_MIME: &str = "application/vnd.android.package-archive";
 
+const PROFILE_MIME: &str = "application/octet-stream";
+
 /// Sends `apk`, pins it, and unpins the releases it replaces; returns its
 /// message id. Refuses another package, and a versionCode not above the
 /// newest release already in the channel — Android would refuse to install
 /// it over that one anyway.
-pub async fn publish(remote: &impl ChannelRemote, apk: &[u8], badging: &Badging, now: i64) -> Result<i32> {
+///
+/// `profile`, the APK's dex metadata, goes first as a document of its own,
+/// unpinned, which the APK's caption then names.
+pub async fn publish(
+    remote: &impl ChannelRemote,
+    apk: &[u8],
+    profile: Option<&[u8]>,
+    badging: &Badging,
+    now: i64,
+) -> Result<i32> {
     if badging.package != APP_PACKAGE {
         bail!("this APK is {}, not {APP_PACKAGE}", badging.package);
     }
@@ -38,12 +49,21 @@ pub async fn publish(remote: &impl ChannelRemote, apk: &[u8], badging: &Badging,
         );
     }
 
+    let profile = match profile {
+        Some(dm) => {
+            let name = format!("mediagram-{}.dm", badging.version_name);
+            let message = remote.send_document(dm, &name, PROFILE_MIME, "").await?;
+            Some(AppProfile { message: i64::from(message), bytes: dm.len() as u64, sha256: hex::encode(Sha256::digest(dm)) })
+        }
+        None => None,
+    };
     let release = AppRelease {
         version: badging.version_name.clone(),
         code: badging.version_code,
         bytes: apk.len() as u64,
         sha256: hex::encode(Sha256::digest(apk)),
         published_at: now,
+        profile,
     };
     let name = format!("mediagram-{}.apk", release.version);
     let id = remote.send_document(apk, &name, APK_MIME, &app_caption::render(&release)).await?;

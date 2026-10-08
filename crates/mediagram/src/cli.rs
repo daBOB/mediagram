@@ -58,6 +58,9 @@ pub enum Cmd {
     PublishApp {
         /// The release APK; `scripts/release-android.sh` builds and checks it first
         apk: std::path::PathBuf,
+        /// The APK's dex metadata (`.dm`), so Android compiles the update at install
+        #[arg(long)]
+        profile: Option<std::path::PathBuf>,
     },
     /// Merge the channel's index into this one, so either machine can publish everything
     PullIndex(PullIndexArgs),

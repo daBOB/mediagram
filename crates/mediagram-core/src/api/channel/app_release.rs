@@ -1,16 +1,16 @@
 //! The newest Android app release pinned in the library channel.
 
-use std::io::Read;
 use std::path::Path;
 
+use grammers_client::Client;
 use grammers_client::message::Message;
 use grammers_mtsender::SenderPoolFatHandle;
+use grammers_session::types::PeerRef;
 use grammers_tl_types::enums::MessagesFilter;
-use sha2::{Digest, Sha256};
 
-use super::download::download_with;
 use super::responses::Responses;
 use super::{index, library};
+use verified_file::write_verified;
 use crate::api::account::revoked::{self, checked_for};
 use crate::api::account::session;
 use crate::api::{Core, CoreError};
@@ -22,6 +22,9 @@ const MAX_PINNED: usize = 100;
 /// The largest APK this build will fetch.
 const MAX_APK_BYTES: u64 = 256 * 1024 * 1024;
 
+/// The largest dex-metadata file this build will fetch; a real one is tens of kilobytes.
+const MAX_PROFILE_BYTES: u64 = 16 * 1024 * 1024;
+
 /// One release, as the channel declares it, and where its APK is.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct AppRelease {
@@ -31,6 +34,17 @@ pub struct AppRelease {
     pub sha256: String,
     pub chat_id: i64,
     pub message_id: i64,
+    /// The APK's dex metadata, a document of its own in the same channel:
+    /// Android compiles the app at install when it arrives beside the APK.
+    pub profile: Option<AppFile>,
+}
+
+/// A document in the release's channel, and how to check it once fetched.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct AppFile {
+    pub message_id: i64,
+    pub bytes: u64,
+    pub sha256: String,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -45,7 +59,9 @@ impl Core {
     }
 
     /// Downloads `release`'s APK to `path`, verified against its caption;
-    /// nothing is left at `path` unless it matched.
+    /// nothing is left at `path` unless it matched. A profile the caption
+    /// names follows to `path` with the extension `dm`, verified the same
+    /// way; failing to fetch it never fails the APK, which installs without.
     pub async fn download_app_release(
         &self,
         release: AppRelease,
@@ -99,6 +115,7 @@ async fn latest_with(
             sha256: release.sha256,
             chat_id,
             message_id: candidates[position].1,
+            profile: release.profile.map(|p| AppFile { message_id: p.message, bytes: p.bytes, sha256: p.sha256 }),
         }),
     )
 }
@@ -119,67 +136,32 @@ async fn download(core: &Core, release: &AppRelease, path: &Path) -> Result<(), 
             "this device has no way to reach the channel the app release is in".into(),
         )
     })?;
-    let document = match part_document(&client, channel, release.message_id).await {
-        Ok(document) => document,
-        Err(err) => {
-            return Err(revoked::failed(core, &owner, "resolving the app release", err).await);
-        }
-    };
-    write_verified(core, &owner, release, path, client.iter_download(&document)).await
+    let apk = AppFile { message_id: release.message_id, bytes: release.bytes, sha256: release.sha256.clone() };
+    fetch(core, &client, &owner, channel, &apk, path).await?;
+    if let Some(profile) = release.profile.as_ref().filter(|p| p.bytes <= MAX_PROFILE_BYTES)
+        && let Err(err) = fetch(core, &client, &owner, channel, profile, &path.with_extension("dm")).await
+    {
+        tracing::warn!(%err, "the app release goes in without its profile");
+    }
+    Ok(())
 }
 
-async fn write_verified(
+async fn fetch(
     core: &Core,
+    client: &Client,
     owner: &SenderPoolFatHandle,
-    release: &AppRelease,
+    channel: PeerRef,
+    file: &AppFile,
     path: &Path,
-    chunks: impl Responses<Item = Vec<u8>>,
 ) -> Result<(), CoreError> {
-    let partial = path.with_extension("part");
-    let result = download_with(
-        core,
-        owner,
-        &partial,
-        release.bytes,
-        "downloading the app release",
-        || CoreError::Io("the app release is larger than its caption says".into()),
-        chunks,
-    )
-    .await
-    .and_then(|()| verify(&partial, release));
-    match result {
-        Ok(()) => std::fs::rename(&partial, path)
-            .map_err(CoreError::io("keeping the downloaded app release")),
-        Err(err) => {
-            let _ = std::fs::remove_file(&partial);
-            Err(err)
-        }
-    }
+    let document = match part_document(client, channel, file.message_id).await {
+        Ok(document) => document,
+        Err(err) => return Err(revoked::failed(core, owner, "resolving the app release", err).await),
+    };
+    write_verified(core, owner, file.bytes, &file.sha256, path, client.iter_download(&document)).await
 }
 
-/// Size and sha256 against the caption, then durable — both before the
-/// rename that makes the file look ready to install.
-fn verify(path: &Path, release: &AppRelease) -> Result<(), CoreError> {
-    const VERIFYING: &str = "verifying the downloaded app release";
-    let mut file = std::fs::File::open(path).map_err(CoreError::io(VERIFYING))?;
-    let mut hasher = Sha256::new();
-    let mut buf = [0u8; 64 * 1024];
-    let mut copied: u64 = 0;
-    loop {
-        let n = file.read(&mut buf).map_err(CoreError::io(VERIFYING))?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-        copied += n as u64;
-    }
-    if copied != release.bytes || hex::encode(hasher.finalize()) != release.sha256 {
-        return Err(CoreError::Io(
-            "the downloaded app release does not match its caption".into(),
-        ));
-    }
-    file.sync_all().map_err(CoreError::io(VERIFYING))
-}
+mod verified_file;
 
 #[cfg(test)]
 #[path = "app_release_tests.rs"]

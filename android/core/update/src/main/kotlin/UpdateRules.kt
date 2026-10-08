@@ -23,10 +23,10 @@ fun isNewer(
 
 /**
  * The files in the updates directory to delete: everything except the APK
- * for [wantedCode] — older downloads, partial ones, the copy of the version
- * now installed. With nothing wanted, all of them.
+ * for [wantedCode] and its profile — older downloads, partial ones, the copy
+ * of the version now installed. With nothing wanted, all of them.
  */
 fun staleFiles(
     names: List<String>,
     wantedCode: Long?,
-): List<String> = names.filter { it != "$wantedCode.apk" }
+): List<String> = names.filter { it != "$wantedCode.apk" && it != "$wantedCode.dm" }

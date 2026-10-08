@@ -577,6 +577,19 @@ message), installs it only over a lower versionCode, and only after the
 downloaded file matches `bytes` and `sha256`. A caption whose marker is not
 exactly `#mlib-app v=1`, or whose JSON lacks a field, is not a release.
 
+A release may also carry its dex metadata (AGP's `.dm` for API 31 and up),
+posted just before the APK as a document of its own, unpinned, and named in
+the caption by an optional field:
+
+    "profile":{"message":4201,"bytes":30412,"sha256":"<64 lowercase hex>"}
+
+A reader that knows the field downloads that message, checks it the same
+way, and installs it beside the APK (`base.dm`), so Android compiles the app
+at install instead of running it interpreted until its next idle compile.
+Failing to fetch it never fails the release, and a profile with a missing or
+malformed field is ignored. A reader that predates the field skips it as an
+unknown JSON key, which is why it needed no new marker.
+
 ## 8. Versioning
 
 - `v=4` is written on every new caption; `v=2` and `v=3` remain readable. A

@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.119.0 — TV updates arrive compiled
+
+**Changed** (uploader, core, Android TV)
+
+- **A release now carries the app's dex metadata, so an update installs compiled.** Until now a TV updated from the channel installed the app at dexopt `verify`, with its baseline profile never applied. It ran interpreted until the box's background compile, which on the TV box had not happened two days after an update. Measured on the box (0.117.4, cold start, the same walks), compiling cut the Movies median frame from 26 to 18 ms, the 99th percentile from 77 to 44 ms, and the share of frames over 16.7 ms from 75% to 28%. On Home the 99th percentile fell from 133 to 69 ms. Most of the stutter on the TV was this.
+- `publish-app --profile` posts AGP's API 31+ `.dm` as a document of its own before the APK, and the caption names it in an optional `profile` field (spec §7a). The marker stays `#mlib-app v=1`, and installed apps ignore the field, so they keep updating. The core fetches the profile after the APK; a profile that fails to arrive, or has the wrong shape, never holds the release back. The updater installs it beside the APK (`base.dm`) on Android 12 and up, and an install Android refuses with a profile is retried without it.
+- `scripts/release-android.sh` publishes the profile with every release.
+- The Kotlin bindings are regenerated. The committed ones predated the doc changes of 0.118.0 and had drifted from the core.
+- This release still installs without a profile on a TV, because the updater already installed there does the install. The next release is the first to arrive compiled.
+
 ## 0.118.2 — the TV hero comes back
 
 **Fixed** (Android TV)

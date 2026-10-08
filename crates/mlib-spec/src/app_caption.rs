@@ -3,8 +3,14 @@
 //!
 //! ```text
 //! #mlib-app v=1
-//! {"version":"0.93.0","code":93000,"bytes":47185920,"sha256":"…","published_at":1790900000}
+//! {"version":"0.93.0","code":93000,"bytes":47185920,"sha256":"…","published_at":1790900000,
+//!  "profile":{"message":4201,"bytes":30412,"sha256":"…"}}
 //! ```
+//!
+//! `profile` is optional and names the APK's dex metadata: a separate
+//! channel document Android takes beside the APK to compile the app at
+//! install. A reader that predates it skips the field and installs the APK
+//! alone, so it never needed a new marker.
 //!
 //! Written by `mediagram publish-app` and read by the app's core, so both
 //! take the spelling from here.
@@ -27,6 +33,24 @@ pub struct AppRelease {
     pub bytes: u64,
     pub sha256: String,
     pub published_at: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none", deserialize_with = "any_profile")]
+    pub profile: Option<AppProfile>,
+}
+
+/// A release's dex-metadata document: its message in the same channel, and
+/// how to check it, as for the APK.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AppProfile {
+    pub message: i64,
+    pub bytes: u64,
+    pub sha256: String,
+}
+
+/// A `profile` of any shape reads as `None` rather than failing the whole
+/// caption: the APK is the release, the profile only speeds up its install.
+fn any_profile<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<AppProfile>, D::Error> {
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(serde_json::from_value(value).ok())
 }
 
 /// The caption for `release`.
@@ -48,7 +72,11 @@ pub fn parse(caption: &str) -> Option<AppRelease> {
     if marker.trim_end() != MARKER {
         return None;
     }
-    let release: AppRelease = serde_json::from_str(json.trim()).ok()?;
+    let mut release: AppRelease = serde_json::from_str(json.trim()).ok()?;
+    // An unusable profile costs only the install-time compile, never the release.
+    release.profile = release
+        .profile
+        .filter(|p| p.message > 0 && p.bytes > 0 && crate::subtitle_bundle::valid_sha256(&p.sha256));
     let sound = !release.version.is_empty()
         && release.code > 0
         && release.bytes > 0

@@ -2,6 +2,13 @@ package update
 
 import java.io.File
 
+/**
+ * The dex metadata the core downloads beside [apk] when the release names
+ * one: Android compiles the app at install with it, instead of running the
+ * update interpreted until the device next compiles in the background.
+ */
+fun profileOf(apk: File): File = File(apk.parentFile, "${apk.nameWithoutExtension}.dm")
+
 /** Puts a downloaded APK in this app's place. The outcome arrives at [AppUpdater.onInstallResult]. */
 interface ApkInstaller {
     /** `null` when [apk] may replace this app, else the reason it may not. */

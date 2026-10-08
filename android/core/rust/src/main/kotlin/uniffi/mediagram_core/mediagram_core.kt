@@ -1092,16 +1092,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 44487) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 30355) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_list_sets() and 0xFFFF) != 9586) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_media_set() and 0xFFFF) != 48923) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_media_set() and 0xFFFF) != 59599) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_read() and 0xFFFF) != 530) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 20015) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_catalog() and 0xFFFF) != 28348) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 57976) {
@@ -1128,7 +1128,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_sign_out() and 0xFFFF) != 40268) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_download_app_release() and 0xFFFF) != 31482) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_download_app_release() and 0xFFFF) != 29906) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_latest_app_release() and 0xFFFF) != 55573) {
@@ -1155,7 +1155,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_set_preference() and 0xFFFF) != 56860) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_preference() and 0xFFFF) != 43309) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
@@ -1257,7 +1257,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_sync_state() and 0xFFFF) != 972) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_hold_course_subtitles() and 0xFFFF) != 43553) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_hold_course_subtitles() and 0xFFFF) != 12250) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_hold_subtitles() and 0xFFFF) != 1785) {
@@ -1843,15 +1843,15 @@ public interface CoreInterface {
     suspend fun `listLibraries`(): List<LibraryChoice>
 
     /**
-     * Every playable set in the current catalog, or an empty list before
-     * the first catalog is loaded. Calls for a named set use `NotFound`.
+     * Every playable set in the current catalog, or an empty list before the first catalog is
+     * loaded. Of the calls for one set, [`Core::media_set`] answers `None` for a set the catalog
+     * does not hold, while [`Core::total_size`] and [`Core::read`] answer `NotFound`.
      */
     suspend fun `listSets`(): List<SetSummary>
 
     /**
-     * One set by id, resolved the same as [`Core::list_sets`] resolves
-     * every row — `None` for an id the catalog does not hold, including
-     * before any catalog is loaded.
+     * One set by id, resolved as [`Core::list_sets`] resolves every row — `None` for an id the
+     * catalog does not hold, including before any catalog is loaded.
      */
     suspend fun `mediaSet`(`setId`: kotlin.String): SetSummary?
 
@@ -1866,9 +1866,9 @@ public interface CoreInterface {
     suspend fun `read`(`setId`: kotlin.String, `offset`: kotlin.ULong, `len`: kotlin.UInt): kotlin.ByteArray
 
     /**
-     * Installs the encrypted package named by `pointer_url`, including its
-     * poster art. Unlike [`Core::refresh_library`], this source is not used
-     * by the first-run flow.
+     * Installs the encrypted package named by `pointer_url`, with its poster art. No Android
+     * code calls this; the app installs from the channel ([`Core::refresh_library`]). Kept so a
+     * library published as a package stays installable.
      */
     suspend fun `refreshCatalog`(`pointerUrl`: kotlin.String, `keyB64`: kotlin.String): kotlin.ULong
 
@@ -1916,7 +1916,9 @@ public interface CoreInterface {
 
     /**
      * Downloads `release`'s APK to `path`, verified against its caption;
-     * nothing is left at `path` unless it matched.
+     * nothing is left at `path` unless it matched. A profile the caption
+     * names follows to `path` with the extension `dm`, verified the same
+     * way; failing to fetch it never fails the APK, which installs without.
      */
     suspend fun `downloadAppRelease`(`release`: AppRelease, `path`: kotlin.String)
 
@@ -1983,8 +1985,9 @@ public interface CoreInterface {
 
     /**
      * Remembers a choice, or forgets it (`value: None`). `false` when
-     * `scope` or `name` has nothing left after trimming, or nothing could
-     * be written.
+     * `scope` or `name` has nothing left after trimming, when the choice to
+     * forget is a synced one another device would bring back, or when
+     * nothing could be written.
      */
     suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?): kotlin.Boolean
 
@@ -2193,7 +2196,7 @@ public interface CoreInterface {
 
     /**
      * Fetches and caches the opened lesson's own bundle plus up to
-     * [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+     * `COURSE_HOLD_NEXT` that follow it in its course, sequentially, so a
      * long course never fetches more than the next few lessons at once.
      */
     suspend fun `holdCourseSubtitles`(`setId`: kotlin.String)
@@ -2460,8 +2463,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Every playable set in the current catalog, or an empty list before
-     * the first catalog is loaded. Calls for a named set use `NotFound`.
+     * Every playable set in the current catalog, or an empty list before the first catalog is
+     * loaded. Of the calls for one set, [`Core::media_set`] answers `None` for a set the catalog
+     * does not hold, while [`Core::total_size`] and [`Core::read`] answer `NotFound`.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2485,9 +2489,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * One set by id, resolved the same as [`Core::list_sets`] resolves
-     * every row — `None` for an id the catalog does not hold, including
-     * before any catalog is loaded.
+     * One set by id, resolved as [`Core::list_sets`] resolves every row — `None` for an id the
+     * catalog does not hold, including before any catalog is loaded.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2544,9 +2547,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Installs the encrypted package named by `pointer_url`, including its
-     * poster art. Unlike [`Core::refresh_library`], this source is not used
-     * by the first-run flow.
+     * Installs the encrypted package named by `pointer_url`, with its poster art. No Android
+     * code calls this; the app installs from the channel ([`Core::refresh_library`]). Kept so a
+     * library published as a package stays installable.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2765,7 +2768,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     /**
      * Downloads `release`'s APK to `path`, verified against its caption;
-     * nothing is left at `path` unless it matched.
+     * nothing is left at `path` unless it matched. A profile the caption
+     * names follows to `path` with the extension `dm`, verified the same
+     * way; failing to fetch it never fails the APK, which installs without.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3008,8 +3013,9 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     /**
      * Remembers a choice, or forgets it (`value: None`). `false` when
-     * `scope` or `name` has nothing left after trimming, or nothing could
-     * be written.
+     * `scope` or `name` has nothing left after trimming, when the choice to
+     * forget is a synced one another device would bring back, or when
+     * nothing could be written.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?) : kotlin.Boolean {
@@ -3901,7 +3907,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
     /**
      * Fetches and caches the opened lesson's own bundle plus up to
-     * [`COURSE_HOLD_NEXT`] that follow it in its course, sequentially, so a
+     * `COURSE_HOLD_NEXT` that follow it in its course, sequentially, so a
      * long course never fetches more than the next few lessons at once.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -4104,6 +4110,52 @@ public object FfiConverterTypeAchievements: FfiConverterRustBuffer<Achievements>
 
 
 /**
+ * A document in the release's channel, and how to check it once fetched.
+ */
+data class AppFile (
+    var `messageId`: kotlin.Long
+    ,
+    var `bytes`: kotlin.ULong
+    ,
+    var `sha256`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAppFile: FfiConverterRustBuffer<AppFile> {
+    override fun read(buf: ByteBuffer): AppFile {
+        return AppFile(
+            FfiConverterLong.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: AppFile) = (
+            FfiConverterLong.allocationSize(value.`messageId`) +
+            FfiConverterULong.allocationSize(value.`bytes`) +
+            FfiConverterString.allocationSize(value.`sha256`)
+    )
+
+    override fun write(value: AppFile, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`messageId`, buf)
+            FfiConverterULong.write(value.`bytes`, buf)
+            FfiConverterString.write(value.`sha256`, buf)
+    }
+}
+
+
+
+/**
  * One release, as the channel declares it, and where its APK is.
  */
 data class AppRelease (
@@ -4118,6 +4170,12 @@ data class AppRelease (
     var `chatId`: kotlin.Long
     ,
     var `messageId`: kotlin.Long
+    ,
+    /**
+     * The APK's dex metadata, a document of its own in the same channel:
+     * Android compiles the app at install when it arrives beside the APK.
+     */
+    var `profile`: AppFile?
 
 ){
 
@@ -4140,6 +4198,7 @@ public object FfiConverterTypeAppRelease: FfiConverterRustBuffer<AppRelease> {
             FfiConverterString.read(buf),
             FfiConverterLong.read(buf),
             FfiConverterLong.read(buf),
+            FfiConverterOptionalTypeAppFile.read(buf),
         )
     }
 
@@ -4149,7 +4208,8 @@ public object FfiConverterTypeAppRelease: FfiConverterRustBuffer<AppRelease> {
             FfiConverterULong.allocationSize(value.`bytes`) +
             FfiConverterString.allocationSize(value.`sha256`) +
             FfiConverterLong.allocationSize(value.`chatId`) +
-            FfiConverterLong.allocationSize(value.`messageId`)
+            FfiConverterLong.allocationSize(value.`messageId`) +
+            FfiConverterOptionalTypeAppFile.allocationSize(value.`profile`)
     )
 
     override fun write(value: AppRelease, buf: ByteBuffer) {
@@ -4159,6 +4219,7 @@ public object FfiConverterTypeAppRelease: FfiConverterRustBuffer<AppRelease> {
             FfiConverterString.write(value.`sha256`, buf)
             FfiConverterLong.write(value.`chatId`, buf)
             FfiConverterLong.write(value.`messageId`, buf)
+            FfiConverterOptionalTypeAppFile.write(value.`profile`, buf)
     }
 }
 
@@ -5209,8 +5270,8 @@ data class SetSummary (
     ,
     /**
      * The provider's genres for this title. A series carries its show's,
-     * the way `fsk` does — see `store::list_sets`, which attaches all four
-     * of these by poster key rather than storing them on the row.
+     * the way `fsk` does — see `store::listing::enrich`, which attaches
+     * these by poster key rather than storing them on the row.
      */
     var `genres`: List<kotlin.String>
     ,
@@ -6583,6 +6644,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeAppFile: FfiConverterRustBuffer<AppFile?> {
+    override fun read(buf: ByteBuffer): AppFile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeAppFile.read(buf)
+    }
+
+    override fun allocationSize(value: AppFile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeAppFile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: AppFile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeAppFile.write(value, buf)
         }
     }
 }

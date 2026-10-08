@@ -42,12 +42,10 @@ class PackageApkInstaller
             val sessionId = installer.createSession(params)
             try {
                 installer.openSession(sessionId).use { session ->
-                    apk.inputStream().use { input ->
-                        session.openWrite("base.apk", 0, apk.length()).use { out ->
-                            input.copyTo(out)
-                            session.fsync(out)
-                        }
-                    }
+                    session.write("base.apk", apk)
+                    // The channel carries the profile in the format ART reads from Android 12 (API 31) on.
+                    val profile = profileOf(apk)
+                    if (Build.VERSION.SDK_INT >= 31 && profile.exists()) session.write("base.dm", profile)
                     // Mutable on 31+: the system fills in the status extras.
                     val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
                     val result = PendingIntent.getBroadcast(context, 0, Intent(context, InstallResultReceiver::class.java), flags)
@@ -56,6 +54,16 @@ class PackageApkInstaller
             } catch (e: Exception) {
                 installer.abandonSession(sessionId)
                 throw e
+            }
+        }
+
+        private fun PackageInstaller.Session.write(
+            name: String,
+            file: File,
+        ) = file.inputStream().use { input ->
+            openWrite(name, 0, file.length()).use { out ->
+                input.copyTo(out)
+                fsync(out)
             }
         }
 

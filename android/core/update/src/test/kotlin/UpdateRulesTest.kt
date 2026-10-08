@@ -27,8 +27,8 @@ class UpdateRulesTest {
 
     @Test
     fun everyFileButTheWantedApkIsStale() {
-        val names = listOf("93000.apk", "92500.apk", "93001.part", "stray.txt")
-        assertEquals(listOf("92500.apk", "93001.part", "stray.txt"), staleFiles(names, wantedCode = 93_000))
+        val names = listOf("93000.apk", "93000.dm", "92500.apk", "92500.dm", "93001.part", "stray.txt")
+        assertEquals(listOf("92500.apk", "92500.dm", "93001.part", "stray.txt"), staleFiles(names, wantedCode = 93_000))
         assertEquals(names, staleFiles(names, wantedCode = null), "nothing newer to keep: everything goes")
     }
 

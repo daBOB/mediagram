@@ -80,7 +80,14 @@ class AppUpdater
                     this.confirm = confirm
                     ready?.let { _status.value = UpdateStatus.ConfirmWaiting(it.versionName) }
                 }
-                else -> dropReady(message ?: "Android refused the update ($status)")
+                // A profile Android will not take must not hold the update back: the next try goes in without
+                // it. Every profile goes, not only the one `ready` names: a result can reach a restarted process.
+                else ->
+                    if (config.updatesDir.listFiles { file -> file.extension == "dm" }.orEmpty().count { it.delete() } > 0) {
+                        Log.w(TAG, "update refused with its profile ($status, $message); retrying without it")
+                    } else {
+                        dropReady(message ?: "Android refused the update ($status)")
+                    }
             }
         }
 

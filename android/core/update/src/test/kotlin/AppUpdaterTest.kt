@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 
 class AppUpdaterTest {
     private val dir: File = Files.createTempDirectory("updates").toFile()
-    private val release = AppRelease("0.93.0", 93_000L, 3uL, "a".repeat(64), -100L, 7L)
+    private val release = AppRelease("0.93.0", 93_000L, 3uL, "a".repeat(64), -100L, 7L, null)
     private val core = FakeCore().apply { latestRelease = release; releaseApk = byteArrayOf(1, 2, 3) }
     private var playing = false
     private val installer = RecordingInstaller()
@@ -155,6 +155,30 @@ class AppUpdaterTest {
             assertTrue(!File(dir, "93000.apk").exists())
             updater.installIfReady()
             assertTrue(installer.installed.isEmpty())
+        }
+
+    @Test
+    fun anInstallRefusedWithItsProfileIsRetriedWithoutIt() =
+        runTest {
+            val updater = updater()
+            updater.checkAndDownload()
+            File(dir, "93000.dm").writeText("profile")
+            updater.onInstallResult(PackageInstaller.STATUS_FAILURE, "bad dex metadata", null)
+            assertEquals(UpdateStatus.Ready("0.93.0"), updater.status.value)
+            assertTrue(!File(dir, "93000.dm").exists())
+            updater.installIfReady()
+            assertEquals(listOf(File(dir, "93000.apk")), installer.installed)
+        }
+
+    @Test
+    fun aRefusalReachingARestartedProcessStillDropsTheProfile() =
+        runTest {
+            File(dir, "93000.apk").writeText("apk")
+            File(dir, "93000.dm").writeText("profile")
+            val updater = updater()
+            updater.onInstallResult(PackageInstaller.STATUS_FAILURE, "bad dex metadata", null)
+            assertTrue(!File(dir, "93000.dm").exists())
+            assertTrue(File(dir, "93000.apk").exists(), "the APK stays for the retry")
         }
 
     @Test

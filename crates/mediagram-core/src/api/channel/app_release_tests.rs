@@ -40,6 +40,7 @@ fn release_of(bytes: &[u8]) -> AppRelease {
         sha256: hex::encode(Sha256::digest(bytes)),
         chat_id: -100,
         message_id: 7,
+        profile: None,
     }
 }
 
@@ -53,7 +54,8 @@ async fn a_matching_download_lands_at_its_path() {
     write_verified(
         &fixture.core,
         &fixture.owner,
-        &release_of(&apk),
+        release_of(&apk).bytes,
+        &release_of(&apk).sha256,
         &path,
         chunks,
     )
@@ -74,7 +76,8 @@ async fn a_corrupt_or_short_download_leaves_nothing_behind() {
         let result = write_verified(
             &fixture.core,
             &fixture.owner,
-            &release_of(&apk),
+            release_of(&apk).bytes,
+        &release_of(&apk).sha256,
             &path,
             chunks,
         )
@@ -93,7 +96,8 @@ async fn a_download_longer_than_its_caption_is_cut_off() {
     let result = write_verified(
         &fixture.core,
         &fixture.owner,
-        &release_of(b"a whole apk"),
+        release_of(b"a whole apk").bytes,
+        &release_of(b"a whole apk").sha256,
         &path,
         chunks,
     )
