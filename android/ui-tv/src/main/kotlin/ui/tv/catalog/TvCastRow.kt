@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,7 +16,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -135,7 +138,11 @@ private fun TvCrewLine(
     focus: FocusRequester,
 ) {
     if (crew.isEmpty()) return
-    FlowRow(modifier = Modifier.padding(bottom = Spacing.medium), horizontalArrangement = Arrangement.spacedBy(CrewGap)) {
+    // Right past the last name stays put. A focus search counts anything whose
+    // edges lie further right as a candidate, however far above, so a lone
+    // director's Right otherwise climbed to Preload on the action row.
+    val staysOnRight = Modifier.focusProperties { onExit = { if (requestedFocusDirection == FocusDirection.Right) cancelFocusChange() } }.focusGroup()
+    FlowRow(modifier = Modifier.padding(bottom = Spacing.medium).then(staysOnRight), horizontalArrangement = Arrangement.spacedBy(CrewGap)) {
         Text(text = if (crew.first().role == "Creator") "Created by" else "Directed by", style = TvTypeScale.body)
         crew.forEachIndexed { at, person ->
             key(person.personId) {

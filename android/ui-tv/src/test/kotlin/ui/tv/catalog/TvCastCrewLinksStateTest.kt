@@ -91,6 +91,20 @@ class TvCastCrewLinksStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Ada Actor").assertIsFocused()
     }
 
+    /** Right from the last name stays on it, rather than climbing to whatever action button sits further right above. */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun rightFromTheLastNameStaysOnTheCrewLine() {
+        InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+        show { TvTitlePage(set = film, info = null, progress = null, onPlay = {}, credits = TitleCredits(cast = listOf(ada), crew = listOf(dee)), restoreKey = "7") }
+        compose.onNodeWithText("Ada Actor").assertIsFocused()
+
+        press(Key.DirectionUp)
+        compose.onNodeWithText("Dee Director").assertIsFocused()
+        press(Key.DirectionRight)
+        compose.onNodeWithText("Dee Director").assertIsFocused()
+    }
+
     /** Back from a director's page — someone the cast does not name — opens on Cast with their name holding the remote. */
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
