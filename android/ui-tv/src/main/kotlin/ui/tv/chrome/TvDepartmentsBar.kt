@@ -1,6 +1,8 @@
 package ui.tv.chrome
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -18,7 +21,9 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
 import designsystem.Overscan
@@ -89,11 +94,18 @@ internal fun TvDepartmentsBar(
                 .fillMaxWidth()
                 .height(TvDepartmentsBarHeight + Overscan.vertical)
                 .background(color = bg)
-                .padding(top = Overscan.vertical, start = Spacing.medium, end = Overscan.horizontal),
+                .padding(top = Overscan.vertical, start = Spacing.medium - PillRingRoom, end = Overscan.horizontal),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val scrollWidth = Modifier.weight(1f, fill = false)
+        // A focused pill grows past its own bounds and the scroll clips at its
+        // edges, so the pill it brings into view keeps [PillRingRoom] clear on
+        // both sides, and the row's ends are padded by the same so the first
+        // and last pill can reach it. The start padding above gives that room
+        // back, so the pills sit where they did.
+        CompositionLocalProvider(LocalBringIntoViewSpec provides rememberRoomOnBothSides(PillRingRoom)) {
         Row(
-            modifier = Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
+            modifier = scrollWidth.horizontalScroll(rememberScrollState()).padding(horizontal = PillRingRoom),
             horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
         ) {
             pills.forEachIndexed { index, pill ->
@@ -103,6 +115,7 @@ internal fun TvDepartmentsBar(
                     TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
                 }
             }
+        }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall), verticalAlignment = Alignment.CenterVertically) {
             // Left goes to the last pill by name, not by where it is drawn: scrolled out of the
@@ -126,6 +139,32 @@ internal fun TvDepartmentsBar(
             )
         }
     }
+}
+
+/**
+ * Clear room kept beside a focused pill: its [ui.tv.TvFocus.Scale] growth,
+ * 4% of its width on each side, is under 8 dp for the widest pill at the
+ * box's density.
+ */
+private val PillRingRoom = Spacing.small
+
+/** Brings an item into view as if it were [roomPx] wider on each side, so nothing it draws past its bounds lands on a clipped edge. */
+private class RoomOnBothSidesBringIntoViewSpec(
+    private val roomPx: Float,
+    private val fallback: BringIntoViewSpec,
+) : BringIntoViewSpec {
+    override fun calculateScrollDistance(
+        offset: Float,
+        size: Float,
+        containerSize: Float,
+    ): Float = fallback.calculateScrollDistance(offset - roomPx, size + 2 * roomPx, containerSize)
+}
+
+@Composable
+private fun rememberRoomOnBothSides(room: Dp): BringIntoViewSpec {
+    val density = LocalDensity.current
+    val fallback = LocalBringIntoViewSpec.current
+    return remember(density, fallback, room) { RoomOnBothSidesBringIntoViewSpec(with(density) { room.toPx() }, fallback) }
 }
 
 /** The bar's own translucent background over a hero, while [blend] is below `1f`. */

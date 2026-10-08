@@ -70,6 +70,30 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
         assertTrue(collections.getUnclippedBoundsInRoot().right <= search.getUnclippedBoundsInRoot().left, "the row scrolls the last pill into view")
     }
 
+    /**
+     * A focused pill grows by [ui.tv.TvFocus.Scale] about its centre, past its
+     * own bounds, and the row clips at its edges: on the box the Collections
+     * ring was cut where the row meets Search. The pill the row scrolls to
+     * keeps room for that growth on either side; the last one is the case seen.
+     */
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun theLastPillKeepsRoomForItsRingBeforeSearch() {
+        val pills =
+            listOf("Home" to null, "Movies" to 1243, "Series" to 318, "Anime" to 52, "Documentaries" to 67, "Tutorials" to 12, "Collections" to 109)
+                .map { (title, count) -> TvDepartmentPill(title, count) }
+        show { chrome(pills, selectedPill = 0) { Spacer(Modifier.height(200.dp)) } }
+        val search = compose.onNodeWithContentDescription("Search")
+        search.performSemanticsAction(SemanticsActions.RequestFocus)
+        search.performKeyInput { pressKey(Key.DirectionLeft) }
+        compose.waitForIdle()
+
+        val collections = compose.onNodeWithText("Collections").getUnclippedBoundsInRoot()
+        val growth = (collections.right - collections.left) * (ui.tv.TvFocus.Scale - 1f) / 2f
+        val rowEnd = search.getUnclippedBoundsInRoot().left
+        assertTrue(collections.right + growth <= rowEnd, "the last pill's ring clears the row's end: $collections, growth $growth, row ends at $rowEnd")
+    }
+
     @Test
     fun upPastThePagesTopRowReachesTheSelectedPill() {
         val last = FocusRequester()
