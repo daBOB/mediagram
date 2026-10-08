@@ -17,6 +17,7 @@ import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
 import ui.tv.catalog.TvMoviesPageEntryKey
+import ui.tv.catalog.TvProfileEntryKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
@@ -76,7 +77,12 @@ internal fun TvLibraryHomeFrame(
         saved.SaveableStateProvider(CatalogStateKey) {
             TvCatalogScreen(
                 state = catalogState,
-                profile = profile,
+                // The picker replaces the library; noting the avatar first is
+                // what lets "Stay as I am" hand the remote back to it.
+                profile = profile.copy(onChoose = {
+                    restore.opened(here, TvProfileEntryKey)
+                    profile.onChoose()
+                }),
                 fetching = fetching,
                 restoreKey = restore.of(here),
                 menu = menu,

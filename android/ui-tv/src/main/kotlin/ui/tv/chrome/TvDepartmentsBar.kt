@@ -75,6 +75,7 @@ internal fun TvDepartmentsBar(
     selectedPillFocus: FocusRequester,
     searchFocus: FocusRequester,
     menuFocus: FocusRequester,
+    avatarFocus: FocusRequester,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
 ) {
@@ -132,7 +133,7 @@ internal fun TvDepartmentsBar(
                             if (lastPill >= 0) left = requesterOf(lastPill)
                         }.focusRequester(searchFocus),
             )
-            TvAvatar(profile = profile, modifier = downModifier)
+            TvAvatar(profile = profile, modifier = downModifier.focusRequester(avatarFocus))
             TvRoundIconButton(
                 icon = painterResource(R.drawable.core_designsystem_ic_menu_more), description = "Menu", ink = ink, onClick = onMenu,
                 modifier = downModifier.focusRequester(menuFocus),

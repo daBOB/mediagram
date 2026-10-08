@@ -20,6 +20,9 @@ internal const val TvSearchEntryKey = "masthead:search"
 /** The catalogue's restore key for "the trimmed menu page was opened from the bar's own ⋮" — [TvSearchEntryKey]'s counterpart. */
 internal const val TvMenuEntryKey = "masthead:menu"
 
+/** The catalogue's restore key for "Who's watching was opened from the bar's avatar" — "Stay as I am" hands the remote back to it. */
+internal const val TvProfileEntryKey = "masthead:profile"
+
 /** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
 internal const val TvMoviesPageEntryKey = "movies:all"
 
@@ -85,6 +88,7 @@ internal fun rememberTvCatalogRestore(
 
     val backFromSearch = restoreKey == TvSearchEntryKey
     val backFromMenu = restoreKey == TvMenuEntryKey
+    val backFromProfile = restoreKey == TvProfileEntryKey
     // The rail row a page opened from the rail hands the remote back to.
     val railTarget =
         when (restoreKey) {
@@ -95,7 +99,7 @@ internal fun rememberTvCatalogRestore(
             menuRestoreKey(MenuScreen.System) -> RailItem.SYSTEM
             else -> null
         }
-    val redirectsFocus = backFromSearch || backFromMenu || railTarget != null
+    val redirectsFocus = backFromSearch || backFromMenu || backFromProfile || railTarget != null
     val wallKey = restoreKey.takeUnless { redirectsFocus }
     // Content never takes arrival focus while a sentinel is sending the
     // remote to one specific bar or rail control instead (`wallKey` is
@@ -121,6 +125,12 @@ internal fun rememberTvCatalogRestore(
     LaunchedEffect(backFromMenu) {
         if (backFromMenu) {
             chromeFocus.menuButtonFocus.requestFocus()
+            onEntryRestored()
+        }
+    }
+    LaunchedEffect(backFromProfile, ready) {
+        if (backFromProfile && ready) {
+            chromeFocus.avatarFocus.requestFocus()
             onEntryRestored()
         }
     }

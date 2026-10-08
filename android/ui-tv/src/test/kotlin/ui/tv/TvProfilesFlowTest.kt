@@ -171,7 +171,7 @@ class TvProfilesFlowTest {
         assertFalse(controller.get().isFinishing, "Back left the app")
     }
 
-    /** "Stay as I am" goes back to the department the picker was opened from, not Home. */
+    /** "Stay as I am" goes back to the department the picker was opened from, not Home, with the remote on the avatar that opened it. */
     @Test
     fun stayingAsIAmKeepsTheChosenDepartment() {
         launch(listOf(andre, bo, cy), chosen = "a")
@@ -185,6 +185,7 @@ class TvProfilesFlowTest {
         awaitLibrary()
 
         compose.onNode(hasText("Movies") and isSelected()).assertExists()
+        compose.onNode(hasContentDescription("Who's watching: andre")).assertIsFocused()
     }
 
     /**

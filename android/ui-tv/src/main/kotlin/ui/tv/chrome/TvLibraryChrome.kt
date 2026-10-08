@@ -74,6 +74,7 @@ internal class TvChromeFocus(
     val selectedPillFocus: FocusRequester,
     val searchFocus: FocusRequester,
     val menuButtonFocus: FocusRequester,
+    val avatarFocus: FocusRequester,
     val railRowFocus: Map<RailItem, FocusRequester>,
     val contentFocus: FocusRequester,
 )
@@ -84,6 +85,7 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
         selectedPillFocus = remember { FocusRequester() },
         searchFocus = remember { FocusRequester() },
         menuButtonFocus = remember { FocusRequester() },
+        avatarFocus = remember { FocusRequester() },
         railRowFocus = remember { RailItem.entries.associateWith { FocusRequester() } },
         contentFocus = remember { FocusRequester() },
     )
@@ -230,6 +232,7 @@ internal fun TvLibraryChrome(
                 selectedPillFocus = focus.selectedPillFocus,
                 searchFocus = focus.searchFocus,
                 menuFocus = focus.menuButtonFocus,
+                avatarFocus = focus.avatarFocus,
                 blend = blend,
                 modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
                         barHasFocus = state.hasFocus
