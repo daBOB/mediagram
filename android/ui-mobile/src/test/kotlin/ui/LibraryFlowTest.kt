@@ -33,6 +33,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import player.PlayerUiState
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 // A tall window: the show's own page is a LazyColumn (its Episodes tab can
 // run to a few hundred rows), and Robolectric's default window is short
@@ -247,6 +248,16 @@ class LibraryFlowTest {
 
         compose.runOnUiThread { answer.complete(null) }
         compose.onNodeWithText("Nobody by that number is credited on anything in your library.").assertIsDisplayed()
+    }
+
+    @Test fun backOnAnotherTabReturnsHomeAndBackOnHomeIsLeftToTheSystem() {
+        val dispatcher = controller.get().onBackPressedDispatcher
+        assertFalse(dispatcher.hasEnabledCallbacks())
+        compose.onNode(hasText("Movies") and hasClickAction()).performClick()
+        compose.onNode(hasText("Movies") and isSelected()).assertExists()
+        systemBack()
+        compose.onNode(hasText("Home") and isSelected()).assertExists()
+        assertFalse(dispatcher.hasEnabledCallbacks())
     }
 
     @Test fun playingFromAHandBuiltListReturnsToThatList() {

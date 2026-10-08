@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.118.1 — Back on a tab returns Home
+
+**Fixed** (Android phone and tablet)
+
+- **Back on a department, My List or Continue goes to Home** instead of leaving the app; Back on Home still leaves. The tabs are not a back stack, so the web's walk through its whole history is not copied; Home-then-leave is Android's convention for top-level destinations. Found on the tablet walk for 0.118.0; it predates that release.
+
 ## 0.118.0 — a code-health cycle across the uploader, the player and the app
 
 113 commits from a desloppify review of all three projects: fresh blind reviews, triage, then one commit per cluster with its regression test. Strict scores: uploader and core 88.3, web player 87.3, Android app in `plans/261006-1318-desloppify-code-health/plan.md`.

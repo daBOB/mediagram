@@ -123,6 +123,13 @@ internal fun LibraryBranches(
     val heldIds = catalogState.heldIdsOrEmpty()
     val heroState = rememberActiveHeroState(shelves, watch, heldIds, now, chosenTab, homeListState, deptScroll)
 
+    // Tabs are not a back stack: on the shelves, Back on any tab but Home
+    // goes Home, and only Home's own Back leaves the app. The web's Back
+    // walks its whole hash history instead; Home-then-leave is Android's
+    // convention for top-level destinations. A pushed frame's own handler
+    // is the one that answers while it is open.
+    BackHandler(enabled = at.top == null && chosenTab != CatalogTab.Home) { chooseTab(CatalogTab.Home) }
+
     CompositionLocalProvider(LocalRailData provides railData) {
     frameState.keyedFrame(at.frameKey, at::holdsFrameKey) {
     when (at.top) {
