@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.119.1 — three remote-control fixes from the TV box walk
+
+**Fixed** (Android TV, and the phone for the last)
+
+- **Right past a title's last crew name stays on it.** On the Cast tab, a lone director's Right climbed to Preload on the action row, where a press started a download: a focus search counts anything whose edges lie further right as a candidate, however far above (`dd5cddd1`).
+- **A focused pill's ring is no longer cut by the edge of the departments bar.** A focused pill grows past its bounds, and the scrolling row clipped the last one where it meets Search; the row now keeps room on both sides of the pill it brings into view (`6edb3c48`).
+- **"Stay as I am" returns to the library as it was left**, on the TV and the phone: the tab and scroll were lost while the picker stood in for the library, so staying landed on Home. Another profile still starts fresh. The TV's department pill now tells a screen reader which one is selected, as the phone's does (`d5e08833`).
+
 ## 0.119.0 — TV updates arrive compiled
 
 **Changed** (uploader, core, Android TV)
