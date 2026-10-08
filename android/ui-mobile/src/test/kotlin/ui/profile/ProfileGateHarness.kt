@@ -8,6 +8,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -114,6 +118,9 @@ abstract class ProfileGateHarness {
                             Column {
                                 Text("Watching as ${bar.name}")
                                 TextButton(onClick = bar.onChoose) { Text("Change") }
+                                // A saved place, as the library's tab and scroll are.
+                                var taps by rememberSaveable { mutableIntStateOf(0) }
+                                TextButton(onClick = { taps++ }) { Text("Tapped $taps") }
                             }
                         }
                     }

@@ -132,6 +132,18 @@ class ProfileGateFlowTest : ProfileGateHarness() {
         inDialog("Choose a PIN for Bea").assertExists()
     }
 
+    /** "Stay as I am" comes back to the library as it was left, not rebuilt from scratch. */
+    @Test fun stayingAsIAmKeepsTheLibrarysSavedPlaces() {
+        open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"), chosen = "a")
+        compose.onNodeWithText("Tapped 0").performClick()
+        compose.onNodeWithText("Tapped 1").assertExists()
+
+        compose.onNodeWithText("Change").performClick()
+        compose.onNodeWithText("Stay as I am").performClick()
+
+        compose.onNodeWithText("Tapped 1").assertExists()
+    }
+
     @Test fun backOnThePinCancelsItAndBackOnTheReopenedPickerStays() {
         open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"), chosen = "a")
         compose.onNodeWithText("Change").performClick()

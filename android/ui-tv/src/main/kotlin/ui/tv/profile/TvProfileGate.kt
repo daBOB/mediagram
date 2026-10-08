@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,8 +54,14 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
 
     val chosen = state as? ProfileUiState.Chosen
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
+    // The picker stands in for the library, which leaves composition and with
+    // it every saved place: the tab, the scroll. Held here per profile, so
+    // "Stay as I am" comes back to them and another profile starts fresh.
+    val places = rememberSaveableStateHolder()
     if (chosen != null) {
-        content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
+        places.SaveableStateProvider(chosen.profile.id) {
+            content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
+        }
         return
     }
     // Back on a reopened picker is "Stay as I am" — the phone's gate says

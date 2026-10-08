@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,7 @@ internal fun TvPill(
     val fill = if (active) ink.copy(alpha = 0.12f) else Color.Transparent
     Surface(
         onClick = onClick,
-        modifier = modifier.semantics { role = Role.Tab },
+        modifier = modifier.semantics { role = Role.Tab; selected = active },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(

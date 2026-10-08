@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -168,6 +169,22 @@ class TvProfilesFlowTest {
         back()
         awaitLibrary()
         assertFalse(controller.get().isFinishing, "Back left the app")
+    }
+
+    /** "Stay as I am" goes back to the department the picker was opened from, not Home. */
+    @Test
+    fun stayingAsIAmKeepsTheChosenDepartment() {
+        launch(listOf(andre, bo, cy), chosen = "a")
+        awaitLibrary()
+        compose.onNode(hasText("Movies") and hasClickAction()).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNode(hasText("Movies") and isSelected()).assertExists()
+
+        reopenPicker()
+        back()
+        awaitLibrary()
+
+        compose.onNode(hasText("Movies") and isSelected()).assertExists()
     }
 
     /**

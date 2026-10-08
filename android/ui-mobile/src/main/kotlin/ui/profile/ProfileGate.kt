@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.ManageProfilesViewModel
@@ -37,9 +38,16 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     val managing by manage.state.collectAsStateWithLifecycle()
     val chosen = state as? ProfileUiState.Chosen
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
+    // The picker stands in for the library, which leaves composition and with
+    // it every saved place: the tab, the scroll. Held here per profile, so
+    // "Stay as I am" comes back to them and another profile starts fresh.
+    val places = rememberSaveableStateHolder()
 
     when {
-        chosen != null -> content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
+        chosen != null ->
+            places.SaveableStateProvider(chosen.profile.id) {
+                content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
+            }
         managing != ManageUiState.Closed -> ManageRoute(manage, managing)
         else -> PickerRoute(viewModel, state, onManage = manage::open)
     }
