@@ -2,7 +2,9 @@ package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,9 +18,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.roundToIntRect
+import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import player.speedLabel
+import player.together.TogetherUi
+import player.together.description
+import player.together.words
 
 /**
  * The card's middle row: its tools ([TvCardTools]), wrapping rather than
@@ -58,9 +64,10 @@ internal fun TvToolGroup(
  * another screen's while the menu marks this viewer's choice. Audio and
  * Framing name what is chosen. CC with no regular track is drawn but dimmed, still there
  * to be read with nothing to turn on, and ▾ the same with no track at all.
+ * Watch together ends the row, as on the web ([TvTogetherTool]).
  *
  * [each] is laid on every one of them: where the remote goes from the row.
- * Left from CC and Right from Framing do nothing: they end the row.
+ * Left from CC and Right from Watch together do nothing: they end the row.
  */
 @Composable
 internal fun TvCardTools(
@@ -92,7 +99,27 @@ internal fun TvCardTools(
     if (choices.audioOptions.isNotEmpty()) {
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }
-    TvMenuTool(choices.framing.label, "Framing", each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    TvTogetherTool(extras.together, each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.together), extras.onTogether)
+}
+
+/**
+ * Watch together, Join or Leave watch together, as the web's tool says.
+ * Greyed out it still takes the remote and gives the reason as a second
+ * line, where the web shows it on hover — a television has no hover.
+ */
+@Composable
+private fun TvTogetherTool(
+    ui: TogetherUi,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    TvOverlaySurface(onClick = onClick, enabled = ui.enabled, modifier = modifier.semantics { contentDescription = ui.description }) {
+        Column(modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
+            Text(text = ui.button.words, style = TvTypeScale.body)
+            ui.reason?.let { Text(text = it, style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow)) }
+        }
+    }
 }
 
 @Composable

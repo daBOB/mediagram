@@ -10,12 +10,14 @@ import player.PlayerMarksState
 import player.PlayerViewModel
 import player.UpNextUiState
 import player.createListAndAdd
+import player.onTogetherButton
 import player.playFromRun
 import player.previous
 import player.restart
 import player.setInList
 import player.toggleSubtitles
 import player.toggleWatchlist
+import player.together.TogetherUi
 import ui.tv.setup.LocalTvDialogKeys
 
 /** What the controls read from the screen's own state, beside the player itself. */
@@ -89,7 +91,7 @@ internal fun tvControlsActions(
 
 /**
  * [TvPlayerControls] over the shared ViewModel: the marks and statistics,
- * the tools and the transport, ⏮ and ⏭ included. The up-next card is not
+ * the tools — watch together's ([together]) among them — and the transport, ⏮ and ⏭ included. The up-next card is not
  * among them but floats over the stage ([TvPlayerStage]); its Play now is
  * the same step forward as "Play next", its Cancel the ViewModel's own,
  * which leaves that standing button in place.
@@ -103,6 +105,7 @@ internal fun TvPlayerControlsForViewModel(
     view: TvControlsView,
     actions: TvControlsActions,
     bands: TvStageBands,
+    together: TogetherUi,
 ) {
     TvPlayerControls(
         player = player,
@@ -131,6 +134,8 @@ internal fun TvPlayerControlsForViewModel(
                 onOpenEpisodes = actions.onOpenEpisodes.takeIf { view.hasEpisodes },
                 onToggleNotes = actions.onToggleNotes,
                 sidebarOpen = view.sidebarOpen,
+                together = together,
+                onTogether = viewModel::onTogetherButton,
             ),
         onSeekBarFocused = actions.onSeekBarFocused,
         bands = bands,

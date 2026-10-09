@@ -67,7 +67,7 @@ class TvPlayerLessonNotesTest : TvPlayerScreenHarness() {
     fun withTheNotesOpenEveryControlFitsBesideThemAndIsReached() {
         val notesLeft = compose.onNodeWithTag(TvNotesTag).getBoundsInRoot().left
         val controls =
-            listOf("Restart", "Back 15 seconds", "Pause", "Forward 15 seconds", "Stats", "Subtitles", "Subtitle options", "Speed", "Framing")
+            listOf("Restart", "Back 15 seconds", "Pause", "Forward 15 seconds", "Stats", "Subtitles", "Subtitle options", "Speed", "Framing", "Watch together")
                 .map { hasContentDescription(it) } + (hasText("Notes") and hasClickAction())
         for (control in controls) {
             val bounds = compose.onNode(control).getBoundsInRoot()
@@ -76,7 +76,7 @@ class TvPlayerLessonNotesTest : TvPlayerScreenHarness() {
         press(Key.DirectionRight)
         compose.onNodeWithContentDescription("Forward 15 seconds").assertIsFocused()
         press(Key.DirectionLeft)
-        toTool(hasContentDescription("Framing"))
+        toTool(hasContentDescription("Watch together"))
         press(Key.DirectionUp)
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
         press(Key.DirectionUp)

@@ -24,15 +24,15 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerRowEndsTest : TvPlayerScreenHarness() {
     @Test
-    fun theToolsRowStopsAtCcAndAtFraming() {
+    fun theToolsRowStopsAtCcAndAtWatchTogether() {
         press(Key.DirectionUp)
         compose.onNodeWithContentDescription("Subtitles").assertIsFocused()
         press(Key.DirectionLeft)
         compose.onNodeWithContentDescription("Subtitles").assertIsFocused()
 
-        along(hasContentDescription("Framing"))
+        along(hasContentDescription("Watch together"))
         press(Key.DirectionRight)
-        compose.onNodeWithContentDescription("Framing").assertIsFocused()
+        compose.onNodeWithContentDescription("Watch together").assertIsFocused()
     }
 
     @Test

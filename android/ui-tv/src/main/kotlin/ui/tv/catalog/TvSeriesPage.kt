@@ -32,6 +32,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -111,6 +112,7 @@ internal fun TvSeriesPage(
 
     val list = rememberLazyListState()
     val play = remember { FocusRequester() }
+    val join = togetherJoinIn(collection)
     val listPill = remember { FocusRequester() }
     val rowFocus = remember { FocusRequester() }
     val picker = collection.divisions.size > 1
@@ -132,7 +134,7 @@ internal fun TvSeriesPage(
                     overview = info?.overview,
                     tagline = info?.tagline,
                 ) {
-                    TvSeriesPills(first, resume, onResume, watch, onToggleWatchlist, editorsChoice, onToggleEditorsChoice, play, listPill)
+                    TvSeriesPills(first, resume, onResume, watch, onToggleWatchlist, editorsChoice, onToggleEditorsChoice, play, listPill, join)
                 }
             }
             item(key = "tabs") {
@@ -168,7 +170,7 @@ internal fun TvSeriesPage(
                 list.scrollToItem(2 + (if (picker) 1 else 0) + row, -inset)
                 rowFocus.requestFocus()
             }
-            restoreKey !in genres -> (if (resume != null) play else listPill).requestFocus()
+            restoreKey !in genres -> (if (resume != null || join != null) play else listPill).requestFocus()
         }
     }
 }

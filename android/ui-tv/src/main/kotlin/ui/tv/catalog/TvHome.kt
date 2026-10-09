@@ -35,6 +35,7 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import model.WatchSnapshot
+import ui.common.catalog.LocalTogetherJoin
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvCourseList
@@ -48,7 +49,8 @@ import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The magazine home page — the television twin of the phone's `HomeScreen`
- * and, through it, the web's own `home-view.js`: cover story, features,
+ * and, through it, the web's own `home-view.js`: cover story, a live
+ * watch-together session's plate ([TvTogetherBand]), features,
  * Continue watching beside a pull-quote, Recently added beside This month,
  * then Latest series and Latest courses. A `LazyColumn` of sections, only
  * the ones near the viewport ever composed, so a heavy section (a poster
@@ -97,13 +99,15 @@ internal fun TvHome(
     val watchlist = remember(watch) { watch.watchlist.toSet() }
     val series = latest.series
     val courses = latest.courses
+    val together = LocalTogetherJoin.current
 
     // Only stops with a focus requester of their own are restorable; any other
     // key (the quote, This month's rows) falls back to homeTargetOf's default.
     val sections =
-        remember(editorial, magazine, series, courses) {
+        remember(editorial, magazine, series, courses, together) {
             listOf(
                 DeptSection(TvHomeSection.COVER, editorial.cover.map { it.setId }),
+                DeptSection(TvHomeSection.TOGETHER, listOfNotNull(together?.offer?.set?.setId)),
                 DeptSection(TvHomeSection.FEATURES, editorial.features.map { it.set.setId }),
                 DeptSection(TvHomeSection.CONTINUE, magazine.resumeCards.map { it.set.setId }),
                 DeptSection(TvHomeSection.RECENT, magazine.recentlyAdded.map { it.setId }),
@@ -123,6 +127,8 @@ internal fun TvHome(
         remember(editorial, magazine, series, courses) {
             buildList {
                 if (hasCover) add(TvHomeSection.COVER)
+                // Drawn with or without a session, so one starting or ending moves no index.
+                add(TvHomeSection.TOGETHER)
                 if (editorial.features.isNotEmpty()) add(TvHomeSection.FEATURES)
                 if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) add(TvHomeSection.CONTINUE)
                 if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) add(TvHomeSection.RECENT)
@@ -140,23 +146,8 @@ internal fun TvHome(
     fun Modifier.remembersBand(section: TvHomeSection) = onFocusChanged { if (it.hasFocus) lastSection = section }
     val scope = rememberCoroutineScope()
 
-    val coverFocus = remember { FocusRequester() }
-    val featuresFocus = remember { FocusRequester() }
-    val continueFocus = remember { FocusRequester() }
-    val recentFocus = remember { FocusRequester() }
-    val seriesFocus = remember { FocusRequester() }
-    val coursesFocus = remember { FocusRequester() }
-    val entryFocus =
-        remember(coverFocus, featuresFocus, continueFocus, recentFocus, seriesFocus, coursesFocus) {
-            mapOf(
-                TvHomeSection.COVER to coverFocus,
-                TvHomeSection.FEATURES to featuresFocus,
-                TvHomeSection.CONTINUE to continueFocus,
-                TvHomeSection.RECENT to recentFocus,
-                TvHomeSection.SERIES to seriesFocus,
-                TvHomeSection.COURSES to coursesFocus,
-            )
-        }
+    val entryFocus = remember { TvHomeSection.entries.associateWith { FocusRequester() } }
+    val coverFocus = entryFocus.getValue(TvHomeSection.COVER)
 
     // Keyed on `target` alone, not also on `takesFocus`: a sentinel
     // elsewhere (Search, the bar's own ⋮) sends the remote there instead of
@@ -276,6 +267,14 @@ internal fun TvHome(
                     }
                 }
             }
+            item(key = "together") {
+                TvTogetherBand(
+                    together = together,
+                    focus = entryFocus.getValue(TvHomeSection.TOGETHER),
+                    modifier = Modifier.remembersBand(TvHomeSection.TOGETHER),
+                    plate = gutter.padding(top = Spacing.extraLarge),
+                )
+            }
             if (TvHomeSection.FEATURES in drawn) {
                 item(key = "features") {
                     Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.FEATURES)) {
@@ -283,7 +282,7 @@ internal fun TvHome(
                         // internal scrolling effect at all — the top-level
                         // effect above is what calls `requestFocus()` for
                         // FEATURES, already gated there.
-                        TvHomeFeatures(features = editorial.features, onOpenTitle = onOpenTitle, focusAt = stopAt(TvHomeSection.FEATURES), focus = featuresFocus)
+                        TvHomeFeatures(features = editorial.features, onOpenTitle = onOpenTitle, focusAt = stopAt(TvHomeSection.FEATURES), focus = entryFocus.getValue(TvHomeSection.FEATURES))
                     }
                 }
             }
@@ -301,7 +300,7 @@ internal fun TvHome(
                                 onOpenTitle = onOpenTitle,
                                 onSeeAllContinue = { onSeeAll(CatalogTab.Kept(KeptKind.CONTINUE)) },
                                 focusAt = stopAt(TvHomeSection.CONTINUE)?.takeIf { it < magazine.resumeCards.size },
-                                focus = continueFocus,
+                                focus = entryFocus.getValue(TvHomeSection.CONTINUE),
                             )
                         }
                     }
@@ -318,7 +317,7 @@ internal fun TvHome(
                                 onOpenTitle = onOpenTitle,
                                 onSeeAllMovies = { onSeeAll(CatalogTab.Dept(Department.MOVIES)) },
                                 focusAt = stopAt(TvHomeSection.RECENT)?.takeIf { it < magazine.recentlyAdded.size },
-                                focus = recentFocus,
+                                focus = entryFocus.getValue(TvHomeSection.RECENT),
                             )
                         }
                     }
@@ -334,7 +333,7 @@ internal fun TvHome(
                                     shows = series,
                                     onOpen = onOpenCollection,
                                     focusAt = stopAt(TvHomeSection.SERIES),
-                                    focus = seriesFocus,
+                                    focus = entryFocus.getValue(TvHomeSection.SERIES),
                                 )
                             }
                         }
@@ -350,7 +349,7 @@ internal fun TvHome(
                                 courses = courses,
                                 onOpen = onOpenCollection,
                                 focusAt = stopAt(TvHomeSection.COURSES),
-                                focus = coursesFocus,
+                                focus = entryFocus.getValue(TvHomeSection.COURSES),
                             )
                         }
                     }

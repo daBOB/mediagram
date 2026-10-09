@@ -29,11 +29,8 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
-import catalog.SeriesResumePick
 import designsystem.Spacing
 import designsystem.TvTypeScale
-import model.MediaSet
-import model.WatchSnapshot
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -156,36 +153,6 @@ internal fun TvMorePill(
     }
     LaunchedEffect(open) { if (open) first.requestFocus() }
     BackHandler(enabled = open, onBack = close)
-}
-
-/**
- * A show's pills — `series-page.js`'s own: the resume pick ([resumeLabel])
- * when there is one, My List and ⋯ for the show's first episode, which is
- * how the web keeps a show on the list and pins it. [play] and [listPill]
- * are always attached to their own pill, so a page can land the remote on
- * whichever leads.
- */
-@Composable
-internal fun TvSeriesPills(
-    first: MediaSet?,
-    resume: SeriesResumePick?,
-    onResume: (setId: String) -> Unit,
-    watch: WatchSnapshot,
-    onToggleWatchlist: () -> Unit,
-    editorsChoice: String?,
-    onToggleEditorsChoice: (() -> Unit)?,
-    play: FocusRequester,
-    listPill: FocusRequester,
-) {
-    TvPillRow {
-        resume?.let { pick ->
-            TvSpreadPill(text = resumeLabel(pick), onClick = { onResume(pick.set.setId) }, solid = true, modifier = Modifier.focusRequester(play))
-        }
-        if (first != null) {
-            TvListPill(watchlisted = first.setId in watch.watchlist, onToggle = onToggleWatchlist, modifier = Modifier.focusRequester(listPill))
-            TvMorePill(editorsChoiceChoice(onToggleEditorsChoice, pinned = editorsChoice == first.setId))
-        }
-    }
 }
 
 /** `.spread-actions`: the pills in a wrapping row, 12dp apart, a text row among them centred on their height. */

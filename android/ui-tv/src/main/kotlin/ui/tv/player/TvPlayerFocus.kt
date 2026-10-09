@@ -11,6 +11,7 @@ internal class TvPlayerFocus {
     val speed = FocusRequester()
     val audio = FocusRequester()
     val framing = FocusRequester()
+    val together = FocusRequester()
     val episodes = FocusRequester()
     val marks = FocusRequester()
     val upNext = FocusRequester()

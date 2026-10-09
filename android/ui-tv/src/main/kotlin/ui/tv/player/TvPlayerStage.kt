@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import designsystem.Overscan
 import designsystem.Spacing
@@ -63,8 +64,8 @@ internal class TvStagePicture(
 /**
  * The film and everything over it, in three bands: along the top what is
  * playing, along the bottom the controls, and floating between them the
- * subtitles and the up-next card — each kept clear of the others by where
- * they report themselves ([bands]). The episode list stands down the
+ * subtitles, the up-next card and watch together's notice — each kept clear
+ * of the others by where they report themselves ([bands]). The episode list stands down the
  * right while it is open, and what floats moves over to leave it room.
  */
 @Composable
@@ -79,6 +80,7 @@ internal fun BoxScope.TvPlayerStage(
     bands: TvStageBands,
 ) {
     val shown = picture.barShown
+    val together by viewModel.together.collectAsStateWithLifecycle()
     // The card stands just above the controls, where a lifted cue would go,
     // so while it shows the cue lifts clear of the card too — beside it, on
     // a stage the notes have narrowed, a long line would be squeezed into a
@@ -88,7 +90,7 @@ internal fun BoxScope.TvPlayerStage(
     TvVideoWithSubtitles(player, picture.cues, picture.choices, room)
     // Everything over the picture is a control that holds still under focus.
     CompositionLocalProvider(LocalFlatControls provides true) {
-        if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands)
+        if (shown) TvPlayerControlsForViewModel(player, set, focus, viewModel, view, actions, bands, together)
         if (shown && view.upNext.phase != UpNextPhase.HIDDEN) {
             TvUpNextOverStage(view.upNext, focus, viewModel::playNext, viewModel::cancelUpNext, bands, besideWidth = if (picture.sidebar != null) TvSidebarWidth else 0.dp)
         }
@@ -105,6 +107,9 @@ internal fun BoxScope.TvPlayerStage(
             DisposableEffect(Unit) { onDispose { bands.panelLeft = null } }
         }
     }
+    // Under what is playing while the controls are up, at the top otherwise: it shows while they rest.
+    val noticeTop = with(LocalDensity.current) { bands.topBottom?.takeIf { shown }?.toDp() } ?: Overscan.vertical
+    TvTogetherNotice(together.notice, Modifier.align(Alignment.TopCenter).padding(top = noticeTop + Spacing.small))
 }
 
 /**

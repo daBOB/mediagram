@@ -16,6 +16,7 @@ import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
 import ui.common.LibraryPositions
+import ui.common.catalog.WithTogetherJoin
 import ui.common.catalog.rememberFilmPreloadUi
 import ui.common.catalog.rememberTitleCredits
 import ui.common.catalog.rememberTitleInfo
@@ -43,19 +44,20 @@ internal fun TvTitleFrame(
     kidsProfile: Boolean,
     leave: () -> Unit,
 ) {
+    // Coming back from the player lands on Play, or Join, not on a genre or a
+    // person whose page was visited before it.
+    val play = { setId: String ->
+        restore.forget(here)
+        at.openPlayer(setId)
+    }
     TvResolvedBranch(title, catalogState, leave) { set ->
         val credits = rememberTitleCredits(set.posterKey, catalogViewModel::titleCredits)
         val similar = remember(set, allFilms, watchedIds) { similarTo(set, allFilms) { it.setId in watchedIds } }
-        TvTitlePage(
+        WithTogetherJoin(catalogViewModel, play) { TvTitlePage(
             set = set,
             info = rememberTitleInfo(set.posterKey, catalogViewModel::titleInfo),
             progress = watch.progress.find { it.setId == set.setId },
-            // Coming back from the player lands on Play, not on a genre or a
-            // person whose page was visited before it.
-            onPlay = {
-                restore.forget(here)
-                at.openPlayer(set.setId)
-            },
+            onPlay = { play(set.setId) },
             onOpenGenre = { name ->
                 restore.opened(here, name)
                 at.openGenre(name)
@@ -90,7 +92,7 @@ internal fun TvTitleFrame(
             preload = if (set.kind == Kind.MOVIE) rememberFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             watchlisted = set.setId in watch.watchlist,
             onToggleWatchlist = { catalogViewModel.toggleWatchlist(set.setId) },
-        )
+        ) }
     }
 }
 
@@ -119,7 +121,12 @@ internal fun TvCollectionFrame(
         val credits = rememberTitleCredits(providerKey, catalogViewModel::titleCredits)
         val similar = remember(coll, allShows, watchedIds) { if (show) similarShows(coll, allShows) { id -> id in watchedIds } else emptyList() }
         val resume = remember(coll, watch) { seriesResumeFor(coll, watch) }
-        TvCollection(
+        val resumes = { setId: String ->
+            restore.forget(here)
+            at.openPlayer(setId)
+        }
+        // Join stands where the resume pill does, so it opens the player the same way.
+        WithTogetherJoin(catalogViewModel, resumes) { TvCollection(
             collection = coll,
             info = rememberTitleInfo(providerKey, catalogViewModel::titleInfo),
             watch = watch,
@@ -146,10 +153,7 @@ internal fun TvCollectionFrame(
                 at.openCollection(key)
             },
             resume = resume,
-            onResume = { setId ->
-                restore.forget(here)
-                at.openPlayer(setId)
-            },
+            onResume = resumes,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
             onToggleWatchlist = { firstEpisodeId?.let(catalogViewModel::toggleWatchlist) },
@@ -160,6 +164,6 @@ internal fun TvCollectionFrame(
                 } else {
                     { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
-        )
+        ) }
     }
 }
