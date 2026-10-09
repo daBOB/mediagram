@@ -26,6 +26,27 @@ pub(in crate::api) use password::{PendingPassword, check_password};
 use super::session;
 use crate::api::{AuthOutcome, Core, CoreError};
 
+#[uniffi::export(async_runtime = "tokio")]
+impl Core {
+    /// Whether a login has ever completed. Reads the persisted auth key
+    /// only: cheap, and needs no connection.
+    pub fn is_authorized(&self) -> bool {
+        session::load_auth_key(&self.data_dir).is_some()
+    }
+
+    pub async fn request_code(&self, phone: String) -> Result<String, CoreError> {
+        request_code(self, phone).await
+    }
+
+    pub async fn sign_in(&self, token: String, code: String) -> Result<AuthOutcome, CoreError> {
+        sign_in(self, token, code).await
+    }
+
+    pub async fn check_password(&self, password: String) -> Result<(), CoreError> {
+        check_password(self, password).await
+    }
+}
+
 pub(in crate::api) struct PendingLogin {
     id: String,
     token: LoginToken,
