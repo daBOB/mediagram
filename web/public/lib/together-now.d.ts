@@ -8,8 +8,12 @@ import type { Session } from "./together/session.js";
 
 export interface Live { id: number; session: Session }
 export interface TogetherView { available: boolean; reason: string | null; live: Live | null; offset: number }
-/** What a `together` event said, ended and stale sessions read as `null`. */
-export interface Heard { id: number; session: Session | null }
+/**
+ * What a `together` event said, ended and stale sessions read as `null`. `lost`: a move of
+ * the server's was given up on, and this is what the channel holds, to be followed by the
+ * tab that made it too.
+ */
+export interface Heard { id: number; session: Session | null; lost?: boolean }
 
 /** This tab's screen id in a session's `members`. */
 export const screen: string;
@@ -24,7 +28,7 @@ export function onLeaveTogether(listener: () => void): void;
 /** `heard` is `null` after a read of `GET /api/together`. Returns the unsubscribe. */
 export function onTogether(listener: (view: TogetherView, heard: Heard | null) => void): () => void;
 export function refreshTogether(): Promise<void>;
-export function heardTogether(payload: { id: number; session: Session | null; serverNow: number }): void;
+export function heardTogether(payload: { id: number; session: Session | null; serverNow: number; lost?: boolean }): void;
 /** Takes session `id` out of this tab's view, telling listeners as a `null` event would. */
 export function forgetTogether(id: number): void;
 export function together(body: Record<string, unknown>): Promise<{ ok: boolean; status: number; body: any }>;

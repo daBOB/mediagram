@@ -135,7 +135,7 @@ class TogetherControllerFollowTest {
         }
 
     @Test
-    fun aReadThatFindsANewerSessionEndsThisScreensOwn() =
+    fun aReadThatFindsANewerSessionLeavesThisScreensOwnRatherThanStayListedInIt() =
         runTest {
             val rig = TogetherRig(this).joined()
             rig.put(960, TV_SESSION.copy(session = "s-2"))
@@ -145,6 +145,7 @@ class TogetherControllerFollowTest {
 
             assertEquals(ENDED, rig.controller.ui.value.notice)
             assertEquals(TogetherButton.JOIN, rig.controller.ui.value.button)
+            assertEquals(listOf(TV.screen), rig.message(950).members.map { it.screen })
         }
 
     @Test

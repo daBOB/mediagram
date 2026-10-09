@@ -9,10 +9,15 @@ import model.together.Session
 /** Why Watch together and Join are greyed out, on every surface: the web player's own words. */
 const val TOGETHER_UNREACHABLE = "Telegram isn't reachable"
 
-/** A session and the channel message that carries it. */
+/**
+ * A session and the channel message that carries it. [lost]: a move of this
+ * device's was given up on, and this is what the channel holds, so the
+ * screen that made the move follows it too, its own echo though it may be.
+ */
 data class LiveSession(
     val id: Int,
     val session: Session,
+    val lost: Boolean = false,
 )
 
 /**
@@ -43,7 +48,7 @@ interface TogetherLive {
      */
     val live: StateFlow<LiveSession?>
 
-    /** False while Telegram can't be reached, nobody is signed in, or the last read failed. */
+    /** False while Telegram can't be reached, nobody is signed in, or the last read or edit failed. */
     val available: StateFlow<Boolean>
 
     /**

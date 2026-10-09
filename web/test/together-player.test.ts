@@ -359,3 +359,46 @@ test("at its end, an edit whose place reads on past the end neither seeks nor pl
   heardFromTv({ pos: 300 });
   expect([seeks, env.video.paused]).toEqual([[300], false]);
 });
+
+test("a move queued while Telegram can't be reached says why", async () => {
+  await joined();
+  env.respondWith(async () => Response.json({ session: session(), serverNow: Date.now(), reason: "Telegram isn't reachable" }));
+  follower.viewer({ playing: false });
+  await settle();
+  expect(note().textContent).toBe("Telegram isn't reachable");
+});
+
+test("a read that finds another session the newest leaves this one, rather than stay listed in it", async () => {
+  await joined();
+  const other = session({ session: "s-2", at: Date.now() });
+  env.respondWith(async (_url, options) => options?.body
+    ? new Response(null, { status: 204 })
+    : Response.json({ available: true, reason: null, live: { id: 8, session: other }, serverNow: Date.now() }));
+  await refreshTogether();
+  await settle();
+  expect(note().textContent).toBe("Watch together ended");
+  expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
+});
+
+test("a session found stale here is read again, so the server deletes it as whoever reads one must", async () => {
+  await joined({ pos: 590 });
+  env.advance(132_000);
+  expect(note().textContent).toBe("Watch together ended");
+  expect(env.requests.filter((request) => request.options?.method === undefined).map((request) => request.url)).toEqual(["/api/together"]);
+});
+
+test("a title the session was moving to, opened by hand once this screen is in a session again, is the viewer's move", async () => {
+  await joined();
+  heardFromTv({ set: "film-2", pos: 0 });
+  expect(opened).toEqual(["film-2"]);
+  // Left before that title opened; back in once the TV went back to this one.
+  button().fire("click");
+  await settle();
+  heardFromTv({ set: "film-1", pos: 0 });
+  button().fire("click");
+  await settle();
+  env.requests.length = 0;
+  follower.open(film("film-2"), { next: null });
+  await settle();
+  expect(posts()).toEqual([{ op: "act", screen, id: 7, change: { set: "film-2", pos: 0, playing: true } }]);
+});

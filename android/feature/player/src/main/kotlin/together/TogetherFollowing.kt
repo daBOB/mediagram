@@ -20,16 +20,18 @@ internal const val DRIFT_CHECK_MS = 2_000L
 
 /**
  * What [data.TogetherLive] holds now. Out of a session that only redraws.
- * In one, no session or another means this one is over here: it moves on to
- * another only once a read finds that one the newest, as a web tab ends its
- * session when a read answers another.
+ * In one, no session means this one is over here. Another one is shown only
+ * once a read finds it the newest, and this screen then leaves its own, as a
+ * web tab does when a read answers another, rather than stay listed in it.
  */
 internal suspend fun TogetherController.onLive(heard: LiveSession?) {
     val inside = id ?: return draw()
+    if (heard != null && heard.id != inside) return leave(ENDED)
     // Ended or gone, checked before what changed: this screen plays on alone.
-    if (heard == null || heard.id != inside || heard.session.ended) return end(ENDED)
+    if (heard == null || heard.session.ended) return end(ENDED)
     val before = current
-    val followed = follow(before, heard.session, screen)
+    // A move given up on comes back as what the channel holds, which the screen that made it follows too.
+    val followed = if (heard.lost) heard.session else follow(before, heard.session, screen)
     if (followed === before) return
     current = followed
     if (before != null && followed.by != screen) changeOf(before, followed)?.let { view.show(say(it, followed)) }

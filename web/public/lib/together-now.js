@@ -81,7 +81,7 @@ export function heardTogether(payload) {
   const session = stillLive(payload.session, payload.serverNow);
   const live = session ? { id: payload.id, session } : known.live?.id === payload.id ? null : known.live;
   known = { available: true, reason: null, live, offset: payload.serverNow - Date.now() };
-  tell({ id: payload.id, session });
+  tell({ id: payload.id, session, lost: payload.lost === true });
 }
 
 /** A session this tab found over by itself, stale or unknown to the server: out of its view, as an event would take it. */

@@ -7,7 +7,9 @@
  * hashtag `#mlib` (see `state-channel.ts`). Not pinned: pins are flood-limited.
  *
  * Signed out, every call throws rather than answering empty: a read that
- * found nothing would say the session was deleted.
+ * found nothing would say the session was deleted. Sent and edited as plain
+ * text, as the Rust core sends it: teleproto would otherwise parse Markdown
+ * in a member's label, and the message would no longer be the JSON written.
  */
 
 import { errors } from "teleproto";
@@ -46,14 +48,14 @@ export class TelegramTogetherChannel implements TogetherChannel {
 
   async send(text: string): Promise<number> {
     const telegram = await this.telegram();
-    const sent = await telegram.client.sendMessage(telegram.peer, { message: text, silent: true });
+    const sent = await telegram.client.sendMessage(telegram.peer, { message: text, silent: true, parseMode: false });
     return sent.id;
   }
 
   async edit(id: number, text: string): Promise<EditOutcome> {
     const telegram = await this.telegram();
     try {
-      await telegram.client.editMessage(telegram.peer, { message: id, text });
+      await telegram.client.editMessage(telegram.peer, { message: id, text, parseMode: false });
       return "ok";
     } catch (error) {
       if (error instanceof errors.FloodWaitError) return { wait: error.seconds };

@@ -23,10 +23,10 @@ const foreign = (over: Partial<Session> = {}): Session => ({
 
 function harness() {
   const channel = new FakeChannel();
-  const announced: [number, Session | null][] = [];
+  const announced: [number, Session | null, true?][] = [];
   const slept: number[] = [];
   let wake: Promise<void> = Promise.resolve();
-  const hub = new TogetherHub(channel, (id, session) => announced.push([id, session]), () => NOW, (ms) => {
+  const hub = new TogetherHub(channel, (id, session, lost) => announced.push(lost ? [id, session, lost] : [id, session]), () => NOW, (ms) => {
     slept.push(ms);
     return wake;
   });
@@ -339,6 +339,19 @@ describe("TogetherHub", () => {
     expect(h.announced.at(-1)).toEqual([id, null]);
   });
 
+  test("a join builds on an edit heard while its read was on its way", async () => {
+    const h = harness();
+    h.channel.messages.set(950, writeSession(foreign()));
+    const gate = deferred<void>();
+    h.channel.readGate = gate.promise;
+    const joining = h.hub.join(950, A);
+    await settle();
+    const paused = foreign({ playing: false, pos: 20 });
+    h.hub.heard(950, writeSession(paused));
+    gate.resolve();
+    expect((await joining)?.session).toEqual({ ...paused, by: A.screen, members: [TV, A] });
+  });
+
   test("join adds this screen to a session it read, and a deleted one cannot be joined", async () => {
     const h = harness();
     h.channel.messages.set(950, writeSession(foreign()));
@@ -363,6 +376,22 @@ describe("TogetherHub", () => {
     expect(h.announced.at(-1)).toEqual([id, null]);
   });
 
+  test("a recheck read across which an edit was heard is set aside", async () => {
+    const h = harness();
+    const id = await h.start();
+    const started = parseSession(h.channel.messages.get(id)!)!;
+    h.channel.messages.set(id, writeSession({ ...started, playing: false, by: TV.screen, members: [A, TV] }));
+    const gate = deferred<void>();
+    h.channel.readGate = gate.promise;
+    const rechecking = h.hub.recheck();
+    await settle();
+    const newer = { ...started, pos: 80, by: TV.screen, members: [A, TV] };
+    h.hub.heard(id, writeSession(newer));
+    gate.resolve();
+    await rechecking;
+    expect(h.announced.at(-1)).toEqual([id, newer]);
+  });
+
   test("a remembered id that is no session, as after a library switch, is forgotten after one read", async () => {
     const h = harness();
     h.hub.heard(800, writeSession(foreign()));
@@ -380,5 +409,54 @@ describe("TogetherHub", () => {
     const before = h.announced.length;
     await h.hub.recheck();
     expect(h.announced).toHaveLength(before);
+  });
+
+  describe("an edit that throws, as while Telegram can't be reached", () => {
+    test("is tried again 30 s later, never sooner, with the moves made since, and lands once Telegram is back", async () => {
+      const h = harness();
+      const id = await h.start();
+      const gate = h.holdSleep();
+      h.channel.failEdits = true;
+      h.hub.act(id, A.screen, { playing: false, pos: 42 });
+      await settle();
+      expect(h.slept).toEqual([30_000]);
+      const sought = h.hub.act(id, A.screen, { pos: 60 })!;
+      h.channel.failEdits = false;
+      await settle();
+      expect(h.channel.edits).toHaveLength(1);
+      gate.resolve();
+      await settle();
+      expect(h.channel.edits).toHaveLength(2);
+      expect(sought).toMatchObject({ playing: false, pos: 60 });
+      expect(parseSession(h.channel.messages.get(id)!)).toEqual(sought);
+    });
+
+    test("three times is given up: every tab is told what the channel holds, marked so the screen that moved follows it too", async () => {
+      const h = harness();
+      const id = await h.start();
+      const held = parseSession(h.channel.messages.get(id)!)!;
+      h.channel.failEdits = true;
+      h.hub.act(id, A.screen, { playing: false, pos: 42 });
+      await settle();
+      expect(h.channel.edits).toHaveLength(3);
+      expect(h.slept).toEqual([30_000, 30_000, 30_000]);
+      expect(h.announced.at(-1)).toEqual([id, held, true]);
+      // What the channel holds is what the next move builds on.
+      expect(h.hub.act(id, A.screen, { rate: 2 })).toMatchObject({ playing: true, rate: 2 });
+    });
+
+    test("a last leave is written, and the message deleted, once Telegram is back", async () => {
+      const h = harness();
+      const id = await h.start();
+      const gate = h.holdSleep();
+      h.channel.failEdits = true;
+      h.hub.leave(id, A.screen);
+      await settle();
+      h.channel.failEdits = false;
+      gate.resolve();
+      await settle();
+      expect(h.channel.edits.at(-1)).toMatchObject({ members: [], ended: true });
+      expect(h.channel.removed).toEqual([id]);
+    });
   });
 });

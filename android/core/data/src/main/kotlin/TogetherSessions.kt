@@ -24,7 +24,8 @@ internal class TogetherSessions(
     channel: TogetherChannel,
     scope: CoroutineScope,
 ) {
-    val sender = TogetherSender(channel, scope) { forget(it) }
+    val sender =
+        TogetherSender(channel, scope, forget = { forget(it) }, lost = { lost(it) }, reached = { reachable.value = it })
     val known: MutableMap<Int, Session> get() = sender.known
 
     /** Screens whose moves went through here: their echoes are not news. */
@@ -81,6 +82,11 @@ internal class TogetherSessions(
         tell(id)
     }
 
+    /** A move given up on: what the channel holds is shown again, marked so the screen that moved takes it too. */
+    private fun lost(id: Int) {
+        if (id in known) tell(id, lost = true)
+    }
+
     /** The session is over here: forgotten, and out of [shown]. */
     fun forget(id: Int): LiveSession? {
         known.remove(id)
@@ -94,15 +100,18 @@ internal class TogetherSessions(
      * does not take its place, as it does not in a web tab: that screen
      * follows its own until a read answers the newest.
      */
-    private fun tell(id: Int): Session? {
+    private fun tell(
+        id: Int,
+        lost: Boolean = false,
+    ): Session? {
         val session = sender.view(id)?.takeUnless { it.ended }
         val current = shown.value
         shown.value =
             when {
-                current?.id == id -> session?.let { LiveSession(id, it) }
+                current?.id == id -> session?.let { LiveSession(id, it, lost) }
                 session == null -> current
                 current != null && mine(current.session) && !mine(session) -> current
-                else -> LiveSession(id, session)
+                else -> LiveSession(id, session, lost)
             }
         return session
     }

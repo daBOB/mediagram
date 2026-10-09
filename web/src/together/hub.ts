@@ -31,11 +31,13 @@ export class TogetherHub {
 
   constructor(
     private readonly channel: TogetherChannel,
-    private readonly announce: (id: number, session: Session | null) => void,
+    /** `lost`: a move of this server's was given up on, so this is followed even by the tab that made it. */
+    private readonly announce: (id: number, session: Session | null, lost: boolean) => void,
     private readonly now: () => number = Date.now,
     sleep: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms)),
   ) {
-    this.sender = new TogetherSender(channel, this.known, (id) => this.forget(id), sleep);
+    const lost = (id: number) => { if (this.known.has(id)) this.tell(id, true); };
+    this.sender = new TogetherSender(channel, this.known, (id) => this.forget(id), lost, sleep);
   }
 
   available(): boolean {
@@ -107,10 +109,12 @@ export class TogetherHub {
 
   async join(id: number, me: Member): Promise<Live | null> {
     if (!this.sender.pending(id)) {
+      const before = this.known.get(id);
       const text = await this.channel.read(id);
       const read = text === null ? null : parseSession(text);
       if (!read || read.ended) return this.forget(id);
-      if (!this.sender.pending(id)) this.known.set(id, read); // else a move made meanwhile already knows newer
+      // A move made meanwhile, or an edit heard, knows newer than this read.
+      if (!this.sender.pending(id) && this.known.get(id) === before) this.known.set(id, read);
     }
     const session = this.queue(id, me.screen, (s) => joined(s, me));
     return session && { id, session };
@@ -136,15 +140,15 @@ export class TogetherHub {
   /**
    * Re-reads every session a local screen is in. A push missed while the
    * connection was down is not replayed (`channel-events.ts`), so this is how
-   * a tab that kept playing learns what it missed. A read made while a move
-   * of this server's is on its way may predate it, so it is set aside.
+   * a tab that kept playing learns what it missed. A read across which a move
+   * of this server's started, or an edit was heard, may predate it, so it is set aside.
    */
   async recheck(): Promise<void> {
     if (!this.channel.available() || this.sender.busy) return;
     for (const [id, session] of [...this.known]) {
       if (this.sender.pending(id) || !session.members.some((m) => this.local.has(m.screen))) continue;
       const text = await this.channel.read(id).catch(() => undefined);
-      if (text === undefined || this.sender.pending(id)) continue;
+      if (text === undefined || this.sender.pending(id) || this.known.get(id) !== session) continue;
       const read = text === null ? null : parseSession(text);
       // Compared as written here: Kotlin and JS print the same numbers differently.
       if (!read) this.forget(id);
@@ -166,17 +170,17 @@ export class TogetherHub {
   }
 
   /** Tells every tab what this server holds the session to be; `null` once it is over. */
-  private tell(id: number): Session | null {
+  private tell(id: number, lost = false): Session | null {
     const session = this.sender.view(id);
     const shown = session && !session.ended ? session : null;
-    this.announce(id, shown);
+    this.announce(id, shown, lost);
     return shown;
   }
 
   /** The session is over here: forgotten, and every tab told. */
   private forget(id: number): null {
     this.known.delete(id);
-    this.announce(id, null);
+    this.announce(id, null, false);
     return null;
   }
 }

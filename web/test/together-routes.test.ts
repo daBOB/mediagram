@@ -94,10 +94,27 @@ describe("/api/together", () => {
     expect(h.channel.removed).toEqual([json.id]);
   });
 
-  test("any write while Telegram is unreachable says why", async () => {
+  test("a start or a join while Telegram is unreachable says why", async () => {
     const h = harness();
     h.channel.up = false;
-    expect(await h.call("POST", start)).toEqual({ status: 503, json: { reason: "Telegram isn't reachable" } });
+    const unreachable = { status: 503, json: { reason: "Telegram isn't reachable" } };
+    expect(await h.call("POST", start)).toEqual(unreachable);
+    expect(await h.call("POST", { op: "join", id: 950, screen: "tab-a" })).toEqual(unreachable);
+  });
+
+  test("an act, a leave or an end while Telegram is unreachable is queued, and an act says why", async () => {
+    const h = harness();
+    const { json } = await h.call("POST", start);
+    h.channel.up = false;
+    const act = await h.call("POST", { op: "act", id: json.id, screen: "tab-a", change: { playing: false } });
+    expect(act.status).toBe(200);
+    expect(act.json).toMatchObject({ session: { playing: false }, reason: "Telegram isn't reachable" });
+    expect((await h.call("POST", { op: "end", id: json.id, screen: "tab-a" })).status).toBe(204);
+    await settle();
+    expect(h.channel.edits.at(-1)).toMatchObject({ playing: false, ended: true });
+    // A session it can't tell is over or not is no reason to end one: the tab plays on alone.
+    expect(await h.call("POST", { op: "act", id: 999, screen: "tab-a", change: { playing: true } }))
+      .toEqual({ status: 503, json: { reason: "Telegram isn't reachable" } });
   });
 
   test("is not there without a hub", async () => {

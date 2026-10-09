@@ -1,5 +1,6 @@
 package player.together
 
+import data.TOGETHER_UNREACHABLE
 import data.TogetherLive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -171,7 +172,13 @@ internal class TogetherController(
         }
         if (watching != null) return
         watching = scope.launch {
-            launch { live.available.collect { draw() } }
+            launch {
+                live.available.collect { up ->
+                    // A read or an edit just failed: a screen in a session plays on alone, and says why.
+                    if (!up && id != null) view.show(TOGETHER_UNREACHABLE)
+                    draw()
+                }
+            }
             live.live.collect { onLive(it) }
         }
         if (id == null) scope.launch { live.refresh() }

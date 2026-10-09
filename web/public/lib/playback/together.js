@@ -9,8 +9,8 @@
 import { changeOf, expectedPosition, follow, isLive } from "../together/follow.js";
 import { acted } from "../together/moves.js";
 import {
-  forgetTogether, heardTogether, onTogether, openForTogether, screen, serverNow, setForTogether, setInTogether, takeJoin,
-  together, togetherNow,
+  forgetTogether, heardTogether, onTogether, openForTogether, refreshTogether, screen, serverNow, setForTogether, setInTogether,
+  takeJoin, together, togetherNow,
 } from "../together-now.js";
 import { COULD_NOT_START, ENDED, LEFT_NOT_HERE, NOT_HERE, say } from "./together-words.js";
 import { togetherView } from "./together-view.js";
@@ -49,11 +49,12 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     apply(true);
   }
 
-  /** Over, found here rather than heard: out of the tab's view too, so Home and the button don't offer it. */
+  /** Over, found here rather than heard: out of the tab's view too, and read again, so the server deletes a stale one. */
   function over() {
     const ended = id;
     end(ENDED);
     forgetTogether(ended);
+    void refreshTogether();
   }
 
   /** The session's next title; one this profile may not see (a kids profile's limit) is where this screen leaves. */
@@ -68,6 +69,7 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     generation++;
     id = null;
     current = null;
+    expecting = null;
     clearInterval(drift);
     clearTimeout(settle);
     drift = null;
@@ -125,7 +127,7 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     current = moved;
     const send = async () => {
       const answer = await together({ op: "act", screen, id: session, change: { ...change, pos: expectedPosition(moved, serverNow()) } });
-      if (answer.ok || session !== id) return;
+      if (session !== id) return;
       if (answer.status === 404) over();
       else if (answer.body?.reason) show(answer.body.reason);
     };
@@ -135,14 +137,18 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
   }
 
   onTogether((view, heard) => {
-    // A read carries no edit: what it found for this session is the news. One that can't
-    // reach Telegram leaves this screen in the session, playing on alone until it can.
-    if (!heard && id !== null && view.available) heard = { id, session: view.live?.id === id ? view.live.session : null };
+    // A read carries no edit: what it found for this session is the news, and another one newest
+    // means this screen leaves it. One that can't reach Telegram leaves it playing on alone until it can.
+    if (!heard && id !== null && view.available) {
+      if (view.live && view.live.id !== id) return void leave(ENDED);
+      heard = { id, session: view.live?.session ?? null };
+    }
     if (!heard || heard.id !== id) return refresh();
     // Ended or stale, which `together-now.js` hears as `null`: this screen plays on alone.
     if (heard.session === null) return end(ENDED);
     const before = current;
-    current = follow(current, heard.session, screen);
+    // A move given up on comes back as what the channel holds, which the screen that made it follows too.
+    current = heard.lost ? heard.session : follow(current, heard.session, screen);
     if (current === before) return;
     const change = before && current.by !== screen ? changeOf(before, current) : null;
     if (change) show(say(change, current));

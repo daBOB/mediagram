@@ -49,13 +49,15 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
     return reply({ available, reason: available ? null : UNREACHABLE, live: live ?? null, serverNow: Date.now() });
   }
   if (request.method !== "POST") return bodiless(405);
-  if (!hub.available()) return reply({ reason: UNREACHABLE }, 503);
+  // A start or a join reads the channel; a move is queued, and sent once Telegram is back.
+  const reachable = hub.available();
   const body = jsonBody(request.body);
   const screen = typeof body?.screen === "string" && SCREEN.test(body.screen) ? body.screen : null;
   if (!body || !screen) return bodiless(400);
   const me = { screen, label: "Browser" };
   const id = Number(body.id);
   try {
+    if ((body.op === "start" || body.op === "join") && !reachable) return reply({ reason: UNREACHABLE }, 503);
     if (body.op === "start") {
       const own = change(body, db, true);
       if (!own) return bodiless(400);
@@ -71,7 +73,9 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
       const moved = typeof body.change === "object" && body.change !== null ? change(body.change as Body, db, false) : null;
       if (!moved) return bodiless(400);
       const session = hub.act(id, screen, moved);
-      return session ? reply({ session, serverNow: Date.now() }) : bodiless(404);
+      // Unknown while Telegram can't be reached may be a server that restarted: the tab plays on alone.
+      if (!session) return reachable ? bodiless(404) : reply({ reason: UNREACHABLE }, 503);
+      return reply({ session, serverNow: Date.now(), reason: reachable ? null : UNREACHABLE });
     }
     if (body.op === "leave" || body.op === "end") {
       // Answered once queued: the sender delivers it, after any flood wait.

@@ -23,6 +23,8 @@ export class FakeChannel implements TogetherChannel {
   /** Answers for the next edits, in order; "ok" once they run out. */
   readonly outcomes: (EditOutcome | Promise<EditOutcome>)[] = [];
   failReads = false;
+  /** Every edit throws, as one does while Telegram can't be reached; it is still recorded. */
+  failEdits = false;
   /** Reads answer once this settles, with what the channel holds then. */
   readGate: Promise<void> = Promise.resolve();
   up = true;
@@ -46,6 +48,7 @@ export class FakeChannel implements TogetherChannel {
   }
   async edit(id: number, text: string) {
     this.edits.push(parseSession(text)!);
+    if (this.failEdits) throw new Error("offline");
     const outcome = await (this.outcomes.shift() ?? "ok");
     if (outcome === "ok") this.messages.set(id, text);
     return outcome;

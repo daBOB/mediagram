@@ -3,6 +3,10 @@
  * of the Android `TogetherSender.kt`. It keeps the tabs' moves per message,
  * composed in the order they were made, and sends them one edit at a time,
  * each applied to the newest session known when it goes.
+ *
+ * An edit that throws, as one does while Telegram can't be reached, is tried
+ * again after 30 s, never sooner, until it has thrown three times. The move
+ * is then given up on, and the tabs are told what the channel holds.
  */
 
 import { writeSession, type Session } from "../../public/lib/together/session.js";
@@ -12,12 +16,19 @@ import type { TogetherChannel } from "./channel";
 /** A tab's move, applied to whatever session is newest when it is sent. Each is idempotent. */
 export type Move = (s: Session) => Session;
 
+/** How long a move whose edit threw waits before it is tried again. */
+export const EDIT_RETRY_MS = 30_000;
+/** How many times a move's edit may throw before the move is given up on, so a lasting error is not tried for ever. */
+export const EDIT_TRIES = 3;
+
 export class TogetherSender {
   /** The moves per message not yet sent, composed in the order they were made. */
   private readonly outgoing = new Map<number, Move>();
   /** The edit on its way: what it says is the newest known until it resolves. */
   private flying: { id: number; session: Session } | null = null;
   private sending: Promise<void> | null = null;
+  /** How many times in a row each message's edit has thrown. */
+  private readonly failures = new Map<number, number>();
 
   constructor(
     private readonly channel: TogetherChannel,
@@ -25,6 +36,8 @@ export class TogetherSender {
     private readonly known: Map<number, Session>,
     /** The session is over: its message deleted, or found gone. */
     private readonly forget: (id: number) => void,
+    /** A move was given up on: the tabs follow what the channel holds again, the one that moved included. */
+    private readonly lost: (id: number) => void,
     private readonly sleep: (ms: number) => Promise<void>,
   ) {}
 
@@ -82,17 +95,38 @@ export class TogetherSender {
     this.flying = null;
     // Refused or failed: the channel still holds what it held, unless another screen's edit came meanwhile.
     if (outcome !== "ok" && this.known.get(id) === session) this.known.set(id, base);
+    if (outcome === null) return this.failed(id, move);
+    this.failures.delete(id);
     if (outcome === "gone") {
       this.forget(id);
-    } else if (outcome !== null && outcome !== "ok") {
-      // Flood-limited: the move goes again once allowed, ahead of any made since, onto whatever is newest by then.
-      const later = this.outgoing.get(id);
-      this.outgoing.set(id, later ? (s) => later(move(s)) : move);
+    } else if (outcome !== "ok") {
+      // Flood-limited: the move goes again once allowed.
+      this.again(id, move);
       await this.sleep(outcome.wait * 1000);
-    } else if (outcome === "ok" && session.ended && this.known.get(id)?.ended) {
+    } else if (session.ended && this.known.get(id)?.ended) {
       // Ending and then deleting the message is this sender's alone, so nothing deletes it before the end is written.
       await this.channel.remove(id).catch(() => {});
       this.forget(id);
     }
+  }
+
+  /** A thrown edit goes again after the retry wait, or, the last time, is given up on. Nothing is tried sooner either way. */
+  private async failed(id: number, move: Move): Promise<void> {
+    const tries = (this.failures.get(id) ?? 0) + 1;
+    if (tries < EDIT_TRIES) {
+      this.failures.set(id, tries);
+      this.again(id, move);
+    } else {
+      this.failures.delete(id);
+      console.warn(`together: a move was given up after ${EDIT_TRIES} failed edits`);
+      this.lost(id);
+    }
+    await this.sleep(EDIT_RETRY_MS);
+  }
+
+  /** The move goes again, ahead of any made since, onto whatever is newest by then. */
+  private again(id: number, move: Move): void {
+    const later = this.outgoing.get(id);
+    this.outgoing.set(id, later ? (s) => later(move(s)) : move);
   }
 }

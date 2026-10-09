@@ -83,7 +83,7 @@ test("listeners hear the view and what was heard, null after a read", async () =
   await refreshTogether();
   stop();
   heardTogether({ id: 7, session: null, serverNow: 0 });
-  expect(calls).toEqual([[7, { id: 7, session: session() }], [null, null]]);
+  expect(calls).toEqual([[7, { id: 7, session: session(), lost: false }], [null, null]]);
 });
 
 test("this tab is in a session as its player says, whatever a read finds, and its leaving is told", async () => {

@@ -359,23 +359,6 @@ class TogetherSenderTest {
             assertNull(h.live.act(id, A.screen, PlaybackChange(playing = true)))
         }
 
-    /** Nothing the edit went out with is kept: the channel still holds what it held, so the next move builds on that. */
-    @Test
-    fun aFailedEditLeavesTheSessionAsTheChannelHoldsIt() =
-        runTest {
-            val h = TogetherHarness(this)
-            val id = h.start()
-            h.core.togetherFailure = IllegalStateException("offline")
-            h.live.act(id, A.screen, pause)
-            runCurrent()
-            assertEquals(1, h.core.togetherEdits.size)
-
-            h.core.togetherFailure = null
-            val faster = h.live.act(id, A.screen, PlaybackChange(rate = 2.0))!!
-
-            assertEquals(listOf(true, 2.0), listOf(faster.playing, faster.rate))
-        }
-
     /** An edit whose call is cancelled under it is no longer on its way, so a re-read of that session goes ahead. */
     @Test
     fun anEditCancelledUnderItIsNoLongerOnItsWay() =

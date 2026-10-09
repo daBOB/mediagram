@@ -57,9 +57,9 @@ export class CatalogEvents {
     this.send("event: state\ndata: {}\n\n");
   }
 
-  /** Tells every open page what a watch-together session now is; `null` when it is over. */
-  together(id: number, session: Session | null, serverNow: number): void {
-    this.send(`event: together\ndata: ${JSON.stringify({ id, session, serverNow })}\n\n`);
+  /** Tells every open page what a watch-together session now is; `null` when it is over. `lost`: see `TogetherHub`. */
+  together(id: number, session: Session | null, serverNow: number, lost = false): void {
+    this.send(`event: together\ndata: ${JSON.stringify({ id, session, serverNow, lost: lost || undefined })}\n\n`);
   }
 
   /** Open pages, for the status route and the tests. */
