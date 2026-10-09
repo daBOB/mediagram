@@ -1173,7 +1173,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_credits() and 0xFFFF) != 3782) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 39550) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 41951) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
@@ -2014,7 +2014,8 @@ public interface CoreInterface {
      * and run one when you start listening, since nothing missed while not
      * listening is replayed. A watch-together session message (`Together`)
      * comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
-     * so its own writes are not reported back. Cancelling the call stops
+     * so its own watch-state writes are not reported back; a `Together` edit
+     * is, since this device hears its own session edits too. Cancelling the call stops
      * the wait; an error means listening stopped — back off and call again.
      */
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
@@ -3027,7 +3028,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
      * and run one when you start listening, since nothing missed while not
      * listening is replayed. A watch-together session message (`Together`)
      * comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
-     * so its own writes are not reported back. Cancelling the call stops
+     * so its own watch-state writes are not reported back; a `Together` edit
+     * is, since this device hears its own session edits too. Cancelling the call stops
      * the wait; an error means listening stopped — back off and call again.
      */
     @Throws(CoreException::class)

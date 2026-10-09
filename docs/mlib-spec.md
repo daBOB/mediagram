@@ -590,6 +590,76 @@ Failing to fetch it never fails the release, and a profile with a missing or
 malformed field is ignored. A reader that predates the field skips it as an
 unknown JSON key, which is why it needed no new marker.
 
+## 7b. Watch together session
+
+Screens of one household that play a title in step share one message in the
+library channel per session, unpinned and edited in place:
+
+    #mlib-together v=1
+    {"session":"<uuid>","set":"<set id>","playing":true,"pos":1234.5,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"TV"}],"ended":false}
+
+| Field | Meaning |
+|---|---|
+| `session` | A random UUID, made when the session starts. |
+| `set` | The set id of the title playing: a film, or one episode or lesson. |
+| `playing` | `true` while playing, `false` while paused. |
+| `pos` | Position in seconds at the moment `at`. A finite number, not negative. |
+| `rate` | Playback speed, shared by every screen. A finite number above 0. |
+| `at` | The writer's wall clock, epoch milliseconds, when `pos` was true. An integer, not negative. |
+| `by` | The screen that made this change. |
+| `members` | The screens in the session: `{"screen","label"}`, where `label` is the surface kind (`TV`, `Phone`, `Tablet` or `Browser`). |
+| `ended` | `true` once the session is over; written just before the message is deleted. |
+
+A screen id is random and lasts for one player instance (one player on an
+Android device, one browser tab); it is not the device id.
+
+**What a reader accepts.** The message is a session only if its first line is
+exactly `#mlib-together v=1` followed by a single `\n` (no `\r\n`), and the
+rest of the message is one JSON object and nothing after it. Every field is
+present with its type: `session`, `set`, `by` and every member's `screen` and
+`label` are non-empty strings (an empty id is rejected), `playing` and `ended`
+are booleans, `pos` and `rate` are finite numbers in range, `at` is an
+integer. A message that fails any of this is not a session, and the reader
+leaves it alone. Unknown extra keys are ignored. A writer emits the fields in
+the order shown, and a whole-number `pos` or `rate` without a fraction
+(`1`, not `1.0`), so both ports write the same bytes. The web reference is
+`web/public/lib/together/session.js`; the Android port is held to it by
+`web/test/fixtures/together/`.
+
+**Writing.** The session is never pinned, so Telegram's pin flood limit stays
+out of the way and index readers skip it (it does not start with
+`#mlib-index`; state readers skip it too). Every change is an edit of the same
+message and the last edit wins. A seek scrub sends one edit, 300 ms after the
+last movement.
+
+**Discovery.** A reader takes the newest 100 messages of the channel (one
+history read) and uses the newest live session among them, plus the last
+session it heard through a push, read by id when that message is older than
+the window. Search is never used: it has been measured never to find a freshly
+sent message, and it reads `#mlib-together` as the hashtag `#mlib`, which
+matches every part caption.
+
+**Keeping in step.** The expected position is `pos + (now - at) / 1000 × rate`
+while playing and `pos` while paused. A screen acts only on what differs from
+its own state (a different `set`, play state, a position more than 0.5 s from
+the expected one, a different `rate`), ignores an edit whose `by` is its own,
+and never sends a change it made because it was following.
+
+**Liveness.** A session is live when `ended` is false and either
+
+- it is playing, and the expected position is no more than 2 minutes past the
+  title's duration (6 hours after `at` when the duration is unknown), or
+- it is paused, and `at` is under 3 hours old.
+
+A session that is not live is stale. Whoever reads a stale session next
+deletes the message. The last screen to leave writes `ended: true`, then
+deletes the message; so does the first screen to reach the end of a film or of
+the last episode. A member that crashes stays listed until the session ends or
+goes stale.
+
+Section 8's versioning rule applies: a change to the fields or their meaning
+bumps the marker, and a reader never guesses at a marker it does not know.
+
 ## 8. Versioning
 
 - `v=4` is written on every new caption; `v=2` and `v=3` remain readable. A

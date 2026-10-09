@@ -690,6 +690,87 @@ unsynced. The core serves `stats` and `achievements` over uniffi and
 `set_progress` takes the local day from Kotlin. Plan:
 `plans/260928-0306-viewing-stats-web-and-android/`.
 
+### Watch together
+
+Screens signed in to one library play the same title in step: play, pause,
+seek, speed and the next episode on one screen happen on the others within
+about a second. Anyone in the session controls it. The transport is one
+unpinned channel message per session, edited in place (`docs/mlib-spec.md`
+§7b); there is no relay of our own.
+
+**The web is the reference.** The rules (parse and write, expected position,
+liveness, `follow`'s decision, join and leave on `members`) are plain
+JavaScript in `web/public/lib/together/`, which the browser loads and the
+server imports. The Kotlin port in `android/core/model/.../together/` is held
+to the same `web/test/fixtures/together/`, and the Rust core ships none of it:
+`crates/mediagram-core/src/api/together.rs` only does the I/O (send, edit,
+delete, read history and a message by id) and hands the message text up.
+
+**Push.** A `#mlib-together` new or edited message is classified `together`
+by `updates.rs` on both surfaces and handed on at once, skipping the 5 s
+debouncer that state and index events wait out. The web server tells open
+pages with a `together` event on `/api/events`, carrying `serverNow`, so the
+browser corrects its own clock from the server's and never compares against
+it. Android receives `LibraryEvent::Together { message_id, text }`; this
+device hears its own edits too, and the echo rule drops them.
+
+**The echo rule.** An edit whose `by` is this screen is ignored. A change a
+screen makes because it is following is never sent. Only the viewer's own
+actions are: on the web, the player's viewer call paths; on Android,
+`ViewerPlayer` plus the speed and restart hooks.
+
+**Writing.** Writes are serialised per hub (web) or sender (Android). A write
+in flight is the newest known state, so a join or leave composes from it. On a
+flood wait the screen keeps its own state and, when the wait ends, re-applies
+its own *move* (act: its playback fields; join; leave; end) to the newest
+known session; earlier queued writes are dropped, and the write is dropped if
+the session is gone or ended. Starting is serialised: one start in flight,
+and on the web a lost start race becomes a join of the winner's session. Leave and end
+are answered once queued, so a client cannot tell when the leave reached
+Telegram. Cross-device races stay inherent: last edit wins and the loser
+follows.
+
+**Discovery.** The newest 100 messages of the channel plus the last session
+heard (read by id). Search is never used.
+
+**Deliberate differences** (the web is the reference; each of these is a
+decision, not drift):
+
+- *Converted titles trail.* On the web, a title served through ffmpeg
+  conversion is never drift-seeked: a seek on a converted stream restarts
+  ffmpeg and would loop. After a heard seek it runs behind by ffmpeg's
+  start-up (1-3 s). A gentle rate nudge is the known fix, not built.
+- *A hidden browser tab in a session keeps its event stream open* (one SSE per
+  such tab), unlike a hidden tab outside one, which closes it. Background
+  keeps a screen in the session.
+- *Join is hidden, not greyed, when Telegram is unreachable,* on Home and on
+  title pages: the server cannot know of a session then. The player's own
+  Watch together button is greyed, with the reason. (The design spec said
+  greyed everywhere.)
+- *A title picked inside a session starts at the session's place,* not at the
+  profile's resume point; a half-watched episode picked from the sidebar
+  starts at the top for a new title.
+- *Home's Join row on Android stays on the session this device is in;* the
+  web's Home switches to a newer session on push.
+- *The Android follower lives in `feature/player`,* not in a `together`
+  feature module, because a feature module may not depend on another.
+- *`TogetherSender` and the live state live in `core/data` on `@AppScope`,* as
+  the twin of the web server's hub: leave and end must outlive the player's
+  view model, and Android has no server to take the hub's role.
+- *The Rust core keeps no rules.* It reads and writes bytes; every decision is
+  in Kotlin (and JavaScript).
+- *The Kotlin JSON reader is lenient on non-JSON tokens* that the JavaScript
+  one rejects. Only the two strict writers ever write the message, so no
+  reachable input differs.
+- *The TV plate takes Home's focus only when the viewer comes back within
+  5 s;* on a cold start Home's focus stays on the cover and the plate is one
+  Down away.
+- *The notice wording grew beyond the spec.* The words are in
+  `web/public/lib/playback/together-words.js` and
+  `android/feature/player/.../TogetherWords.kt` (`Watch together ended`,
+  `Next episode by <screen>`, `That title isn't on this profile`, ...); they
+  are copied word for word, and "episode" is also used for a course lesson.
+
 ### Parity with the web player
 
 Reached by

@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.120.0 — watch together
+
+**Added** (web player, core, Android phone, tablet and TV)
+
+- **Screens in one household can play a title in step.** Play, pause, seek, speed and the next episode on one screen happen on the others within about a second, and anyone in the session controls it. A **Watch together** button in the player starts one, **Join** replaces it while one is live, and a label (**Together · TV, Tablet**) and a two-second notice ("Paused by TV") show who did what. Home's first row and a title's page offer Join.
+- The transport is one unpinned `#mlib-together v=1` message per session in the library channel, edited in place (spec §7b). Sessions are found in the newest 100 messages plus the last one heard; a stale one is deleted by whoever reads it next, and the last screen to leave deletes it. Together edits are pushed on both surfaces at once, skipping the 5 s debouncer.
+- The rules are written once, in `web/public/lib/together/`, ported to Kotlin and held to `web/test/fixtures/together/`; the Rust core only does the channel I/O. `GET`/`POST /api/together` and a `together` event on `/api/events` serve the browser.
+- Known limits, documented in the architecture notes: a converted web title trails by the converter's start-up; Join is hidden (not greyed) on Home and title pages while Telegram is unreachable.
+
+**Fixed**
+
+- The core's `next_library_event` doc said own writes are never reported back; a `Together` edit is. The doc is corrected, in the generated Kotlin too.
+
 ## 0.119.2 — "Stay as I am" hands the TV remote back to the avatar
 
 **Fixed** (Android TV)

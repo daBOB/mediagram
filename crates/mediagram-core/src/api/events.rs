@@ -80,7 +80,8 @@ impl Core {
     /// and run one when you start listening, since nothing missed while not
     /// listening is replayed. A watch-together session message (`Together`)
     /// comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
-    /// so its own writes are not reported back. Cancelling the call stops
+    /// so its own watch-state writes are not reported back; a `Together` edit
+    /// is, since this device hears its own session edits too. Cancelling the call stops
     /// the wait; an error means listening stopped — back off and call again.
     pub async fn next_library_event(
         &self,
