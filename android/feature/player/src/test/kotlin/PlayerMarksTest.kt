@@ -13,9 +13,12 @@ import model.ListOfSets
 import model.Profile
 import model.WatchSnapshot
 import org.junit.After
+import io.mockk.mockk
 import playback.PlaybackCounters
+import player.together.ViewerRelay
 import testing.FakeHeldSets
 import testing.FakeSeriesPreloader
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,6 +64,9 @@ class PlayerMarksTest {
         FakeSubtitleTrackSource(),
         seriesPreloader = FakeSeriesPreloader(),
         heldSets = FakeHeldSets(),
+        togetherLive = FakeTogetherLive(),
+        relay = ViewerRelay(),
+        context = mockk(relaxed = true),
     )
 
     @Test

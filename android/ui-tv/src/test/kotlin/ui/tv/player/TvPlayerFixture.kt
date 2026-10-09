@@ -34,6 +34,8 @@ import player.DefaultPlayerHandle
 import player.PlaybackServiceController
 import player.PlayerViewModel
 import player.ProgressRecorder
+import player.together.ViewerRelay
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
 /**
@@ -163,6 +165,9 @@ internal class TvPlayerFixture(
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
                     summary,
+                    togetherLive = FakeTogetherLive(),
+                    relay = ViewerRelay(),
+                    context = mockk(relaxed = true),
                 ) as T
             }
         }

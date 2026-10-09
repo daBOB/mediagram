@@ -11,6 +11,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import player.together.ViewerPlayer
+import player.together.ViewerRelay
 import javax.inject.Inject
 
 /**
@@ -26,7 +28,9 @@ import javax.inject.Inject
  * [PlayerViewModel.open]/`stop` start and stop this service (through
  * [AndroidPlaybackServiceController]) — this class only ever waits for the
  * already-building player to finish and wraps it once, since the app's
- * singleton player is never rebuilt for a second session.
+ * singleton player is never rebuilt for a second session. It wraps it as a
+ * [ViewerPlayer], so a headset's or the lock screen's play, pause and seek
+ * reach a watch-together session as the viewer's own.
  *
  * Declared in this module's own `AndroidManifest.xml`, foreground service
  * type `mediaPlayback` — `:app` does not need to know this service exists.
@@ -37,6 +41,9 @@ class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var handle: PlayerHandle
 
+    @Inject
+    lateinit var relay: ViewerRelay
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var mediaSession: MediaSession? = null
 
@@ -44,7 +51,7 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         serviceScope.launch {
             val player = handle.player.filterNotNull().first()
-            val builder = MediaSession.Builder(this@PlaybackService, player)
+            val builder = MediaSession.Builder(this@PlaybackService, ViewerPlayer(player, relay::report))
             sessionActivityIntent()?.let(builder::setSessionActivity)
             val session = builder.build()
             mediaSession = session

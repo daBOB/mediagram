@@ -1,9 +1,12 @@
 package player
 
 import data.WatchSync
+import io.mockk.mockk
 import playback.PlaybackCounters
+import player.together.ViewerRelay
 import testing.FakeHeldSets
 import testing.FakeSeriesPreloader
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
 /**
@@ -26,6 +29,9 @@ internal fun testViewModel(handle: PlayerHandle): PlayerViewModel {
         FakeSubtitleTrackSource(),
         seriesPreloader = FakeSeriesPreloader(),
         heldSets = FakeHeldSets(),
+        togetherLive = FakeTogetherLive(),
+        relay = ViewerRelay(),
+        context = mockk(relaxed = true),
     )
 }
 

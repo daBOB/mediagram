@@ -30,6 +30,7 @@ import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
 import player.createListAndAdd
+import player.pauseForPipDismissal
 import player.retry
 import player.setInList
 import player.setKidsMark

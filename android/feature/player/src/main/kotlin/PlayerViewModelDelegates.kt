@@ -2,8 +2,10 @@ package player
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import model.together.PlaybackChange
 import playback.AudioOption
 import playback.Framing
+import player.together.rate
 
 /**
  * Thin pass-throughs onto [PlayerViewModel]'s controllers, plus [retry].
@@ -34,7 +36,12 @@ fun PlayerViewModel.retry() {
     handle.setPlaybackSpeed(choicesController.choices.value.speed)
 }
 
-fun PlayerViewModel.setSpeed(rate: Float) = choicesController.setSpeed(rate)
+/** A speed picked by hand: the viewer's own move, which a watch-together session hears. */
+fun PlayerViewModel.setSpeed(rate: Float) {
+    choicesController.setSpeed(rate)
+    togetherController.viewer(PlaybackChange(rate = rate.rate()))
+}
+
 fun PlayerViewModel.chooseAudioTrack(option: AudioOption) = choicesController.chooseAudioTrack(option)
 fun PlayerViewModel.chooseSubtitleLanguage(trackKeyOrOff: String) = choicesController.chooseSubtitleLanguage(trackKeyOrOff)
 fun PlayerViewModel.toggleSubtitles() = choicesController.toggleSubtitles()

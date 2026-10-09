@@ -7,9 +7,12 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import io.mockk.mockk
 import playback.PlaybackCounters
+import player.together.ViewerRelay
 import testing.FakeHeldSets
 import testing.FakeSeriesPreloader
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,6 +48,9 @@ class PlayerChoicesResetTest {
         FakeSubtitleTrackSource(),
         seriesPreloader = FakeSeriesPreloader(),
         heldSets = FakeHeldSets(),
+        togetherLive = FakeTogetherLive(),
+        relay = ViewerRelay(),
+        context = mockk(relaxed = true),
     )
 
     private object NoopWatchSync : data.WatchSync {
@@ -161,6 +167,9 @@ class PlayerChoicesResetTest {
             FakeSubtitleTrackSource(),
             seriesPreloader = FakeSeriesPreloader(),
             heldSets = FakeHeldSets(),
+            togetherLive = FakeTogetherLive(),
+            relay = ViewerRelay(),
+            context = mockk(relaxed = true),
         )
 
         vm.open(episode.setId) // resolve() suspends on the gate, mid-flight

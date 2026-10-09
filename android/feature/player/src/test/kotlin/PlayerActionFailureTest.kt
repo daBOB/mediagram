@@ -15,9 +15,12 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import io.mockk.mockk
 import playback.PlaybackCounters
+import player.together.ViewerRelay
 import testing.FakeHeldSets
 import testing.FakeSeriesPreloader
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -138,4 +141,7 @@ internal fun actionViewModel(
     FakePlaybackServiceController(),
     FakeSeriesPreloader(),
     FakeHeldSets(),
+    togetherLive = FakeTogetherLive(),
+    relay = ViewerRelay(),
+    context = mockk(relaxed = true),
 )

@@ -29,6 +29,8 @@ import playback.SubtitleTrackSource
 import playback.SeriesPreloading
 import playback.HeldSetsQuery
 import player.PlaybackServiceController
+import player.together.ViewerRelay
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
 /**
@@ -88,6 +90,9 @@ internal class PlayerLifecycleFixture(
                     PlaybackServiceController.Noop,
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
+                    togetherLive = FakeTogetherLive(),
+                    relay = ViewerRelay(),
+                    context = mockk(relaxed = true),
                 ) as T
             }
         }
