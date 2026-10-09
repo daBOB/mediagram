@@ -23,6 +23,8 @@ export class FakeChannel implements TogetherChannel {
   /** Answers for the next edits, in order; "ok" once they run out. */
   readonly outcomes: (EditOutcome | Promise<EditOutcome>)[] = [];
   failReads = false;
+  /** Reads answer once this settles, with what the channel holds then. */
+  readGate: Promise<void> = Promise.resolve();
   up = true;
   private nextId = 900;
 
@@ -33,6 +35,7 @@ export class FakeChannel implements TogetherChannel {
   }
   async read(id: number) {
     this.reads.push(id);
+    await this.readGate;
     if (this.failReads) throw new Error("offline");
     return this.messages.get(id) ?? null;
   }
