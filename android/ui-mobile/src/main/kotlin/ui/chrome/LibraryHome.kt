@@ -96,6 +96,8 @@ internal fun LibraryHome(
     val onRailSelect: (RailItem) -> Unit = { item -> railSelect(item, browse, menu) }
     val onAskStartOver = { askingStartOver = true }
 
+    // Only the wide layout has a bar over content; the compact header hides by scrolling away.
+    val frost = if (expanded) rememberFrost() else null
     var headerHeightPx by remember { mutableIntStateOf(0) }
     var headerOffsetPx by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -168,12 +170,12 @@ internal fun LibraryHome(
                 }
             CompositionLocalProvider(LocalTopChrome provides if (bleed) expandedChromeHeight else 0.dp) {
                 Box(bodyModifier) {
-                    Box(contentModifier) { content() }
+                    Box(contentModifier.frostSource(frost)) { content() }
                     if (expanded) {
                         DepartmentsBar(
                             pills = pills, selected = selectedPill, onSelect = { onTabChange(tabs[it]) }, onSearch = onSearch,
                             profile = profile, menu = menu, onAskStartOver = onAskStartOver, blend = blend,
-                            modifier = Modifier.align(Alignment.TopStart),
+                            modifier = Modifier.align(Alignment.TopStart), frost = frost,
                         )
                     } else {
                         CompactLibraryHeader(
