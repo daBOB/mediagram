@@ -30,7 +30,7 @@ export function parseSession(message) {
   const v = json;
   if (
     !named(v.session) || !named(v.set) || typeof v.playing !== "boolean" ||
-    !finite(v.pos) || v.pos < 0 || !finite(v.rate) || v.rate <= 0 || !finite(v.at) ||
+    !finite(v.pos) || v.pos < 0 || !finite(v.rate) || v.rate <= 0 || !Number.isInteger(v.at) || v.at < 0 ||
     !named(v.by) || !Array.isArray(v.members) || typeof v.ended !== "boolean"
   ) return null;
   const members = v.members.map(memberOf);

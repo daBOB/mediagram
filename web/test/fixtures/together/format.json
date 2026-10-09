@@ -21,6 +21,6 @@
   {"name":"playing given as a string","text":"#mlib-together v=1\n{\"session\":\"s1\",\"set\":\"f\",\"playing\":\"true\",\"pos\":1,\"rate\":1,\"at\":1,\"by\":\"a\",\"members\":[],\"ended\":false}","expect":null},
   {"name":"JSON that is an array","text":"#mlib-together v=1\n[]","expect":null},
   {"name":"JSON that is null","text":"#mlib-together v=1\nnull","expect":null},
-  {"name":"a fractional at is kept as it is","text":"#mlib-together v=1\n{\"session\":\"s1\",\"set\":\"f\",\"playing\":true,\"pos\":1,\"rate\":1,\"at\":1.5,\"by\":\"a\",\"members\":[],\"ended\":false}","expect":{"session":"s1","set":"f","playing":true,"pos":1,"rate":1,"at":1.5,"by":"a","members":[],"ended":false}},
+  {"name":"a fractional at is not a session","text":"#mlib-together v=1\n{\"session\":\"s1\",\"set\":\"f\",\"playing\":true,\"pos\":1,\"rate\":1,\"at\":1.5,\"by\":\"a\",\"members\":[],\"ended\":false}","expect":null},
   {"name":"unknown keys inside a member are dropped","text":"#mlib-together v=1\n{\"session\":\"s1\",\"set\":\"f\",\"playing\":true,\"pos\":1,\"rate\":1,\"at\":1,\"by\":\"a\",\"members\":[{\"screen\":\"a\",\"label\":\"TV\",\"extra\":1}],\"ended\":false}","expect":{"session":"s1","set":"f","playing":true,"pos":1,"rate":1,"at":1,"by":"a","members":[{"screen":"a","label":"TV"}],"ended":false}}
 ]
