@@ -714,7 +714,7 @@ browser corrects its own clock from the server's and never compares against
 it. Android receives `LibraryEvent::Together { message_id, text }`; this
 device hears its own edits too, and the echo rule drops them.
 
-**The echo rule.** An edit whose `by` is this screen is ignored. A change a
+**The echo rule.** An edit whose `by` is this screen is ignored only while the current session is still this screen's own write (`stillMine` in `follow.js`); if another screen's edit landed in between, the later own echo becomes the session. A change a
 screen makes because it is following is never sent. Only the viewer's own
 actions are: on the web, the player's viewer call paths; on Android,
 `ViewerPlayer` plus the speed and restart hooks.
@@ -725,7 +725,7 @@ flood wait the screen keeps its own state and, when the wait ends, re-applies
 its own *move* (act: its playback fields; join; leave; end) to the newest
 known session; earlier queued writes are dropped, and the write is dropped if
 the session is gone or ended. Starting is serialised: one start in flight,
-and on the web a lost start race becomes a join of the winner's session. Leave and end
+and on both surfaces a lost start race becomes a join of the winner's session (`DefaultTogetherLive.kt` returns `Started(conflict = true)`, `TogetherJoining.kt` then joins). The lock covers only starts from the same server or process, so a start from another device can still race. Leave and end
 are answered once queued, so a client cannot tell when the leave reached
 Telegram. Cross-device races stay inherent: last edit wins and the loser
 follows.
@@ -764,7 +764,11 @@ decision, not drift):
   reachable input differs.
 - *The TV plate takes Home's focus only when the viewer comes back within
   5 s;* on a cold start Home's focus stays on the cover and the plate is one
-  Down away.
+  Down away. The 5 s is the offer's `SharingStarted.WhileSubscribed(5_000,
+  replayExpirationMillis = 0)` in
+  `android/feature/catalog/src/main/kotlin/CatalogViewModel.kt`: once Join has
+  not been shown for 5 s the offer is dropped, so on a later return Home's
+  focus lands on the cover.
 - *The notice wording grew beyond the spec.* The words are in
   `web/public/lib/playback/together-words.js` and
   `android/feature/player/.../TogetherWords.kt` (`Watch together ended`,

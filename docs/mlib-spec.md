@@ -642,7 +642,9 @@ matches every part caption.
 **Keeping in step.** The expected position is `pos + (now - at) / 1000 × rate`
 while playing and `pos` while paused. A screen acts only on what differs from
 its own state (a different `set`, play state, a position more than 0.5 s from
-the expected one, a different `rate`), ignores an edit whose `by` is its own,
+the expected one, a different `rate`), ignores an edit whose `by` is its own
+only while the current session is still that screen's own write (if another
+screen's edit landed in between, the later own echo becomes the session),
 and never sends a change it made because it was following.
 
 **Liveness.** A session is live when `ended` is false and either
