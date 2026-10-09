@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -26,6 +27,7 @@ import player.PlayerChoices
 import player.together.TogetherButton
 import player.together.TogetherUi
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Watch together on the phone's player, as the web's control card, top bar
@@ -98,11 +100,23 @@ class TogetherToolTest {
         assertEquals(0, pressed)
     }
 
+    /** At the web's 768px and wider the label shares the title's line; a screen reader hears it as written, not in capitals. */
     @Test
-    fun theLabelNamesWhoIsInTheSessionBesideTheTitle() {
+    fun onAWideBarTheLabelNamesWhoIsInTheSessionBesideTheTitle() {
         show { PlayerTopBar(title = "A Film", showTitle = true, onBack = {}, label = "Together · TV, Tablet") }
-        compose.onNodeWithText("A Film").assertExists()
         compose.onNodeWithText("TOGETHER · TV, TABLET").assertExists()
+        val label = compose.onNode(hasContentDescription("Together · TV, Tablet")).getUnclippedBoundsInRoot()
+        val title = compose.onNodeWithText("A Film").getUnclippedBoundsInRoot()
+        assertTrue(label.top < title.bottom && label.left >= title.right, "the label ($label) sits beside the title ($title)")
+    }
+
+    @Test
+    @Config(qualifiers = "w400dp-h800dp")
+    fun onANarrowBarTheLabelTakesTheLineUnderTheTitle() {
+        show { PlayerTopBar(title = "A Film", showTitle = true, onBack = {}, label = "Together · TV, Tablet") }
+        val label = compose.onNode(hasContentDescription("Together · TV, Tablet")).getUnclippedBoundsInRoot()
+        val title = compose.onNodeWithText("A Film").getUnclippedBoundsInRoot()
+        assertTrue(label.top >= title.bottom, "the label ($label) sits under the title ($title)")
     }
 
     @Test

@@ -1,7 +1,6 @@
 package ui.common.catalog
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -11,50 +10,56 @@ import catalog.CatalogViewModel
 import catalog.Entry
 import catalog.TogetherOffer
 import catalog.playsIn
+import kotlinx.coroutines.flow.StateFlow
 
-/** Watch together's Join where a viewer looks for something to watch: the session's [offer], and what pressing Join does. */
+/** Watch together's Join where a viewer looks for something to watch: the session's [offer], and what Join does. */
 class TogetherJoin(
     val offer: TogetherOffer,
     val join: () -> Unit,
 )
 
-/**
- * The Join a frame offers, `null` with no session this profile may join.
- * The frames that show Join provide it ([WithTogetherJoin]) — Home and the
- * title pages, on the phone and the television alike — and it is read where
- * Join is drawn, as the rail reads its own data.
- */
-val LocalTogetherJoin = compositionLocalOf<TogetherJoin?> { null }
+/** Where Join comes from: the live [offers], and what joining one does. */
+class TogetherOffers(
+    val offers: StateFlow<TogetherOffer?>,
+    val join: (TogetherOffer) -> Unit,
+)
 
 /**
- * [content] with [catalog]'s Join. [open] opens the session's title as the
- * frame's own Play does, and the player it opens joins. Collected here, so
- * the sessions are listened for only while one of these frames is shown.
+ * The library's [TogetherOffers], provided once at its root. Providing them
+ * listens to nothing: only a screen that draws Join collects them
+ * ([togetherJoin]), so the sessions are listened for while Home or a
+ * title page is on screen, and not on a department tab or in the player.
  */
+val LocalTogetherOffers = compositionLocalOf<TogetherOffers?> { null }
+
+/** [catalog]'s offers; [open] opens the session's title as the frame's own Play does, and the player it opens joins. */
 @Composable
-fun WithTogetherJoin(
+fun rememberTogetherOffers(
     catalog: CatalogViewModel,
     open: (setId: String) -> Unit,
-    content: @Composable () -> Unit,
-) {
-    val offer by catalog.together.collectAsStateWithLifecycle()
+): TogetherOffers {
     val opens by rememberUpdatedState(open)
-    val join =
-        remember(offer) {
-            offer?.let { live ->
-                TogetherJoin(live) {
-                    catalog.join(live)
-                    opens(live.set.setId)
-                }
-            }
+    return remember(catalog) {
+        TogetherOffers(catalog.together) { offer ->
+            catalog.join(offer)
+            opens(offer.set.setId)
         }
-    CompositionLocalProvider(LocalTogetherJoin provides join, content = content)
+    }
+}
+
+/** The Join to draw here, `null` with no session this profile may join. Calling it is what listens. */
+@Composable
+fun togetherJoin(): TogetherJoin? {
+    val source = LocalTogetherOffers.current ?: return null
+    val offer by source.offers.collectAsStateWithLifecycle()
+    return remember(source, offer) { offer?.let { live -> TogetherJoin(live) { source.join(live) } } }
 }
 
 /** Join on a film's page: while the session plays [setId]. */
 @Composable
-fun togetherJoinOf(setId: String): TogetherJoin? = LocalTogetherJoin.current?.takeIf { it.offer.set.setId == setId }
+fun togetherJoinOf(setId: String): TogetherJoin? = togetherJoin()?.takeIf { it.offer.set.setId == setId }
 
 /** Join on a show's or a course's page: while the session plays one of [collection]'s titles. */
 @Composable
-fun togetherJoinIn(collection: Entry.Collection): TogetherJoin? = LocalTogetherJoin.current?.takeIf { it.offer.playsIn(collection) }
+fun togetherJoinIn(collection: Entry.Collection): TogetherJoin? =
+    togetherJoin()?.takeIf { it.offer.playsIn(collection) }

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import catalog.CollectionKind
 import catalog.TogetherOffer
+import kotlinx.coroutines.flow.MutableStateFlow
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
@@ -15,8 +16,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import ui.common.catalog.LocalTogetherJoin
-import ui.common.catalog.TogetherJoin
+import ui.common.catalog.LocalTogetherOffers
+import ui.common.catalog.TogetherOffers
 import kotlin.test.assertEquals
 
 /**
@@ -31,12 +32,13 @@ class TogetherJoinRowTest : BrowsePageTest() {
     private var joined = 0
     private var played = 0
 
-    private fun joining(set: MediaSet) = TogetherJoin(TogetherOffer(41, set, "TV")) { joined++ }
-
     private fun offering(
         set: MediaSet?,
         content: @Composable () -> Unit,
-    ) = show { CompositionLocalProvider(LocalTogetherJoin provides set?.let(::joining), content = content) }
+    ) {
+        val offers = TogetherOffers(MutableStateFlow(set?.let { TogetherOffer(41, it, "TV") })) { joined++ }
+        show { CompositionLocalProvider(LocalTogetherOffers provides offers, content = content) }
+    }
 
     @Test
     fun homesLineNamesTheTitleAndWhoIsWatchingAndJoins() {

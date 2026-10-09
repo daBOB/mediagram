@@ -178,9 +178,13 @@ class CatalogViewModel
             kids: KidsView?,
         ): CatalogUiState = projected(shown, kids, lastSets)
 
-        /** Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one shows it. */
+        /**
+         * Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one
+         * shows it. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
+         */
         val together: StateFlow<TogetherOffer?> =
-            togetherOffers(togetherLive, state).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+            togetherOffers(togetherLive, state)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
 
         /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */
         fun join(offer: TogetherOffer) = togetherLive.joinOnOpen(offer.id)

@@ -24,8 +24,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import designsystem.Spacing
 import ui.common.player.SCRIM_ALPHA
@@ -75,19 +81,7 @@ internal fun PlayerTopBar(
         }
         if (showTitle) {
             Column(modifier = Modifier.weight(1f).padding(top = Spacing.medium, end = Spacing.small)) {
-                if (title.isNotEmpty()) {
-                    Text(text = title, color = Color.White, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                // The web's `.together-label`, on its own line under the title as the web's narrow bar sets it.
-                label?.let {
-                    Text(
-                        text = it.uppercase(),
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                TitleAndLabel(title, label)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                     marks()
                     if (onNotes != null) TextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
@@ -95,4 +89,66 @@ internal fun PlayerTopBar(
             }
         }
     }
+}
+
+/** Where the web's bar sets the label beside the title rather than under it: its 768px breakpoint. */
+private val LABEL_BESIDE_FROM = 768.dp
+
+/**
+ * The title, and watch together's [label] — the web's `.together-label`:
+ * beside the title on a wide window, each with half the room, and on its own
+ * line under it on a narrow one. Beside the episode sidebar it stays beside,
+ * where the web's drops under: this bar keeps the window's width.
+ */
+@Composable
+private fun TitleAndLabel(
+    title: String,
+    label: String?,
+) {
+    val wide = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } >= LABEL_BESIDE_FROM
+    if (label != null && wide) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        ) {
+            if (title.isNotEmpty()) TitleText(title, Modifier.weight(1f))
+            TogetherLabel(label, Modifier.weight(1f), TextAlign.End)
+        }
+    } else {
+        if (title.isNotEmpty()) TitleText(title)
+        label?.let { TogetherLabel(it) }
+    }
+}
+
+@Composable
+private fun TitleText(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title,
+        color = Color.White,
+        style = MaterialTheme.typography.titleSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/** Set in capitals, as the web's `text-transform` sets it; a screen reader hears it as written. */
+@Composable
+private fun TogetherLabel(
+    label: String,
+    modifier: Modifier = Modifier,
+    align: TextAlign = TextAlign.Start,
+) {
+    Text(
+        text = label.uppercase(),
+        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = align,
+        modifier = modifier.semantics { contentDescription = label },
+    )
 }

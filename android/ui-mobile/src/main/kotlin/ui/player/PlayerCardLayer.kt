@@ -10,17 +10,16 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import player.EpisodeList
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.UpNextUiState
 import player.playFromRun
+import player.together.TogetherUi
 
 /**
  * The card and the menu that opens above it, as the screen lays them out.
@@ -42,8 +41,8 @@ internal fun BoxScope.PlayerCardLayer(
     onToggleStats: () -> Unit,
     onEnterPip: (() -> Unit)?,
     onScrubbingChanged: (Boolean) -> Unit,
+    together: TogetherUi,
 ) {
-    val together by viewModel.together.collectAsStateWithLifecycle()
     val clearance = if (card.sidebarOpen && !sidebarCoversScreen()) SIDEBAR_WIDTH else 0.dp
     Box(modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(end = clearance)) {
         PlayerControlCard(

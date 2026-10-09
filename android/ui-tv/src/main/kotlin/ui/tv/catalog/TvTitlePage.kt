@@ -137,7 +137,7 @@ internal fun TvTitlePage(
             ) {
                 TvPillRow {
                     TvSpreadPill(
-                        text = if (join != null) "▶ Join" else resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
+                        text = join?.let { "▶ Join" } ?: resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
                         onClick = join?.join ?: onPlay,
                         solid = true,
                         modifier = Modifier.focusRequester(play),

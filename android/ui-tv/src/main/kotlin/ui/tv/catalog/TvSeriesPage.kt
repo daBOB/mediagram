@@ -134,7 +134,10 @@ internal fun TvSeriesPage(
                     overview = info?.overview,
                     tagline = info?.tagline,
                 ) {
-                    TvSeriesPills(first, resume, onResume, watch, onToggleWatchlist, editorsChoice, onToggleEditorsChoice, play, listPill, join)
+                    TvSeriesPills(
+                        first, resume, onResume, watch, onToggleWatchlist, editorsChoice, onToggleEditorsChoice,
+                        play, listPill, join,
+                    )
                 }
             }
             item(key = "tabs") {

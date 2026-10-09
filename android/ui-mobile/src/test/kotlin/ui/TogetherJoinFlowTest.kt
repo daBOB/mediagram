@@ -95,6 +95,33 @@ class TogetherJoinFlowTest {
     }
 
     @Test
+    fun theSessionsShowPageJoinsInPlaceOfItsResumePill() {
+        open()
+        compose.runOnUiThread { fixture.together.live.value = live.copy(session = live.session.copy(set = "episode-1")) }
+        compose.onNode(hasText("Series") and hasClickAction()).performClick()
+        compose.onNode(hasText("Example Show") and hasClickAction()).performClick()
+
+        compose.onNodeWithText("▶ Join").performClick()
+
+        compose.onNodeWithText("←").assertExists()
+        assertEquals(41, fixture.together.takeJoin())
+    }
+
+    /** A department tab draws no Join, so nothing listens for sessions while one is shown. */
+    @Test
+    fun onADepartmentTabTheSessionsAreNotListenedFor() {
+        open()
+        assertTrue(fixture.together.live.subscriptionCount.value > 0, "Home listens while it shows Join")
+
+        compose.onNode(hasText("Movies") and hasClickAction()).performClick()
+        compose.onNodeWithText("Watching together", substring = true).assertDoesNotExist()
+        compose.runOnUiThread { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6)) }
+        compose.waitForIdle()
+
+        assertEquals(0, fixture.together.live.subscriptionCount.value)
+    }
+
+    @Test
     fun outOfTelegramsReachHomeOffersNothing() {
         open(available = false)
         compose.onNodeWithText("mediagram").assertExists()

@@ -35,7 +35,7 @@ import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import model.WatchSnapshot
-import ui.common.catalog.LocalTogetherJoin
+import ui.common.catalog.togetherJoin
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvCourseList
@@ -99,7 +99,7 @@ internal fun TvHome(
     val watchlist = remember(watch) { watch.watchlist.toSet() }
     val series = latest.series
     val courses = latest.courses
-    val together = LocalTogetherJoin.current
+    val together = togetherJoin()
 
     // Only stops with a focus requester of their own are restorable; any other
     // key (the quote, This month's rows) falls back to homeTargetOf's default.
@@ -282,7 +282,12 @@ internal fun TvHome(
                         // internal scrolling effect at all — the top-level
                         // effect above is what calls `requestFocus()` for
                         // FEATURES, already gated there.
-                        TvHomeFeatures(features = editorial.features, onOpenTitle = onOpenTitle, focusAt = stopAt(TvHomeSection.FEATURES), focus = entryFocus.getValue(TvHomeSection.FEATURES))
+                        TvHomeFeatures(
+                            features = editorial.features,
+                            onOpenTitle = onOpenTitle,
+                            focusAt = stopAt(TvHomeSection.FEATURES),
+                            focus = entryFocus.getValue(TvHomeSection.FEATURES),
+                        )
                     }
                 }
             }

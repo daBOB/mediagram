@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -17,6 +18,8 @@ import ui.catalog.FetchResultDialog
 import ui.chrome.ProfileBarState
 import ui.common.LibraryPositions
 import ui.common.MenuActions
+import ui.common.catalog.LocalTogetherOffers
+import ui.common.catalog.rememberTogetherOffers
 import ui.common.rememberLibraryPositions
 import ui.common.settings.SettingsOutcomes
 import ui.profile.ProfileGate
@@ -77,7 +80,12 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         preloadCount = queueCount,
     )
 
-    LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+    // Watch together's Join, for Home and the title pages to read: each opens
+    // the session's title as its own Play does.
+    val togetherOffers = rememberTogetherOffers(catalogViewModel, at::openPlayer)
+    CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
+        LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+    }
 
     // Every branch but the player, which is the one that fills the window
     // with a picture. A fetch started before a film began would otherwise

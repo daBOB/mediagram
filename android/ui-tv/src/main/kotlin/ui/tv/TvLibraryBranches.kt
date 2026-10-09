@@ -13,7 +13,6 @@ import catalog.runFor
 import stats.AchievementDotViewModel
 import ui.common.LibraryPositions
 import ui.common.MenuActions
-import ui.common.catalog.WithTogetherJoin
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
@@ -74,13 +73,8 @@ internal fun TvLibraryHomeFrame(
     // title plays.
     val achievementDot: AchievementDotViewModel = hiltViewModel()
     val newAchievement by achievementDot.newAchievement.collectAsStateWithLifecycle()
-    // Join on Home opens the player as the cover's Watch now does, and Back comes to the plate.
-    val play = { setId: String ->
-        restore.opened(here, setId)
-        at.openPlayer(setId)
-    }
     CompositionLocalProvider(LocalNewAchievement provides newAchievement) {
-        saved.SaveableStateProvider(CatalogStateKey) { WithTogetherJoin(catalogViewModel, play) {
+        saved.SaveableStateProvider(CatalogStateKey) {
             TvCatalogScreen(
                 state = catalogState,
                 // The picker replaces the library; noting the avatar first is
@@ -143,10 +137,13 @@ internal fun TvLibraryHomeFrame(
                 // The cover story's own "Watch now" — straight to the player,
                 // the same as `web/home-cover.js:137`, rather than the title
                 // page every other plate on this screen opens.
-                onPlay = play,
+                onPlay = { setId ->
+                    restore.opened(here, setId)
+                    at.openPlayer(setId)
+                },
                 onToggleWatchlist = catalogViewModel::setWatchlisted,
             )
-        } }
+        }
     }
 }
 

@@ -10,6 +10,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
@@ -22,6 +24,10 @@ import model.MediaSet
 import player.PlayerMarksState
 import player.technicalLine
 import player.titleLine
+
+/** `.together-label`: small, heavier, and set wide. */
+private val LabelStyle =
+    TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em)
 
 /** Finds the title in a test without depending on what it reads. */
 internal const val TvPlayerTitleTag = "tv-player-title"
@@ -51,7 +57,10 @@ internal fun TvPlayerTopBar(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.medium), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
             set?.takeIf { titleShown }?.let {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = titleLine(it),
                         style = TvTypeScale.title,
@@ -60,13 +69,15 @@ internal fun TvPlayerTopBar(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false).testTag(TvPlayerTitleTag),
                     )
-                    // The web's `.together-label`, beside the title; unlike the web's it goes with the title beside the episode list.
+                    // The web's `.together-label`, beside the title, in capitals a screen reader hears as written.
+                    // Unlike the web's it goes with the title beside the episode list.
                     label?.let { words ->
                         Text(
                             text = words.uppercase(),
-                            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em),
+                            style = LabelStyle,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
+                            modifier = Modifier.semantics { contentDescription = words },
                         )
                     }
                 }

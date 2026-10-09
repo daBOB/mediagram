@@ -57,10 +57,14 @@ internal fun TvTogetherBand(
     SideEffect { if (together != null) last = together }
     val focusManager = LocalFocusManager.current
     LaunchedEffect(together == null, focused) {
-        if (together == null && focused && !focusManager.moveFocus(FocusDirection.Down)) focusManager.moveFocus(FocusDirection.Up)
+        if (together != null || !focused) return@LaunchedEffect
+        if (!focusManager.moveFocus(FocusDirection.Down)) focusManager.moveFocus(FocusDirection.Up)
     }
     Box(modifier.focusRequester(focus).onFocusChanged { focused = it.hasFocus }) {
-        (together ?: last?.takeIf { focused })?.let { TvTogetherPlate(it, plate) }
+        // Kept for the remote after its session ended, the plate joins nothing.
+        (together ?: last?.takeIf { focused })?.let { shown ->
+            TvTogetherPlate(shown, plate, onJoin = together?.join ?: {})
+        }
     }
 }
 
@@ -68,11 +72,12 @@ internal fun TvTogetherBand(
 private fun TvTogetherPlate(
     together: TogetherJoin,
     modifier: Modifier,
+    onJoin: () -> Unit,
 ) {
     val style = TvTypeScale.body
     val color = MaterialTheme.colorScheme.error
     Card(
-        onClick = together.join,
+        onClick = onJoin,
         modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
         shape = TvFocus.cardShape(),
         scale = TvFocus.cardScale(),
@@ -85,8 +90,19 @@ private fun TvTogetherPlate(
             horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = together.offer.line, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-            Text(text = "Join", style = style.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline), color = color)
+            Text(
+                text = together.offer.line,
+                style = style,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                text = "Join",
+                style = style.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline),
+                color = color,
+            )
         }
     }
 }

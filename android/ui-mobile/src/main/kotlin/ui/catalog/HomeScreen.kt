@@ -29,11 +29,11 @@ import ui.catalog.home.HomeFeatures
 import ui.catalog.home.HomeShelfRow
 import ui.catalog.home.RecentBand
 import ui.catalog.home.gutterFor
-import ui.common.catalog.LocalTogetherJoin
+import ui.common.catalog.togetherJoin
 
 /**
  * The magazine home page: cover story, a live watch-together session's
- * Join line ([LocalTogetherJoin]), features, Continue watching beside a
+ * Join line ([togetherJoin]), features, Continue watching beside a
  * pull-quote, what arrived beside This month, then Latest series and Latest
  * courses — a Compose port of `home-view.js`'s own section order. A part
  * with nothing in it is not drawn at all, the same rule the web follows.
@@ -72,7 +72,7 @@ internal fun HomeScreen(
     val compact = width <= CompactBreakpoint
     val series = latest.series
     val courses = latest.courses
-    val together = LocalTogetherJoin.current
+    val together = togetherJoin()
 
     // `columnWidth` (this `BoxWithConstraints`'s own measured width) is
     // deliberately not `width` (the window's own `screenWidthDp`): every
@@ -97,7 +97,8 @@ internal fun HomeScreen(
                     )
                 }
             }
-            // Under the cover, as the web's `home-view.js` sets it: the cover bleeds up under the bar and would hide it.
+            // Under the cover, as the web's `home-view.js` sets it: the cover
+            // bleeds up under the bar and would hide it.
             together?.let { join ->
                 item(key = "together") {
                     TogetherJoinRow(join.offer.line, join.join, Modifier.padding(top = 12.dp, start = gutter, end = gutter))

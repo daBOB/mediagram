@@ -91,7 +91,12 @@ internal fun CardToolsRow(
                 modifier = actions.openerFor(CardMenu.Framing),
                 state = expanded(CardMenu.Framing),
             )
-            LabelButton(label = together.button.words, description = together.description, onClick = actions.onTogether, enabled = together.enabled)
+            LabelButton(
+                label = together.button.words,
+                description = together.description,
+                onClick = actions.onTogether,
+                enabled = together.enabled,
+            )
         }
         actions.onEnterPip?.let { enter ->
             GlyphButton(glyph = "⧉", description = "Picture in picture", enabled = true, onClick = enter)

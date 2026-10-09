@@ -100,7 +100,11 @@ internal fun TvCardTools(
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }
     TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
-    TvTogetherTool(extras.together, each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.together), extras.onTogether)
+    TvTogetherTool(
+        ui = extras.together,
+        modifier = each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.together),
+        onClick = extras.onTogether,
+    )
 }
 
 /**
@@ -114,7 +118,11 @@ private fun TvTogetherTool(
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
-    TvOverlaySurface(onClick = onClick, enabled = ui.enabled, modifier = modifier.semantics { contentDescription = ui.description }) {
+    TvOverlaySurface(
+        onClick = onClick,
+        enabled = ui.enabled,
+        modifier = modifier.semantics { contentDescription = ui.description },
+    ) {
         Column(modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
             Text(text = ui.button.words, style = TvTypeScale.body)
             ui.reason?.let { Text(text = it, style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow)) }

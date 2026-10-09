@@ -37,7 +37,12 @@ internal fun TvSeriesPills(
     TvPillRow {
         // One pill either way, so Join standing in for Resume keeps the remote on it.
         (if (join != null) "▶ Join" else resume?.let(::resumeLabel))?.let { label ->
-            TvSpreadPill(text = label, onClick = join?.join ?: { if (resume != null) onResume(resume.set.setId) }, solid = true, modifier = Modifier.focusRequester(play))
+            TvSpreadPill(
+                text = label,
+                onClick = join?.join ?: { if (resume != null) onResume(resume.set.setId) },
+                solid = true,
+                modifier = Modifier.focusRequester(play),
+            )
         }
         if (first != null) {
             TvListPill(watchlisted = first.setId in watch.watchlist, onToggle = onToggleWatchlist, modifier = Modifier.focusRequester(listPill))

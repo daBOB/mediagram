@@ -152,6 +152,7 @@ fun PlayerScreen(
                         onToggleStats = { statsShown = !statsShown },
                         onEnterPip = pip.enterPip.takeIf { pip.supported },
                         onScrubbingChanged = { scrubbing = it },
+                        together = together,
                     )
                 }
                 // The countdown that may run it keeps ticking either way — it

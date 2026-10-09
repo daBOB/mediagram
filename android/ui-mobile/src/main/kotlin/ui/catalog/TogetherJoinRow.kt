@@ -36,7 +36,11 @@ internal fun TogetherJoinRow(
     ) {
         Text(text = line, style = style, color = color)
         TextButton(onClick = onJoin, contentPadding = PaddingValues(0.dp), modifier = Modifier.heightIn(min = 48.dp)) {
-            Text(text = "Join", style = style.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline), color = color)
+            Text(
+                text = "Join",
+                style = style.copy(fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline),
+                color = color,
+            )
         }
     }
 }

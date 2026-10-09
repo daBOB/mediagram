@@ -112,6 +112,28 @@ class CatalogTogetherTest {
             }
         }
 
+    /** What a grown-up was offered last never reaches the kid chosen while nobody showed Join, not even for a frame. */
+    @Test
+    fun aProfileChosenWhileNobodyShowedJoinStartsFromNoOffer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val watch = WatchStateFixture(listOf(Profile("a", "Ana"), Profile("k", "Mia", kids = true)))
+            val vm = catalog(FakeTogetherLive(live("grown", "TV")), watch.repository)
+            vm.together.test {
+                assertNull(awaitItem())
+                assertEquals(grown, awaitItem()?.set)
+                cancelAndIgnoreRemainingEvents()
+            }
+            advanceTimeBy(5_001)
+            watch.repository.chooseProfile("k")
+
+            vm.together.test {
+                assertNull(awaitItem())
+                runCurrent()
+                expectNoEvents()
+            }
+        }
+
     @Test
     fun nothingIsOfferedWhileTelegramIsOutOfReach() =
         runTest {

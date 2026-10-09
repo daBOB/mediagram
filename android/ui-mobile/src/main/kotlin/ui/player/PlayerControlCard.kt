@@ -152,7 +152,13 @@ internal fun PlayerControlCard(
             onScrubbingToChange = { scrubbingTo = it },
             onSeek = player::seekTo,
         )
-        CardToolsRow(choices = view.choices, speed = speed, actions = actions, openMenu = view.openMenu, together = view.together)
+        CardToolsRow(
+            choices = view.choices,
+            speed = speed,
+            actions = actions,
+            openMenu = view.openMenu,
+            together = view.together,
+        )
         CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }
 }

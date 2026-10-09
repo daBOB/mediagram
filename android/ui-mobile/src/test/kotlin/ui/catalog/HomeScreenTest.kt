@@ -22,6 +22,7 @@ import catalog.Latest
 import catalog.MagazineHome
 import catalog.SetCard
 import catalog.TogetherOffer
+import kotlinx.coroutines.flow.MutableStateFlow
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -35,8 +36,8 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.catalog.home.HOME_COVER_TEST_TAG
 import ui.catalog.home.HOME_FEATURES_TEST_TAG
-import ui.common.catalog.LocalTogetherJoin
-import ui.common.catalog.TogetherJoin
+import ui.common.catalog.LocalTogetherOffers
+import ui.common.catalog.TogetherOffers
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -95,13 +96,13 @@ class HomeScreenTest {
 
     private fun show(
         onSeeAll: (CatalogTab) -> Unit = {},
-        together: TogetherJoin? = null,
+        together: TogetherOffer? = null,
     ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
-                    CompositionLocalProvider(LocalTogetherJoin provides together) {
+                    CompositionLocalProvider(LocalTogetherOffers provides TogetherOffers(MutableStateFlow(together)) {}) {
                         HomeScreen(
                             magazine = magazine, latest = latest, watch = WatchSnapshot.Empty, listState = rememberLazyListState(),
                             onPlay = {}, onOpenTitle = {}, onOpenCollection = {}, onToggleWatchlist = { _, _ -> }, onSeeAll = onSeeAll,
@@ -138,11 +139,11 @@ class HomeScreenTest {
     /** The web's `home-view.js`: under the cover, not above it — the cover bleeds up under the masthead and would cover it. */
     @Test
     fun aLiveSessionsLineIsTheFirstRowUnderTheCover() {
-        show(together = TogetherJoin(TogetherOffer(41, film("feature"), "TV, Tablet")) {})
+        show(together = TogetherOffer(41, film("feature"), "TV, Tablet"))
         val line = compose.onNodeWithText("Watching together: Film FEATURE · TV, Tablet").getUnclippedBoundsInRoot()
         val coverBottom = compose.onNodeWithTag(HOME_COVER_TEST_TAG).getUnclippedBoundsInRoot().bottom
         val featuresTop = compose.onNodeWithTag(HOME_FEATURES_TEST_TAG).getUnclippedBoundsInRoot().top
-        assertTrue(line.top >= coverBottom && line.bottom <= featuresTop, "the line ($line) should sit between the cover ($coverBottom) and the features ($featuresTop)")
+        assertTrue(line.top >= coverBottom && line.bottom <= featuresTop, "the line ($line) sits between the cover and the features")
     }
 
     @Test

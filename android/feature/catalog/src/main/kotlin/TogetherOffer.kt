@@ -25,7 +25,8 @@ val TogetherOffer.line: String
     get() = "Watching together: ${set.show?.let { "$it ${episodeShort(set)}" } ?: set.title} · $members"
 
 /** Whether the session plays one of [collection]'s titles: a show's or a course's page offers Join then. */
-fun TogetherOffer.playsIn(collection: Entry.Collection): Boolean = playableInOrder(collection.divisions).any { it.setId == set.setId }
+fun TogetherOffer.playsIn(collection: Entry.Collection): Boolean =
+    playableInOrder(collection.divisions).any { it.setId == set.setId }
 
 /**
  * The offer [catalog] makes as [live] changes. Each time someone starts

@@ -106,6 +106,8 @@ class TvTogetherViewTest : TvScreenStateTest() {
         }
         compose.onNodeWithText("A Film").assertIsDisplayed()
         compose.onNodeWithText("TOGETHER · TV, TABLET").assertIsDisplayed()
+        // Capitals are how it looks; a screen reader hears it as written, as the web's text-transform leaves it.
+        compose.onNode(hasContentDescription("Together · TV, Tablet")).assertExists()
     }
 
     @Test

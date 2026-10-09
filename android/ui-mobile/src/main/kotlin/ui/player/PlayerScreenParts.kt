@@ -62,10 +62,19 @@ internal fun PlayerTopChrome(
     onBarBottom: (Int) -> Unit = {},
     together: TogetherUi = TogetherUi(),
 ) {
-    // Watch together's notice goes too, unlike the web's beside its sidebar: a sidebar that covers the window covers the picture it speaks of.
+    // Watch together's notice goes too, unlike the web's beside its sidebar:
+    // a sidebar that covers the window covers the picture it speaks of.
     if (isInPip) return
     Column(modifier = modifier) {
-        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks, onBottom = onBarBottom, label = together.label)
+        PlayerTopBar(
+            title = titleLine(openSet),
+            showTitle = barShown,
+            onBack = onBack,
+            onNotes = onNotes,
+            marks = marks,
+            onBottom = onBarBottom,
+            label = together.label,
+        )
         // Under the bar rather than with it, so it shows while the controls rest.
         TogetherNoticePill(together.notice, Modifier.align(Alignment.CenterHorizontally).padding(top = Spacing.small))
         // Gated on the bar being shown as well as on the toggle, so the

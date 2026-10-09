@@ -1,5 +1,6 @@
 package ui.tv
 
+import android.os.Looper
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
@@ -28,10 +29,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.tv.catalog.set
 import ui.tv.player.TvPlayerScreenTag
+import java.time.Duration
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -49,16 +52,21 @@ class TvTogetherTest {
     private lateinit var fixture: TvAppFixture
     private lateinit var controller: ActivityController<TvAppTestActivity>
     private val plate = hasText("Watching together: Film 1 · TV, Tablet")
+    private val live =
+        LiveSession(41, Session("s", "film-1", true, 0.0, 1.0, 0, "tv", listOf(Member("tv", "TV"), Member("tab", "Tablet")), false))
 
     @Before
     fun open() {
         mockkStatic(::HiltViewModelFactory)
         every { HiltViewModelFactory(any(), any()) } answers { secondArg() }
         compose.runOnUiThread {
-            val films = (0 until 3).map { set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()).copy(backdropPath = "/b-$it.jpg", posterPath = "/p-$it.jpg") }
-            fixture = TvAppFixture(TvSetupStage.READY, listOf(Profile(id = "ada", name = "Ada")), "ada", films)
-            fixture.together.live.value =
-                LiveSession(41, Session("s", "film-1", true, 0.0, 1.0, 0, "tv", listOf(Member("tv", "TV"), Member("tab", "Tablet")), false))
+            val films =
+                (0 until 3).map {
+                    set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()).copy(backdropPath = "/b-$it.jpg", posterPath = "/p-$it.jpg")
+                }
+            val pilot = set("pilot", Kind.EPISODE, "Pilot", show = "A Show", addedAt = 20, episode = 1).copy(season = 1)
+            fixture = TvAppFixture(TvSetupStage.READY, listOf(Profile(id = "ada", name = "Ada")), "ada", films + pilot)
+            fixture.together.live.value = live
             TvAppTestActivity.fixture = fixture
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
@@ -96,6 +104,35 @@ class TvTogetherTest {
 
         compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
         assertEquals(41, fixture.together.takeJoin())
+    }
+
+    @Test
+    fun theSessionsShowPageJoinsInPlaceOfItsResumePill() {
+        compose.runOnUiThread { fixture.together.live.value = live.copy(session = live.session.copy(set = "pilot")) }
+        val poster = hasText("A Show") and hasClickAction()
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(poster)
+        compose.onNode(poster).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        compose.onNodeWithText("▶ Join").assertIsFocused()
+        key(KeyEvent.KEYCODE_DPAD_CENTER)
+
+        compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
+        assertEquals(41, fixture.together.takeJoin())
+    }
+
+    /** A department tab draws no Join, so nothing listens for sessions while one is shown. */
+    @Test
+    fun onADepartmentTabTheSessionsAreNotListenedFor() {
+        assertTrue(fixture.together.live.subscriptionCount.value > 0, "Home listens while it shows Join")
+
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNode(plate).assertDoesNotExist()
+        compose.runOnUiThread { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6)) }
+        compose.waitForIdle()
+
+        assertEquals(0, fixture.together.live.subscriptionCount.value)
     }
 
     @Test
