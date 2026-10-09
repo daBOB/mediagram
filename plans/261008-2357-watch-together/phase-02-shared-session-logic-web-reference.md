@@ -1,6 +1,6 @@
 # Phase 02 — Shared session logic (web reference) and fixtures
 
-**Spec:** `../spec.md` §1, §2. **Status:** pending. **Depends on:** phase 01 verdict (search works, or the fallback is chosen).
+**Spec:** `../spec.md` §1, §2. **Status:** pending. **Depends on:** phase 01 verdict (history read finds a fresh message: yes, see reports/probe-261009-history-read-and-edit-push-report.md).
 
 ## Context
 
@@ -400,3 +400,10 @@ export function changeOf(prev: Session, next: Session): { change: Change; label:
 
 - **Float compare differences between JS and Kotlin.** The fixtures compare positions within 1e-6, and `acted` rounds to milliseconds.
 - **`changeOf` picks one change per edit.** An edit that both seeks and pauses reads as "paused". That is acceptable: the screen still matches the state, and only the wording is simplified.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- Tasks 2.1–2.3 are one dispatch. `moves.js` needs `expectedPosition` before 2.3: create `follow.js` with `expectedPosition` during 2.2 and fill in the rest in 2.3.
+- `moves.json` has a `finished` case: the JS moves test dispatches `started`, `joined`, `left`, `acted` **and `finished`**.
+- The `.d.ts` files use `import type` for `Session`/`Member` from `session.d.ts` (don't rely on `skipLibCheck`).
+- The probe (phase 01) checked a history read (`getMessages` limit 100), not search.

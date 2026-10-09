@@ -133,3 +133,10 @@ data class TogetherOffer(val id: Int, val set: MediaSet, val members: String) //
 ## Risks
 
 - **TV Home's arrival focus moving to a plate can surprise a viewer.** It happens only while a session is live, which is the moment Join matters most. The spec asked for the plate first.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- **Wording follows the spec:** the title-change notice is "Next episode by X". Define the notice text function once (in `feature/player`) and use it on phone and TV.
+- **`CatalogViewModel`** has no `projectedSets`, no `onPlay` and no Continue-refresh hook. Derive the visible sets from the projected `CatalogUiState.Ready` shelves, which carry the kids gate. `join(offer)` only calls `joinOnOpen`; the UI opens the title through its existing open path.
+- Use `LabelButton(label=, description=, …)` as the existing call sites do.
+- **TV focus:** make the requester rule consistent between the two places the text describes. Add `offer` to the `remember` keys, and keep `TOGETHER` always in `drawn`, so the plate's appearance doesn't reset focus (memory: a conditional focusRequester resets the target).

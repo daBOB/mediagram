@@ -68,3 +68,8 @@
 - The walk passes on all three surfaces.
 - No `#mlib-together` message is left behind.
 - The TV release happens only on the user's say-so.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- **Walk step 8 doesn't touch the box:** `am force-stop` goes beyond "navigate only" on the box. Run step 8 with the tablet (`ANDROID_SERIAL=caad49da`) and the browser (or the TV emulator), and leave the box out of that session.
+- `system-architecture.md`: anchor the section after `### Watch state` (~520), and list every deliberate difference the phases recorded: the follower in `feature/player`, the core keeping no rules, and the web keeping the event stream open while a hidden tab is in a session.

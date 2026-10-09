@@ -528,3 +528,13 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
 
 - **Trust boundary.** `/api/together` is reachable wherever the player is, the same reach as the watch-state writes. It writes only to the library channel, only in the `#mlib-together` shape, and only for sets in the catalog.
 - **Validation.** The body is size-capped (64 KiB, `server.ts:46`). `screen` must match `[A-Za-z0-9-]{1,64}`, `rate` must be in (0, 4], and `pos` must be ≥ 0.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- **3.1:** setting `ChannelUpdate.id` changes the two `toChannelUpdate` expectations in `web/test/channel-events.test.ts` (~lines 42, 48): update them (`id: 7` / `id: 8`).
+- **Availability (spec §3/§5 "Telegram unreachable"):** `available()` is signed in **and** connected (`current()?.connected !== false`, `web/src/telegram/client.ts` ~163). `GET /api/together` also reports `available:false` with the reason when `live()` throws.
+- **Discovery keeps pushed sessions (spec §1 "It also keeps any session it heard about through a push"):** the hub remembers the newest session id it heard by push or read. `live()` returns the newest live session from the 100-message read; if the remembered one is missing from that read (a busy channel pushed it out), it reads it by id and uses it while it's still live. So a busy channel can't let a second session start beside a live one.
+- **Flood wait follows the spec (§5: "keeps its own state and sends the latest one once the wait ends. Earlier ones are dropped"):** the single sender keeps only the latest own write. When the wait ends it sends it **re-based** on the newest known session: playback fields (`set, playing, pos, rate, at, by`) come from the own write; `session, members, ended` come from the newest known. If the newest known is ended or gone, it drops the write. A foreign edit arriving during the wait no longer cancels the own write. Add a hub test: a foreign join during a flood wait → after the wait the edit carries the own playback **and** the joiner in `members`.
+- **`join` on a deleted message:** `if (text === null && !this.outgoing.has(id)) return null` → the route answers 404, as stated above.
+- Extract the duplicated `leave`/`end` tail into one helper. Put `TOGETHER_RECHECK_MS` in hub.ts. Hub test 4 needs a held `sleep`, and FakeChannel `send` must feed `recent`.
+- Ceilings: index.ts will be ≈451 (measure, don't trust 448). The GET gate is in `src/routes.ts` ~138, not 236. Cite `docs/mlib-spec.md` §7b in comments, not "the spec".

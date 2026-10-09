@@ -436,3 +436,12 @@ export function joinOr(setIds, pill) {
 
 - **The speed menu's tick follows `chosenRate`, not the session.** While following someone else's speed, the menu can show the old choice. Accepted, and recorded in the plan's review.
 - **A drift seek during a conversion** (`seekFilmTo` restarts ffmpeg) is expensive. Drift checks only seek when more than 0.5 s off, and skip while buffering.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- **Wording follows the spec:** the title-change notice is `Next episode by ${by}` (spec §3), not "Next title".
+- **Kids / visibility (spec §1 Kids):** the Home notice and Join are hidden when `titleForTogether(set) === null` (the title isn't in this profile's catalog, `byId` is profile-filtered). If the session moves to a title this tab can't see, the tab leaves with a notice.
+- **`joinOr(ids, null)`:** render with `replaceChildren(...(x ? [x] : []))`; never render "null" (series page with no resume).
+- **Background tabs stay in the session (spec §1 "PiP and going to the background keep a screen in the session"):** while this tab is in a session, the library event stream is not closed on `visibilitychange` hidden (`library-session.js` ~154-163). The hidden-tab close still applies when not in a session.
+- **Leave on close:** `together()` POSTs use `fetch(..., { keepalive: true })` and keep the JSON content type the CSRF gate needs, so leaving on `pagehide`/close isn't dropped.
+- Test 3 expects `{playing:true, pos}` (or uses `toMatchObject`). Raise the `app.js` ceiling in 4.3, where app.js changes.
