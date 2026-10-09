@@ -62,6 +62,13 @@ private fun JsonElement.member(): Member? {
     return Member(o.named("screen") ?: return null, o.named("label") ?: return null)
 }
 
+/**
+ * Deliberate difference from the web: the JSON reader here is lenient about
+ * non-JSON tokens that `JSON.parse` rejects (`TRUE`, `+1`, `.5`, `01`, raw
+ * control characters in strings). That is acceptable because only two writers
+ * ever produce this message, `JSON.stringify` on the web and [writeSession]
+ * here, and both write strict JSON, so no reachable input tells them apart.
+ */
 fun parseSession(message: String): Session? {
     val newline = message.indexOf('\n')
     if (newline < 0 || message.substring(0, newline) != TOGETHER_MARKER) return null
@@ -80,6 +87,10 @@ fun parseSession(message: String): Session? {
     )
 }
 
+/** A whole number is written without a fraction (`1`, not `1.0`), as `JSON.stringify` does. */
+private fun number(x: Double): JsonPrimitive =
+    if (x == Math.floor(x) && abs(x) < 9007199254740992.0) JsonPrimitive(x.toLong()) else JsonPrimitive(x)
+
 fun writeSession(s: Session): String {
     val body =
         JsonObject(
@@ -87,8 +98,8 @@ fun writeSession(s: Session): String {
                 "session" to JsonPrimitive(s.session),
                 "set" to JsonPrimitive(s.set),
                 "playing" to JsonPrimitive(s.playing),
-                "pos" to JsonPrimitive(s.pos),
-                "rate" to JsonPrimitive(s.rate),
+                "pos" to number(s.pos),
+                "rate" to number(s.rate),
                 "at" to JsonPrimitive(s.at),
                 "by" to JsonPrimitive(s.by),
                 "members" to

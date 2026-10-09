@@ -35,6 +35,17 @@ class TogetherFixtureTest {
     }
 
     @Test
+    fun writeSessionIsByteIdenticalToJsonStringify() {
+        val s = Session("s1", "film-1", true, 0.0, 1.0, 1791500000000, "tv-1", listOf(Member("tv-1", "TV")), false)
+        val expected =
+            "#mlib-together v=1\n" +
+                """{"session":"s1","set":"film-1","playing":true,"pos":0,"rate":1,"at":1791500000000,"by":"tv-1",""" +
+                """"members":[{"screen":"tv-1","label":"TV"}],"ended":false}"""
+        assertEquals(expected, writeSession(s))
+        assertTrue(writeSession(s.copy(pos = 12.5, rate = 1.5)).contains(""""pos":12.5,"rate":1.5"""))
+    }
+
+    @Test
     fun movesAgreeWithTheWeb() {
         for (case in cases("moves.json")) {
             val args = case.getValue("args").jsonObject
