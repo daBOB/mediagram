@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.compose.ui.text.TextStyle
+import designsystem.CatalogueType
 import designsystem.Spacing
 import designsystem.TvTypeScale
 import ui.tv.TvSafeArea
@@ -33,7 +35,7 @@ import ui.tv.TvSafeArea
 /**
  * A reference page's own head — the web's `heading()` as `.shelf-head`
  * sets it (`catalog.css`), the phone's `ShelfHead`: the title in the display
- * face at the web's 4.4vw (42sp at television's fixed 960dp), how much is
+ * face at [TvTypeScale.ShelfHead], how much is
  * there in small tracked capitals flush right, and a rule under both.
  * Genres, one genre, Latest, a person and a list open with this, as on the web;
  * [leading] goes before the title — a person's round portrait, which the
@@ -53,7 +55,7 @@ internal fun TvShelfHead(
             }
             Text(
                 text = title,
-                style = TvTypeScale.title.copy(fontWeight = FontWeight.SemiBold, fontSize = 42.sp, lineHeight = 1.em, letterSpacing = (-0.03).em),
+                style = ShelfHeadTitle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(end = 24.dp).semantics { heading() },
@@ -61,7 +63,7 @@ internal fun TvShelfHead(
             sub?.let {
                 Text(
                     text = it.uppercase(),
-                    style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, letterSpacing = 0.24.em),
+                    style = CatalogueType.labelSmall.copy(letterSpacing = 0.24.em),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -102,7 +104,7 @@ internal fun TvCountedHeading(
                         append(title)
                         withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(" · $total") }
                     },
-                style = TvTypeScale.title,
+                style = ShelfHeadTitle,
             )
             trailing()
         }
@@ -118,19 +120,19 @@ internal fun TvCountedHeading(
 }
 
 /**
- * A heading one step down from [TvCountedHeading] — a course's folder —
- * where the phone sets a smaller title. The television scale has only a
- * title and a body size, so this is the body face made heavier rather than
- * a third size invented here.
+ * A heading one step down from [TvCountedHeading] — a course's folder, by
+ * default, the web's `.season h2` (`catalog.css:71`); [style] for the other
+ * headings that sit at this step.
  */
 @Composable
 internal fun TvSectionHeading(
     title: String,
     modifier: Modifier = Modifier,
+    style: TextStyle = SeasonHeading,
 ) {
     Text(
         text = title,
-        style = TvTypeScale.body.copy(fontWeight = FontWeight.SemiBold),
+        style = style,
         modifier = modifier.padding(top = Spacing.small),
     )
 }
@@ -145,10 +147,11 @@ internal fun TvQuietLine(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
+    style: TextStyle = CatalogueType.bodySmall,
 ) {
     Text(
         text = text,
-        style = TvTypeScale.body,
+        style = style,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = textAlign,
         modifier = modifier,
@@ -164,9 +167,32 @@ internal fun TvCenteredMessage(message: String) {
     TvSafeArea {
         Text(
             text = message,
-            style = TvTypeScale.body,
+            style = CatalogueType.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
     }
 }
+
+/** `.shelf-head h1` (`catalog.css:5-10`): Fraunces 600 at the television's display size for it — a reference page's head, and Stats'. */
+internal val ShelfHeadTitle =
+    CatalogueType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
+
+/**
+ * Fraunces 500 on its own metrics, unsized: the face the television's display
+ * titles are set in, at [TvTypeScale]'s sizes. Not a [CatalogueType] role —
+ * those carry M3's line heights in sp, which a 60sp title would overrun.
+ */
+internal val DisplayFace = TextStyle(fontFamily = CatalogueType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, letterSpacing = (-0.1).sp)
+
+/** `.season h2` (`catalog.css:71`): Geist 600 at 15px. A course's top level is set at 18 (`.season.depth-0`), [TopSeasonHeading]. */
+internal val SeasonHeading = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+
+/** `.season.depth-0 > h2` (`catalog.css:73`). */
+internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.sp)
+
+/** `.shelf-sub` (`catalog.css:98`): a wall's own sections ("Films", "Series") and Search's groups — the phone's `ShelfHead` sub. */
+internal val ShelfSub = CatalogueType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 1.2.em)
+
+/** `.row-head h2` (`home.css:195`): Home's bands and a department's rows — the phone's `BandHeading`. */
+internal val RowHead = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.sp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

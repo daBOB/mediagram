@@ -7,7 +7,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 import ui.tv.setup.TvDialog
 
 /**
@@ -28,7 +28,7 @@ internal fun TvFetchResultDialog(
     val ok = remember { FocusRequester() }
     TvDialog(title = "Update library", body = message, onDismissRequest = onDismiss, initialFocus = ok) {
         Button(onClick = onDismiss, modifier = Modifier.focusRequester(ok)) {
-            Text("OK", style = TvTypeScale.body)
+            Text("OK", style = CatalogueType.labelLarge)
         }
     }
 }

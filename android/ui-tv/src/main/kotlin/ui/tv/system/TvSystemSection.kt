@@ -12,7 +12,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 import kotlinx.coroutines.delay
 import system.SystemUiState
 import system.cacheRows
@@ -74,7 +74,7 @@ internal fun TvSystemSection(
 
     if (failure != null) {
         Column {
-            Text(failure, style = TvTypeScale.body, color = MaterialTheme.colorScheme.error)
+            Text(failure, style = CatalogueType.bodySmall, color = MaterialTheme.colorScheme.error)
             TvTextRow(text = "Try again", onClick = onRetry, focusRequester = retry)
         }
     }
@@ -84,6 +84,6 @@ internal fun TvSystemSection(
         TvInfoBlock("Upstream", upstreamRows(current), focusable = true)
         TvInfoBlock("This app", thisAppRows(current), focusable = true)
     } else if (failure == null) {
-        Text("Reading system information…", style = TvTypeScale.body)
+        Text("Reading system information…", style = CatalogueType.bodyMedium)
     }
 }

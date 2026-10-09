@@ -73,7 +73,6 @@ internal fun TvPagePadding.asPaddingValues(): PaddingValues = PaddingValues(star
 internal class TvChromeFocus(
     val selectedPillFocus: FocusRequester,
     val searchFocus: FocusRequester,
-    val menuButtonFocus: FocusRequester,
     val avatarFocus: FocusRequester,
     val railRowFocus: Map<RailItem, FocusRequester>,
     val contentFocus: FocusRequester,
@@ -84,7 +83,6 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
     TvChromeFocus(
         selectedPillFocus = remember { FocusRequester() },
         searchFocus = remember { FocusRequester() },
-        menuButtonFocus = remember { FocusRequester() },
         avatarFocus = remember { FocusRequester() },
         railRowFocus = remember { RailItem.entries.associateWith { FocusRequester() } },
         contentFocus = remember { FocusRequester() },
@@ -127,7 +125,7 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
  */
 @Composable
 internal fun TvLibraryChrome(
-    pills: List<TvDepartmentPill>,
+    pills: List<String>,
     selectedPill: Int,
     onSelectPill: (Int) -> Unit,
     railActive: RailItem?,
@@ -160,7 +158,7 @@ internal fun TvLibraryChrome(
     BackHandler(enabled = contentHasFocus) {
         if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
     }
-    // "bar (pill, search, avatar, ⋮) -> rail" — the rail's own active row,
+    // "bar (pill, search, avatar) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
     BackHandler(enabled = barHasFocus) {
         railArrivalTarget().requestFocus()
@@ -231,7 +229,6 @@ internal fun TvLibraryChrome(
                 downTarget = focus.contentFocus,
                 selectedPillFocus = focus.selectedPillFocus,
                 searchFocus = focus.searchFocus,
-                menuFocus = focus.menuButtonFocus,
                 avatarFocus = focus.avatarFocus,
                 blend = blend,
                 modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->

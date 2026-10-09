@@ -22,9 +22,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.LedgerLabel
+import designsystem.LedgerValue
 import designsystem.LocalCatalogueTones
+import designsystem.SectionHead
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvFocus
 
 private val LedgerRowPadding = 10.dp
@@ -63,7 +65,7 @@ internal fun TvInfoBlock(
                     }
                 },
     ) {
-        Text(text = heading, style = TvFocus.textStyle(TvTypeScale.title, focused))
+        Text(text = heading, style = TvFocus.textStyle(SectionHead, focused))
         Spacer(Modifier.height(Spacing.small))
         for ((label, value) in rows) {
             if (value.isNullOrEmpty()) continue
@@ -75,10 +77,10 @@ internal fun TvInfoBlock(
                     // itself rather than colliding with the label before it.
                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
                 ) {
-                    Text(text = label, style = TvTypeScale.body, color = tones.quiet)
+                    Text(text = label, style = LedgerLabel, color = tones.quiet)
                     Text(
                         text = value,
-                        style = TvTypeScale.body,
+                        style = LedgerValue,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.End,
                         modifier = Modifier.weight(1f),

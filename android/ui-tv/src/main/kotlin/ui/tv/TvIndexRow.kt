@@ -30,16 +30,18 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
 import designsystem.StatusDot
-import designsystem.TvTypeScale
 
 /**
  * One row of an index — an icon, a label, and whatever [status] or
@@ -49,7 +51,9 @@ import designsystem.TvTypeScale
  * inventing its own. Settings never collapses; the rail does, which is
  * [expanded]'s only reader here — `false` drops the label, [status] and
  * [trailing] and centres the icon alone in whatever width the caller gives
- * the row, the rail's own icons-only form. [contentDescription] is what a
+ * the row, the rail's own icons-only form. [labelStyle] is the rail's own
+ * (`.rail-nav a`, Geist 500 at 14px); Settings sets its index in Fraunces.
+ * [contentDescription] is what a
  * collapsed row still says to a screen reader with no visible label to read
  * instead; expanded, the visible [label] already carries that.
  *
@@ -73,6 +77,7 @@ internal fun TvIndexRow(
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
     minHeight: Dp = 44.dp,
+    labelStyle: TextStyle = CatalogueType.labelLarge,
     trailing: String? = null,
     status: (@Composable () -> Unit)? = null,
     onFocusChanged: (FocusState) -> Unit = {},
@@ -130,11 +135,11 @@ internal fun TvIndexRow(
             // invisible, not merely uncounted. Weighted, the label always
             // ellipsizes into whatever room remains instead.
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = label, style = TvFocus.textStyle(TvTypeScale.body.copy(color = baseColor), focused), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = label, style = TvFocus.textStyle(labelStyle.copy(color = baseColor), focused), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 status?.invoke()
             }
             trailing?.let {
-                Text(text = it, style = TvTypeScale.body.copy(fontSize = TvTypeScale.count), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
+                Text(text = it, style = CatalogueType.labelSmall.copy(fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
             }
         }
     }

@@ -11,7 +11,7 @@
 // fontTools' own instancer pinned at the same `wght`/`opsz` — the variable
 // one rendered at the font's own heavy default regardless of what was
 // asked for, the static one at the requested weight and optical size.
-// Every Fraunces cut this file exposes is a static instance for that
+// Every Fraunces cut here and in `TitleType.kt` is a static instance for that
 // reason now, the same way `PageTitle`'s own pair already were. Newsreader
 // and Geist stay variable: Newsreader's own default instance (`wght 400`,
 // `opsz 18`) is close enough to what every call site here actually asks
@@ -22,22 +22,16 @@
 
 package designsystem
 
-import androidx.compose.material3.Typography
 import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.mediagram.android.core.designsystem.R
 
 /**
  * Newsreader and Geist: still variable, unlike [Display]/[PageTitle]/
- * [CoverTitle] below — see this file's own top note for why those three
+ * [CoverTitle] in `TitleType.kt` — see this file's own top note for why those three
  * draw through static, pre-instanced files instead.
  *
  * Newsreader is variable on an optical-size axis, which is why one file can
@@ -105,172 +99,4 @@ internal val Interface = FontFamily(interfaceFont(400), interfaceFont(500), inte
  * Figures set in tabular numerals, so a column of counts or runtimes lines
  * up down the page instead of shifting with each digit's own width.
  */
-private const val TABULAR = "tnum"
-
-internal val CatalogueTypography =
-    Typography().run {
-        copy(
-            headlineSmall =
-                headlineSmall.copy(
-                    fontFamily = Display,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 26.sp,
-                    letterSpacing = (-0.1).sp,
-                ),
-            titleLarge =
-                titleLarge.copy(
-                    fontFamily = Display,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 23.sp,
-                    letterSpacing = (-0.1).sp,
-                ),
-            titleMedium =
-                titleMedium.copy(
-                    fontFamily = Display,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 18.sp,
-                ),
-            titleSmall =
-                titleSmall.copy(
-                    fontFamily = Display,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp,
-                ),
-            // The web's own reading-copy size: whole sentences (loading, empty,
-            // failure states) stay in the serif, not the interface face.
-            bodyLarge = bodyLarge.copy(fontFamily = Read, fontSize = 17.sp),
-            bodyMedium = bodyMedium.copy(fontFamily = Interface, fontSize = 15.sp),
-            bodySmall = bodySmall.copy(fontFamily = Interface, fontSize = 13.sp),
-            labelLarge = labelLarge.copy(fontFamily = Interface, fontWeight = FontWeight.Medium),
-            labelMedium =
-                labelMedium.copy(
-                    fontFamily = Interface,
-                    fontSize = 13.sp,
-                    fontFeatureSettings = TABULAR,
-                ),
-            labelSmall =
-                labelSmall.copy(
-                    fontFamily = Interface,
-                    fontSize = 11.sp,
-                    fontFeatureSettings = TABULAR,
-                ),
-        )
-    }
-
-/**
- * The huge uppercase title atop a page — Fraunces at the web's own weight
- * and optical size for a wide viewport (`.dept-title`, `departments.css:30-35`).
- * Font size is deliberately unset: [PageHead] sizes it per screen with
- * `TextAutoSize.StepBased`, so only the shape of the title — weight,
- * tracking, how tight the lines sit — belongs to the style. `Center` +
- * `Trim.None` keep the 0.86em line height from clipping a capital's top and
- * bottom, which `Trim.Both` (Compose's own default) does not guarantee.
- *
- * A static font, the same reason [Display] and [CoverTitle] are — see this
- * file's own top note. This was the face that first surfaced the bug: a
- * page title draws through `TextAutoSize.StepBased` (see [PageHead]),
- * which re-measures the same `FontFamily` at several candidate sizes in one
- * pass, and on the device that found this, that re-measurement left the
- * requested `wght`/`opsz` axis values behind and fell back to
- * `fraunces.ttf`'s own registered default instance — `wght 900`, `opsz 9`,
- * its heaviest, most decorative cut. It was not the only face that carried
- * the failure, only the one whose own re-measurement pass happened to
- * surface it first — the top note's own on-device A/B is what showed
- * [Display] dropped the same axis values through a plain `Text`, no
- * `TextAutoSize` involved at all.
- */
-val PageTitle =
-    TextStyle(
-        fontFamily = FontFamily(Font(resId = R.font.fraunces_page_title, weight = FontWeight.Medium)),
-        fontWeight = FontWeight.Medium,
-        letterSpacing = (-0.03).em,
-        lineHeight = 0.86.em,
-        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
-    )
-
-/**
- * [PageTitle] at the web's narrow-viewport optical size (`departments.css:90`)
- * — a compact phone screen, or a television read from the couch rather than
- * a tablet held in the hand. Its own static instance for the same reason.
- */
-val PageTitleCompact =
-    PageTitle.copy(fontFamily = FontFamily(Font(resId = R.font.fraunces_page_title_compact, weight = FontWeight.Medium)))
-
-/**
- * The cover story's own headline — Fraunces at the widest cut the variable
- * font's optical-size axis offers, `opsz 144` (`.cover-title`'s own
- * `font-variation-settings: "opsz" 144`, `home.css:48-55`), a size no other
- * title on this catalogue reaches for. A static cut, like [Display] — see
- * this file's own top note; font size is left to the caller
- * (`ui.catalog.home.HomeType`'s own `fluid()`), the same split [PageTitle]
- * makes.
- */
-val CoverTitle =
-    TextStyle(
-        fontFamily = FontFamily(Font(resId = R.font.fraunces_cover_600, weight = FontWeight.SemiBold)),
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = (-0.035).em,
-        lineHeight = 0.86.em,
-    )
-
-/** Spaced capitals over a page title, the way a magazine labels a department (`.eyebrow`, `theme.css:197-204`). */
-val Eyebrow =
-    TextStyle(
-        fontFamily = Interface,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        letterSpacing = 0.32.em,
-        lineHeight = 1.4.em,
-    )
-
-/** A settings section's own heading — smaller and heavier than [Eyebrow], set in the interface face rather than Fraunces. */
-val SectionHead =
-    TextStyle(
-        fontFamily = Interface,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-    )
-
-/** A ledger row's label — what a value beside it is *of*. */
-val LedgerLabel = TextStyle(fontFamily = Interface, fontSize = 14.sp)
-
-/** A ledger row's value, in tabular numerals so a column of them lines up. */
-val LedgerValue = TextStyle(fontFamily = Interface, fontSize = 15.sp, fontFeatureSettings = TABULAR)
-
-/**
- * The same faces, set for a screen read from the couch rather than from
- * the hand. Plain `TextStyle`, not an M3 `Typography` like
- * [CatalogueTypography] above: `:ui-tv` never has material3 on its compile
- * classpath, only `compose-ui`, so `TextStyle` is the type this scale can
- * actually hand across that boundary.
- *
- * Body copy holds at 18sp — this catalogue's floor for what reads at
- * roughly 3m, the couch distance a 960x540dp TV viewport assumes — now set
- * in Geist rather than Newsreader, the same swap [CatalogueTypography]
- * makes for everything that isn't a whole sentence. Fraunces titles are set
- * at 34sp, since a shelf name here is read across the room rather than at
- * arm's length, the way the phone's own titles are.
- */
-object TvTypeScale {
-    val title: TextStyle =
-        TextStyle(
-            fontFamily = Display,
-            fontWeight = FontWeight.Medium,
-            fontSize = 34.sp,
-            letterSpacing = (-0.1).sp,
-        )
-    val body: TextStyle =
-        TextStyle(
-            fontFamily = Interface,
-            fontSize = 18.sp,
-        )
-
-    /** The size [PageHead] steps [PageTitleCompact] down from on a television — the ten-foot floor under its own 72-opsz ceiling. */
-    val pageTitleMax: TextUnit = 72.sp
-
-    /** [Eyebrow], at the ten-foot floor: double the phone's 11sp, read from the couch rather than the hand. */
-    val eyebrow: TextUnit = 16.sp
-
-    /** A menu count beside a rail item or department pill: kept small and faint, as the web's `.n` is. */
-    val count: TextUnit = 13.sp
-}
+internal const val TABULAR = "tnum"

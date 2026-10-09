@@ -155,8 +155,7 @@ class TvProfilesFlowTest {
     @Test
     fun backOnThePinGivesUpThePinNotThePicker() {
         launch(listOf(andre, bo, cy), chosen = "a")
-        compose.onNode(hasContentDescription("Who's watching: andre")).performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitForIdle()
+        reopenPicker()
         compose.onNodeWithText("Stay as I am").assertExists()
         walkTo(hasText("Bo") and hasClickAction(), Key.DirectionRight)
         press(Key.DirectionCenter)
@@ -185,7 +184,7 @@ class TvProfilesFlowTest {
         awaitLibrary()
 
         compose.onNode(hasText("Movies") and isSelected()).assertExists()
-        compose.onNode(hasContentDescription("Who's watching: andre")).assertIsFocused()
+        compose.onNode(hasContentDescription("Menu, watching as andre")).assertIsFocused()
     }
 
     /**
@@ -342,9 +341,11 @@ class TvProfilesFlowTest {
 
     private fun rowOf(text: String) = hasText(text) and hasClickAction()
 
-    /** The masthead's "who is watching" entry, as selecting it does. */
+    /** The masthead's avatar, then its menu's "Switch profile", as selecting them does. */
     private fun reopenPicker() {
-        compose.onNode(hasContentDescription("Who's watching: andre")).performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNode(hasContentDescription("Menu, watching as andre")).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNode(hasText("Switch profile") and hasClickAction()).performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
     }
 

@@ -17,7 +17,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import playback.AudioOption
 import playback.Framing
 import player.PLAYBACK_SPEEDS
@@ -92,7 +91,7 @@ internal fun TvFramingSection(
 internal fun TvSettingsHeading(text: String) {
     Text(
         text = text,
-        style = TvTypeScale.body,
+        style = TvPlayerType.body,
         color = Palette.Figures,
         modifier = Modifier.padding(top = Spacing.medium, bottom = Spacing.extraSmall),
     )
@@ -130,8 +129,8 @@ internal fun TvChoiceRow(
         ) {
             // The mark is the selected state drawn, which the row already
             // says as a radio button; read aloud it would be noise.
-            Text(text = if (selected) CHOSEN else NOT_CHOSEN, style = TvTypeScale.body, modifier = Modifier.clearAndSetSemantics {})
-            Text(text = label, style = TvTypeScale.body)
+            Text(text = if (selected) CHOSEN else NOT_CHOSEN, style = TvPlayerType.body, modifier = Modifier.clearAndSetSemantics {})
+            Text(text = label, style = TvPlayerType.body)
         }
     }
 }

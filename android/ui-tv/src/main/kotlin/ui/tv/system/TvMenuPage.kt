@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Text
 import catalog.MenuScreen
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.common.MenuActions
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
@@ -28,7 +28,9 @@ import ui.tv.setup.START_OVER_BODY
 import ui.tv.setup.TvConfirmDialog
 
 /**
- * The phone's overflow menu as a page, trimmed to its own Android-only rows
+ * What the bar's avatar opens: the switch to another profile — the avatar's
+ * own job on the web and the tablet — then the phone's overflow menu,
+ * trimmed to its own Android-only rows
  * — Update library, TMDB key…, Start over, and a conditional row for
  * whatever else the menu carries (currently, "Preloads · n") — the same
  * three the tablet's own `AndroidOnlyMenu` keeps once its rail already
@@ -40,6 +42,7 @@ import ui.tv.setup.TvConfirmDialog
  *
  * [restoreKey] is the row whose screen was just left, so Back from TMDB
  * key… lands on TMDB key…; with none, the first row takes the remote.
+ * [onSwitchProfile] leaves for Who's watching; [watchingAs] is said under it.
  * Start over asks first, in the phone's words, with Cancel under the
  * remote. The column itself scrolls: enough rows (a TMDB-key note, a
  * larger font scale) can push the last of them below the fold of a
@@ -50,11 +53,13 @@ import ui.tv.setup.TvConfirmDialog
 internal fun TvMenuPage(
     menu: MenuActions,
     restoreKey: String?,
+    watchingAs: String,
+    onSwitchProfile: () -> Unit,
     onBack: () -> Unit,
 ) {
     var askingStartOver by rememberSaveable { mutableStateOf(false) }
     val rows = remember { MenuRow.entries.associateWith { FocusRequester() } }
-    val landing = MenuRow.entries.firstOrNull { it.key != null && it.key == restoreKey } ?: MenuRow.Update
+    val landing = MenuRow.entries.firstOrNull { it.key != null && it.key == restoreKey } ?: MenuRow.SwitchProfile
     LaunchedEffect(Unit) { rows.getValue(landing).requestFocus() }
     BackHandler(onBack = onBack)
 
@@ -62,7 +67,11 @@ internal fun TvMenuPage(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        Text(text = "Menu", style = TvTypeScale.title)
+        Text(text = "Menu", style = CatalogueType.headlineSmall)
+        Column {
+            TvTextRow(text = "Switch profile", onClick = onSwitchProfile, focusRequester = rows.getValue(MenuRow.SwitchProfile))
+            TvQuietLine("Watching as $watchingAs", Modifier.padding(top = Spacing.extraSmall))
+        }
         Column {
             TvTextRow(
                 text = "Update library",
@@ -99,6 +108,7 @@ internal fun TvMenuPage(
 private enum class MenuRow(
     val key: String?,
 ) {
+    SwitchProfile(null),
     Update(null),
     TmdbKey(menuRestoreKey(MenuScreen.TmdbKey)),
     StartOver(null),

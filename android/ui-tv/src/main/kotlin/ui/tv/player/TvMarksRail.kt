@@ -10,7 +10,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.KidsVerdict
 import player.PlayerMarksState
 import player.kidsLabel
@@ -77,5 +76,5 @@ private fun MarkButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    TvOverlayButton(text = label, style = TvTypeScale.body, enabled = enabled, onClick = onClick, modifier = modifier, padding = Spacing.medium)
+    TvOverlayButton(text = label, style = TvPlayerType.body, enabled = enabled, onClick = onClick, modifier = modifier, padding = Spacing.medium)
 }

@@ -28,12 +28,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 
 /**
  * One line typed through the system keyboard — the field every television
@@ -102,7 +103,7 @@ internal fun TvTextField(
                     }
                     .fillMaxWidth()
                     .padding(Spacing.medium),
-            textStyle = TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+            textStyle = FieldText.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
             singleLine = true,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
@@ -111,7 +112,7 @@ internal fun TvTextField(
             decorationBox = { field ->
                 Box {
                     if (value.isEmpty() && placeholder != null) {
-                        Text(text = placeholder, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = placeholder, style = FieldText, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     field()
                 }
@@ -119,3 +120,6 @@ internal fun TvTextField(
         )
     }
 }
+
+/** The web's text inputs, `font-size: 1rem` (`library-controls.css:12,51`). */
+private val FieldText = CatalogueType.bodyMedium.copy(fontSize = 16.sp)

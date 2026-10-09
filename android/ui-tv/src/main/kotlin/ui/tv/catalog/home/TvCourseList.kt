@@ -17,8 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
@@ -26,8 +29,8 @@ import androidx.tv.material3.Text
 import catalog.Entry
 import catalog.initialsOf
 import catalog.spelledCountOf
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -78,16 +81,16 @@ internal fun TvCourseList(
                         Box(modifier = Modifier.width(64.dp).aspectRatio(2f / 3f).background(MaterialTheme.colorScheme.surfaceVariant)) {
                             Text(
                                 text = initialsOf(course.name),
-                                style = TvTypeScale.title,
+                                style = CatalogueType.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.align(Alignment.Center),
                             )
                         }
                         Column {
-                            Text(text = course.name, style = TvTypeScale.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(text = course.name, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, lineHeight = 1.35.em), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 text = "${spelledCountOf(course.count, "lesson")} · ${spelledCountOf(course.chapters, "chapter")}",
-                                style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+                                style = CatalogueType.labelSmall.copy(fontSize = 13.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 2.dp),
                             )

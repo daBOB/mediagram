@@ -23,8 +23,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import data.PortraitRequestLog
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.Credit
 import model.TitleCredits
 import ui.tv.TvTextRow
@@ -143,13 +143,13 @@ private fun TvCrewLine(
     // director's Right otherwise climbed to Preload on the action row.
     val staysOnRight = Modifier.focusProperties { onExit = { if (requestedFocusDirection == FocusDirection.Right) cancelFocusChange() } }.focusGroup()
     FlowRow(modifier = Modifier.padding(bottom = Spacing.medium).then(staysOnRight), horizontalArrangement = Arrangement.spacedBy(CrewGap)) {
-        Text(text = if (crew.first().role == "Creator") "Created by" else "Directed by", style = TvTypeScale.body)
+        Text(text = if (crew.first().role == "Creator") "Created by" else "Directed by", style = CatalogueType.bodyLarge)
         crew.forEachIndexed { at, person ->
             key(person.personId) {
                 // The comma rides with the name before it, so a wrap never starts a line with one.
                 Row {
-                    TvTextRow(text = person.name, onClick = { onOpenPerson(person.personId) }, focusRequester = focus.takeIf { at == focused })
-                    if (at < crew.lastIndex) Text(text = ",", style = TvTypeScale.body)
+                    TvTextRow(text = person.name, onClick = { onOpenPerson(person.personId) }, focusRequester = focus.takeIf { at == focused }, style = CatalogueType.bodyLarge)
+                    if (at < crew.lastIndex) Text(text = ",", style = CatalogueType.bodyLarge)
                 }
             }
         }

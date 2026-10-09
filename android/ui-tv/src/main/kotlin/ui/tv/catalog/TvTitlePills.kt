@@ -23,6 +23,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -30,8 +31,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.SeriesResumePick
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.TvFocus
@@ -84,7 +85,7 @@ internal fun TvSpreadPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = PillHeight).padding(horizontal = Spacing.large), contentAlignment = Alignment.Center) {
-            Text(text = text, style = TvTypeScale.body.copy(color = content))
+            Text(text = text, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = content))
         }
     }
 }

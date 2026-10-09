@@ -16,14 +16,15 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.mediagram.android.core.designsystem.R
+import designsystem.CatalogueType
 import designsystem.Eyebrow
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import designsystem.StatusDot
-import designsystem.TvTypeScale
 import ui.common.settings.IndexStatus
 import ui.common.settings.SettingsSection
 import ui.tv.TvIndexRow
@@ -73,7 +74,7 @@ internal fun TvSettingsIndex(
     ) {
         Text(
             text = "SETTINGS",
-            style = Eyebrow.copy(fontSize = TvTypeScale.eyebrow),
+            style = Eyebrow,
             color = tones.quiet,
             modifier = Modifier.padding(start = Spacing.small, bottom = Spacing.large),
         )
@@ -111,6 +112,7 @@ private fun TvSettingsIndexRow(
         focusRequester = focusRequester,
         onSelect = { onEnterSection(section) },
         minHeight = 56.dp,
+        labelStyle = CatalogueType.titleSmall,
         status = status?.let { { TvSettingsIndexStatus(it) } },
         onFocusChanged = { state -> if (state.isFocused) onFocusSection(section) },
     )
@@ -130,7 +132,7 @@ private fun TvSettingsIndexStatus(status: IndexStatus) {
         }
         Text(
             text = status.text,
-            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+            style = CatalogueType.bodySmall.copy(fontSize = 12.sp),
             color = tones.quiet,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

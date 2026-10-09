@@ -2,7 +2,7 @@ package ui.tv.chrome
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -24,8 +24,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.profileInitial
-import designsystem.Spacing
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 import ui.tv.TvFocus
 import ui.tv.profile.TvChosenProfile
 
@@ -34,12 +33,13 @@ import ui.tv.profile.TvChosenProfile
  * accent ring only while focused; [active] fills it at ink@12% instead of
  * ringing it, the tablet's own `Pill` treatment (`ChromeControls.kt`), so a
  * chosen department still reads as chosen once the remote has moved on to
- * something else on the bar.
+ * something else on the bar. Set as the web's `.departments a` at a
+ * 960px window: Geist 500 at 14px, padded 10 by 12, at least 44 tall
+ * (`shell.css:39-50,181`).
  */
 @Composable
 internal fun TvPill(
     title: String,
-    count: Int?,
     active: Boolean,
     ink: Color,
     onClick: () -> Unit,
@@ -63,18 +63,11 @@ internal fun TvPill(
         border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier.heightIn(min = 44.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            count?.let {
-                Text(
-                    text = " $it",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = TvTypeScale.count),
-                    color = ink.copy(alpha = 0.4f),
-                )
-            }
+            Text(text = title, style = CatalogueType.labelLarge)
         }
     }
 }
@@ -118,15 +111,20 @@ internal fun TvRoundIconButton(
     }
 }
 
-/** The viewer as an initial in a circle — the bar's own `#who`, the tablet's [ui.chrome.ChromeAvatar] in tv-material. */
+/**
+ * The viewer as an initial in a circle — the bar's own `#who`, the tablet's
+ * [ui.chrome.ChromeAvatar] in tv-material. [onClick] opens the menu, which
+ * is where switching profile lives on television: see [TvDepartmentsBar].
+ */
 @Composable
 internal fun TvAvatar(
     profile: TvChosenProfile,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        onClick = profile.onChoose,
-        modifier = modifier.size(44.dp).semantics { contentDescription = "Who's watching: ${profile.name}" },
+        onClick = onClick,
+        modifier = modifier.size(44.dp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -140,7 +138,7 @@ internal fun TvAvatar(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-            Text(text = profileInitial(profile.name), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+            Text(text = profileInitial(profile.name), style = CatalogueType.labelLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.sp))
         }
     }
 }

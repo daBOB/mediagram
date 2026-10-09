@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.SetCard
 import catalog.spelledCountOf
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
 import model.ListOfSets
@@ -112,7 +113,7 @@ fun TvList(
         if (sets.isEmpty()) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
                 header()
-                TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large))
+                TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large), style = CatalogueType.bodyLarge)
             }
         } else {
             TvWall(

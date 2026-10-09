@@ -32,7 +32,6 @@ import catalog.profile.YOUR_PIN
 import catalog.profile.managingAs
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.Profile
 import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
@@ -161,9 +160,9 @@ private fun TvManagePage(
                 .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        Text(MANAGE_PROFILES, style = TvTypeScale.title)
-        Text(subheading, style = TvTypeScale.body, modifier = Modifier.padding(bottom = Spacing.small))
-        notice?.let { Text(it, style = TvTypeScale.body, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = Spacing.small)) }
+        Text(MANAGE_PROFILES, style = WhoHeading)
+        Text(subheading, style = WhoNote, modifier = Modifier.padding(bottom = Spacing.small))
+        notice?.let { Text(it, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = Spacing.small)) }
         content()
     }
 }

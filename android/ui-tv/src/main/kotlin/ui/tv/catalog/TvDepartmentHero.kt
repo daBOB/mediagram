@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Backdrop
+import designsystem.CatalogueType
+import designsystem.Eyebrow
 import designsystem.LocalBackdrop
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
@@ -111,7 +113,7 @@ internal fun TvDepartmentHero(
                     if (franchiseTitle) {
                         Text(
                             text = title.uppercase(),
-                            style = TvTypeScale.title.copy(fontSize = FranchiseTitleSize, lineHeight = 0.92.em),
+                            style = DisplayFace.copy(fontSize = TvTypeScale.FranchiseTitle, lineHeight = 0.92.em),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
@@ -120,13 +122,13 @@ internal fun TvDepartmentHero(
                     } else {
                         BasicText(
                             text = title.uppercase(),
-                            style = TvTypeScale.title.copy(color = MaterialTheme.colorScheme.onSurface),
-                            autoSize = TextAutoSize.StepBased(maxFontSize = HeroTitleSize),
+                            style = DisplayFace.copy(color = MaterialTheme.colorScheme.onSurface),
+                            autoSize = TextAutoSize.StepBased(maxFontSize = TvTypeScale.DepartmentTitle),
                             maxLines = 1,
                             modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
                         )
                     }
-                    Text(text = line, style = TvTypeScale.body, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
+                    Text(text = line, style = DeptLine, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
                     overview?.let { Box(modifier = Modifier.padding(top = Spacing.medium)) { it() } }
                 }
             },
@@ -158,14 +160,14 @@ private fun TvDeptQuote(
     Column(modifier = modifier.testTag(TvDepartmentHeroQuoteTestTag).padding(Spacing.medium)) {
         Text(
             text = "“$tagline”",
-            style = TvTypeScale.body.copy(fontStyle = FontStyle.Italic),
+            style = CatalogueType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 20.8.sp, lineHeight = 1.2.em),
             color = Color.White,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = "— ${leadName.uppercase()}",
-            style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+            style = Eyebrow.copy(letterSpacing = 0.28.em, lineHeight = 1.6.em),
             color = Color.White.copy(alpha = 0.75f),
             modifier = Modifier.padding(top = Spacing.small),
         )
@@ -185,11 +187,8 @@ private const val ArtWidthFraction = 0.7f
  */
 internal val TvDepartmentHeroHeight = 360.dp
 
-/** [DeptHeroText]'s own ceiling (`fluid(56f,0.085f,120f,width)`) evaluated at the department bar's fixed 960dp width, never read from a window television has no reason to resize. */
-private val HeroTitleSize = 81.6f.sp
-
-/** `.franchise-hero .dept-title`'s own `5.5vw` (`departments.css:108`) at television's fixed 960dp. */
-private val FranchiseTitleSize = 52.8.sp
+/** `.dept-line` (`departments.css:36`): Newsreader at 20px, figures tabular — the tablet's own. */
+private val DeptLine = CatalogueType.bodyLarge.copy(fontSize = 20.sp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
 
 /**
  * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap

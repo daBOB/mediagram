@@ -30,7 +30,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.clockTime
 
 /** Finds the seek bar in a test without depending on how it is drawn. */
@@ -122,7 +121,7 @@ internal fun TvSeekRow(
     up: FocusRequester? = null,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-        Text(text = clockTime(positionMs), style = TvTypeScale.body, color = Palette.Text)
+        Text(text = clockTime(positionMs), style = TvPlayerType.body, color = Palette.Text)
         TvSeekBar(
             positionMs = positionMs,
             durationMs = durationMs,
@@ -132,6 +131,6 @@ internal fun TvSeekRow(
             onFocusChanged = onFocusChanged,
             modifier = Modifier.weight(1f),
         )
-        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvTypeScale.body, color = Palette.Figures)
+        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvPlayerType.body, color = Palette.Figures)
     }
 }

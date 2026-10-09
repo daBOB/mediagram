@@ -15,14 +15,15 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Tab
 import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 
 /**
  * A title page's own tabs — Overview/Cast/Similar/Details on a film, Episodes/
@@ -97,7 +98,7 @@ internal fun TvSectionTabs(
                 ) {
                     Text(
                         text = title,
-                        style = TvTypeScale.body,
+                        style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.small),
                     )
                 }

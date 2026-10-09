@@ -22,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
@@ -29,12 +30,13 @@ import androidx.tv.material3.Text
 import catalog.Feature
 import catalog.label
 import coil3.compose.AsyncImage
+import designsystem.CatalogueType
 import designsystem.Eyebrow
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import java.io.File
 import model.Kind
 import ui.tv.TvFocus
+import ui.tv.catalog.DisplayFace
 import ui.tv.rememberStableRequester
 
 /** The first card's own height, full width — the phone's own two-tier shape (`home.css:342-344`) at TV's one width. */
@@ -129,13 +131,13 @@ private fun TvFeatureCard(
             Column(modifier = Modifier.align(Alignment.BottomStart).widthIn(max = 480.dp).padding(horizontal = Spacing.large, vertical = Spacing.medium)) {
                 Text(
                     text = feature.kind.label.uppercase(),
-                    style = Eyebrow.copy(fontSize = TvTypeScale.eyebrow),
+                    style = Eyebrow,
                     color = OnImage2,
                     modifier = Modifier.padding(bottom = Spacing.small),
                 )
                 Text(
                     text = if (secondCard) title else title.uppercase(),
-                    style = TvTypeScale.title.copy(fontSize = if (secondCard) 26.sp else 24.sp),
+                    style = DisplayFace.copy(fontSize = if (secondCard) 26.sp else 24.sp),
                     color = OnImage,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -144,7 +146,7 @@ private fun TvFeatureCard(
                 if (deck != null) {
                     Text(
                         text = deck,
-                        style = TvTypeScale.body,
+                        style = CatalogueType.bodyLarge.copy(fontSize = 16.sp, lineHeight = 1.4.em),
                         color = OnImage2,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

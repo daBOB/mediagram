@@ -14,8 +14,8 @@ import androidx.tv.material3.Text
 import catalog.profile.REMOVE
 import catalog.profile.RESET_PIN
 import catalog.profile.removeQuestion
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.KIDS_LIMITS
 import model.Profile
 import ui.tv.TvTextRow
@@ -103,5 +103,5 @@ private fun TvProfileActions(
                 TvTextRow(REMOVE, onClick = { removing = true }, modifier = Modifier.padding(top = Spacing.small))
             }
         },
-    ) { Button(onClick = onDismiss) { Text("Cancel", style = TvTypeScale.body) } }
+    ) { Button(onClick = onDismiss) { Text("Cancel", style = CatalogueType.labelLarge) } }
 }

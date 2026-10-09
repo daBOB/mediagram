@@ -21,12 +21,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import stats.HISTORY_HEADING
 import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
@@ -57,7 +60,7 @@ internal fun TvStatsPage(state: StatsUiState) {
         contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        item(key = "heading") { Text(text = STATS_HEADING, style = TvTypeScale.title) }
+        item(key = "heading") { Text(text = STATS_HEADING, style = ShelfHeadTitle) }
         when (state) {
             StatsUiState.Loading -> Unit
             is StatsUiState.Failed -> item(key = "failed") { TvQuietLine(state.text) }
@@ -69,8 +72,8 @@ internal fun TvStatsPage(state: StatsUiState) {
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
                                 for ((label, value) in state.totals) {
                                     Column {
-                                        Text(text = label, style = TvFocus.textStyle(TvTypeScale.body, focused))
-                                        Text(text = value, style = TvTypeScale.title)
+                                        Text(text = label, style = TvFocus.textStyle(CatalogueType.labelMedium, focused))
+                                        Text(text = value, style = StatsTotal)
                                     }
                                 }
                             }
@@ -82,20 +85,20 @@ internal fun TvStatsPage(state: StatsUiState) {
                 item(key = "chart") {
                     TvStatsStop { focused ->
                         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-                            Text(text = LAST_30_DAYS_HEADING, style = TvFocus.textStyle(TvTypeScale.body, focused))
+                            Text(text = LAST_30_DAYS_HEADING, style = TvFocus.textStyle(CatalogueType.titleMedium, focused))
                             StatsBars(
                                 bars = state.bars,
                                 color = MaterialTheme.colorScheme.primary,
-                                labelStyle = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, color = quiet),
+                                labelStyle = CatalogueType.labelSmall.copy(color = quiet),
                                 height = ChartHeight,
                             )
                         }
                     }
                 }
                 tvAchievementItems(state.achievements)
-                item(key = "history") { Text(text = HISTORY_HEADING, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small)) }
+                item(key = "history") { Text(text = HISTORY_HEADING, style = CatalogueType.titleMedium, modifier = Modifier.padding(top = Spacing.small)) }
                 items(items = state.history, key = { it.key }) { line ->
-                    TvStatsStop { focused -> Text(text = line.text, style = TvFocus.textStyle(TvTypeScale.body, focused)) }
+                    TvStatsStop { focused -> Text(text = line.text, style = TvFocus.textStyle(CatalogueType.bodyMedium, focused)) }
                 }
             }
         }
@@ -113,3 +116,6 @@ internal fun TvStatsStop(
         content(focused)
     }
 }
+
+/** `.stats-total dd` (`appearance.css:157`): Fraunces 600, `clamp(1.6rem, 3vw, 2.4rem)` at a 960px window. */
+private val StatsTotal = CatalogueType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 28.8.sp, lineHeight = 1.1.em, fontFeatureSettings = "tnum")

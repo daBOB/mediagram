@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.UpNextPhase
 import player.UpNextUiState
 
@@ -59,7 +58,7 @@ internal fun TvUpNextCard(
         // the controls along the bottom, and on a 540dp-high television a
         // heading-sized line more would reach the one or the other.
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            Text(text = "Up next", style = TvTypeScale.body, color = Palette.Figures)
+            Text(text = "Up next", style = TvPlayerType.body, color = Palette.Figures)
             Text(
                 text =
                     if (state.phase == UpNextPhase.COUNTING) {
@@ -67,22 +66,22 @@ internal fun TvUpNextCard(
                     } else {
                         "When this ends"
                     },
-                style = TvTypeScale.body,
+                style = TvPlayerType.body,
                 color = Palette.Text,
             )
         }
         if (state.titleLine.isNotEmpty()) {
-            Text(text = state.titleLine, style = TvTypeScale.body.copy(fontWeight = FontWeight.SemiBold), color = Palette.Text)
+            Text(text = state.titleLine, style = TvPlayerType.body.copy(fontWeight = FontWeight.SemiBold), color = Palette.Text)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
             TvOverlayButton(
                 text = "Play now",
-                style = TvTypeScale.body,
+                style = TvPlayerType.body,
                 enabled = true,
                 onClick = onPlayNow,
                 modifier = Modifier.focusRequester(playNow),
             )
-            TvOverlayButton(text = "Cancel", style = TvTypeScale.body, enabled = true, onClick = onCancel)
+            TvOverlayButton(text = "Cancel", style = TvPlayerType.body, enabled = true, onClick = onCancel)
         }
     }
 }

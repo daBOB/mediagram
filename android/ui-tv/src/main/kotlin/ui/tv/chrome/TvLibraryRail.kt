@@ -31,23 +31,23 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import catalog.ChromeCounts
+import designsystem.CatalogueType
 import designsystem.LocalCatalogueTones
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import stats.NEW_ACHIEVEMENT
 import ui.common.RailItem
 import ui.tv.TvIndexRow
 
-/** Collapsed: the web's own icons-only form of the rail, `shell.css:184-216`; open: the tablet's full rail. */
+/** Collapsed: the web's own icons-only form of the rail, `shell.css:184-216`; open: the web's own rail, `--rail-width: 14rem` (`theme.css:113`). */
 private val RailCollapsedWidth = 96.dp
-internal val RailOpenWidth = 288.dp
+internal val RailOpenWidth = 224.dp
 
 /** The rows drawn before System's own gap — [RailItem.SYSTEM] is added apart, after this list. */
 private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
 
-/** The wordmark's own size on a 288dp rail — narrower than [designsystem.TvTypeScale.title], the same lesson the tablet's own narrow rail already drew for the same reason: it wraps at that size in this little room. */
-private val TvWordmarkSize = 24.sp
+/** The web's `.brand`: Fraunces 600 at 1.7rem, tracked in (`shell.css:29-37`) — the tablet's own `Wordmark`. */
+private val TvWordmark = CatalogueType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.sp, letterSpacing = (-0.02).em)
 
 /**
  * Whether the chosen profile has earned something this device has not shown
@@ -116,7 +116,9 @@ internal fun TvLibraryRail(
         if (expanded) {
             Text(
                 text = "mediagram",
-                style = TvTypeScale.title.copy(fontSize = TvWordmarkSize, fontWeight = FontWeight.Medium),
+                style = TvWordmark,
+                maxLines = 1,
+                softWrap = false,
                 modifier = Modifier.padding(bottom = Spacing.large),
             )
         } else {
@@ -138,7 +140,7 @@ internal fun TvLibraryRail(
 
         if (expanded && tally.isNotEmpty()) {
             val tallyStyle =
-                TvTypeScale.body.copy(fontWeight = FontWeight.Medium, fontSize = TvTypeScale.eyebrow, letterSpacing = 0.34.em, lineHeight = 2.em)
+                CatalogueType.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.34.em, lineHeight = 2.em)
             Box(modifier = Modifier.padding(top = Spacing.large).fillMaxWidth().height(1.dp).background(tones.ruleSoft))
             Column(modifier = Modifier.padding(top = Spacing.large)) {
                 for (line in tally) {

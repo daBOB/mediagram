@@ -14,10 +14,10 @@ import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
 import designsystem.Accent
 import designsystem.Backdrop
+import designsystem.CatalogueType
 import designsystem.LocalBackdrop
 import designsystem.Overscan
 import designsystem.Palette
-import designsystem.TvTypeScale
 
 /**
  * Dark, always: a media library read from the couch is read in the dark,
@@ -70,24 +70,25 @@ internal fun tvColorScheme(accent: Color): ColorScheme =
     )
 
 /**
- * [TvTypeScale] set into every title/headline and body slot of tv-material's
- * `Typography`, so a shelf name reads at the same size regardless of which
- * slot a screen reaches for, and so does a sentence or a runtime figure.
- * Display and label slots are left at tv-material's own baseline: nothing
- * on this surface asks for either yet, and inventing a size nobody needs is
- * a second scale to keep in step with [TvTypeScale] for no reader.
+ * [CatalogueType]'s roles in the tv-material slots they are named for, as
+ * `designsystem`'s own `CatalogueTypography` sets them into M3's on the
+ * phone — so a tv-material component that reaches for a slot of its own (a
+ * `Button`'s label, a bare `Text`) draws the web's size, the same as every
+ * screen here that names its role directly. Display and headline slots
+ * above `headlineSmall` keep tv-material's baseline, as the phone's keep M3's.
  */
 private val TvTypography =
     Typography().copy(
-        headlineLarge = TvTypeScale.title,
-        headlineMedium = TvTypeScale.title,
-        headlineSmall = TvTypeScale.title,
-        titleLarge = TvTypeScale.title,
-        titleMedium = TvTypeScale.title,
-        titleSmall = TvTypeScale.title,
-        bodyLarge = TvTypeScale.body,
-        bodyMedium = TvTypeScale.body,
-        bodySmall = TvTypeScale.body,
+        headlineSmall = CatalogueType.headlineSmall,
+        titleLarge = CatalogueType.titleLarge,
+        titleMedium = CatalogueType.titleMedium,
+        titleSmall = CatalogueType.titleSmall,
+        bodyLarge = CatalogueType.bodyLarge,
+        bodyMedium = CatalogueType.bodyMedium,
+        bodySmall = CatalogueType.bodySmall,
+        labelLarge = CatalogueType.labelLarge,
+        labelMedium = CatalogueType.labelMedium,
+        labelSmall = CatalogueType.labelSmall,
     )
 
 /**

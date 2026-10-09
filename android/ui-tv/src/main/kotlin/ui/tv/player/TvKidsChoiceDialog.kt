@@ -10,8 +10,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.KIDS_CHOICES
 import player.PlayerMarksState
 import player.PlayerViewModel
@@ -52,7 +52,7 @@ internal fun TvKidsChoiceDialog(
                 }
             }
         },
-    ) { Button(onClick = onDismiss) { Text("Cancel", style = TvTypeScale.body) } }
+    ) { Button(onClick = onDismiss) { Text("Cancel", style = CatalogueType.labelLarge) } }
 }
 
 /** The Kids choice over the film while a title is open; its window's keys go to the player first, as the list dialog's do. */

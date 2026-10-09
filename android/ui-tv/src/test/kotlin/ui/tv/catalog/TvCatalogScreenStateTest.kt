@@ -73,19 +73,19 @@ class TvCatalogScreenStateTest {
         for (entry in listOf("Home", "Movies", "Tutorials", "Collections")) {
             compose.onAllNodesWithText(entry).fetchSemanticsNodes().let { assert(it.isNotEmpty()) { "missing $entry" } }
         }
-        compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertExists()
         compose.onNodeWithText("Continue").assertDoesNotExist()
         compose.onNodeWithText("My List").assertDoesNotExist()
     }
 
     @Test
-    fun choosingTheViewersAvatarReopensThePicker() {
-        var reopened = 0
-        show(ready(films(2)), onChoose = { reopened++ })
+    fun choosingTheViewersAvatarOpensTheMenuWhereSwitchingProfileLives() {
+        var opened = 0
+        show(ready(films(2)), onOpenMenu = { opened++ })
 
-        compose.onNodeWithContentDescription("Who's watching: Ada").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithContentDescription("Menu, watching as Ada").performSemanticsAction(SemanticsActions.OnClick)
 
-        assertEquals(1, reopened)
+        assertEquals(1, opened)
     }
 
     /** The magazine layout's own "Recently added" replaces the plain grid's "Latest films" on Home — see `TvHome`'s own doc. */
@@ -358,18 +358,18 @@ class TvCatalogScreenStateTest {
         for ((state, message) in messages) {
             show(state)
             compose.onNodeWithText(message).assertExists()
-            compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
+            compose.onNodeWithContentDescription("Menu, watching as Ada").assertExists()
             compose.onNodeWithText("Home").assertDoesNotExist()
             close()
         }
     }
 
-    /** Start over is behind ⋮, and a library that cannot be read is exactly when it is needed. */
+    /** Start over is behind the avatar's menu, and a library that cannot be read is exactly when it is needed. */
     @Test
     fun menuIsOfferedWithNoShelvesAndComingBackFromItLandsThere() {
         show(CatalogUiState.Failed("Could not reach the channel."), restoreKey = TvMenuEntryKey)
 
-        compose.onNodeWithContentDescription("Menu").assertIsFocused()
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
     }
 
     /**
@@ -452,7 +452,7 @@ class TvCatalogScreenStateTest {
 
     private fun show(
         state: CatalogUiState,
-        onChoose: () -> Unit = {},
+        onOpenMenu: () -> Unit = {},
         onOpenTitle: (String) -> Unit = {},
         onOpenCollection: (String) -> Unit = {},
         fetching: Boolean = false,
@@ -465,7 +465,8 @@ class TvCatalogScreenStateTest {
                 TvTheme {
                     TvCatalogScreen(
                         state = state,
-                        profile = TvChosenProfile(name = "Ada", onChoose = onChoose),
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenMenu = onOpenMenu,
                         onOpenTitle = onOpenTitle,
                         onOpenCollection = onOpenCollection,
                         onOpenList = {},

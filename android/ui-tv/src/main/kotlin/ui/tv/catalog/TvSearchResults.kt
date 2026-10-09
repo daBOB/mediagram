@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.unit.sp
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
 import data.PortraitRequestLog
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
 import model.WatchSnapshot
@@ -131,7 +133,7 @@ internal fun TvSearchResults(
                     contentType = { line -> if (line is SearchLine.Entries) line.layout else SearchLine.Heading::class },
                 ) { line ->
                     when (line) {
-                        is SearchLine.Heading -> TvSectionHeading(line.title, modifier = Modifier.padding(top = Spacing.small))
+                        is SearchLine.Heading -> TvSectionHeading(line.title, modifier = Modifier.padding(top = Spacing.small), style = ShelfSub)
                         is SearchLine.Entries ->
                             SearchEntryLine(line) { at, modifier ->
                                 val entry = entries[at]
@@ -201,7 +203,7 @@ private fun TvSearchFilterChips(
     ) {
         for ((kind, count) in filters) {
             val marker = if (kind == selected) "●" else "○"
-            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) })
+            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) }, style = CatalogueType.bodyMedium.copy(fontSize = 14.sp))
         }
     }
 }

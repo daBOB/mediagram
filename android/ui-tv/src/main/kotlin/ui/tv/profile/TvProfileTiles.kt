@@ -18,17 +18,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.initialsOf
 import catalog.profile.kidsTag
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.Profile
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
@@ -77,10 +80,10 @@ internal fun TvProfileTile(
         // second surface never reimplements what one function already
         // covers. The two only ever visibly differ on a two-word name.
         TvProfileAvatar(letters = initialsOf(profile.name))
-        Text(profile.name, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
+        Text(profile.name, style = CatalogueType.bodyMedium.copy(fontSize = 14.sp), modifier = Modifier.padding(top = Spacing.small))
         // The web's tile line: a kid's own limit, never a fixed one.
         profile.kidsTag?.let {
-            Text(it, style = TvTypeScale.body, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = Spacing.extraSmall))
+            Text(it, style = CatalogueType.bodyMedium.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(top = Spacing.extraSmall))
         }
     }
 }
@@ -133,6 +136,12 @@ private fun TvProfileAvatar(letters: String) {
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        Text(letters, style = TvTypeScale.title, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(letters, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 32.sp, lineHeight = 1.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
+
+/** `.who-card h1` (`library-controls.css:4`): Geist 600, `clamp(1.75rem, 4vw, 2.5rem)` at a 960px window — Who's watching and Manage profiles. */
+internal val WhoHeading = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 38.4.sp, lineHeight = 1.2.em, letterSpacing = (-0.035).em)
+
+/** `.who-note` (`library-controls.css:17`): what the picker and its PIN say beside the tiles. */
+internal val WhoNote = CatalogueType.bodyMedium.copy(fontSize = 14.sp)

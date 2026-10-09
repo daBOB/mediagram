@@ -19,19 +19,25 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.TvTypeScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import ui.tv.catalog.RowHead
 
 /**
  * A magazine band's own heading: its name, an optional count, "See all" at
  * the far end — the television twin of the phone's `BandHeading`
  * (`ContinueBand.kt`). Unlike [ui.tv.catalog.TvCountedHeading] (every plain
  * wall's own, mandatory total), [count] here is nullable: Home's own
- * Continue Watching band carries none, the same as the phone's.
+ * Continue Watching band carries none, the same as the phone's. [style] is
+ * the web's `.row-head h2`; a wall's own sections pass `.shelf-sub` instead.
+ * The count is the web's `.row-head .count`, 13px and regular weight.
  */
 @Composable
 internal fun TvBandHeading(
     title: String,
     count: Int?,
+    style: TextStyle = RowHead,
     trailing: @Composable () -> Unit = {},
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
@@ -39,9 +45,9 @@ internal fun TvBandHeading(
             text =
                 buildAnnotatedString {
                     append(title)
-                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) { append(" · $count") }
+                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, fontWeight = FontWeight.Normal)) { append(" · $count") }
                 },
-            style = TvTypeScale.title,
+            style = style,
         )
         trailing()
     }

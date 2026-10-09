@@ -16,7 +16,6 @@ import androidx.media3.common.Player
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import playback.PlaybackTotals
 import ui.common.player.SCRIM_ALPHA
 import ui.common.player.playbackStats
@@ -60,7 +59,7 @@ internal fun TvStatsOverlay(
     }
 }
 
-private val Mono = TvTypeScale.body.copy(fontFamily = FontFamily.Monospace)
+private val Mono = TvPlayerType.body.copy(fontFamily = FontFamily.Monospace)
 
 /** Wide enough for `dropped`, the longest label, at the television's reading size, so every value starts at the same x. */
 private val LabelWidth = 88.dp

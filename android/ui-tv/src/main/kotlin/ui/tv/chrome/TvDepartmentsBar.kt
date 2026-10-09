@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,18 +32,19 @@ import designsystem.Overscan
 import designsystem.Spacing
 import ui.tv.profile.TvChosenProfile
 
-/** One pill's own title and count, bundled so a caller cannot hand [TvPill] one out of step with the other. */
-internal data class TvDepartmentPill(val title: String, val count: Int?)
-
 /** The bar's own ink over a hero, while [blend] is below `1f`. */
 private val TvOverCoverInk = Color(0xFFF6F2EA)
 
 /**
  * The departments pill bar across the top of [TvLibraryChrome]: Home, the
- * shelves, Collections — [pills], the web's `nav.departments` in this
- * catalogue's ten-foot form — then search, the viewer's own avatar and the
- * trimmed menu's ⋮. The tablet's own `DepartmentsBar`
- * (`ui-mobile/.../ChromeControls.kt`) in tv-material: [blend] runs from
+ * shelves, Collections — [pills], the web's `nav.departments` at the web's
+ * own sizes, without the counts the web sets beside them (the rail's footer
+ * carries the totals) — then search and the viewer's own avatar, which
+ * opens [onMenu]: the trimmed menu, with the profile switch in it, where the
+ * tablet has a ⋮ beside the avatar. Both are this television's own, written
+ * down in `docs/system-architecture.md`; without them seven departments,
+ * search, the avatar and ⋮ ran past the box's 960dp. The tablet's own
+ * `DepartmentsBar` (`ui-mobile/.../ChromeControls.kt`) in tv-material: [blend] runs from
  * translucent over a hero (`0f`) to opaque (`1f`), and comes from
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
  * under the bar, every other tab draws it opaque.
@@ -58,14 +61,18 @@ private val TvOverCoverInk = Color(0xFFF6F2EA)
  * draw modifiers are, so a caller that set it only here would find Down
  * doing nothing from any actual pill.
  *
- * [selectedPillFocus], [searchFocus] and [menuFocus] are how a caller sends
+ * Should the pills still run past the row — a longer department name, a
+ * larger font scale — the row scrolls, and [fadeClippedEdges] fades only an
+ * end that clips something, so a cut pill reads as more to come.
+ *
+ * [selectedPillFocus], [searchFocus] and [avatarFocus] are how a caller sends
  * the remote back to one specific control here — a restore key naming
  * "search was opened from here", or simply "whichever pill is current" —
  * the same reason [TvIndexRow] takes one for a rail row.
  */
 @Composable
 internal fun TvDepartmentsBar(
-    pills: List<TvDepartmentPill>,
+    pills: List<String>,
     selected: Int,
     onSelect: (Int) -> Unit,
     onSearch: () -> Unit,
@@ -74,7 +81,6 @@ internal fun TvDepartmentsBar(
     downTarget: FocusRequester,
     selectedPillFocus: FocusRequester,
     searchFocus: FocusRequester,
-    menuFocus: FocusRequester,
     avatarFocus: FocusRequester,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
@@ -87,7 +93,7 @@ internal fun TvDepartmentsBar(
     // Each pill's own requester, held here rather than inside the pill so Search can name the last one.
     val pillRequesters = remember { HashMap<String, FocusRequester>() }
 
-    fun requesterOf(index: Int): FocusRequester = if (index == selected) selectedPillFocus else pillRequesters.getOrPut(pills[index].title) { FocusRequester() }
+    fun requesterOf(index: Int): FocusRequester = if (index == selected) selectedPillFocus else pillRequesters.getOrPut(pills[index]) { FocusRequester() }
 
     Row(
         modifier =
@@ -100,20 +106,24 @@ internal fun TvDepartmentsBar(
     ) {
         val scrollWidth = Modifier.weight(1f, fill = false)
         // A focused pill grows past its own bounds and the scroll clips at its
-        // edges, so the pill it brings into view keeps [PillRingRoom] clear on
-        // both sides, and the row's ends are padded by the same so the first
-        // and last pill can reach it. The start padding above gives that room
-        // back, so the pills sit where they did.
-        CompositionLocalProvider(LocalBringIntoViewSpec provides rememberRoomOnBothSides(PillRingRoom)) {
+        // edges, so the row's ends are padded by [PillRingRoom] for the first
+        // and last pill's ring; the start padding above gives that room back,
+        // so the pills sit where they did. Padded above and below by the same,
+        // too: the fade's offscreen layer clips to the row, where the scroll
+        // alone let the ring spill over. A pill the row scrolls to between
+        // its ends stops [EdgeFadeWidth] clear, out of the fade.
+        val scroll = rememberScrollState()
+        val fades by remember(scroll) { derivedStateOf { EdgeFades(start = scroll.canScrollBackward, end = scroll.canScrollForward) } }
+        CompositionLocalProvider(LocalBringIntoViewSpec provides rememberRoomOnBothSides(EdgeFadeWidth)) {
         Row(
-            modifier = scrollWidth.horizontalScroll(rememberScrollState()).padding(horizontal = PillRingRoom),
+            modifier = scrollWidth.fadeClippedEdges(fades).horizontalScroll(scroll).padding(PillRingRoom),
             horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
         ) {
             pills.forEachIndexed { index, pill ->
-                key(pill.title) {
+                key(pill) {
                     // One requester on every pill, every recomposition: [ui.tv.rememberStableRequester]'s KDoc says why.
                     val pillModifier = downModifier.focusRequester(requesterOf(index))
-                    TvPill(title = pill.title, count = pill.count, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
+                    TvPill(title = pill, active = index == selected, ink = ink, onClick = { onSelect(index) }, modifier = pillModifier)
                 }
             }
         }
@@ -133,19 +143,15 @@ internal fun TvDepartmentsBar(
                             if (lastPill >= 0) left = requesterOf(lastPill)
                         }.focusRequester(searchFocus),
             )
-            TvAvatar(profile = profile, modifier = downModifier.focusRequester(avatarFocus))
-            TvRoundIconButton(
-                icon = painterResource(R.drawable.core_designsystem_ic_menu_more), description = "Menu", ink = ink, onClick = onMenu,
-                modifier = downModifier.focusRequester(menuFocus),
-            )
+            TvAvatar(profile = profile, onClick = onMenu, modifier = downModifier.focusRequester(avatarFocus))
         }
     }
 }
 
 /**
- * Clear room kept beside a focused pill: its [ui.tv.TvFocus.Scale] growth,
- * 4% of its width on each side, is under 8 dp for the widest pill at the
- * box's density.
+ * Clear room kept at the row's ends for a focused pill's [ui.tv.TvFocus.Scale]
+ * growth, 4% of its width on each side — under 8 dp for the widest pill at
+ * the box's density.
  */
 private val PillRingRoom = Spacing.small
 

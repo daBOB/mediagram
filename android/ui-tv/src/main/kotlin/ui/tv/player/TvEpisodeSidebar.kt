@@ -28,7 +28,6 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.EpisodeList
 import ui.common.player.playerCard
 
@@ -90,7 +89,7 @@ internal fun TvEpisodeSidebar(
             }
             Text(
                 text = section.title,
-                style = TvTypeScale.body,
+                style = TvPlayerType.body,
                 color = Palette.Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

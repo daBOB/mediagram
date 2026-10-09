@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import kotlinx.coroutines.delay
 import ui.common.player.SCRIM_ALPHA
 
@@ -47,7 +46,7 @@ internal fun TvActionNotice(
     }
     Text(
         text = notice,
-        style = TvTypeScale.body,
+        style = TvPlayerType.body,
         color = Palette.Text,
         modifier =
             modifier

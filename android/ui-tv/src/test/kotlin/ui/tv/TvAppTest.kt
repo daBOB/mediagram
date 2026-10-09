@@ -69,7 +69,7 @@ class TvAppTest {
             sets = films(1),
         )
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Home").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithContentDescription("Who's watching: Ada").assertExists()
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertExists()
         compose.onNodeWithText("Film 0").assertExists()
     }
 

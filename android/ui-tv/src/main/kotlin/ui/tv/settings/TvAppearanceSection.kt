@@ -18,15 +18,17 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.Backdrop
+import designsystem.CatalogueType
 import designsystem.Palette
+import designsystem.SectionHead
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -59,7 +61,7 @@ internal fun TvAppearanceSection(
     LaunchedEffect(focusInContent) { if (focusInContent) entryFocusRequester.requestFocus() }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-            Text(text = "Accent colour", style = TvTypeScale.title)
+            Text(text = "Accent colour", style = SectionHead)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
                 Accent.entries.forEachIndexed { index, entry ->
                     TvAccentSwatch(
@@ -72,7 +74,7 @@ internal fun TvAppearanceSection(
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
-            Text(text = "Artwork", style = TvTypeScale.title)
+            Text(text = "Artwork", style = SectionHead)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
                 for (entry in Backdrop.entries) {
                     // Shares the row rather than a fixed card width: the content
@@ -116,7 +118,7 @@ private fun TvAccentSwatch(
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
         ) {}
-        Text(text = label, style = TvTypeScale.body)
+        Text(text = label, style = CatalogueType.bodySmall.copy(fontSize = 12.sp))
     }
 }
 
@@ -145,8 +147,8 @@ private fun TvArtworkSwatch(
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
         ) {}
-        Text(text = backdrop.label, style = TvTypeScale.body)
-        Text(text = backdrop.note, style = TvTypeScale.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = backdrop.label, style = CatalogueType.labelLarge)
+        Text(text = backdrop.note, style = CatalogueType.bodySmall.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

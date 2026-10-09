@@ -19,6 +19,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.coverFactsLine
 import designsystem.Backdrop
+import designsystem.CatalogueType
 import designsystem.CoverTitle
 import designsystem.Eyebrow
 import designsystem.LocalBackdrop
@@ -87,14 +88,14 @@ internal fun TvCoverSlide(
             val genre = set.genres.firstOrNull()
             Text(
                 text = listOfNotNull("Featured today", genre).joinToString(" · ").uppercase(),
-                style = Eyebrow.copy(fontSize = TvTypeScale.eyebrow),
+                style = Eyebrow,
                 color = OnImage2,
                 modifier = Modifier.padding(bottom = Spacing.medium),
             )
             val long = set.title.length > LONG_TITLE
             Text(
                 text = set.title.uppercase(),
-                style = CoverTitle.copy(fontSize = if (long) 42.sp else 61.sp, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight),
+                style = CoverTitle.copy(fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight),
                 color = OnImage,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -102,7 +103,7 @@ internal fun TvCoverSlide(
             set.tagline?.takeIf(String::isNotEmpty)?.let { tagline ->
                 Text(
                     text = tagline,
-                    style = TvTypeScale.body,
+                    style = CatalogueType.bodyLarge.copy(fontSize = 17.6.sp, lineHeight = 1.4.em),
                     color = OnImage2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -112,7 +113,7 @@ internal fun TvCoverSlide(
             coverFactsLine(set)?.let { meta ->
                 Text(
                     text = meta,
-                    style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow),
+                    style = CatalogueType.labelSmall.copy(fontSize = 13.sp, letterSpacing = 0.06.em),
                     color = OnImage2,
                     modifier = Modifier.padding(top = Spacing.small),
                 )

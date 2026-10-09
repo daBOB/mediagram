@@ -52,10 +52,7 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun leftFromSearchReachesTheLastPillScrolledOutOfView() {
-        val pills =
-            listOf("Home" to null, "Movies" to 1243, "Series" to 318, "Anime" to 52, "Documentaries" to 67, "Tutorials" to 12, "Collections" to 109)
-                .map { (title, count) -> TvDepartmentPill(title, count) }
-        show { chrome(pills, selectedPill = 0) { Spacer(Modifier.height(200.dp)) } }
+        show { chrome(OverflowingPills, selectedPill = 0) { Spacer(Modifier.height(200.dp)) } }
         val search = compose.onNodeWithContentDescription("Search")
         search.performSemanticsAction(SemanticsActions.RequestFocus)
         val collections = compose.onNodeWithText("Collections")
@@ -79,10 +76,7 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun theLastPillKeepsRoomForItsRingBeforeSearch() {
-        val pills =
-            listOf("Home" to null, "Movies" to 1243, "Series" to 318, "Anime" to 52, "Documentaries" to 67, "Tutorials" to 12, "Collections" to 109)
-                .map { (title, count) -> TvDepartmentPill(title, count) }
-        show { chrome(pills, selectedPill = 0) { Spacer(Modifier.height(200.dp)) } }
+        show { chrome(OverflowingPills, selectedPill = 0) { Spacer(Modifier.height(200.dp)) } }
         val search = compose.onNodeWithContentDescription("Search")
         search.performSemanticsAction(SemanticsActions.RequestFocus)
         search.performKeyInput { pressKey(Key.DirectionLeft) }
@@ -98,7 +92,7 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
     fun upPastThePagesTopRowReachesTheSelectedPill() {
         val last = FocusRequester()
         show {
-            chrome(listOf(TvDepartmentPill("Home", null), TvDepartmentPill("Movies", 3), TvDepartmentPill("Series", 2)), selectedPill = 2) {
+            chrome(listOf("Home", "Movies", "Series"), selectedPill = 2) {
                 LazyColumn {
                     // A hero with nothing to focus, as every department page opens with.
                     item { Spacer(Modifier.height(200.dp)) }
@@ -123,7 +117,7 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
 
     @Composable
     private fun chrome(
-        pills: List<TvDepartmentPill>,
+        pills: List<String>,
         selectedPill: Int,
         content: @Composable () -> Unit,
     ) = TvLibraryChrome(
@@ -140,4 +134,15 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
         focus = rememberTvChromeFocus(),
         content = content,
     )
+
+    private companion object {
+        /**
+         * Seven departments at the box's width overflowed the row while the
+         * pills carried counts; at the web's sizes and with none, they fit,
+         * so these two tests name the departments long enough to overflow
+         * still — what they guard is the scrolled row, not the box's titles.
+         */
+        val OverflowingPills =
+            listOf("Home", "Movies and more", "Series to watch", "Anime", "Documentaries", "Tutorials and courses", "Collections")
+    }
 }

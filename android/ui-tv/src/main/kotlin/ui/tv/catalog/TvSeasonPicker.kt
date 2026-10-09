@@ -91,7 +91,6 @@ internal fun TvSeasonPicker(
             key(division.title) {
                 TvPill(
                     title = seasonOptionOf(division),
-                    count = null,
                     active = division == shown,
                     ink = MaterialTheme.colorScheme.onSurface,
                     onClick = { onSelect(division.title) },

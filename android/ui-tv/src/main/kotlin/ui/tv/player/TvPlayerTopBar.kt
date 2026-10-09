@@ -14,7 +14,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.MediaSet
 import player.PlayerMarksState
 import player.technicalLine
@@ -46,10 +45,10 @@ internal fun TvPlayerTopBar(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.medium), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
             set?.takeIf { titleShown }?.let {
-                Text(text = titleLine(it), style = TvTypeScale.title, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
+                Text(text = titleLine(it), style = TvPlayerType.title, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
                 // As stored, not shouted: the web prints the container and codecs in the case the index recorded them.
                 technicalLine(it).takeIf(String::isNotEmpty)?.let { line ->
-                    Text(text = line, style = TvTypeScale.body, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = line, style = TvPlayerType.body, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -57,7 +56,7 @@ internal fun TvPlayerTopBar(
         onToggleNotes?.let { toggle ->
             TvOverlayButton(
                 text = "Notes",
-                style = TvTypeScale.body,
+                style = TvPlayerType.body,
                 enabled = true,
                 onClick = toggle,
                 modifier =

@@ -13,8 +13,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.tv.material3.Text
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 
 /**
  * One focusable text row for every TV screen that needs a menu line rather
@@ -24,7 +25,9 @@ import designsystem.TvTypeScale
  * the same reason [TvFocus] itself exists for cards. Layout is entirely the
  * caller's: [modifier] carries whatever width, padding and tag each row
  * needs, since those differ by where the row sits, and this only owns the
- * focus and click behaviour common to all of them.
+ * focus and click behaviour common to all of them. [style] is the web's
+ * list-row title (`.row .title b`, 15px) unless the line stands for
+ * something the web sets smaller — "See all", "Details".
  *
  * A row that is not [enabled] is drawn faint and ignores a press, but the
  * remote can still land on it: a row that stopped being focusable the
@@ -39,6 +42,7 @@ internal fun TvTextRow(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
     enabled: Boolean = true,
+    style: TextStyle = CatalogueType.bodyMedium,
 ) {
     // Read from the focus state itself rather than from the click's
     // interaction stream: a row focused in the same moment a centre press
@@ -48,7 +52,7 @@ internal fun TvTextRow(
 
     Text(
         text = text,
-        style = TvFocus.textStyle(TvTypeScale.body, focused),
+        style = TvFocus.textStyle(style, focused),
         modifier =
             modifier
                 .focusRequester(rememberStableRequester(focusRequester))

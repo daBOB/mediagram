@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -25,7 +26,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 import java.io.File
 import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
@@ -80,9 +81,9 @@ internal fun TvArtTile(
                     text = if (destination) name.uppercase() else name,
                     style =
                         if (destination) {
-                            TvTypeScale.title.copy(fontSize = 28.sp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
+                            CatalogueType.headlineSmall.copy(fontSize = 22.4.sp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
                         } else {
-                            TvTypeScale.title.copy(fontSize = 24.sp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
+                            CatalogueType.headlineSmall.copy(fontSize = 21.6.sp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
                         },
                     color = ink,
                     maxLines = if (destination) 3 else 2,
@@ -90,7 +91,7 @@ internal fun TvArtTile(
                 )
                 Text(
                     text = meta,
-                    style = TvTypeScale.body.copy(fontSize = TvTypeScale.eyebrow, letterSpacing = if (destination) 0.em else 0.08.em),
+                    style = if (destination) CatalogueType.labelMedium else CatalogueType.labelMedium.copy(fontSize = 12.sp, letterSpacing = 0.08.em),
                     color = ink.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = if (destination) 6.dp else 4.dp),
                 )
@@ -136,7 +137,7 @@ internal fun TvPagePill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = 52.dp).padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
-            Text(text = text, style = TvTypeScale.body)
+            Text(text = text, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium))
         }
     }
 }

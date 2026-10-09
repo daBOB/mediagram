@@ -24,9 +24,9 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.ListOfSets
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvListNameQuestion
@@ -77,10 +77,10 @@ internal fun TvAddToListDialog(
         initialFocus = first,
         content = {
             notice?.let {
-                Text(it, style = TvTypeScale.body, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.medium))
+                Text(it, style = CatalogueType.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.medium))
             }
             if (lists.isEmpty()) {
-                Text("No lists yet.", style = TvTypeScale.body, color = Palette.Figures, modifier = Modifier.padding(top = Spacing.medium))
+                Text("No lists yet.", style = CatalogueType.bodyMedium, color = Palette.Figures, modifier = Modifier.padding(top = Spacing.medium))
             }
             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = ListsHeight).padding(top = Spacing.medium)) {
                 itemsIndexed(items = lists, key = { _, list -> list.id }) { index, list ->
@@ -101,7 +101,7 @@ internal fun TvAddToListDialog(
             )
         },
     ) {
-        Button(onClick = onDismiss) { Text("Done", style = TvTypeScale.body) }
+        Button(onClick = onDismiss) { Text("Done", style = CatalogueType.labelLarge) }
     }
 }
 

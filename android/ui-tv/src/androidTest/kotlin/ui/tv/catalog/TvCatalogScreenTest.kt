@@ -110,7 +110,7 @@ class TvCatalogScreenTest {
     fun theAvatarShowsTheViewersInitial() {
         show(films(2), profileName = "andre")
 
-        compose.onNodeWithContentDescription("Who's watching: andre").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Menu, watching as andre").assertIsDisplayed()
     }
 
     /**

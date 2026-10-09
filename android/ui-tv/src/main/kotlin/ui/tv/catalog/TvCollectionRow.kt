@@ -20,7 +20,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CollectionRow
 import catalog.watchedFractionOf
-import designsystem.TvTypeScale
+import designsystem.CatalogueType
 import model.Kind
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
@@ -42,7 +42,7 @@ internal fun TvCollectionRow(
     modifier: Modifier = Modifier,
 ) {
     when (row) {
-        is CollectionRow.Heading -> TvSectionHeading(row.title, modifier.padding(start = indentOf(row.depth)))
+        is CollectionRow.Heading -> TvSectionHeading(row.title, modifier.padding(start = indentOf(row.depth)), if (row.depth == 0) TopSeasonHeading else SeasonHeading)
         is CollectionRow.Item ->
             ItemRow(
                 row = row,
@@ -109,7 +109,7 @@ private fun DocumentRow(
     ) {
         Text(
             text = text,
-            style = TvFocus.textStyle(TvTypeScale.body.copy(color = MaterialTheme.colorScheme.onSurfaceVariant), focused),
+            style = TvFocus.textStyle(CatalogueType.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant), focused),
         )
         TvQuietLine(DocumentReason)
     }

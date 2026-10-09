@@ -69,7 +69,7 @@ internal fun TvHomeCover(
     // its outer list has confirmed the cover is really composed, not this
     // composable's to decide on its own mount (a real regression once it
     // was: a request fired the instant this mounted, racing a sentinel
-    // elsewhere handing the remote to Search or the bar's own ⋮ instead).
+    // elsewhere handing the remote to Search or the bar's avatar instead).
     arrivalFocus: FocusRequester,
     // Where Up from the action row leads once it runs out of the cover's
     // own subtree to search — the bar's own selected pill, the same stop

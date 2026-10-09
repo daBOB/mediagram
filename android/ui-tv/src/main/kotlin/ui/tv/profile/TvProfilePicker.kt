@@ -35,7 +35,6 @@ import catalog.profile.ProfileUiState
 import catalog.profile.WAITING_FOR_HOUSEHOLD
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvTextRow
 import ui.tv.setup.TvLoadingIndicator
 
@@ -133,12 +132,12 @@ private fun TvPickerBody(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(HEADING, style = TvTypeScale.title, modifier = side)
+        Text(HEADING, style = WhoHeading, modifier = side)
         if (error != null) {
-            Text(error, style = TvTypeScale.body, color = MaterialTheme.colorScheme.error, modifier = side.padding(top = Spacing.small))
+            Text(error, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = side.padding(top = Spacing.small))
             tryAgain()
         }
-        state.notice?.let { Text(it, style = TvTypeScale.body, color = MaterialTheme.colorScheme.error, modifier = side.padding(top = Spacing.small)) }
+        state.notice?.let { Text(it, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = side.padding(top = Spacing.small)) }
         // A failed load says nothing of whether a household exists, so
         // neither question is asked over one.
         if (error == null && state.needsFirstProfile) {
@@ -146,7 +145,7 @@ private fun TvPickerBody(
         }
         // No first profile until a sync round has landed; look again meanwhile.
         if (error == null && state.awaitingHousehold) {
-            Text(WAITING_FOR_HOUSEHOLD, style = TvTypeScale.body, modifier = side.padding(top = Spacing.medium))
+            Text(WAITING_FOR_HOUSEHOLD, style = WhoNote, modifier = side.padding(top = Spacing.medium))
             tryAgain()
         }
         if (error == null && state.needsAdmin) TvAdminQuestion(state.grownUps, actions.onClaim, focus, requester)
@@ -189,7 +188,7 @@ private fun TvPickerBody(
         }
         Text(
             PICKER_NOTE,
-            style = TvTypeScale.body,
+            style = WhoNote,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = NoteMaxWidth).then(side).padding(top = Spacing.large),
         )

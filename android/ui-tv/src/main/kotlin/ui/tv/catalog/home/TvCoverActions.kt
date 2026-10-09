@@ -20,12 +20,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
 
@@ -87,7 +89,7 @@ internal fun TvCoverActions(
             onClick = { onToggleWatchlist(!watchlisted) },
             modifier = up,
         )
-        TvTextRow(text = "Details", onClick = onDetails, modifier = up)
+        TvTextRow(text = "Details", onClick = onDetails, modifier = up, style = CatalogueType.bodyMedium.copy(fontSize = 14.sp))
         if (dotCount > 1) {
             Row(modifier = Modifier.padding(start = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 for (index in 0 until dotCount) {
@@ -125,7 +127,7 @@ private fun TvCoverPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small)) {
-            Text(text = text, style = TvTypeScale.body.copy(color = ink))
+            Text(text = text, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = ink))
         }
     }
 }

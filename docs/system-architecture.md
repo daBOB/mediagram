@@ -888,9 +888,22 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   tally) the rest of the time, matching the box's own launcher.
 - **Continue, My List, Latest, Genres, Settings and System live on the rail,
   not the departments bar.** The web's own side rail carries the same six as utilities;
-  the bar mirrors only its `nav.departments` row (Home, the shelves, Collections). The
-  ⋮ menu keeps just the phone's three Android-only actions (Update library, TMDB key…,
-  Start over) plus Preloads.
+  the bar mirrors only its `nav.departments` row (Home, the shelves, Collections).
+- **The avatar opens the menu; there is no ⋮.** The menu page offers Switch profile
+  (the avatar's own job on the web and the tablet), then the phone's three
+  Android-only actions (Update library, TMDB key…, Start over) plus Preloads. Seven
+  departments, search, the avatar and ⋮ ran past the box's 960dp even at the web's
+  sizes, and the web itself overflows at a window that narrow (user decision,
+  2026-10-09).
+- **Department pills carry no counts.** "Movies", not "Movies 1143": the counts were
+  the rest of what the bar could not fit, and the rail's foot still carries the
+  library's totals (user decision, 2026-10-09). A row that still overflows (a longer
+  name, a larger font scale) scrolls and fades only the end it clips.
+- **Display titles at the desktop's proportions.** Text reads the web at a 960px
+  window, px as sp, never under 11sp; the department, cover, spread and shelf-head
+  titles take the web's 1920px size halved (60/56/46/28.8sp) rather than its own
+  960px clamp, which stood a department title 12% of the screen high against the
+  desktop's 8% (user decision, 2026-10-09; DESIGN.md's Television Rule).
 - **Pressing a department pill keeps the remote on the pill.** The page swaps and shows
   from its own top; Down is what steps the remote into it. Jumping straight to a plate
   the instant a pill is pressed would scroll a department's own hero away before a

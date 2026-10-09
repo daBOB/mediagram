@@ -17,10 +17,10 @@ import ui.tv.system.menuRestoreKey
 /** The catalogue's restore key for "search was opened from the departments bar" — no plate, row or list is ever keyed by it. */
 internal const val TvSearchEntryKey = "masthead:search"
 
-/** The catalogue's restore key for "the trimmed menu page was opened from the bar's own ⋮" — [TvSearchEntryKey]'s counterpart. */
+/** The catalogue's restore key for "the trimmed menu page was opened from the bar's avatar" — [TvSearchEntryKey]'s counterpart. */
 internal const val TvMenuEntryKey = "masthead:menu"
 
-/** The catalogue's restore key for "Who's watching was opened from the bar's avatar" — "Stay as I am" hands the remote back to it. */
+/** The catalogue's restore key for "Who's watching was opened from the avatar's menu" — "Stay as I am" hands the remote back to the avatar. */
 internal const val TvProfileEntryKey = "masthead:profile"
 
 /** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
@@ -112,19 +112,19 @@ internal fun rememberTvCatalogRestore(
     val takesArrivalFocus = wallKey != null || (!pillPressed && !redirectsFocus)
 
     // With no wall below to take focus, the bar is the one thing on
-    // screen the remote can rest on.
-    LaunchedEffect(!ready) { if (!ready) chromeFocus.menuButtonFocus.requestFocus() }
+    // screen the remote can rest on: the avatar, which holds the menu.
+    LaunchedEffect(!ready) { if (!ready) chromeFocus.avatarFocus.requestFocus() }
     LaunchedEffect(backFromSearch, ready) {
         if (backFromSearch && ready) {
             chromeFocus.searchFocus.requestFocus()
             onEntryRestored()
         }
     }
-    // After the effect above that sends an empty catalogue's remote to the
-    // bar, so ⋮ is where it rests rather than the viewer's own avatar.
+    // Back from the menu lands on the avatar that opened it, catalogue
+    // ready or not.
     LaunchedEffect(backFromMenu) {
         if (backFromMenu) {
-            chromeFocus.menuButtonFocus.requestFocus()
+            chromeFocus.avatarFocus.requestFocus()
             onEntryRestored()
         }
     }

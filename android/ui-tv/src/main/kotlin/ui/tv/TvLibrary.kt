@@ -26,6 +26,7 @@ import ui.common.resolve
 import ui.common.settings.SettingsOutcomes
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvMenuEntryKey
+import ui.tv.catalog.TvProfileEntryKey
 import ui.tv.profile.TvChosenProfile
 import ui.tv.system.TvMenuPage
 
@@ -140,10 +141,21 @@ internal fun TvLibrary(
 
         FrameKind.STATS -> TvStatsFrame(catalogState, leave)
 
-        // Nothing open, the trimmed menu page chosen from the bar's own ⋮:
+        // Nothing open, the trimmed menu page opened from the bar's avatar:
         // Back from it puts the remote back on that button.
         null if menuOpen ->
-            TvMenuPage(menu = menu, restoreKey = restore.of(here)) {
+            TvMenuPage(
+                menu = menu,
+                restoreKey = restore.of(here),
+                watchingAs = profile.name,
+                // The picker replaces the library; noting the avatar first is
+                // what lets "Stay as I am" hand the remote back to it.
+                onSwitchProfile = {
+                    menuOpen = false
+                    restore.opened(here, TvProfileEntryKey)
+                    profile.onChoose()
+                },
+            ) {
                 menuOpen = false
                 restore.opened(here, TvMenuEntryKey)
             }

@@ -175,7 +175,7 @@ fun <T> TvWall(
                             val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
                             Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
                         }
-                    is WallCell.Heading -> TvBandHeading(title = cell.label, count = null)
+                    is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = ShelfSub)
                     is WallCell.Plate -> {
                         val item = items[cell.index]
                         val crossingRequester = crossingFocusRequesters[cell.index]

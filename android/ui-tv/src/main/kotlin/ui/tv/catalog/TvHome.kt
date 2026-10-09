@@ -159,7 +159,7 @@ internal fun TvHome(
         }
 
     // Keyed on `target` alone, not also on `takesFocus`: a sentinel
-    // elsewhere (Search, the bar's own ⋮) sends the remote there instead of
+    // elsewhere (Search, the bar's avatar) sends the remote there instead of
     // here by making `takesFocus` read `false` for exactly one composition,
     // then flips it back to `true` the moment that sentinel is consumed —
     // with `target` itself unchanged (the wall key this page was handed

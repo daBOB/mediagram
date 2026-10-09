@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.chooseAudioTrack
@@ -151,7 +150,7 @@ private fun TvSubtitleMenu(
     if (choices.subtitleStyleVisible) {
         TvOverlayButton(
             text = "Style…",
-            style = TvTypeScale.body,
+            style = TvPlayerType.body,
             enabled = true,
             onClick = { onSwitch(TvCardMenu.SubtitleStyle) },
             modifier = Modifier.fillMaxWidth().focusRequester(rememberStableRequester(current.takeUnless { languages })),

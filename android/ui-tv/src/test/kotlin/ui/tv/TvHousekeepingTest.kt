@@ -123,7 +123,8 @@ class TvHousekeepingTest {
     @Test
     fun backOnTheReopenedPickerStaysAsTheViewer() {
         launch(profiles = listOf(Profile("ada", "Ada"), Profile("bo", "Bo")), chosen = "ada", films = 1)
-        press(compose.onNodeWithContentDescription("Who's watching: Ada"))
+        press(compose.onNodeWithContentDescription("Menu, watching as Ada"))
+        press(compose.onNodeWithText("Switch profile"))
         compose.onNodeWithText("Stay as I am").assertExists()
 
         compose.runOnUiThread { controller.get().onBackPressedDispatcher.onBackPressed() }

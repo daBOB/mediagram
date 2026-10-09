@@ -17,7 +17,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.roundToIntRect
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.speedLabel
 
 /**
@@ -100,7 +99,7 @@ private fun TvMenuTool(
 ) {
     TvOverlayButton(
         text = label,
-        style = TvTypeScale.body,
+        style = TvPlayerType.body,
         enabled = true,
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },

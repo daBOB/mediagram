@@ -12,9 +12,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.tv.TvTextField
 
 /**
@@ -49,7 +49,7 @@ internal fun resolvedKeyboardType(
  *
  * [heading] and [explanation] are kept as separate slots, not one joined
  * string, because they read at different sizes on the phone
- * ([TvTypeScale.title] versus [TvTypeScale.body]) — a heading needs to keep
+ * (a heading role versus a body one) — a heading needs to keep
  * reading as a heading, and a long explanation needs to grow downward
  * without pushing the heading itself out of a centred layout. [heading] is
  * skipped when blank, for a step like sign-in whose field label is the only
@@ -109,26 +109,26 @@ fun TvTextQuestion(
                 .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
     ) {
         if (heading.isNotBlank()) {
-            Text(text = heading, style = TvTypeScale.title)
+            Text(text = heading, style = CatalogueType.headlineSmall)
         }
         if (explanation != null) {
             Text(
                 text = explanation,
-                style = TvTypeScale.body,
+                style = CatalogueType.bodyMedium,
                 modifier = Modifier.padding(top = Spacing.small),
             )
         }
         if (error != null) {
             Text(
                 text = error,
-                style = TvTypeScale.body,
+                style = CatalogueType.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = Spacing.small),
             )
         }
         Text(
             text = label,
-            style = TvTypeScale.body,
+            style = CatalogueType.bodyMedium,
             modifier = Modifier.padding(top = Spacing.large),
         )
         TvTextField(

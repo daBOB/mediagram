@@ -17,9 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import model.MediaSet
 import playback.FilmPreloadRow
 import player.preloadLabel
@@ -67,7 +67,7 @@ internal fun TvPreloadsPage(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        Text(text = "Preloads", style = TvTypeScale.title)
+        Text(text = "Preloads", style = CatalogueType.headlineSmall)
         if (rowIds.isEmpty()) TvQuietLine("Nothing is preloading right now.")
         if (running.isNotEmpty() || pausedActive.isNotEmpty()) {
             TvSectionHeading("Preloading")
@@ -106,7 +106,7 @@ private const val PAUSED_CAPTION = "Paused — background limit"
 
 @Composable
 private fun TvSectionHeading(text: String) {
-    Text(text = text, style = TvTypeScale.body, modifier = Modifier.padding(top = Spacing.small))
+    Text(text = text, style = CatalogueType.titleMedium, modifier = Modifier.padding(top = Spacing.small))
 }
 
 @Composable

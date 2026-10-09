@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Backdrop
+import designsystem.CatalogueType
 import designsystem.LocalBackdrop
 import designsystem.Overscan
 import designsystem.Spacing
@@ -96,8 +97,8 @@ internal fun TvTitleSpread(
             Text(
                 text = title,
                 style =
-                    TvTypeScale.title.copy(
-                        fontSize = if (long) LongTitleSize else TitleSize,
+                    DisplayFace.copy(
+                        fontSize = if (long) TvTypeScale.SpreadTitleLong else TvTypeScale.SpreadTitle,
                         lineHeight = if (long) 0.96.em else 0.92.em,
                         letterSpacing = (-0.025).em,
                     ),
@@ -109,7 +110,7 @@ internal fun TvTitleSpread(
             facts?.takeIf(String::isNotEmpty)?.let {
                 Text(
                     text = it,
-                    style = TvTypeScale.body.copy(fontFeatureSettings = "tnum"),
+                    style = CatalogueType.bodyMedium.copy(fontSize = 14.sp, fontFeatureSettings = "tnum"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )
@@ -119,7 +120,7 @@ internal fun TvTitleSpread(
                 // introduces the title, it does not carry its whole synopsis.
                 Text(
                     text = it,
-                    style = TvTypeScale.body.copy(lineHeight = 1.5.em),
+                    style = CatalogueType.bodyLarge.copy(lineHeight = 1.6.em),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
@@ -136,7 +137,7 @@ internal fun TvTitleSpread(
                 Text(
                     text = "“$tagline”",
                     style =
-                        TvTypeScale.body.copy(
+                        CatalogueType.bodyLarge.copy(
                             fontSize = QuoteSize,
                             lineHeight = 1.2.em,
                             fontStyle = FontStyle.Italic,
@@ -175,12 +176,6 @@ private val SpreadQuoteMaxWidth = 272.dp
 
 /** A title longer than this is set smaller, as `.spread-title.long` is. */
 private const val LongTitle = 22
-
-/** `clamp(3rem, 6.2vw, 5.75rem)` at the television's fixed 960dp. */
-private val TitleSize = 59.5.sp
-
-/** `clamp(2.5rem, 4.6vw, 4.25rem)` at 960dp. */
-private val LongTitleSize = 44.sp
 
 /** `clamp(1.4rem, 2.1vw, 2rem)` at 960dp — the floor, 22.4. */
 private val QuoteSize = 22.4.sp

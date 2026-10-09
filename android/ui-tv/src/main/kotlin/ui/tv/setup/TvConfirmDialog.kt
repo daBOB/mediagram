@@ -20,8 +20,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 
 /**
  * The two buttons' own tags, for the androidTest set that proves initial
@@ -66,10 +66,10 @@ fun TvConfirmDialog(
             onClick = cancel,
             modifier = Modifier.testTag(TvConfirmDialogCancelTag).focusRequester(cancelFocusRequester),
         ) {
-            Text(cancelLabel, style = TvTypeScale.body)
+            Text(cancelLabel, style = CatalogueType.labelLarge)
         }
         Button(onClick = confirm, modifier = Modifier.testTag(TvConfirmDialogConfirmTag)) {
-            Text(confirmLabel, style = TvTypeScale.body)
+            Text(confirmLabel, style = CatalogueType.labelLarge)
         }
     }
 }
@@ -108,11 +108,11 @@ internal fun TvDialog(
                 ),
         ) {
             Column(modifier = Modifier.padding(Spacing.large)) {
-                Text(text = title, style = TvTypeScale.title)
+                Text(text = title, style = CatalogueType.headlineSmall)
                 if (body.isNotBlank()) {
                     Text(
                         text = body,
-                        style = TvTypeScale.body,
+                        style = CatalogueType.bodyMedium,
                         modifier = Modifier.padding(top = Spacing.medium),
                     )
                 }

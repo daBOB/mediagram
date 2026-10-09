@@ -45,7 +45,6 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import kotlinx.coroutines.launch
 import model.markdown.Block
 import model.markdown.Span
@@ -92,7 +91,7 @@ internal fun TvNotesPanel(
                 // facing the picture needs only breathing room.
                 .padding(start = Spacing.large, end = Overscan.horizontal, top = Overscan.vertical, bottom = Overscan.vertical),
     ) {
-        Text(text = "Notes", style = TvTypeScale.title, color = Palette.Text, modifier = Modifier.padding(bottom = Spacing.medium))
+        Text(text = "Notes", style = TvPlayerType.title, color = Palette.Text, modifier = Modifier.padding(bottom = Spacing.medium))
         Column(
             modifier =
                 Modifier
@@ -146,7 +145,7 @@ private fun TvNotesBlock(block: Block) {
         is Block.MarkdownList ->
             block.items.forEachIndexed { index, item ->
                 Row(modifier = Modifier.padding(bottom = Spacing.extraSmall)) {
-                    Text(if (block.ordered) "${index + 1}." else "•", style = TvTypeScale.body, color = Palette.Figures, modifier = Modifier.width(32.dp))
+                    Text(if (block.ordered) "${index + 1}." else "•", style = TvPlayerType.body, color = Palette.Figures, modifier = Modifier.width(32.dp))
                     Column {
                         TvNotesLine(item.spans)
                         item.blocks.forEach { TvNotesBlock(it) }
@@ -165,7 +164,7 @@ private fun TvNotesBlock(block: Block) {
         is Block.Code ->
             Text(
                 text = block.text,
-                style = TvTypeScale.body.copy(fontFamily = FontFamily.Monospace),
+                style = TvPlayerType.body.copy(fontFamily = FontFamily.Monospace),
                 color = Palette.Text,
                 modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.small).background(Palette.Sunk).padding(Spacing.small),
             )
@@ -175,7 +174,7 @@ private fun TvNotesBlock(block: Block) {
 
 @Composable
 private fun TvNotesLine(spans: List<Span>) {
-    Text(text = tvNotesText(spans), style = TvTypeScale.body, color = Palette.Text, modifier = Modifier.padding(bottom = Spacing.small))
+    Text(text = tvNotesText(spans), style = TvPlayerType.body, color = Palette.Text, modifier = Modifier.padding(bottom = Spacing.small))
 }
 
 /** No link handler: nothing on a remote can point at one word of a paragraph, so a link keeps only its words. */
@@ -185,7 +184,7 @@ private fun tvNotesText(spans: List<Span>) = rememberNotesText(spans, linkColor 
 /** By [notesHeadingLevel]'s floor; a size between the body and the head, so a section heading never outranks "Notes". */
 private fun headingStyle(level: Int): TextStyle =
     when (notesHeadingLevel(level)) {
-        2 -> TvTypeScale.title.copy(fontSize = 26.sp)
-        3 -> TvTypeScale.body.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-        else -> TvTypeScale.body.copy(fontWeight = FontWeight.SemiBold)
+        2 -> TvPlayerType.title.copy(fontSize = 26.sp)
+        3 -> TvPlayerType.body.copy(fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        else -> TvPlayerType.body.copy(fontWeight = FontWeight.SemiBold)
     }

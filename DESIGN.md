@@ -348,8 +348,8 @@ either of the others' jobs.
 - **Title Small** (Fraunces Medium, 16sp): the name under a plate, to two lines
   then ellipsis; a settings index row's own label.
 - **Page Title** (Fraunces Medium, uppercase, −0.03em, 0.86 line height,
-  stepped down from 112sp on a phone/tablet or 72sp compact/TV): the huge
-  title atop a page — `PageHead`'s own title slot.
+  stepped down from 112sp on a phone/tablet, 72sp compact, 60sp on a
+  television): the huge title atop a page — `PageHead`'s own title slot.
 - **Body** (Newsreader, 17sp): whole sentences — loading, empty, and failure
   messages. The one role kept in the reading face rather than moved to Geist.
 - **Body Small** (Geist, 13sp): the notice above a shelf.
@@ -378,6 +378,18 @@ lines up down a page instead of shifting with each digit's width.
 **The Fraunces Floor.** Fraunces is never asked for a weight below 500. On an
 ink ground its 400 goes thin enough to shimmer, and the catalogue sets its names
 in medium on paper anyway.
+
+**The Television Rule.** A television sets text at the web's CSS for a 960px
+window — the box's own width in dp — reading each px as one sp: the ten-foot
+adaptation, since from the couch a dp subtends about what a CSS px does on a
+desktop monitor. Those are the roles above, unchanged (`CatalogueType` hands
+them to `:ui-tv` as plain styles), and nothing goes under 11sp, which lifts the
+web's 10px counts and tallies. Display titles, which the web sizes with `vw`
+clamps that run near their ceilings at 960px, take the web's 1920px size halved
+instead (`TvTypeScale`): a department or page title 60sp, the cover 56sp (36.8sp
+long), a title spread 46sp (34sp long), a shelf head 28.8sp, a franchise 40sp —
+the desktop's proportions on a 540dp-tall screen. The player overlay keeps its
+earlier sizes until it is measured against the web's player card.
 
 **The Whole-Sentence Rule.** A first run, an empty library, a failed load and
 a page's own eyebrow-and-title pair are the moments a viewer reads a line
@@ -504,7 +516,10 @@ written beside it.
   blur behind it — Compose cannot blur what lies behind a node without a new
   dependency — so the art shows through sharper than on the web until the bar
   settles. The player card makes the same choice for a different reason; see
-  Player card.
+  Player card. **Television:** the pills carry no counts (the rail's foot
+  carries the totals) and the ⋮ menu folds into the avatar, so the seven
+  departments, search and the avatar fit 960dp; a row that still overflows
+  scrolls, fading only the end it clips.
 - **Compact (phone, tablet portrait):** the web's ≤900px header — wordmark and
   an icon row, a scrolling row of department pills, then a search field and the
   avatar. **Deliberate difference:** it hides on scroll down and returns on
@@ -558,8 +573,8 @@ the way a magazine department does.
 - **Eyebrow:** Geist Medium 11sp, 0.32em tracking, uppercase, in quiet
   (`{colors.rule-strong}`).
 - **Title:** Fraunces Medium, uppercase, −0.03em tracking, 0.86 line height,
-  in text (`{colors.text}`), stepped down from 112sp (72sp compact/TV) to fit
-  one line rather than wrapping or clipping.
+  in text (`{colors.text}`), stepped down from 112sp (72sp compact, 60sp on a
+  television) to fit one line rather than wrapping or clipping.
 - **Semantics:** eyebrow and title merge into one heading node, the same way
   a plate merges artwork and caption.
 
@@ -573,8 +588,8 @@ title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
 0.24em tracking in quiet, dropping under the title when it needs the width;
 a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
 Fraunces SemiBold 24sp (`.shelf-sub`). Television's `TvShelfHead` opens the
-same six pages at the web's 4.4vw for its fixed 960dp (42sp), the extent
-at the 16sp ten-foot floor; a person's round portrait (120dp) stands
+same six pages at half the web's desktop size (28.8sp, the Television
+Rule), the extent at the web's own 11sp; a person's round portrait (120dp) stands
 before the title, as the web prepends it. Search's people are the same
 round portrait as a card, the name and count under it, six to a line on
 television (the web's `personCard`); a title's Cast tab draws its people
@@ -603,8 +618,8 @@ says what it is.
 - **Target:** the whole tile, merged into one node.
 - **Television** (`TvArtTile`): the same tile as a focusable card with the
   one TV focus treatment (accent ring, 1.08 scale) on the same 12dp corner,
-  at ten-foot sizes — a 24sp genre name, a 28sp destination name, the count
-  at 16sp. Genres four across on the Genres page; 240dp wide in the Movies
+  at the web's sizes for a 960px window — a 21.6sp genre name, a 22.4sp
+  destination name, the count at 12sp and 13sp. Genres four across on the Genres page; 240dp wide in the Movies
   row, where the web's 12rem would leave a two-line name no room; franchises
   and lists three across on Collections and in Search's Collections part.
   The scrim and proportions are the phone's own, shared (`ArtTileScrim`).

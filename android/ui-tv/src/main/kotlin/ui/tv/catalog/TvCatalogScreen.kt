@@ -32,13 +32,12 @@ import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
+import designsystem.CatalogueType
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.common.MenuActions
 import ui.common.RailItem
 import ui.common.catalog.rememberDepartmentScrollStates
 import ui.tv.chrome.LocalTvPagePadding
-import ui.tv.chrome.TvDepartmentPill
 import ui.tv.chrome.TvLibraryChrome
 import ui.tv.profile.TvChosenProfile
 
@@ -51,7 +50,7 @@ import ui.tv.profile.TvChosenProfile
  *
  * The chrome stays even while there are no shelves to show — loading, an
  * empty library, a kids profile with nothing rated for it yet, a failed
- * read — carrying only the viewer's name and the way out through ⋮. A kids
+ * read — carrying only the viewer's name and the way out through the avatar's menu. A kids
  * profile left on a message with nothing else to press would be a dead end
  * otherwise.
  *
@@ -62,11 +61,11 @@ import ui.tv.profile.TvChosenProfile
  * names a plate on the tab that was left, and a film opened from Home would
  * otherwise pull the remote to its plate on Movies.
  *
- * [onOpenSearch]/[onOpenMenu] are the bar's Search and its own ⋮; coming
+ * [onOpenSearch]/[onOpenMenu] are the bar's Search and its avatar; coming
  * back from either, or from Settings/System/Latest/Genres/Stats now that the
  * rail reaches all five directly, is [rememberTvCatalogRestore]'s own
  * sentinel-key handling. [menu] is what the rail's own Settings and System
- * rows call directly — the same [MenuActions] the trimmed ⋮ page still
+ * rows call directly — the same [MenuActions] the trimmed menu page still
  * calls for its own three rows. [onFinish] is Continue's "Mark finished".
  * [onPlay] plays a set straight away — the cover story's own "Watch now" —
  * rather than opening its title page the way [onOpenTitle] does everywhere
@@ -135,9 +134,7 @@ fun TvCatalogScreen(
     val counts = remember(shelves, ready?.watch) { ready?.let { chromeCountsOf(shelves, it.watch) } ?: ChromeCounts.Empty }
     val tally = remember(shelves) { libraryTallyLines(shelves) }
     val pills =
-        remember(mastheadTabs, counts) {
-            mastheadTabs.map { tab -> TvDepartmentPill(tab.label, counts.departmentCount(tab)) }
-        }
+        remember(mastheadTabs) { mastheadTabs.map { it.label } }
     val onRailSelect: (RailItem) -> Unit = { item ->
         when (item) {
             RailItem.MY_LIST -> choose(CatalogTab.Kept(KeptKind.WATCHLIST))
@@ -214,7 +211,7 @@ fun TvCatalogScreen(
             ready?.notice?.let { notice ->
                 Text(
                     text = notice,
-                    style = TvTypeScale.body,
+                    style = CatalogueType.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
                 )

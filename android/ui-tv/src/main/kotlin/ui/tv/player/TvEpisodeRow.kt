@@ -22,7 +22,6 @@ import androidx.tv.material3.Text
 import catalog.humanDuration
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import player.EpisodeRow
 
 /** What the open title's row says in place of its runtime. */
@@ -53,10 +52,10 @@ internal fun TvEpisodeRow(
         // The content alone fades: the surface carries the focus border, which must stay full strength.
         Column(modifier = Modifier.alpha(if (row.watched) WATCHED_ALPHA else 1f).padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small), verticalAlignment = Alignment.CenterVertically) {
-                if (row.watched) Text(text = "✓", style = TvTypeScale.body)
-                if (row.number.isNotEmpty()) Text(text = row.number, style = TvTypeScale.body)
-                Text(text = row.title, style = TvTypeScale.body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                Text(text = if (row.current) NOW_PLAYING else humanDuration(row.runtimeSecs).orEmpty(), style = TvTypeScale.body)
+                if (row.watched) Text(text = "✓", style = TvPlayerType.body)
+                if (row.number.isNotEmpty()) Text(text = row.number, style = TvPlayerType.body)
+                Text(text = row.title, style = TvPlayerType.body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Text(text = if (row.current) NOW_PLAYING else humanDuration(row.runtimeSecs).orEmpty(), style = TvPlayerType.body)
             }
             row.progress?.let { done ->
                 Box(modifier = Modifier.padding(top = Spacing.extraSmall).fillMaxWidth().height(ProgressHeight).background(Palette.RuleStrong)) {

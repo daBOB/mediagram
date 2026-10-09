@@ -19,7 +19,6 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
-import designsystem.TvTypeScale
 import ui.common.player.TransportIcon
 import ui.common.player.TransportIcons
 import ui.tv.TvFocus
@@ -42,7 +41,7 @@ internal fun TvGlyphButton(
     TvOverlayButton(
         dimmed = dimmed,
         text = glyph,
-        style = TvTypeScale.title,
+        style = TvPlayerType.title,
         enabled = enabled,
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },
@@ -72,7 +71,7 @@ internal fun TvIconButton(
         TransportIcon(
             icon = icon,
             tint = LocalContentColor.current,
-            size = TvTypeScale.title.fontSize,
+            size = TvPlayerType.title.fontSize,
             modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small),
         )
     }

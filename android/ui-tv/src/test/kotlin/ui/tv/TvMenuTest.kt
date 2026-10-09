@@ -38,8 +38,9 @@ import uniffi.mediagram_core.SessionSummary
 import kotlin.test.assertEquals
 
 /**
- * The menu walked with a remote over the real [TvLibrary]: the bar's own ⋮
- * opens the phone's three Android-only rows as a trimmed page; System and
+ * The menu walked with a remote over the real [TvLibrary]: the bar's avatar
+ * opens the profile switch and the phone's three Android-only rows as a
+ * trimmed page; System and
  * Settings are reached straight from the rail instead, each screen taking
  * the remote on arrival and Back walking out one step at a time — the
  * screen, then whatever opened it (the rail row directly for System and
@@ -77,17 +78,29 @@ class TvMenuTest {
     }
 
     @Test
-    fun theMenuIsTheAndroidOnlyRowsInThePhonesOrderAndBackReturnsToTheBarsMenuButton() {
+    fun theMenuIsTheProfileSwitchThenTheAndroidOnlyRowsInThePhonesOrderAndBackReturnsToTheAvatar() {
         openMenu()
 
-        compose.onNodeWithText("Update library").assertIsFocused()
-        val order = listOf("Update library", "TMDB key…", "Start over")
+        compose.onNodeWithText("Switch profile").assertIsFocused()
+        compose.onNodeWithText("Watching as Ada").assertExists()
+        val order = listOf("Switch profile", "Update library", "TMDB key…", "Start over")
         val tops = order.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
-        assertEquals(tops.sorted(), tops, "the rows stand in the phone's order")
+        assertEquals(tops.sorted(), tops, "the profile switch first, then the rows in the phone's order")
         compose.onNodeWithText("Artwork and descriptions need a TMDB key").assertExists()
 
         back()
-        compose.onNodeWithContentDescription("Menu").assertIsFocused()
+        compose.onNodeWithContentDescription(AVATAR).assertIsFocused()
+    }
+
+    @Test
+    fun switchProfileOpensWhosWatchingAndStayingHandsTheRemoteBackToTheAvatar() {
+        openMenu()
+        press(compose.onNodeWithText("Switch profile"))
+        compose.onNodeWithText("Who's watching?").assertExists()
+
+        back()
+        compose.onNodeWithContentDescription(AVATAR).assertIsFocused()
+        compose.onNodeWithText("Switch profile").assertDoesNotExist()
     }
 
     @Test
@@ -276,7 +289,7 @@ class TvMenuTest {
         openMenu()
         press(compose.onNodeWithText("Update library"))
 
-        compose.onNodeWithContentDescription("Menu").assertExists()
+        compose.onNodeWithContentDescription(AVATAR).assertExists()
         compose.onNodeWithText("Update library").assertDoesNotExist()
     }
 
@@ -296,10 +309,10 @@ class TvMenuTest {
         )
         compose.waitForIdle()
         openMenu()
-        compose.onNodeWithText("Update library").assertIsFocused()
+        compose.onNodeWithText("Switch profile").assertIsFocused()
 
-        // Update library, TMDB key…, Start over, then Preloads — three rows down.
-        repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        // Switch profile, Update library, TMDB key…, Start over, then Preloads — four rows down.
+        repeat(4) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
         compose.onNodeWithText("Preloads · 1").assertIsFocused()
 
         press(compose.onNodeWithText("Preloads · 1"))
@@ -307,8 +320,7 @@ class TvMenuTest {
         compose.onNodeWithText("2.0 of 5.0 GB · 40%").assertExists()
 
         // Specifically the home wall, not merely a screen that happens to
-        // carry a "Menu" node too (the bar's own ⋮ reads the same
-        // description): Preloads clears the trimmed menu page before it
+        // carry the avatar too: Preloads clears the trimmed menu page before it
         // pushes its own frame, so Back lands past it, on the shelves
         // themselves.
         back()
@@ -399,7 +411,7 @@ class TvMenuTest {
     ) = SessionSummary(id, device, "Android", "Mediagram", "0.61.0", "Berlin", 0, 0, current, false)
 
     private fun openMenu() {
-        press(compose.onNodeWithContentDescription("Menu"))
+        press(compose.onNodeWithContentDescription(AVATAR))
     }
 
     /**
@@ -427,6 +439,7 @@ class TvMenuTest {
     }
 
     private companion object {
+        const val AVATAR = "Menu, watching as Ada"
         const val TOTAL = 5 * 1_073_741_824L
         const val HELD_40_PERCENT = TOTAL * 40 / 100
     }
