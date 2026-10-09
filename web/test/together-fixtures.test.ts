@@ -64,9 +64,9 @@ describe("expected position fixtures", () => {
 });
 
 describe("liveness fixtures", () => {
-  for (const one of load<{ name: string; session: Session; duration: number | null; now: number; expect: boolean }[]>("liveness.json")) {
+  for (const one of load<{ name: string; session: Session; duration?: number | null; now: number; expect: boolean }[]>("liveness.json")) {
     test(one.name, () => {
-      expect(isLive(one.session, one.duration, one.now)).toBe(one.expect);
+      expect(isLive(one.session, one.duration as number | null, one.now)).toBe(one.expect);
     });
   }
 });
@@ -83,8 +83,17 @@ describe("follow fixtures", () => {
 describe("decide fixtures", () => {
   for (const one of load<{ name: string; own: ScreenState; session: Session; now: number; expect: Step[] }[]>("decide.json")) {
     test(one.name, () => {
-      const round = (step: Step): Step => ("pos" in step ? { ...step, pos: Math.round(step.pos * 1e6) / 1e6 } : step);
-      expect(decide(one.own, one.session, one.now).map(round)).toEqual(one.expect.map(round));
+      const got = decide(one.own, one.session, one.now);
+      expect(got.length).toBe(one.expect.length);
+      one.expect.forEach((want, i) => {
+        const step = got[i] as Step;
+        if ("pos" in want && "pos" in step) {
+          expect(Math.abs(step.pos - want.pos)).toBeLessThan(TOLERANCE);
+          expect({ ...step, pos: 0 }).toEqual({ ...want, pos: 0 });
+        } else {
+          expect(step).toEqual(want);
+        }
+      });
     });
   }
 });

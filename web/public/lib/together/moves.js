@@ -24,8 +24,15 @@ export function left(s, screen) {
 }
 
 export function acted(s, change, me, now) {
-  const pos = change.pos ?? expectedPosition(s, now);
-  return { ...s, ...change, pos: toMillis(pos), at: now, by: me };
+  return {
+    ...s,
+    set: change.set ?? s.set,
+    playing: change.playing ?? s.playing,
+    pos: toMillis(change.pos ?? expectedPosition(s, now)),
+    rate: change.rate ?? s.rate,
+    at: now,
+    by: me,
+  };
 }
 
 /** The first screen to reach the end of a film, or of the last episode, ends the session for everyone. */

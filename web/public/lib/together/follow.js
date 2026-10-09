@@ -25,7 +25,7 @@ export function expectedPosition(s, now) {
 export function isLive(s, durationSecs, now) {
   if (s.ended) return false;
   if (!s.playing) return now - s.at < PAUSED_LIFETIME_MS;
-  if (durationSecs === null) return now - s.at < UNKNOWN_LENGTH_LIFETIME_MS;
+  if (durationSecs == null) return now - s.at < UNKNOWN_LENGTH_LIFETIME_MS;
   return expectedPosition(s, now) <= durationSecs + PAST_END_GRACE_SECS;
 }
 
