@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -58,7 +57,7 @@ internal fun TvThisMonth(
                     ) {
                         Text(
                             text = (index + 1).toString().padStart(2, '0'),
-                            style = CatalogueType.titleMedium.copy(fontWeight = FontWeight.Normal, fontSize = 20.8.sp, lineHeight = 1.em),
+                            style = CatalogueType.titleMedium.copy(fontSize = 20.8.sp, lineHeight = 1.em),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.width(35.dp),
                         )

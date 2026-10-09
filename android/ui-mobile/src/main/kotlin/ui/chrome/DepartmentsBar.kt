@@ -108,7 +108,9 @@ internal fun DepartmentsBar(
                     .padding(horizontal = gutter),
         ) {
             Row(
-                modifier = Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
+                // Filling, so search, the avatar and ⋮ stand at the bar's far end,
+                // as the web's `.library-toolbar { margin-left: auto }` does (`shell.css:91`).
+                modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 pills.forEachIndexed { index, pill ->

@@ -104,17 +104,20 @@ internal fun TvDepartmentsBar(
                 .padding(top = Overscan.vertical, start = Spacing.medium - PillRingRoom, end = Overscan.horizontal),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val scrollWidth = Modifier.weight(1f, fill = false)
+        // Filling, so search and the avatar stand at the bar's far end, as the
+        // web's `.library-toolbar { margin-left: auto }` does (`shell.css:91`).
+        val scrollWidth = Modifier.weight(1f)
         // A focused pill grows past its own bounds and the scroll clips at its
         // edges, so the row's ends are padded by [PillRingRoom] for the first
         // and last pill's ring; the start padding above gives that room back,
         // so the pills sit where they did. Padded above and below by the same,
         // too: the fade's offscreen layer clips to the row, where the scroll
         // alone let the ring spill over. A pill the row scrolls to between
-        // its ends stops [EdgeFadeWidth] clear, out of the fade.
+        // its ends stops clear of the fade by its ring room as well, since
+        // its grow and ring reach past its own bounds.
         val scroll = rememberScrollState()
         val fades by remember(scroll) { derivedStateOf { EdgeFades(start = scroll.canScrollBackward, end = scroll.canScrollForward) } }
-        CompositionLocalProvider(LocalBringIntoViewSpec provides rememberRoomOnBothSides(EdgeFadeWidth)) {
+        CompositionLocalProvider(LocalBringIntoViewSpec provides rememberRoomOnBothSides(EdgeFadeWidth + PillRingRoom)) {
         Row(
             modifier = scrollWidth.fadeClippedEdges(fades).horizontalScroll(scroll).padding(PillRingRoom),
             horizontalArrangement = Arrangement.spacedBy(Spacing.extraSmall),

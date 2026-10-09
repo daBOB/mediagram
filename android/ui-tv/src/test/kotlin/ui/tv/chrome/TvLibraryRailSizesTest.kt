@@ -21,6 +21,7 @@ import ui.tv.catalog.TvScreenStateTest
 import ui.tv.fontSizeOf
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * The rail opened by the remote, at the web's rail (`shell.css:17-70`):
@@ -55,12 +56,12 @@ class TvLibraryRailSizesTest : TvScreenStateTest() {
         compose.waitForIdle()
 
         val wordmark = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()
-        assertEquals(RailOpenWidth, 224.dp)
+        assertEquals(224.dp, RailOpenWidth)
         assertEquals(14f, compose.fontSizeOf(RailItem.CONTINUE_WATCHING.label).value, "`.rail-nav a`, 0.875rem")
         assertEquals(11f, compose.fontSizeOf("12").value, "`.n`, the web's 10px at the floor")
         assertEquals(11f, compose.fontSizeOf("1,143 FILMS").value, "`.rail-masthead`, the web's 10px at the floor")
         assertEquals(27f, compose.fontSizeOf("mediagram").value, "`.brand`, 1.7rem")
-        assert(wordmark.right <= RailOpenWidth) { "the wordmark fits the open rail: $wordmark" }
+        assertTrue(wordmark.right <= RailOpenWidth, "the wordmark fits the open rail: $wordmark")
         for (item in RailItem.entries) {
             assertFalse(layoutOf(item.label).isLineEllipsized(0), "${item.label} is cut short at 224dp")
         }

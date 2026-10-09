@@ -16,11 +16,13 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
+import designsystem.Overscan
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -76,6 +78,16 @@ class TvDepartmentsBarTest : TvScreenStateTest() {
 
         val grown = (pill.bottom - pill.top) * (TvFocus.Scale - 1f) / 2f + TvFocus.BorderWidth
         assertTrue(row.top <= pill.top - grown && row.bottom >= pill.bottom + grown, "the ring fits the layer: pill $pill, layer $row")
+    }
+
+    /** `.library-toolbar { margin-left: auto }` (`shell.css:91`): search and the avatar stand at the bar's end, not straight after Collections. */
+    @Test
+    fun theAvatarEndsAtTheBarsEndGutter() {
+        show { chrome() }
+        val width = compose.onRoot().getUnclippedBoundsInRoot().right
+        val avatar = compose.onNodeWithContentDescription(AVATAR).getUnclippedBoundsInRoot()
+
+        assertEquals((width - Overscan.horizontal).value, avatar.right.value, 0.5f)
     }
 
     @Test

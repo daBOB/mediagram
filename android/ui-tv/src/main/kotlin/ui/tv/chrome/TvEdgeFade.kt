@@ -30,11 +30,13 @@ internal val EdgeFadeWidth = Spacing.large
  * pixels rather than a scrim in the bar's colour, since over a cover the bar
  * is translucent and a scrim would tint the art behind it. Reports [fades]
  * as [EdgeFadesKey]. Placed before the scroll in the chain, so it masks the
- * clipped viewport rather than the content scrolling inside it.
+ * clipped viewport rather than the content scrolling inside it. Offscreen
+ * only while an end fades: the mask needs its own buffer, a row that fits
+ * does not, and the box redraws the bar on every frame of a cover's blend.
  */
 internal fun Modifier.fadeClippedEdges(fades: EdgeFades): Modifier =
     semantics { this[EdgeFadesKey] = fades }
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .graphicsLayer { compositingStrategy = if (fades.start || fades.end) CompositingStrategy.Offscreen else CompositingStrategy.Auto }
         .drawWithContent {
             drawContent()
             val width = EdgeFadeWidth.toPx().coerceAtMost(size.width / 2)

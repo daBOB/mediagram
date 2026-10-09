@@ -389,7 +389,9 @@ clamps that run near their ceilings at 960px, take the web's 1920px size halved
 instead (`TvTypeScale`): a department or page title 60sp, the cover 56sp (36.8sp
 long), a title spread 46sp (34sp long), a shelf head 28.8sp, a franchise 40sp —
 the desktop's proportions on a 540dp-tall screen. The player overlay keeps its
-earlier sizes until it is measured against the web's player card.
+earlier 18sp and 34sp (`TvPlayerType`) until it is measured against the web's
+player card; that work has an owner, "batch 5, player overlay text at the web's
+size", after the TV parity plan's focus batch.
 
 **The Whole-Sentence Rule.** A first run, an empty library, a failed load and
 a page's own eyebrow-and-title pair are the moments a viewer reads a line
