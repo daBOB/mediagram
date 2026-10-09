@@ -72,10 +72,11 @@ const ROOT = join(import.meta.dir, "..");
  * by 2, to hand the library session watch together's share of the event stream.
  * Raised the same day for `player.js`, by 11, for watch together's hooks: the
  * viewer's play, pause, seek, speed and next title, the media keys, and leaving
- * as the player closes.
+ * as the player closes. Raised again for `app.js`, by 3, to register how Join
+ * opens a title and finds it in this profile's catalog.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 695,
+  "public/app.js": 698,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

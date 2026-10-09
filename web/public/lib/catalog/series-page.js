@@ -9,7 +9,7 @@
 
 import { el, focusWhenAttached } from "../dom.js";
 import { countOf } from "../format.js";
-import { firstItemOf } from "../library.js";
+import { firstItemOf, flattenCollection } from "../library.js";
 import { genresOf } from "./genres.js";
 import { pinControl } from "./pin-control.js";
 import { describeHero, factSheet, titleSpread, moreMenu, playPill } from "./title-spread.js";
@@ -27,6 +27,7 @@ import { similarTo } from "./similar.js";
 import { inProgress, isWatched, progressOf } from "../watch-state.js";
 import { resumeAt } from "../resume-point.js";
 import { href } from "../address.js";
+import { joinOr } from "./together-join.js";
 
 /**
  * The route: one show, with the season the URL names (if any) in view.
@@ -82,7 +83,8 @@ export function seriesPage(collection, { section, season, resume, play, openSeas
   page.facts = facts;
   page.first = first;
 
-  const start = resume ? playPill(`${resume.verb} ${episodeShort(resume.set)}`, () => play(resume.set)) : null;
+  const episodeIds = flattenCollection(collection).map((set) => set.setId);
+  const start = joinOr(episodeIds, resume ? playPill(`${resume.verb} ${episodeShort(resume.set)}`, () => play(resume.set)) : null);
   const hero = titleSpread({
     back: { href: href({ page: "department", section }), label: `Back to ${SECTIONS[section].label}` },
     title: collection.name,

@@ -154,6 +154,23 @@ test("each open of the event stream reads watch together again, for an edit miss
   expect(reads()).toBe(before + 1);
 });
 
+test("a session heard on the stream offers Join on Home and on its title's page, and Join opens it in the session", async () => {
+  const live = { session: "s-1", set: "First", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  intercept = (url, init) => (url === "/api/together" && init?.method === "POST" ? Response.json({ id: 7, session: live, serverNow: 0 }) : null);
+  await start();
+  await env.navigate("#/home");
+  stream().fire("together", { id: 7, session: live, serverNow: 0 });
+  expect(page()).toContain("Watching together: First · TV");
+  await env.navigate("#/film/First");
+  const join = byClass(env.node("main"), "film-play");
+  expect(textOf(join)).toBe("Join");
+  join.fire("click");
+  await settle();
+  const posted = env.requests.filter((request) => request.url === "/api/together" && request.options?.method === "POST");
+  expect(posted.map((request) => JSON.parse(String(request.options!.body)))).toMatchObject([{ op: "join", id: 7 }]);
+  expect(env.video.attachments).toEqual(["/api/sets/First/stream"]);
+});
+
 for (const outcome of ["success", "failure"] as const) {
   test(`old search ${outcome} cannot overwrite a different route`, async () => {
     await start();

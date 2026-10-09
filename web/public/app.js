@@ -51,7 +51,7 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
-import { heardTogether, inTogether, refreshTogether } from "./lib/together-now.js";
+import { heardTogether, inTogether, refreshTogether, setTogetherOpener } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
 import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
@@ -225,6 +225,9 @@ const deptContext = () => ({
   kidsLimit: kidsLimitOf(state.profile()), play: (set) => play(set), openFilm, reel: reelButton(),
   openShow,
 });
+
+// Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
+setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null);
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {

@@ -5,9 +5,15 @@
    colours. `--warn` is a colour for paper: the light theme's is a dark ochre
    that would vanish over a picture. Home's line is on paper, and takes it. */
 
-/* "Together · TV, Tablet", beside the title; it rests with the top bar. */
+/* "Together · TV, Tablet", beside the title; it rests with the top bar. It
+   shares what room there is with the title, as the title does (`.hud .what`),
+   rather than leaving the title none of it. */
 .together-label {
-  flex: none;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--stage-accent);
   font-size: 0.75rem;
   font-weight: 600;
@@ -22,11 +28,11 @@
 .together-note {
   position: absolute;
   top: 4.5rem;
-  left: 50%;
+  right: 1rem;
+  left: 1rem;
   z-index: 3;
-  transform: translateX(-50%);
-  max-width: calc(100% - 2rem);
-  margin: 0;
+  width: fit-content;
+  margin: 0 auto;
   padding: 0.5rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
@@ -37,6 +43,16 @@
   pointer-events: none;
 }
 .together-note:empty { display: none; }
+/* Where the top bar wraps, on a phone or beside the episode sidebar, the title
+   has a row to itself: the label takes the next, and the notice goes below both. */
+@media (max-width: 767px) {
+  .together-label { flex-basis: 100%; text-align: left; }
+  .together-note { top: 8rem; }
+}
+@media (min-width: 768px) {
+  dialog.sidebar-open .together-label { flex-basis: 100%; text-align: left; }
+  dialog.sidebar-open .together-note { top: 8rem; right: calc(var(--sidebar-width) + 1rem); }
+}
 
 /* Home: one line above the shelf, never instead of it. */
 .together-join {
