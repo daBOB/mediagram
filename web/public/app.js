@@ -51,7 +51,7 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
-import { heardTogether, inTogether, refreshTogether, setTogetherOpener } from "./lib/together-now.js";
+import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
 import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
@@ -92,7 +92,7 @@ const librarySession = createLibrarySession({
     void state.refreshState();
     void loadEditorsChoice();
   },
-  together: { heard: heardTogether, reopened: () => void refreshTogether(), inSession: inTogether },
+  together: { heard: heardTogether, reopened: () => void refreshTogether(), inSession: inTogether, onLeave: onLeaveTogether },
 });
 
 // Counts and the colophon reach the page at once, even while a redraw waits;

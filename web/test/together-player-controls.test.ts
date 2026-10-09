@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { browserEnvironment, chooseInMenu, settle } from "./support/player-environment";
 import * as state from "../public/lib/watch-state.js";
-import { heardTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
+import { heardTogether, openForTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -15,7 +15,9 @@ let openPlayer: (set: ReturnType<typeof film>, options?: object) => void;
 let serial = 0;
 const mediaKeys = new Map<string, () => void>();
 const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration: 600, container: "mp4", vcodec: "h264", acodec: "aac" });
-const sets = new Map(["film-1", "film-2"].map((id) => [id, film(id)]));
+const sets = new Map<string, object>(["film-1", "film-2"].map((id) => [id, film(id)]));
+/** A title the browser can't play as it is: it is converted, and every seek starts ffmpeg again. */
+sets.set("film-3", { ...film("film-3"), container: "mkv" });
 const TV = { screen: "tv", label: "TV" };
 const ME = { screen, label: "Browser" };
 const session = (over: Partial<Session> = {}): Session => ({
@@ -148,4 +150,53 @@ test("closing the player leaves the session, once", async () => {
   env.node("player").close();
   await settle();
   expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
+});
+
+test("at the end of an episode with one next, Up next counts down and nothing starts the episode again", async () => {
+  await inSession({ next: film("film-2") });
+  env.video.readyState = 4;
+  heardTogether({ id: 7, session: session({ members: [TV, ME], playing: true, pos: 598 }), serverNow: Date.now() });
+  await settle();
+  let played = 0;
+  env.video.addEventListener("play", () => { played++; });
+  Object.assign(env.video, { currentTime: 600, paused: true, ended: true });
+  env.video.fire("ended");
+  env.advance(3_000);
+  await settle();
+  expect([played, env.video.currentTime, env.node("up-next").hidden]).toEqual([0, 600, false]);
+  expect(posts()).toEqual([]);
+});
+
+test("a held drag of the seek bar moves the session once it settles, and the drift check doesn't pull it back", async () => {
+  await inSession();
+  env.node("play-pause").fire("click");
+  await settle();
+  env.requests.length = 0;
+  env.video.readyState = 4;
+  const bar = env.node("seek-to");
+  bar.value = "300";
+  bar.fire("input");
+  env.advance(2_000);
+  await settle();
+  expect(acts().map((change) => Math.round(change.pos))).toEqual([300]);
+  expect(env.video.currentTime).not.toBeLessThan(300);
+  bar.fire("change");
+  env.advance(300);
+  await settle();
+  expect(acts()).toHaveLength(2);
+});
+
+test("a conversion opened because the session moved to it starts once, at the session's place", async () => {
+  await inSession();
+  heardTogether({ id: 7, session: session({ members: [TV, ME], set: "film-3", playing: true, pos: 300 }), serverNow: Date.now() });
+  await settle();
+  const starts = env.requests.filter((request) => request.url.includes("/api/sets/film-3/transcode?"));
+  expect(starts.map((request) => request.url.match(/seek=(\d+)/)?.[1])).toEqual(["300"]);
+});
+
+test("a title opened to join a session starts at the session's place", async () => {
+  heardTogether({ id: 7, session: session({ playing: true, pos: 120 }), serverNow: Date.now() });
+  openForTogether("film-1", 7);
+  env.video.fire("loadedmetadata");
+  expect(env.video.currentTime).toBe(120);
 });

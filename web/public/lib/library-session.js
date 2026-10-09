@@ -141,7 +141,6 @@ export function createLibrarySession({ port, state, remoteState, together }) {
     if (stopStream) return;
     stopStream = port.listen({
       catalog: () => void refreshCatalog(),
-      // A stream that was gone may have missed a watch-together edit as much as a catalog.
       open: () => { void refreshCatalog(); together.reopened(); },
       // Another device's positions or marks, pulled by the server.
       state: () => remoteState(),
@@ -156,16 +155,17 @@ export function createLibrarySession({ port, state, remoteState, together }) {
   // Open only while the tab is visible: without HTTP/2 a browser allows about
   // six connections to one host, and a stream held by every background tab
   // would leave the tab being watched none for its video. A tab brought back
-  // opens its stream again, and that open reads the catalog through `open`.
-  // A tab in a watch-together session keeps it: hidden, it still plays and follows.
+  // opens its stream again, and that open reads the catalog and watch together
+  // through `open`, for what it missed. One in a session keeps it until it leaves.
+  const closeHidden = () => { if (!port.visible() && !together.inSession()) closeStream(); };
   port.onVisibility(() => {
-    if (port.visible()) {
-      openStream();
-      // State saved on another device while this tab was away follows the
-      // same notification path as a local mutation.
-      remoteState();
-    } else if (!together.inSession()) closeStream();
+    if (!port.visible()) return closeHidden();
+    openStream();
+    // State saved on another device while this tab was away follows the
+    // same notification path as a local mutation.
+    remoteState();
   });
+  together.onLeave(closeHidden);
   if (port.visible()) openStream();
 
   return {

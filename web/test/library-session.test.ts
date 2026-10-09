@@ -43,10 +43,14 @@ function fakeTogether() {
   const heard: unknown[] = [];
   const reopened = spy();
   let inSession = false;
+  let left: () => void = () => {};
   return {
     heard, reopened,
-    together: { heard: (payload: unknown) => { heard.push(payload); }, reopened, inSession: () => inSession },
-    join(value: boolean) { inSession = value; },
+    together: {
+      heard: (payload: unknown) => { heard.push(payload); }, reopened, inSession: () => inSession,
+      onLeave: (listener: () => void) => { left = listener; },
+    },
+    join(value: boolean) { inSession = value; if (!value) left(); },
   };
 }
 
@@ -198,6 +202,18 @@ test("a tab in a watch-together session keeps its stream while hidden, and one o
   watch.join(false);
   fake.setVisible(false);
   expect(fake.streamOpen).toBe(false);
+});
+
+test("a hidden tab that leaves its session lets its stream go, and a visible one keeps it", () => {
+  const { fake, watch } = session();
+  watch.join(true);
+  fake.setVisible(false);
+  watch.join(false);
+  expect(fake.streamOpen).toBe(false);
+  fake.setVisible(true);
+  watch.join(true);
+  watch.join(false);
+  expect(fake.streamOpen).toBe(true);
 });
 
 describe("a kids profile", () => {

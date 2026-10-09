@@ -6,27 +6,24 @@
  * out: only `viewer()` sends, and only the player's viewer call paths call it.
  */
 
-import { changeOf, decide, expectedPosition, follow } from "../together/follow.js";
+import { changeOf, expectedPosition, follow, isLive } from "../together/follow.js";
 import { acted } from "../together/moves.js";
 import {
-  heardTogether, onTogether, openForTogether, screen, serverNow, setForTogether, takeJoin, together, togetherNow,
+  heardTogether, onTogether, openForTogether, screen, serverNow, setForTogether, setInTogether, takeJoin, together,
+  togetherNow,
 } from "../together-now.js";
-import { clockTime } from "../format.js";
-import { speedLabel } from "./transport.js";
+import { COULD_NOT_START, ENDED, LEFT_NOT_HERE, NOT_HERE, say } from "./together-words.js";
+import { togetherView } from "./together-view.js";
+import { playerSteps } from "./together-steps.js";
 
 const DRIFT_CHECK_MS = 2000;
-const NOTICE_MS = 2000;
 /** A scrub sends one edit, this long after the last movement. */
 const SEEK_SETTLE_MS = 300;
-/** Below this the picture is loading or buffering. Nobody waits for it, and the next check catches it up. */
-const HAVE_FUTURE_DATA = 3;
-const NOT_HERE = "That title isn't on this profile";
 
-/**
- * `seekTo` and `setRate` move the player without saying so to anyone;
- * `converting` is whether a seek restarts ffmpeg.
- */
+/** The player's own parts are in `together-steps.js`; the button, label and notice in `together-view.js`. */
 export function mountTogether({ video, button, label, note, filmTime, seekTo, setRate, converting }) {
+  const player = playerSteps({ video, filmTime, seekTo, setRate, converting });
+  const { show, draw } = togetherView({ button, label, note });
   let setId = null;
   let hasNext = false;
   /** The session this screen is in, and that session as this screen follows it. */
@@ -34,90 +31,71 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
   let current = null;
   /** A title opened because the session moved to it: opening it is not the viewer's move. */
   let expecting = null;
+  /** Counts leaving: a start or join answered after this screen left, or its player closed, is too late to enter. */
+  let generation = 0;
   let drift = null;
   let settle = null;
-  let hide = null;
 
-  const own = () => ({ set: setId, playing: !video.paused, pos: filmTime(), rate: video.playbackRate });
+  const refresh = () => draw(id, current);
 
-  /** Text, not `hidden`: a status region has to be on the page already for its change to be read out. */
-  function show(text) {
-    note.textContent = text;
-    clearTimeout(hide);
-    hide = setTimeout(() => { note.textContent = ""; }, NOTICE_MS);
+  function apply(drifting = false) {
+    const opening = current && player.bring(current, setId, drifting);
+    if (opening) openTitle(opening);
   }
 
-  /**
-   * Brings the player to the session. A drift check passes over a screen
-   * still loading or buffering, and never seeks a conversion: that starts
-   * ffmpeg again, which lands it behind by as long as starting takes, every time.
-   */
-  function apply(drifting = false) {
-    if (!current || (drifting && (video.seeking || video.readyState < HAVE_FUTURE_DATA))) return;
-    for (const step of decide(own(), current, serverNow())) {
-      if (step.kind === "open") return openTitle(step.set);
-      if (step.kind === "rate") setRate(step.rate);
-      if (step.kind === "seek" && !(drifting && converting())) seekTo(step.pos);
-      if (step.kind === "play") void video.play().catch(() => {});
-      if (step.kind === "pause") video.pause();
-    }
+  /** Every two seconds: a session gone stale under this screen, as one nobody moved on from does, is over. */
+  function check() {
+    if (current && !isLive(current, setForTogether(current.set)?.duration ?? null, serverNow())) return end(ENDED);
+    apply(true);
   }
 
   /** The session's next title; one this profile may not see (a kids profile's limit) is where this screen leaves. */
   function openTitle(set) {
-    if (!setForTogether(set)) return void leave("Left watch together: that title isn't on this profile");
+    if (!setForTogether(set)) return void leave(LEFT_NOT_HERE);
     expecting = set;
     openForTogether(set);
   }
 
-  function say({ change, label: who }) {
-    const by = who ?? "Another screen";
-    if (change === "joined") return `${by} joined`;
-    if (change === "left") return `${by} left`;
-    if (change === "sought") return `Skipped to ${clockTime(current.pos)} by ${by}`;
-    if (change === "rate") return `${speedLabel(current.rate)} by ${by}`;
-    if (change === "title") return `Next episode by ${by}`;
-    return `${change === "paused" ? "Paused" : "Resumed"} by ${by}`;
-  }
-
-  function refresh() {
-    const { available, reason, live } = togetherNow();
-    const elsewhere = id === null ? live : null;
-    const here = elsewhere === null || setForTogether(elsewhere.session.set) !== null;
-    button.textContent = id !== null ? "Leave watch together" : elsewhere ? "Join" : "Watch together";
-    button.disabled = id === null && (!available || !here);
-    button.title = !button.disabled ? "" : available ? NOT_HERE : reason ?? "";
-    label.hidden = current === null;
-    if (current) label.textContent = `Together · ${current.members.map((m) => m.label).join(", ")}`;
-  }
-
   function end(message) {
     if (message) show(message);
+    generation++;
     id = null;
     current = null;
     clearInterval(drift);
     clearTimeout(settle);
     drift = null;
+    setInTogether(false);
     refresh();
+  }
+
+  /** A start or a join, asked of the server; an answer that comes after this screen left takes it out again. */
+  async function ask(body) {
+    const asked = generation;
+    const answer = await together(body);
+    if (asked === generation) return answer;
+    if (answer.ok) void together({ op: "leave", screen, id: answer.body.id });
+    return null;
   }
 
   /** A start's or a join's answer, heard as the stream would say it: a stale session is over at once. */
   function enter(answer) {
-    if (!answer.ok) return show(answer.status === 404 ? "Watch together ended" : answer.body?.reason ?? "Watch together couldn't start");
+    if (!answer) return;
+    if (!answer.ok) return show(answer.status === 404 ? ENDED : answer.body?.reason ?? COULD_NOT_START);
     id = answer.body.id;
-    drift ??= setInterval(() => apply(true), DRIFT_CHECK_MS);
+    setInTogether(true);
+    drift ??= setInterval(check, DRIFT_CHECK_MS);
     heardTogether(answer.body);
   }
 
   async function start() {
-    const answer = await together({ op: "start", screen, ...own() });
+    const answer = await ask({ op: "start", screen, ...player.own(setId) });
     // Another screen started one first: this is a join of theirs.
-    if (answer.status === 409) return joinLive(answer.body);
+    if (answer?.status === 409) return joinLive(answer.body);
     enter(answer);
   }
 
   async function joinLive(live) {
-    if (live.session.set === setId) return enter(await together({ op: "join", screen, id: live.id }));
+    if (live.session.set === setId) return enter(await ask({ op: "join", screen, id: live.id }));
     if (setForTogether(live.session.set)) openForTogether(live.session.set, live.id);
     else show(NOT_HERE);
   }
@@ -128,16 +106,25 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     if (leaving !== null) await together({ op: "leave", screen, id: leaving });
   }
 
-  /** The viewer's own move. `settle` holds a scrub's edit until it stops moving. */
+  /**
+   * The viewer's own move. `settle` holds a scrub's edit until it stops moving.
+   * A session the server no longer has is over; one it can't reach Telegram
+   * for plays on alone, and says why.
+   */
   function viewer(change, { settle: settling = false } = {}) {
     if (id === null || !current) return;
     const moved = acted(current, change, screen, serverNow());
     const session = id;
     current = moved;
-    const send = () => void together({ op: "act", screen, id: session, change: { ...change, pos: expectedPosition(moved, serverNow()) } });
+    const send = async () => {
+      const answer = await together({ op: "act", screen, id: session, change: { ...change, pos: expectedPosition(moved, serverNow()) } });
+      if (answer.ok || session !== id) return;
+      if (answer.status === 404) end(ENDED);
+      else if (answer.body?.reason) show(answer.body.reason);
+    };
     clearTimeout(settle);
     if (settling) settle = setTimeout(send, SEEK_SETTLE_MS);
-    else send();
+    else void send();
   }
 
   onTogether((view, heard) => {
@@ -146,12 +133,12 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     if (!heard && id !== null && view.available) heard = { id, session: view.live?.id === id ? view.live.session : null };
     if (!heard || heard.id !== id) return refresh();
     // Ended or stale, which `together-now.js` hears as `null`: this screen plays on alone.
-    if (heard.session === null) return end("Watch together ended");
+    if (heard.session === null) return end(ENDED);
     const before = current;
     current = follow(current, heard.session, screen);
     if (current === before) return;
     const change = before && current.by !== screen ? changeOf(before, current) : null;
-    if (change) show(say(change));
+    if (change) show(say(change, current));
     refresh();
     apply();
   });
@@ -172,7 +159,10 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
   return {
     /**
      * `openPlayer`'s title, as it opens: `next` says whether its end is the session's.
+     * Returns where to start it when that is the session's place, for a title opened
+     * in a session or to join one, so a conversion starts there rather than twice.
      * @param {{ setId: string }} set @param {{ next?: unknown }} [options]
+     * @returns {number | null}
      */
     open(set, { next = null } = {}) {
       setId = set.setId;
@@ -183,8 +173,11 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
       if (id !== null && followed) queueMicrotask(apply);
       else if (id !== null) viewer({ set: setId, pos: 0, playing: true });
       const joining = takeJoin();
-      if (joining !== null && id === null) void together({ op: "join", screen, id: joining }).then(enter);
+      if (joining !== null && id === null) void ask({ op: "join", screen, id: joining }).then(enter);
       refresh();
+      const { live } = togetherNow();
+      const session = id !== null ? current : live?.id === joining ? live.session : null;
+      return session?.set === setId ? expectedPosition(session, serverNow()) : null;
     },
     viewer,
     /** The player closing, or the page going: this screen leaves. */

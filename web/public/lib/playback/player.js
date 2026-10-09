@@ -629,7 +629,8 @@ function mountPlayer() {
     // can read it. Nothing below should observe the preceding title's values.
     playing = set;
     upNext.open(set, options);
-    together.open(set, options);
+    // The session's place, for a title opened in a session or to join one: started there, not seeked to.
+    const sessionAt = together.open(set, options);
     base = 0;
     capBits = null;
     converting = false;
@@ -673,7 +674,7 @@ function mountPlayer() {
     // Where this profile left off, if that is a place worth going back to —
     // `resume-point.js` decides what counts. Announced rather than done
     // silently, because a film that opens 34 minutes in looks broken.
-    const resume = resumeAt(state.progressOf(set.setId)) ?? 0;
+    const resume = sessionAt ?? resumeAt(state.progressOf(set.setId)) ?? 0;
     // Armed before the source is attached, so nothing can become ready in the
     // gap between setting it and starting to watch for it.
     const autoplay = options.autoplay ?? null;
@@ -723,7 +724,7 @@ function mountPlayer() {
       // Conversions are not revisited here — restarting one mid-flight for a
       // position a few seconds different is not worth the encoder churn.
       options.freshResume?.then((at) => {
-        if (at == null || converting || signal.aborted) return;
+        if (at == null || converting || signal.aborted || sessionAt !== null) return;
         if (Math.abs(filmTime() - resume) > RESUME_DRIFT_SECONDS) return;
         if (metadataSeen) video.currentTime = at;
         else operation.resume = at;
@@ -931,6 +932,7 @@ function mountPlayer() {
     });
     showSeekAt(bar);
     if (bar.seeksWhileDragging) seekFilmTo(at);
+    together.viewer({ pos: at }, { settle: true });
   });
 
   // Letting go. For a direct file this lands where the drag already went; for a

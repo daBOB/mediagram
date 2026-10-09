@@ -75,13 +75,12 @@ test("a page with no pill of its own shows nothing until there is a session to j
   expect(textOf(slot)).toBe("Join");
 });
 
-test("a slot a redraw has taken off the page stops following the session", () => {
-  const slot = joinOr(["film-1"], null) as unknown as Node & { isConnected: boolean };
-  slot.isConnected = true;
+test("a notice or slot a redraw replaced stops following, though nothing was heard while it showed", () => {
+  const firstSlot = joinOr(["film-1"], null) as unknown as Node;
+  const firstNotice = togetherNotice();
+  const slot = joinOr(["film-1"], null) as unknown as Node;
+  const notice = togetherNotice();
   live();
-  expect(textOf(slot)).toBe("Join");
-  slot.isConnected = false;
-  // Still listening, the end of the session would have emptied it.
-  heardTogether({ id: 7, session: null, serverNow: 0 });
-  expect(textOf(slot)).toBe("Join");
+  expect([textOf(firstSlot), firstNotice.hidden]).toEqual(["", true]);
+  expect([textOf(slot), notice.hidden]).toEqual(["Join", false]);
 });

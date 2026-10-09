@@ -11,18 +11,21 @@ import { onTogether, openForTogether, setForTogether, togetherNow } from "../tog
 import { playPill } from "./title-spread.js";
 import { episodeShort } from "./series-resume.js";
 
-/** Draws `node` now and on every change, until a redraw has taken it off the page. */
-function follow(node, draw) {
-  let shown = false;
+/** The listener each kind draws through. Each is in one place at a time, so the next one drawn replaces it. */
+const following = new Map();
+
+/** Draws now and on every change, until the page that holds it is drawn again. */
+function follow(kind, draw) {
+  following.get(kind)?.();
   draw(togetherNow());
-  const stop = onTogether((view) => {
-    shown ||= node.isConnected;
-    if (shown && !node.isConnected) return stop();
-    draw(view);
-  });
+  following.set(kind, onTogether(draw));
 }
 
-/** The live session and its title, when this profile may see it. */
+/**
+ * The live session and its title, when this profile may see it. Hidden, not
+ * greyed, while Telegram is out of reach: the server can't know of a session
+ * then, so there is none to offer. The player's own button says why.
+ */
 function joinable(live) {
   const set = live ? setForTogether(live.session.set) : null;
   return set && { live, set };
@@ -30,7 +33,7 @@ function joinable(live) {
 
 export function togetherNotice() {
   const line = el("p", "together-join");
-  follow(line, ({ live }) => {
+  follow("notice", ({ live }) => {
     const found = joinable(live);
     line.hidden = !found;
     line.replaceChildren();
@@ -49,7 +52,7 @@ export function togetherNotice() {
 /** `pill`, or Join while a live session plays one of `setIds`; nothing for no `pill` and no session. */
 export function joinOr(setIds, pill) {
   const slot = el("span", "together-slot");
-  follow(slot, ({ live }) => {
+  follow("slot", ({ live }) => {
     const found = joinable(live);
     const shown = found && setIds.includes(found.set.setId) ? playPill("Join", () => openForTogether(found.set.setId, live.id)) : pill;
     slot.replaceChildren(...(shown ? [shown] : []));

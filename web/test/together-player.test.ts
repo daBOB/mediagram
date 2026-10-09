@@ -8,7 +8,9 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { browserEnvironment, settle } from "./support/player-environment";
 import { mountTogether } from "../public/lib/playback/together.js";
-import { heardTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
+import {
+  heardTogether, inTogether, openForTogether, refreshTogether, screen, setTogetherOpener, takeJoin,
+} from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -249,10 +251,95 @@ test("starting while another screen started first joins theirs", async () => {
 
 test("a join the title page asked for is made as the player opens that title", async () => {
   heardTogether({ id: 7, session: session({ at: Date.now() }), serverNow: Date.now() });
-  const { openForTogether } = await import("../public/lib/together-now.js");
   openForTogether("film-1", 7);
   follower.open(film("film-1"), { next: null });
   await settle();
   expect(posts()).toEqual([{ op: "join", screen, id: 7 }]);
   expect(button().textContent).toBe("Leave watch together");
+});
+
+test("a join answered after the player closed takes this screen out again, and leaves nothing behind", async () => {
+  let answer!: () => void;
+  const gate = new Promise<void>((done) => { answer = done; });
+  env.respondWith(async (_url, options) => {
+    const body = options?.body ? JSON.parse(String(options.body)) : null;
+    if (body?.op !== "join") return new Response(null, { status: 204 });
+    await gate;
+    return Response.json({ id: 7, session: { ...held, by: screen, members: [TV, ME] }, serverNow: Date.now() });
+  });
+  heardTogether({ id: 7, session: held, serverNow: Date.now() });
+  follower.open(film("film-1"), { next: null });
+  button().fire("click");
+  await settle();
+  follower.clear();
+  answer();
+  await settle();
+  expect(posts().map((body) => body.op)).toEqual(["join", "leave"]);
+  expect([env.node("together-label").hidden, button().textContent, inTogether()]).toEqual([true, "Join", false]);
+  expect([...env.timers.values()].filter((timer) => timer.interval > 0)).toEqual([]);
+});
+
+test("a read asked before a join doesn't end the session the join entered", async () => {
+  let answerRead!: (response: Response) => void;
+  heardTogether({ id: 7, session: held, serverNow: Date.now() });
+  env.respondWith(async (_url, options) => {
+    const body = options?.body ? JSON.parse(String(options.body)) : null;
+    if (!body) return new Promise<Response>((done) => { answerRead = done; });
+    return Response.json({ id: 7, session: { ...held, by: screen, members: [TV, ME] }, serverNow: Date.now() });
+  });
+  const reading = refreshTogether();
+  follower.open(film("film-1"), { next: null });
+  button().fire("click");
+  await settle();
+  answerRead(Response.json({ available: true, reason: null, live: null, serverNow: Date.now() }));
+  await reading;
+  expect([button().textContent, note().textContent]).toEqual(["Leave watch together", ""]);
+});
+
+test("a session gone stale under this screen, nobody having moved on from its end, is over", async () => {
+  await joined({ pos: 590 });
+  env.advance(130_000);
+  expect(env.node("together-label").hidden).toBe(false);
+  env.advance(2_000);
+  expect(note().textContent).toBe("Watch together ended");
+  expect([env.node("together-label").hidden, inTogether()]).toEqual([true, false]);
+  expect(posts()).toEqual([]);
+});
+
+test("at its title's end this screen waits for the next one: neither an edit nor a drift check starts it again", async () => {
+  await joined({ pos: 598 });
+  Object.assign(env.video, { currentTime: 600, paused: true, ended: true });
+  heardFromTv({ pos: 600, members: [TV, ME, { screen: "tab", label: "Tablet" }] });
+  env.advance(4_000);
+  expect([env.video.paused, seeks]).toEqual([true, []]);
+});
+
+test("a move the server has no session for ends it here; one it can't send says why and plays on", async () => {
+  await joined();
+  env.respondWith(async () => Response.json({ reason: "Telegram isn't reachable" }, { status: 503 }));
+  follower.viewer({ playing: false });
+  await settle();
+  expect([note().textContent, button().textContent]).toEqual(["Telegram isn't reachable", "Leave watch together"]);
+  env.advance(2_000);
+  env.respondWith(async () => { throw new TypeError("offline"); });
+  follower.viewer({ playing: true });
+  await settle();
+  expect(note().textContent).toBe("Telegram isn't reachable");
+  env.respondWith(async () => new Response(null, { status: 404 }));
+  follower.viewer({ pos: 30 }, { settle: true });
+  env.advance(300);
+  await settle();
+  expect([note().textContent, env.node("together-label").hidden, inTogether()]).toEqual(["Watch together ended", true, false]);
+});
+
+test("a title opened in a session, or to join one, starts at the session's place", async () => {
+  expect(follower.open(film("film-1"), { next: null })).toBeNull();
+  heardTogether({ id: 7, session: session({ pos: 120, at: Date.now() }), serverNow: Date.now() });
+  openForTogether("film-1", 7);
+  expect(follower.open(film("film-1"), { next: null })).toBe(120);
+  await settle();
+  env.advance(1_000);
+  heardFromTv({ set: "film-2", pos: 30 });
+  expect(follower.open(film("film-2"), { next: null })).toBe(30);
+  expect(follower.open(film("film-1"), { next: null })).toBe(0);
 });

@@ -28,6 +28,8 @@ export interface LibraryTogether {
   reopened(): void;
   /** Whether this tab is in a session, which keeps its stream open while hidden. */
   inSession(): boolean;
+  /** `listener` runs each time this tab is out of a session. */
+  onLeave(listener: () => void): void;
 }
 
 /** Everything the session needs from the browser, so it can be faked. */

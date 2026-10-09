@@ -21,13 +21,29 @@ export const screen = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b)
 
 let known = { available: false, reason: UNREACHABLE, live: null, offset: 0 };
 const listeners = new Set();
+/** How many sessions have been heard: a read answered after a newer one knows less than this tab already does. */
+let heardCount = 0;
+let member = false;
+const leaving = new Set();
 let opener = null;
 let setOf = () => null;
 let joinNext = null;
 
 export const togetherNow = () => known;
 export const serverNow = () => Date.now() + known.offset;
-export const inTogether = () => known.live?.session.members.some((m) => m.screen === screen) ?? false;
+
+/** Whether this tab is in a session, as its player says: a read that can't reach Telegram doesn't take it out. */
+export const inTogether = () => member;
+
+export function setInTogether(value) {
+  member = value;
+  if (!value) for (const left of leaving) left();
+}
+
+/** Called each time this tab is out of a session, so a hidden tab can let its event stream go. */
+export function onLeaveTogether(listener) {
+  leaving.add(listener);
+}
 
 export function onTogether(listener) {
   listeners.add(listener);
@@ -44,12 +60,15 @@ function stillLive(session, now) {
 }
 
 export async function refreshTogether() {
+  const since = heardCount;
   try {
     const response = await fetch("/api/together");
     // No watch together on this server at all reads the same as one that can't reach Telegram.
     const body = response.ok ? await response.json() : { available: false, reason: UNREACHABLE, live: null, serverNow: Date.now() };
     const session = stillLive(body.live?.session ?? null, body.serverNow);
-    known = { available: body.available, reason: body.reason, live: session && body.live, offset: body.serverNow - Date.now() };
+    // Asked before a session heard since, such as the answer to a join, it is older news than that one.
+    const live = heardCount === since ? session && body.live : known.live;
+    known = { available: body.available, reason: body.reason, live, offset: body.serverNow - Date.now() };
     tell(null);
   } catch {
     // Offline for a moment: what was known stays, and the next event or open corrects it.
@@ -58,6 +77,7 @@ export async function refreshTogether() {
 
 /** A `together` event. The server only sends one while it reaches Telegram. */
 export function heardTogether(payload) {
+  heardCount++;
   const session = stillLive(payload.session, payload.serverNow);
   const live = session ? { id: payload.id, session } : known.live?.id === payload.id ? null : known.live;
   known = { available: true, reason: null, live, offset: payload.serverNow - Date.now() };

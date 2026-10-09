@@ -16,8 +16,11 @@ export const screen: string;
 export function togetherNow(): TogetherView;
 /** This tab's clock, corrected to the server's. */
 export function serverNow(): number;
-/** Whether this tab is one of the live session's members. */
+/** Whether this tab is in a session, as its player last said through `setInTogether`. */
 export function inTogether(): boolean;
+export function setInTogether(value: boolean): void;
+/** `listener` runs each time this tab is out of a session. */
+export function onLeaveTogether(listener: () => void): void;
 /** `heard` is `null` after a read of `GET /api/together`. Returns the unsubscribe. */
 export function onTogether(listener: (view: TogetherView, heard: Heard | null) => void): () => void;
 export function refreshTogether(): Promise<void>;

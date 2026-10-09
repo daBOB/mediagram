@@ -24,7 +24,8 @@
 }
 
 /* What another screen just did, at the top centre of the picture. Outside
-   the HUD, so it shows while the controls rest; empty in between. */
+   the HUD, so it shows while the controls rest. Empty in between, and drawn as
+   nothing then while staying a status region. */
 .together-note {
   position: absolute;
   top: 4.5rem;
@@ -42,7 +43,7 @@
   text-align: center;
   pointer-events: none;
 }
-.together-note:empty { display: none; }
+.together-note:empty { padding: 0; border: 0; background: none; }
 /* Where the top bar wraps, on a phone or beside the episode sidebar, the title
    has a row to itself: the label takes the next, and the notice goes below both. */
 @media (max-width: 767px) {
@@ -53,6 +54,9 @@
   dialog.sidebar-open .together-label { flex-basis: 100%; text-align: left; }
   dialog.sidebar-open .together-note { top: 8rem; right: calc(var(--sidebar-width) + 1rem); }
 }
+
+/* Join in place of a title page's Play: the pill sits in the row as Play would. */
+.together-slot { display: contents; }
 
 /* Home: one line above the shelf, never instead of it. */
 .together-join {

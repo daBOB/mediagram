@@ -171,6 +171,16 @@ test("a session heard on the stream offers Join on Home and on its title's page,
   expect(env.video.attachments).toEqual(["/api/sets/First/stream"]);
 });
 
+test("a course's page offers Join while a session plays one of its lessons", async () => {
+  catalog = JSON.stringify([{ ...film("Lesson"), kind: "tut", show: "Course", path: "Basics" }]);
+  await start();
+  await env.navigate("#/tutorials/Course");
+  expect(page()).not.toContain("Join");
+  const live = { session: "s-1", set: "Lesson", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  stream().fire("together", { id: 7, session: live, serverNow: 0 });
+  expect(textOf(byClass(env.node("main"), "film-play"))).toBe("Join");
+});
+
 for (const outcome of ["success", "failure"] as const) {
   test(`old search ${outcome} cannot overwrite a different route`, async () => {
     await start();

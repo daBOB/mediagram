@@ -73,17 +73,20 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `player.js`, by 11, for watch together's hooks: the
  * viewer's play, pause, seek, speed and next title, the media keys, and leaving
  * as the player closes. Raised again for `app.js`, by 3, to register how Join
- * opens a title and finds it in this profile's catalog.
+ * opens a title and finds it in this profile's catalog. Raised again for
+ * `player.js`, by 2, so a held seek-bar drag reports as it moves and a title
+ * opened in a session starts at the session's place; and for
+ * `catalog/course-view.js`, by 3, for Join on a course's page.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 698,
-  "public/lib/catalog/course-view.js": 234,
+  "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
   "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1005,
+  "public/lib/playback/player.js": 1007,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
