@@ -88,15 +88,24 @@ internal class TogetherSessions(
         return null
     }
 
-    /** Shows what this device holds session [id] to be; nothing once it is over. */
+    /**
+     * Shows what this device holds session [id] to be; nothing once it is
+     * over. Another session heard while a screen here is in the one shown
+     * does not take its place, as it does not in a web tab: that screen
+     * follows its own until a read answers the newest.
+     */
     private fun tell(id: Int): Session? {
         val session = sender.view(id)?.takeUnless { it.ended }
+        val current = shown.value
         shown.value =
             when {
-                session != null -> LiveSession(id, session)
-                shown.value?.id == id -> null
-                else -> shown.value
+                current?.id == id -> session?.let { LiveSession(id, it) }
+                session == null -> current
+                current != null && mine(current.session) && !mine(session) -> current
+                else -> LiveSession(id, session)
             }
         return session
     }
+
+    private fun mine(session: Session): Boolean = session.members.any { it.screen in local }
 }

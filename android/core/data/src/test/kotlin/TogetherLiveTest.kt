@@ -124,6 +124,54 @@ class TogetherLiveTest {
             assertEquals(LiveSession(950, tvPause), h.live.live.value)
         }
 
+    /**
+     * Two sessions started in the same second on two devices: a screen in
+     * the first keeps following it, as a web tab does, until a read answers
+     * the newest; one that joins the second is shown that one at once.
+     */
+    @Test
+    fun aNewerSessionHeardWhileAScreenHereIsInAnotherLeavesItFollowingItsOwnUntilTheNextRead() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.put(800, TV_SESSION)
+            h.push(800, TV_SESSION)
+            val mine = h.live.join(800, A)!!
+            runCurrent()
+            val other = TV_SESSION.copy(session = "s-phone", by = B.screen, members = listOf(B))
+            h.put(950, other)
+
+            h.push(950, other)
+            assertEquals(mine, h.live.live.value)
+            val tvPause = mine.session.copy(playing = false, by = TV.screen)
+            h.push(800, tvPause)
+            assertEquals(LiveSession(800, tvPause), h.live.live.value)
+            h.push(950, other.copy(rate = 1.5))
+            assertEquals(LiveSession(800, tvPause), h.live.live.value)
+
+            assertEquals(950, h.live.refresh()?.id)
+            assertEquals(950, h.live.live.value?.id)
+        }
+
+    @Test
+    fun aScreenHereJoiningTheNewerSessionIsShownItAtOnce() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.put(800, TV_SESSION)
+            h.push(800, TV_SESSION)
+            h.live.join(800, A)
+            runCurrent()
+            val other = TV_SESSION.copy(session = "s-phone", by = B.screen, members = listOf(B))
+            h.put(950, other)
+            h.push(950, other)
+
+            val joined = h.live.join(950, A)
+
+            assertEquals(joined, h.live.live.value)
+            assertEquals(950, joined?.id)
+        }
+
     @Test
     fun aRememberedIdThatIsNoSessionIsForgottenAfterOneRead() =
         runTest {
