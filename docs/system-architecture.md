@@ -711,8 +711,11 @@ by `updates.rs` on both surfaces and handed on at once, skipping the 5 s
 debouncer that state and index events wait out. The web server tells open
 pages with a `together` event on `/api/events`, carrying `serverNow`, so the
 browser corrects its own clock from the server's and never compares against
-it. Android receives `LibraryEvent::Together { message_id, text }`; this
-device hears its own edits too, and the echo rule drops them.
+it. Android receives a payload-less `LibraryEvent::Together` (`TOGETHER` in
+Kotlin) and then reads `together_heard()`, a slot in the core that holds only
+the newest together message heard and is not cleared, so two pushes can read
+the same message (`TogetherReads.kt` takes it as news once). This device hears its own edits
+too, and the echo rule drops them.
 
 **The echo rule.** An edit whose `by` is this screen is ignored only while the current session is still this screen's own write (`stillMine` in `follow.js`); if another screen's edit landed in between, the later own echo becomes the session. A change a
 screen makes because it is following is never sent. Only the viewer's own
@@ -720,11 +723,28 @@ actions are: on the web, the player's viewer call paths; on Android,
 `ViewerPlayer` plus the speed and restart hooks.
 
 **Writing.** Writes are serialised per hub (web) or sender (Android). A write
-in flight is the newest known state, so a join or leave composes from it. On a
-flood wait the screen keeps its own state and, when the wait ends, re-applies
-its own *move* (act: its playback fields; join; leave; end) to the newest
-known session; earlier queued writes are dropped, and the write is dropped if
-the session is gone or ended. Starting is serialised: one start in flight,
+in flight is the newest known state, so a join or leave composes from it.
+What is queued is each screen's *move* (act: its playback fields; join; leave;
+end), and the moves waiting for one message are composed in the order they
+were made, so a queued join survives a later act; each goes out re-applied to
+the newest known session, and is dropped if the session is gone or ended. On a
+flood wait the move goes again when Telegram's wait ends, ahead of any made
+since. An edit that throws, as while Telegram can't be reached, restores the
+last state the channel is known to hold and is tried again after 30 s, never
+sooner, ahead of any move made since (`EDIT_RETRY_MS` in `web/src/together/sender.ts`
+and `TogetherSender.kt`). After three throws (`EDIT_TRIES`) the move is given
+up on and logged, and the screens are shown what the channel holds with a
+`lost` mark: the web's `together` event carries `lost: true`, Android's
+`LiveSession.lost` is set. A screen takes a `lost` session even when it is its
+own echo, which `follow` would otherwise ignore, so the screen that made the
+move follows the channel again rather than stay on a state nobody else has.
+A last leave or end that throws is retried the same way, so it is still written
+and the message deleted once Telegram is back. On Android a thrown edit also
+makes `available` false until a read or an edit answers, and a screen in a
+session says "Telegram isn't reachable" when it does. The web lets act, leave
+and end queue while Telegram is unreachable, and an act answered then carries
+the reason; only start and join, which read the channel, are refused with a
+503. Starting is serialised: one start in flight,
 and on both surfaces a lost start race becomes a join of the winner's session (`DefaultTogetherLive.kt` returns `Started(conflict = true)`, `TogetherJoining.kt` then joins). The lock covers only starts from the same server or process, so a start from another device can still race. Leave and end
 are answered once queued, so a client cannot tell when the leave reached
 Telegram. Cross-device races stay inherent: last edit wins and the loser
@@ -769,6 +789,17 @@ decision, not drift):
   `android/feature/catalog/src/main/kotlin/CatalogViewModel.kt`: once Join has
   not been shown for 5 s the offer is dropped, so on a later return Home's
   focus lands on the cover.
+- *Dismissing picture-in-picture on Android leaves the session*
+  (`PlayerViewModelPip.kt`): the title stays open and paused, but nothing is
+  on screen to follow with. The web player has no such dismissal.
+- *A start or a join on Android gives up after 10 s* (`ASK_MS` in
+  `TogetherJoining.kt`) and says it could not start; one answered later
+  leaves again. The web waits on the server's answer, whose own reads and
+  sends have no limit of their own.
+- *Unreachable is learned differently.* The web server knows whether its
+  connection is up, so every move answered while it is down says why. Android
+  learns it from a read or an edit that fails, says so then, and on each
+  move after, until a read or an edit answers.
 - *The notice wording grew beyond the spec.* The words are in
   `web/public/lib/playback/together-words.js` and
   `android/feature/player/.../TogetherWords.kt` (`Watch together ended`,

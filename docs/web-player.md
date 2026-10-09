@@ -387,7 +387,7 @@ hash at all fall back the same way.
 | `GET` | `/api/sets/:id/subtitles/:n.vtt` | One subtitle track's WebVTT, by its position in the catalog's own list |
 | `GET` | `/api/sets/:id/cached-stream` | Cache-only stream (for thumbnail generation) |
 | `GET` | `/api/events` | Server-sent events (catalog refresh, index install, `together`) |
-| `GET`/`POST` | `/api/together` | Watch together: the live session; start, join, act, leave |
+| `GET`/`POST` | `/api/together` | Watch together: the live session; start, join, act, leave, end |
 | `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
 | `GET` | `/api/settings/*` | Settings endpoints (admin-gated: Telegram/cache/library) |
 | `GET` | `/api/settings/sessions` | Active sessions list |
@@ -695,13 +695,24 @@ Screens in one household play a title in step; the format and the rules are in
   a course page, one of its lessons) a live session is playing.
 - **`GET /api/together`** answers `{available, reason, live, serverNow}`;
   `live` is the newest live session with its message id, or `null`.
-  **`POST /api/together`** takes `op` = `start`, `join`, `act` or `leave` with
-  the tab's `screen` id (and the message `id` for the last three); `start`
-  answers 409 with the live session when another screen started first, `join`
-  of a deleted message 404, and any write 503 when Telegram is unreachable.
-  The server holds no rules and writes the label `Browser`.
+  **`POST /api/together`** takes `op` = `start`, `join`, `act`, `leave` or
+  `end` with the tab's `screen` id (and the message `id` for the last four);
+  `start` answers 409 with the live session when another screen started
+  first, `join` of a deleted message 404. While Telegram is unreachable a
+  `start` or `join` answers 503 with the reason, since both read the channel;
+  an `act`, `leave` or `end` is still queued, and an `act` answers the session
+  with `reason` set, so the tab says why. `leave` and `end` answer 204 once
+  queued. The server holds no rules and writes the label `Browser`.
+- **Retries.** The hub's sender (`src/together/sender.ts`) sends one edit at
+  a time. One that throws is tried again after 30 s, never sooner, with the
+  moves made since composed after it; after three throws the move is given up
+  on and logged, and every tab is told what the channel holds, marked `lost`.
+  A flood wait is not a throw: the move goes again once Telegram's wait ends,
+  and is never given up on.
 - **The `together` SSE event** on `/api/events` carries
-  `{id, session, serverNow}` (`session` is `null` when it is over), delivered
+  `{id, session, serverNow}` (`session` is `null` when it is over), and
+  `lost: true` when a move of this server's was given up on: the tab that made
+  it then follows that session too, though it is its own echo. It is delivered
   at once and never debounced. The browser corrects its clock from `serverNow`.
   A hidden tab that is in a session keeps the stream open.
 - **Known limitation.** A converted (ffmpeg) title is never drift-seeked, so it
