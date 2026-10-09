@@ -12,7 +12,7 @@
  * bug in whichever disagrees with the web.
  */
 
-import { INDEX_MARKER, STATE_MARKER, deviceFromCaption } from "./channel-captions";
+import { INDEX_MARKER, STATE_MARKER, TOGETHER_PREFIX, deviceFromCaption } from "./channel-captions";
 
 /**
  * One raw update, reduced to what classifying needs. The MTProto adapter
@@ -22,6 +22,8 @@ export interface ChannelUpdate {
   kind: "new" | "edit" | "pinned" | "delete" | "other";
   /** Bare channel id (no -100 prefix). */
   channel: number;
+  /** The message id, for `new` and `edit`. */
+  id?: number;
   /** The message's text or caption, for `new` and `edit`. */
   caption?: string;
   /** A service message, such as "pinned a message". */
@@ -30,7 +32,7 @@ export interface ChannelUpdate {
   pinned?: boolean;
 }
 
-export type LibraryEvent = "state" | "index";
+export type LibraryEvent = "state" | "index" | "together";
 
 export interface ClassifyContext {
   channel: number;
@@ -48,6 +50,7 @@ export function classify(update: ChannelUpdate, context: ClassifyContext): Libra
   if ((update.kind !== "new" && update.kind !== "edit") || update.service) return null;
 
   const caption = update.caption ?? "";
+  if (caption.startsWith(TOGETHER_PREFIX)) return "together";
   if (caption.startsWith(`${STATE_MARKER} `)) {
     const device = deviceFromCaption(caption);
     // This device's own write comes back to it on some libraries; it is not news.
@@ -58,7 +61,7 @@ export function classify(update: ChannelUpdate, context: ClassifyContext): Libra
   return null;
 }
 
-/** Released in this order when both are due at once, so every port agrees. */
+/** Released in this order when both are due at once, so every port agrees. Never `together`: it skips the debouncer. */
 const ORDER: LibraryEvent[] = ["state", "index"];
 
 /**

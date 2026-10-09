@@ -37,6 +37,7 @@ export class FollowedChannel {
 
 export class UpdatesBinding {
   private updates: LibraryUpdates | null = null;
+  private together: (id: number, text: string) => void = () => {};
 
   constructor(
     private readonly connection: TelegramConnection,
@@ -50,6 +51,11 @@ export class UpdatesBinding {
   /** Which follower a future `followCatalog`/`rebind` binds to; `null` follows nothing (a package catalog). */
   setFollower(follower: Pick<CatalogFollower, "refresh"> | null): void {
     this.follower = follower;
+  }
+
+  /** Where each watch-together edit heard goes, for this and every later subscription. */
+  setTogether(sink: (id: number, text: string) => void): void {
+    this.together = sink;
   }
 
   /**
@@ -69,6 +75,8 @@ export class UpdatesBinding {
     const next = new LibraryUpdates(
       (onEvent) => this.listen(telegram.client, { channel: bareChannelId(chatId), ownDevice: this.ownDevice }, onEvent),
       this.sync,
+      // Read on each edit, so a sink set after subscribing still hears them.
+      (id, text) => this.together(id, text),
     );
     this.updates = next;
     await next.start();

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "a new session message is together",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "new", "channel": 3816522481, "id": 901, "caption": "#mlib-together v=1\n{}" },
+    "expect": "together"
+  },
+  {
+    "name": "an edited session message is together",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "edit", "channel": 3816522481, "id": 901, "caption": "#mlib-together v=1\n{}" },
+    "expect": "together"
+  },
+  {
+    "name": "together on another channel is nothing",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "edit", "channel": 42, "id": 901, "caption": "#mlib-together v=1\n{}" },
+    "expect": null
+  },
+  {
+    "name": "a word that only starts the same is nothing",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "new", "channel": 3816522481, "id": 902, "caption": "#mlib-togetherness" },
+    "expect": null
+  },
+  {
+    "name": "a service message is nothing",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "new", "channel": 3816522481, "id": 903, "service": true },
+    "expect": null
+  }
+]

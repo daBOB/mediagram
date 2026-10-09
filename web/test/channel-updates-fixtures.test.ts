@@ -30,7 +30,7 @@ describe("classify fixtures", () => {
     expect: LibraryEvent | null;
   }
 
-  for (const one of load<Case[]>("classify.json")) {
+  for (const one of [...load<Case[]>("classify.json"), ...load<Case[]>("together.json")]) {
     test(one.name, () => {
       expect(classify(one.update, one.context)).toBe(one.expect);
     });
