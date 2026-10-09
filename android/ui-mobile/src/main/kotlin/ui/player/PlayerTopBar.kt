@@ -66,6 +66,8 @@ internal fun PlayerTopBar(
     /** Where the bar ends in the root, so a menu knows how far up it may reach. */
     onBottom: (Int) -> Unit = {},
     label: String? = null,
+    /** The episode list standing down the right: the bar runs under its header, so nothing may sit at its right end. */
+    sidebarBeside: Boolean = false,
 ) {
     Row(
         modifier =
@@ -81,7 +83,7 @@ internal fun PlayerTopBar(
         }
         if (showTitle) {
             Column(modifier = Modifier.weight(1f).padding(top = Spacing.medium, end = Spacing.small)) {
-                TitleAndLabel(title, label)
+                TitleAndLabel(title, label, roomBeside = !sidebarBeside)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                     marks()
                     if (onNotes != null) TextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
@@ -97,16 +99,18 @@ private val LABEL_BESIDE_FROM = 768.dp
 /**
  * The title, and watch together's [label] — the web's `.together-label`:
  * beside the title on a wide window, each with half the room, and on its own
- * line under it on a narrow one. Beside the episode sidebar it stays beside,
- * where the web's drops under: this bar keeps the window's width.
+ * line under it on a narrow one, and under it too while the episode list
+ * stands beside the picture ([roomBeside] false), as the web's goes beside
+ * its sidebar.
  */
 @Composable
 private fun TitleAndLabel(
     title: String,
     label: String?,
+    roomBeside: Boolean,
 ) {
     val wide = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } >= LABEL_BESIDE_FROM
-    if (label != null && wide) {
+    if (label != null && wide && roomBeside) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),

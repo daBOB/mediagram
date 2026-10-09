@@ -24,12 +24,14 @@ import player.DefaultPlayerHandle
 import player.PlayerViewModel
 import player.ProgressRecorder
 import data.CatalogRepository
+import data.TogetherLive
 import data.PlayerPreferences
 import playback.SubtitleTrackSource
 import playback.SeriesPreloading
 import playback.HeldSetsQuery
 import player.PlaybackServiceController
 import player.together.ViewerRelay
+import org.robolectric.RuntimeEnvironment
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
@@ -42,6 +44,7 @@ import testing.WatchStateFixture
 internal class PlayerLifecycleFixture(
     val watchState: WatchStateFixture = WatchStateFixture(),
     private val catalog: CatalogRepository = mockk(relaxed = true),
+    private val togetherLive: TogetherLive = FakeTogetherLive(),
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository = watchState.repository
@@ -90,9 +93,10 @@ internal class PlayerLifecycleFixture(
                     PlaybackServiceController.Noop,
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
-                    togetherLive = FakeTogetherLive(),
+                    togetherLive = togetherLive,
                     relay = ViewerRelay(),
-                    context = mockk(relaxed = true),
+                    // Real, so the screen can name itself (Phone or Tablet) when it joins a session.
+                    context = RuntimeEnvironment.getApplication(),
                 ) as T
             }
         }

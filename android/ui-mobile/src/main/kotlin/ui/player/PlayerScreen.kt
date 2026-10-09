@@ -189,6 +189,7 @@ fun PlayerScreen(
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
                 together = together,
+                sidebarBeside = card.sidebarOpen,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )

@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import data.CatalogRepository
+import data.TogetherLive
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.verify
@@ -33,6 +34,7 @@ import org.robolectric.annotation.Config
 import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
 import player.UNKNOWN_TITLE
+import testing.FakeTogetherLive
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -42,12 +44,14 @@ abstract class PlayerCardScreenBase {
     internal lateinit var fixture: PlayerLifecycleFixture
     internal lateinit var controller: ActivityController<PlayerTestActivity>
 
-    internal fun open(run: List<String> = emptyList()) {
+    internal fun open(
+        run: List<String> = emptyList(),
+        // Nothing in the catalogue: a run's rows list as unknown titles, which is all these need.
+        catalog: CatalogRepository = emptyCatalog(),
+        together: TogetherLive = FakeTogetherLive(),
+    ) {
         compose.runOnUiThread {
-            // Nothing in the catalogue: a run's rows list as unknown titles, which is all these need.
-            val catalog = mockk<CatalogRepository>(relaxed = true)
-            coEvery { catalog.sets() } returns emptyList()
-            fixture = PlayerLifecycleFixture(catalog = catalog)
+            fixture = PlayerLifecycleFixture(catalog = catalog, togetherLive = together)
             PlayerTestActivity.fixture = fixture
             PlayerTestActivity.run = run
             PlayerTestActivity.switches.clear()
@@ -56,6 +60,8 @@ abstract class PlayerCardScreenBase {
         compose.waitForIdle()
         assertEquals(PlayerUiState.Playing, controller.get().playerViewModel.state.value)
     }
+
+    private fun emptyCatalog(): CatalogRepository = mockk<CatalogRepository>(relaxed = true).also { coEvery { it.sets() } returns emptyList() }
 
     @After
     fun close() {

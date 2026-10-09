@@ -91,6 +91,8 @@ private fun TvCoursePage(
 ) {
     val rows = remember(collection) { rowsOf(collection.divisions) }
     val extent = remember(collection) { courseExtentOf(collection.divisions) }
+    // Read here, not in the head: the head is a lazy item, and scrolled away it would stop listening.
+    val join = togetherJoinIn(collection)
     TvPage {
         TvCollectionRows(
             rows = rows,
@@ -100,7 +102,7 @@ private fun TvCoursePage(
             header = {
                 Column {
                     TvShelfHead(collection.name, extent)
-                    SeriesResumeRow(resume, onResume, togetherJoinIn(collection))
+                    SeriesResumeRow(resume, onResume, join)
                 }
             },
             heldIds = heldIds,

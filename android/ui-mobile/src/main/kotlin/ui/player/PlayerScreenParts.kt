@@ -61,6 +61,7 @@ internal fun PlayerTopChrome(
     marks: @Composable () -> Unit = {},
     onBarBottom: (Int) -> Unit = {},
     together: TogetherUi = TogetherUi(),
+    sidebarBeside: Boolean = false,
 ) {
     // Watch together's notice goes too, unlike the web's beside its sidebar:
     // a sidebar that covers the window covers the picture it speaks of.
@@ -74,6 +75,7 @@ internal fun PlayerTopChrome(
             marks = marks,
             onBottom = onBarBottom,
             label = together.label,
+            sidebarBeside = sidebarBeside,
         )
         // Under the bar rather than with it, so it shows while the controls rest.
         TogetherNoticePill(together.notice, Modifier.align(Alignment.CenterHorizontally).padding(top = Spacing.small))

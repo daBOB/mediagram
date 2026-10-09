@@ -4,9 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.pressKey
 import catalog.CollectionKind
 import catalog.Division
@@ -24,6 +26,7 @@ import org.robolectric.annotation.Config
 import ui.common.catalog.LocalTogetherOffers
 import ui.common.catalog.TogetherOffers
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Join on the television's title pages, as `together-join.js`'s `joinOr`
@@ -90,5 +93,26 @@ class TvTogetherTitlePageTest : TvScreenStateTest() {
         }
         compose.onNodeWithText("Play lesson", substring = true).assertDoesNotExist()
         compose.onNodeWithText("▶ Join").assertExists()
+    }
+
+    /** A long course scrolled past its head still listens, so the line under it never reads again on the way back. */
+    @Test
+    fun aCourseScrolledPastItsHeadKeepsListening() {
+        val lessons = (1..60).map { set("lesson-$it", Kind.TUTORIAL, "Lesson $it", show = "A Course", addedAt = 0, episode = it) }
+        val part = Division("Part 1", 1, lessons, emptyList())
+        val course = Entry.Collection("k", CollectionKind.COURSE, "A Course", null, null, 60, 1, listOf(part))
+        val flow = MutableStateFlow<TogetherOffer?>(TogetherOffer(41, lessons.first(), "TV"))
+        show {
+            CompositionLocalProvider(LocalTogetherOffers provides TogetherOffers(flow) { joined++ }) {
+                val resume = seriesResumeFor(course, WatchSnapshot.Empty)
+                TvCollection(course, info = null, watch = WatchSnapshot.Empty, onPlay = {}, resume = resume)
+            }
+        }
+        compose.onNodeWithText("▶ Join").assertExists()
+
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(55)
+        compose.onNodeWithText("▶ Join").assertDoesNotExist()
+
+        assertTrue(flow.subscriptionCount.value > 0, "the course page still listens with its head scrolled away")
     }
 }
