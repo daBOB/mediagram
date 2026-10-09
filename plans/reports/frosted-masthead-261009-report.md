@@ -26,7 +26,26 @@ after-A-cover.png, after-B-posters.png; composites (top = before, bottom = after
 | before | 1634 / 1636 | 0 / 0 | 3.4% / 3.6% | 10 | 14 / 13 | 14 | 19 | 12 / 11 |
 | after | 1394 / 1414 | 5 / 0 | 26.8% / 21.1% | 12 | 17 / 16 | 20 / 18 | 34 / 28 | 12 / 12 |
 
+## Tuning round (same 8-swipe protocol, tablet, debug build; legacy-janky % / p50 / p99 ms; run1, run2)
+The first baseline (3.4%) was the previously installed 0.118.1 build. Re-measured on the build under test with frost forced off, the "baseline" is not 3.5%: it is very noisy on this tablet (frame counts per run swing 500-1400, so some swipes barely render).
+
+| variant | run1 | run2 |
+|---|---|---|
+| original installed build (first baseline) | 3.4 / 10 / 19 | 3.6 / 10 / 19 |
+| this build, frost off (3 runs) | 27.0 / 11 / 53 | 18.6 / 10 / 31 ; 15.4 / 12 / 44 ; 27.6 / 12 / 36 |
+| frost 18dp, Adaptive (first measure) | 26.8 / 12 / 34 | 21.1 / 12 / 28 |
+| frost 18dp, Adaptive (re-measure x2) | 18.4 / 12 / 48 ; 21.1 / 14 / 46 | 44.9 / 13 / 42 ; 49.1 / 14 / 57 |
+| Performance mode | 46.0 / 14 / 200 | 39.5 / 13 / 46 |
+| Balanced mode | 17.4 / 13 / 200 | 30.3 / 12 / 36 |
+| radius 12dp | 41.2 / 14 / 69 | 36.3 / 12 / 36 |
+| radius 8dp | 16.1 / 13 / 38 | 46.8 / 14 / 46 |
+| expandLayerBounds=false | 17.2 / 13 / 46 | 29.8 / 12 / 36 |
+
+Not tried: combined variants, and gating the effect while the list is at the top. No single knob moved the numbers outside the noise, so a combination is unlikely to; and the dominant cost is capturing the whole content area into a layer every frame (`hazeSource`), which none of these shrink. Gating at the top only helps when not scrolling, which is not what is measured.
+
+Result: frost costs roughly +2 ms p50 and somewhat worse tail versus the same build with frost off; nothing tested gets it under that. Committed settings stay at Haze defaults, 18dp. The decision (accept, or drop to a cheaper look) is the user's.
+
 ## Concerns
-- Blur costs frame time: p50 +2 ms, p99 +9..15 ms; modern jank stays ~0 but legacy (16.7 ms deadline) goes from ~3% to ~20-27%. GPU time is flat; extra cost is CPU-side layer recording. Tuning options if wanted: `HazePerformanceMode`, a smaller radius, or `expandLayerBounds = false`. Not tried (out of scope, no user decision).
+- Blur costs frame time (see tuning table); modern jank stays ~0. The first before/after in this report compared against a different installed build and overstates the gap.
 - Over the cover the 35% black tint is weaker than the web's blur-on-opaque feel only in that the hero is smeared, as intended; the status-bar strip is blurred too.
 - Versions not bumped; not pushed.
