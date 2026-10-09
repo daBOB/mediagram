@@ -86,6 +86,16 @@ describe("telling open pages", () => {
     await reader.cancel();
   });
 
+  test("a page hears what a watch-together session now is, and when it is over", async () => {
+    const events = new CatalogEvents();
+    const reader = events.subscribe().getReader();
+    const decoder = new TextDecoder();
+    await reader.read();
+    events.together(901, null, 1791500000123);
+    expect(decoder.decode((await reader.read()).value)).toBe('event: together\ndata: {"id":901,"session":null,"serverNow":1791500000123}\n\n');
+    await reader.cancel();
+  });
+
   test("a page that goes away stops being written to", async () => {
     const events = new CatalogEvents();
     const stream = events.subscribe();

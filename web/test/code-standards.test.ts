@@ -67,6 +67,8 @@ const ROOT = join(import.meta.dir, "..");
  * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
  * Lowered the same day for `src/state/store.ts`, once its foreign-key check
  * read the SQLite code through `errorCode`.
+ * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
+ * push sink, its recheck timer and its route.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 693,
@@ -89,7 +91,7 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 446,
+  "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

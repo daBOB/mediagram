@@ -5,9 +5,10 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { TogetherHub, type EditOutcome, type TogetherChannel } from "../src/together/hub";
+import { TogetherHub, type EditOutcome } from "../src/together/hub";
 import { parseSession, writeSession, type Member, type Session } from "../public/lib/together/session.js";
 import { joined } from "../public/lib/together/moves.js";
+import { FakeChannel } from "./together-fixture";
 
 const NOW = 1_791_500_000_000;
 const A: Member = { screen: "tab-a", label: "Browser" };
@@ -25,45 +26,6 @@ function deferred<T>() {
 }
 
 const settle = () => new Promise((done) => setTimeout(done, 0));
-
-class FakeChannel implements TogetherChannel {
-  readonly messages = new Map<number, string>();
-  /** Pushed out of the newest 100 by a busy channel: readable by id only. */
-  readonly old = new Set<number>();
-  readonly sent: string[] = [];
-  readonly edits: Session[] = [];
-  readonly removed: number[] = [];
-  readonly reads: number[] = [];
-  /** Answers for the next edits, in order; "ok" once they run out. */
-  readonly outcomes: (EditOutcome | Promise<EditOutcome>)[] = [];
-  failReads = false;
-  private nextId = 900;
-
-  available() { return true; }
-  async recent() {
-    return [...this.messages].filter(([id]) => !this.old.has(id)).sort(([a], [b]) => b - a).map(([id, text]) => ({ id, text }));
-  }
-  async read(id: number) {
-    this.reads.push(id);
-    if (this.failReads) throw new Error("offline");
-    return this.messages.get(id) ?? null;
-  }
-  async send(text: string) {
-    this.sent.push(text);
-    this.messages.set(++this.nextId, text);
-    return this.nextId;
-  }
-  async edit(id: number, text: string) {
-    this.edits.push(parseSession(text)!);
-    const outcome = await (this.outcomes.shift() ?? "ok");
-    if (outcome === "ok") this.messages.set(id, text);
-    return outcome;
-  }
-  async remove(id: number) {
-    this.removed.push(id);
-    this.messages.delete(id);
-  }
-}
 
 function harness() {
   const channel = new FakeChannel();
