@@ -176,7 +176,7 @@ Shots are in `scratchpad/tv-audit/batch1/`: `before-*` (0.119.2) and `after-*` (
   - the cover pills, now about 37dp tall where the web's are 48;
   - lists drawn as rows and pills;
   - the profile tiles' layout (only their type changed here).
-- **The player overlay** (`TvPlayerType`, 18/34):
+- **The player overlay** (`TvPlayerType`, 18/34), now batch 5, "player overlay text at the web's size", after batch 4:
   - it is not in table A and has no web measurement yet;
   - the box check plays nothing, so a change there could not be seen;
   - its two dialogs (Add to list, Kids) draw in the shared `TvDialog`, so they already follow the new roles.
@@ -190,3 +190,41 @@ Shots are in `scratchpad/tv-audit/batch1/`: `before-*` (0.119.2) and `after-*` (
 5. **Version not bumped.** The worktree's CLAUDE.md asks for a version bump; the batch instructions said not to. 0.119.2 stays in all three manifests.
 6. **Stale baseline-profile entries.** The release baseline profile still names `TvTypeScale.getBody()` and its siblings. That is harmless and refreshes at the next profile generation.
 7. **Scratchpad previews.** I overwrote `scratchpad/p1.png` and `p2.png` while previewing and regenerated both from their `-full` originals at 50%.
+
+## Batch 1b: review fixes
+
+Commit `0cf9a990` `fix(chrome): search and the avatar stand at the bar's far end`.
+
+**Search and the avatar now sit at the bar's far end.**
+- `TvDepartmentsBar` gave the pill row `weight(1f, fill = false)`, so the toolbar followed straight after Collections. The row now fills (`weight(1f)`), as the web's `.library-toolbar { margin-left: auto }` does (shell.css:91). The fade still works: `canScrollForward` is false while the pills fit.
+- On the box the avatar's right edge was 809dp at batch 1 and is 911.5dp now, against the 912dp gutter (measured in the screenshot's pixels).
+- The tablet's `DepartmentsBar` had the same `fill = false` and floated the same way: two pills while loading put the toolbar at 293dp of 1280. It is fixed the same way and checked on the tablet (debug build, `ANDROID_SERIAL=caad49da`, navigate only).
+- Tests (red, then green):
+  - `TvDepartmentsBarTest.theAvatarEndsAtTheBarsEndGutter`: was 819, expected 912.
+  - `DepartmentsBarToolbarTest.theToolbarEndsAtTheBarsGutter` (new, ui-mobile): was 293, expected 1239.
+
+**Folded in:**
+1. **The fade's pixels.** `TvEdgeFadePixelsTest` at 640dp masks white content over black and samples the red channel, the mask's alpha, at the start, the centre and the end band. The clipped end reads under 0.1 and the rest over 0.9; with nothing clipped, both ends read over 0.9.
+   - It draws the ComposeView into a software bitmap rather than calling `captureToImage`. That call's redraw wait times out under this project's Robolectric, as `PageGroundColorTest` already records; the bitmap uses the same native canvas, so the offscreen layer and its DstIn really draw.
+   - A mutation run (end fade disabled) failed it with `end=1.0`; the file was restored to the commit.
+2. **Bring-into-view room.** It is now `EdgeFadeWidth + PillRingRoom`, so a pill scrolled to stops clear of the fade including its 1.08 grow and ring. The comment says so.
+3. **The offscreen layer** is offscreen only while an end fades (`CompositingStrategy.Auto` otherwise).
+4. **TvThisMonth.** The dead `FontWeight.Normal` on the This month number is removed; Fraunces here has only 500 and 600. The phone's `RecentBand` carries the same no-op and is left alone.
+5. **TvLibraryRailSizesTest.** `assertEquals` now takes expected first, and `assertTrue` replaces Kotlin's `assert`.
+
+**Player overlay text.** It stays on 18 and 34 (`TvPlayerType`) and now has an owner: "batch 5, player overlay text at the web's size", after batch 4. DESIGN.md's Television Rule says so.
+
+**Runs (all green):**
+- The focused tests.
+- `:ui-tv:testDebugUnitTest`: 595 tests, 0 failures.
+- `:ui-mobile:testDebugUnitTest`: 395 tests, 0 failures.
+- `:app:assembleDebug`, `lint` and `:ui-tv:compileDebugAndroidTestKotlin`. Lint's warning count is unchanged, at 36.
+
+**On the box:**
+- The release build, cert `5840181d…f576`, went on with `install -r -d`, navigating only.
+- Shots `batch1/after1b-home.png` and `after1b-avatar-focus.png`. Composite `tv-audit/batch1b-bar.jpg`: web, batch 1 (floating), 1b, and 1b with the avatar focused.
+- Focus was handed back to the page. The box was left on Home.
+
+**On the tablet:** `tv-audit/batch1b-tablet-bar.jpg` shows the toolbar at the gutter while loading (two pills) and once loaded. The tablet was left on Home with no playback.
+
+**Ledgered, not now:** meta at weight 400, loose caption line heights, the `CoverTitle` naming clash, consolidating the 12px meta role, and long lines.
