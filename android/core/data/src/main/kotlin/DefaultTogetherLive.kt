@@ -5,11 +5,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -35,9 +33,6 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.ContinuationInterceptor
 
 private const val TAG = "together"
-
-/** How often the sessions a screen here is in are read again, for a push missed while offline. */
-private const val RECHECK_MS = 30_000L
 
 // What a screen writes, every screen parses: a position or speed no parser
 // accepts would end the session for all of them.
@@ -87,7 +82,7 @@ class DefaultTogetherLive(
             sessions.shown.subscriptionCount
                 .map { it > 0 }
                 .distinctUntilChanged()
-                .collectLatest { if (it) listen() }
+                .collectLatest { if (it) reads.listen() }
         }
     }
 
@@ -112,10 +107,13 @@ class DefaultTogetherLive(
                 look()?.let { return@withLock Started(it, conflict = true) }
                 val playback = own.copy(pos = own.pos.position() ?: 0.0, rate = own.rate.speed() ?: 1.0)
                 val session = started(UUID.randomUUID().toString(), me, playback, now())
-                val id = channel.send(writeSession(session))
-                sessions.local += me.screen
-                sessions.keep(id, session)
-                Started(LiveSession(id, session), conflict = false)
+                // Once on its way, the message is this device's to keep, whatever becomes of the caller.
+                withContext(NonCancellable) {
+                    val id = channel.send(writeSession(session))
+                    sessions.local += me.screen
+                    sessions.keep(id, session)
+                    Started(LiveSession(id, session), conflict = false)
+                }
             }
         }
 
@@ -181,13 +179,4 @@ class DefaultTogetherLive(
         sessions.shown.value = newest
         return newest
     }
-
-    private suspend fun listen(): Unit =
-        coroutineScope {
-            launch { channel.heard().catch { Log.w(TAG, "stopped hearing edits", it) }.collect { reads.hear(it) } }
-            while (true) {
-                delay(RECHECK_MS)
-                reads.recheck()
-            }
-        }
 }

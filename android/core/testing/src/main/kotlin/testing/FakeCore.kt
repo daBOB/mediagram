@@ -487,7 +487,7 @@ class FakeCore(
      */
     val togetherEditOutcomes = ArrayDeque<Deferred<TogetherEdit>>()
 
-    /** Every edit [togetherEdit] was asked for, in order, whatever it answered. */
+    /** Every edit [togetherEdit] was asked for, in order, whatever came of it: refused, failed or thrown. */
     val togetherEdits = mutableListOf<TogetherMessage>()
 
     /** Every id [togetherRead] was asked for, in order. */
@@ -495,6 +495,9 @@ class FakeCore(
 
     /** Holds every [togetherRead] until completed; it then answers the text as it stood when it was asked. */
     var togetherReadGate: CompletableDeferred<Unit>? = null
+
+    /** Holds every [togetherSend] once its message is in the channel, until completed: the answer not back yet. */
+    var togetherSendGate: CompletableDeferred<Unit>? = null
 
     /** Every id [togetherDelete] was asked to delete, in order. */
     val togetherDeletes = mutableListOf<Int>()
@@ -522,12 +525,13 @@ class FakeCore(
         togetherFailure?.let { throw it }
         val id = nextTogetherId++
         togetherMessages[id] = text
+        togetherSendGate?.await()
         return id
     }
 
     override suspend fun togetherEdit(handle: String, messageId: Int, text: String): TogetherEdit {
-        togetherFailure?.let { throw it }
         togetherEdits += TogetherMessage(messageId, text)
+        togetherFailure?.let { throw it }
         val outcome = togetherEditOutcomes.removeFirstOrNull()?.await() ?: togetherEditOutcome
         if (messageId !in togetherMessages) return TogetherEdit.Gone
         when (outcome) {

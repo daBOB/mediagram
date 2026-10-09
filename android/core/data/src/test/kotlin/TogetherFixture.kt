@@ -4,9 +4,12 @@ import data.settings.LibrarySettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.yield
 import model.together.Member
 import model.together.Playback
 import model.together.Session
@@ -32,7 +35,8 @@ val TV_SESSION = Session("s-tv", FILM.set, FILM.playing, FILM.pos, FILM.rate, NO
  * [DefaultTogetherLive] over a [FakeCore] channel, on the test's own
  * scheduler: nothing reaches Telegram, and time moves only when the test
  * moves it. The clock stands at [NOW]. [FILM] is 100 s long; any other
- * title's length is unknown.
+ * title's length is unknown. Looking a length up suspends, as the catalog's
+ * own lookup does, and [lengthGate] can hold it there.
  */
 class TogetherHarness(
     private val scope: TestScope,
@@ -40,11 +44,33 @@ class TogetherHarness(
 ) {
     val core = FakeCore()
     val events = MutableSharedFlow<LibraryEvent>()
+
+    /** How many times listening fails before it is heard again, as a dropped connection does. */
+    var listenFailures = 0
+
+    /** Holds every length lookup until completed. */
+    var lengthGate: CompletableDeferred<Unit>? = null
+
+    private val listening =
+        LibraryEvents {
+            flow {
+                if (listenFailures > 0) {
+                    listenFailures--
+                    error("connection lost")
+                }
+                emitAll(events)
+            }
+        }
+
     val live =
         DefaultTogetherLive(
-            CoreTogetherChannel(FakeCoreProvider(core), settings, LibraryEvents { events }),
+            CoreTogetherChannel(FakeCoreProvider(core), settings, listening),
             scope.backgroundScope,
-            durationOf = { if (it == FILM.set) 100.0 else null },
+            durationOf = {
+                yield()
+                lengthGate?.await()
+                if (it == FILM.set) 100.0 else null
+            },
             now = { NOW },
         )
 

@@ -83,8 +83,13 @@ internal class TogetherSender(
         val session = move(base)
         known[id] = session
         flying = id to session
-        val outcome = orDefault(null, "a watch-together edit") { channel.edit(id, writeSession(session)) }
-        flying = null
+        val outcome =
+            try {
+                orDefault(null, "a watch-together edit") { channel.edit(id, writeSession(session)) }
+            } finally {
+                // A call cancelled under it is no longer on its way either.
+                flying = null
+            }
         // Refused or failed: the channel still holds what it held, unless another screen's edit came meanwhile.
         if (outcome != TogetherEdit.Ok && known[id] === session) known[id] = base
         when {

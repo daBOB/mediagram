@@ -6,6 +6,9 @@ import model.together.Playback
 import model.together.PlaybackChange
 import model.together.Session
 
+/** Why Watch together and Join are greyed out, on every surface: the web player's own words. */
+const val TOGETHER_UNREACHABLE = "Telegram isn't reachable"
+
 /** A session and the channel message that carries it. */
 data class LiveSession(
     val id: Int,
@@ -55,13 +58,25 @@ interface TogetherLive {
      * then that one is answered as a [Started.conflict]. One start at a time,
      * so a second screen's start meets the first one's session. Throws when
      * Telegram can't be reached.
+     *
+     * Cancelled before its message is sent, nothing is started. Once it is
+     * sent, the session is kept here whatever happens to the caller, so a
+     * caller cancelled then never learns its id while [me] is a member. A
+     * screen that can close mid-call therefore calls this, and [join], under
+     * `withContext(NonCancellable)`, and leaves once answered if it has
+     * closed meanwhile, as the web player's `ask()` does.
      */
     suspend fun start(
         me: Member,
         own: Playback,
     ): Started
 
-    /** Adds [me] to session [id]; `null` when it is over or gone. Throws when it can't be read. */
+    /**
+     * Adds [me] to session [id]; `null` when it is over or gone. Throws when
+     * it can't be read. Cancelled before its read answers, nothing is done;
+     * once the read has answered, the join is queued and sent even if the
+     * caller has gone, so it is called as [start] is.
+     */
     suspend fun join(
         id: Int,
         me: Member,

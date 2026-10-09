@@ -1,11 +1,15 @@
 package data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import model.together.PlaybackChange
 import model.together.finished
 import model.together.joined
@@ -364,11 +368,77 @@ class TogetherSenderTest {
             h.core.togetherFailure = IllegalStateException("offline")
             h.live.act(id, A.screen, pause)
             runCurrent()
+            assertEquals(1, h.core.togetherEdits.size)
 
             h.core.togetherFailure = null
             val faster = h.live.act(id, A.screen, PlaybackChange(rate = 2.0))!!
 
             assertEquals(listOf(true, 2.0), listOf(faster.playing, faster.rate))
+        }
+
+    /** An edit whose call is cancelled under it is no longer on its way, so a re-read of that session goes ahead. */
+    @Test
+    fun anEditCancelledUnderItIsNoLongerOnItsWay() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            val id = h.start()
+            h.core.togetherFailure = CancellationException("the core was closed")
+            h.live.act(id, A.screen, pause)
+            runCurrent()
+            h.core.togetherFailure = null
+
+            val tvPlay = h.message(id).copy(by = TV.screen, members = listOf(A, TV))
+            h.put(id, tvPlay)
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            assertEquals(LiveSession(id, tvPlay), h.live.live.value)
+        }
+
+    /** Once its message is sent, a session is this device's to keep, even if the screen that asked has gone. */
+    @Test
+    fun aStartCancelledWhileItsMessageIsSentStillKeepsTheSession() =
+        runTest {
+            val h = TogetherHarness(this)
+            val gate = CompletableDeferred<Unit>()
+            h.core.togetherSendGate = gate
+            val screen = launch { h.live.start(A, FILM) }
+            runCurrent()
+
+            screen.cancel()
+            gate.complete(Unit)
+            runCurrent()
+
+            val id = h.core.togetherMessages.keys.single()
+            assertEquals(LiveSession(id, h.message(id)), h.live.live.value)
+        }
+
+    /** What a player that may close mid-call does, as the web's `ask()` does: wait out the answer, then leave if it has gone. */
+    @Test
+    fun aStartWaitedOutUnderNonCancellableAfterThePlayerClosedCanBeLeft() =
+        runTest {
+            val h = TogetherHarness(this)
+            val gate = CompletableDeferred<Unit>()
+            h.core.togetherSendGate = gate
+            var closed = false
+            val screen =
+                launch {
+                    withContext(NonCancellable) {
+                        val started = h.live.start(A, FILM)
+                        if (closed) h.live.leave(started.live.id, A.screen)
+                    }
+                }
+            runCurrent()
+
+            closed = true
+            screen.cancel()
+            gate.complete(Unit)
+            runCurrent()
+
+            assertTrue(h.edits.single().ended)
+            assertEquals(emptyMap(), h.core.togetherMessages)
+            assertNull(h.live.live.value)
         }
 
     /**

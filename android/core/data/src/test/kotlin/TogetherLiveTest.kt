@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.together.PlaybackChange
 import model.together.joined
+import testing.webFixture
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TogetherEdit
 import uniffi.mediagram_core.TogetherMessage
@@ -58,16 +59,53 @@ class TogetherLiveTest {
         }
 
     @Test
-    fun nobodySignedInOrNoLibraryChosenIsUnavailable() =
+    fun signingOutOrGivingTheLibraryBackIsUnavailable() =
         runTest {
-            val unsigned = TogetherHarness(this).apply { core.authorized = false }
-            assertFalse(unsigned.live.available.value)
-            unsigned.live.refresh()
-            assertFalse(unsigned.live.available.value)
+            val settings = settingsWithAChosenLibrary()
+            val h = TogetherHarness(this, settings)
+            h.live.refresh()
+            assertTrue(h.live.available.value)
 
-            val unchosen = TogetherHarness(this, settings = InMemoryLibrarySettings())
-            unchosen.live.refresh()
-            assertFalse(unchosen.live.available.value)
+            h.core.authorized = false
+            h.live.refresh()
+            assertFalse(h.live.available.value)
+
+            h.core.authorized = true
+            h.live.refresh()
+            assertTrue(h.live.available.value)
+            settings.clear()
+            h.live.refresh()
+            assertFalse(h.live.available.value)
+        }
+
+    /** One sentence on every surface, and it is the web player's. */
+    @Test
+    fun theUnreachableReasonIsTheWebPlayersOwn() {
+        val web = webFixture("../../public/lib/together-now.js").readText()
+        assertTrue("const UNREACHABLE = \"$TOGETHER_UNREACHABLE\";" in web, "together-now.js says otherwise")
+    }
+
+    /** A dropped listener is listened to again, never sooner than a re-read would be. */
+    @Test
+    fun listeningThatFailsIsTakenUpAgainAfterThirtySeconds() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.listenFailures = 1
+            val home = h.watch()
+            assertEquals(0, h.events.subscriptionCount.value)
+
+            advanceTimeBy(29_999)
+            runCurrent()
+            assertEquals(0, h.events.subscriptionCount.value)
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(1, h.events.subscriptionCount.value)
+            h.push(950, TV_SESSION)
+            assertEquals(LiveSession(950, TV_SESSION), h.live.live.value)
+
+            home.cancel()
+            runCurrent()
+            assertEquals(0, h.events.subscriptionCount.value)
         }
 
     /** A push only arrives over a connection, so hearing one is reaching Telegram again. */
@@ -170,6 +208,28 @@ class TogetherLiveTest {
 
             assertEquals(joined, h.live.live.value)
             assertEquals(950, joined?.id)
+        }
+
+    /** A session first heard while the newest were being read is newer than the read, so the read doesn't hide it. */
+    @Test
+    fun aSessionFirstHeardWhileTheNewestAreReadIsNotHiddenByTheRead() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.put(800, TV_SESSION.copy(session = "s-800"))
+            h.core.togetherOld += 800
+            h.push(800, TV_SESSION.copy(session = "s-800"))
+            val gate = CompletableDeferred<Unit>()
+            h.core.togetherReadGate = gate // the read of 800 by id, after the newest are read
+
+            val found = async { h.live.refresh() }
+            runCurrent()
+            val phone = TV_SESSION.copy(session = "s-phone", by = B.screen, members = listOf(B))
+            h.push(960, phone)
+            gate.complete(Unit)
+
+            assertEquals(LiveSession(960, phone), found.await())
+            assertEquals(LiveSession(960, phone), h.live.live.value)
         }
 
     @Test
@@ -314,6 +374,28 @@ class TogetherLiveTest {
             h.put(id, h.message(id).copy(by = TV.screen, members = listOf(A, TV)))
             val gate = CompletableDeferred<Unit>()
             h.core.togetherReadGate = gate
+            advanceTimeBy(30_000)
+            runCurrent()
+
+            val paused = h.live.act(id, A.screen, PlaybackChange(playing = false, pos = 42.0))!!
+            runCurrent()
+            assertEquals(listOf(paused), h.edits)
+            gate.complete(Unit)
+            runCurrent()
+
+            assertEquals(LiveSession(id, paused), h.live.live.value)
+        }
+
+    /** Looking the title's length up suspends too: an own edit that lands while it does is newer than the read. */
+    @Test
+    fun aRecheckReadAcrossWhoseLengthLookupAnOwnEditLandedIsSetAside() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            val id = h.start()
+            h.put(id, h.message(id).copy(by = TV.screen, members = listOf(A, TV)))
+            val gate = CompletableDeferred<Unit>()
+            h.lengthGate = gate
             advanceTimeBy(30_000)
             runCurrent()
 
