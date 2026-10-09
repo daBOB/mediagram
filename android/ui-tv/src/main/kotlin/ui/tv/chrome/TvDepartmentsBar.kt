@@ -50,6 +50,9 @@ private val TvOverCoverInk = Color(0xFFF6F2EA)
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
  * under the bar, every other tab draws it opaque.
  *
+ * Unlike the phone and tablet bar this one stays unfrosted (no backdrop
+ * blur) until the box's GPU has been measured; a deliberate difference.
+ *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
  *

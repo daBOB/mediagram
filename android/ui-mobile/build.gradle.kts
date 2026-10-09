@@ -29,6 +29,7 @@ dependencies {
     // app convention plugin only adds this to :app, and this module reaches
     // the Activity window directly rather than through it.
     implementation(libs.findLibrary("androidx.core").get())
+    implementation(libs.findLibrary("haze.blur").get())
     // PipRationalBoundsTest constructs a real android.util.Rational; the
     // plain unit-test android.jar stub leaves it zeroed rather than
     // throwing for it (isReturnDefaultValues), which is worse — a wrong

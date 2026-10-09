@@ -27,20 +27,28 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
+import dev.chrisbanes.haze.HazeState
 import ui.common.MenuActions
 
 /** The bar's own height, before the status-bar inset — the web's `--masthead-height` (`theme.css:114`, `76px` on the wide layout). */
 internal val DepartmentsBarHeight = 76.dp
 
-/** The bar's own colour over the cover, translucent black with light type — the web's `[data-cover]` opening state (`shell.css:227`). No blur: Compose cannot blur what is behind a node without a new dependency, so a flatter starting alpha stands in for it instead. */
+/** The bar's own colour over the cover, translucent black with light type — the web's `[data-cover]` opening state (`shell.css:233`). */
 internal val OverCoverBg = Color(0x590A0A0B)
 private val OverImageInk = Color(0xFFF6F2EA)
 
-/** The bar's own background, blended between [OverCoverBg] and [solid] — reaches [solid] exactly (not just close) once [blend] is 1, since nothing here can blur whatever a deep scroll would otherwise show through it. */
+/**
+ * The bar's own background, blended between [OverCoverBg] and [solid]. Over a
+ * [frosted] backdrop blur the scrolled end is [solid] at the web's 72% (the
+ * blur is what keeps that readable); without one it reaches [solid] exactly
+ * (not just close) once [blend] is 1, since nothing would blur whatever a deep
+ * scroll shows through it.
+ */
 internal fun barBackground(
     solid: Color,
     blend: Float,
-): Color = lerp(OverCoverBg, solid, blend)
+    frosted: Boolean,
+): Color = lerp(OverCoverBg, if (frosted) solid.copy(alpha = FrostedPaperAlpha) else solid, blend)
 
 /** The window width the pills themselves narrow at, matching [LibraryRail]'s own breakpoint (`shell.css:169-171`). */
 private val NarrowBreakpoint = 1180.dp
@@ -65,18 +73,15 @@ internal fun DepartmentsBar(
     onAskStartOver: () -> Unit,
     blend: Float,
     modifier: Modifier = Modifier,
+    frost: HazeState? = null,
 ) {
-    // The web's own solid state is `--paper` at 78%, but it sits over a
-    // `backdrop-filter: blur` the page behind it never stops drawing —
-    // that blur is what lets 78% still read as solid. Compose has no blur
-    // there (this file's own note on why, above); without one, anything
-    // under a translucent bar just shows through it once the page has
-    // scrolled deep enough to matter, so the solid state here is `--paper`
-    // at its own full opacity instead. Only the opening state over the
-    // cover stays translucent.
+    // With [frost] the scrolled bar is the web's 72% paper over a blur of the
+    // content behind it; without it (below API 31) it is `--paper` at full
+    // opacity, since a translucent bar with nothing blurred behind it just
+    // shows whatever scrolled under it.
     val solidBg = MaterialTheme.colorScheme.background
     val solidInk = MaterialTheme.colorScheme.onBackground
-    val bg = barBackground(solidBg, blend)
+    val bg = barBackground(solidBg, blend, frosted = frost != null)
     val ink = lerp(OverImageInk, solidInk, blend)
     val narrow = LocalConfiguration.current.screenWidthDp.dp <= NarrowBreakpoint
     val gutter = gutterFor(LocalConfiguration.current.screenWidthDp.dp)
@@ -91,7 +96,7 @@ internal fun DepartmentsBar(
     // `Column` — this height-only spacer, then the pill row, both inside
     // one shared `background(bg)` — leaves nothing for either to disagree
     // about the size of.
-    Column(modifier = modifier.fillMaxWidth().background(bg)) {
+    Column(modifier = modifier.fillMaxWidth().frostedBackdrop(frost).background(bg).frostHairline(solidInk, blend, frost)) {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
             verticalAlignment = Alignment.CenterVertically,
