@@ -1,9 +1,9 @@
 //! Kotlin's UniFFI surface: authentication, library refresh, playback and
 //! enrichment. Calls orchestrate domain modules over one [`Core`].
 //!
-//! Kotlin never receives connections, clients, or Telegram chat/message/doc
-//! IDs, including through [`CoreError`]: the player learns what it can play,
-//! never where the bytes live.
+//! Kotlin never receives connections, clients, or the Telegram chat/message/doc
+//! IDs behind a set, including through [`CoreError`]: the player learns what it
+//! can play, never where the bytes live.
 
 mod account;
 mod blocking;
