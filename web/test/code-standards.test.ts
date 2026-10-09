@@ -76,7 +76,9 @@ const ROOT = join(import.meta.dir, "..");
  * opens a title and finds it in this profile's catalog. Raised again for
  * `player.js`, by 2, so a held seek-bar drag reports as it moves and a title
  * opened in a session starts at the session's place; and for
- * `catalog/course-view.js`, by 3, for Join on a course's page.
+ * `catalog/course-view.js`, by 3, for Join on a course's page. Raised again for
+ * `player.js`, by 1, to say why a title started at the session's place isn't
+ * announced as carrying on from this profile's own.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 698,
@@ -86,7 +88,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1007,
+  "public/lib/playback/player.js": 1008,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,

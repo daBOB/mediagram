@@ -9,7 +9,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { browserEnvironment, settle } from "./support/player-environment";
 import { mountTogether } from "../public/lib/playback/together.js";
 import {
-  heardTogether, inTogether, openForTogether, refreshTogether, screen, setTogetherOpener, takeJoin,
+  heardTogether, inTogether, openForTogether, refreshTogether, screen, setTogetherOpener, takeJoin, togetherNow,
 } from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
 
@@ -303,6 +303,8 @@ test("a session gone stale under this screen, nobody having moved on from its en
   env.advance(2_000);
   expect(note().textContent).toBe("Watch together ended");
   expect([env.node("together-label").hidden, inTogether()]).toEqual([true, false]);
+  // Out of the tab's view as well, so nothing offers to join what just ended.
+  expect([button().textContent, togetherNow().live]).toEqual(["Watch together", null]);
   expect(posts()).toEqual([]);
 });
 
@@ -330,6 +332,7 @@ test("a move the server has no session for ends it here; one it can't send says 
   env.advance(300);
   await settle();
   expect([note().textContent, env.node("together-label").hidden, inTogether()]).toEqual(["Watch together ended", true, false]);
+  expect([button().textContent, togetherNow().live]).toEqual(["Watch together", null]);
 });
 
 test("a title opened in a session, or to join one, starts at the session's place", async () => {
@@ -342,4 +345,17 @@ test("a title opened in a session, or to join one, starts at the session's place
   heardFromTv({ set: "film-2", pos: 30 });
   expect(follower.open(film("film-2"), { next: null })).toBe(30);
   expect(follower.open(film("film-1"), { next: null })).toBe(0);
+});
+
+test("at its end, an edit whose place reads on past the end neither seeks nor plays; a seek back is followed", async () => {
+  await joined({ pos: 598 });
+  env.advance(2_000);
+  Object.assign(env.video, { currentTime: 600, paused: true, ended: true });
+  seeks.length = 0;
+  env.advance(4_000);
+  // The TV leaves: its edit keeps the session's place and time, which now reads 604 s into a 600 s title.
+  heardTogether({ id: 7, session: session({ members: [ME], by: "tv", pos: 598, at: 0 }), serverNow: Date.now() });
+  expect([seeks, env.video.paused]).toEqual([[], true]);
+  heardFromTv({ pos: 300 });
+  expect([seeks, env.video.paused]).toEqual([[300], false]);
 });

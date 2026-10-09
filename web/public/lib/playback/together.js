@@ -9,8 +9,8 @@
 import { changeOf, expectedPosition, follow, isLive } from "../together/follow.js";
 import { acted } from "../together/moves.js";
 import {
-  heardTogether, onTogether, openForTogether, screen, serverNow, setForTogether, setInTogether, takeJoin, together,
-  togetherNow,
+  forgetTogether, heardTogether, onTogether, openForTogether, screen, serverNow, setForTogether, setInTogether, takeJoin,
+  together, togetherNow,
 } from "../together-now.js";
 import { COULD_NOT_START, ENDED, LEFT_NOT_HERE, NOT_HERE, say } from "./together-words.js";
 import { togetherView } from "./together-view.js";
@@ -45,8 +45,15 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
 
   /** Every two seconds: a session gone stale under this screen, as one nobody moved on from does, is over. */
   function check() {
-    if (current && !isLive(current, setForTogether(current.set)?.duration ?? null, serverNow())) return end(ENDED);
+    if (current && !isLive(current, setForTogether(current.set)?.duration ?? null, serverNow())) return over();
     apply(true);
+  }
+
+  /** Over, found here rather than heard: out of the tab's view too, so Home and the button don't offer it. */
+  function over() {
+    const ended = id;
+    end(ENDED);
+    forgetTogether(ended);
   }
 
   /** The session's next title; one this profile may not see (a kids profile's limit) is where this screen leaves. */
@@ -119,7 +126,7 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     const send = async () => {
       const answer = await together({ op: "act", screen, id: session, change: { ...change, pos: expectedPosition(moved, serverNow()) } });
       if (answer.ok || session !== id) return;
-      if (answer.status === 404) end(ENDED);
+      if (answer.status === 404) over();
       else if (answer.body?.reason) show(answer.body.reason);
     };
     clearTimeout(settle);

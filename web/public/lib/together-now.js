@@ -84,6 +84,13 @@ export function heardTogether(payload) {
   tell({ id: payload.id, session });
 }
 
+/** A session this tab found over by itself, stale or unknown to the server: out of its view, as an event would take it. */
+export function forgetTogether(id) {
+  if (known.live?.id !== id) return;
+  known = { ...known, live: null };
+  tell({ id, session: null });
+}
+
 /** A watch-together move; never throws. `keepalive`, so a leave sent as the page goes still arrives. */
 export async function together(body) {
   try {

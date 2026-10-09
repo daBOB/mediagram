@@ -711,7 +711,8 @@ function mountPlayer() {
           signal: operation.controller.signal,
         },
       );
-      if (resume > 0) {
+      // The session's place is where everyone is, not where this profile left off.
+      if (resume > 0 && sessionAt === null) {
         note.textContent = `Carrying on from ${clockTime(resume)}.`;
         note.hidden = false;
       }
@@ -748,7 +749,7 @@ function mountPlayer() {
     convert(
       set,
       resume,
-      resume > 0 ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
+      resume > 0 && sessionAt === null ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
     );
     if (autoplay) startWhenReady(autoplay);
   }

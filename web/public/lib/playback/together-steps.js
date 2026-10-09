@@ -19,8 +19,9 @@ export function playerSteps({ video, filmTime, seekTo, setRate, converting }) {
    * first. A drift check passes over a screen still loading or buffering, and
    * never seeks a conversion: that starts ffmpeg again, which lands it behind
    * by as long as starting takes, every time. An element at its end waits for
-   * the next title, which Up next or the viewer opens: a play there would start
-   * this one again from nothing.
+   * the next title, which Up next or the viewer opens. A session still playing
+   * reads on past that end, and going there, or playing, would start this title
+   * again from nothing; only a seek back moves it.
    * @returns {string | null}
    */
   function bring(session, setId, drifting) {
@@ -29,7 +30,7 @@ export function playerSteps({ video, filmTime, seekTo, setRate, converting }) {
     for (const step of decide(own(setId), session, serverNow())) {
       if (step.kind === "open") return step.set;
       if (step.kind === "rate") setRate(step.rate);
-      if (step.kind === "seek" && !(drifting && converting())) {
+      if (step.kind === "seek" && !(drifting && converting()) && !(atEnd && step.pos >= filmTime())) {
         seekTo(step.pos);
         atEnd = false;
       }

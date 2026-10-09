@@ -188,10 +188,13 @@ test("a held drag of the seek bar moves the session once it settles, and the dri
 
 test("a conversion opened because the session moved to it starts once, at the session's place", async () => {
   await inSession();
+  // Held open, so the note stays the one the player wrote as the conversion starts.
+  env.respondWith((url) => (url.includes("/transcode?") ? new Promise<Response>(() => {}) : Promise.resolve(new Response(null, { status: 404 }))));
   heardTogether({ id: 7, session: session({ members: [TV, ME], set: "film-3", playing: true, pos: 300 }), serverNow: Date.now() });
   await settle();
   const starts = env.requests.filter((request) => request.url.includes("/api/sets/film-3/transcode?"));
   expect(starts.map((request) => request.url.match(/seek=(\d+)/)?.[1])).toEqual(["300"]);
+  expect(env.node("note").textContent).not.toContain("Carrying on");
 });
 
 test("a title opened to join a session starts at the session's place", async () => {
@@ -199,4 +202,26 @@ test("a title opened to join a session starts at the session's place", async () 
   openForTogether("film-1", 7);
   env.video.fire("loadedmetadata");
   expect(env.video.currentTime).toBe(120);
+  // The session's place is where everyone is, not where this profile left off.
+  expect(env.node("note").textContent).not.toContain("Carrying on");
+});
+
+test("a member leaving after the end leaves Up next counting down, and the next episode moves the session", async () => {
+  await inSession({ next: film("film-2") });
+  env.video.readyState = 4;
+  const at = Date.now();
+  heardTogether({ id: 7, session: session({ members: [TV, ME], playing: true, pos: 598, at }), serverNow: Date.now() });
+  await settle();
+  let played = 0;
+  env.video.addEventListener("play", () => { played++; });
+  env.advance(2_000);
+  Object.assign(env.video, { currentTime: 600, paused: true, ended: true });
+  env.video.fire("ended");
+  env.advance(4_000);
+  heardTogether({ id: 7, session: session({ members: [ME], by: "tv", playing: true, pos: 598, at }), serverNow: Date.now() });
+  await settle();
+  expect([played, env.video.currentTime, env.node("up-next-in").textContent]).toEqual([0, 600, "starting in 6…"]);
+  env.advance(6_000);
+  await settle();
+  expect(acts()).toEqual([{ set: "film-2", pos: 0, playing: true }]);
 });
