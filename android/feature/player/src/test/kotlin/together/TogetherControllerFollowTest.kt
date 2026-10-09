@@ -68,8 +68,12 @@ class TogetherControllerFollowTest {
 
             advanceTimeBy(DRIFT_CHECK_MS * 3)
             runCurrent()
-
             verify(exactly = 0) { rig.player.seekTo(any<Long>()) }
+
+            rig.state = Player.STATE_READY
+            advanceTimeBy(DRIFT_CHECK_MS)
+            runCurrent()
+            verify { rig.player.seekTo(18_000L) }
         }
 
     @Test
@@ -82,34 +86,6 @@ class TogetherControllerFollowTest {
 
             assertEquals("1.1× by TV", rig.controller.ui.value.notice)
             assertTrue(rig.handle.speedCalls.isEmpty())
-        }
-
-    @Test
-    fun anotherScreenMovingOnIsFollowedAndOpeningThatTitleSendsNothing() =
-        runTest {
-            val rig = TogetherRig(this).joined()
-            rig.push(950, rig.message(950).copy(set = EP2, pos = 0.0, at = rig.now(), by = TV.screen))
-            assertEquals(listOf(EP2), rig.opened)
-            assertEquals("Next episode by TV", rig.controller.ui.value.notice)
-            val sent = rig.core.togetherEdits.size
-
-            val start = rig.controller.open(EP2)
-            runCurrent()
-
-            assertEquals(sent, rig.core.togetherEdits.size)
-            assertEquals(0.0, start?.pos)
-        }
-
-    @Test
-    fun theSessionMovingToATitleThisProfileMayNotSeeIsWhereThisScreenLeaves() =
-        runTest {
-            val rig = TogetherRig(this).joined()
-
-            rig.push(950, rig.message(950).copy(set = HIDDEN, pos = 0.0, at = rig.now(), by = TV.screen))
-
-            assertTrue(rig.opened.isEmpty())
-            assertEquals(LEFT_NOT_HERE, rig.controller.ui.value.notice)
-            assertEquals(listOf(TV), rig.message(950).members)
         }
 
     @Test

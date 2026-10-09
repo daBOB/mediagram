@@ -22,7 +22,9 @@ import player.speedLabel
  * than hidden for a title without a regular track, so the row does not shift
  * from one title to the next; ▾ beside it opens the languages and the style,
  * and stays open to a forced-only title, whose lines still take a size.
- * Speed and Framing name the current choice. Audio is left out for a single
+ * Speed names the speed playing, which in watch together can be another
+ * screen's while its menu still marks this viewer's choice, as on the web;
+ * Framing names the current choice. Audio is left out for a single
  * track, which is a label, not a choice. The tools stand at the left and
  * picture-in-picture at the right end, as volume and fullscreen do on the web.
  *
@@ -33,6 +35,7 @@ import player.speedLabel
 @Composable
 internal fun CardToolsRow(
     choices: PlayerChoices,
+    speed: Float,
     actions: PlayerCardActions,
     openMenu: CardMenu? = null,
 ) {
@@ -60,7 +63,7 @@ internal fun CardToolsRow(
                 state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
             )
             LabelButton(
-                label = speedLabel(choices.speed),
+                label = speedLabel(speed),
                 description = "Speed",
                 onClick = { actions.onOpenMenu(CardMenu.Speed) },
                 modifier = actions.openerFor(CardMenu.Speed),

@@ -67,6 +67,7 @@ private suspend fun TogetherController.enter(answer: Result<LiveSession?>?) {
     val got = answer ?: return
     val entered = got.getOrElse { return view.show(TOGETHER_UNREACHABLE) } ?: return view.show(ENDED)
     id = entered.id
+    listen()
     drift = drift ?: scope.launch { keepInStep() }
     onLive(live.live.value?.takeIf { it.id == entered.id } ?: entered)
 }

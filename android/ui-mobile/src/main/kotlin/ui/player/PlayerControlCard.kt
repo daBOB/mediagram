@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntRect
 import androidx.media3.common.Player
+import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import designsystem.Spacing
 import player.PlayerChoices
@@ -103,6 +104,9 @@ internal fun PlayerControlCard(
     onBounds: (IntRect) -> Unit = {},
 ) {
     val progress = rememberProgressStateWithTickInterval(player, READOUT_TICK_MS)
+    // The speed playing, which the web's button says too: in watch together it
+    // can be another screen's, not the one this viewer chose.
+    val speed = rememberPlaybackSpeedState(player).playbackSpeed
 
     // Null except mid-drag, when it holds where the thumb is rather than
     // where the film is. A slider snapped back to the playhead twice a
@@ -118,7 +122,7 @@ internal fun PlayerControlCard(
             cataloguedSecs = view.catalogedDurationSecs,
             positionMs = progress.currentPositionMs,
             durationMs = progress.durationMs,
-            speed = view.choices.speed,
+            speed = speed,
             nowMs = System.currentTimeMillis(),
         )
 
@@ -143,7 +147,7 @@ internal fun PlayerControlCard(
             onScrubbingToChange = { scrubbingTo = it },
             onSeek = player::seekTo,
         )
-        CardToolsRow(choices = view.choices, actions = actions, openMenu = view.openMenu)
+        CardToolsRow(choices = view.choices, speed = speed, actions = actions, openMenu = view.openMenu)
         CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }
 }

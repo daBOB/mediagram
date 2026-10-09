@@ -63,6 +63,16 @@ class ViewerPlayerTest {
         assertEquals(listOf(PlaybackChange(pos = 30.0), PlaybackChange(pos = 30.0)), reported)
     }
 
+    /** The media session pausing an idle player as the app's task goes, say: no viewer's move. */
+    @Test
+    fun whatTheAppDoesItselfThroughThePlayerIsNotReported() {
+        viewer.unreported { viewer.playWhenReady = false }
+        viewer.pause()
+
+        verify { player.playWhenReady = false }
+        assertEquals(listOf(PlaybackChange(playing = false)), reported)
+    }
+
     @Test
     fun askingToPlayWhenReadyIsReportedAsPlayOrPause() {
         viewer.playWhenReady = false

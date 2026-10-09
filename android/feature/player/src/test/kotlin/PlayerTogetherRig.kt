@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
+import model.together.Member
 import model.together.Session
 import model.together.parseSession
 import model.together.writeSession
@@ -27,6 +28,16 @@ import testing.FakeCoreProvider
 import testing.WatchStateFixture
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TogetherMessage
+
+/** The other screen in these sessions. */
+internal val TV_SCREEN = Member("tv-1", "TV")
+
+/** A session the TV is in alone, stamped now by the real clock. */
+internal fun tvSession(
+    set: String = "film-1",
+    playing: Boolean = true,
+    pos: Double = 10.0,
+) = Session("s-tv", set, playing, pos, 1.0, System.currentTimeMillis(), TV_SCREEN.screen, listOf(TV_SCREEN), ended = false)
 
 /** A phone, to the surface checks: no television mode, and narrower than a tablet. */
 internal fun phoneContext(): Context =
@@ -48,7 +59,8 @@ internal class PlayerTogetherRig(
     catalog: FakeCatalogRepository = FakeCatalogRepository(listOf("film-1", "e1", "e2").associateWith { fakeMediaSet(it) }),
 ) {
     val core = FakeCore()
-    private val events = MutableSharedFlow<LibraryEvent>()
+    /** The core's push stream: someone subscribed to it is a connection held open. */
+    val events = MutableSharedFlow<LibraryEvent>()
     val relay = ViewerRelay()
     val player =
         mockk<Player>(relaxed = true) {

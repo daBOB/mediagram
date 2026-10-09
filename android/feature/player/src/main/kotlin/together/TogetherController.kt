@@ -63,6 +63,9 @@ internal class TogetherController(
     private var settle: Job? = null
     private var watching: Job? = null
 
+    /** Whether the player screen is started: out of a session, it listens only then. */
+    private var shown = true
+
     /**
      * The player opens [set]. Answers where to start it, and whether to
      * play, when that is the session's place: for a title opened in a
@@ -123,30 +126,51 @@ internal class TogetherController(
         if (leaving != null) live.leave(leaving, screen)
     }
 
-    /** The player closing: this screen leaves, and stops listening. */
-    fun close() {
-        leave()
-        watching?.cancel()
-        watching = null
-        setId = null
+    /** The player screen started or stopped. In a session it keeps following in the background, as audio and picture-in-picture do. */
+    fun screenShown(shown: Boolean) {
+        this.shown = shown
+        listen()
     }
 
-    /** Out of the session, if in one: whatever was waiting to go, or to be answered, is dropped. */
+    /** The player closing: this screen leaves, and stops listening. */
+    fun close() {
+        setId = null
+        leave()
+    }
+
+    /**
+     * Out of the session, if in one: whatever was waiting to go, or to be
+     * answered, is dropped, and so is a title on its way because the session
+     * moved there, which opened later is the viewer's own.
+     */
     fun end(message: String?) {
         message?.let(view::show)
         generation++
         id = null
         current = null
+        expecting = null
         drift?.cancel()
         drift = null
         settle?.cancel()
         settle = null
         scope.launch { draw() }
+        listen()
     }
 
-    /** Follows [TogetherLive] while the player is open, collecting it being what listens; out of a session, asks again. */
-    private fun listen() {
-        watching = watching ?: scope.launch {
+    /**
+     * Follows [TogetherLive] while it is needed, collecting it being what
+     * holds the core's push stream open: in a session, or with the player
+     * open on a screen that is started. Taken up out of a session, it reads
+     * the channel first, since nothing was heard while it was let go.
+     */
+    fun listen() {
+        if (setId == null || !(shown || id != null)) {
+            watching?.cancel()
+            watching = null
+            return
+        }
+        if (watching != null) return
+        watching = scope.launch {
             launch { live.available.collect { draw() } }
             live.live.collect { onLive(it) }
         }

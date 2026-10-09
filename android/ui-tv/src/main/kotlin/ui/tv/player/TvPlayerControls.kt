@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntRect
 import androidx.media3.common.Player
+import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import designsystem.Overscan
 import designsystem.Spacing
@@ -153,7 +154,7 @@ internal fun TvPlayerControls(
                 up = above,
                 onFocusChanged = onSeekBarFocused,
             )
-            TvToolGroup(focus = focus, extras = extras, bands = bands)
+            TvToolGroup(focus = focus, extras = extras, bands = bands, speed = rememberPlaybackSpeedState(player).playbackSpeed)
             TvTransport(player = player, focus = focus, extras = extras)
         }
     }

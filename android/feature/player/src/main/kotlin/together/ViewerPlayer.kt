@@ -26,24 +26,40 @@ internal class ViewerPlayer(
     player: Player,
     private val report: (PlaybackChange) -> Unit,
 ) : ForwardingPlayer(player) {
+    private var reporting = true
+
+    /** Runs [block] with nothing it does through this player reported: the app's own housekeeping, not the viewer's move. */
+    fun <T> unreported(block: () -> T): T {
+        reporting = false
+        try {
+            return block()
+        } finally {
+            reporting = true
+        }
+    }
+
+    private fun tell(change: PlaybackChange) {
+        if (reporting) report(change)
+    }
+
     override fun play() {
         super.play()
-        report(PlaybackChange(playing = true))
+        tell(PlaybackChange(playing = true))
     }
 
     override fun pause() {
         super.pause()
-        report(PlaybackChange(playing = false))
+        tell(PlaybackChange(playing = false))
     }
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
         super.setPlayWhenReady(playWhenReady)
-        report(PlaybackChange(playing = playWhenReady))
+        tell(PlaybackChange(playing = playWhenReady))
     }
 
     override fun seekTo(positionMs: Long) {
         super.seekTo(positionMs)
-        report(PlaybackChange(pos = positionMs / MS))
+        tell(PlaybackChange(pos = positionMs / MS))
     }
 
     override fun seekTo(
@@ -51,16 +67,16 @@ internal class ViewerPlayer(
         positionMs: Long,
     ) {
         super.seekTo(mediaItemIndex, positionMs)
-        report(PlaybackChange(pos = positionMs / MS))
+        tell(PlaybackChange(pos = positionMs / MS))
     }
 
     override fun seekBack() {
         super.seekBack()
-        report(PlaybackChange(pos = currentPosition / MS))
+        tell(PlaybackChange(pos = currentPosition / MS))
     }
 
     override fun seekForward() {
         super.seekForward()
-        report(PlaybackChange(pos = currentPosition / MS))
+        tell(PlaybackChange(pos = currentPosition / MS))
     }
 }

@@ -79,6 +79,9 @@ internal fun PlayerViewModel.viewerPlayer(relay: ViewerRelay): StateFlow<Player?
         .map { raw -> raw?.let { ViewerPlayer(it, relay::report) } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+/** The player screen started or stopped: out of a session, it listens for one only while started. */
+fun PlayerViewModel.screenShown(shown: Boolean) = togetherController.screenShown(shown)
+
 /** The Watch together button: start, join, or leave. */
 fun PlayerViewModel.onTogetherButton() = togetherController.onButton()
 

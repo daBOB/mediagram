@@ -53,7 +53,8 @@ internal class TogetherRig(
 ) {
     val core = FakeCore()
     val provider = FakeCoreProvider(core)
-    private val events = MutableSharedFlow<LibraryEvent>()
+    /** The core's push stream: someone subscribed to it is a connection held open. */
+    val events = MutableSharedFlow<LibraryEvent>()
     val handle = FakePlayerHandle()
     val player = mockk<Player>(relaxed = true)
     var state = Player.STATE_READY

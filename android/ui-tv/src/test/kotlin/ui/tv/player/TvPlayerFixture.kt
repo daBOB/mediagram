@@ -41,7 +41,7 @@ import testing.WatchStateFixture
 /**
  * The phone's player fixture, for the television: a real handle, ViewModel
  * and recorder over an [ExoPlayer] that decodes nothing. It answers play,
- * pause and seek the way the real one reports them — through its listeners
+ * pause, seek and a speed the way the real one reports them — through its listeners
  * — so the screen's media3 state holders and the ViewModel's own state
  * both see a press land, and it offers the commands a playing film offers,
  * so the transport is enabled as it would be.
@@ -79,6 +79,7 @@ internal class TvPlayerFixture(
         every { media.mediaMetadata } returns MediaMetadata.EMPTY
         every { media.currentTimeline } returns Timeline.EMPTY
         every { media.playbackParameters } returns PlaybackParameters.DEFAULT
+        every { media.setPlaybackSpeed(any()) } answers { playAt(firstArg()) }
         every { media.availableCommands } returns Player.Commands.Builder().addAll(*OFFERED).build()
         every { media.isCommandAvailable(any()) } answers { firstArg<Int>() in OFFERED }
         every { media.seekBackIncrement } returns SKIP_MS
@@ -121,6 +122,16 @@ internal class TvPlayerFixture(
     fun becomeReady() {
         playbackState = Player.STATE_READY
         listeners.toList().forEach { it.onPlaybackStateChanged(playbackState) }
+    }
+
+    /** The player now running at [speed], as media3 reports a change of it: another screen's, in watch together. */
+    fun playAt(speed: Float) {
+        val parameters = PlaybackParameters(speed)
+        every { media.playbackParameters } returns parameters
+        listeners.toList().forEach {
+            it.onPlaybackParametersChanged(parameters)
+            it.onEvents(media, Player.Events(FlagSet.Builder().add(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED).build()))
+        }
     }
 
     /** The open title's tracks, as the player reports them once it has probed the file. */

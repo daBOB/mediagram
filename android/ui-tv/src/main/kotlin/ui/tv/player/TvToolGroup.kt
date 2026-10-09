@@ -32,6 +32,7 @@ internal fun TvToolGroup(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     bands: TvStageBands,
+    speed: Float,
 ) {
     val between =
         Modifier.focusProperties {
@@ -44,7 +45,7 @@ internal fun TvToolGroup(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        TvCardTools(focus = focus, extras = extras, bands = bands, each = between)
+        TvCardTools(focus = focus, extras = extras, bands = bands, speed = speed, each = between)
     }
 }
 
@@ -52,8 +53,10 @@ internal fun TvToolGroup(
  * The card's tools, in the web's order: CC, which turns subtitles on or off
  * in one press, and ▾ beside it for the languages and their style; then
  * Speed, Audio — only with more than one track to choose from — and
- * Framing, each naming what is chosen and opening a short menu of the rest
- * above itself. CC with no regular track is drawn but dimmed, still there
+ * Framing, each opening a short menu of the rest above itself. Speed names
+ * the [speed] playing, as the web's does: in watch together it can be
+ * another screen's while the menu marks this viewer's choice. Audio and
+ * Framing name what is chosen. CC with no regular track is drawn but dimmed, still there
  * to be read with nothing to turn on, and ▾ the same with no track at all.
  *
  * [each] is laid on every one of them: where the remote goes from the row.
@@ -64,6 +67,7 @@ internal fun TvCardTools(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     bands: TvStageBands,
+    speed: Float,
     each: Modifier = Modifier,
 ) {
     val choices = extras.choices
@@ -84,7 +88,7 @@ internal fun TvCardTools(
         modifier = each.focusRequester(focus.subtitleOptions).opens(bands, TvCardMenu.Subtitles, TvCardMenu.SubtitleStyle),
         padding = Spacing.small,
     )
-    TvMenuTool(speedLabel(choices.speed), "Speed", each.focusRequester(focus.speed).opens(bands, TvCardMenu.Speed)) { extras.onOpenMenu(TvCardMenu.Speed) }
+    TvMenuTool(speedLabel(speed), "Speed", each.focusRequester(focus.speed).opens(bands, TvCardMenu.Speed)) { extras.onOpenMenu(TvCardMenu.Speed) }
     if (choices.audioOptions.isNotEmpty()) {
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }

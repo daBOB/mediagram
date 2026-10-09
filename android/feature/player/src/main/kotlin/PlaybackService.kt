@@ -1,6 +1,7 @@
 package player
 
 import android.app.PendingIntent
+import android.content.Intent
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,12 +47,14 @@ class PlaybackService : MediaSessionService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var mediaSession: MediaSession? = null
+    private var viewer: ViewerPlayer? = null
 
     override fun onCreate() {
         super.onCreate()
         serviceScope.launch {
             val player = handle.player.filterNotNull().first()
-            val builder = MediaSession.Builder(this@PlaybackService, ViewerPlayer(player, relay::report))
+            val wrapped = ViewerPlayer(player, relay::report).also { viewer = it }
+            val builder = MediaSession.Builder(this@PlaybackService, wrapped)
             sessionActivityIntent()?.let(builder::setSessionActivity)
             val session = builder.build()
             mediaSession = session
@@ -82,6 +85,18 @@ class PlaybackService : MediaSessionService() {
      */
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
+    /**
+     * media3's own: the app swiped away from Recents while nothing plays
+     * (paused, buffering, at a title's end) pauses the player and stops the
+     * service. It pauses through the session's player, which is the viewer's,
+     * and the app going away is no viewer pausing a watch-together session
+     * for every screen in it, so that pause goes unreported.
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val wrapped = viewer
+        if (wrapped == null) super.onTaskRemoved(rootIntent) else wrapped.unreported { super.onTaskRemoved(rootIntent) }
+    }
+
     override fun onDestroy() {
         serviceScope.cancel()
         mediaSession?.let {
@@ -89,6 +104,7 @@ class PlaybackService : MediaSessionService() {
             it.release()
             mediaSession = null
         }
+        viewer = null
         super.onDestroy()
     }
 }

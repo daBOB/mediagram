@@ -9,10 +9,13 @@ package player
  * regardless — nothing plays with the window gone, so there is
  * nothing left to keep a notification or a foreground state for
  * until the viewer returns. It leaves watch together first, and pauses
- * the raw player, so the pause stops this screen alone.
+ * the raw player, so the pause stops this screen alone; and with no window
+ * left to show it, the player stops listening for sessions until its screen
+ * starts again.
  */
 fun PlayerViewModel.pauseForPipDismissal() {
     togetherController.leave()
+    togetherController.screenShown(false)
     handle.pause()
     session.save()
     playbackServiceController.stop()

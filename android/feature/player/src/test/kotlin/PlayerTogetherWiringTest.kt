@@ -6,9 +6,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.Profile
-import model.together.Member
 import model.together.PlaybackChange
-import model.together.Session
 import org.junit.After
 import player.together.NOT_HERE
 import player.together.SEEK_SETTLE_MS
@@ -21,62 +19,13 @@ import kotlin.test.assertTrue
 
 /**
  * Watch together through [PlayerViewModel]: every way the viewer moves the
- * player reaches the session once, and every way the player goes away
- * leaves it, even once the ViewModel itself is gone.
+ * player reaches the session once, the end of a title is the session's, and
+ * a title the session opens starts where it is. The ways the player goes
+ * away are `PlayerTogetherLeavingTest`'s.
  */
 class PlayerTogetherWiringTest {
-    private val tv = Member("tv-1", "TV")
-
-    private fun tvSession(
-        set: String = "film-1",
-        playing: Boolean = true,
-        pos: Double = 10.0,
-    ) = Session("s-tv", set, playing, pos, 1.0, System.currentTimeMillis(), tv.screen, listOf(tv), ended = false)
-
     @After
     fun tearDown() = Dispatchers.resetMain()
-
-    @Test
-    fun closingThePlayerLeavesTheSession() =
-        runTest {
-            installMainDispatcher()
-            val rig = PlayerTogetherRig(this).apply { inASession() }
-
-            rig.vm.stop()
-            runCurrent()
-
-            assertEquals(listOf(true), rig.edits.map { it.ended })
-            assertEquals(listOf(900), rig.core.togetherDeletes)
-        }
-
-    @Test
-    fun theViewModelGoingAwayStillLeavesTheSession() =
-        runTest {
-            installMainDispatcher()
-            val rig = PlayerTogetherRig(this).apply { inASession() }
-
-            rig.clear()
-            runCurrent()
-
-            assertEquals(listOf(true), rig.edits.map { it.ended })
-            assertEquals(listOf(900), rig.core.togetherDeletes)
-        }
-
-    @Test
-    fun dismissingPictureInPictureLeavesWithoutPausingTheOthers() =
-        runTest {
-            installMainDispatcher()
-            val rig = PlayerTogetherRig(this)
-            rig.put(950, tvSession())
-            rig.inASession()
-
-            rig.vm.pauseForPipDismissal()
-            runCurrent()
-
-            assertTrue(rig.handle.pauseCalled)
-            assertEquals(listOf(tv), rig.message(950).members)
-            assertTrue(rig.message(950).playing)
-        }
 
     @Test
     fun aSpeedPickedByHandReachesTheSession() =
@@ -170,7 +119,7 @@ class PlayerTogetherWiringTest {
             rig.put(950, tvSession(set = "e1"))
             rig.inASession("e1", run)
 
-            rig.push(950, rig.message(950).copy(set = "e2", pos = 0.0, at = System.currentTimeMillis(), by = tv.screen))
+            rig.push(950, rig.message(950).copy(set = "e2", pos = 0.0, at = System.currentTimeMillis(), by = TV_SCREEN.screen))
             runCurrent()
 
             assertEquals(PendingPlayerSwitch("e2", run), rig.vm.pendingSwitch.value)

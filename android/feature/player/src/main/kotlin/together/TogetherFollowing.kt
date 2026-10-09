@@ -55,11 +55,14 @@ internal suspend fun TogetherController.keepInStep() {
     }
 }
 
-/** Brings the player to the session, or opens the title it moved to; one this profile may not see is where this screen leaves. */
+/**
+ * Brings the player to the session, or opens the title it moved to: asked
+ * again on every check until it has opened, as the web player does. One
+ * this profile may not see is where this screen leaves.
+ */
 private fun TogetherController.apply(drifting: Boolean = false) {
     val session = current ?: return
     val set = steps.bring(session, setId, drifting) ?: return
-    if (set == expecting) return
     expecting = set
     val asked = generation
     scope.launch {
