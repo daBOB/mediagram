@@ -70,7 +70,7 @@ export class TogetherHub {
     const remembered = Math.max(0, ...this.known.keys());
     if (remembered > 0 && !found.some((m) => m.id === remembered)) {
       const text = await this.channel.read(remembered);
-      if (text === null) this.forget(remembered); else found.push({ id: remembered, text });
+      if (text !== null && parseSession(text)) found.push({ id: remembered, text }); else this.forget(remembered);
     }
     let newest: Live | null = null;
     for (const { id, text } of found) {
@@ -138,10 +138,10 @@ export class TogetherHub {
     for (const [id, session] of [...this.known]) {
       if (this.outgoing.has(id) || !session.members.some((m) => this.local.has(m.screen))) continue;
       const text = await this.channel.read(id).catch(() => undefined);
-      if (text === null) this.forget(id);
-      const read = text ? parseSession(text) : null;
+      if (text === undefined) continue;
+      const read = text === null ? null : parseSession(text);
       // Compared as written here: Kotlin and JS print the same numbers differently.
-      if (read && writeSession(read) !== writeSession(session)) this.heard(id, writeSession(read));
+      if (!read) this.forget(id); else if (writeSession(read) !== writeSession(session)) this.heard(id, writeSession(read));
     }
   }
 

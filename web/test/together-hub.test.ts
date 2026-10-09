@@ -197,6 +197,16 @@ describe("TogetherHub", () => {
     expect(h.announced.at(-1)).toEqual([id, null]);
   });
 
+  test("a remembered id that is no session, as after a library switch, is forgotten after one read", async () => {
+    const h = harness();
+    h.hub.heard(800, writeSession(foreign()));
+    h.channel.messages.set(800, "an ordinary post");
+    h.channel.old.add(800);
+    await h.hub.live(h.durationOf);
+    await h.hub.live(h.durationOf);
+    expect(h.channel.reads).toEqual([800]);
+  });
+
   test("a recheck that cannot read tells nothing and does not throw", async () => {
     const h = harness();
     await h.start();
