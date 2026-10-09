@@ -14,7 +14,7 @@ import { errors } from "teleproto";
 import type { Telegram } from "./client";
 import type { TelegramConnection } from "./connection";
 import { TOGETHER_PREFIX } from "./channel-captions";
-import type { EditOutcome, TogetherChannel } from "../together/hub";
+import type { EditOutcome, TogetherChannel } from "../together/channel";
 
 /** How far back a screen looks for a session: one history read. */
 const RECENT = 100;

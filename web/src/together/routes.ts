@@ -74,7 +74,8 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
       return session ? reply({ session, serverNow: Date.now() }) : bodiless(404);
     }
     if (body.op === "leave" || body.op === "end") {
-      await (body.op === "leave" ? hub.leave(id, screen) : hub.end(id, screen));
+      // Answered once queued: the sender delivers it, after any flood wait.
+      if (body.op === "leave") hub.leave(id, screen); else hub.end(id, screen);
       return bodiless(204);
     }
     return bodiless(400);

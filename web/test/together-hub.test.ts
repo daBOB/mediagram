@@ -5,27 +5,21 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { TogetherHub, type EditOutcome } from "../src/together/hub";
+import { TogetherHub } from "../src/together/hub";
+import type { EditOutcome } from "../src/together/channel";
 import { parseSession, writeSession, type Member, type Session } from "../public/lib/together/session.js";
 import { joined } from "../public/lib/together/moves.js";
-import { FakeChannel } from "./together-fixture";
+import { FakeChannel, deferred, settle } from "./together-fixture";
 
 const NOW = 1_791_500_000_000;
 const A: Member = { screen: "tab-a", label: "Browser" };
+const B: Member = { screen: "tab-b", label: "Browser" };
 const TV: Member = { screen: "tv-1", label: "TV" };
 const FILM = { set: "film-1", playing: true, pos: 10, rate: 1 };
 
 const foreign = (over: Partial<Session> = {}): Session => ({
   session: "s-tv", ...FILM, at: NOW, by: TV.screen, members: [TV], ended: false, ...over,
 });
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
-  return { promise, resolve };
-}
-
-const settle = () => new Promise((done) => setTimeout(done, 0));
 
 function harness() {
   const channel = new FakeChannel();
@@ -76,6 +70,59 @@ describe("TogetherHub", () => {
     expect(h.channel.sent).toEqual([]);
   });
 
+  test("two starts from this server at once: the second meets the first", async () => {
+    const h = harness();
+    const [first, second] = await Promise.all([h.hub.start(A, FILM, h.durationOf), h.hub.start(B, FILM, h.durationOf)]);
+    expect(first.conflict).toBe(false);
+    expect(second).toEqual({ live: first.live, conflict: true });
+    expect(h.channel.sent).toHaveLength(1);
+  });
+
+  test("a read or a join while an edit is on its way builds on that edit, never on the text before it", async () => {
+    const h = harness();
+    const id = await h.start();
+    const held = deferred<EditOutcome>();
+    h.channel.outcomes.push(held.promise);
+    const paused = h.hub.act(id, A.screen, { playing: false, pos: 42 })!;
+    expect((await h.hub.live(h.durationOf))?.session).toEqual(paused);
+    const live = await h.hub.join(id, B);
+    expect(live?.session).toEqual({ ...paused, by: B.screen, members: [A, B] });
+    held.resolve("ok");
+    await settle();
+    expect(h.channel.edits).toEqual([paused, live!.session]);
+    expect(h.channel.reads).toEqual([]);
+  });
+
+  test("a join and a move queued behind it both land", async () => {
+    const h = harness();
+    const id = await h.start();
+    const held = deferred<EditOutcome>();
+    h.channel.outcomes.push(held.promise);
+    h.hub.act(id, A.screen, { playing: false });
+    await h.hub.join(id, B);
+    const sought = h.hub.act(id, B.screen, { pos: 90 })!;
+    held.resolve("ok");
+    await settle();
+    expect(h.channel.edits).toHaveLength(2);
+    expect(h.channel.edits[1]).toEqual(sought);
+    expect(sought).toMatchObject({ playing: false, pos: 90, by: B.screen, members: [A, B] });
+  });
+
+  test("a move made while an edit is refused goes after it, so the newest wins", async () => {
+    const h = harness();
+    const id = await h.start();
+    const refused = deferred<EditOutcome>();
+    h.channel.outcomes.push(refused.promise);
+    h.hub.act(id, A.screen, { playing: false, pos: 42 });
+    const sought = h.hub.act(id, A.screen, { pos: 60 })!;
+    refused.resolve({ wait: 5 });
+    await settle();
+    expect(h.slept).toEqual([5000]);
+    expect(h.channel.edits).toHaveLength(2);
+    expect(h.channel.edits[1]).toEqual(sought);
+    expect(sought).toMatchObject({ playing: false, pos: 60 });
+  });
+
   test("moves made while an edit is on its way: only the newest is sent", async () => {
     const h = harness();
     const id = await h.start();
@@ -102,11 +149,43 @@ describe("TogetherHub", () => {
     // The TV still sees the message as started, since the pause was refused.
     const tvJoin = joined(parseSession(h.channel.messages.get(id)!)!, TV);
     h.hub.heard(id, writeSession(tvJoin));
-    expect(h.announced.at(-1)).toEqual([id, tvJoin]);
+    // The tabs keep their own state through the wait, and see who joined.
+    expect(h.announced.at(-1)).toEqual([id, { ...paused, members: [A, TV] }]);
     wait.resolve();
     await settle();
     expect(h.channel.edits).toHaveLength(2);
     expect(h.channel.edits[1]).toEqual({ ...paused, members: [A, TV] });
+  });
+
+  test("a join held by a flood wait survives another screen's edit meanwhile", async () => {
+    const h = harness();
+    const id = await h.start();
+    const wait = h.holdSleep();
+    h.channel.outcomes.push({ wait: 5 });
+    await h.hub.join(id, B);
+    await settle();
+    // The TV pauses the message as it still stands: without the refused join.
+    const tvPause = { ...parseSession(h.channel.messages.get(id)!)!, playing: false, by: TV.screen, members: [A, TV] };
+    h.hub.heard(id, writeSession(tvPause));
+    wait.resolve();
+    await settle();
+    expect(h.channel.edits[1]).toEqual({ ...tvPause, by: B.screen, members: [A, TV, B] });
+  });
+
+  test("a last leave held by a flood wait, raced by a joiner, leaves the session to them", async () => {
+    const h = harness();
+    const id = await h.start();
+    const wait = h.holdSleep();
+    h.channel.outcomes.push({ wait: 5 });
+    h.hub.leave(id, A.screen);
+    await settle();
+    expect(h.announced.at(-1)).toEqual([id, null]);
+    const tvJoin = joined(parseSession(h.channel.messages.get(id)!)!, TV);
+    h.hub.heard(id, writeSession(tvJoin));
+    wait.resolve();
+    await settle();
+    expect(h.channel.edits[1]).toEqual({ ...tvJoin, by: A.screen, members: [TV] });
+    expect(h.channel.removed).toEqual([]);
   });
 
   test("another screen's edit is news; this server's own echo while its newer write waits is not", async () => {
@@ -124,7 +203,7 @@ describe("TogetherHub", () => {
     // Another screen's move while the own write still waits is kept, and the own write still goes.
     const tvRate = { ...first, rate: 1.5, by: TV.screen, members: [A, TV] };
     h.hub.heard(id, writeSession(tvRate));
-    expect(h.announced.at(-1)).toEqual([id, tvRate]);
+    expect(h.announced.at(-1)).toEqual([id, { ...second, members: [A, TV] }]);
     held.resolve("ok");
     await settle();
     expect(h.channel.edits[1]).toEqual({ ...second, members: [A, TV] });
@@ -157,7 +236,8 @@ describe("TogetherHub", () => {
   test("the last to leave writes the end and deletes the message", async () => {
     const h = harness();
     const id = await h.start();
-    await h.hub.leave(id, A.screen);
+    h.hub.leave(id, A.screen);
+    await settle();
     expect(h.channel.edits).toEqual([expect.objectContaining({ members: [], ended: true, by: A.screen })]);
     expect(h.channel.removed).toEqual([id]);
     expect(h.announced.at(-1)).toEqual([id, null]);
@@ -167,7 +247,8 @@ describe("TogetherHub", () => {
     const h = harness();
     const id = await h.start();
     h.hub.heard(id, writeSession(joined(parseSession(h.channel.messages.get(id)!)!, TV)));
-    await h.hub.end(id, A.screen);
+    h.hub.end(id, A.screen);
+    await settle();
     expect(h.channel.edits).toEqual([expect.objectContaining({ members: [A, TV], playing: false, ended: true })]);
     expect(h.channel.removed).toEqual([id]);
     expect(h.announced.at(-1)).toEqual([id, null]);

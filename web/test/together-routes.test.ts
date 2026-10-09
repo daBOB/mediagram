@@ -4,9 +4,10 @@ import { describe, expect, test } from "bun:test";
 
 import { createRouter } from "../src/routes";
 import { TogetherHub } from "../src/together/hub";
+import type { EditOutcome } from "../src/together/channel";
 import type { PlayerRequest } from "../src/http/contracts";
 import { emptyIndex } from "./index-fixture";
-import { FakeChannel } from "./together-fixture";
+import { FakeChannel, deferred, settle } from "./together-fixture";
 
 function db() {
   const index = emptyIndex();
@@ -79,6 +80,18 @@ describe("/api/together", () => {
     const h = harness();
     expect((await h.call("POST", { op: "act", id: 999, screen: "tab-a", change: { playing: false } })).status).toBe(404);
     expect((await h.call("POST", { op: "join", id: 999, screen: "tab-a" })).status).toBe(404);
+  });
+
+  test.each(["leave", "end"])("%s is answered once queued, before its edit lands", async (op) => {
+    const h = harness();
+    const { json } = await h.call("POST", start);
+    const held = deferred<EditOutcome>();
+    h.channel.outcomes.push(held.promise);
+    expect((await h.call("POST", { op, id: json.id, screen: "tab-a" })).status).toBe(204);
+    expect(h.channel.removed).toEqual([]);
+    held.resolve("ok");
+    await settle();
+    expect(h.channel.removed).toEqual([json.id]);
   });
 
   test("any write while Telegram is unreachable says why", async () => {

@@ -1,7 +1,16 @@
 /** A library channel for watch together that is a map of message ids to texts. Nothing here reaches Telegram. */
 
-import type { EditOutcome, TogetherChannel } from "../src/together/hub";
+import type { EditOutcome, TogetherChannel } from "../src/together/channel";
 import { parseSession, type Session } from "../public/lib/together/session.js";
+
+export function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+/** Lets every queued promise run. */
+export const settle = () => new Promise((done) => setTimeout(done, 0));
 
 export class FakeChannel implements TogetherChannel {
   readonly messages = new Map<number, string>();

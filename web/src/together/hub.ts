@@ -1,9 +1,7 @@
 /**
- * The web server's side of watch together (`docs/mlib-spec.md` §7b): the one
- * place its tabs' moves reach the channel, and the channel's edits reach its
- * tabs, which do the following themselves. This keeps the newest session it
- * knows, writes through one sender that keeps only the newest own write per
- * message, and forwards every edit it hears.
+ * The web server's side of watch together (`docs/mlib-spec.md` §7b). Its tabs'
+ * moves reach the channel through one sender, each re-applied to the newest
+ * session known when it goes; every edit heard reaches the tabs, which follow it.
  */
 
 import { parseSession, writeSession } from "../../public/lib/together/session.js";
@@ -12,36 +10,27 @@ import { acted, finished, joined, left, started } from "../../public/lib/togethe
 import type { Playback } from "../../public/lib/together/moves.js";
 import { isLive } from "../../public/lib/together/follow.js";
 import { failureMessage } from "../failure-message";
+import type { TogetherChannel } from "./channel";
 
 /** How often the sessions this server's tabs are in are read again, for a push missed while offline. */
 export const TOGETHER_RECHECK_MS = 30_000;
 
-export type EditOutcome = "ok" | "gone" | { wait: number };
-
-/** The library channel, as watch together needs it. Every call but `available` throws while Telegram is unreachable. */
-export interface TogetherChannel {
-  /** Signed in and connected. */
-  available(): boolean;
-  /** Session messages among the newest in the channel. */
-  recent(): Promise<{ id: number; text: string }[]>;
-  /** A message's current text; `null` once it is deleted. */
-  read(id: number): Promise<string | null>;
-  send(text: string): Promise<number>;
-  edit(id: number, text: string): Promise<EditOutcome>;
-  remove(id: number): Promise<void>;
-}
-
 export interface Live { id: number; session: Session }
 export type DurationOf = (set: string) => number | null;
+/** A tab's move, applied to whatever session is newest when it is sent. Each is idempotent. */
+type Move = (s: Session) => Session;
 
 export class TogetherHub {
-  /** The newest session known per message: heard, read, or written here. */
+  /** The newest session known per message: heard, read, or on its way from here. */
   private readonly known = new Map<number, Session>();
   /** Screens whose moves went through this server: their echoes are not news. */
   private readonly local = new Set<string>();
-  /** The newest own write per message, not yet sent. */
-  private readonly outgoing = new Map<number, Session>();
+  /** The moves per message not yet sent, composed in the order they were made. */
+  private readonly outgoing = new Map<number, Move>();
+  /** The message whose edit is on its way: what it says is the newest known until it resolves. */
+  private flying: number | null = null;
   private sending: Promise<void> | null = null;
+  private starting: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly channel: TogetherChannel,
@@ -52,11 +41,11 @@ export class TogetherHub {
 
   available(): boolean { return this.channel.available(); }
 
-  /** An edit heard from the channel. Another screen's is always kept: an own write still waiting is re-based on it. */
+  /** An edit heard from the channel. Another screen's is always kept: moves still waiting are applied to it. */
   heard(id: number, text: string): void {
     const session = parseSession(text);
     if (!session) return;
-    if (this.outgoing.has(id) && this.local.has(session.by)) return; // this server's newer write is still on its way
+    if (this.outgoing.has(id) && this.local.has(session.by)) return; // this server's newer move is still on its way
     this.keep(id, session);
   }
 
@@ -74,69 +63,69 @@ export class TogetherHub {
     }
     let newest: Live | null = null;
     for (const { id, text } of found) {
-      const session = this.outgoing.has(id) ? this.known.get(id) : parseSession(text);
+      const pending = this.pending(id);
+      const session = pending ? this.view(id) : parseSession(text);
       if (!session) continue;
       if (!isLive(session, durationOf(session.set), this.now())) {
         this.forget(id);
         void this.channel.remove(id).catch(() => {});
         continue;
       }
-      this.known.set(id, session);
+      if (!pending) this.known.set(id, session);
       if (!newest || id > newest.id) newest = { id, session };
     }
     return newest;
   }
 
-  async start(me: Member, own: Playback, durationOf: DurationOf): Promise<{ live: Live; conflict: boolean }> {
-    const existing = await this.live(durationOf);
-    if (existing) return { live: existing, conflict: true };
-    const session = started(crypto.randomUUID(), me, own, this.now());
-    const id = await this.channel.send(writeSession(session));
-    this.local.add(me.screen);
-    this.keep(id, session);
-    return { live: { id, session }, conflict: false };
+  /** One at a time, so a second tab's start finds the first one's session. */
+  start(me: Member, own: Playback, durationOf: DurationOf): Promise<{ live: Live; conflict: boolean }> {
+    const run = this.starting.then(async () => {
+      const existing = await this.live(durationOf);
+      if (existing) return { live: existing, conflict: true };
+      const session = started(crypto.randomUUID(), me, own, this.now());
+      const id = await this.channel.send(writeSession(session));
+      this.local.add(me.screen);
+      this.keep(id, session);
+      return { live: { id, session }, conflict: false };
+    });
+    this.starting = run.catch(() => {});
+    return run;
   }
 
   async join(id: number, me: Member): Promise<Live | null> {
-    const text = this.outgoing.has(id) ? null : await this.channel.read(id);
-    if (text === null && !this.outgoing.has(id)) return this.forget(id);
-    const current = text === null ? this.known.get(id) : parseSession(text);
-    if (!current || current.ended) return null;
-    this.local.add(me.screen);
-    return { id, session: this.write(id, joined(current, me)) };
+    if (!this.pending(id)) {
+      const text = await this.channel.read(id);
+      const read = text === null ? null : parseSession(text);
+      if (!read || read.ended) return this.forget(id);
+      if (!this.pending(id)) this.known.set(id, read); // else a move made meanwhile already knows newer
+    }
+    const session = this.queue(id, me.screen, (s) => joined(s, me));
+    return session && { id, session };
   }
 
   act(id: number, screen: string, change: Partial<Playback>): Session | null {
-    const current = this.known.get(id);
+    const current = this.view(id);
     if (!current || current.ended) return null;
-    this.local.add(screen);
-    return this.write(id, acted(current, change, screen, this.now()));
+    const { set, playing, pos, rate, at, by } = acted(current, change, screen, this.now());
+    return this.queue(id, screen, (s) => ({ ...s, set, playing, pos, rate, at, by }));
   }
 
-  async leave(id: number, screen: string): Promise<void> {
-    const current = this.known.get(id);
-    if (!current || current.ended) return;
-    if (this.write(id, left(current, screen)).ended) await this.close(id);
-  }
+  /** Over for everyone only if nobody is left once it is sent; the sender then deletes the message. */
+  leave(id: number, screen: string): void { this.queue(id, screen, (s) => left(s, screen)); }
 
   /** The end of the last title: over for everyone, not just this screen. */
-  async end(id: number, screen: string): Promise<void> {
-    const current = this.known.get(id);
-    if (!current || current.ended) return;
-    this.write(id, finished(current, screen));
-    await this.close(id);
-  }
+  end(id: number, screen: string): void { this.queue(id, screen, (s) => finished(s, screen)); }
 
   /**
    * Re-reads every session a local screen is in. A push missed while the
    * connection was down is not replayed (`channel-events.ts`), so this is how
-   * a tab that kept playing learns what it missed. Skipped while a write is on
+   * a tab that kept playing learns what it missed. Skipped while a move is on
    * its way: a read then may predate it.
    */
   async recheck(): Promise<void> {
     if (!this.channel.available() || this.sending) return;
     for (const [id, session] of [...this.known]) {
-      if (this.outgoing.has(id) || !session.members.some((m) => this.local.has(m.screen))) continue;
+      if (this.pending(id) || !session.members.some((m) => this.local.has(m.screen))) continue;
       const text = await this.channel.read(id).catch(() => undefined);
       if (text === undefined) continue;
       const read = text === null ? null : parseSession(text);
@@ -145,51 +134,62 @@ export class TogetherHub {
     }
   }
 
-  private write(id: number, session: Session): Session {
-    this.keep(id, session);
-    this.outgoing.set(id, session);
-    this.kick();
-    return session;
+  /** What this server holds the session to be: the newest known, with its own moves not yet sent. */
+  private view(id: number): Session | undefined {
+    const base = this.known.get(id);
+    const move = this.outgoing.get(id);
+    return base && move && !base.ended ? move(base) : base;
   }
 
-  private keep(id: number, session: Session): void {
-    this.known.set(id, session);
-    this.announce(id, session.ended ? null : session);
+  private pending(id: number): boolean { return this.outgoing.has(id) || this.flying === id; }
+
+  private queue(id: number, screen: string, move: Move): Session | null {
+    const current = this.view(id);
+    if (!current || current.ended) return null;
+    this.local.add(screen);
+    const before = this.outgoing.get(id);
+    this.outgoing.set(id, before ? (s) => move(before(s)) : move);
+    this.kick();
+    return this.tell(id);
+  }
+
+  private keep(id: number, session: Session): void { this.known.set(id, session); this.tell(id); }
+
+  private tell(id: number): Session | null {
+    const session = this.view(id);
+    const shown = session && !session.ended ? session : null;
+    this.announce(id, shown);
+    return shown;
   }
 
   /** The session is over here: forgotten, and every tab told. */
-  private forget(id: number): null {
-    this.known.delete(id);
-    this.announce(id, null);
-    return null;
-  }
+  private forget(id: number): null { this.known.delete(id); this.announce(id, null); return null; }
 
-  /** Once the ending write is sent, the message goes. */
-  private async close(id: number): Promise<void> {
-    while (this.sending) await this.sending;
-    await this.channel.remove(id).catch(() => {});
-    this.forget(id);
-  }
-
-  /** Starts the one sender, unless it runs. Started again for a write queued after its last look but before it stopped. */
+  /** Starts the one sender, unless it runs. Started again for a move queued after its last look but before it stopped. */
   private kick(): void {
     this.sending ??= this.drain().finally(() => { this.sending = null; if (this.outgoing.size > 0) this.kick(); });
   }
 
   private async drain(): Promise<void> {
     for (let next = this.outgoing.entries().next(); !next.done; next = this.outgoing.entries().next()) {
-      const [id, own] = next.value;
+      const [id, move] = next.value;
       this.outgoing.delete(id);
-      // Re-based on the newest known session: the own playback, with the members another screen's edit may have changed.
       const base = this.known.get(id);
-      if (!base || (base.ended && !own.ended)) continue; // over meanwhile: the write is dropped
+      if (!base || base.ended) continue; // over meanwhile: the move is dropped
+      const session = move(base);
+      this.known.set(id, session);
+      this.flying = id;
       try {
-        const outcome = await this.channel.edit(id, writeSession({ ...own, session: base.session, members: base.members }));
+        const outcome = await this.channel.edit(id, writeSession(session)).finally(() => { this.flying = null; });
         if (outcome === "gone") this.forget(id);
         else if (outcome !== "ok") {
-          // Flood-limited: the newest own write goes once allowed, re-based on whatever is known by then.
-          if (!this.outgoing.has(id)) this.outgoing.set(id, own);
+          // Flood-limited: the move goes again once allowed, ahead of any made since, onto whatever is newest by then.
+          const later = this.outgoing.get(id);
+          this.outgoing.set(id, later ? (s) => later(move(s)) : move);
           await this.sleep(outcome.wait * 1000);
+        } else if (session.ended && this.known.get(id)?.ended) {
+          await this.channel.remove(id).catch(() => {});
+          this.forget(id);
         }
       } catch (error) {
         console.warn(`together: an edit failed: ${failureMessage(error)}`);
