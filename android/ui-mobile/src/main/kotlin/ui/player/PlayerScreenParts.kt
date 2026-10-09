@@ -19,6 +19,7 @@ import designsystem.Spacing
 import model.MediaSet
 import playback.PlaybackTotals
 import player.titleLine
+import player.together.TogetherUi
 
 /**
  * The pieces `PlayerScreen` draws, apart from the screen that arranges
@@ -36,8 +37,8 @@ internal fun CenteredSpinner() {
 }
 
 /**
- * The back arrow, the title, the marks and Notes beside it, and the
- * statistics. Absent entirely in picture-in-picture: there
+ * The back arrow, the title, the marks and Notes beside it, watch
+ * together's label and notice ([together]), and the statistics. Absent entirely in picture-in-picture: there
  * is no touch surface of this app's own inside that window, and no room
  * for the statistics either.
  *
@@ -59,10 +60,14 @@ internal fun PlayerTopChrome(
     onNotes: (() -> Unit)? = null,
     marks: @Composable () -> Unit = {},
     onBarBottom: (Int) -> Unit = {},
+    together: TogetherUi = TogetherUi(),
 ) {
+    // Watch together's notice goes too, unlike the web's beside its sidebar: a sidebar that covers the window covers the picture it speaks of.
     if (isInPip) return
     Column(modifier = modifier) {
-        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks, onBottom = onBarBottom)
+        PlayerTopBar(title = titleLine(openSet), showTitle = barShown, onBack = onBack, onNotes = onNotes, marks = marks, onBottom = onBarBottom, label = together.label)
+        // Under the bar rather than with it, so it shows while the controls rest.
+        TogetherNoticePill(together.notice, Modifier.align(Alignment.CenterHorizontally).padding(top = Spacing.small))
         // Gated on the bar being shown as well as on the toggle, so the
         // statistics have no visibility rule of their own: a viewer who
         // leaves the numbers on gets the picture back when the card takes

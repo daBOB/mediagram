@@ -37,6 +37,7 @@ import player.PlayerChoices
 import player.READOUT_TICK_MS
 import player.UpNextUiState
 import player.endsLine
+import player.together.TogetherUi
 import ui.common.player.playerCard
 
 /** Finds the card in a test. */
@@ -63,6 +64,8 @@ internal class PlayerCardActions(
     val onAnchor: (CardMenu, IntRect) -> Unit = { _, _ -> },
     /** The focus target of [CardMenu]'s opener, or of the episodes button for null — where focus returns when what it opened closes. */
     val focusOf: (CardMenu?) -> FocusRequester = { FocusRequester() },
+    /** Watch together's button: start, join or leave, whichever it says. */
+    val onTogether: () -> Unit = {},
 )
 
 /** What the card reads, beside the player itself. */
@@ -77,6 +80,8 @@ internal class PlayerCardView(
     /** What a screen reader hears each opener report as expanded: the open menu, and whether the sidebar is out. */
     val openMenu: CardMenu? = null,
     val sidebarOpen: Boolean = false,
+    /** Watch together's button, as the player decides it. */
+    val together: TogetherUi = TogetherUi(),
 )
 
 /**
@@ -147,7 +152,7 @@ internal fun PlayerControlCard(
             onScrubbingToChange = { scrubbingTo = it },
             onSeek = player::seekTo,
         )
-        CardToolsRow(choices = view.choices, speed = speed, actions = actions, openMenu = view.openMenu)
+        CardToolsRow(choices = view.choices, speed = speed, actions = actions, openMenu = view.openMenu, together = view.together)
         CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }
 }

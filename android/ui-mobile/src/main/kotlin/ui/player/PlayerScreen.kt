@@ -29,12 +29,8 @@ import player.PlayerViewModel
 import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
-import player.createListAndAdd
 import player.pauseForPipDismissal
 import player.retry
-import player.setInList
-import player.setKidsMark
-import player.toggleWatchlist
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -80,6 +76,7 @@ fun PlayerScreen(
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
+    val together by viewModel.together.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -190,20 +187,9 @@ fun PlayerScreen(
                 onBack = onBack,
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
+                together = together,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
-                marks = {
-                    PlayerMarks(
-                        marks = marks,
-                        notice = actionNotice,
-                        actions =
-                            PlayerMarksActions(
-                                onToggleWatchlist = viewModel::toggleWatchlist,
-                                onKidsMark = viewModel::setKidsMark,
-                                onSetInList = viewModel::setInList,
-                                onCreateList = viewModel::createListAndAdd,
-                            ),
-                    )
-                },
+                marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }

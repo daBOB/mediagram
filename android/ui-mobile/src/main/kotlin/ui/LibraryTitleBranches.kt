@@ -18,11 +18,13 @@ import ui.chrome.ProfileBarState
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.ResolvedPositions
+import ui.common.catalog.WithTogetherJoin
 import ui.common.catalog.rememberFilmPreloadUi
 import ui.common.catalog.rememberTitleInfo
 
 /**
- * A title's own page and a show or course's own page — split out of
+ * A title's own page and a show or course's own page, each offering Join
+ * while a watch-together session plays it ([WithTogetherJoin]) — split out of
  * [LibraryBranches]'s own `when` once its own setup grew past what fit
  * beside a dispatch this wide, the same way [PersonFrame] and its
  * neighbours already did in `LibraryBrowseBranches.kt`.
@@ -40,7 +42,7 @@ internal fun TitleFrame(
     ResolvedBranch(resolved.title, catalogState, Destination.Title(LOADING), menuActions, profileBar, browse, at, { Destination.Title(it.title) }) { title ->
         val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
         val browseViewModel: BrowseViewModel = hiltViewModel()
-        TitleDetailScreen(
+        WithTogetherJoin(catalogViewModel, at::openPlayer) { TitleDetailScreen(
             set = title,
             info = rememberTitleInfo(title.posterKey, catalogViewModel::titleInfo),
             onPlay = { at.openPlayer(title.setId) },
@@ -65,7 +67,7 @@ internal fun TitleFrame(
             // their own already; kids profiles get it too, unlike the
             // editor's-choice pin above, since it is not a household mark.
             preload = if (title.kind == Kind.MOVIE) rememberFilmPreloadUi(title, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
-        )
+        ) }
     }
 }
 
@@ -87,7 +89,7 @@ internal fun CollectionFrame(
         // it (see `CollectionScreen`'s own `firstEpisode`); a course has
         // none of these controls, so a null first episode never matters here.
         val firstEpisodeId = firstItemOf(collection.divisions)?.setId
-        CollectionScreen(
+        WithTogetherJoin(catalogViewModel, at::openPlayer) { CollectionScreen(
             collection = collection,
             // A course's page draws nothing a provider entry would fill, so it asks for none.
             info = rememberTitleInfo(collection.posterKey.takeIf { collection.kind == CollectionKind.SHOW }, catalogViewModel::titleInfo),
@@ -112,6 +114,6 @@ internal fun CollectionFrame(
             portraits = browseViewModel.portraits,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
-        )
+        ) }
     }
 }

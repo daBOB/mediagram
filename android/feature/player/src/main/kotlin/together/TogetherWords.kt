@@ -25,6 +25,13 @@ val TogetherButton.words: String
             TogetherButton.LEAVE -> "Leave watch together"
         }
 
+/**
+ * What a screen reader hears of the button: its words, and while it is greyed
+ * out why, which the web gives as the button's title.
+ */
+val TogetherUi.description: String
+    get() = listOfNotNull(button.words, reason).joinToString(", ")
+
 /** The two-second notice for another screen's edit [session], as `changeOf` named it. */
 internal fun say(
     noticed: Noticed,

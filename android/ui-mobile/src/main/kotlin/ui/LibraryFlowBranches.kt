@@ -38,6 +38,7 @@ import ui.common.FrameKind
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.catalog.DepartmentScrollStates
+import ui.common.catalog.WithTogetherJoin
 import ui.common.catalog.rememberDepartmentScrollStates
 import ui.common.resolve
 import ui.player.PlayerScreen
@@ -232,7 +233,7 @@ internal fun LibraryBranches(
             onSearch = at::openSearch,
             heroState = heroState,
         ) {
-            shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
+            shelvesState.SaveableStateProvider(SHELVES_KEY) { WithTogetherJoin(catalogViewModel, at::openPlayer) { CatalogScreen(
                 state = catalogState,
                 fetching = fetchState.running,
                 chosenTab = chosenTab,
@@ -253,7 +254,7 @@ internal fun LibraryBranches(
                 deptScroll = deptScroll,
                 now = now,
                 titleInfo = catalogViewModel::titleInfo,
-            ) }
+            ) } }
         }
     }
     }

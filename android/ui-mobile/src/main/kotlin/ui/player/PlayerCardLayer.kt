@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import player.EpisodeList
 import player.PlayerChoices
@@ -41,6 +43,7 @@ internal fun BoxScope.PlayerCardLayer(
     onEnterPip: (() -> Unit)?,
     onScrubbingChanged: (Boolean) -> Unit,
 ) {
+    val together by viewModel.together.collectAsStateWithLifecycle()
     val clearance = if (card.sidebarOpen && !sidebarCoversScreen()) SIDEBAR_WIDTH else 0.dp
     Box(modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(end = clearance)) {
         PlayerControlCard(
@@ -48,7 +51,7 @@ internal fun BoxScope.PlayerCardLayer(
             view =
                 PlayerCardView(
                     choices, upNext, statsShown, hasEpisodes = hasEpisodes, catalogedDurationSecs = catalogedDurationSecs,
-                    openMenu = card.menu, sidebarOpen = card.sidebarOpen,
+                    openMenu = card.menu, sidebarOpen = card.sidebarOpen, together = together,
                 ),
             actions = playerCardActions(viewModel, card, onToggleStats = onToggleStats, onEnterPip = onEnterPip),
             onScrubbingChanged = onScrubbingChanged,

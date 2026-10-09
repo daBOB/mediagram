@@ -24,7 +24,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.em
 import designsystem.Spacing
 import ui.common.player.SCRIM_ALPHA
 import kotlin.math.roundToInt
@@ -36,7 +38,8 @@ private val TOP_GRADIENT = Brush.verticalGradient(listOf(Color.Black.copy(alpha 
  * The slim bar along the top: back, what is playing, and the controls the
  * web keeps in its own top bar — My List, Kids and Add to list ([marks]) and
  * Notes ([onNotes], when the open title has notes). Picture-in-picture rides
- * in the card instead.
+ * in the card instead. In watch together [label] names who is in the
+ * session ("Together · TV, Tablet").
  *
  * The arrow stays up regardless of the card's fade — Android's own way
  * back, not something the web has; everything else follows [showTitle], the
@@ -56,6 +59,7 @@ internal fun PlayerTopBar(
     marks: @Composable () -> Unit = {},
     /** Where the bar ends in the root, so a menu knows how far up it may reach. */
     onBottom: (Int) -> Unit = {},
+    label: String? = null,
 ) {
     Row(
         modifier =
@@ -73,6 +77,16 @@ internal fun PlayerTopBar(
             Column(modifier = Modifier.weight(1f).padding(top = Spacing.medium, end = Spacing.small)) {
                 if (title.isNotEmpty()) {
                     Text(text = title, color = Color.White, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                // The web's `.together-label`, on its own line under the title as the web's narrow bar sets it.
+                label?.let {
+                    Text(
+                        text = it.uppercase(),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                     marks()

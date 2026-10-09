@@ -3,7 +3,6 @@ package ui.catalog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
@@ -17,11 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import designsystem.Spacing
-
-/** The smallest a control here may be, so a thumb never has to aim for less. */
-private val MIN_TOUCH_TARGET = 48.dp
 
 /**
  * The row of pills under a title's spread: what starts it, "My List", and a
@@ -56,11 +51,7 @@ internal fun TitlePills(
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        if (playLabel != null) {
-            Button(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET)) {
-                Text("▶ $playLabel")
-            }
-        }
+        if (playLabel != null) PlayPill(playLabel, onPlay)
         preloadPill?.invoke()
         OutlinedButton(
             onClick = onToggleWatchlist,

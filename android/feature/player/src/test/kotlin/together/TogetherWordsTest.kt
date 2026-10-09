@@ -39,4 +39,13 @@ class TogetherWordsTest {
             TogetherButton.entries.map { it.words },
         )
     }
+
+    @Test
+    fun aGreyedButtonSaysWhyToAScreenReader() {
+        assertEquals("Join", TogetherUi(button = TogetherButton.JOIN, enabled = true).description)
+        assertEquals(
+            "Watch together, Telegram isn't reachable",
+            TogetherUi(button = TogetherButton.START, reason = data.TOGETHER_UNREACHABLE).description,
+        )
+    }
 }

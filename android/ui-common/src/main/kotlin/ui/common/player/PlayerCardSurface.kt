@@ -35,6 +35,13 @@ fun Modifier.playerCard(): Modifier =
     background(Color.Black.copy(alpha = CARD_FILL_ALPHA), CardShape)
         .border(1.dp, Color.White.copy(alpha = CARD_EDGE_ALPHA), CardShape)
 
+private val NoteShape = RoundedCornerShape(percent = 50)
+
+/** Watch together's notice: the card's fill and hairline drawn as a pill, the web's `.together-note`. */
+fun Modifier.togetherNote(): Modifier =
+    background(Color.Black.copy(alpha = CARD_FILL_ALPHA), NoteShape)
+        .border(1.dp, Color.White.copy(alpha = CARD_EDGE_ALPHA), NoteShape)
+
 /**
  * Where a card menu goes, with [anchor] (the button that opened it) and
  * [card] both in window coordinates, since the top edge of the window is

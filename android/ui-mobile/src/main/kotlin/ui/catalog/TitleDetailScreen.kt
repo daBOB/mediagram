@@ -33,6 +33,7 @@ import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.rememberTitleCredits
+import ui.common.catalog.togetherJoinOf
 import uniffi.mediagram_core.TitleInfo
 
 /** Wide enough to recognise a poster by, narrow enough to leave the facts a column. */
@@ -42,6 +43,7 @@ private val POSTER_WIDTH = 120.dp
  * A film's own page, laid out as a feature article: the opening spread
  * ([TitleSpread]), the pills that start it, then tabs — Overview, Cast (once
  * credits name somebody), Similar, Details. A Compose port of `film-page.js`.
+ * While a watch-together session plays this film, Join stands in for Play.
  *
  * [info] being null is ordinary rather than a failure — a course has no
  * provider entry, and a library assembled without a TMDB key has no rows at
@@ -74,6 +76,7 @@ fun TitleDetailScreen(
             watch.progress.find { it.setId == set.setId }?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) }
         }
     val credits = rememberTitleCredits(set.posterKey, titleCredits)
+    val join = togetherJoinOf(set.setId)
     val franchise =
         remember(set.setId, set.collectionId, shelves) {
             set.collectionId?.let { id -> franchisesIn(everyFilm(shelves)).find { it.id == id } }
@@ -96,8 +99,8 @@ fun TitleDetailScreen(
             tagline = info?.tagline,
         ) {
             TitlePills(
-                playLabel = resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play",
-                onPlay = onPlay,
+                playLabel = if (join != null) "Join" else resumeAt?.let { "Resume from ${clockTime(it)}" } ?: "Play",
+                onPlay = join?.join ?: onPlay,
                 watchlisted = set.setId in watch.watchlist,
                 onToggleWatchlist = onToggleWatchlist,
                 editorsChoicePinned = editorsChoice == set.setId,
