@@ -49,6 +49,7 @@ import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
 import testing.FakeLanChunkProtocol
 import testing.FakeLanServerSource
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import ui.player.PlayerLifecycleFixture
 import uniffi.mediagram_core.Achievements
@@ -89,6 +90,9 @@ internal class LibraryFlowFixture(
     val stats = mockk<StatsViewModel>(relaxed = true)
 
     val repository = mockk<CatalogRepository>()
+
+    /** Watch together as the catalog hears it: a test puts a session up, or takes Telegram away. */
+    val together = FakeTogetherLive()
     val catalog: CatalogViewModel
     val player: PlayerViewModel
 
@@ -117,7 +121,7 @@ internal class LibraryFlowFixture(
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.fetchPortrait(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment))
+        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together)
         player = playback.factory.create(PlayerViewModel::class.java)
         if (settingsModel == null) {
             every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))

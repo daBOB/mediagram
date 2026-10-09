@@ -8,6 +8,7 @@ import data.CatalogRepository
 import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
+import data.TogetherLive
 import data.WatchStateRepository
 import data.coreSentence
 import data.orDefault
@@ -47,6 +48,7 @@ class CatalogViewModel
         private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
         filmPreloader: FilmPreloading = FilmPreloading.Noop,
+        private val togetherLive: TogetherLive,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
@@ -180,6 +182,17 @@ class CatalogViewModel
                     error("unreachable: a StateFlow-backed combine never completes")
                 }
             }
+
+        /**
+         * Watch together's Join, for Home and the title pages: the live session
+         * on a title this profile's catalog holds, while Telegram can be reached.
+         * Collecting it is what listens, so only a screen showing Join does.
+         */
+        val together: StateFlow<TogetherOffer?> =
+            togetherOffers(togetherLive, state).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+        /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */
+        fun join(offer: TogetherOffer) = togetherLive.joinOnOpen(offer.id)
 
         /** One place the filter applies: every wall and title page on the phone is built from these shelves. */
         private fun project(

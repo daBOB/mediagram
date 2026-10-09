@@ -30,6 +30,7 @@ import playback.FilmPreloading
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
@@ -55,6 +56,7 @@ private fun catalogViewModel(
         LibraryUpdateCoordinator(repository, enrichment),
         events,
         filmPreloader = filmPreloader,
+        togetherLive = FakeTogetherLive(),
     )
 
 private val ANA = Profile("a", "Ana")

@@ -63,6 +63,7 @@ import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
 import testing.FakeLanChunkProtocol
 import testing.FakeLanServerSource
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import ui.tv.player.TvPlayerFixture
 import uniffi.mediagram_core.Achievements
@@ -122,6 +123,9 @@ internal class TvAppFixture(
 
     /** The core behind everything, the household's rules with it: what a profile change left, and each grown-up's PIN. */
     val core: FakeCore
+
+    /** Watch together as the catalog hears it: a test puts a session up, or takes Telegram away. */
+    val together = FakeTogetherLive()
     val catalog: CatalogViewModel
     private val search: SearchViewModel
     private val fetch: FetchViewModel
@@ -228,6 +232,7 @@ internal class TvAppFixture(
                 viewer.repository,
                 LibraryUpdateCoordinator(repository, enrichment),
                 heldSets = HeldIds(heldIds),
+                togetherLive = together,
             )
         fetch = FetchViewModel(enrichment)
         search = SearchViewModel(repository)
