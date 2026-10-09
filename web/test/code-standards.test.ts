@@ -68,10 +68,11 @@ const ROOT = join(import.meta.dir, "..");
  * Lowered the same day for `src/state/store.ts`, once its foreign-key check
  * read the SQLite code through `errorCode`.
  * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
- * push sink, its recheck timer and its route.
+ * push sink, its recheck timer and its route. Raised the same day for `app.js`,
+ * by 2, to hand the library session watch together's share of the event stream.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 693,
+  "public/app.js": 695,
   "public/lib/catalog/course-view.js": 234,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

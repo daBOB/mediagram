@@ -13,11 +13,12 @@ export function browserLibraryPort() {
       return response.text();
     },
 
-    listen({ catalog, open, state }) {
+    listen({ catalog, open, state, together }) {
       const events = new EventSource("/api/events");
       events.addEventListener("catalog", catalog);
       events.addEventListener("open", open);
       events.addEventListener("state", state);
+      events.addEventListener("together", (event) => together(JSON.parse(event.data)));
       return () => events.close();
     },
 

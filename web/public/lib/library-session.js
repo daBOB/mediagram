@@ -22,10 +22,10 @@ import { forKidsProfile, kidsLimitOf } from "./age-rating.js";
 /**
  * @param {{ port: import("./library-session.js").LibraryPort,
  *   state: import("./library-session.js").LibrarySessionState,
- *   remoteState: () => void }} deps
+ *   remoteState: () => void, together: import("./library-session.js").LibraryTogether }} deps
  * @returns {import("./library-session.js").LibrarySession}
  */
-export function createLibrarySession({ port, state, remoteState }) {
+export function createLibrarySession({ port, state, remoteState, together }) {
   /**
    * The catalog exactly as the server last sent it, kept as text so a
    * refresh can tell "the same again" from "something arrived" with one
@@ -141,9 +141,11 @@ export function createLibrarySession({ port, state, remoteState }) {
     if (stopStream) return;
     stopStream = port.listen({
       catalog: () => void refreshCatalog(),
-      open: () => void refreshCatalog(),
+      // A stream that was gone may have missed a watch-together edit as much as a catalog.
+      open: () => { void refreshCatalog(); together.reopened(); },
       // Another device's positions or marks, pulled by the server.
       state: () => remoteState(),
+      together: (payload) => together.heard(payload),
     });
   }
   function closeStream() {
@@ -155,13 +157,14 @@ export function createLibrarySession({ port, state, remoteState }) {
   // six connections to one host, and a stream held by every background tab
   // would leave the tab being watched none for its video. A tab brought back
   // opens its stream again, and that open reads the catalog through `open`.
+  // A tab in a watch-together session keeps it: hidden, it still plays and follows.
   port.onVisibility(() => {
     if (port.visible()) {
       openStream();
       // State saved on another device while this tab was away follows the
       // same notification path as a local mutation.
       remoteState();
-    } else closeStream();
+    } else if (!together.inSession()) closeStream();
   });
   if (port.visible()) openStream();
 

@@ -146,6 +146,14 @@ test("hide/show owns one event stream and refreshes the chosen profile", async (
   expect(env.node("n-continue").textContent).toBe("1");
 });
 
+test("each open of the event stream reads watch together again, for an edit missed while it was gone", async () => {
+  await start();
+  const reads = () => env.requests.filter((request) => request.url === "/api/together" && !request.options?.method).length;
+  const before = reads();
+  stream().fire("open"); await settle();
+  expect(reads()).toBe(before + 1);
+});
+
 for (const outcome of ["success", "failure"] as const) {
   test(`old search ${outcome} cannot overwrite a different route`, async () => {
     await start();

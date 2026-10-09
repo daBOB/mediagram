@@ -52,8 +52,9 @@ export function fakeLibraryPort(initialText = "[]") {
       visible = value;
       onVisibilityFn?.();
     },
-    fire(event: keyof LibraryPortListeners) {
-      listeners?.[event]();
+    /** A stream event; `together` carries its payload, the others none. */
+    fire(event: keyof LibraryPortListeners, payload?: unknown) {
+      (listeners?.[event] as ((payload?: unknown) => void) | undefined)?.(payload);
     },
     get fetches() {
       return fetches;

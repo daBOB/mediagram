@@ -7,13 +7,27 @@
  */
 
 import type { CatalogSet, Library } from "./library.js";
+import type { Session } from "./together/session.js";
 
-/** The three stream events the server sends, none carrying a payload the
- *  session needs: what changed is asked for separately, over `fetchCatalog`. */
+/** What a `together` stream event carries; `session` is `null` once it is over. */
+export interface TogetherPayload { id: number; session: Session | null; serverNow: number }
+
+/** The stream events the server sends. Only `together` carries a payload the
+ *  session needs; what else changed is asked for separately, over `fetchCatalog`. */
 export interface LibraryPortListeners {
   catalog(): void;
   open(): void;
   state(): void;
+  together(payload: TogetherPayload): void;
+}
+
+/** Watch together's share of the stream (`together-now.js`). */
+export interface LibraryTogether {
+  heard(payload: TogetherPayload): void;
+  /** The stream opened, again or for the first time: read the session afresh. */
+  reopened(): void;
+  /** Whether this tab is in a session, which keeps its stream open while hidden. */
+  inSession(): boolean;
 }
 
 /** Everything the session needs from the browser, so it can be faked. */
@@ -64,4 +78,5 @@ export function createLibrarySession(deps: {
   port: LibraryPort;
   state: LibrarySessionState;
   remoteState: () => void;
+  together: LibraryTogether;
 }): LibrarySession;
