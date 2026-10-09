@@ -1,0 +1,7 @@
+[
+  {"name":"playing adds the elapsed time","session":{"session":"s1","set":"film-1","playing":true,"pos":100,"rate":1,"at":1000000,"by":"tv-1","members":[{"screen":"tv-1","label":"TV"},{"screen":"tab-1","label":"Tablet"}],"ended":false},"now":1010000,"expect":110},
+  {"name":"playing faster adds the elapsed time times the rate","session":{"session":"s1","set":"film-1","playing":true,"pos":100,"rate":1.5,"at":1000000,"by":"tv-1","members":[{"screen":"tv-1","label":"TV"},{"screen":"tab-1","label":"Tablet"}],"ended":false},"now":1010000,"expect":115},
+  {"name":"paused stays where it is","session":{"session":"s1","set":"film-1","playing":false,"pos":100,"rate":1,"at":1000000,"by":"tv-1","members":[{"screen":"tv-1","label":"TV"},{"screen":"tab-1","label":"Tablet"}],"ended":false},"now":9999999,"expect":100},
+  {"name":"a writer clock ahead of ours is clamped at zero","session":{"session":"s1","set":"film-1","playing":true,"pos":3,"rate":1,"at":1000000,"by":"tv-1","members":[{"screen":"tv-1","label":"TV"},{"screen":"tab-1","label":"Tablet"}],"ended":false},"now":990000,"expect":0},
+  {"name":"a writer clock slightly ahead subtracts the difference","session":{"session":"s1","set":"film-1","playing":true,"pos":100,"rate":1,"at":1000000,"by":"tv-1","members":[{"screen":"tv-1","label":"TV"},{"screen":"tab-1","label":"Tablet"}],"ended":false},"now":995000,"expect":95}
+]
