@@ -2,9 +2,12 @@ package testing
 
 import kotlinx.coroutines.test.runTest
 import uniffi.mediagram_core.CoreException
+import uniffi.mediagram_core.TogetherEdit
+import uniffi.mediagram_core.TogetherMessage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import uniffi.mediagram_core.Profile as CoreProfile
 
 /**
@@ -67,5 +70,24 @@ class FakeCoreTest {
             // removedAt actually holds. max(60, removedAt+1) is 102 with the
             // clamp above correctly applied, or 60 if it were dropped.
             assertEquals(102L, core.snapshot("p1").watched.single().finishedAt)
+        }
+
+    /** A flood wait leaves the message as it was, as Telegram does; a deleted one is gone whatever the fake is told. */
+    @Test
+    fun aTogetherEditLandsOnlyWhenItIsOk() =
+        runTest {
+            val core = FakeCore()
+            val first = core.togetherSend("h", "one")
+            val second = core.togetherSend("h", "two")
+            assertEquals(listOf(TogetherMessage(second, "two"), TogetherMessage(first, "one")), core.togetherRecent("h"))
+
+            core.togetherEditOutcome = TogetherEdit.Wait(90u)
+            assertEquals(TogetherEdit.Wait(90u), core.togetherEdit("h", second, "three"))
+            assertEquals("two", core.togetherRead("h", second))
+
+            core.togetherEditOutcome = TogetherEdit.Ok
+            core.togetherDelete("h", second)
+            assertEquals(TogetherEdit.Gone, core.togetherEdit("h", second, "three"))
+            assertNull(core.togetherRead("h", second))
         }
 }

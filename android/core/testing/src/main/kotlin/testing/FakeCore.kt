@@ -28,6 +28,8 @@ import uniffi.mediagram_core.StatsSummary
 import uniffi.mediagram_core.SyncOutcome
 import uniffi.mediagram_core.TitleCreditsRecord
 import uniffi.mediagram_core.TitleInfo
+import uniffi.mediagram_core.TogetherEdit
+import uniffi.mediagram_core.TogetherMessage
 
 /**
  * The one fake of the generated core every test in this app builds on.
@@ -455,6 +457,56 @@ class FakeCore(
         val next = events.getOrNull(eventCalls++) ?: awaitCancellation()
         return next.getOrThrow()
     }
+
+    /** The library channel's watch-together session messages, by message id: what the together calls read and write. */
+    val togetherMessages = linkedMapOf<Int, String>()
+
+    /** The id [togetherSend] gives the next message it sends. */
+    var nextTogetherId = 900
+
+    /** What [togetherHeard] answers: the newest session message a push carried. */
+    var togetherHeardMessage: TogetherMessage? = null
+
+    /**
+     * What [togetherEdit] answers for a message that still exists. Only
+     * [TogetherEdit.Ok] stores the new text — a flood wait, like the real
+     * one, leaves the message as it was. A deleted message is always gone.
+     */
+    var togetherEditOutcome: TogetherEdit = TogetherEdit.Ok
+
+    /** What every together call but [togetherHeard] throws, or `null` — a Telegram that cannot be reached. */
+    var togetherFailure: Throwable? = null
+
+    override suspend fun togetherRecent(handle: String): List<TogetherMessage> {
+        togetherFailure?.let { throw it }
+        return togetherMessages.entries.sortedByDescending { it.key }.map { TogetherMessage(it.key, it.value) }
+    }
+
+    override suspend fun togetherRead(handle: String, messageId: Int): String? {
+        togetherFailure?.let { throw it }
+        return togetherMessages[messageId]
+    }
+
+    override suspend fun togetherSend(handle: String, text: String): Int {
+        togetherFailure?.let { throw it }
+        val id = nextTogetherId++
+        togetherMessages[id] = text
+        return id
+    }
+
+    override suspend fun togetherEdit(handle: String, messageId: Int, text: String): TogetherEdit {
+        togetherFailure?.let { throw it }
+        if (messageId !in togetherMessages) return TogetherEdit.Gone
+        if (togetherEditOutcome == TogetherEdit.Ok) togetherMessages[messageId] = text
+        return togetherEditOutcome
+    }
+
+    override suspend fun togetherDelete(handle: String, messageId: Int) {
+        togetherFailure?.let { throw it }
+        togetherMessages.remove(messageId)
+    }
+
+    override fun togetherHeard(): TogetherMessage? = togetherHeardMessage
 
     /** How many times [profiles] actually ran. */
     var profilesCalls: Int = 0
