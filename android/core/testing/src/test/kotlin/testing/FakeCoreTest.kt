@@ -1,5 +1,6 @@
 package testing
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.TogetherEdit
@@ -89,5 +90,10 @@ class FakeCoreTest {
             core.togetherDelete("h", second)
             assertEquals(TogetherEdit.Gone, core.togetherEdit("h", second, "three"))
             assertNull(core.togetherRead("h", second))
+
+            // A Gone answer is a message Telegram no longer has, so it reads as deleted too.
+            core.togetherEditOutcomes += CompletableDeferred(TogetherEdit.Gone)
+            assertEquals(TogetherEdit.Gone, core.togetherEdit("h", first, "four"))
+            assertNull(core.togetherRead("h", first))
         }
 }

@@ -2,6 +2,7 @@ package testing
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.awaitCancellation
 import uniffi.mediagram_core.AccountSummary
 import uniffi.mediagram_core.Achievements
@@ -461,6 +462,9 @@ class FakeCore(
     /** The library channel's watch-together session messages, by message id: what the together calls read and write. */
     val togetherMessages = linkedMapOf<Int, String>()
 
+    /** Ids pushed out of the newest messages by a busy channel: [togetherRecent] leaves them out, [togetherRead] still finds them. */
+    val togetherOld = mutableSetOf<Int>()
+
     /** The id [togetherSend] gives the next message it sends. */
     var nextTogetherId = 900
 
@@ -468,23 +472,50 @@ class FakeCore(
     var togetherHeardMessage: TogetherMessage? = null
 
     /**
-     * What [togetherEdit] answers for a message that still exists. Only
-     * [TogetherEdit.Ok] stores the new text — a flood wait, like the real
-     * one, leaves the message as it was. A deleted message is always gone.
+     * What [togetherEdit] answers for a message that still exists, once
+     * [togetherEditOutcomes] runs out. Only [TogetherEdit.Ok] stores the new
+     * text — a flood wait, like the real one, leaves the message as it was —
+     * and [TogetherEdit.Gone] takes the message away. A deleted message is
+     * always gone.
      */
     var togetherEditOutcome: TogetherEdit = TogetherEdit.Ok
+
+    /**
+     * What the next [togetherEdit] calls answer, one each, in order. Each is
+     * awaited, so an incomplete one holds its edit on its way until the test
+     * completes it. Past the end, [togetherEditOutcome] answers.
+     */
+    val togetherEditOutcomes = ArrayDeque<Deferred<TogetherEdit>>()
+
+    /** Every edit [togetherEdit] was asked for, in order, whatever it answered. */
+    val togetherEdits = mutableListOf<TogetherMessage>()
+
+    /** Every id [togetherRead] was asked for, in order. */
+    val togetherReads = mutableListOf<Int>()
+
+    /** Holds every [togetherRead] until completed; it then answers the text as it stood when it was asked. */
+    var togetherReadGate: CompletableDeferred<Unit>? = null
+
+    /** Every id [togetherDelete] was asked to delete, in order. */
+    val togetherDeletes = mutableListOf<Int>()
 
     /** What every together call but [togetherHeard] throws, or `null` — a Telegram that cannot be reached. */
     var togetherFailure: Throwable? = null
 
     override suspend fun togetherRecent(handle: String): List<TogetherMessage> {
         togetherFailure?.let { throw it }
-        return togetherMessages.entries.sortedByDescending { it.key }.map { TogetherMessage(it.key, it.value) }
+        return togetherMessages.entries
+            .filter { it.key !in togetherOld }
+            .sortedByDescending { it.key }
+            .map { TogetherMessage(it.key, it.value) }
     }
 
     override suspend fun togetherRead(handle: String, messageId: Int): String? {
         togetherFailure?.let { throw it }
-        return togetherMessages[messageId]
+        togetherReads += messageId
+        val text = togetherMessages[messageId]
+        togetherReadGate?.await()
+        return text
     }
 
     override suspend fun togetherSend(handle: String, text: String): Int {
@@ -496,13 +527,20 @@ class FakeCore(
 
     override suspend fun togetherEdit(handle: String, messageId: Int, text: String): TogetherEdit {
         togetherFailure?.let { throw it }
+        togetherEdits += TogetherMessage(messageId, text)
+        val outcome = togetherEditOutcomes.removeFirstOrNull()?.await() ?: togetherEditOutcome
         if (messageId !in togetherMessages) return TogetherEdit.Gone
-        if (togetherEditOutcome == TogetherEdit.Ok) togetherMessages[messageId] = text
-        return togetherEditOutcome
+        when (outcome) {
+            TogetherEdit.Ok -> togetherMessages[messageId] = text
+            TogetherEdit.Gone -> togetherMessages.remove(messageId)
+            is TogetherEdit.Wait -> Unit
+        }
+        return outcome
     }
 
     override suspend fun togetherDelete(handle: String, messageId: Int) {
         togetherFailure?.let { throw it }
+        togetherDeletes += messageId
         togetherMessages.remove(messageId)
     }
 
