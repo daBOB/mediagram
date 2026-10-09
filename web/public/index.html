@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="/styles/library-controls.css" />
     <link rel="stylesheet" href="/styles/playback.css" />
     <link rel="stylesheet" href="/styles/player-card.css" />
+    <link rel="stylesheet" href="/styles/together.css" />
     <link rel="stylesheet" href="/styles/episode-sidebar.css" />
     <link rel="stylesheet" href="/styles/stats.css" />
     <!-- The deepest modules the first shelf's own render reaches, fetched
@@ -122,6 +123,7 @@
            behind it; the card below needs none. -->
       <div class="hud hud-top" id="top-bar">
         <span class="what" id="now"></span>
+        <span class="together-label" id="together-label" hidden></span>
         <button id="watchlist" class="ghost" aria-pressed="false">My List</button>
         <button id="kids" class="ghost" aria-pressed="false">Kids</button>
         <!-- An unrated title is for kids only from the age a grown-up picks
@@ -135,6 +137,10 @@
         <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
         <button id="close" class="ghost" aria-label="Close">✕</button>
       </div>
+
+      <!-- What another screen in the session just did, for two seconds. Empty
+           rather than hidden in between, so the change is read out. -->
+      <p class="together-note" id="together-note" role="status"></p>
 
       <!-- The controls, as one card over the foot of the picture, in three
            rows: where the viewer is, how the title plays, and the transport.
@@ -169,6 +175,7 @@
             <button id="speed" class="tool" aria-label="Speed">1×</button>
             <button id="audio" class="tool" aria-label="Audio" hidden>Audio</button>
             <button id="framing" class="tool" aria-label="Framing">Fit</button>
+            <button id="together" class="tool">Watch together</button>
             <span class="spacer"></span>
             <span class="volume">
               <button id="mute" class="tsp" aria-label="Mute"></button>

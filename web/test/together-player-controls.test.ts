@@ -1,0 +1,151 @@
+/**
+ * The real player in a watch-together session: every way a viewer plays,
+ * pauses, seeks, changes speed or moves on reaches the session exactly once,
+ * and nothing the player does because it is following goes back out.
+ */
+
+import { afterEach, beforeEach, expect, test } from "bun:test";
+import { browserEnvironment, chooseInMenu, settle } from "./support/player-environment";
+import * as state from "../public/lib/watch-state.js";
+import { heardTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
+import type { Session } from "../public/lib/together/session.js";
+
+let env: ReturnType<typeof browserEnvironment>;
+let openPlayer: (set: ReturnType<typeof film>, options?: object) => void;
+let serial = 0;
+const mediaKeys = new Map<string, () => void>();
+const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration: 600, container: "mp4", vcodec: "h264", acodec: "aac" });
+const sets = new Map(["film-1", "film-2"].map((id) => [id, film(id)]));
+const TV = { screen: "tv", label: "TV" };
+const ME = { screen, label: "Browser" };
+const session = (over: Partial<Session> = {}): Session => ({
+  session: "s-1", set: "film-1", playing: false, pos: 0, rate: 1, at: Date.now(), by: "tv", members: [TV], ended: false, ...over,
+});
+const posts = () => env.requests
+  .filter((request) => request.url === "/api/together" && request.options?.method === "POST")
+  .map((request) => JSON.parse(String(request.options!.body)));
+const acts = () => posts().filter((body) => body.op === "act").map((body) => body.change);
+
+beforeEach(async () => {
+  env = browserEnvironment();
+  mediaKeys.clear();
+  env.replace("navigator", { mediaSession: { setActionHandler: (action: string, run: () => void) => mediaKeys.set(action, run) } });
+  await state.useProfile(null);
+  env.respondWith(async (url, options) => {
+    if (url !== "/api/together") return new Response(null, { status: 404 });
+    const body = options?.body ? JSON.parse(String(options.body)) : null;
+    if (!body) return Response.json({ available: true, reason: null, live: null, serverNow: Date.now() });
+    if (body.op === "join") return Response.json({ id: 7, session: session({ by: screen, members: [TV, ME] }), serverNow: Date.now() });
+    return new Response(null, { status: 204 });
+  });
+  // The module is one per tab: every test starts it from a read that found nothing.
+  await refreshTogether();
+  takeJoin();
+  const player = await import(`../public/lib/playback/player.js?together=${++serial}`);
+  player.initializePlayer();
+  ({ openPlayer } = player);
+  setTogetherOpener((set) => openPlayer(set as never), (setId) => sets.get(setId) as never ?? null);
+});
+
+afterEach(async () => {
+  env.node("player").close();
+  await settle();
+  env.restore();
+});
+
+/** Film 1 open and joined, paused at the start, with nothing posted yet. */
+async function inSession(options: object = {}) {
+  heardTogether({ id: 7, session: session(), serverNow: Date.now() });
+  openPlayer(film("film-1"), options);
+  env.node("together").fire("click");
+  await settle();
+  env.requests.length = 0;
+}
+
+function press(key: string) {
+  const event = new Event("keydown", { cancelable: true });
+  Object.assign(event, { key, ctrlKey: false, altKey: false, metaKey: false });
+  env.node("player").dispatchEvent(event);
+}
+
+test("play and pause, by the button, the keyboard or the media keys, each send one edit", async () => {
+  await inSession();
+  env.node("play-pause").fire("click");
+  await settle();
+  expect(acts()).toEqual([{ playing: true, pos: 0 }]);
+  press(" ");
+  await settle();
+  expect(acts().map((change) => change.playing)).toEqual([true, false]);
+  mediaKeys.get("play")!();
+  mediaKeys.get("play")!();
+  await settle();
+  expect(acts().map((change) => change.playing)).toEqual([true, false, true]);
+  mediaKeys.get("pause")!();
+  await settle();
+  expect(acts().map((change) => change.playing)).toEqual([true, false, true, false]);
+  expect(env.video.paused).toBe(true);
+});
+
+test("a skip and the seek bar each send one edit, once the viewer stops", async () => {
+  await inSession();
+  press("ArrowRight");
+  env.advance(300);
+  await settle();
+  expect(acts()).toEqual([{ pos: 15 }]);
+  const bar = env.node("seek-to");
+  bar.value = "100";
+  bar.fire("input");
+  bar.value = "120";
+  bar.fire("input");
+  bar.fire("change");
+  env.advance(300);
+  await settle();
+  expect(acts()).toEqual([{ pos: 15 }, { pos: 120 }]);
+});
+
+test("speed, from the menu or a bracket key, sends one edit", async () => {
+  await inSession();
+  chooseInMenu(env.node, "speed", "1.5");
+  press("]");
+  await settle();
+  expect(acts()).toEqual([{ rate: 1.5, pos: 0 }, { rate: 1.75, pos: 0 }]);
+});
+
+test("a frame step pauses the session as well as moving it", async () => {
+  await inSession();
+  env.node("play-pause").fire("click");
+  await settle();
+  env.requests.length = 0;
+  press(".");
+  env.advance(300);
+  await settle();
+  expect(acts().map((change) => change.playing ?? "kept")).toEqual([false, "kept"]);
+});
+
+test("following another screen's pause, seek and speed sends nothing", async () => {
+  await inSession();
+  heardTogether({ id: 7, session: session({ members: [TV, ME], playing: true }), serverNow: Date.now() });
+  heardTogether({ id: 7, session: session({ members: [TV, ME], playing: true, pos: 200, rate: 1.5 }), serverNow: Date.now() });
+  heardTogether({ id: 7, session: session({ members: [TV, ME], playing: false, pos: 210, rate: 1.5 }), serverNow: Date.now() });
+  env.video.readyState = 4;
+  env.advance(4_000);
+  await settle();
+  expect(env.video.paused).toBe(true);
+  expect(env.video.currentTime).toBe(210);
+  expect(env.video.playbackRate).toBe(1.5);
+  expect(posts()).toEqual([]);
+});
+
+test("the next title, from the Next button, moves the session once", async () => {
+  await inSession({ next: film("film-2") });
+  env.node("play-next").fire("click");
+  await settle();
+  expect(acts()).toEqual([{ set: "film-2", pos: 0, playing: true }]);
+});
+
+test("closing the player leaves the session, once", async () => {
+  await inSession();
+  env.node("player").close();
+  await settle();
+  expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
+});

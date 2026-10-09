@@ -1,0 +1,62 @@
+/* Watch together: the player's label and notice (`lib/playback/together.js`)
+   and Home's Join line (`lib/catalog/together-join.js`).
+
+   The player is a stage, dark in both themes, so its two take the stage's
+   colours. `--warn` is a colour for paper: the light theme's is a dark ochre
+   that would vanish over a picture. Home's line is on paper, and takes it. */
+
+/* "Together · TV, Tablet", beside the title; it rests with the top bar. */
+.together-label {
+  flex: none;
+  color: var(--stage-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* What another screen just did, at the top centre of the picture. Outside
+   the HUD, so it shows while the controls rest; empty in between. */
+.together-note {
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent);
+  color: var(--stage-ink);
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
+.together-note:empty { display: none; }
+
+/* Home: one line above the shelf, never instead of it. */
+.together-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 1.5rem;
+  color: var(--warn);
+  font-size: 0.8125rem;
+}
+.together-join-button {
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}

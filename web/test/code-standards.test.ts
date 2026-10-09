@@ -70,6 +70,9 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
  * push sink, its recheck timer and its route. Raised the same day for `app.js`,
  * by 2, to hand the library session watch together's share of the event stream.
+ * Raised the same day for `player.js`, by 11, for watch together's hooks: the
+ * viewer's play, pause, seek, speed and next title, the media keys, and leaving
+ * as the player closes.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 695,
@@ -79,7 +82,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 994,
+  "public/lib/playback/player.js": 1005,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
