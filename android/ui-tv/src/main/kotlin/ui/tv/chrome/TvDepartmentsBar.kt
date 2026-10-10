@@ -31,6 +31,10 @@ import com.mediagram.android.core.designsystem.R
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.tvDp
+import dev.chrisbanes.haze.HazeState
+import ui.common.chrome.barBackground
+import ui.common.chrome.frostHairline
+import ui.common.chrome.frostedBackdrop
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own ink over a hero, while [blend] is below `1f`. */
@@ -46,12 +50,15 @@ private val TvOverCoverInk = Color(0xFFF6F2EA)
  * down in `docs/system-architecture.md`; without them seven departments,
  * search, the avatar and ⋮ ran past the box's 960dp. The tablet's own
  * `DepartmentsBar` (`ui-mobile/.../ChromeControls.kt`) in tv-material: [blend] runs from
- * translucent over a hero (`0f`) to opaque (`1f`), and comes from
+ * translucent over a hero (`0f`) to solid (`1f`), and comes from
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
- * under the bar, every other tab draws it opaque.
+ * under the bar, every other tab draws it solid.
  *
- * Unlike the phone and tablet bar this one stays unfrosted (no backdrop
- * blur) until the box's GPU has been measured; a deliberate difference.
+ * With [frost] — every tab, as on the tablet and the web, since rows scroll
+ * up under the bar on all of them — the bar blurs the content behind it and
+ * its solid end is the web's 72% paper over that blur, with the web's
+ * hairline; without it (below API 31) the solid end is opaque paper, since
+ * nothing would blur what scrolls under it.
  *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
@@ -88,10 +95,11 @@ internal fun TvDepartmentsBar(
     avatarFocus: FocusRequester,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
+    frost: HazeState? = null,
 ) {
     val solidBg = MaterialTheme.colorScheme.background
     val solidInk = MaterialTheme.colorScheme.onBackground
-    val bg = lerp(TvBarOverCoverBg, solidBg, blend)
+    val bg = barBackground(solidBg, blend, frosted = frost != null)
     val ink = lerp(TvOverCoverInk, solidInk, blend)
     val downModifier = Modifier.focusProperties { down = downTarget }
     // Each pill's own requester, held here rather than inside the pill so Search can name the last one.
@@ -104,7 +112,9 @@ internal fun TvDepartmentsBar(
             modifier
                 .fillMaxWidth()
                 .height(TvDepartmentsBarHeight + Overscan.vertical)
+                .frostedBackdrop(frost)
                 .background(color = bg)
+                .frostHairline(solidInk, blend, frost)
                 .padding(top = Overscan.vertical, start = TvContentGutter - PillRingRoom, end = TvContentGutter),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -181,6 +191,3 @@ private fun rememberRoomOnBothSides(room: Dp): BringIntoViewSpec {
     val fallback = LocalBringIntoViewSpec.current
     return remember(density, fallback, room) { RoomOnBothSidesBringIntoViewSpec(with(density) { room.toPx() }, fallback) }
 }
-
-/** The bar's own translucent background over a hero, while [blend] is below `1f`. */
-private val TvBarOverCoverBg = Color(0x590A0A0B)
