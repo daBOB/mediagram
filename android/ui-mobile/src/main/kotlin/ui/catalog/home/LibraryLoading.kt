@@ -24,8 +24,8 @@ private val PHONE_EDGE = 16.dp
 private val PHONE_FOOT = 104.dp
 private val WIDE_FOOT = 96.dp
 
-/** The leader stands this far above the words (`shell.css:175`, `gap: 24px`). */
-private val LEADER_GAP = 24.dp
+/** The leader stands this far above a wait's words, here and in [ui.catalog.CenteredLoading] (`shell.css:175`, `gap: 24px`). */
+internal val LEADER_GAP = 24.dp
 
 /**
  * The library loading, shaped like the cover story it is about to become:

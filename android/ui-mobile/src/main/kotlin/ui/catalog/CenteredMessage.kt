@@ -11,12 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import designsystem.CountdownLeader
 import designsystem.Spacing
-
-/** The leader stands this far above the words, as in the library's own wait (`shell.css:175`, `gap: 24px`). */
-private val LEADER_GAP = 24.dp
+import ui.catalog.home.LEADER_GAP
 
 /**
  * What a screen says when it has nothing to show.
