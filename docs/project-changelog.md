@@ -5,13 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.120.3 — Down off the bar glides the page in
+
+**Fixed** (Android TV)
+
+- **Down from the bar onto a department page glides the hero away instead of jumping.** On Anime with nothing underway, the wall's header jumped to the first plate in one frame and the page slid back two frames later. On the row pages, and on a wall whose header holds a row, Compose's own spring threw the hero off in about five frames and stopped dead at the safe band. The page now glides to the stop over 420ms on the web's `--ease` (`theme.css:120`), at the pace of its `page-in` (`shell.css:162`). It comes to rest where the TV's scroll already settles a stop coming up from below. The next press, or Up to the bar, takes over at once, and with animations off the page lands at once (`7a9a7981`).
+- **The Anime and franchise section heads keep the web's row-head gaps**, 44px above (`.dept-row`, `departments.css:53`) and 20px below (`.row-head`, `home.css:194`), where they still had a shelf subheading's 40 and 20. A person, a genre and Latest keep 40 and 20.
+
 ## 0.120.2 — the TV's faces match the web's
 
 **Fixed** (Android TV, and the phone for the quotes and the tracking)
 
 - **Department, franchise and spread titles are set in Fraunces' display cuts.** They were drawn in the opsz-28 text cut meant for a name under a plate, the reason the TV still read as its old self. The web sets them at opsz 120, 80 and 92. The department and spread titles now take the 112 cut, and the franchise and a long spread title the 72 cut. The Settings and System title takes the 112 cut too (`c6df5627`).
 - **Quotes are Newsreader's own italic.** The app carried only the roman, so every quote was the roman slanted. The web's italic file now ships beside it, on the TV and the phone alike (`4a2d3b04`).
-- **The Anime department's "Series" and "Films" heads and the franchise's "In release order" are Geist 600**, the web's row head, not Fraunces (`3aadf30f`).
+- **The Anime department's "Series" and "Films" heads and the franchise's "In release order" are Geist 600**, the web's row head, not Fraunces (`3aadf30f`). They shrink with it to the web's 20.8px row head.
 - **Meta and figure lines are Geist 400 on the TV**, where they were 500. The pull-quote credit and the Stats page's "Next" heading keep the web's 500 (`a75e323b`).
 - **Every text role drops M3's baseline letter-spacing** for the web's normal, on both surfaces (`a75e323b`).
 - **Home's feature titles are 600**, and search's match reason is upright, as the web's are (`c6df5627`, `307249d1`).
