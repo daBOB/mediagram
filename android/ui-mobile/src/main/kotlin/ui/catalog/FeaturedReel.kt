@@ -1,6 +1,5 @@
 package ui.catalog
 
-import android.provider.Settings
 import androidx.compose.animation.Crossfade
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.Role
@@ -24,13 +23,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.Dialog
@@ -39,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import catalog.stepFrom
+import designsystem.Motion
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import model.MediaSet
@@ -80,16 +78,19 @@ internal fun FeaturedReel(
             delay(HOLD_MS)
             index = stepFrom(index, 1, films.size)
         }
-        val still = rememberReducedMotion()
 
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            Crossfade(targetState = index, animationSpec = tween(if (still) 0 else FADE_MS), label = "featured") { at ->
+            // The web's `.featured-slide` opacity transition, `1200ms ease`
+            // (`playback.css:477`). "Remove animations" scales it to nothing,
+            // as the web's reduced motion removes it, and the poster's drift
+            // reads the setting itself, so the reel needs no read of its own.
+            Crossfade(targetState = index, animationSpec = tween(FADE_MS, easing = Motion.CssEase), label = "featured") { at ->
                 val set = films[at]
                 FeaturedSlide(
                     set = set,
                     count = "Featured · ${at + 1} / ${films.size}",
                     info = rememberTitleInfo(set.posterKey, titleInfo),
-                    drifting = !still && !paused,
+                    paused = paused,
                     onTogglePause = { paused = !paused },
                     onPlay = { onClose(); onPlay(set) },
                     onDetails = { onClose(); onDetails(set) },
@@ -148,16 +149,6 @@ private fun FeaturedNav(
             Text("›", color = Color.White)
         }
     }
-}
-
-/**
- * Whether the system asks for no animation — the web's `prefers-reduced-motion`.
- * Android says so by turning animator durations off.
- */
-@Composable
-private fun rememberReducedMotion(): Boolean {
-    val resolver = LocalContext.current.contentResolver
-    return remember(resolver) { Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
 }
 
 private val DOT = 8.dp
