@@ -52,6 +52,9 @@ internal fun SearchResultRow(row: SearchRow, progress: Progress?, watched: Boole
             text = "${if (watched) "✓ " else ""}${set.title}",
             style = MaterialTheme.typography.bodyLarge,
             source = source,
+            // A `.row` (`search-view.js:165`): its title snaps to accent (`catalog.css:78`); the
+            // row's `--surface` hover background is the catalogue indication's hover tint.
+            snap = true,
             rest = if (playable) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (!playable) {

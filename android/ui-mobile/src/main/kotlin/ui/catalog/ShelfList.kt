@@ -85,6 +85,8 @@ private fun ShelfRow(
             .clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button, onClick = onClick)
             .padding(vertical = Spacing.medium),
     ) {
+        // A `.card` in list form (`shelf-view.js:64`): its name fades. The web's thumb (and its
+        // `catalog.css:51` lift) has no counterpart: Android's rows carry no thumb.
         HoverTitle(if (watched) "✓ $title" else title, MaterialTheme.typography.bodyLarge, source)
         caption?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -87,6 +87,9 @@ private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boole
             text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}",
             style = MaterialTheme.typography.bodyLarge,
             source = source,
+            // A `.row` (`course-view.js:48`): its title snaps to accent (`catalog.css:78`); the
+            // row's `--surface` hover background is the catalogue indication's hover tint.
+            snap = true,
             rest = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
             modifier = Modifier
                 .fillMaxWidth()
