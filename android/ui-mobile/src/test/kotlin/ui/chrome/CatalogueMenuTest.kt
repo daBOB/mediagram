@@ -18,6 +18,10 @@ import androidx.compose.ui.test.performClick
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -113,6 +117,7 @@ class CatalogueMenuTest {
     /** Material's menu scales and fades both ways; one slipping back in would move where the web does not. */
     @Test
     fun noScreenUsesMaterialsAnimatedMenu() {
+        assertTrue(File("src/main/kotlin/ui/chrome/CatalogueMenu.kt").isFile, "run from the module directory")
         val menu = Regex("""^import androidx\.compose\.material3\.DropdownMenu$""", RegexOption.MULTILINE)
         val item = Regex("""^import androidx\.compose\.material3\.DropdownMenuItem$""", RegexOption.MULTILINE)
         val offenders =
@@ -124,5 +129,23 @@ class CatalogueMenuTest {
                 }.map { it.path }
                 .toList()
         assertTrue(offenders.isEmpty(), "use ui.chrome's CatalogueMenu and CatalogueMenuItem instead in: $offenders")
+    }
+
+    private fun place(anchor: IntRect, size: IntSize) =
+        UnderAnchor(margin = 48).calculatePosition(anchor, IntSize(1000, 800), LayoutDirection.Ltr, size)
+
+    @Test
+    fun theListSitsBelowItsAnchor() {
+        assertEquals(IntOffset(100, 150), place(IntRect(100, 100, 150, 150), IntSize(200, 300)))
+    }
+
+    @Test
+    fun theListFlipsAboveItsAnchorWhenBelowIsFull() {
+        assertEquals(IntOffset(100, 400), place(IntRect(100, 700, 150, 750), IntSize(200, 300)))
+    }
+
+    @Test
+    fun aListTooTallForTheWindowIsCentredInIt() {
+        assertEquals(IntOffset(100, 0), place(IntRect(100, 700, 150, 750), IntSize(200, 800)))
     }
 }

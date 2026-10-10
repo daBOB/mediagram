@@ -105,11 +105,11 @@ internal fun CatalogueMenuItem(
  *   against the nearer side of the window;
  * - down: below the anchor, else above it, else centred on its top, else
  *   against the nearer end of the window, always [margin] clear of the
- *   window's top and bottom.
+ *   window's top and bottom (centred when the list is too tall for that).
  *
  * The anchor is the layout the menu is called in, as before.
  */
-private data class UnderAnchor(val margin: Int) : PopupPositionProvider {
+internal data class UnderAnchor(val margin: Int) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
@@ -130,7 +130,11 @@ private data class UnderAnchor(val margin: Int) : PopupPositionProvider {
                 anchorBounds.bottom,
                 anchorBounds.top - height,
                 anchorBounds.top - height / 2,
-                if (anchorBounds.center.y < windowSize.height / 2) margin else windowSize.height - height - margin,
+                when {
+                    height >= windowSize.height - 2 * margin -> (windowSize.height - height) / 2
+                    anchorBounds.center.y < windowSize.height / 2 -> margin
+                    else -> windowSize.height - height - margin
+                },
             )
         val x = xs.firstOrNull { it >= 0 && it + width <= windowSize.width } ?: xs.last()
         val y = ys.firstOrNull { it >= margin && it + height <= windowSize.height - margin } ?: ys.last()
