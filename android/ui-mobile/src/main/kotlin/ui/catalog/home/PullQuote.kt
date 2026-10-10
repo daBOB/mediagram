@@ -1,7 +1,6 @@
 package ui.catalog.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -22,6 +20,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import designsystem.CoverTitle
 import model.MediaSet
+import ui.chrome.linkClickable
 
 /** The typographic break — a real tagline, set large, the mark hung in the margin — `.pull-quote` (`home.css:276-304`). */
 @Composable
@@ -31,7 +30,8 @@ internal fun Quote(
     onOpenTitle: (String) -> Unit,
 ) {
     val tagline = set.tagline ?: return
-    Column(modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpenTitle(set.setId) }) {
+    // A link on the web (`home-break.js:22`), and links don't shrink when pressed.
+    Column(modifier = Modifier.fillMaxWidth().linkClickable(null) { onOpenTitle(set.setId) }) {
         // The mark hangs in the margin beside the first line, not above it
         // — `blockquote::before`, absolutely positioned at the paragraph's
         // own top-left (`home.css:277-285`).

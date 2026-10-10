@@ -1,7 +1,6 @@
 package ui.catalog.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
@@ -36,6 +34,7 @@ import designsystem.drift
 import designsystem.entrance
 import model.MediaSet
 import ui.chrome.LocalTopChrome
+import ui.chrome.linkClickable
 import ui.common.catalog.HeroArtwork
 
 /** Past this many characters a title steps down a size, so it still fits in three lines (`home-cover.js:22`). */
@@ -188,7 +187,8 @@ internal fun CoverSlide(
                         Modifier
                             .align(Alignment.CenterVertically)
                             .padding(start = 16.dp)
-                            .clickable(role = Role.Button, onClick = onDetails)
+                            // A link on the web (`home-cover.js:140`), and links don't shrink when pressed.
+                            .linkClickable(null, onClick = onDetails)
                             .semantics { contentDescription = "Details: ${set.title}" }
                             .padding(vertical = 12.dp),
                 )

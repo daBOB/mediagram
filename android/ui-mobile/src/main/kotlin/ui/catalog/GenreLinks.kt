@@ -1,15 +1,14 @@
 package ui.catalog
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import designsystem.Spacing
+import ui.chrome.linkClickable
 
 /**
  * Each genre as a link to its shelf — shared by a film's own page and a
@@ -27,7 +26,8 @@ internal fun GenreLinks(names: List<String>, onOpen: (String) -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 textDecoration = TextDecoration.Underline,
-                modifier = Modifier.clickable(role = Role.Button) { onOpen(name) },
+                // A link on the web (`film-page.js:134`), and links don't shrink when pressed.
+                modifier = Modifier.linkClickable(null) { onOpen(name) },
             )
         }
     }

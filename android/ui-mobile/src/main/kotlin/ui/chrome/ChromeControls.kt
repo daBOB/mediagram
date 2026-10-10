@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import catalog.profileInitial
 import designsystem.StatusDot
+import designsystem.catalogueIndication
 
 /**
  * A department pill's own count. Bundled with the title rather than kept as
@@ -55,11 +56,14 @@ internal fun CircleIconButton(
     selected: Boolean? = null,
     dot: String? = null,
 ) {
+    // Never a `button` on the web, so neither kind shrinks (`theme.css:167`): the
+    // rail's links drawn as icons (`index.html:55-65`) and the search field (`:89`).
+    val noShrink = catalogueIndication(pressScale = 1f)
     val target =
         if (selected != null) {
-            Modifier.selectable(selected = selected, onClick = onClick, role = Role.Tab)
+            Modifier.selectable(selected = selected, interactionSource = null, indication = noShrink, role = Role.Tab, onClick = onClick)
         } else {
-            Modifier.clickable(onClick = onClick)
+            Modifier.clickable(interactionSource = null, indication = noShrink, onClick = onClick)
         }
     Box(
         modifier =
@@ -122,7 +126,8 @@ internal fun Pill(
                 .heightIn(min = 44.dp)
                 .clip(CircleShape)
                 .then(if (active) Modifier.background(ink.copy(alpha = 0.12f)) else Modifier)
-                .selectable(selected = active, onClick = onClick, role = Role.Tab)
+                // A link on the web (`index.html:76-82`), and links don't shrink when pressed.
+                .selectable(selected = active, interactionSource = null, indication = catalogueIndication(pressScale = 1f), role = Role.Tab, onClick = onClick)
                 .semantics(mergeDescendants = true) {}
                 .padding(vertical = 10.dp, horizontal = horizontalPadding),
         contentAlignment = Alignment.Center,

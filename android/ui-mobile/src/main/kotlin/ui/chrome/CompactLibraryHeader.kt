@@ -1,7 +1,6 @@
 package ui.chrome
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -84,7 +83,8 @@ internal fun CompactLibraryHeader(
                 fontSize = wordmarkSize,
                 modifier =
                     Modifier
-                        .clickable(onClick = onHome)
+                        // A link on the web (`index.html:51`), and links don't shrink when pressed.
+                        .linkClickable(null, role = null, onClick = onHome)
                         .semantics { contentDescription = "mediagram — home" },
             )
             Row(
@@ -140,7 +140,8 @@ private fun SearchFieldLookAlike(
             modifier
                 .clip(RoundedCornerShape(percent = 50))
                 .background(tones.ruleSoft)
-                .clickable(onClick = onSearch)
+                // A link on the web (`index.html:89, an `<input>`, which `button:active` doesn't reach`), and links don't shrink when pressed.
+                .linkClickable(null, role = null, onClick = onSearch)
                 .semantics { contentDescription = "Search" }
                 .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {

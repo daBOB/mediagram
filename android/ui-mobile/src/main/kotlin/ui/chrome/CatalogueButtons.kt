@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.isUnspecified
  * instead of reading LocalIndication, so a bare one would answer with nothing.
  * Each wrapper draws the theme's indication over its own shape, on the
  * interaction source it hands the button.
+ * [CatalogueButton] and [CatalogueIconButton] take Material's own
+ * `interactionSource`, for content that moves with the button's hover or press.
  */
 
 @Composable
@@ -54,9 +56,10 @@ fun CatalogueButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val source = remember { MutableInteractionSource() }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
     PressTarget(modifier, ButtonDefaults.shape, source) { inner ->
         Button(onClick = onClick, modifier = inner, enabled = enabled, interactionSource = source, content = content)
     }
@@ -94,9 +97,10 @@ fun CatalogueIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit,
 ) {
-    val source = remember { MutableInteractionSource() }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
     PressTarget(modifier, CircleShape, source) { inner ->
         IconButton(onClick = onClick, modifier = inner, enabled = enabled, interactionSource = source, content = content)
     }

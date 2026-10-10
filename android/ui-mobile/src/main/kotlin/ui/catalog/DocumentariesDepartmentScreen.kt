@@ -135,7 +135,7 @@ internal fun DocumentariesDepartmentScreen(
                 DeptRowHeading(
                     title = group.collection.name,
                     onSeeAll = { onOpenCollection(group.collection.key) }.takeIf { hasMore },
-                    seeAllLabel = "All ${group.collection.count} →",
+                    seeAllLabel = "All ${group.collection.count}",
                 )
             }
             revealItem(reveals, "group-row-${group.collection.key}") { DocumentaryRow(group.preview, watchedIds, onPlay) }

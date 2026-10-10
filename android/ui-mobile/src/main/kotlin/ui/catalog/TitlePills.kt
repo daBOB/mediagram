@@ -1,6 +1,8 @@
 package ui.catalog
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import ui.chrome.CatalogueButton
@@ -14,11 +16,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
+import designsystem.hoverMotion
 
 /** The smallest a control here may be, so a thumb never has to aim for less. */
 private val MIN_TOUCH_TARGET = 48.dp
@@ -57,8 +64,19 @@ internal fun TitlePills(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
         if (playLabel != null) {
-            CatalogueButton(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET)) {
-                Text("▶ $playLabel")
+            val play = remember { MutableInteractionSource() }
+            CatalogueButton(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET), interactionSource = play) {
+                // Two nodes so the triangle can move on its own, still read as the one label it was.
+                Row(
+                    modifier = Modifier.clearAndSetSemantics { text = AnnotatedString("▶ $playLabel") },
+                    // `.pill { gap: 10px }` (`title-page.css:9`).
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // `.pill:hover .pill-play` moves 2px over 520ms (`title-page.css:26-27`); a press nudges it too.
+                    Text("▶", modifier = Modifier.hoverMotion(play, durationMs = 520, nudge = 2.dp))
+                    Text(playLabel)
+                }
             }
         }
         preloadPill?.invoke()

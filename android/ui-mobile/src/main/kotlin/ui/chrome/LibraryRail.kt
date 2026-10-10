@@ -1,7 +1,6 @@
 package ui.chrome
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,35 +43,8 @@ import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.StatusDot
-import stats.NEW_ACHIEVEMENT
+import designsystem.catalogueIndication
 import ui.common.RailItem
-
-/**
- * What the rail needs beside its own click handlers — computed once where
- * the shelves are ([ui.LibraryBranches]) and read wherever the rail renders,
- * root or pushed frame alike, through [LocalRailData] rather than threaded
- * across every branch in between.
- */
-data class RailData(
-    val counts: ChromeCounts,
-    val tally: List<String>,
-    val onHome: () -> Unit,
-    /** Whether something the chosen profile earned has not been shown on this device: the Stats row's dot. */
-    val newAchievement: Boolean = false,
-) {
-    companion object {
-        val Empty = RailData(ChromeCounts.Empty, emptyList(), onHome = {})
-    }
-}
-
-/** What the dot on [item] says to a screen reader, or `null` when it wears none — only Stats ever does. */
-internal fun RailData.dotFor(item: RailItem): String? = if (item == RailItem.STATS && newAchievement) NEW_ACHIEVEMENT else null
-
-// compositionLocalOf, not static: this changes on every watch-state write
-// (a position saved, a watchlist toggle), and a player frame sits under the
-// same provider — static would recompose that whole subtree on every write
-// even though nothing under the player reads this.
-val LocalRailData = compositionLocalOf { RailData.Empty }
 
 /** The window width the rail itself narrows at — the web's `--rail-width` breakpoint, `shell.css:169`. */
 private val RailNarrowBreakpoint = 1180.dp
@@ -123,7 +94,8 @@ internal fun LibraryRail(
             modifier =
                 Modifier
                     .padding(start = 10.dp, bottom = 36.dp)
-                    .clickable(onClick = onHome)
+                    // A link on the web (`index.html:51`), and links don't shrink when pressed.
+                    .linkClickable(null, role = null, onClick = onHome)
                     .semantics { contentDescription = "mediagram — home" },
         )
         for (item in listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)) {
@@ -182,7 +154,8 @@ private fun RailRow(
                 .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(Radius.control))
                 .then(if (active) Modifier.background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)) else Modifier)
-                .selectable(selected = active, onClick = { onSelect(item) }, role = Role.Tab)
+                // A link on the web (`index.html:55-65`), and links don't shrink when pressed.
+                .selectable(selected = active, interactionSource = null, indication = catalogueIndication(pressScale = 1f), role = Role.Tab, onClick = { onSelect(item) })
                 // The icon carries no description of its own; merging lets a
                 // screen reader read the label and the count as one row
                 // rather than as two unrelated nodes a swipe lands on apart.

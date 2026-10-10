@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import designsystem.Eyebrow
 import designsystem.Spacing
+import designsystem.catalogueIndication
 import ui.catalog.home.OnImage
 import ui.catalog.home.OnImage2
 import ui.catalog.home.fluid
@@ -122,7 +123,8 @@ internal fun DeptQuote(
                     // enum expresses it.
                     .let {
                         if (onOpen != null) {
-                            it.clickable(role = Role.Button, onClickLabel = "Open $leadName", onClick = onOpen)
+                            // A link on the web (`department-hero.js:30`), and links don't shrink when pressed.
+                            it.clickable(interactionSource = null, indication = catalogueIndication(pressScale = 1f), onClickLabel = "Open $leadName", role = Role.Button, onClick = onOpen)
                         } else {
                             it
                         }

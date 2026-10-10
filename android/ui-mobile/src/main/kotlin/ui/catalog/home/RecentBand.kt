@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import designsystem.Eyebrow
 import model.MediaSet
+import ui.chrome.linkClickable
 import ui.common.catalog.rememberRowState
 import java.io.File
 
@@ -143,7 +144,8 @@ private fun ThisMonth(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) })
+                                // A link on the web (`home-break.js:40`), and links don't shrink when pressed.
+                                .linkClickable(null, onClick = { onOpenTitle(set.setId) })
                                 .padding(vertical = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {

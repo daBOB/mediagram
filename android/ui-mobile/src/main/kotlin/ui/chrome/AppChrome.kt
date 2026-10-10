@@ -1,5 +1,7 @@
 package ui.chrome
 
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,12 +27,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
+import designsystem.catalogueIndication
+import designsystem.hoverMotion
 import ui.Destination
 import ui.backLabelFor
 import ui.barTitleFor
 import ui.common.MenuActions
-import ui.common.RailItem
 import ui.pageGround
 import ui.setup.StartOverConfirmation
 import ui.showsSearchAction
@@ -111,14 +116,21 @@ fun LibraryScaffold(
                         ),
                         navigationIcon = {
                             if (backLabel != null) {
-                                CatalogueIconButton(
-                                    onClick = onBack,
-                                    modifier = Modifier.semantics { contentDescription = backLabel },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = null,
-                                    )
+                                val backSource = remember { MutableInteractionSource() }
+                                // The web's way back is a link (`title-spread.js:24`), and links don't shrink.
+                                CompositionLocalProvider(LocalIndication provides catalogueIndication(pressScale = 1f)) {
+                                    CatalogueIconButton(
+                                        onClick = onBack,
+                                        modifier = Modifier.semantics { contentDescription = backLabel },
+                                        interactionSource = backSource,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = null,
+                                            // `.spread-back` moves 3px back over 520ms on hover (`title-page.css:84,86`).
+                                            modifier = Modifier.hoverMotion(backSource, durationMs = 520, nudge = (-3).dp),
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -156,32 +168,6 @@ fun LibraryScaffold(
         onDismiss = { askingStartOver = false },
         onConfirm = menu.onStartOver,
     )
-}
-
-/** Which rail row, if any, is where [destination] already is — Latest, Genres and Stats are the only pushed frames the rail also names; My List/Continue/Settings/System resolve to their own root tab or their own frame, never this one. */
-private fun railItemFor(destination: Destination): RailItem? =
-    when (destination) {
-        Destination.Latest -> RailItem.LATEST
-        Destination.Genres -> RailItem.GENRES
-        Destination.Stats -> RailItem.STATS
-        else -> null
-    }
-
-/** A rail tap's own effect, the same wherever the rail renders — [ui.chrome.LibraryHome] reuses this rather than repeating the same seven-way branch. */
-internal fun railSelect(
-    item: RailItem,
-    browse: BrowseActions,
-    menu: MenuActions,
-) {
-    when (item) {
-        RailItem.MY_LIST -> browse.onMyList()
-        RailItem.CONTINUE_WATCHING -> browse.onContinueWatching()
-        RailItem.LATEST -> browse.onLatest()
-        RailItem.GENRES -> browse.onGenres()
-        RailItem.STATS -> browse.onStats()
-        RailItem.SETTINGS -> menu.onSettings()
-        RailItem.SYSTEM -> menu.onSystem()
-    }
 }
 
 @Composable
