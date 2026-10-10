@@ -2,7 +2,7 @@ package ui.profile
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import catalog.profile.REMOVE
 import catalog.profile.removeQuestion
@@ -22,11 +22,11 @@ internal fun RemoveProfileDialog(
         onDismissRequest = onDismiss,
         title = { Text(removeQuestion(profile)) },
         confirmButton = {
-            TextButton(onClick = {
+            CatalogueTextButton(onClick = {
                 onRemove()
                 onDismiss()
             }) { Text(REMOVE) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

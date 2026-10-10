@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -70,6 +70,6 @@ internal fun ProfileReload(
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small), modifier = Modifier.padding(Spacing.large)) {
         state.notice?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         Text(if (state.busy) "Loading profiles…" else "Reload profiles to continue.", style = MaterialTheme.typography.bodySmall)
-        TextButton(onClick = onRetry, enabled = !state.busy) { Text("Try again") }
+        CatalogueTextButton(onClick = onRetry, enabled = !state.busy) { Text("Try again") }
     }
 }

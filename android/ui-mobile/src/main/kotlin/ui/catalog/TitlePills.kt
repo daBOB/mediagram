@@ -3,12 +3,12 @@ package ui.catalog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
+import ui.chrome.CatalogueButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedButton
+import ui.chrome.CatalogueOutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,12 +57,12 @@ internal fun TitlePills(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
         if (playLabel != null) {
-            Button(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET)) {
+            CatalogueButton(onClick = onPlay, modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET)) {
                 Text("▶ $playLabel")
             }
         }
         preloadPill?.invoke()
-        OutlinedButton(
+        CatalogueOutlinedButton(
             onClick = onToggleWatchlist,
             modifier =
                 Modifier
@@ -73,7 +73,7 @@ internal fun TitlePills(
         }
         if (onToggleEditorsChoice != null || preloadRemoveItem != null) {
             var expanded by remember { mutableStateOf(false) }
-            TextButton(
+            CatalogueTextButton(
                 onClick = { expanded = true },
                 modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET).semantics { contentDescription = "More" },
             ) { Text("⋯") }

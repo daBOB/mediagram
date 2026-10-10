@@ -19,7 +19,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import ui.chrome.CatalogueOutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -57,7 +57,7 @@ internal fun LinePill(
     enabled: Boolean = true,
     contentDescription: String? = null,
 ) {
-    OutlinedButton(
+    CatalogueOutlinedButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(Radius.control),
@@ -81,7 +81,7 @@ internal fun QuietPill(
     small: Boolean = false,
     contentDescription: String? = null,
 ) {
-    OutlinedButton(
+    CatalogueOutlinedButton(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(Radius.control),

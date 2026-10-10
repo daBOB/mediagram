@@ -6,7 +6,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,7 +100,7 @@ private fun MarkButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
-    TextButton(onClick = onClick, enabled = enabled) {
+    CatalogueTextButton(onClick = onClick, enabled = enabled) {
         // Dimmed rather than hidden when it cannot be pressed: the rating
         // it reports is still worth reading.
         Text(

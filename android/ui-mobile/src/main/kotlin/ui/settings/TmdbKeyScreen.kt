@@ -3,7 +3,7 @@ package ui.settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import ui.chrome.CatalogueButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -53,7 +53,7 @@ fun TmdbKeyScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.padding(vertical = Spacing.small),
         )
-        Button(onClick = {
+        CatalogueButton(onClick = {
             onSave(key)
             key = ""
         }) { Text("Save") }

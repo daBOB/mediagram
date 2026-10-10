@@ -2,7 +2,7 @@ package ui.settings
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 
 /**
@@ -28,11 +28,11 @@ internal fun SignOutConfirmation(
             )
         },
         confirmButton = {
-            TextButton(onClick = {
+            CatalogueTextButton(onClick = {
                 onDismiss()
                 onConfirm()
             }) { Text("Sign out") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

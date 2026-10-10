@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +46,7 @@ internal fun ShelfPager(
         horizontalArrangement = Arrangement.Center,
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = { onPage(page - 1) }, enabled = page > 1) { Text("‹ Prev") }
+        CatalogueTextButton(onClick = { onPage(page - 1) }, enabled = page > 1) { Text("‹ Prev") }
         for (link in links) {
             when (link) {
                 PageLink.Gap -> Text("…", modifier = Modifier.padding(horizontal = Spacing.small))
@@ -60,13 +60,13 @@ internal fun ShelfPager(
                             modifier = Modifier.padding(horizontal = Spacing.medium).semantics { selected = true },
                         )
                     } else {
-                        TextButton(onClick = { onPage(link.page) }, modifier = Modifier.semantics { role = Role.Button }) {
+                        CatalogueTextButton(onClick = { onPage(link.page) }, modifier = Modifier.semantics { role = Role.Button }) {
                             Text(link.page.toString())
                         }
                     }
             }
         }
-        TextButton(onClick = { onPage(page + 1) }, enabled = page < pages) { Text("Next ›") }
+        CatalogueTextButton(onClick = { onPage(page + 1) }, enabled = page < pages) { Text("Next ›") }
     }
 }
 

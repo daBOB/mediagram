@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -43,7 +43,7 @@ internal fun CacheBudgetBlock() {
         }
         failure?.let {
             Text(it, style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = viewModel::refresh) { Text("Try again") }
+            CatalogueTextButton(onClick = viewModel::refresh) { Text("Try again") }
         }
         if (current == null) return@Column
         val fraction = if (current.budgetBytes > 0) current.heldBytes.toFloat() / current.budgetBytes else 0f

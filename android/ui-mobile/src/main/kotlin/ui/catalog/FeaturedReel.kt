@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -95,7 +95,7 @@ internal fun FeaturedReel(
                     onDetails = { onClose(); onDetails(set) },
                 )
             }
-            TextButton(
+            CatalogueTextButton(
                 onClick = onClose,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -123,7 +123,7 @@ private fun FeaturedNav(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.padding(Spacing.small), verticalAlignment = Alignment.CenterVertically) {
-        TextButton(onClick = { onStep(-1) }, modifier = Modifier.semantics { contentDescription = "Previous film" }) {
+        CatalogueTextButton(onClick = { onStep(-1) }, modifier = Modifier.semantics { contentDescription = "Previous film" }) {
             Text("‹", color = Color.White)
         }
         // Small targets rather than full buttons: twelve of those would not
@@ -144,7 +144,7 @@ private fun FeaturedNav(
                 )
             }
         }
-        TextButton(onClick = { onStep(1) }, modifier = Modifier.semantics { contentDescription = "Next film" }) {
+        CatalogueTextButton(onClick = { onStep(1) }, modifier = Modifier.semantics { contentDescription = "Next film" }) {
             Text("›", color = Color.White)
         }
     }

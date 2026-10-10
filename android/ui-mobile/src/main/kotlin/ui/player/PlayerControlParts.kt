@@ -3,7 +3,7 @@ package ui.player
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +49,7 @@ internal fun GlyphButton(
     /** What a screen reader says of a toggle or an opener — "On", "Expanded" — beyond its name; null for a plain button. */
     state: String? = null,
 ) {
-    TextButton(
+    CatalogueTextButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
@@ -75,7 +75,7 @@ internal fun TransportButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TextButton(
+    CatalogueTextButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description },
@@ -98,7 +98,7 @@ internal fun LabelButton(
     enabled: Boolean = true,
     state: String? = null,
 ) {
-    TextButton(
+    CatalogueTextButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },

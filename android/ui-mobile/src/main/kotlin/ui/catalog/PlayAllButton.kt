@@ -1,7 +1,7 @@
 package ui.catalog
 
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
  */
 @Composable
 internal fun PlayAllButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(onClick = onClick, modifier = modifier) {
+    CatalogueTextButton(onClick = onClick, modifier = modifier) {
         Text("▶ Play all")
     }
 }

@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,7 +52,7 @@ internal fun OverflowMenu(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    IconButton(
+    CatalogueIconButton(
         onClick = { menuExpanded = true },
         modifier = Modifier.semantics { contentDescription = "Menu" },
     ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null) }
@@ -100,7 +99,7 @@ internal fun AndroidOnlyMenu(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    IconButton(
+    CatalogueIconButton(
         onClick = { menuExpanded = true },
         modifier = Modifier.semantics { contentDescription = "Menu" },
     ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null, tint = tint) }

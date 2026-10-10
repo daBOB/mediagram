@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -109,7 +109,7 @@ private fun PreloadingRow(row: FilmPreloadRow.Running, onOpenTitle: () -> Unit, 
                 Text(row.title, style = MaterialTheme.typography.bodyLarge)
                 Text(preloadLabel(preloadRowState(row)), style = MaterialTheme.typography.bodySmall)
             }
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            CatalogueTextButton(onClick = onCancel) { Text("Cancel") }
         }
         PreloadProgressBar(state = preloadRowState(row), onCancel = onCancel)
     }
@@ -124,7 +124,7 @@ private fun TitleActionRow(title: String, onOpen: () -> Unit, actionLabel: Strin
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        TextButton(onClick = onAction) { Text(actionLabel) }
+        CatalogueTextButton(onClick = onAction) { Text(actionLabel) }
     }
 }
 
@@ -140,6 +140,6 @@ private fun TimeLimitPausedRow(title: String, onOpen: () -> Unit, onResume: () -
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text("Paused — background limit", style = MaterialTheme.typography.bodySmall)
         }
-        TextButton(onClick = onResume) { Text("Resume") }
+        CatalogueTextButton(onClick = onResume) { Text("Resume") }
     }
 }

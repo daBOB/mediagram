@@ -3,7 +3,7 @@ package ui.player
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import designsystem.Spacing
@@ -18,6 +18,6 @@ internal fun ActionNoticeBar(
     notice ?: return
     Snackbar(
         modifier = modifier.padding(Spacing.medium),
-        dismissAction = { TextButton(onClick = onDismiss) { Text("Dismiss") } },
+        dismissAction = { CatalogueTextButton(onClick = onDismiss) { Text("Dismiss") } },
     ) { Text(notice) }
 }

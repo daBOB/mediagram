@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.IconButton
+import ui.chrome.CatalogueIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +66,7 @@ internal fun PlayerTopBar(
                 .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)),
         verticalAlignment = Alignment.Top,
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.padding(Spacing.small)) {
+        CatalogueIconButton(onClick = onBack, modifier = Modifier.padding(Spacing.small)) {
             Text(text = "←", color = Color.White, style = MaterialTheme.typography.headlineSmall)
         }
         if (showTitle) {
@@ -76,7 +76,7 @@ internal fun PlayerTopBar(
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                     marks()
-                    if (onNotes != null) TextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
+                    if (onNotes != null) CatalogueTextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
                 }
             }
         }

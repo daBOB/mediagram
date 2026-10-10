@@ -12,7 +12,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,7 +79,7 @@ internal fun AddToListDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            CatalogueTextButton(
                 onClick = {
                     onCreate(newName.trim())
                     newName = ""
@@ -87,6 +87,6 @@ internal fun AddToListDialog(
                 enabled = newName.isNotBlank(),
             ) { Text("New list") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Done") } },
     )
 }

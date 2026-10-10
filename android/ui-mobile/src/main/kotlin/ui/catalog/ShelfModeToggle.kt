@@ -3,7 +3,7 @@ package ui.catalog
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -21,7 +21,7 @@ internal fun ShelfModeToggle(current: ShelfView, onChoose: (ShelfView) -> Unit, 
     Row(modifier = modifier.semantics { contentDescription = "How to show this shelf" }) {
         for ((view, label) in listOf(ShelfView.LIST to "List", ShelfView.GRID to "Grid")) {
             val on = view == current
-            TextButton(onClick = { if (!on) onChoose(view) }, modifier = Modifier.semantics { selected = on }) {
+            CatalogueTextButton(onClick = { if (!on) onChoose(view) }, modifier = Modifier.semantics { selected = on }) {
                 Text(
                     text = label,
                     color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,

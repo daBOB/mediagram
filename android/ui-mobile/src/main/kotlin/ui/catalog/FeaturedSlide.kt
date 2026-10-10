@@ -18,9 +18,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import ui.chrome.CatalogueButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import ui.chrome.CatalogueOutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -137,8 +137,8 @@ private fun FeaturedCopy(
             Text(it, style = MaterialTheme.typography.bodyLarge, fontStyle = FontStyle.Italic, color = Color.White)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium), modifier = Modifier.padding(top = Spacing.small)) {
-            Button(onClick = onPlay) { Text("Play") }
-            OutlinedButton(onClick = onDetails) { Text("Details", color = Color.White) }
+            CatalogueButton(onClick = onPlay) { Text("Play") }
+            CatalogueOutlinedButton(onClick = onDetails) { Text("Details", color = Color.White) }
         }
     }
 }

@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -89,7 +89,7 @@ internal fun MoviesDepartmentScreen(
                     title = "Featured Movies",
                     onSeeAll = onSeeAllFilms,
                     seeAllLabel = allFilms,
-                    extra = { if (featured.isNotEmpty()) TextButton(onClick = { reel = pickFeatured(films, watchedIds, Random) }) { Text("Featured") } },
+                    extra = { if (featured.isNotEmpty()) CatalogueTextButton(onClick = { reel = pickFeatured(films, watchedIds, Random) }) { Text("Featured") } },
                 )
             }
             item { FilmRow(department.featured, watchedIds, onOpenTitle) }

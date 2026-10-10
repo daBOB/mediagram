@@ -13,7 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +58,7 @@ fun LibraryScreen(
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {
                 Heading()
                 Explanation(prompt.explanation, isError = error != null)
-                TextButton(onClick = onLookAgain, modifier = Modifier.padding(top = Spacing.small)) {
+                CatalogueTextButton(onClick = onLookAgain, modifier = Modifier.padding(top = Spacing.small)) {
                     Text("Look again")
                 }
             }

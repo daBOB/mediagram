@@ -9,7 +9,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +73,6 @@ private fun SyncRow(offsetMs: Long, onNudge: (Int) -> Unit, onResetOffset: () ->
         GlyphButton(glyph = "−", description = "Subtitles earlier", enabled = true, onClick = { onNudge(-1) })
         Text(cueOffsetLabel(offsetMs / 1000.0), modifier = Modifier.padding(horizontal = Spacing.small))
         GlyphButton(glyph = "+", description = "Subtitles later", enabled = true, onClick = { onNudge(1) })
-        TextButton(onClick = onResetOffset, modifier = Modifier.heightIn(min = MIN_TARGET)) { Text("Reset") }
+        CatalogueTextButton(onClick = onResetOffset, modifier = Modifier.heightIn(min = MIN_TARGET)) { Text("Reset") }
     }
 }

@@ -10,11 +10,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -113,7 +111,7 @@ fun LibraryScaffold(
                         ),
                         navigationIcon = {
                             if (backLabel != null) {
-                                IconButton(
+                                CatalogueIconButton(
                                     onClick = onBack,
                                     modifier = Modifier.semantics { contentDescription = backLabel },
                                 ) {
@@ -126,7 +124,7 @@ fun LibraryScaffold(
                         },
                         actions = {
                             if (showsSearchAction(destination)) {
-                                IconButton(
+                                CatalogueIconButton(
                                     onClick = onSearch,
                                     modifier = Modifier.semantics { contentDescription = "Search" },
                                 ) { Icon(imageVector = Icons.Default.Search, contentDescription = null) }
@@ -186,7 +184,7 @@ internal fun railSelect(
 
 @Composable
 private fun ProfileButton(profile: ProfileBarState) {
-    TextButton(
+    CatalogueTextButton(
         onClick = profile.onChoose,
         modifier = Modifier.semantics { contentDescription = "Who's watching: ${profile.name}" },
     ) {
