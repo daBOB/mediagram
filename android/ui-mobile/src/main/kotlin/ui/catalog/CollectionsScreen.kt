@@ -50,6 +50,7 @@ internal fun CollectionsScreen(
     // hero's quote to that film's own page (`collections-page.js:74`), not
     // to a franchise or a list.
     val lead: MediaSet? = franchises.firstOrNull()?.films?.find { it.backdropPath != null }
+    val reveals = rememberReveals()
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val columns = tileColumnsOf(maxWidth - Spacing.medium * 2, DESTINATION_MIN_WIDTH)
@@ -63,8 +64,8 @@ internal fun CollectionsScreen(
                 )
             }
             if (franchises.isNotEmpty()) {
-                item(key = "franchises-heading") { DeptRowHeading(title = "Franchises") }
-                tileLines("franchises", franchises, columns, Franchise::id, Modifier.padding(horizontal = Spacing.medium)) { franchise, modifier ->
+                revealItem(reveals, "franchises-heading") { DeptRowHeading(title = "Franchises") }
+                tileLines("franchises", franchises, columns, Franchise::id, Modifier.reveal(reveals, "franchises").padding(horizontal = Spacing.medium)) { franchise, modifier ->
                     ArtTile(
                         name = franchise.name,
                         meta = spelledCountOf(franchise.films.size, "film"),
@@ -76,8 +77,11 @@ internal fun CollectionsScreen(
                     )
                 }
             }
-            item(key = "lists-heading") { DeptRowHeading(title = "Your lists") }
-            listsSection(lists = lists, setsById = setsById, columns = columns, onOpen = onOpenList, onNewList = { naming = true })
+            revealItem(reveals, "lists-heading") { DeptRowHeading(title = "Your lists") }
+            listsSection(
+                lists = lists, setsById = setsById, columns = columns, onOpen = onOpenList, onNewList = { naming = true },
+                modifier = Modifier.reveal(reveals, "lists"),
+            )
         }
     }
 

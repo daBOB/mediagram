@@ -2,6 +2,8 @@ package ui.catalog
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -62,4 +64,9 @@ internal fun Modifier.reveal(reveals: Reveals, key: String): Modifier {
 /** A full-width section of a lazy column that reveals as it comes into view, [key] naming it both as an item and as a section. */
 internal fun LazyListScope.revealItem(reveals: Reveals, key: String, content: @Composable () -> Unit) {
     item(key = key) { Box(Modifier.reveal(reveals, key)) { content() } }
+}
+
+/** [revealItem] for a lazy grid: one section across every column. */
+internal fun LazyGridScope.revealItem(reveals: Reveals, key: String, content: @Composable () -> Unit) {
+    item(key = key, span = { GridItemSpan(maxLineSpan) }) { Box(Modifier.reveal(reveals, key)) { content() } }
 }

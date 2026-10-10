@@ -97,6 +97,7 @@ internal fun DocumentariesDepartmentScreen(
     val resumeCards = remember(department.continuing, watch, heldIds) {
         resumeCardsOf(department.continuing, emptyList(), watch, heldIds)
     }
+    val reveals = rememberReveals()
 
     LazyColumn(
         state = state,
@@ -116,31 +117,31 @@ internal fun DocumentariesDepartmentScreen(
             )
         }
         if (resumeCards.isNotEmpty()) {
-            item { DeptRowHeading(title = "Continue watching") }
-            item { ResumeStrip(cards = resumeCards, onOpenTitle = onPlay) }
+            revealItem(reveals, "continue-heading") { DeptRowHeading(title = "Continue watching") }
+            revealItem(reveals, "continue") { ResumeStrip(cards = resumeCards, onOpenTitle = onPlay) }
         }
         for (row in department.categories) {
-            item(key = "category-heading-${row.title}") { DeptRowHeading(title = row.title) }
-            item(key = "category-row-${row.title}") { DocumentaryUnitRow(row.units, watchedIds, onOpenCollection, onPlay) }
+            revealItem(reveals, "category-heading-${row.title}") { DeptRowHeading(title = row.title) }
+            revealItem(reveals, "category-row-${row.title}") { DocumentaryUnitRow(row.units, watchedIds, onOpenCollection, onPlay) }
         }
         if (department.recentlyAdded.isNotEmpty()) {
-            item { DeptRowHeading(title = "Recently added") }
-            item { DocumentaryRow(department.recentlyAdded, watchedIds, onPlay) }
+            revealItem(reveals, "recent-heading") { DeptRowHeading(title = "Recently added") }
+            revealItem(reveals, "recent") { DocumentaryRow(department.recentlyAdded, watchedIds, onPlay) }
         }
         for (group in department.collections) {
             val hasMore = group.collection.count > group.preview.size
-            item(key = "group-${group.collection.key}") {
+            revealItem(reveals, "group-${group.collection.key}") {
                 DeptRowHeading(
                     title = group.collection.name,
                     onSeeAll = { onOpenCollection(group.collection.key) }.takeIf { hasMore },
                     seeAllLabel = "All ${group.collection.count} →",
                 )
             }
-            item(key = "group-row-${group.collection.key}") { DocumentaryRow(group.preview, watchedIds, onPlay) }
+            revealItem(reveals, "group-row-${group.collection.key}") { DocumentaryRow(group.preview, watchedIds, onPlay) }
         }
         if (department.singles.isNotEmpty()) {
-            item { DeptRowHeading(title = "Standalone documentaries") }
-            item { DocumentaryRow(department.singles, watchedIds, onPlay) }
+            revealItem(reveals, "singles-heading") { DeptRowHeading(title = "Standalone documentaries") }
+            revealItem(reveals, "singles") { DocumentaryRow(department.singles, watchedIds, onPlay) }
         }
     }
 }

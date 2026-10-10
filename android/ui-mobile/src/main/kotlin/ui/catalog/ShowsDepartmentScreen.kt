@@ -64,6 +64,7 @@ internal fun ShowsDepartmentScreen(
     val leadTitle = department.lead?.let { firstItemOf(it.divisions) }
     val leadKey = department.lead?.key
     val series = dept == Department.SERIES
+    val reveals = rememberReveals()
 
     LazyVerticalGrid(
         columns = GutteredCells(columns, Spacing.medium),
@@ -89,43 +90,28 @@ internal fun ShowsDepartmentScreen(
             )
         }
         if (resumeCards.isNotEmpty()) {
-            item(key = "continue-heading", span = { GridItemSpan(maxLineSpan) }) {
+            revealItem(reveals, "continue-heading") {
                 DeptRowHeading(title = if (series) "Continue your series" else "Continue your courses")
             }
-            item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
-                ResumeStrip(cards = resumeCards, onOpenTitle = onPlay)
-            }
+            revealItem(reveals, "continue") { ResumeStrip(cards = resumeCards, onOpenTitle = onPlay) }
         }
         for (row in department.categories) {
-            item(key = "category-heading-${row.title}", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = row.title)
-            }
-            item(key = "category-${row.title}", span = { GridItemSpan(maxLineSpan) }) {
-                CollectionRow(row.units, onOpenCollection)
-            }
+            revealItem(reveals, "category-heading-${row.title}") { DeptRowHeading(title = row.title) }
+            revealItem(reveals, "category-${row.title}") { CollectionRow(row.units, onOpenCollection) }
         }
         if (department.popular.isNotEmpty()) {
-            item(key = "popular-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "Popular series")
-            }
-            item(key = "popular", span = { GridItemSpan(maxLineSpan) }) {
-                CollectionRow(department.popular, onOpenCollection)
-            }
+            revealItem(reveals, "popular-heading") { DeptRowHeading(title = "Popular series") }
+            revealItem(reveals, "popular") { CollectionRow(department.popular, onOpenCollection) }
         }
         if (department.newEpisodes.isNotEmpty()) {
-            item(key = "new-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "New episodes")
-            }
-            item(key = "new", span = { GridItemSpan(maxLineSpan) }) {
-                CollectionRow(department.newEpisodes, onOpenCollection)
-            }
+            revealItem(reveals, "new-heading") { DeptRowHeading(title = "New episodes") }
+            revealItem(reveals, "new") { CollectionRow(department.newEpisodes, onOpenCollection) }
         }
-        item(key = "all-heading", span = { GridItemSpan(maxLineSpan) }) {
-            DeptRowHeading(title = if (series) "All shows" else "All courses")
-        }
+        revealItem(reveals, "all-heading") { DeptRowHeading(title = if (series) "All shows" else "All courses") }
         if (series) {
+            // One web section, many cells: they share its key (see [reveal]).
             itemsIndexed(items = department.all, key = { _, entry -> "all/${entry.key}" }) { index, entry ->
-                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                Box(Modifier.reveal(reveals, "all").gutteredCell(index, columns, Spacing.medium)) {
                     EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
                 }
             }
@@ -134,7 +120,7 @@ internal fun ShowsDepartmentScreen(
             // carries no artwork to fill a plate with. One item rather than
             // one per course, so the grid's gap does not open between rows
             // the list draws edge to edge.
-            item(key = "all-courses", span = { GridItemSpan(maxLineSpan) }) {
+            revealItem(reveals, "all-courses") {
                 Box(Modifier.padding(horizontal = Spacing.medium)) { CourseList(department.all, onOpenCollection) }
             }
         }
