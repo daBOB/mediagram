@@ -56,6 +56,10 @@ internal const val DEPARTMENT_HERO_TEST_TAG = "department-hero"
  *
  * [overview] is a franchise's own introduction, set under the line inside
  * the hero's copy, where `renderFranchise` appends `.franchise-overview`.
+ *
+ * [reveals] is the department page's own holder, from `rememberReveals()`
+ * above its lazy list. The hero's art-in is kept there, so the hero scrolled
+ * away and back stays at rest, while any new visit, Back included, plays it.
  */
 @Composable
 internal fun DepartmentHero(
@@ -63,6 +67,7 @@ internal fun DepartmentHero(
     line: String,
     lead: MediaSet?,
     onOpenTitle: ((String) -> Unit)?,
+    reveals: Reveals,
     modifier: Modifier = Modifier,
     leadName: String? = lead?.title,
     franchiseTitle: Boolean = false,
@@ -97,14 +102,17 @@ internal fun DepartmentHero(
                 .let { if (!compact && art != null) it.heightIn(min = heroMinHeight) else it },
     ) {
         if (compact) {
-            CompactDeptHero(title, line, art, width, franchiseTitle, overview)
+            CompactDeptHero(title, line, art, width, franchiseTitle, overview, reveals)
         } else {
             // The web hides `.dept-quote` below 900px (`departments.css:91`)
             // — the quote is a wide-only concern, so only this branch ever
             // needs to know [lead]'s own tagline at all.
             val quote = art?.let { lead.tagline?.takeIf { it.isNotBlank() }?.let { tagline -> leadName?.let { name -> tagline to name } } }
             val onOpenLead = if (quote != null) onOpenTitle?.let { open -> { open(lead.setId) } } else null
-            WideDeptHero(title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction, franchiseTitle, overview)
+            WideDeptHero(
+                title, line, art, hasBackdropData, quote, onOpenLead, width, topChrome, heroMinHeight, artFraction,
+                franchiseTitle, overview, reveals,
+            )
         }
     }
 }

@@ -105,6 +105,7 @@ internal fun AnimeDepartmentScreen(
                 line = animeLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
+                reveals = reveals,
             )
         }
         if (resumeCards.isNotEmpty()) {

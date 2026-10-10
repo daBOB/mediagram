@@ -11,7 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
@@ -58,6 +60,10 @@ private const val HERO_HEIGHT_FRACTION = 0.4f
  * [bleed] is the horizontal padding of whatever list holds the spread: the
  * wide spread reaches back over it so its art meets the window's edge, as
  * the web's does. The stacked spread keeps the inset — see the series page.
+ *
+ * [reveals] is the page's holder for the art-in where the spread sits in a
+ * lazy list (the series page). Without one the spread holds its own, which
+ * the film page's scrolling column never disposes mid-visit.
  */
 @Composable
 internal fun TitleSpread(
@@ -68,14 +74,20 @@ internal fun TitleSpread(
     tagline: String?,
     modifier: Modifier = Modifier,
     bleed: Dp = 0.dp,
+    reveals: Reveals? = null,
     actions: @Composable () -> Unit = {},
 ) {
     // Solid drops the art — no picture, no placeholder, no tagline quote —
     // the same "plain pages, no artwork" the web's own
     // `[data-backdrop="solid"]` rule leaves behind.
     val art = backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
+    // Held, not saved, so Back is a new visit that plays the art-in again, as
+    // on the web; and above the width branch, so turning a tablet across it
+    // redraws the spread without playing it again.
+    val ownReveals = remember { Reveals() }
+    val page = reveals ?: ownReveals
     if (currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED) {
-        WideTitleSpread(art, title, facts, overview, tagline, actions, modifier.bleed(bleed))
+        WideTitleSpread(art, title, facts, overview, tagline, actions, page, modifier.bleed(bleed))
         return
     }
     val background = MaterialTheme.colorScheme.background
@@ -84,7 +96,9 @@ internal fun TitleSpread(
         if (LocalBackdrop.current != Backdrop.SOLID) {
             Box(modifier = Modifier.fillMaxWidth().height(heroHeight)) {
                 if (art != null) {
-                    HeroArtwork(path = art, modifier = Modifier.matchParentSize())
+                    // Clipped as `.spread-art` is (`title-page.css:62`), so the
+                    // picture settling from 1.04 never spills past its block.
+                    HeroArtwork(path = art, modifier = Modifier.matchParentSize().clipToBounds().artIn(page.of(HERO_ART)))
                     // Fades the artwork into the page along its foot, the same
                     // job the web's own CSS fade does over its own axis.
                     Box(

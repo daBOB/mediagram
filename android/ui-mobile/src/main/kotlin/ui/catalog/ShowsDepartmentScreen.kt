@@ -87,6 +87,7 @@ internal fun ShowsDepartmentScreen(
                 // tap target now, and one with nowhere to go should not draw
                 // as a link at all.
                 onOpenTitle = leadKey?.let { key -> { onOpenCollection(key) } },
+                reveals = reveals,
             )
         }
         if (resumeCards.isNotEmpty()) {

@@ -82,6 +82,7 @@ internal fun MoviesDepartmentScreen(
                 line = moviesLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
+                reveals = reveals,
             )
         }
         if (department.featured.isNotEmpty()) {

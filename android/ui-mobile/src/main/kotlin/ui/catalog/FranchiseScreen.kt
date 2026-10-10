@@ -33,6 +33,10 @@ internal fun FranchiseScreen(
     val positions = remember(watch) { watch.progress.associateBy { it.setId } }
     val watchedIds = remember(watch) { watch.watched.mapTo(HashSet()) { it.setId } }
     val lead = franchise.films.find { it.backdropPath != null }
+    // The hero's art-in, held by the page above its grid, so a scroll away
+    // and back finds it played and a new visit plays it. The rows don't
+    // reveal: the web never arms this page's (`collections-page.js:115`).
+    val reveals = rememberReveals()
 
     LazyVerticalGrid(
         columns = GutteredCells(columns, Spacing.medium),
@@ -47,6 +51,7 @@ internal fun FranchiseScreen(
                 line = franchiseLineOf(franchise),
                 lead = lead,
                 onOpenTitle = onOpenTitle,
+                reveals = reveals,
                 franchiseTitle = true,
                 overview = page.overview,
             )

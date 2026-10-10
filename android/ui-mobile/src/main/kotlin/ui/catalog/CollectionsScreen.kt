@@ -61,6 +61,7 @@ internal fun CollectionsScreen(
                     line = collectionsLineOf(franchises.size, lists.size),
                     lead = lead,
                     onOpenTitle = onOpenTitle,
+                    reveals = reveals,
                 )
             }
             if (franchises.isNotEmpty()) {

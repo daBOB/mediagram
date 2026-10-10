@@ -114,6 +114,7 @@ internal fun DocumentariesDepartmentScreen(
                 // comes from a provider, so there is no film page for the
                 // quote's credit to open either.
                 onOpenTitle = null,
+                reveals = reveals,
             )
         }
         if (resumeCards.isNotEmpty()) {
