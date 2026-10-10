@@ -153,3 +153,86 @@ dexopt   # must read speed-profile / install-dm; if it reads verify, stop: the n
 - `TvLibraryChrome.kt` is 257 lines (253 on main). It was already over the 200-line limit, and this change does not split it.
 - Not measured: the TV verdict is the box's.
 - Version not bumped (that happens at merge); not pushed; no device touched.
+
+## TV measurement (2026-10-10)
+
+Status: measured on the box. **The frost fails the ship rule on all three walks.** The user decides; dropping the TV frost alone is still one line (`rememberFrost()` → `null` in `TvLibraryChrome`).
+
+### Setup
+- Box `192.168.0.46:5555`, TV on, 3840x2160 at 59.94 Hz, UI override 1920x1080 at 320 dpi. Profile "andre" (no picker at launch), the same for both builds, measured 14:56-15:16 in one sitting.
+- **Off:** the installed sideloaded 0.120.3 release (versionCode 120003, `speed-profile` / `install-dm`), measured first, as it was.
+- **On:** branch `measure/tv-frost` (worktree `../mediagram-tvfrost`) = `feat/tv-parity` 8a30b7e1 + `a07fbb40` + `f4522beb`. The second pick conflicted in `TvDepartmentsBar.kt` (imports; the row's padding, where tv-parity's `TvContentGutter` ends were kept and `frostHairline` added) and `TvLibraryChrome.kt` (the `top` comment and `val frost = rememberFrost()` beside tv-parity's padding, with `TvContentGutter` at both ends). Diff against 8a30b7e1 is the frost chain only. Tests: 85 + 624 + 393, 0 failed. Release built as `release-android.sh` lines 1-37 (not published), cert 5840181d…f576, API 31+ `.dm` taken from `output-metadata.json`, installed with `install-multiple -r`, `dexopt` read `speed-profile` / `install-dm`, versionName 0.120.3.
+- Walks as in the protocol (W1 Home at rest 20 s on the Home pill; W2 Movies 12 down / 12 up; W3 Series 6 down / 6 up); one warm round discarded, then three. Changes, and notation:
+  - Before each OK, a `uiautomator dump` confirmed focus was on exactly the Movies or Series pill; the round would abort otherwise (it never did, 8 of 8 checks per build). The launch wait also polls the dump until the library has loaded (the first cold start was still on "Loading your library…" at 15 s). Both builds ran the identical script.
+  - Unit: ms; "janky" is `Janky frames`, "legacy" is `Janky frames (legacy)`.
+- Restore: plain 0.120.3 apk + dm reinstalled with `install-multiple -r`; versionName 0.120.3, `speed-profile` / `install-dm`, and the box's `base.apk` sha256 equals the kept one (80bfe66a…7033).
+
+### Results
+**W1 Home at rest**
+
+| build | run | frames | janky % | legacy janky % | p50 | p90 | p99 | GPU p50 | GPU p90 |
+|---|---|---|---|---|---|---|---|---|---|
+| off | 1 | 163 | 6.13 | 99.39 | 34 | 42 | 69 | 10 | 14 |
+| off | 2 | 162 | 6.17 | 99.38 | 34 | 42 | 65 | 10 | 14 |
+| off | 3 | 163 | 5.52 | 98.16 | 34 | 40 | 69 | 10 | 14 |
+| off | **median** | 163 | 6.13 | 99.38 | 34 | 42 | 69 | 10 | 14 |
+| on | 1 | 159 | 6.92 | 91.19 | 25 | 46 | 81 | 9 | 21 |
+| on | 2 | 155 | 7.74 | 87.74 | 25 | 48 | 89 | 9 | 19 |
+| on | 3 | 157 | 7.01 | 92.99 | 25 | 44 | 89 | 9 | 18 |
+| on | **median** | 157 | 7.01 | 91.19 | 25 | 46 | 89 | 9 | 19 |
+
+**W2 Movies rows**
+
+| build | run | frames | janky % | legacy janky % | p50 | p90 | p99 | GPU p50 | GPU p90 |
+|---|---|---|---|---|---|---|---|---|---|
+| off | 1 | 296 | 2.36 | 76.01 | 24 | 38 | 69 | 7 | 11 |
+| off | 2 | 304 | 1.97 | 38.16 | 18 | 30 | 48 | 7 | 11 |
+| off | 3 | 294 | 3.4 | 72.45 | 24 | 36 | 61 | 7 | 11 |
+| off | **median** | 296 | 2.36 | 72.45 | 24 | 36 | 61 | 7 | 11 |
+| on | 1 | 296 | 7.43 | 77.36 | 27 | 40 | 81 | 10 | 13 |
+| on | 2 | 299 | 8.36 | 85.28 | 28 | 42 | 89 | 10 | 14 |
+| on | 3 | 297 | 7.41 | 80.13 | 27 | 44 | 77 | 10 | 13 |
+| on | **median** | 297 | 7.43 | 80.13 | 27 | 42 | 81 | 10 | 13 |
+
+**W3 Series hero grid**
+
+| build | run | frames | janky % | legacy janky % | p50 | p90 | p99 | GPU p50 | GPU p90 |
+|---|---|---|---|---|---|---|---|---|---|
+| off | 1 | 352 | 1.7 | 90.91 | 24 | 32 | 57 | 7 | 11 |
+| off | 2 | 348 | 2.3 | 87.93 | 24 | 34 | 57 | 7 | 11 |
+| off | 3 | 352 | 2.27 | 88.35 | 24 | 36 | 57 | 7 | 13 |
+| off | **median** | 352 | 2.27 | 88.35 | 24 | 34 | 57 | 7 | 11 |
+| on | 1 | 365 | 5.21 | 90.41 | 28 | 40 | 77 | 9 | 12 |
+| on | 2 | 360 | 6.94 | 94.17 | 29 | 48 | 69 | 10 | 13 |
+| on | 3 | 362 | 7.46 | 94.75 | 30 | 46 | 69 | 9 | 13 |
+| on | **median** | 362 | 6.94 | 94.17 | 29 | 46 | 69 | 9 | 13 |
+
+### Verdict
+The protocol's rule: on each walk, the frost build's median p90, janky share and legacy-janky share must each be no higher than the baseline's worst run.
+
+| walk | p90 median off → on (off worst) | janky % median off → on (off worst) | legacy % median off → on (off worst) | rule |
+|---|---|---|---|---|
+| W1 Home | 42 → 46 (42) | 6.13 → 7.01 (6.17) | 99.38 → 91.19 (99.39) | fails (p90, janky) |
+| W2 Movies | 36 → 42 (38) | 2.36 → 7.43 (3.40) | 72.45 → 80.13 (76.01) | fails (all three) |
+| W3 Series | 34 → 46 (36) | 2.27 → 6.94 (2.30) | 88.35 → 94.17 (90.91) | fails (all three) |
+
+The fallback rule (p90 ≤ 16.7 ms or within 2 ms of off, janky within 5 points) fails too: p90 is +4/+6/+12 ms, and Movies' janky share is +5.1 points.
+
+Reading: on scrolling walks the frost costs about +3-5 ms p50, +6-12 ms p90 and +12-28 ms p99, and roughly triples the modern janky share (≈2% → ≈7%). GPU time rises only 1-3 ms at p50/p90 there, so most of the cost is on the CPU/RenderThread side (recording the page into Haze's layer each frame), not the blur shader. W1 is mixed: p50 fell 34 → 25 and legacy jank fell, while p90/p99 and GPU p90 (14 → 19) rose, so the crossfade frames under the blur are the slow ones, as the protocol expected.
+
+Decision: the TV bar stays unfrosted (the user's rule: ship only if smooth); the tablet frost ships.
+
+Tablet, release build, for comparison (motion's tablet benchmark, `/home/andre/Workspace/mediagram-motion/plans/261010-0112-android-motion-parity/reports/frame-times-261010-motion-report.md`):
+
+| build | backdrop | walk | frames | janky % | p50 | p90 | p99 |
+|---|---|---|---|---|---|---|---|
+| frosted-masthead | Default | scroll | 948 | 0.00 | 11 | 14 | 27 |
+| main | Default | scroll | 880 | 0.11 | 9 | 12 | 25 |
+
+### Odd
+- The baseline itself is far from 16.7 ms on this box (p90 30-42 ms, legacy jank 38-99%), so "smooth" here is relative to an already heavy page.
+- The frost code is not in the baseline profile (see "Bias" above). The warm round was discarded, but if the user wants the frost, regenerate the profile and re-run before deciding; the gap is wide enough that it is unlikely to close.
+- The TV blur is `18.dp`, the web's 18 px unscaled, while feat/tv-parity sizes everything else by `tvDp` (0.75), which would make it 13.5 dp. Not tried; the tablet tuning found the radius did not move the cost.
+- The tvfrost checkout lacked the gitignored FFmpeg decoder libs (`verifyFfmpeg` failed). They were copied from `../mediagram-tv`; the armeabi-v7a lib is byte-identical to the one in the off APK.
+- Series showed 11010 episodes in the off rounds and 11015 in the on rounds: the other uploader published mid-session. Five more episodes in a 173-show page is noise.
+- Raw dumps, screenshots and scripts: `/tmp/claude-1000/-home-andre-Workspace-mediagram/35591186-acb4-4a07-9b7f-c6e887a63688/scratchpad/frost-tv-261010/`; frost APK and dm in `…/scratchpad/tv-frost-0.120.3/`.
