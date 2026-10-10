@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="/styles/player-card.css" />
     <link rel="stylesheet" href="/styles/episode-sidebar.css" />
     <link rel="stylesheet" href="/styles/stats.css" />
+    <link rel="stylesheet" href="/styles/film-leader.css" />
     <!-- The deepest modules the first shelf's own render reaches, fetched
          alongside the shallower ones that import them rather than after: an
          `@import`-style chain of five whole round trips deep, flattened to
@@ -94,6 +95,26 @@
       </div>
     </header>
 
+    <!-- The film leader: a 3·2·1 countdown, drawn once and cloned into each
+         wait by lib/film-leader.js. A 96-unit square, rendered at 96px. -->
+    <template id="film-leader">
+      <svg class="film-leader" viewBox="0 0 96 96" width="96" height="96" aria-hidden="true" focusable="false">
+        <!-- Under everything else, as on film: the sweep. A circle of radius 19
+             stroked 38 wide is a disc of radius 38, so a dash along it is a
+             sector reaching the inner ring. Turned back 90° to start at 12 o'clock. -->
+        <circle class="leader-sweep" cx="48" cy="48" r="19" stroke-width="38" transform="rotate(-90 48 48)"></circle>
+        <circle class="leader-ring" cx="48" cy="48" r="46" stroke-width="1.5"></circle>
+        <circle class="leader-ring" cx="48" cy="48" r="38" stroke-width="1"></circle>
+        <!-- Hairlines through the centre, the outer ring's full width and height. -->
+        <path class="leader-cross" d="M2 48H94M48 2V94" stroke-width="1"></path>
+        <!-- On a baseline at 64, Fraunces' lining figures at 44 (ink 32 tall,
+             measured) stand centred on 48. -->
+        <text class="leader-count" x="48" y="64">3</text>
+        <text class="leader-count" x="48" y="64">2</text>
+        <text class="leader-count" x="48" y="64">1</text>
+      </svg>
+    </template>
+
     <main id="main" tabindex="-1">
       <div class="loading-state" role="status">
         <p>Loading your library…</p>
@@ -116,6 +137,13 @@
            timer. `preload="auto"` with no autoplay anywhere — opening a title
            fills the buffer and then waits for the viewer. -->
       <video id="video" preload="auto" crossorigin="anonymous"></video>
+
+      <!-- While a title opens, until its first frame: the film leader, and the
+           words for a screen reader. The status region stays so the words are
+           announced as they appear; lib/film-leader.js shows and hides them. -->
+      <div class="stage-leader" role="status">
+        <div id="stage-leader" hidden><span class="sr-only">Loading…</span></div>
+      </div>
 
       <!-- The title and what can be done with it, none of which acts on the
            picture: the marks, the notes and the way out. The top scrim stays
@@ -236,6 +264,7 @@
       </aside>
     </dialog>
 
+    <script src="/lib/film-leader.js"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
