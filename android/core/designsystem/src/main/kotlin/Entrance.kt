@@ -9,9 +9,11 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.LayoutAwareModifierNode
 import androidx.compose.ui.node.LayoutModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.invalidatePlacement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Constraints
@@ -35,6 +37,9 @@ import kotlinx.coroutines.launch
  * [seen] is the same state for the same item from one composition to the
  * next. A different one means a different item, which a lazy list can hand
  * this node to, and the entrance starts over for it.
+ *
+ * Under reduced motion it is at rest from its first frame, as the web draws
+ * the page at once: zeroed tweens alone would still finish a frame late.
  */
 fun Modifier.entrance(
     durationMs: Int,
@@ -66,7 +71,11 @@ private data class EntranceElement(
     }
 }
 
-private class EntranceNode(spec: EntranceElement) : Modifier.Node(), LayoutModifierNode, LayoutAwareModifierNode {
+private class EntranceNode(spec: EntranceElement) :
+    Modifier.Node(),
+    LayoutModifierNode,
+    LayoutAwareModifierNode,
+    CompositionLocalConsumerModifierNode {
     private var fade = Animatable(0f)
     private var move = Animatable(0f)
     private var started = false
@@ -101,6 +110,8 @@ private class EntranceNode(spec: EntranceElement) : Modifier.Node(), LayoutModif
     private fun play() {
         started = true
         spec.seen?.value = true
+        // Read at each start, so the setting turned on or off reaches the next entrance.
+        if (currentValueOf(LocalReducedMotion)) return toRest()
         coroutineScope.launch { fade.animateTo(1f, tween(spec.fadeMs, spec.delayMs, spec.easing)) }
         coroutineScope.launch { move.animateTo(1f, tween(spec.durationMs, spec.delayMs, spec.easing)) }
     }
@@ -112,9 +123,13 @@ private class EntranceNode(spec: EntranceElement) : Modifier.Node(), LayoutModif
     override fun onReset() {
         placed = false
         if (!started) return
+        toRest()
+        if (isAttached) invalidatePlacement()
+    }
+
+    private fun toRest() {
         fade = Animatable(1f)
         move = Animatable(1f)
-        if (isAttached) invalidatePlacement()
     }
 
     override fun onDetach() {
@@ -127,6 +142,8 @@ private class EntranceNode(spec: EntranceElement) : Modifier.Node(), LayoutModif
     }
 
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        // With nothing to play, start before this placement draws: onPlaced comes after it.
+        if (!started && currentValueOf(LocalReducedMotion)) play()
         val placeable = measurable.measure(constraints)
         return layout(placeable.width, placeable.height) {
             placeable.placeWithLayer(0, 0) {
