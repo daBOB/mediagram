@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.120.1 — the TV is a quarter smaller
+
+**Fixed** (Android TV)
+
+- **The TV is a quarter smaller: text, rail, bar and gutters, from one scale.** The TV now reads the web as a 1280px viewport on its 960dp, one CSS px to 0.75dp and sp (`TvScale`, with `tvSp`/`tvDp`), with no size floor, since the web has none. The rail drops the 48dp overscan inset for the web's own: collapsed it is the open rail's icon column, 60.75dp wide with the icons 22.5dp in where they stood 56dp in a 96dp column, and it opens at the web's 14rem (168dp) without moving a row. The bar's first pill stands one gutter off the rail, where the page starts. Display titles keep the web's 1920px size halved through the same scale (department 45sp) (`fe85a285`).
+- **Up from any title on a list's first line lands on Play all.** By geometry alone the narrower Play all lost the first title's column to Rename beside it (`fe85a285`).
+- **The page's spacing follows the same scale, and both sides share one gutter.** The page and the bar now end one web gutter (30.72dp) in from the screen's right edge, as they start off the rail, where the right side alone kept the 48dp overscan margin. A page's spacing comes from the web's px through the same scale: Home's band and section tops, a row head to its row (15dp), a department row's top (33dp), strip, Continue and tile gaps, a wall's 36 × 22 grid gap (27 × 16.5dp, from 16 × 16), This month, the feature copy, and the cover's and the department hero's text (`a8c0bc23`).
+- **A wall's head and headings keep the web's margins, and cards, tiles and pills their insets.** A shelf head stands 27dp above a wall's first line (it had grown to 43) and a section heading 30dp above and 15dp below its line. The Continue caption, the art tiles, the "All N films" pill and the cover's actions take the web's px through the scale. The cover's words and Watch now start on the page's gutter with the bar and the bands, the rail's top sits on the bar's top line, and the Movies row's genre tile is the phone's 240 through the scale (`f83269b0`).
+
 ## 0.120.0 — the TV reads at the web's size
 
 **Changed** (Android TV, and the tablet for the toolbar)
