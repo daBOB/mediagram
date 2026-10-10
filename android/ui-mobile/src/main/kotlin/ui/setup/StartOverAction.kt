@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import ui.chrome.NoDialogAnimation
 
 /**
  * Starting over signs this device out of Telegram and forgets everything
@@ -39,7 +40,10 @@ internal fun StartOverConfirmation(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Start over?") },
+        title = {
+            NoDialogAnimation()
+            Text("Start over?")
+        },
         text = {
             Text(
                 "This signs this device out of Telegram and forgets the api_id and " +

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import catalog.profile.PIN_LENGTH
 import catalog.profile.PinPrompt
 import designsystem.Spacing
+import ui.chrome.NoDialogAnimation
 
 /** The PIN field's tag, for tests. */
 internal const val PinFieldTag = "pin-field"
@@ -57,7 +58,10 @@ internal fun PinDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(prompt.heading) },
+        title = {
+            NoDialogAnimation()
+            Text(prompt.heading)
+        },
         text = {
             // Inside the dialog's own content: a dialog is a second window,
             // and the field has to exist there before it can take focus.

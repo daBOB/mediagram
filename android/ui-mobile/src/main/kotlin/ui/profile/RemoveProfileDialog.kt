@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import catalog.profile.REMOVE
 import catalog.profile.removeQuestion
 import model.Profile
+import ui.chrome.NoDialogAnimation
 
 /**
  * Asked before Manage removes anyone, in the web's words — its
@@ -20,7 +21,10 @@ internal fun RemoveProfileDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(removeQuestion(profile)) },
+        title = {
+            NoDialogAnimation()
+            Text(removeQuestion(profile))
+        },
         confirmButton = {
             CatalogueTextButton(onClick = {
                 onRemove()

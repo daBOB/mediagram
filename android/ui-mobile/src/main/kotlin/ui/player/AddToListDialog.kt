@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import model.ListOfSets
+import ui.chrome.NoDialogAnimation
 
 /**
  * Filing the open title into one or more lists, from the player.
@@ -47,7 +48,10 @@ internal fun AddToListDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to list") },
+        title = {
+            NoDialogAnimation()
+            Text("Add to list")
+        },
         text = {
             Column {
                 notice?.let { Text(it, color = MaterialTheme.colorScheme.error) }

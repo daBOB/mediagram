@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import ui.chrome.NoDialogAnimation
 
 /**
  * `window.prompt` for a list's name, as a Material dialog with a text field
@@ -27,7 +28,10 @@ internal fun ListNameDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            NoDialogAnimation()
+            Text(title)
+        },
         text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
         confirmButton = {
             CatalogueTextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text(confirmLabel) }

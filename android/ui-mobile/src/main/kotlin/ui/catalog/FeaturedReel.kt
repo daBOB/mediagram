@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import model.MediaSet
 import ui.common.catalog.rememberTitleInfo
 import uniffi.mediagram_core.TitleInfo
+import ui.chrome.NoDialogAnimation
 
 /** How long a slide holds before the next — the web's `HOLD_MS`. */
 private const val HOLD_MS = 7_000L
@@ -69,6 +70,7 @@ internal fun FeaturedReel(
     onClose: () -> Unit,
 ) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        NoDialogAnimation()
         var index by rememberSaveable { mutableIntStateOf(0) }
         var paused by rememberSaveable { mutableStateOf(false) }
         val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()

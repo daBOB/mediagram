@@ -27,6 +27,7 @@ import catalog.spelledCountOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
+import ui.chrome.NoDialogAnimation
 
 /**
  * One list's titles, in the order they were filed — `renderList` and
@@ -126,7 +127,10 @@ private fun ListedRow(set: MediaSet, held: Boolean, onPlay: () -> Unit, onRemove
 private fun DeleteListConfirmation(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete \"$name\"?") },
+        title = {
+            NoDialogAnimation()
+            Text("Delete \"$name\"?")
+        },
         text = { Text("The titles stay in the library.") },
         confirmButton = { CatalogueTextButton(onClick = onConfirm) { Text("Delete list") } },
         dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
