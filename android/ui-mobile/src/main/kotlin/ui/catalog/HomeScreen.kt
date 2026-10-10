@@ -70,6 +70,11 @@ internal fun HomeScreen(
     val series = latest.series
     val courses = latest.courses
 
+    // Every section but the cover rises into view the first time it is
+    // placed on this visit (`home-view.js:47,85,98`, `home-features.js:32`).
+    // The cover has a fade of its own. Continue with its quote, and Recently
+    // Added with This month, are one lazy item each, so each pair rises as one.
+    val reveals = rememberReveals()
     // `columnWidth` (this `BoxWithConstraints`'s own measured width) is
     // deliberately not `width` (the window's own `screenWidthDp`): every
     // fluid size below is `vw`-relative on the web, which a rail beside
@@ -94,12 +99,12 @@ internal fun HomeScreen(
                 }
             }
             if (editorial.features.isNotEmpty()) {
-                item(key = "features") {
+                revealItem(reveals, "features") {
                     Box(Modifier.padding(top = 12.dp)) { HomeFeatures(features = editorial.features, width = width, onOpenTitle = onOpenTitle) }
                 }
             }
             if (magazine.resumeCards.isNotEmpty() || editorial.quote != null) {
-                item(key = "continue") {
+                revealItem(reveals, "continue") {
                     Box(Modifier.padding(top = 28.dp)) {
                         ContinueBand(
                             cards = magazine.resumeCards, quote = editorial.quote, width = width,
@@ -109,7 +114,7 @@ internal fun HomeScreen(
                 }
             }
             if (magazine.recentlyAdded.isNotEmpty() || editorial.thisMonth.isNotEmpty()) {
-                item(key = "recent") {
+                revealItem(reveals, "recent") {
                     Box(Modifier.padding(top = 28.dp)) {
                         RecentBand(
                             recentlyAdded = magazine.recentlyAdded, totalFilms = magazine.recentlyAddedTotal, thisMonth = editorial.thisMonth,
@@ -119,7 +124,7 @@ internal fun HomeScreen(
                 }
             }
             if (series.isNotEmpty()) {
-                item(key = "series") {
+                revealItem(reveals, "series") {
                     Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
                         BandHeading(title = "Latest series", count = latest.seriesTotal, onSeeAll = { onSeeAll(CatalogTab.Dept(Department.SERIES)) })
                         HomeShelfRow(shows = series, width = columnWidth - gutter * 2, compact = compact, onOpen = onOpenCollection)
@@ -127,7 +132,7 @@ internal fun HomeScreen(
                 }
             }
             if (courses.isNotEmpty()) {
-                item(key = "courses") {
+                revealItem(reveals, "courses") {
                     Column(modifier = Modifier.padding(top = 36.dp, start = gutter, end = gutter)) {
                         BandHeading(title = "Latest courses", count = latest.coursesTotal, onSeeAll = { onSeeAll(CatalogTab.Dept(Department.TUTORIALS)) })
                         CourseList(courses = courses, onOpen = onOpenCollection)
