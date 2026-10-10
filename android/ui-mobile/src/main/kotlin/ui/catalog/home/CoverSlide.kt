@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -51,6 +52,7 @@ private const val DRIFT_MS = 14_000
  * [turning]: the page arrived on this film or a turn brought it in, so the
  * slide comes up out of the cover's ground and its picture settles. A film a
  * refresh swapped in is drawn at rest, as on the web's settled page.
+ * [arrived], when given, is the page's note that the arrival has played.
  *
  * [minHeight] is a floor, not an exact height: this root `Box`'s own
  * `heightIn(min = ...)` is what actually reserves the cover's usual size —
@@ -70,11 +72,12 @@ internal fun CoverSlide(
     minHeight: Dp,
     watchlisted: Boolean,
     turning: Boolean,
+    arrived: MutableState<Boolean>?,
     onPlay: () -> Unit,
     onDetails: () -> Unit,
     onToggleWatchlist: (Boolean) -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).then(if (turning) Modifier.entrance(COVER_FADE_MS) else Modifier)) {
+    Box(modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).then(if (turning) Modifier.entrance(COVER_FADE_MS, seen = arrived) else Modifier)) {
         val backdropPath = set.backdropPath
         // Blurred is the only Artwork mode that changes the cover's own
         // picture: `appearance.css:22` lists `.cover-stage` on its blur rule

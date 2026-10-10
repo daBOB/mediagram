@@ -2,13 +2,10 @@ package ui.catalog.home
 
 import android.view.accessibility.AccessibilityManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -61,6 +59,10 @@ internal fun HomeCover(
     onPlay: (MediaSet) -> Unit,
     onOpenTitle: (String) -> Unit,
     onToggleWatchlist: (String, Boolean) -> Unit,
+    // Whether the page has already played the cover's arrival. Held by the
+    // page, never saved: a lazy list recycling the cover's slot, or a sync,
+    // must not replay it, while a new visit does (`catalog.css:136`).
+    arrived: MutableState<Boolean> = remember { mutableStateOf(false) },
 ) {
     if (films.isEmpty()) return
     val context = LocalContext.current
@@ -80,12 +82,12 @@ internal fun HomeCover(
     val page = currentPage.coerceIn(0, films.lastIndex)
 
     // Which film the last turn brought in, by the timer or a dot. Only it and
-    // the film the page arrived on come up out of the ground and settle; one a
-    // refresh moves into view, its predecessor gone from the lineup, is simply
-    // there, as on the web's settled redraw (`catalog.css:136`). Counted from
-    // the page shown, so a shrunk lineup never "turns" to the film it shows.
+    // the film the page first arrived on come up out of the ground and settle;
+    // one a refresh moves into view, its predecessor gone from the lineup, is
+    // simply there, as on the web's settled redraw (`catalog.css:136`). Counted
+    // from the page shown, so a shrunk lineup never "turns" to the film it
+    // shows, and dropped once the shown film stops being it.
     var turnedTo by remember { mutableStateOf<String?>(null) }
-    val arrivedOn = remember { films[page].setId }
     val turn = { next: Int ->
         if (next != page) {
             turnedTo = films[next].setId
@@ -106,8 +108,10 @@ internal fun HomeCover(
     // barely see. The first film comes up as the page arrives and takes taps,
     // as any arriving page does; under reduced motion nothing fades at all.
     var fading by remember { mutableStateOf(false) }
+    LaunchedEffect(films[page].setId) { if (turnedTo != films[page].setId) turnedTo = null }
     // A timer guarding taps, not motion, so it is not a tween delay.
     LaunchedEffect(turnedTo) {
+        fading = false
         if (turnedTo == null || reducedMotion) return@LaunchedEffect
         fading = true
         delay(COVER_FADE_MS.toLong())
@@ -156,6 +160,10 @@ internal fun HomeCover(
         // share the screen. Keyed by id, so a refresh handing over the same
         // film with new details redraws it in place rather than turning.
         key(set.setId) {
+            // Decided once per slide, so the flag flipping mid-fade doesn't
+            // strip the modifiers from the slide that set it.
+            val fromArrival = remember { turnedTo == null && !arrived.value }
+            val turning = remember { fromArrival || turnedTo == set.setId }
             CoverSlide(
                 set = set,
                 width = width,
@@ -163,22 +171,14 @@ internal fun HomeCover(
                 compact = compact,
                 minHeight = coverMinHeight,
                 watchlisted = set.setId in watchlist,
-                turning = set.setId == turnedTo || set.setId == arrivedOn,
+                turning = turning,
+                arrived = if (fromArrival) arrived else null,
                 onPlay = { onPlay(set) },
                 onDetails = { onOpenTitle(set.setId) },
                 onToggleWatchlist = { listed -> onToggleWatchlist(set.setId, listed) },
             )
         }
-        if (fading) {
-            // Consumes every tap without doing anything with it — no press
-            // tint, no callback — so a press mid-fade lands on nothing.
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
-            )
-        }
+        if (fading && set.setId == turnedTo) CoverTapShield()
         if (films.size > 1) {
             CoverPager(
                 count = films.size,

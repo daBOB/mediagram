@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -75,6 +76,8 @@ internal fun HomeScreen(
     // The cover has a fade of its own. Continue with its quote, and Recently
     // Added with This month, are one lazy item each, so each pair rises as one.
     val reveals = rememberReveals()
+    // Outside the lazy list, so recycling the cover's slot never replays its arrival.
+    val coverArrived = remember { mutableStateOf(false) }
     // `columnWidth` (this `BoxWithConstraints`'s own measured width) is
     // deliberately not `width` (the window's own `screenWidthDp`): every
     // fluid size below is `vw`-relative on the web, which a rail beside
@@ -95,6 +98,7 @@ internal fun HomeScreen(
                     HomeCover(
                         films = editorial.cover, watchlist = watchlist, width = width,
                         onPlay = { onPlay(it.setId) }, onOpenTitle = onOpenTitle, onToggleWatchlist = onToggleWatchlist,
+                        arrived = coverArrived,
                     )
                 }
             }
