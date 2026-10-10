@@ -12,6 +12,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import java.io.File
+import kotlin.test.assertTrue
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -81,5 +83,22 @@ class TitleTabsTest {
         compose.runOnUiThread { labels = listOf("Overview", "Similar") }
         compose.waitForIdle()
         compose.onNodeWithText("body: Overview").assertIsDisplayed()
+    }
+
+    /**
+     * Material's tab rows slide an indicator from tab to tab unless handed
+     * `indicator = {}`; the web's underline fades in place under each tab
+     * (`title-page.css:121-132`). A tab row added without it would slide again.
+     */
+    @Test fun noTabRowSlidesAnIndicator() {
+        val rows = Regex("""(?<![A-Za-z.])(Primary|Secondary)?(Scrollable)?TabRow\(""")
+        val still = Regex("""indicator = \{\}""")
+        val offenders =
+            File("src/main/kotlin").walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .filter { file -> file.readText().let { rows.findAll(it).count() > still.findAll(it).count() } }
+                .map { it.path }
+                .toList()
+        assertTrue(offenders.isEmpty(), "pass indicator = {} and draw each tab's own underline in: $offenders")
     }
 }

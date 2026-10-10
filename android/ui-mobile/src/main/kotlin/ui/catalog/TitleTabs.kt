@@ -1,7 +1,12 @@
 package ui.catalog
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -9,13 +14,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import designsystem.Motion
 import designsystem.entrance
 
 /**
@@ -56,17 +66,57 @@ internal fun TitleTabRow(
         modifier = modifier,
         edgePadding = 0.dp,
         containerColor = Color.Transparent,
+        // Nothing slides between tabs on the web: each tab carries its own
+        // underline (`title-page.css:121-132`), drawn by [TitleTab].
+        indicator = {},
     ) {
         labels.forEach { label ->
-            Tab(
-                selected = label == shown,
-                onClick = { onSelect(label) },
-                text = { Text(label) },
-                modifier = Modifier.semantics { contentDescription = label },
-            )
+            key(label) { TitleTab(label, selected = label == shown, onClick = { onSelect(label) }) }
         }
     }
 }
+
+/**
+ * One tab, with its own underline:
+ * - the label's colour while chosen and clear otherwise, crossing over
+ *   `--hover` as the web's inset shadow does (`title-page.css:128-132`);
+ * - read when drawn, so the fade redraws the tab and recomposes nothing;
+ * - keyed by label in the row, so Cast arriving ahead of the chosen tab moves
+ *   that tab's underline with it, instead of fading one out and another in.
+ *
+ * Material's tab hard-codes a ripple the theme has turned off, so this one
+ * draws the theme's indication on its own interaction source.
+ */
+@Composable
+private fun TitleTab(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val source = remember { MutableInteractionSource() }
+    val underline by animateColorAsState(
+        if (selected) LocalContentColor.current else Color.Transparent,
+        Motion.hover(),
+        label = "tab underline",
+    )
+    Tab(
+        selected = selected,
+        onClick = onClick,
+        text = { Text(label) },
+        interactionSource = source,
+        modifier =
+            Modifier
+                .semantics { contentDescription = label }
+                .indication(source, LocalIndication.current)
+                .drawBehind {
+                    val thickness = UNDERLINE.toPx()
+                    drawRect(underline, topLeft = Offset(0f, size.height - thickness), size = Size(size.width, thickness))
+                },
+    )
+}
+
+/** The web's `inset 0 -2px 0` (`title-page.css:132`). */
+private val UNDERLINE = 2.dp
 
 /** `.tab-panel { animation: panel-in 520ms var(--ease) }`, from 8px below (`title-page.css:133-134`). */
 internal const val PANEL_IN_MS = 520
