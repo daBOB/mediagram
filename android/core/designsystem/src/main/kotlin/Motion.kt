@@ -1,12 +1,17 @@
 package designsystem
 
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 
 /**
@@ -38,18 +43,31 @@ object Motion {
 /**
  * Whether the system asks for no animation, which is the web's
  * `prefers-reduced-motion`: Android says so by turning animator durations
- * off. Read once, not observed. Compose's own tweens already follow the
- * setting live, and this only steers the few places whose end state is not
- * their rest (a drift, a timer), for a setting viewers rarely flip.
+ * off. Observed, so turning "Remove animations" on while the app runs
+ * reaches the places whose end state is not their rest (a drift, a timer)
+ * as Compose's own tweens already do.
  */
 @Composable
 fun rememberReducedMotion(): Boolean {
     val resolver = LocalContext.current.contentResolver
-    return remember(resolver) { Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
+    fun read() = Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val still = remember(resolver) { mutableStateOf(read()) }
+    DisposableEffect(resolver) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                still.value = read()
+            }
+        }
+        resolver.registerContentObserver(Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE), false, observer)
+        still.value = read()
+        onDispose { resolver.unregisterContentObserver(observer) }
+    }
+    return still.value
 }
 
 /**
- * [rememberReducedMotion], read once by the theme so the motion nodes can
- * reach it with `currentValueOf` and tests can set it outright.
+ * [rememberReducedMotion], read by the theme so the motion nodes can reach
+ * it with `currentValueOf` and tests can set it outright. Not static: a
+ * node reading it while it draws is redrawn when the setting flips.
  */
-val LocalReducedMotion = staticCompositionLocalOf { false }
+val LocalReducedMotion = compositionLocalOf { false }

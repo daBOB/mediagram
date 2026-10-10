@@ -50,13 +50,13 @@ class FeaturedSlideMotionTest {
         episodeFirst = null, episodeLast = null, year = 2021, durationSecs = 6_000, posterPath = null, totalBytes = 0,
     )
 
-    private fun show(paused: MutableState<Boolean> = mutableStateOf(false), reducedMotion: Boolean = false) {
+    private fun show(paused: MutableState<Boolean> = mutableStateOf(false), reducedMotion: MutableState<Boolean> = mutableStateOf(false)) {
         compose.mainClock.autoAdvance = false
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
-                    CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {
+                    CompositionLocalProvider(LocalReducedMotion provides reducedMotion.value) {
                         FeaturedSlide(
                             set = film, count = "Featured · 1 / 1", info = null, paused = paused.value,
                             onTogglePause = {}, onPlay = {}, onDetails = {},
@@ -80,7 +80,7 @@ class FeaturedSlideMotionTest {
     /** With "Remove animations" on, the poster is at its own size and stays there. */
     @Test
     fun underReducedMotionThePosterRestsAtItsOwnSize() {
-        show(reducedMotion = true)
+        show(reducedMotion = mutableStateOf(true))
         assertEquals(0f, drifted(), 0.5f)
         compose.mainClock.advanceTimeBy(10_000)
         assertEquals(0f, drifted(), 0.5f)
@@ -115,5 +115,20 @@ class FeaturedSlideMotionTest {
         assertEquals(14f, play - top("Play"), 0.5f)
         val countToGo = count - top("Featured · 1 / 1")
         assertTrue(countToGo in 1f..10f, "the count line should be well on its way, $countToGo dp to go")
+    }
+
+    /** "Remove animations" turned on mid-drift sends the poster back to its own size and stills the copy. */
+    @Test
+    fun turningReducedMotionOnMidDriftRestsThePoster() {
+        val reduced = mutableStateOf(false)
+        show(reducedMotion = reduced)
+        compose.mainClock.advanceTimeBy(3_000)
+        assertTrue(drifted() > 1f, "the poster should be mid-drift")
+        compose.runOnUiThread { reduced.value = true }
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeByFrame()
+        assertEquals(0f, drifted(), 0.5f)
+        compose.mainClock.advanceTimeBy(10_000)
+        assertEquals(0f, drifted(), 0.5f)
     }
 }
