@@ -10,6 +10,7 @@ import ui.chrome.CatalogueMenu
 import ui.chrome.CatalogueMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -101,12 +102,13 @@ private fun MarkButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
-    CatalogueTextButton(onClick = onClick, enabled = enabled) {
+    val source = remember { MutableInteractionSource() }
+    CatalogueTextButton(onClick = onClick, enabled = enabled, interactionSource = source) {
         // Dimmed rather than hidden when it cannot be pressed: the rating
         // it reports is still worth reading.
         Text(
             text = label,
-            color = if (enabled) Color.White else Color.White.copy(alpha = DISABLED_ALPHA),
+            color = toolInk(source, enabled, rest = if (enabled) Color.White else Color.White.copy(alpha = DISABLED_ALPHA)),
             style = MaterialTheme.typography.labelLarge,
         )
     }

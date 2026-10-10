@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,11 +94,25 @@ internal fun PlayerTopBar(
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                         marks()
-                        if (onNotes != null) CatalogueTextButton(onClick = onNotes) { Text(text = "Notes", color = Color.White) }
+                        if (onNotes != null) NotesButton(onNotes)
                     }
                 }
                 if (!showTitle) TapsReachThePicture()
             }
         }
+    }
+}
+
+/*
+ * The web's top-bar buttons are `.ghost`: on hover the border goes to the stage
+ * accent and the text to `--stage-ink`, both over `--hover`
+ * (`playback.css:97-99`). These have no outline and their text already rests at
+ * full ink, so the text takes the accent instead: a known look difference.
+ */
+@Composable
+private fun NotesButton(onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    CatalogueTextButton(onClick = onClick, interactionSource = source) {
+        Text(text = "Notes", color = toolInk(source, enabled = true, rest = Color.White))
     }
 }

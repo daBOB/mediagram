@@ -151,7 +151,7 @@ internal fun TimeText(text: String) {
  * (`player-card.css:84`).
  */
 @Composable
-private fun toolInk(
+internal fun toolInk(
     source: InteractionSource,
     enabled: Boolean,
     rest: Color,

@@ -8,6 +8,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import designsystem.Appearance
@@ -104,5 +105,24 @@ class PlayerOverVideoInkTest {
         compose.onNodeWithContentDescription("Subtitles").performTouchInput { up() }
         compose.mainClock.advanceTimeBy(300)
         assertEquals(dim, inkOf("CC"))
+    }
+
+    @Test
+    fun aDisabledToolDoesNotLightOnHover() {
+        show { LabelButton(label = "Fit", description = "Framing", onClick = {}, enabled = false) }
+        val rest = inkOf("Fit")
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Framing").performMouseInput { enter(center) }
+        compose.mainClock.advanceTimeBy(300)
+        assertEquals(rest, inkOf("Fit"))
+    }
+
+    @Test
+    fun anEnabledToolLightsOnHover() {
+        show { LabelButton(label = "Fit", description = "Framing", onClick = {}) }
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("Framing").performMouseInput { enter(center) }
+        compose.mainClock.advanceTimeBy(300)
+        assertEquals(StageAccent, inkOf("Fit"))
     }
 }
