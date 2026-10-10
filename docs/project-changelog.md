@@ -5,6 +5,17 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.120.2 — the TV's faces match the web's
+
+**Fixed** (Android TV, and the phone for the quotes and the tracking)
+
+- **Department, franchise and spread titles are set in Fraunces' display cuts.** They were drawn in the opsz-28 text cut meant for a name under a plate, the reason the TV still read as its old self. The web sets them at opsz 120, 80 and 92. The department and spread titles now take the 112 cut, and the franchise and a long spread title the 72 cut. The Settings and System title takes the 112 cut too (`c6df5627`).
+- **Quotes are Newsreader's own italic.** The app carried only the roman, so every quote was the roman slanted. The web's italic file now ships beside it, on the TV and the phone alike (`4a2d3b04`).
+- **The Anime department's "Series" and "Films" heads and the franchise's "In release order" are Geist 600**, the web's row head, not Fraunces (`3aadf30f`).
+- **Meta and figure lines are Geist 400 on the TV**, where they were 500. The pull-quote credit and the Stats page's "Next" heading keep the web's 500 (`a75e323b`).
+- **Every text role drops M3's baseline letter-spacing** for the web's normal, on both surfaces (`a75e323b`).
+- **Home's feature titles are 600**, and search's match reason is upright, as the web's are (`c6df5627`, `307249d1`).
+
 ## 0.120.1 — the TV is a quarter smaller
 
 **Fixed** (Android TV)
