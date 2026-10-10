@@ -113,4 +113,11 @@ class ArrowNudgeTest {
         compose.mainClock.advanceTimeBy(600)
         assertEquals(make, left("＋ New list"), 0.3f, "a button-type pill has no motion of its own")
     }
+
+    @Test fun seeAllsTapTargetIncludesItsVerticalPadding() {
+        show { BandHeading(title = "Continue Watching", count = null, onSeeAll = {}) }
+        val link = compose.onNodeWithText("See all →").getUnclippedBoundsInRoot()
+        val label = compose.onNodeWithText("See all", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals((label.bottom - label.top).value + 24f, (link.bottom - link.top).value, 0.5f, "the 12 dp above and below are part of the target")
+    }
 }

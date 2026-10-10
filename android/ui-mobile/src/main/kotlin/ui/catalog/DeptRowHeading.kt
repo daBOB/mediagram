@@ -1,6 +1,7 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,7 +36,7 @@ internal fun DeptRowHeading(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 onClick = onSeeAll,
-                modifier = Modifier.padding(start = Spacing.medium),
+                contentPadding = PaddingValues(start = Spacing.medium),
             )
         }
     }

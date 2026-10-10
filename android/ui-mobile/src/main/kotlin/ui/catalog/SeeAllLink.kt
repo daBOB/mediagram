@@ -2,6 +2,7 @@ package ui.catalog
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -22,7 +23,8 @@ import ui.chrome.linkClickable
  * The web's `.see-all` link: a label and an arrow that nudges toward the wall
  * (`home-view.js:39`, `department-hero.js:51`). The arrow is its own node so it
  * can move alone; the link reads as [spoken] (the label by default), because
- * the arrow is decoration, as `::after` is.
+ * the arrow is decoration, as `::after` is. [contentPadding] sits inside the
+ * tap target, so the press tint and the touch area include it.
  */
 @Composable
 internal fun SeeAllLink(
@@ -31,12 +33,13 @@ internal fun SeeAllLink(
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
     spoken: String = label,
 ) {
     val source = remember { MutableInteractionSource() }
     Row(
         // Links don't shrink when pressed (`theme.css:167` is `button:active` only).
-        modifier = modifier.linkClickable(source, onClick = onClick).clearAndSetSemantics { text = AnnotatedString(spoken) },
+        modifier = modifier.linkClickable(source, onClick = onClick).clearAndSetSemantics { text = AnnotatedString(spoken) }.padding(contentPadding),
         // `.see-all { gap: 8px }` (`home.css:200`).
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,

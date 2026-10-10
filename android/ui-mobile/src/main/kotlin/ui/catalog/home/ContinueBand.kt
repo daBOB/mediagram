@@ -3,6 +3,7 @@ package ui.catalog.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -102,7 +103,7 @@ internal fun BandHeading(
             style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             onClick = onSeeAll,
-            modifier = Modifier.padding(vertical = 12.dp),
+            contentPadding = PaddingValues(vertical = 12.dp),
             // Read as the one label it was before the arrow had a node of its own.
             spoken = "See all →",
         )
