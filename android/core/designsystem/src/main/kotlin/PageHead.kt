@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.TextUnit
  * which of [PageTitle]/[PageTitleCompact] draws it — the wide cut at 112sp
  * and up, the narrow one below — so a compact caller gets the optical size
  * its own static font was actually instanced at, not the wide cut scaled down.
+ * [titleStyle] overrides that pick for a caller whose drawn size stands for a
+ * larger web one: a television's [TvTypeScale.DepartmentTitle] is the web's
+ * 120px title, so it takes the wide cut the web draws that title in.
  *
  * The eyebrow and the title are merged into one semantics node marked as a
  * heading, so a screen reader meets one page head once rather than two
@@ -51,8 +54,8 @@ fun PageHead(
     maxTitleSize: TextUnit,
     modifier: Modifier = Modifier,
     eyebrowStyle: TextStyle = Eyebrow,
+    titleStyle: TextStyle = if (maxTitleSize.value >= WideTitleFloor) PageTitle else PageTitleCompact,
 ) {
-    val titleStyle = if (maxTitleSize.value >= WideTitleFloor) PageTitle else PageTitleCompact
     Column(
         modifier = modifier.semantics(mergeDescendants = true) { heading() },
         // The mockup's own `.title{margin:0 0 16px}` — the gap between the

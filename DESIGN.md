@@ -350,8 +350,10 @@ either of the others' jobs.
 - **Title Small** (Fraunces Medium, 16sp): the name under a plate, to two lines
   then ellipsis; a settings index row's own label.
 - **Page Title** (Fraunces Medium, uppercase, −0.03em, 0.86 line height,
-  stepped down from 112sp on a phone/tablet, 72sp compact, 60sp on a
-  television): the huge title atop a page — `PageHead`'s own title slot.
+  stepped down from 112sp on a phone/tablet, 72sp compact, 45sp on a
+  television, which draws it in the 112 cut because 45sp there is the web's
+  120px): the huge title atop a page — `PageHead`'s own title slot, and a
+  television department's title.
 - **Body** (Newsreader, 17sp): whole sentences — loading, empty, and failure
   messages. The one role kept in the reading face rather than moved to Geist.
 - **Body Small** (Geist, 13sp): the notice above a shelf.
@@ -579,7 +581,7 @@ the way a magazine department does.
 - **Eyebrow:** Geist Medium 11sp, 0.32em tracking, uppercase, in quiet
   (`{colors.rule-strong}`).
 - **Title:** Fraunces Medium, uppercase, −0.03em tracking, 0.86 line height,
-  in text (`{colors.text}`), stepped down from 112sp (72sp compact, 60sp on a
+  in text (`{colors.text}`), stepped down from 112sp (72sp compact, 45sp on a
   television) to fit one line rather than wrapping or clipping.
 - **Semantics:** eyebrow and title merge into one heading node, the same way
   a plate merges artwork and caption.

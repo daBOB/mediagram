@@ -26,6 +26,8 @@ import androidx.tv.material3.Text
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.LocalCatalogueTones
+import designsystem.PageTitle
+import designsystem.PageTitleCompact
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
@@ -114,7 +116,7 @@ internal fun TvDepartmentHero(
                     if (franchiseTitle) {
                         Text(
                             text = title.uppercase(),
-                            style = DisplayFace.copy(fontSize = TvTypeScale.FranchiseTitle, lineHeight = 0.92.em),
+                            style = PageTitleCompact.copy(fontSize = TvTypeScale.FranchiseTitle, lineHeight = 0.92.em),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
@@ -123,7 +125,7 @@ internal fun TvDepartmentHero(
                     } else {
                         BasicText(
                             text = title.uppercase(),
-                            style = DisplayFace.copy(color = MaterialTheme.colorScheme.onSurface),
+                            style = PageTitle.copy(color = MaterialTheme.colorScheme.onSurface),
                             autoSize = TextAutoSize.StepBased(maxFontSize = TvTypeScale.DepartmentTitle),
                             maxLines = 1,
                             modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),

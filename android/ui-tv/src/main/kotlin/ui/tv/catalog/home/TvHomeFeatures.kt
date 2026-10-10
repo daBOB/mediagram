@@ -37,7 +37,7 @@ import designsystem.tvSp
 import java.io.File
 import model.Kind
 import ui.tv.TvFocus
-import ui.tv.catalog.DisplayFace
+import ui.tv.catalog.DisplaySemiBold
 import ui.tv.rememberStableRequester
 
 /** The first card's own height, full width — the phone's own two-tier shape (`home.css:342-344`) at TV's one width. */
@@ -139,7 +139,7 @@ private fun TvFeatureCard(
                 )
                 Text(
                     text = if (secondCard) title else title.uppercase(),
-                    style = DisplayFace.copy(fontSize = if (secondCard) 26.tvSp else 24.tvSp),
+                    style = DisplaySemiBold.copy(fontSize = if (secondCard) 26.tvSp else 24.tvSp, letterSpacing = (-0.025).em),
                     color = OnImage,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

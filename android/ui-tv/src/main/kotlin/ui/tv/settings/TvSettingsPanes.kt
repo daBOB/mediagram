@@ -27,6 +27,7 @@ import androidx.tv.material3.MaterialTheme
 import designsystem.LocalCatalogueTones
 import designsystem.Overscan
 import designsystem.PageHead
+import designsystem.PageTitle
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
@@ -135,6 +136,7 @@ internal fun TvSettingsPanes(
                     eyebrowColor = tones.quiet,
                     maxTitleSize = TvTypeScale.DepartmentTitle,
                     eyebrowStyle = TvType.Eyebrow,
+                    titleStyle = PageTitle,
                 )
                 content(section, focusInContent, entryRequester)
             }

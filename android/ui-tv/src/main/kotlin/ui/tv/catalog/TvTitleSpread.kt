@@ -28,6 +28,8 @@ import androidx.tv.material3.Text
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.Overscan
+import designsystem.PageTitle
+import designsystem.PageTitleCompact
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
@@ -97,7 +99,8 @@ internal fun TvTitleSpread(
             Text(
                 text = title,
                 style =
-                    DisplayFace.copy(
+                    // The web draws these at opsz 92 and 68: the wide cut (112) for the one, the compact (72) for the long.
+                    (if (long) PageTitleCompact else PageTitle).copy(
                         fontSize = if (long) TvTypeScale.SpreadTitleLong else TvTypeScale.SpreadTitle,
                         lineHeight = if (long) 0.96.em else 0.92.em,
                         letterSpacing = (-0.025).em,

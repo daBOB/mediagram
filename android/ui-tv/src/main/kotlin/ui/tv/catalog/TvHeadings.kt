@@ -180,11 +180,14 @@ internal val ShelfHeadTitle =
     TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
 
 /**
- * Fraunces 500 on its own metrics, unsized: the face the television's display
- * titles are set in, at [TvTypeScale]'s sizes. Not a [TvType] role —
- * those carry M3's line heights in sp, which a 60sp title would overrun.
+ * Fraunces 600 on its own metrics, unsized, in the opsz-28 text cut: Home's
+ * feature titles and a resume card's initial, the nearest 600 cut to the
+ * web's opsz 32–46 for them. Never a page's own title: those are the display
+ * cuts, `PageTitle` and `PageTitleCompact`, as the web draws them. Not a
+ * [TvType] role — those carry M3's line heights in sp, which a large line
+ * would overrun.
  */
-internal val DisplayFace = TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, letterSpacing = TvType.headlineSmall.letterSpacing)
+internal val DisplaySemiBold = TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.SemiBold)
 
 /** `.season h2` (`catalog.css:71`): Geist 600 at 15px. A course's top level is set at 18 (`.season.depth-0`), [TopSeasonHeading]. */
 internal val SeasonHeading = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)

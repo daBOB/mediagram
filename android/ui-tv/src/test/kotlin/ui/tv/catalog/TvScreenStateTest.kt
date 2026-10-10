@@ -3,7 +3,12 @@ package ui.tv.catalog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import org.junit.After
 import org.junit.Rule
 import org.robolectric.Robolectric
@@ -36,6 +41,13 @@ abstract class TvScreenStateTest {
         var takes = false
         compose.runOnUiThread { takes = controller?.get()?.onBackPressedDispatcher?.hasEnabledCallbacks() == true }
         return takes
+    }
+
+    /** The style [text] was laid out in, once its call site's copies and the theme's merges are done. */
+    protected fun styleOf(text: String): TextStyle {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single().layoutInput.style
     }
 
     protected fun show(content: @Composable () -> Unit) {

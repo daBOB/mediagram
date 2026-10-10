@@ -42,7 +42,7 @@ import java.io.File
 import model.Kind
 import model.episodeLabel
 import ui.tv.TvFocus
-import ui.tv.catalog.DisplayFace
+import ui.tv.catalog.DisplaySemiBold
 import ui.tv.catalog.TvOfflineBadge
 import ui.tv.rememberStableRequester
 
@@ -178,4 +178,4 @@ private val ResumeName = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, 
 private val ResumeSub = TvType.bodyMedium.copy(fontSize = 12.tvSp)
 
 /** `.resume-initial`: Fraunces 600 at 2rem. */
-private val ResumeInitial = DisplayFace.copy(fontWeight = FontWeight.SemiBold, fontSize = 32.tvSp)
+private val ResumeInitial = DisplaySemiBold.copy(fontSize = 32.tvSp)
