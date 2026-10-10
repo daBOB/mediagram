@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.Overscan
 import ui.common.RailItem
+import ui.common.chrome.frostSource
+import ui.common.chrome.rememberFrost
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own row height, before its top inset — the tablet's own `DepartmentsBarHeight` (`ChromeControls.kt`), reused since both draw the same pills. */
@@ -90,7 +92,7 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
 
 /**
  * The chrome around the catalogue's own body: [TvLibraryRail] overlaying
- * the start edge, [TvDepartmentsBar] drawn opaque above [content], and the
+ * the start edge, [TvDepartmentsBar] above [content], blurring it, and the
  * three-region Back chain the plan settled on — content leaves for the
  * selected pill (or, on a kept wall, the rail's own active row); the bar
  * leaves for the rail; the rail is left unhandled, so a further Back closes
@@ -119,7 +121,7 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
  * own width could push against.
  *
  * [blend] passes straight through to [TvDepartmentsBar]'s own parameter of
- * the same name — `1f` (opaque) for every tab without a hero to bleed
+ * the same name — `1f` (solid) for every tab without a hero to bleed
  * under; Home, over its own magazine cover, is the first real caller of
  * anything less.
  */
@@ -177,13 +179,12 @@ internal fun TvLibraryChrome(
     // lands in that gap from reading as the rail's own "close the app".
     BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus) {}
 
-    // `top` matches the bar's own rendered height: the bar draws opaquely
-    // over this same region (a `Box`, not a `Column` — see the doc above),
-    // so a page's first stop needs exactly this much clearance to sit
-    // below it rather than under it; a lower plate scrolling up into that
-    // same band is then hidden by the bar drawn on top of it, one hero's
-    // worth of bleed away from becoming visible instead once a cover here
-    // has one to bleed under it.
+    // `top` matches the bar's own rendered height: the bar draws over this
+    // same region (a `Box`, not a `Column` — see the doc above), so a page's
+    // first stop needs exactly this much clearance to sit below it rather
+    // than under it; a lower plate scrolling up into that same band is then
+    // blurred behind the bar's frost (hidden by it, below API 31).
+    val frost = rememberFrost()
     val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = Overscan.horizontal, bottom = Overscan.vertical) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -211,6 +212,7 @@ internal fun TvLibraryChrome(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .frostSource(frost)
                         .focusRequester(focus.contentFocus)
                         .onFocusChanged { state ->
                             contentHasFocus = state.hasFocus
@@ -231,6 +233,7 @@ internal fun TvLibraryChrome(
                 searchFocus = focus.searchFocus,
                 avatarFocus = focus.avatarFocus,
                 blend = blend,
+                frost = frost,
                 modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
                         barHasFocus = state.hasFocus
                         if (state.hasFocus) lastInBar = true

@@ -41,6 +41,8 @@ import ui.common.MenuActions
 import ui.common.RailItem
 import ui.common.chrome.HeroListState
 import ui.common.chrome.coverBlend
+import ui.common.chrome.frostSource
+import ui.common.chrome.rememberFrost
 import ui.common.railItemOf
 import ui.setup.StartOverConfirmation
 
