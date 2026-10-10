@@ -899,11 +899,12 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   the rest of what the bar could not fit, and the rail's foot still carries the
   library's totals (user decision, 2026-10-09). A row that still overflows (a longer
   name, a larger font scale) scrolls and fades only the end it clips.
-- **Display titles at the desktop's proportions.** Text reads the web at a 960px
-  window, px as sp, never under 11sp; the department, cover, spread and shelf-head
-  titles take the web's 1920px size halved (60/56/46/28.8sp) rather than its own
-  960px clamp, which stood a department title 12% of the screen high against the
-  desktop's 8% (user decision, 2026-10-09; DESIGN.md's Television Rule).
+- **One scale, a quarter under the web.** Text and spacing read the web as a 1280px
+  viewport on the 960dp screen, one CSS px to 0.75dp/sp (`TvScale`), with no size
+  floor, since the web has none (user decision, 2026-10-10). Display titles keep
+  the web's 1920px size halved through the same scale (45/42/34.5/21.6sp), since
+  their `vw` clamps at 1280px would have grown them a third (DESIGN.md's
+  Television Rule).
 - **Pressing a department pill keeps the remote on the pill.** The page swaps and shows
   from its own top; Down is what steps the remote into it. Jumping straight to a plate
   the instant a pill is pressed would scroll a department's own hero away before a

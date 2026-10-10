@@ -31,8 +31,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.SeriesResumePick
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
 import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.TvFocus
@@ -85,7 +85,7 @@ internal fun TvSpreadPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = PillHeight).padding(horizontal = Spacing.large), contentAlignment = Alignment.Center) {
-            Text(text = text, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = content))
+            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = content))
         }
     }
 }

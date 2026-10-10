@@ -27,7 +27,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
@@ -36,7 +35,8 @@ import catalog.SetCard
 import catalog.factsLine
 import catalog.initialsOf
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import model.Kind
 import model.episodeLabel
@@ -172,8 +172,8 @@ private const val BarShare = 0.52f
 /** The caption block's own scrim, 0.9 at its foot to nothing at its top. */
 private val CaptionScrim = Brush.verticalGradient(0f to Color(0x00080809), 0.4f to Color(0x99080809), 1f to Color(0xE6080809))
 
-private val ResumeName = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.sp)
-private val ResumeSub = CatalogueType.bodyMedium.copy(fontSize = 12.sp)
+private val ResumeName = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.webSp)
+private val ResumeSub = TvType.bodyMedium.copy(fontSize = 12.webSp)
 
 /** `.resume-initial`: Fraunces 600 at 2rem. */
-private val ResumeInitial = DisplayFace.copy(fontWeight = FontWeight.SemiBold, fontSize = 32.sp)
+private val ResumeInitial = DisplayFace.copy(fontWeight = FontWeight.SemiBold, fontSize = 32.webSp)

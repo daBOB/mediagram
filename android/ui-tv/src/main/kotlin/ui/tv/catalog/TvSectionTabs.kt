@@ -22,8 +22,8 @@ import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
 
 /**
  * A title page's own tabs — Overview/Cast/Similar/Details on a film, Episodes/
@@ -98,7 +98,7 @@ internal fun TvSectionTabs(
                 ) {
                     Text(
                         text = title,
-                        style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.small),
                     )
                 }

@@ -15,7 +15,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
+import designsystem.TvType
 
 /**
  * One focusable text row for every TV screen that needs a menu line rather
@@ -42,7 +42,7 @@ internal fun TvTextRow(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
     enabled: Boolean = true,
-    style: TextStyle = CatalogueType.bodyMedium,
+    style: TextStyle = TvType.bodyMedium,
 ) {
     // Read from the focus state itself rather than from the click's
     // interaction stream: a row focused in the same moment a centre press

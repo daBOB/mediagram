@@ -27,13 +27,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.SetCard
-import designsystem.CatalogueType
 import designsystem.CoverTitle
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import model.MediaSet
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
@@ -68,7 +68,7 @@ internal fun TvContinueBand(
         if (cards.isNotEmpty()) {
             Column {
                 TvBandHeading(title = "Continue Watching", count = null) {
-                    TvTextRow(text = "See all", onClick = onSeeAllContinue, modifier = link.seeAll, focusRequester = link.focus, style = CatalogueType.bodySmall)
+                    TvTextRow(text = "See all", onClick = onSeeAllContinue, modifier = link.seeAll, focusRequester = link.focus, style = TvType.bodySmall)
                 }
                 Row(
                     modifier = Modifier.padding(top = Spacing.medium).horizontalScroll(rememberScrollState()),
@@ -116,7 +116,7 @@ private fun TvQuote(
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) }),
     ) {
-        Text(text = "“", style = CoverTitle.copy(fontSize = 40.sp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
+        Text(text = "“", style = CoverTitle.copy(fontSize = 40.webSp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
         Text(
             text = tagline,
             style = TvFocus.textStyle(QuoteTagline, focused),
@@ -125,9 +125,9 @@ private fun TvQuote(
         )
         Box(modifier = Modifier.padding(top = Spacing.medium, bottom = Spacing.small).width(32.dp).height(1.dp).background(MaterialTheme.colorScheme.border))
         val credit = listOfNotNull(set.title, set.year?.takeIf { it > 0 }?.toString()).joinToString(", ").uppercase()
-        Text(text = credit, style = CatalogueType.labelSmall.copy(letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = credit, style = TvType.labelSmall.copy(letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
-/** `.pull-quote p` (`home.css:286-291`): Newsreader italic, `clamp(1.6rem, 2.3vw, 2.35rem)` at a 960px window. */
-private val QuoteTagline = CatalogueType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 25.6.sp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+/** `.pull-quote p` (`home.css:286-291`): Newsreader italic, `clamp(1.6rem, 2.3vw, 2.35rem)` at 1280px, 29.44. */
+private val QuoteTagline = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 29.44.webSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

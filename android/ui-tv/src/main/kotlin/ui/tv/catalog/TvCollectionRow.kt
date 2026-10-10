@@ -20,7 +20,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CollectionRow
 import catalog.watchedFractionOf
-import designsystem.CatalogueType
+import designsystem.TvType
 import model.Kind
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
@@ -109,7 +109,7 @@ private fun DocumentRow(
     ) {
         Text(
             text = text,
-            style = TvFocus.textStyle(CatalogueType.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant), focused),
+            style = TvFocus.textStyle(TvType.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant), focused),
         )
         TvQuietLine(DocumentReason)
     }

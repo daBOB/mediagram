@@ -10,9 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
+import designsystem.TvType
 import stats.ACHIEVEMENTS_HEADING
 import stats.AchievementsUi
 import stats.NEXT_HEADING
@@ -28,14 +28,14 @@ import ui.tv.TvFocus
 internal fun LazyListScope.tvAchievementItems(achievements: AchievementsUi) {
     if (achievements.earned.isEmpty() && achievements.next.isEmpty()) return
     item(key = "achievements") {
-        Text(text = ACHIEVEMENTS_HEADING, style = CatalogueType.titleMedium, modifier = Modifier.padding(top = Spacing.small))
+        Text(text = ACHIEVEMENTS_HEADING, style = TvType.titleMedium, modifier = Modifier.padding(top = Spacing.small))
     }
     items(items = achievements.earned, key = { "achievement:${it.id}" }) { line ->
         TvStatsStop { focused -> TvAchievementLine(line.label, line.on, focused) }
     }
     if (achievements.next.isEmpty()) return
     item(key = "achievements-next") {
-        Text(text = NEXT_HEADING, style = CatalogueType.labelMedium.copy(color = LocalCatalogueTones.current.quiet))
+        Text(text = NEXT_HEADING, style = TvType.labelMedium.copy(color = LocalCatalogueTones.current.quiet))
     }
     items(items = achievements.next, key = { "next:${it.id}" }) { line ->
         TvStatsStop { focused ->
@@ -54,7 +54,7 @@ private fun TvAchievementLine(
     focused: Boolean,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text = label, style = TvFocus.textStyle(CatalogueType.bodyMedium, focused))
-        Text(text = detail, style = CatalogueType.bodyMedium.copy(color = LocalCatalogueTones.current.quiet))
+        Text(text = label, style = TvFocus.textStyle(TvType.bodyMedium, focused))
+        Text(text = detail, style = TvType.bodyMedium.copy(color = LocalCatalogueTones.current.quiet))
     }
 }

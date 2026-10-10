@@ -18,17 +18,17 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.Backdrop
-import designsystem.CatalogueType
 import designsystem.Palette
-import designsystem.SectionHead
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.TvType.SectionHead
+import designsystem.webSp
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -118,7 +118,7 @@ private fun TvAccentSwatch(
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
         ) {}
-        Text(text = label, style = CatalogueType.bodySmall.copy(fontSize = 12.sp))
+        Text(text = label, style = TvType.bodySmall.copy(fontSize = 12.webSp))
     }
 }
 
@@ -147,8 +147,8 @@ private fun TvArtworkSwatch(
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
         ) {}
-        Text(text = backdrop.label, style = CatalogueType.labelLarge)
-        Text(text = backdrop.note, style = CatalogueType.bodySmall.copy(fontSize = 12.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = backdrop.label, style = TvType.labelLarge)
+        Text(text = backdrop.note, style = TvType.bodySmall.copy(fontSize = 12.webSp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

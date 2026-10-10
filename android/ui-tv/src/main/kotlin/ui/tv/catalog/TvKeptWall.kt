@@ -19,7 +19,7 @@ import catalog.KeptKind
 import catalog.SetCard
 import catalog.resumeLine
 import catalog.watchedFractionOf
-import designsystem.CatalogueType
+import designsystem.TvType
 import model.MediaSet
 import model.Progress
 import model.WatchSnapshot
@@ -133,7 +133,7 @@ private fun EmptyKeptWall(
         // Centred in what is left, not through TvCenteredMessage: this
         // column already stands inside the overscan inset.
         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            TvQuietLine(kind.empty, textAlign = TextAlign.Center, style = CatalogueType.bodyLarge)
+            TvQuietLine(kind.empty, textAlign = TextAlign.Center, style = TvType.bodyLarge)
         }
     }
 }

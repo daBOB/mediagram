@@ -15,13 +15,13 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import designsystem.webSp
 import ui.tv.catalog.RowHead
 
 /**
@@ -45,7 +45,7 @@ internal fun TvBandHeading(
             text =
                 buildAnnotatedString {
                     append(title)
-                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, fontWeight = FontWeight.Normal)) { append(" · $count") }
+                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.webSp, fontWeight = FontWeight.Normal)) { append(" · $count") }
                 },
             style = style,
         )

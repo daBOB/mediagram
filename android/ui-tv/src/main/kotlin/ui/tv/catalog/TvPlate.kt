@@ -16,15 +16,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.initialsOf
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import ui.tv.TvFocus
 
@@ -168,10 +168,10 @@ internal fun TvPlateArt(
 }
 
 /** `.grid.plates .name` (`catalog.css:54`): Fraunces 500 at 17px. */
-private val PlateName = CatalogueType.titleSmall.copy(fontSize = 17.sp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
+private val PlateName = TvType.titleSmall.copy(fontSize = 17.webSp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
 
 /** `.grid.plates .meta` (`catalog.css:55`). */
-private val PlateMeta = CatalogueType.labelSmall.copy(fontSize = 12.sp)
+private val PlateMeta = TvType.labelSmall.copy(fontSize = 12.webSp)
 
 /** A poster's own proportions, the same ratio the phone plate is cut to. */
 private const val PosterAspectRatio = 2f / 3f

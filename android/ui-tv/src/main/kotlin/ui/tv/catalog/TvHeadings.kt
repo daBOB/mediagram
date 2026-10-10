@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,13 +24,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import androidx.compose.ui.text.TextStyle
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
 import designsystem.TvTypeScale
+import designsystem.webSp
 import ui.tv.TvSafeArea
 
 /**
@@ -63,7 +63,7 @@ internal fun TvShelfHead(
             sub?.let {
                 Text(
                     text = it.uppercase(),
-                    style = CatalogueType.labelSmall.copy(letterSpacing = 0.24.em),
+                    style = TvType.labelSmall.copy(letterSpacing = 0.24.em),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -147,7 +147,7 @@ internal fun TvQuietLine(
     text: String,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
-    style: TextStyle = CatalogueType.bodySmall,
+    style: TextStyle = TvType.bodySmall,
 ) {
     Text(
         text = text,
@@ -167,7 +167,7 @@ internal fun TvCenteredMessage(message: String) {
     TvSafeArea {
         Text(
             text = message,
-            style = CatalogueType.bodyLarge,
+            style = TvType.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -176,23 +176,23 @@ internal fun TvCenteredMessage(message: String) {
 
 /** `.shelf-head h1` (`catalog.css:5-10`): Fraunces 600 at the television's display size for it — a reference page's head, and Stats'. */
 internal val ShelfHeadTitle =
-    CatalogueType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
+    TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
 
 /**
  * Fraunces 500 on its own metrics, unsized: the face the television's display
- * titles are set in, at [TvTypeScale]'s sizes. Not a [CatalogueType] role —
+ * titles are set in, at [TvTypeScale]'s sizes. Not a [TvType] role —
  * those carry M3's line heights in sp, which a 60sp title would overrun.
  */
-internal val DisplayFace = TextStyle(fontFamily = CatalogueType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, letterSpacing = (-0.1).sp)
+internal val DisplayFace = TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, letterSpacing = TvType.headlineSmall.letterSpacing)
 
 /** `.season h2` (`catalog.css:71`): Geist 600 at 15px. A course's top level is set at 18 (`.season.depth-0`), [TopSeasonHeading]. */
-internal val SeasonHeading = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+internal val SeasonHeading = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
 
 /** `.season.depth-0 > h2` (`catalog.css:73`). */
-internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.sp)
+internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.webSp)
 
 /** `.shelf-sub` (`catalog.css:98`): a wall's own sections ("Films", "Series") and Search's groups — the phone's `ShelfHead` sub. */
-internal val ShelfSub = CatalogueType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 1.2.em)
+internal val ShelfSub = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.webSp, lineHeight = 1.2.em)
 
 /** `.row-head h2` (`home.css:195`): Home's bands and a department's rows — the phone's `BandHeading`. */
-internal val RowHead = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.sp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+internal val RowHead = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.webSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

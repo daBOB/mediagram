@@ -20,8 +20,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.FactRow
 import catalog.FactValue
-import designsystem.CatalogueType
 import designsystem.LocalCatalogueTones
+import designsystem.TvType
 import ui.tv.TvTextRow
 
 /**
@@ -50,12 +50,12 @@ internal fun TvFactSheet(
             Row(modifier = Modifier.padding(vertical = RowPadding)) {
                 Text(
                     text = label.uppercase(),
-                    style = CatalogueType.labelSmall.copy(letterSpacing = 0.24.em),
+                    style = TvType.labelSmall.copy(letterSpacing = 0.24.em),
                     color = tones.quiet,
                     modifier = Modifier.width(LabelWidth).padding(top = 3.dp),
                 )
                 when (value) {
-                    is FactValue.Words -> Text(text = value.text, style = CatalogueType.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    is FactValue.Words -> Text(text = value.text, style = TvType.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     is FactValue.Genres -> TvGenreLinks(value.names, onOpenGenre, restoreKey)
                     is FactValue.PartOf -> {
                         val back = franchiseRestoreKey(value.franchise.id) == restoreKey

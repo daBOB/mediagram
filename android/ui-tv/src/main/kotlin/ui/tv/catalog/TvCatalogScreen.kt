@@ -32,8 +32,8 @@ import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
 import catalog.updateDisabledReason
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
 import ui.common.MenuActions
 import ui.common.RailItem
 import ui.common.catalog.rememberDepartmentScrollStates
@@ -211,7 +211,7 @@ fun TvCatalogScreen(
             ready?.notice?.let { notice ->
                 Text(
                     text = notice,
-                    style = CatalogueType.bodySmall,
+                    style = TvType.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.fillMaxWidth().padding(start = gutter.start, end = gutter.end, top = Spacing.small, bottom = Spacing.small),
                 )

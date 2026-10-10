@@ -30,16 +30,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.profile.PIN_LENGTH
 import catalog.profile.PinPrompt
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
 import ui.tv.rememberStableRequester
@@ -76,7 +76,7 @@ internal fun TvPinPrompt(
         modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(prompt.heading, style = CatalogueType.titleMedium.copy(fontSize = 19.5.sp, lineHeight = 1.25.em))
+        Text(prompt.heading, style = TvType.titleMedium.copy(fontSize = 19.5.webSp, lineHeight = 1.25.em))
         prompt.error?.let {
             Text(it, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.small))
         }
@@ -173,10 +173,10 @@ private fun TvPinKey(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = label, style = if (label == DELETE) CatalogueType.labelLarge else PinFigures)
+            Text(text = label, style = if (label == DELETE) TvType.labelLarge else PinFigures)
         }
     }
 }
 
 /** `.pin-prompt input` (`library-controls.css:71`): Geist 500 at 1.5rem — the dots, and the pad's digits that type them. */
-private val PinFigures = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.sp, lineHeight = 1.em)
+private val PinFigures = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.webSp, lineHeight = 1.em)

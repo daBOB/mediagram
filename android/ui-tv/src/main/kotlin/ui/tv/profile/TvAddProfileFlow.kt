@@ -14,11 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import model.KIDS_LIMITS
 import ui.tv.TvTextRow
 import ui.tv.setup.TvTextQuestion
@@ -78,7 +78,7 @@ private fun TvKidsLimitChoice(
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
     Column(Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
-        Text(name, style = CatalogueType.titleLarge.copy(fontSize = 21.6.sp, lineHeight = 1.1.em))
+        Text(name, style = TvType.titleLarge.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em))
         KIDS_LIMITS.forEachIndexed { index, age ->
             TvTextRow(
                 text = "FSK $age",

@@ -23,6 +23,9 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.Overscan
+import designsystem.TvScale
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -32,8 +35,6 @@ import ui.tv.TvFocus
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.fontSizeOf
 import ui.tv.profile.TvChosenProfile
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * The departments bar at the web's sizes (`shell.css:39-60`): pills at 14px
@@ -90,12 +91,24 @@ class TvDepartmentsBarTest : TvScreenStateTest() {
         assertEquals((width - Overscan.horizontal).value, avatar.right.value, 0.5f)
     }
 
+    /** `.masthead` and `main` both pad by `--gutter` off the rail (`shell.css:81,158`): the first pill and the page share one edge. */
+    @Test
+    @Config(qualifiers = "w960dp-h540dp-xhdpi")
+    fun theFirstPillStandsOneGutterOffTheCollapsedRail() {
+        show { chrome() }
+        val home = compose.onNodeWithText("Home").getUnclippedBoundsInRoot()
+        val content = compose.onNodeWithTag(CONTENT).getUnclippedBoundsInRoot()
+
+        assertEquals((18 + 12 + 21 + 12 + 18) * TvScale, content.left.value, 0.5f, "the page starts where the collapsed rail ends")
+        assertEquals(content.left.value + 40.96f * TvScale, home.left.value, 0.5f, "`--gutter`, 3.2vw at 1280px")
+    }
+
     @Test
     fun aPillIsItsNameAtTheWebsTabSize() {
         show { chrome() }
 
         compose.onNodeWithText("Movies").assertExists()
-        assertEquals(14f, compose.fontSizeOf("Movies").value, "`.departments a`, 0.875rem")
+        assertEquals(14 * TvScale, compose.fontSizeOf("Movies").value, "`.departments a`, 0.875rem")
     }
 
     @Test

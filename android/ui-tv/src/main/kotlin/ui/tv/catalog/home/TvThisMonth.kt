@@ -18,12 +18,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
-import designsystem.Eyebrow
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.TvType.Eyebrow
+import designsystem.webSp
 import model.MediaSet
 
 /**
@@ -57,17 +57,17 @@ internal fun TvThisMonth(
                     ) {
                         Text(
                             text = (index + 1).toString().padStart(2, '0'),
-                            style = CatalogueType.titleMedium.copy(fontSize = 20.8.sp, lineHeight = 1.em),
+                            style = TvType.titleMedium.copy(fontSize = 20.8.webSp, lineHeight = 1.em),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.width(35.dp),
                         )
                         Column {
-                            Text(text = set.title, style = CatalogueType.titleSmall.copy(fontSize = 15.sp, lineHeight = 1.3.em), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(text = set.title, style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.3.em), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             val meta = listOfNotNull(set.year?.takeIf { it > 0 }?.toString(), set.genres.firstOrNull()).joinToString(" · ")
                             if (meta.isNotEmpty()) {
                                 Text(
                                     text = meta,
-                                    style = CatalogueType.labelSmall.copy(fontSize = 12.sp),
+                                    style = TvType.labelSmall.copy(fontSize = 12.webSp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 2.dp),
                                 )

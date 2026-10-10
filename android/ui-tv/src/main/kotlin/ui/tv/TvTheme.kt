@@ -14,10 +14,10 @@ import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
 import designsystem.Accent
 import designsystem.Backdrop
-import designsystem.CatalogueType
 import designsystem.LocalBackdrop
 import designsystem.Overscan
 import designsystem.Palette
+import designsystem.TvType
 
 /**
  * Dark, always: a media library read from the couch is read in the dark,
@@ -70,7 +70,7 @@ internal fun tvColorScheme(accent: Color): ColorScheme =
     )
 
 /**
- * [CatalogueType]'s roles in the tv-material slots they are named for, as
+ * [TvType]'s roles in the tv-material slots they are named for, as
  * `designsystem`'s own `CatalogueTypography` sets them into M3's on the
  * phone — so a tv-material component that reaches for a slot of its own (a
  * `Button`'s label, a bare `Text`) draws the web's size, the same as every
@@ -79,16 +79,16 @@ internal fun tvColorScheme(accent: Color): ColorScheme =
  */
 private val TvTypography =
     Typography().copy(
-        headlineSmall = CatalogueType.headlineSmall,
-        titleLarge = CatalogueType.titleLarge,
-        titleMedium = CatalogueType.titleMedium,
-        titleSmall = CatalogueType.titleSmall,
-        bodyLarge = CatalogueType.bodyLarge,
-        bodyMedium = CatalogueType.bodyMedium,
-        bodySmall = CatalogueType.bodySmall,
-        labelLarge = CatalogueType.labelLarge,
-        labelMedium = CatalogueType.labelMedium,
-        labelSmall = CatalogueType.labelSmall,
+        headlineSmall = TvType.headlineSmall,
+        titleLarge = TvType.titleLarge,
+        titleMedium = TvType.titleMedium,
+        titleSmall = TvType.titleSmall,
+        bodyLarge = TvType.bodyLarge,
+        bodyMedium = TvType.bodyMedium,
+        bodySmall = TvType.bodySmall,
+        labelLarge = TvType.labelLarge,
+        labelMedium = TvType.labelMedium,
+        labelSmall = TvType.labelSmall,
     )
 
 /**

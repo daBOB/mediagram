@@ -21,14 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.unit.sp
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
 import data.PortraitRequestLog
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import model.WatchSnapshot
 import ui.common.catalog.SearchResultsView
 import ui.common.catalog.countOf
@@ -203,7 +203,7 @@ private fun TvSearchFilterChips(
     ) {
         for ((kind, count) in filters) {
             val marker = if (kind == selected) "●" else "○"
-            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) }, style = CatalogueType.bodyMedium.copy(fontSize = 14.sp))
+            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) }, style = TvType.bodyMedium.copy(fontSize = 14.webSp))
         }
     }
 }

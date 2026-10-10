@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.SearchRow
@@ -39,8 +38,9 @@ import catalog.initialsOf
 import catalog.searchWhy
 import coil3.compose.AsyncImage
 import data.PortraitRequestLog
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import ui.common.catalog.isPlayable
 import ui.common.catalog.locationOf
@@ -91,13 +91,13 @@ internal fun TvSearchRow(
                     }
                 },
     ) {
-        val base = if (playable) CatalogueType.bodyMedium else CatalogueType.bodyMedium.copy(color = quiet)
+        val base = if (playable) TvType.bodyMedium else TvType.bodyMedium.copy(color = quiet)
         Text(text = "${if (watched) "✓ " else ""}${set.title}", style = TvFocus.textStyle(base, focused))
         if (!playable) TvQuietLine(DocumentReason)
         locationOf(set)?.let { TvQuietLine(it) }
         // The reason a summary hit is worth showing at all.
         row.excerpt?.let { TvQuietLine(it) }
-        searchWhy(row.matched)?.let { Text(text = it, style = CatalogueType.bodySmall, fontStyle = FontStyle.Italic, color = quiet) }
+        searchWhy(row.matched)?.let { Text(text = it, style = TvType.bodySmall, fontStyle = FontStyle.Italic, color = quiet) }
         searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
         TvItemMarks(progress, row.held)
     }
@@ -157,13 +157,13 @@ internal fun TvPersonCard(
         )
         Text(
             text = name,
-            style = CatalogueType.labelLarge,
+            style = TvType.labelLarge,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = Spacing.small),
         )
-        sub?.let { TvQuietLine(it, textAlign = TextAlign.Center, style = CatalogueType.bodySmall.copy(fontSize = 12.sp)) }
+        sub?.let { TvQuietLine(it, textAlign = TextAlign.Center, style = TvType.bodySmall.copy(fontSize = 12.webSp)) }
     }
 }
 
@@ -185,7 +185,7 @@ internal fun TvPortraitCircle(
         if (path != null) {
             AsyncImage(model = path, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         } else {
-            Text(text = initialsOf(name), style = CatalogueType.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = initialsOf(name), style = TvType.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

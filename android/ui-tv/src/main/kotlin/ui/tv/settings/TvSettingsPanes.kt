@@ -28,6 +28,7 @@ import designsystem.LocalCatalogueTones
 import designsystem.Overscan
 import designsystem.PageHead
 import designsystem.Spacing
+import designsystem.TvType
 import designsystem.TvTypeScale
 import ui.common.settings.IndexStatus
 import ui.common.settings.SettingsSection
@@ -133,6 +134,7 @@ internal fun TvSettingsPanes(
                     titleColor = MaterialTheme.colorScheme.onBackground,
                     eyebrowColor = tones.quiet,
                     maxTitleSize = TvTypeScale.DepartmentTitle,
+                    eyebrowStyle = TvType.Eyebrow,
                 )
                 content(section, focusInContent, entryRequester)
             }

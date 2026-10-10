@@ -22,11 +22,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.LedgerLabel
-import designsystem.LedgerValue
 import designsystem.LocalCatalogueTones
-import designsystem.SectionHead
 import designsystem.Spacing
+import designsystem.TvType.LedgerLabel
+import designsystem.TvType.LedgerValue
+import designsystem.TvType.SectionHead
 import ui.tv.TvFocus
 
 private val LedgerRowPadding = 10.dp

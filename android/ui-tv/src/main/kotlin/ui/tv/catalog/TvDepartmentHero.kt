@@ -21,16 +21,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Backdrop
-import designsystem.CatalogueType
-import designsystem.Eyebrow
 import designsystem.LocalBackdrop
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
+import designsystem.webSp
 import model.MediaSet
 import ui.common.catalog.HeroArtwork
 import ui.tv.chrome.LocalTvPagePadding
@@ -160,7 +160,8 @@ private fun TvDeptQuote(
     Column(modifier = modifier.testTag(TvDepartmentHeroQuoteTestTag).padding(Spacing.medium)) {
         Text(
             text = "“$tagline”",
-            style = CatalogueType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 20.8.sp, lineHeight = 1.2.em),
+            // `.dept-quote blockquote`: `clamp(1.3rem, 1.9vw, 1.8rem)` at 1280px (`departments.css:47`).
+            style = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 24.32.webSp, lineHeight = 1.2.em),
             color = Color.White,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
@@ -188,7 +189,7 @@ private const val ArtWidthFraction = 0.7f
 internal val TvDepartmentHeroHeight = 360.dp
 
 /** `.dept-line` (`departments.css:36`): Newsreader at 20px, figures tabular — the tablet's own. */
-private val DeptLine = CatalogueType.bodyLarge.copy(fontSize = 20.sp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
+private val DeptLine = TvType.bodyLarge.copy(fontSize = 20.webSp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
 
 /**
  * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap

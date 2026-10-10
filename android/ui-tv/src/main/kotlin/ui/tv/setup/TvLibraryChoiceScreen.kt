@@ -14,9 +14,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import setup.LibraryOption
 import setup.LibraryPrompt
 import setup.libraryPromptFor
@@ -111,7 +111,7 @@ private fun ChooseScreen(
 
 @Composable
 private fun Heading() {
-    Text(text = HEADING, style = CatalogueType.headlineSmall)
+    Text(text = HEADING, style = TvType.headlineSmall)
 }
 
 @Composable
@@ -121,7 +121,7 @@ private fun Explanation(
 ) {
     Text(
         text = text,
-        style = CatalogueType.bodyMedium,
+        style = TvType.bodyMedium,
         color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(top = Spacing.small),
     )

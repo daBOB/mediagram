@@ -3,7 +3,7 @@ package ui.tv.player
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import designsystem.CatalogueType
+import designsystem.TvType
 
 /**
  * The player overlay's own two sizes: every television screen was set in
@@ -17,6 +17,6 @@ import designsystem.CatalogueType
  */
 internal object TvPlayerType {
     val title: TextStyle =
-        TextStyle(fontFamily = CatalogueType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, fontSize = 34.sp, letterSpacing = (-0.1).sp)
-    val body: TextStyle = TextStyle(fontFamily = CatalogueType.bodyMedium.fontFamily, fontSize = 18.sp)
+        TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.Medium, fontSize = 34.sp, letterSpacing = (-0.1).sp)
+    val body: TextStyle = TextStyle(fontFamily = TvType.bodyMedium.fontFamily, fontSize = 18.sp)
 }

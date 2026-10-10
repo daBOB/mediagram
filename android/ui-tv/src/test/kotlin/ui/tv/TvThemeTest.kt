@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.tv.material3.MaterialTheme
 import designsystem.Accent
 import designsystem.Palette
-import designsystem.CatalogueType
+import designsystem.TvType
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -22,12 +22,12 @@ import kotlin.test.assertEquals
 
 /**
  * [TvTheme] is the only place a TV screen can reach [Palette] and
- * [CatalogueType] through tv-material's own `MaterialTheme` — `:ui-tv`
+ * [TvType] through tv-material's own `MaterialTheme` — `:ui-tv`
  * never has M3 on its compile classpath, so nothing here can fall back to
  * `designsystem.MediagramTheme`. These tests pin the two facts every later
  * screen relies on without re-checking: the accent colour a focused card
  * borders itself in is the same red the phone calls "active", and a slot a
- * tv-material component reaches for on its own holds the phone's role for
+ * tv-material component reaches for on its own holds the television's role for
  * that slot, not tv-material's own default.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -56,22 +56,22 @@ class TvThemeTest {
     }
 
     @Test
-    fun titleSlotHoldsThePhonesTitleRole() {
+    fun titleSlotHoldsTheTelevisionsTitleRole() {
         var titleSize: TextUnit? = null
         show { titleSize = MaterialTheme.typography.titleLarge.fontSize }
-        assertEquals(CatalogueType.titleLarge.fontSize, titleSize)
+        assertEquals(TvType.titleLarge.fontSize, titleSize)
     }
 
     @Test
-    fun bodyAndLabelSlotsHoldThePhonesRoles() {
+    fun bodyAndLabelSlotsHoldTheTelevisionsRoles() {
         var body: TextUnit? = null
         var label: TextUnit? = null
         show {
             body = MaterialTheme.typography.bodyMedium.fontSize
             label = MaterialTheme.typography.labelLarge.fontSize
         }
-        assertEquals(CatalogueType.bodyMedium.fontSize, body)
-        assertEquals(CatalogueType.labelLarge.fontSize, label)
+        assertEquals(TvType.bodyMedium.fontSize, body)
+        assertEquals(TvType.labelLarge.fontSize, label)
     }
 
     /**

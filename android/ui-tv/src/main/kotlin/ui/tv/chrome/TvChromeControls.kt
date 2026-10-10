@@ -17,14 +17,14 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.profileInitial
-import designsystem.CatalogueType
+import designsystem.TvType
+import designsystem.webDp
+import designsystem.webSp
 import ui.tv.TvFocus
 import ui.tv.profile.TvChosenProfile
 
@@ -33,9 +33,9 @@ import ui.tv.profile.TvChosenProfile
  * accent ring only while focused; [active] fills it at ink@12% instead of
  * ringing it, the tablet's own `Pill` treatment (`ChromeControls.kt`), so a
  * chosen department still reads as chosen once the remote has moved on to
- * something else on the bar. Set as the web's `.departments a` at a
- * 960px window: Geist 500 at 14px, padded 10 by 12, at least 44 tall
- * (`shell.css:39-50,181`).
+ * something else on the bar. Set as the web's `.departments a` at the
+ * TV's 1280px reading: Geist 500 at 14px, padded 10 by 16, at least 44 tall
+ * (`shell.css:39-50,90`).
  */
 @Composable
 internal fun TvPill(
@@ -64,10 +64,10 @@ internal fun TvPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(
-            modifier = Modifier.heightIn(min = 44.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.heightIn(min = 44.webDp).padding(horizontal = 16.webDp, vertical = 10.webDp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = title, style = CatalogueType.labelLarge)
+            Text(text = title, style = TvType.labelLarge)
         }
     }
 }
@@ -87,7 +87,7 @@ internal fun TvRoundIconButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(44.dp).semantics { contentDescription = description },
+        modifier = modifier.size(44.webDp).semantics { contentDescription = description },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -100,12 +100,12 @@ internal fun TvRoundIconButton(
         border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(44.webDp), contentAlignment = Alignment.Center) {
             Image(
                 painter = icon,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(ink),
-                modifier = Modifier.size(21.dp),
+                modifier = Modifier.size(21.webDp),
             )
         }
     }
@@ -124,7 +124,7 @@ internal fun TvAvatar(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(44.dp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
+        modifier = modifier.size(44.webDp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -137,8 +137,8 @@ internal fun TvAvatar(
         border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-            Text(text = profileInitial(profile.name), style = CatalogueType.labelLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.sp))
+        Box(modifier = Modifier.size(44.webDp), contentAlignment = Alignment.Center) {
+            Text(text = profileInitial(profile.name), style = TvType.labelLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.webSp))
         }
     }
 }

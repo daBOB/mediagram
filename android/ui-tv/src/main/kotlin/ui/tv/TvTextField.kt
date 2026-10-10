@@ -28,13 +28,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 
 /**
  * One line typed through the system keyboard — the field every television
@@ -122,4 +122,4 @@ internal fun TvTextField(
 }
 
 /** The web's text inputs, `font-size: 1rem` (`library-controls.css:12,51`). */
-private val FieldText = CatalogueType.bodyMedium.copy(fontSize = 16.sp)
+private val FieldText = TvType.bodyMedium.copy(fontSize = 16.webSp)

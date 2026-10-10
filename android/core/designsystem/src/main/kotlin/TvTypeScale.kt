@@ -1,46 +1,81 @@
 package designsystem
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * How a television sizes text, by the two rules the web player sets it by.
- *
- * Text reads the web's CSS at a 960px window — the box's own width in dp —
- * with each px taken as one sp. That is the ten-foot adaptation: on a set
- * read from the couch, a dp subtends about what a CSS px does on a desktop
- * monitor at arm's length, so text lands at the web's desktop size. Those
- * are [CatalogueType]'s roles and [Eyebrow], [SectionHead], [LedgerLabel],
- * [LedgerValue] unchanged, since the phone already carries the web's
- * numbers; no text drops under [Floor].
- *
- * Display type — the titles the web sizes with `vw` clamps — takes the
- * web's 1920px size halved instead. At a 960px window those clamps run near
- * their ceilings and a department title stood 12% of the screen high,
- * against 8% on a desktop; halving keeps the desktop's proportions.
+ * One web CSS px on a television, in dp and sp alike. The TV reads the web as
+ * a 1280px viewport laid across its 960dp, so a px is 960/1280 of a dp, and any
+ * `vw` or `clamp()` the TV takes from the web is evaluated at 1280px. Text and
+ * spacing share it, so the two stay in step; this is the one knob to retune
+ * how large the whole television draws. The web sets no minimum size, so
+ * nothing here floors a small one: a 10px count is 7.5sp.
+ */
+const val TvScale = 960f / 1280f
+
+/** [this] web px, in sp on a television. */
+val Number.webSp: TextUnit get() = (toFloat() * TvScale).sp
+
+/** [this] web px, in dp on a television. */
+val Number.webDp: Dp get() = (toFloat() * TvScale).dp
+
+private fun TextUnit.onTv(): TextUnit = if (isSp) this * TvScale else this
+
+/** [this] role at the television's scale: size, line height and sp tracking; `em` already follows the size. */
+fun TextStyle.onTv(): TextStyle = copy(fontSize = fontSize.onTv(), lineHeight = lineHeight.onTv(), letterSpacing = letterSpacing.onTv())
+
+/**
+ * The catalogue's roles as a television sets them: [CatalogueType] and the
+ * page roles beside it, each the web's px through [TvScale]. The phone keeps
+ * [CatalogueType] itself.
+ */
+object TvType {
+    val headlineSmall: TextStyle = CatalogueType.headlineSmall.onTv()
+    val titleLarge: TextStyle = CatalogueType.titleLarge.onTv()
+    val titleMedium: TextStyle = CatalogueType.titleMedium.onTv()
+    val titleSmall: TextStyle = CatalogueType.titleSmall.onTv()
+    val bodyLarge: TextStyle = CatalogueType.bodyLarge.onTv()
+    val bodyMedium: TextStyle = CatalogueType.bodyMedium.onTv()
+    val bodySmall: TextStyle = CatalogueType.bodySmall.onTv()
+    val labelLarge: TextStyle = CatalogueType.labelLarge.onTv()
+    val labelMedium: TextStyle = CatalogueType.labelMedium.onTv()
+    val labelSmall: TextStyle = CatalogueType.labelSmall.onTv()
+    val Eyebrow: TextStyle = designsystem.Eyebrow.onTv()
+    val SectionHead: TextStyle = designsystem.SectionHead.onTv()
+    val LedgerLabel: TextStyle = designsystem.LedgerLabel.onTv()
+    val LedgerValue: TextStyle = designsystem.LedgerValue.onTv()
+}
+
+/**
+ * Display type: the titles the web sizes with `vw` clamps. Evaluated at a
+ * 1280px viewport those clamps run near their ceilings, and a department
+ * title would stand at 81.6sp, a third larger than the 60sp it had where
+ * the rest of the text became a quarter smaller. So display keeps its
+ * desktop proportions to the text, the web's 1920px size halved, and takes
+ * the same [TvScale]: 45sp for a department title.
  */
 object TvTypeScale {
-    /** Under this, nothing: tv-material's smallest role, which lifts the web's 10px counts and tallies (`shell.css:60,66`). */
-    val Floor: TextUnit = 11.sp
+    /** `.dept-title` 7.5rem (`departments.css:32`), also the Settings and System page title (`settings-page.js:55`). */
+    val DepartmentTitle: TextUnit = (120 / 2).webSp
 
-    /** `.dept-title` (`departments.css:32`), also the Settings and System page title (`settings-page.js:55`). */
-    val DepartmentTitle: TextUnit = 60.sp
+    /** `.franchise-hero .dept-title` 5rem (`departments.css:108`). */
+    val FranchiseTitle: TextUnit = (80 / 2).webSp
 
-    /** `.franchise-hero .dept-title` (`departments.css:108`). */
-    val FranchiseTitle: TextUnit = 40.sp
+    /** `.cover-title` 7rem (`home.css:50`). */
+    val CoverTitle: TextUnit = (112 / 2).webSp
 
-    /** `.cover-title` (`home.css:50`). */
-    val CoverTitle: TextUnit = 56.sp
+    /** `.cover-title.long` 4.6rem (`home.css:56`). */
+    val CoverTitleLong: TextUnit = (73.6 / 2).webSp
 
-    /** `.cover-title.long` (`home.css:56`). */
-    val CoverTitleLong: TextUnit = 36.8.sp
+    /** `.spread-title` 5.75rem (`title-page.css:89`). */
+    val SpreadTitle: TextUnit = (92 / 2).webSp
 
-    /** `.spread-title` (`title-page.css:89`). */
-    val SpreadTitle: TextUnit = 46.sp
+    /** `.spread-title.long` 4.25rem (`title-page.css:93`). */
+    val SpreadTitleLong: TextUnit = (68 / 2).webSp
 
-    /** `.spread-title.long` (`title-page.css:93`). */
-    val SpreadTitleLong: TextUnit = 34.sp
-
-    /** `.shelf-head h1` (`catalog.css:7`). */
-    val ShelfHead: TextUnit = 28.8.sp
+    /** `.shelf-head h1` 3.6rem (`catalog.css:7`). */
+    val ShelfHead: TextUnit = (57.6 / 2).webSp
 }

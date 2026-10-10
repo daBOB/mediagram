@@ -14,17 +14,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.coverFactsLine
 import designsystem.Backdrop
-import designsystem.CatalogueType
 import designsystem.CoverTitle
-import designsystem.Eyebrow
 import designsystem.LocalBackdrop
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
+import designsystem.webSp
 import model.MediaSet
 import ui.common.catalog.CoverScrim
 import ui.common.catalog.HeroArtwork
@@ -103,7 +103,8 @@ internal fun TvCoverSlide(
             set.tagline?.takeIf(String::isNotEmpty)?.let { tagline ->
                 Text(
                     text = tagline,
-                    style = CatalogueType.bodyLarge.copy(fontSize = 17.6.sp, lineHeight = 1.4.em),
+                    // `.cover-deck`: `clamp(1.1rem, 1.4vw, 1.3rem)` at 1280px (`home.css:60`).
+                    style = TvType.bodyLarge.copy(fontSize = 17.92.webSp, lineHeight = 1.4.em),
                     color = OnImage2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -113,7 +114,7 @@ internal fun TvCoverSlide(
             coverFactsLine(set)?.let { meta ->
                 Text(
                     text = meta,
-                    style = CatalogueType.labelSmall.copy(fontSize = 13.sp, letterSpacing = 0.06.em),
+                    style = TvType.labelSmall.copy(fontSize = 13.webSp, letterSpacing = 0.06.em),
                     color = OnImage2,
                     modifier = Modifier.padding(top = Spacing.small),
                 )

@@ -143,6 +143,9 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
          * still — what they guard is the scrolled row, not the box's titles.
          */
         val OverflowingPills =
-            listOf("Home", "Movies and more", "Series to watch", "Anime", "Documentaries", "Tutorials and courses", "Collections")
+            listOf(
+                "Home", "Movies and more films", "Series to watch tonight", "Anime and animation", "Documentaries and true stories",
+                "Tutorials and courses", "Collections",
+            )
     }
 }

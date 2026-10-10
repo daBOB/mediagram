@@ -5,6 +5,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.DpRect
 import catalog.SetCard
+import designsystem.TvScale
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import model.Kind
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,8 +18,6 @@ import ui.tv.catalog.TvOfflineBadgeTag
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.catalog.set
 import ui.tv.fontSizeOf
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * The Continue card's caption as the web sets it (`home.css:248-273`): the
@@ -59,9 +60,9 @@ class TvResumeCardTest : TvScreenStateTest() {
     fun theCaptionIsSetAtTheWebsSizes() {
         show { TvResumeCard(card = card(held = true), onOpen = {}) }
 
-        assertEquals(14f, compose.fontSizeOf("Tatort").value, "`.resume-name`, 0.875rem")
-        assertEquals(12f, compose.fontSizeOf(SUB).value, "`.resume-sub`, 0.75rem")
-        assertEquals(12f, compose.fontSizeOf("offline").value, "`.badge`, 0.75rem")
+        assertEquals(14 * TvScale, compose.fontSizeOf("Tatort").value, "`.resume-name`, 0.875rem")
+        assertEquals(12 * TvScale, compose.fontSizeOf(SUB).value, "`.resume-sub`, 0.75rem")
+        assertEquals(12 * TvScale, compose.fontSizeOf("offline").value, "`.badge`, 0.75rem")
     }
 
     private fun subBounds(): DpRect = compose.onNodeWithText(SUB, useUnmergedTree = true).getUnclippedBoundsInRoot()

@@ -22,7 +22,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
@@ -31,8 +30,9 @@ import catalog.Entry
 import catalog.initialsOf
 import catalog.spelledCountOf
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
@@ -98,7 +98,7 @@ internal fun TvPosterStrip(
                             } else {
                                 Text(
                                     text = initialsOf(show.name),
-                                    style = CatalogueType.titleLarge,
+                                    style = TvType.titleLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.align(Alignment.Center),
                                 )
@@ -106,14 +106,14 @@ internal fun TvPosterStrip(
                         }
                         Text(
                             text = show.name,
-                            style = CatalogueType.titleSmall.copy(fontSize = 15.sp, lineHeight = 1.25.em),
+                            style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.25.em),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
                         )
                         Text(
                             text = "${spelledCountOf(show.count, "episode")} · ${spelledCountOf(show.chapters, "season")}",
-                            style = CatalogueType.labelSmall.copy(fontSize = 12.sp),
+                            style = TvType.labelSmall.copy(fontSize = 12.webSp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

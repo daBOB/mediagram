@@ -379,19 +379,21 @@ lines up down a page instead of shifting with each digit's width.
 ink ground its 400 goes thin enough to shimmer, and the catalogue sets its names
 in medium on paper anyway.
 
-**The Television Rule.** A television sets text at the web's CSS for a 960px
-window — the box's own width in dp — reading each px as one sp: the ten-foot
-adaptation, since from the couch a dp subtends about what a CSS px does on a
-desktop monitor. Those are the roles above, unchanged (`CatalogueType` hands
-them to `:ui-tv` as plain styles), and nothing goes under 11sp, which lifts the
-web's 10px counts and tallies. Display titles, which the web sizes with `vw`
-clamps that run near their ceilings at 960px, take the web's 1920px size halved
-instead (`TvTypeScale`): a department or page title 60sp, the cover 56sp (36.8sp
-long), a title spread 46sp (34sp long), a shelf head 28.8sp, a franchise 40sp —
-the desktop's proportions on a 540dp-tall screen. The player overlay keeps its
-earlier 18sp and 34sp (`TvPlayerType`) until it is measured against the web's
-player card; that work has an owner, "batch 5, player overlay text at the web's
-size", after the TV parity plan's focus batch.
+**The Television Rule.** A television reads the web as a 1280px viewport laid
+across its 960dp, so one CSS px is 0.75dp and 0.75sp, text and spacing alike,
+and any `vw` or `clamp()` is evaluated at 1280px. `TvScale` (`designsystem`) is
+that one number; `TvType` is the roles above through it, and the rail, the
+departments bar and the page gutter take their px through it too. The web sets
+no minimum size, so neither does the television: a 10px count is 7.5sp.
+Display titles are the one exception to evaluating `vw` at 1280px: their clamps
+run near their ceilings there, which would have grown a department title to
+81.6sp while everything else shrank, so they keep the web's 1920px size halved,
+then the same scale (`TvTypeScale`): a department or page title 45sp, the cover
+42sp (27.6sp long), a title spread 34.5sp (25.5sp long), a shelf head 21.6sp, a
+franchise 30sp. The player overlay keeps its earlier 18sp and 34sp
+(`TvPlayerType`) until it is measured against the web's player card; that work
+has an owner, "batch 5, player overlay text at the web's size", after the TV
+parity plan's focus batch.
 
 **The Whole-Sentence Rule.** A first run, an empty library, a failed load and
 a page's own eyebrow-and-title pair are the moments a viewer reads a line
@@ -590,8 +592,8 @@ title in Fraunces SemiBold at 35–58sp (the web's `clamp(2.2rem, 4.4vw,
 0.24em tracking in quiet, dropping under the title when it needs the width;
 a 1dp rule beneath both. Its parts ("Movies", "Series", "Films") are
 Fraunces SemiBold 24sp (`.shelf-sub`). Television's `TvShelfHead` opens the
-same six pages at half the web's desktop size (28.8sp, the Television
-Rule), the extent at the web's own 11sp; a person's round portrait (120dp) stands
+same six pages at the Television Rule's display size (21.6sp), the extent
+at the web's 11px through the same scale; a person's round portrait (120dp) stands
 before the title, as the web prepends it. Search's people are the same
 round portrait as a card, the name and count under it, six to a line on
 television (the web's `personCard`); a title's Cast tab draws its people
@@ -620,8 +622,8 @@ says what it is.
 - **Target:** the whole tile, merged into one node.
 - **Television** (`TvArtTile`): the same tile as a focusable card with the
   one TV focus treatment (accent ring, 1.08 scale) on the same 12dp corner,
-  at the web's sizes for a 960px window — a 21.6sp genre name, a 22.4sp
-  destination name, the count at 12sp and 13sp. Genres four across on the Genres page; 240dp wide in the Movies
+  at the web's sizes through the Television Rule — a 16.2sp genre name, a
+  19.2sp destination name, the count at 9sp and 9.75sp. Genres four across on the Genres page; 240dp wide in the Movies
   row, where the web's 12rem would leave a two-line name no room; franchises
   and lists three across on Collections and in Search's Collections part.
   The scrim and proportions are the phone's own, shared (`ArtTileScrim`).

@@ -12,9 +12,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import ui.tv.TvTextField
 
 /**
@@ -109,26 +109,26 @@ fun TvTextQuestion(
                 .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
     ) {
         if (heading.isNotBlank()) {
-            Text(text = heading, style = CatalogueType.headlineSmall)
+            Text(text = heading, style = TvType.headlineSmall)
         }
         if (explanation != null) {
             Text(
                 text = explanation,
-                style = CatalogueType.bodyMedium,
+                style = TvType.bodyMedium,
                 modifier = Modifier.padding(top = Spacing.small),
             )
         }
         if (error != null) {
             Text(
                 text = error,
-                style = CatalogueType.bodySmall,
+                style = TvType.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = Spacing.small),
             )
         }
         Text(
             text = label,
-            style = CatalogueType.bodyMedium,
+            style = TvType.bodyMedium,
             modifier = Modifier.padding(top = Spacing.large),
         )
         TvTextField(

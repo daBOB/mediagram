@@ -9,14 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import catalog.profile.FIRST_PROFILE
 import catalog.profile.ProfileUiState
 import catalog.profile.WHO_RUNS_THIS
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import model.Profile
 import ui.tv.TvTextRow
 
@@ -93,7 +93,7 @@ internal fun TvAdminQuestion(
     focus: TvPickerSpot,
     focusRequester: FocusRequester,
 ) {
-    Text(WHO_RUNS_THIS, style = CatalogueType.titleLarge.copy(fontSize = 21.6.sp, lineHeight = 1.1.em), modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium))
+    Text(WHO_RUNS_THIS, style = TvType.titleLarge.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em), modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium))
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large), modifier = Modifier.padding(top = Spacing.small)) {
         grownUps.forEach { profile ->
             key(profile.id) {

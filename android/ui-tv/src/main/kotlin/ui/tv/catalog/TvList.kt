@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,12 +14,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import catalog.SetCard
 import catalog.spelledCountOf
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import model.ListOfSets
 import model.MediaSet
 import ui.tv.TvTextRow
@@ -94,7 +97,16 @@ fun TvList(
             // the list names — the number its Collections card shows too —
             // rather than only the titles this library could still resolve.
             TvShelfHead(list.name, spelledCountOf(list.items.size, "title"))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large)) {
+            // Up from the wall lands on Play all, the first action: by geometry alone a narrower
+            // Play all lost the first plate's column to Rename beside it.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.large),
+                modifier =
+                    Modifier
+                        .focusProperties {
+                            onEnter = { if (requestedFocusDirection == FocusDirection.Up && sets.isNotEmpty()) playAllFocus.requestFocus() }
+                        }.focusGroup(),
+            ) {
                 if (sets.isNotEmpty()) {
                     TvTextRow(text = "▶ Play all", onClick = onPlayAll, focusRequester = playAllFocus)
                     // Asked for from inside the header, which the wall only
@@ -113,7 +125,7 @@ fun TvList(
         if (sets.isEmpty()) {
             Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
                 header()
-                TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large), style = CatalogueType.bodyLarge)
+                TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large), style = TvType.bodyLarge)
             }
         } else {
             TvWall(

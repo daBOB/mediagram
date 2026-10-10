@@ -164,16 +164,16 @@ class TvCollectionStateTest : TvScreenStateTest() {
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun theShownSeasonsPillIsInSightAndTakesTheRemoteFromTheTab() {
-        val seasons = (1..6).map { n -> division("Season $n", n, episode("s${n}e1", "Opener $n")) }
+        val seasons = (1..8).map { n -> division("Season $n", n, episode("s${n}e1", "Opener $n")) }
         val fifth = seasons[4].items.single()
         val fifthPill = seasonOptionOf(seasons[4])
         showCollection(show(*seasons.toTypedArray()), resume = SeriesResumePick(fifth, at = null, verb = ResumeVerb.CONTINUE))
         compose.onNodeWithText("1. Opener 5").assertExists()
 
-        // Real type, so six pills run past the screen's edge as they do on the box.
-        val sixth = compose.onNodeWithText(seasonOptionOf(seasons[5])).getUnclippedBoundsInRoot()
+        // Real type, so eight pills run past the screen's edge as a long show's do on the box.
+        val last = compose.onNodeWithText(seasonOptionOf(seasons.last())).getUnclippedBoundsInRoot()
         val screen = compose.onRoot().getUnclippedBoundsInRoot()
-        assertTrue(sixth.right > screen.right, "expected the row to run past the screen, got Season 6 at $sixth")
+        assertTrue(last.right > screen.right, "expected the row to run past the screen, got Season 8 at $last")
         val pill = compose.onNodeWithText(fifthPill).getUnclippedBoundsInRoot()
         assertTrue(pill.left >= screen.left && pill.right <= screen.right, "expected Season 5's pill on screen, got $pill on $screen")
 

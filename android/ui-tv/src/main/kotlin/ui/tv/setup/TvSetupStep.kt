@@ -27,9 +27,9 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import setup.SetupUiState
 import setup.SetupViewModel
 import ui.tv.TvFocus
@@ -167,7 +167,7 @@ internal fun TvCentredMessage(message: String) {
         modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = message, style = CatalogueType.bodyLarge)
+        Text(text = message, style = TvType.bodyLarge)
     }
 }
 

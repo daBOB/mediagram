@@ -12,11 +12,11 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import catalog.initialsOf
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import kotlin.math.roundToInt
 
 /**
@@ -51,7 +51,7 @@ internal fun TvPlateInitials(
                         measurer.measure(
                             text = initials,
                             style =
-                                CatalogueType.titleMedium.copy(
+                                TvType.titleMedium.copy(
                                     color = color,
                                     fontSize = fontSize,
                                     lineHeight = fontSize * InitialLeading,
@@ -73,4 +73,4 @@ private const val InitialShare = 0.26f
 private const val InitialLeading = 1.1f
 
 /** Letters standing in for artwork are set apart, the way the phone plate's are. */
-private val InitialTracking = 2.sp
+private val InitialTracking = 2.webSp

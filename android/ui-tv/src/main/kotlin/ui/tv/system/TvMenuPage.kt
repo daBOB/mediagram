@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.tv.material3.Text
 import catalog.MenuScreen
-import designsystem.CatalogueType
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import ui.common.MenuActions
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
@@ -67,7 +67,7 @@ internal fun TvMenuPage(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
-        Text(text = "Menu", style = CatalogueType.headlineSmall)
+        Text(text = "Menu", style = TvType.headlineSmall)
         Column {
             TvTextRow(text = "Switch profile", onClick = onSwitchProfile, focusRequester = rows.getValue(MenuRow.SwitchProfile))
             TvQuietLine("Watching as $watchingAs", Modifier.padding(top = Spacing.extraSmall))

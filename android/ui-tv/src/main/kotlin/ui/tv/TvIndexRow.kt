@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -37,11 +38,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
 import designsystem.LocalCatalogueTones
 import designsystem.Radius
 import designsystem.Spacing
 import designsystem.StatusDot
+import designsystem.TvType
+import designsystem.webSp
 
 /**
  * One row of an index — an icon, a label, and whatever [status] or
@@ -62,6 +64,9 @@ import designsystem.StatusDot
  * keeps only the icon, still shows it; its words are what a screen reader
  * hears for it, merged into the collapsed row's own description.
  *
+ * [contentPadding], [iconSize], [iconGap] and [alignment] default to the
+ * Settings index's own; the rail passes the web's `.rail-nav a` instead.
+ *
  * [onFocusChanged] is Settings' own reason to exist on this row rather than
  * only on [onSelect]: a row gaining focus alone swaps the pane shown beside
  * it, before Right or OK ever steps the remote into it. The rail has
@@ -77,7 +82,11 @@ internal fun TvIndexRow(
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
     minHeight: Dp = 44.dp,
-    labelStyle: TextStyle = CatalogueType.labelLarge,
+    labelStyle: TextStyle = TvType.labelLarge,
+    contentPadding: PaddingValues = PaddingValues(Spacing.small),
+    iconSize: Dp = 22.dp,
+    iconGap: Dp = Spacing.medium,
+    alignment: Alignment.Vertical = Alignment.Top,
     trailing: String? = null,
     status: (@Composable () -> Unit)? = null,
     onFocusChanged: (FocusState) -> Unit = {},
@@ -111,16 +120,16 @@ internal fun TvIndexRow(
                         Modifier
                     },
                 )
-                .padding(horizontal = Spacing.small, vertical = Spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-        verticalAlignment = if (expanded) Alignment.Top else Alignment.CenterVertically,
+                .padding(contentPadding),
+        horizontalArrangement = Arrangement.spacedBy(iconGap),
+        verticalAlignment = if (expanded) alignment else Alignment.CenterVertically,
     ) {
         Box {
             Image(
                 painter = icon,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(if (focused) MaterialTheme.colorScheme.primary else baseColor),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(iconSize),
             )
             dot?.let {
                 StatusDot(MaterialTheme.colorScheme.tertiary, Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp), description = it)
@@ -139,7 +148,8 @@ internal fun TvIndexRow(
                 status?.invoke()
             }
             trailing?.let {
-                Text(text = it, style = CatalogueType.labelSmall.copy(fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
+                // `.n`: 0.625rem, 40% ink (`shell.css:60`).
+                Text(text = it, style = TvType.labelSmall.copy(fontSize = 10.webSp, fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
             }
         }
     }

@@ -23,15 +23,15 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Backdrop
-import designsystem.CatalogueType
 import designsystem.LocalBackdrop
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.TvType
 import designsystem.TvTypeScale
+import designsystem.webSp
 import ui.common.catalog.HeroArtwork
 import ui.tv.catalog.home.OnImage
 
@@ -110,7 +110,7 @@ internal fun TvTitleSpread(
             facts?.takeIf(String::isNotEmpty)?.let {
                 Text(
                     text = it,
-                    style = CatalogueType.bodyMedium.copy(fontSize = 14.sp, fontFeatureSettings = "tnum"),
+                    style = TvType.bodyMedium.copy(fontSize = 14.webSp, fontFeatureSettings = "tnum"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )
@@ -120,7 +120,7 @@ internal fun TvTitleSpread(
                 // introduces the title, it does not carry its whole synopsis.
                 Text(
                     text = it,
-                    style = CatalogueType.bodyLarge.copy(lineHeight = 1.6.em),
+                    style = TvType.bodyLarge.copy(lineHeight = 1.6.em),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
@@ -137,7 +137,7 @@ internal fun TvTitleSpread(
                 Text(
                     text = "“$tagline”",
                     style =
-                        CatalogueType.bodyLarge.copy(
+                        TvType.bodyLarge.copy(
                             fontSize = QuoteSize,
                             lineHeight = 1.2.em,
                             fontStyle = FontStyle.Italic,
@@ -177,8 +177,8 @@ private val SpreadQuoteMaxWidth = 272.dp
 /** A title longer than this is set smaller, as `.spread-title.long` is. */
 private const val LongTitle = 22
 
-/** `clamp(1.4rem, 2.1vw, 2rem)` at 960dp — the floor, 22.4. */
-private val QuoteSize = 22.4.sp
+/** `clamp(1.4rem, 2.1vw, 2rem)` at 1280px (`title-page.css:113`). */
+private val QuoteSize = 26.88.webSp
 
 /** For a test to find the spread without matching on its own words. */
 internal const val TvTitleSpreadTag = "tv-title-spread"

@@ -22,14 +22,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import model.MediaSet
 import ui.tv.TvFocus
@@ -63,7 +63,7 @@ internal fun TvRecentBand(
         if (recentlyAdded.isNotEmpty()) {
             Column {
                 TvBandHeading(title = "Recently Added", count = totalFilms) {
-                    TvTextRow(text = "See all", onClick = onSeeAllMovies, modifier = link.seeAll, focusRequester = link.focus, style = CatalogueType.bodySmall)
+                    TvTextRow(text = "See all", onClick = onSeeAllMovies, modifier = link.seeAll, focusRequester = link.focus, style = TvType.bodySmall)
                 }
                 TvRecentPosterRow(recentlyAdded, onOpenTitle, focusAt, focus, link.lastStop)
             }
@@ -125,7 +125,7 @@ private fun TvRecentPosterRow(
                         } else {
                             Text(
                                 text = set.title,
-                                style = CatalogueType.titleSmall.copy(fontSize = 15.sp, lineHeight = 1.3.em),
+                                style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.3.em),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis,

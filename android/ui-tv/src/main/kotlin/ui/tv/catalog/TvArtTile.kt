@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Border
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
@@ -26,7 +25,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
+import designsystem.TvType
+import designsystem.webSp
 import java.io.File
 import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
@@ -42,9 +42,8 @@ import ui.tv.catalog.home.OnImage
  *
  * A `Card` at [TvFocus.FeatureCardShape] — the rounded picture-card corner
  * Home's feature cards already take — with this surface's one focus
- * treatment. Sizes are the ten-foot step up from the phone's (a 24sp genre
- * name where the phone sets 21.6sp, the 16sp floor for the count), the same
- * step every other television card takes.
+ * treatment. Sizes are the web's px through the television's scale, as on
+ * every other television card.
  */
 @Composable
 internal fun TvArtTile(
@@ -81,9 +80,9 @@ internal fun TvArtTile(
                     text = if (destination) name.uppercase() else name,
                     style =
                         if (destination) {
-                            CatalogueType.headlineSmall.copy(fontSize = 22.4.sp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
+                            TvType.headlineSmall.copy(fontSize = 25.6.webSp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
                         } else {
-                            CatalogueType.headlineSmall.copy(fontSize = 21.6.sp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
+                            TvType.headlineSmall.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
                         },
                     color = ink,
                     maxLines = if (destination) 3 else 2,
@@ -91,7 +90,7 @@ internal fun TvArtTile(
                 )
                 Text(
                     text = meta,
-                    style = if (destination) CatalogueType.labelMedium else CatalogueType.labelMedium.copy(fontSize = 12.sp, letterSpacing = 0.08.em),
+                    style = if (destination) TvType.labelMedium else TvType.labelMedium.copy(fontSize = 12.webSp, letterSpacing = 0.08.em),
                     color = ink.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = if (destination) 6.dp else 4.dp),
                 )
@@ -137,7 +136,7 @@ internal fun TvPagePill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = 52.dp).padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
-            Text(text = text, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.Medium))
+            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium))
         }
     }
 }

@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
@@ -29,8 +28,9 @@ import androidx.tv.material3.Text
 import catalog.Entry
 import catalog.initialsOf
 import catalog.spelledCountOf
-import designsystem.CatalogueType
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.webSp
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -81,16 +81,16 @@ internal fun TvCourseList(
                         Box(modifier = Modifier.width(64.dp).aspectRatio(2f / 3f).background(MaterialTheme.colorScheme.surfaceVariant)) {
                             Text(
                                 text = initialsOf(course.name),
-                                style = CatalogueType.titleLarge,
+                                style = TvType.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.align(Alignment.Center),
                             )
                         }
                         Column {
-                            Text(text = course.name, style = CatalogueType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, lineHeight = 1.35.em), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(text = course.name, style = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, lineHeight = 1.35.em), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 text = "${spelledCountOf(course.count, "lesson")} · ${spelledCountOf(course.chapters, "chapter")}",
-                                style = CatalogueType.labelSmall.copy(fontSize = 13.sp),
+                                style = TvType.labelSmall.copy(fontSize = 13.webSp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 2.dp),
                             )

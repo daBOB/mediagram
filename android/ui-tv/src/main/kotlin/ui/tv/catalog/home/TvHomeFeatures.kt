@@ -23,16 +23,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Text
 import catalog.Feature
 import catalog.label
 import coil3.compose.AsyncImage
-import designsystem.CatalogueType
-import designsystem.Eyebrow
 import designsystem.Spacing
+import designsystem.TvType
+import designsystem.TvType.Eyebrow
+import designsystem.webSp
 import java.io.File
 import model.Kind
 import ui.tv.TvFocus
@@ -137,7 +137,7 @@ private fun TvFeatureCard(
                 )
                 Text(
                     text = if (secondCard) title else title.uppercase(),
-                    style = DisplayFace.copy(fontSize = if (secondCard) 26.sp else 24.sp),
+                    style = DisplayFace.copy(fontSize = if (secondCard) 26.webSp else 24.webSp),
                     color = OnImage,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -146,7 +146,7 @@ private fun TvFeatureCard(
                 if (deck != null) {
                     Text(
                         text = deck,
-                        style = CatalogueType.bodyLarge.copy(fontSize = 16.sp, lineHeight = 1.4.em),
+                        style = TvType.bodyLarge.copy(fontSize = 16.webSp, lineHeight = 1.4.em),
                         color = OnImage2,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,

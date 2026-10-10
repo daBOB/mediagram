@@ -20,28 +20,24 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.Overscan
+import designsystem.webDp
 import ui.common.RailItem
 import ui.tv.profile.TvChosenProfile
 
-/** The bar's own row height, before its top inset — the tablet's own `DepartmentsBarHeight` (`ChromeControls.kt`), reused since both draw the same pills. */
-internal val TvDepartmentsBarHeight = 76.dp
+/** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
+internal val TvDepartmentsBarHeight = 76.webDp
 
-/** The gutter between the collapsed rail's own edge and whatever the content or the bar draws next — [Overscan.horizontal] is the screen's own safe margin from x=0; this is the rail's own, measured from its own far edge instead. */
-internal val TvContentGutter = 32.dp
-
-/** The rail's own collapsed width — [TvLibraryRail] is the one composable that draws it; declared here too, ahead of [TvContentStart], only so the outer column knows where to start clear of it. */
-private val RailCollapsedWidth = 96.dp
+/** The gutter between the collapsed rail's edge and the bar's first pill and the page: the web's `--gutter`, 3.2vw at 1280px (`theme.css:112`). [Overscan.horizontal] is the screen's own safe margin from x=0; this is measured from the rail's far edge instead. */
+internal val TvContentGutter = 40.96.webDp
 
 /**
  * Where the bar and the content both start, regardless of whether the rail
  * is open — it overlays past this line rather than pushing it, so this
  * never changes with the rail's own width. [TvContentGutter] is layered on
- * top of this, in [LocalTvPagePadding] alone, not here: a focused plate's
- * own left edge needs the extra 32dp room [TvContentGutter] names, but a
- * cramped 96dp is already clear of the collapsed rail's own icons.
+ * top of this, in [LocalTvPagePadding] and the bar's start, as the web's
+ * `main` and `.masthead` both pad by `--gutter` off the rail.
  */
 internal val TvContentStart = RailCollapsedWidth
 

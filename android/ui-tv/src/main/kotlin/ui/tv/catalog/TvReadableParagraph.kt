@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.CatalogueType
+import designsystem.TvType
 import ui.tv.TvFocus
 
 /**
@@ -33,7 +33,7 @@ import ui.tv.TvFocus
 internal fun TvReadableParagraph(
     text: String,
     modifier: Modifier = Modifier,
-    style: TextStyle = CatalogueType.bodyLarge.copy(lineHeight = 1.6.em),
+    style: TextStyle = TvType.bodyLarge.copy(lineHeight = 1.6.em),
 ) {
     var focused by remember { mutableStateOf(false) }
     val accent = MaterialTheme.colorScheme.primary
