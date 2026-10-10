@@ -19,14 +19,19 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
  * Shared by the tablet's own hero-bleeding pages and the television's Home,
  * over its own magazine cover — both read the same live measurement rather
  * than each tracking its own scroll delta.
+ *
+ * Under reduced motion it is always 1: the web settles its masthead over a
+ * cover only with `prefers-reduced-motion: no-preference` (`shell.css:230`)
+ * and is the ordinary paper bar otherwise.
  */
 fun coverBlend(
     firstVisibleItemIndex: Int,
     firstVisibleItemScrollOffset: Int,
     coverHeightPx: Float,
     barHeightPx: Float,
+    reducedMotion: Boolean = false,
 ): Float {
-    if (firstVisibleItemIndex > 0) return 1f
+    if (reducedMotion || firstVisibleItemIndex > 0) return 1f
     val threshold = (coverHeightPx - barHeightPx).coerceAtLeast(1f)
     return (firstVisibleItemScrollOffset / threshold).coerceIn(0f, 1f)
 }
