@@ -30,10 +30,7 @@ import androidx.tv.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
 import designsystem.Overscan
 import designsystem.Spacing
-import dev.chrisbanes.haze.HazeState
 import ui.common.chrome.barBackground
-import ui.common.chrome.frostHairline
-import ui.common.chrome.frostedBackdrop
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own ink over a hero, while [blend] is below `1f`. */
@@ -53,11 +50,9 @@ private val TvOverCoverInk = Color(0xFFF6F2EA)
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
  * under the bar, every other tab draws it solid.
  *
- * With [frost] — every tab, as on the tablet and the web, since rows scroll
- * up under the bar on all of them — the bar blurs the content behind it and
- * its solid end is the web's 72% paper over that blur, with the web's
- * hairline; without it (below API 31) the solid end is opaque paper, since
- * nothing would blur what scrolls under it.
+ * Unlike the phone and tablet bar this one is not frosted: the blur measured
+ * too slow on the box (`plans/reports/frosted-masthead-261009-report.md`,
+ * "TV measurement"), so the solid end is opaque paper.
  *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
@@ -94,11 +89,10 @@ internal fun TvDepartmentsBar(
     avatarFocus: FocusRequester,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
-    frost: HazeState? = null,
 ) {
     val solidBg = MaterialTheme.colorScheme.background
     val solidInk = MaterialTheme.colorScheme.onBackground
-    val bg = barBackground(solidBg, blend, frosted = frost != null)
+    val bg = barBackground(solidBg, blend, frosted = false)
     val ink = lerp(TvOverCoverInk, solidInk, blend)
     val downModifier = Modifier.focusProperties { down = downTarget }
     // Each pill's own requester, held here rather than inside the pill so Search can name the last one.
@@ -111,9 +105,7 @@ internal fun TvDepartmentsBar(
             modifier
                 .fillMaxWidth()
                 .height(TvDepartmentsBarHeight + Overscan.vertical)
-                .frostedBackdrop(frost)
                 .background(color = bg)
-                .frostHairline(solidInk, blend, frost)
                 .padding(top = Overscan.vertical, start = Spacing.medium - PillRingRoom, end = Overscan.horizontal),
         verticalAlignment = Alignment.CenterVertically,
     ) {
