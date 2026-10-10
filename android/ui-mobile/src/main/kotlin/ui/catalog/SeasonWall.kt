@@ -2,6 +2,7 @@ package ui.catalog
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +46,8 @@ import model.WatchSnapshot
  * state rather than this function's own: the same season must still be
  * shown once a watch-state update recomposes the whole series page, as
  * the chosen tab is ([rememberChosenTab]).
+ *
+ * [modifier] goes on every item this adds: the Episodes panel's rise.
  */
 internal fun LazyListScope.seriesEpisodes(
     collection: Entry.Collection,
@@ -53,15 +56,16 @@ internal fun LazyListScope.seriesEpisodes(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     onPlay: (setId: String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
     if (collection.divisions.size > 1) {
-        item(key = "season-picker") { SeasonPicker(collection.divisions, shown, onSelectSeason) }
+        item(key = "season-picker") { Box(modifier) { SeasonPicker(collection.divisions, shown, onSelectSeason) } }
     }
     val rows = rowsOf(listOf(shown))
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-    items(rows, positions, watchedIds, heldIds, onPlay)
+    items(rows, positions, watchedIds, heldIds, onPlay, modifier)
 }
 
 @Composable

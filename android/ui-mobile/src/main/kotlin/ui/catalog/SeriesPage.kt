@@ -1,12 +1,14 @@
 package ui.catalog
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import catalog.Entry
@@ -23,6 +25,7 @@ import catalog.summarize
 import catalog.walk
 import data.PortraitRequestLog
 import designsystem.Spacing
+import designsystem.entrance
 import model.TitleCredits
 import model.WatchSnapshot
 import ui.common.catalog.rememberTitleCredits
@@ -91,6 +94,13 @@ internal fun SeriesPage(
     // The spread is a lazy item here, so its art-in is held by the page above
     // the list: a scroll away and back finds it played, a new visit plays it.
     val reveals = rememberReveals()
+    // The shown tab's panel, as the web's one `.tab-panel` (`title-page.css:133-134`):
+    // its items share one flag, made anew each time a tab is shown. The items
+    // that arrive with the panel rise together; rows scrolled to later are
+    // already in. A new flag restarts even a node the list hands back, so every
+    // switch rises again (`tabs.js:85-97`); held, not saved, so Back does too.
+    val panelIn = remember(shownTab) { mutableStateOf(false) }
+    val panel = Modifier.entrance(PANEL_IN_MS, fromY = PANEL_IN_RISE, seen = panelIn)
 
     // A LazyColumn rather than a scrolling Column, since Episodes can run to
     // a few hundred rows: those join this list directly ([seriesEpisodes])
@@ -131,18 +141,18 @@ internal fun SeriesPage(
         }
         item(key = "tab-row") { TitleTabRow(labels, shownTab, onSelectTab, modifier = Modifier.padding(top = Spacing.small)) }
         when (shownTab) {
-            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay)
+            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay, modifier = panel)
             "Cast" ->
                 item(key = "cast") {
-                    CastPanel(credits, onOpenPerson, fetchPortrait, portraits)
+                    Box(panel) { CastPanel(credits, onOpenPerson, fetchPortrait, portraits) }
                 }
             "Similar" ->
                 item(key = "similar") {
-                    SeriesSimilarTab(collection, watch, shelves, onOpenCollection)
+                    Box(panel) { SeriesSimilarTab(collection, watch, shelves, onOpenCollection) }
                 }
             else ->
                 item(key = "about") {
-                    FactSheet(factRows(seriesAboutFacts(facts, info, firstEpisode?.genres.orEmpty()), onOpenGenre))
+                    Box(panel) { FactSheet(factRows(seriesAboutFacts(facts, info, firstEpisode?.genres.orEmpty()), onOpenGenre)) }
                 }
         }
     }

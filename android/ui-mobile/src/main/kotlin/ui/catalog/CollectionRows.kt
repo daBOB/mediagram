@@ -1,6 +1,7 @@
 package ui.catalog
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,25 +27,29 @@ import model.Progress
  * file should carry alongside the layout that places these rows.
  */
 
+/** [modifier] goes on every row, so a show's Episodes panel rises as one. */
 internal fun LazyListScope.items(
     rows: List<CollectionRow>,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
     heldIds: Set<String>,
     onPlay: (setId: String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     items(
         count = rows.size,
         key = { index -> keyOf(rows[index], index) },
     ) { index ->
-        when (val row = rows[index]) {
-            is CollectionRow.Heading -> Text(
-                text = row.title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
-            )
+        Box(modifier) {
+            when (val row = rows[index]) {
+                is CollectionRow.Heading -> Text(
+                    text = row.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
+                )
 
-            is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onPlay)
+                is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onPlay)
+            }
         }
     }
 }
