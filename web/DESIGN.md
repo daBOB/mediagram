@@ -226,7 +226,7 @@ Full height. Top: Utilities (My List, Continue, Latest, Genres, Settings). Below
 
 - **Ease** (`cubic-bezier(0.32, 0.72, 0, 1)`): standard motion, settling spring
 - **Ease-out** (`cubic-bezier(0.22, 1, 0.36, 1)`): exit, responsive motion
-- Reduced motion: all transitions collapse to 1ms
+- Reduced motion: none at all — every animation and transition is off (`theme.css:180-182`)
 - Hover (`--hover`, 160ms): a change of colour, border or background. Controls never lift or grow on hover; artwork (plates, portraits) lifts, and arrows nudge toward where they lead
 - Image cards (home features, genre tiles, collection cards) share `--radius-card` (12px)
 
@@ -289,7 +289,7 @@ The screening room keeps a slim top bar over the top scrim (the title, My List, 
 - **Do** separate content with 1px `rule` (strong) or `rule-soft` (gentle)
 - **Do** keep artwork at 2:3 and let it lift only on hover
 - **Do** use Fraunces for titles and display, Newsreader for body and quotes, Geist for labels
-- **Do** honour `prefers-reduced-motion` by collapsing all motion to 1ms
+- **Do** honour `prefers-reduced-motion` by turning all motion off
 - **Do** test accent pairs at both light and dark themes (contrast-tested, but verify visually)
 - **Do** apply `data-theme="light"` to `<html>` only from `lib/appearance-boot.js`, before first paint
 

@@ -5,6 +5,37 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.121.0 — the phone and tablet move like the web player
+
+**Changed** (Android phone and tablet; loading on the web too)
+
+- **The web's motion, on the web's clock.** Pages rise in as they open, Home's
+  sections rise as they scroll into view (once a visit), the cover fades up from
+  black and slowly settles, and hero art eases in with its pull-quote after it.
+  The Featured poster drifts once per slide and holds when paused, instead of
+  looping. Arrows nudge toward where they lead; with a mouse or stylus, posters
+  lift and artwork zooms.
+- **Presses answer as on the web: a quiet tint and a snapped 0.98, never a
+  ripple.** Menus fade in and drop 4dp and close at once; in the player they
+  open and close without motion. Tabs fade their underline instead of sliding
+  one, and dialogs open without the window animation.
+- **Loading is the film leader's 3·2·1 countdown on every surface**: the web
+  (`film-leader.css`, `lib/film-leader.js`) and Android (`CountdownLeader.kt`)
+  share it, replacing the spinners and "Loading…" text. The TV adopts it later.
+- **The player's controls fade in and out over 260 ms**, and ignore taps once
+  they start to fade.
+- **"Remove animations" stops all of it**, as reduced motion does on the web.
+  The TV is unchanged; it adopts the same module in its own parity work.
+
+**Known issue**
+
+- Under the Blurred backdrop, Home scrolls slower on this build than on 0.120.0
+  (tablet benchmark: p50 14 vs 8 ms, p90 18 vs 11 ms, no deadline-missed frames),
+  while the idle cover stays within budget (p90 16 vs 15 ms, 0.00% janky).
+
+Frame times on the tablet, with and without the motion:
+`plans/261010-0112-android-motion-parity/reports/frame-times-261010-motion-report.md`.
+
 ## 0.120.0 — the TV reads at the web's size
 
 **Changed** (Android TV, and the tablet for the toolbar)
