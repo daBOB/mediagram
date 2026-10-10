@@ -43,9 +43,12 @@ fun CatalogueTextButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    // Material's own name and default: a caller that colours its label on a
+    // press or a hover hands in the source it reads.
+    interactionSource: MutableInteractionSource? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val source = remember { MutableInteractionSource() }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
     PressTarget(modifier, ButtonDefaults.textShape, source) { inner ->
         TextButton(onClick = onClick, modifier = inner, enabled = enabled, interactionSource = source, content = content)
     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +17,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.media3.common.Player
 import androidx.media3.common.util.Util
+import designsystem.LocalIndicationTone
 import playback.Framing
 
 /**
@@ -57,8 +59,11 @@ internal fun PlayerGestureLayer(
             .pointerInput(Unit) { detectPinchFraming(onPinchFraming) },
         contentAlignment = Alignment.Center,
     ) {
-        content()
-        SeekRipple(flash = flash, modifier = Modifier.align(Alignment.Center))
+        // Everything in here is drawn over the video: presses tint white ([OverVideoTone]).
+        CompositionLocalProvider(LocalIndicationTone provides OverVideoTone) {
+            content()
+            SeekRipple(flash = flash, modifier = Modifier.align(Alignment.Center))
+        }
     }
 }
 

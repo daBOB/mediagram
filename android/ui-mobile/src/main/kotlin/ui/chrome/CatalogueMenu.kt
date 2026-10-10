@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -62,17 +63,21 @@ internal fun CatalogueMenu(
         onDismissRequest = onDismissRequest,
         properties = PopupProperties(focusable = true),
     ) {
-        Surface(
-            modifier = if (still) Modifier else Modifier.entrance(MENU_IN_MS, fromY = MENU_IN_FROM),
-            shape = MenuDefaults.shape,
-            color = MenuDefaults.containerColor,
-            tonalElevation = MenuDefaults.TonalElevation,
-            shadowElevation = MenuDefaults.ShadowElevation,
-        ) {
-            Column(
-                modifier = Modifier.padding(vertical = LIST_PADDING).width(IntrinsicSize.Max).verticalScroll(rememberScrollState()),
-                content = content,
-            )
+        // The menu is the page's own surface, wherever it opens from: over the
+        // video (the player's Kids menu) its presses still tint in the page's ink.
+        IndicationInk(MaterialTheme.colorScheme.onSurface) {
+            Surface(
+                modifier = if (still) Modifier else Modifier.entrance(MENU_IN_MS, fromY = MENU_IN_FROM),
+                shape = MenuDefaults.shape,
+                color = MenuDefaults.containerColor,
+                tonalElevation = MenuDefaults.TonalElevation,
+                shadowElevation = MenuDefaults.ShadowElevation,
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = LIST_PADDING).width(IntrinsicSize.Max).verticalScroll(rememberScrollState()),
+                    content = content,
+                )
+            }
         }
     }
 }
