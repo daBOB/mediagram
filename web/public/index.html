@@ -139,10 +139,12 @@
       <video id="video" preload="auto" crossorigin="anonymous"></video>
 
       <!-- While a title opens, until its first frame: the film leader, and the
-           words for a screen reader. The status region stays so the words are
-           announced as they appear; lib/film-leader.js shows and hides them. -->
-      <div class="stage-leader" role="status">
-        <div id="stage-leader" hidden><span class="sr-only">Loading…</span></div>
+           words for a screen reader. The status region is always there and
+           only its words come and go, so they are announced as they appear;
+           lib/film-leader.js writes them and shows and hides the drawing. -->
+      <div class="stage-leader">
+        <span class="sr-only" id="stage-status" role="status"></span>
+        <div id="stage-leader" hidden></div>
       </div>
 
       <!-- The title and what can be done with it, none of which acts on the

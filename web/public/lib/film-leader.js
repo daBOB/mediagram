@@ -16,9 +16,15 @@
   // On the stage, from a source starting to load until its first frame is in
   // hand. A stall after that leaves it down: the player shows no buffering
   // wait, and this is not one. A source dropped or failed takes it down too.
+  // The words go with it, written into a status region that never hides.
+  const status = document.getElementById("stage-status");
+  const show = (on) => {
+    stage.hidden = !on;
+    status.textContent = on ? "Loading…" : "";
+  };
   const video = document.getElementById("video");
-  video.addEventListener("loadstart", () => { stage.hidden = false; });
+  video.addEventListener("loadstart", () => show(true));
   for (const event of ["loadeddata", "emptied", "error"]) {
-    video.addEventListener(event, () => { stage.hidden = true; });
+    video.addEventListener(event, () => show(false));
   }
 })();
