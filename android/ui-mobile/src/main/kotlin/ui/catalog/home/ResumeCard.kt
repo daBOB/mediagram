@@ -1,9 +1,11 @@
 package ui.catalog.home
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,20 +34,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import catalog.SetCard
 import catalog.factsLine
 import catalog.initialsOf
 import coil3.compose.AsyncImage
-import designsystem.CoverTitle
+import designsystem.hoverMotion
 import model.Kind
-import model.MediaSet
 import model.episodeLabel
 import ui.common.catalog.rememberRowState
 import java.io.File
@@ -83,6 +82,7 @@ private fun ResumeCard(
     val episode = set.kind != Kind.MOVIE && set.show != null
     val name = if (episode) requireNotNull(set.show) else set.title
     val art = set.backdropPath ?: set.posterPath
+    val source = remember { MutableInteractionSource() }
 
     Box(
         modifier =
@@ -91,10 +91,16 @@ private fun ResumeCard(
                 .aspectRatio(16f / 8.4f)
                 .clip(RoundedCornerShape(3.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(role = Role.Button, onClick = onClick),
+                .clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button, onClick = onClick),
     ) {
         if (art != null) {
-            AsyncImage(model = File(art), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            // `.resume-card:hover .resume-art img` zooms to 1.04 over 1200ms (`home.css:245-246`), inside the clip.
+            AsyncImage(
+                model = File(art),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize().hoverMotion(source, durationMs = 1200, zoom = 1.04f),
+            )
         } else {
             Text(
                 text = initialsOf(name),
@@ -155,42 +161,5 @@ private fun ResumeCard(
                 )
             }
         }
-    }
-}
-
-/** The typographic break — a real tagline, set large, the mark hung in the margin — `.pull-quote` (`home.css:276-304`). */
-@Composable
-internal fun Quote(
-    set: MediaSet,
-    width: Dp,
-    onOpenTitle: (String) -> Unit,
-) {
-    val tagline = set.tagline ?: return
-    Column(modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpenTitle(set.setId) }) {
-        // The mark hangs in the margin beside the first line, not above it
-        // — `blockquote::before`, absolutely positioned at the paragraph's
-        // own top-left (`home.css:277-285`).
-        Box {
-            Text(text = "“", style = CoverTitle.copy(fontSize = 64.sp, lineHeight = 1.em), modifier = Modifier.align(Alignment.TopStart))
-            Text(
-                text = tagline,
-                style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontStyle = FontStyle.Italic,
-                        fontSize = fluid(25.6f, 0.023f, 37.6f, width.value).sp,
-                        lineHeight = 1.2.em,
-                        letterSpacing = (-0.01).em,
-                    ),
-                modifier = Modifier.padding(start = 54.dp),
-            )
-        }
-        Box(modifier = Modifier.padding(start = 54.dp, top = 24.dp, bottom = 18.dp).width(32.dp).height(1.dp).background(MaterialTheme.colorScheme.outline))
-        val credit = listOfNotNull(set.title, set.year?.takeIf { it > 0 }?.toString()).joinToString(", ").uppercase()
-        Text(
-            text = credit,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium, fontSize = 11.sp, letterSpacing = 0.28.em),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 54.dp),
-        )
     }
 }

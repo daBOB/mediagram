@@ -16,18 +16,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import catalog.BrowseViewModel
 import catalog.Entry
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchGroups
 import catalog.SearchRow
-import catalog.VisiblePerson
 import catalog.extentOf
 import catalog.factsLine
 import catalog.spelledCountOf
@@ -35,7 +31,6 @@ import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
 import ui.common.catalog.DESTINATION_ASPECT
-import ui.common.catalog.rememberPortrait
 
 private val SEARCH_CARD_WIDTH = 120.dp
 
@@ -195,34 +190,6 @@ private fun RowSection(title: String, rows: List<SearchRow>, positions: Map<Stri
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
         for (row in rows) {
             SearchResultRow(row, positions[row.set.setId], row.set.setId in watchedIds, onPlay)
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> Unit) {
-    val browseViewModel: BrowseViewModel = hiltViewModel()
-    Column(modifier = Modifier.padding(top = Spacing.medium)) {
-        Text("People", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            for (person in people) {
-                // Fetched lazily, at most once per session per person — the
-                // same [rememberPortrait] a person's own page asks with.
-                val portrait = rememberPortrait(person.personId, person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
-                Column(
-                    modifier = Modifier.clickable(role = Role.Button) { onOpenPerson(person.personId) }.padding(Spacing.small),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    PersonFace(name = person.name, portraitPath = portrait, size = 64.dp)
-                    Text(person.name, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = Spacing.extraSmall))
-                    Text(
-                        spelledCountOf(person.titles, "title"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
     }
 }

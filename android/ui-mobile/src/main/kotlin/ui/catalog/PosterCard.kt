@@ -1,17 +1,27 @@
 package ui.catalog
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import designsystem.Motion
 import designsystem.Spacing
+import designsystem.hoverMotion
 
 /**
  * A plate, named underneath rather than across its face.
@@ -27,6 +37,10 @@ import designsystem.Spacing
  * does not open what it names is a dead patch in the middle of a wall.
  * Merging the semantics is the other half of that: a screen reader should
  * meet one plate once, not an image and then its title again.
+ *
+ * Under a hovering mouse or stylus the art lifts and the name turns to the
+ * accent, as the web's plate does; a finger only turns the name, while
+ * pressed, since the web gives touch no lift either.
  *
  * [meta] is a fact about the title itself — an episode's show and number —
  * and sits above [caption], a fact about this viewer's own place in it
@@ -48,19 +62,22 @@ internal fun PosterCard(
     watched: Boolean = false,
     held: Boolean = false,
 ) {
+    val source = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {},
     ) {
-        PosterArt(posterPath = posterPath, title = title, progress = progress, watched = watched)
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = Spacing.small),
+        PosterArt(
+            posterPath = posterPath,
+            title = title,
+            // `.card:hover .thumb` lifts 6px over 700ms (`catalog.css:49,51`). No
+            // shadow: the plate carries none here, as PosterArt explains.
+            modifier = Modifier.hoverMotion(source, durationMs = 700, lift = (-6).dp),
+            progress = progress,
+            watched = watched,
         )
+        PlateName(title, source)
         if (meta != null) {
             Text(
                 text = meta,
@@ -79,4 +96,28 @@ internal fun PosterCard(
         }
         if (held) OfflineBadge(modifier = Modifier.padding(top = 2.dp))
     }
+}
+
+/**
+ * `.card .name` turns accent over `--hover` while hovered (`catalog.css:44,48`);
+ * a finger has no hover, so its press stands in. Kept in its own scope so only
+ * this Text recomposes while the colour fades.
+ */
+@Composable
+private fun PlateName(title: String, source: MutableInteractionSource) {
+    val hovered by source.collectIsHoveredAsState()
+    val pressed by source.collectIsPressedAsState()
+    val ink by animateColorAsState(
+        if (hovered || pressed) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+        animationSpec = Motion.hover(),
+        label = "plate name",
+    )
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = ink,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = Spacing.small),
+    )
 }
