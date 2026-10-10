@@ -62,6 +62,13 @@ object TvFocus {
     /** How far a focused element grows. Legible from the couch, not just the palm. */
     const val Scale = 1.08f
 
+    /**
+     * The ink fill, as a share of the page's ink, that marks where the viewer
+     * is within a list: a settings row that is the open section, and a
+     * settings block the remote is resting on.
+     */
+    const val ChosenFillAlpha = 0.10f
+
     /** Width of the accent border a focused card or surface gains. */
     val BorderWidth: Dp = 3.dp
 

@@ -106,7 +106,7 @@ internal fun TvIndexRow(
                     onFocusChanged(state)
                 }
                 .clip(RoundedCornerShape(Radius.control))
-                .then(if (selected) Modifier.background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)) else Modifier)
+                .then(if (selected) Modifier.background(MaterialTheme.colorScheme.onBackground.copy(alpha = TvFocus.ChosenFillAlpha)) else Modifier)
                 .selectable(selected = selected, role = Role.Tab, onClick = onSelect)
                 // Merged, and only while collapsed: expanded already reads as
                 // one row through its own visible label, and merging then too
