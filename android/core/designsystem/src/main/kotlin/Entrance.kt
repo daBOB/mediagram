@@ -107,11 +107,18 @@ private class EntranceNode(spec: EntranceElement) :
         if (isAttached) invalidatePlacement()
     }
 
-    private fun play() {
+    private fun play(fromMeasure: Boolean = false) {
         started = true
         spec.seen?.value = true
         // Read at each start, so the setting turned on or off reaches the next entrance.
-        if (currentValueOf(LocalReducedMotion)) return toRest()
+        if (currentValueOf(LocalReducedMotion)) {
+            toRest()
+            // Started from onPlaced or a reused node's new spec, the layer block
+            // still holds the animatables it last read; from measure, the block
+            // about to be built reads these.
+            if (!fromMeasure && isAttached) invalidatePlacement()
+            return
+        }
         coroutineScope.launch { fade.animateTo(1f, tween(spec.fadeMs, spec.delayMs, spec.easing)) }
         coroutineScope.launch { move.animateTo(1f, tween(spec.durationMs, spec.delayMs, spec.easing)) }
     }
@@ -143,7 +150,7 @@ private class EntranceNode(spec: EntranceElement) :
 
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
         // With nothing to play, start before this placement draws: onPlaced comes after it.
-        if (!started && currentValueOf(LocalReducedMotion)) play()
+        if (!started && currentValueOf(LocalReducedMotion)) play(fromMeasure = true)
         val placeable = measurable.measure(constraints)
         return layout(placeable.width, placeable.height) {
             placeable.placeWithLayer(0, 0) {
