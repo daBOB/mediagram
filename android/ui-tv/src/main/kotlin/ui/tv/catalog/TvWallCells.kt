@@ -77,22 +77,24 @@ internal fun sectionCrossingsOf(
  * The space above [cell] in a wall, carried by each cell rather than by the grid's arrangement,
  * which would put one gap around the head, a section's heading and the lines alike. Between two
  * lines of a section, the grid's line gap; under the head, `.shelf-head`'s margin; around a
- * heading, `.shelf-sub`'s 40 above and 20 below (`catalog.css:11,98`).
+ * heading, `.shelf-sub`'s 40 above and 20 below (`catalog.css:11,98`) — or, for a heading drawn in
+ * `RowHead`, its `.dept-row`'s 44 above and `.row-head`'s 20 below (`departments.css:53`, `home.css:194`).
  */
 internal fun spaceAbove(
     cell: WallCell,
     hasHeader: Boolean,
     headings: Map<Int, String>,
     columns: Int,
+    rowHead: Boolean = false,
 ): Dp =
     when (cell) {
         WallCell.Header -> 0.dp
-        is WallCell.Heading -> if (!hasHeader && headings[0] == cell.label) 0.dp else ShelfSubAbove
+        is WallCell.Heading -> if (!hasHeader && headings[0] == cell.label) 0.dp else if (rowHead) DeptRowTop else ShelfSubAbove
         is WallCell.Plate -> {
             val sectionStart = headings.keys.filter { it <= cell.index }.maxOrNull()
             when {
                 cell.index - (sectionStart ?: 0) >= columns -> if (columns == Columns) WallLineGap else TileGap
-                sectionStart != null -> ShelfSubBelow
+                sectionStart != null -> if (rowHead) RowHeadBelow else ShelfSubBelow
                 hasHeader -> ShelfHeadBelow
                 else -> 0.dp
             }

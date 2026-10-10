@@ -166,7 +166,7 @@ fun <T> TvWall(
                 // heading — the reuse a lazy grid only does between items of one declared type.
                 contentType = { cell -> cell::class },
             ) { cell ->
-                Box(Modifier.padding(top = spaceAbove(cell, header != null, headings, columns))) {
+                Box(Modifier.padding(top = spaceAbove(cell, header != null, headings, columns, rowHead = headingStyle == RowHead))) {
                     when (cell) {
                         WallCell.Header ->
                             CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {

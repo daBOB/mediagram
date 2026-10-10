@@ -76,6 +76,22 @@ class TvPageSpacingTest : TvScreenStateTest() {
         assertEquals(20 * TvScale, (bounds("p$Columns").top - heading.bottom).value, OnePixel, "`.shelf-sub` margin-bottom")
     }
 
+    /** A department's section heads are `.row-head`s inside a `.dept-row`, not `.shelf-sub`s. */
+    @Test
+    fun aRowHeadHeadingTakesTheDeptRowAndRowHeadMargins() {
+        show {
+            TvWall(
+                items = items(Columns * 2), key = WallItem::id, restoreKey = null, onOpen = {}, headingStyle = RowHead,
+                headings = mapOf(Columns to "Films"),
+                plate = { item, modifier, _ -> FillPlate(item, modifier) },
+            )
+        }
+        val heading = compose.onNodeWithText("Films").getUnclippedBoundsInRoot()
+
+        assertEquals(44 * TvScale, (heading.top - bounds("p0").bottom).value, OnePixel, "`.dept-row` margin-top")
+        assertEquals(20 * TvScale, (bounds("p$Columns").top - heading.bottom).value, OnePixel, "`.row-head` margin-bottom")
+    }
+
     @Test
     fun aWallOfTilesStandsUnderItsHeadByTheHeadsMargin() {
         show {

@@ -331,6 +331,9 @@ woff2 sources — Newsreader's italic too (`newsreader_italic.ttf`), so a quote
 is the web's italic rather than the roman slanted; OFL licences ship in
 `android/core/designsystem/licenses/`.
 
+Figures are Geist 400 here, the web's weight, and on the television. The phone
+still draws them at Geist 500, which some of its call sites lean on.
+
 **Character:** A press catalogue's pairing, now with the web's own third
 voice added for chrome. Fraunces names things — it has the weight and the
 slight eccentricity of a title set on a cover, at arm's length or, on a page
