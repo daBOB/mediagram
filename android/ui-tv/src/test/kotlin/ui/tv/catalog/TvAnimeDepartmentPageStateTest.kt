@@ -5,11 +5,13 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.font.FontWeight
 import catalog.AnimeLibrary
 import catalog.CollectionKind
 import catalog.Division
 import catalog.Entry
 import catalog.animeDepartmentOf
+import designsystem.TvType
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -17,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.test.assertEquals
 
 /**
  * [TvAnimeDepartmentPage] over real [animeDepartmentOf] output — replaces
@@ -53,6 +56,19 @@ class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Dragonball").assertIsDisplayed()
         compose.onNodeWithText("Films").assertIsDisplayed()
         compose.onNodeWithText("your-name").assertIsDisplayed()
+    }
+
+    /** The web builds both sections with `deptRow`, so `.row-head h2`: Geist 600, not a shelf's Fraunces `.shelf-sub`. */
+    @Test
+    @Config(qualifiers = TALL_ENOUGH_FOR_BOTH_LINES)
+    fun theSectionHeadsAreGeist600AsTheWebsRowHeads() {
+        val library = AnimeLibrary(shows = listOf(show("Dragonball")), films = listOf(film("your-name")))
+        show { TvAnimeDepartmentPage(animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
+
+        for (head in listOf("Series", "Films")) {
+            assertEquals(TvType.bodyMedium.fontFamily, styleOf(head).fontFamily)
+            assertEquals(FontWeight.SemiBold, styleOf(head).fontWeight)
+        }
     }
 
     @Test

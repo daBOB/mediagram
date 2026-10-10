@@ -77,7 +77,9 @@ internal fun TvAnimeDepartmentPage(
                 onOpen = { entry -> openEntry(entry, onOpenTitle, onOpenCollection) },
                 gridState = gridState,
                 headerHoldsNoStop = resumeCards.isEmpty(),
+                // `deptRow`'s `.row-head h2` on the web (`anime-department.js:61,65`), not a shelf's `.shelf-sub`.
                 headings = headings,
+                headingStyle = RowHead,
                 header = {
                     Column {
                         Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {

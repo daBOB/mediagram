@@ -95,7 +95,9 @@ internal fun TvFranchisePage(
                     )
                 }
             },
+            // `deptRow`'s `.row-head h2` on the web (`collections-page.js:115`), not a shelf's `.shelf-sub`.
             headings = mapOf(0 to "In release order"),
+            headingStyle = RowHead,
             plate = { set, modifier, onOpen ->
                 val stop = modifier.focusRequester(rememberStableRequester(firstFilm.takeIf { set.setId == franchise.films.first().setId }))
                 TvEntryPlate(Entry.Film(set), positions, watchedIds, onOpen, stop, heldIds)

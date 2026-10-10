@@ -25,6 +25,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.first
 import ui.tv.catalog.home.TvBandHeading
@@ -69,10 +70,9 @@ private val CacheBehind = 320.dp
  * back to the first plate, so the wall is never left with nothing focused.
  *
  * [header] stands above the plates and scrolls with them ([headerHoldsNoStop]:
- * see [passesEntryOn]); [headings] start a
- * labelled line of plates before the item at each index (a genre page's
- * Movies, then its Series); [columns] is fewer than [Columns] for a wall of
- * wider art tiles.
+ * see [passesEntryOn]); [headings] start a labelled line of plates before the
+ * item at each index (a genre page's Movies, then its Series), set in
+ * [headingStyle]; [columns] is fewer than [Columns] for a wall of wider art tiles.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -84,11 +84,11 @@ fun <T> TvWall(
     header: (@Composable () -> Unit)? = null,
     headerHoldsNoStop: Boolean = false,
     headings: Map<Int, String> = emptyMap(),
+    headingStyle: TextStyle = ShelfSub,
     columns: Int = Columns,
-    // Hoisted by a caller that also needs this wall's own scroll position —
-    // a department page's own bar blend, read live through the same
-    // instance rather than a second, disagreeing one this wall kept to
-    // itself.
+    // Hoisted by a caller that also needs this wall's own scroll position — a
+    // department page's own bar blend, read live through the same instance
+    // rather than a second, disagreeing one this wall kept to itself.
     gridState: LazyGridState = rememberLazyGridState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = CacheAhead, behind = CacheBehind) }),
     plate: @Composable (item: T, modifier: Modifier, onOpen: () -> Unit) -> Unit,
 ) {
@@ -174,7 +174,7 @@ fun <T> TvWall(
                                 val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
                                 Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
                             }
-                        is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = ShelfSub)
+                        is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = headingStyle)
                         is WallCell.Plate -> {
                             val item = items[cell.index]
                             val crossingRequester = crossingFocusRequesters[cell.index]

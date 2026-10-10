@@ -16,8 +16,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.text.font.FontWeight
 import catalog.Franchise
 import catalog.FranchisePage
+import designsystem.TvType
 import model.Kind
 import model.WatchSnapshot
 import org.junit.Test
@@ -50,6 +52,15 @@ class TvFranchisePageStateTest : TvScreenStateTest() {
         compose.onNodeWithText("two films · 1999–2003").assertExists()
         compose.onNodeWithText("Two films about an adventure.").assertExists()
         compose.onNodeWithText("In release order").assertExists()
+    }
+
+    /** The web's `deptRow`, so `.row-head h2`: Geist 600, not a shelf's Fraunces `.shelf-sub`. */
+    @Test
+    fun theFilmsHeadIsGeist600AsTheWebsRowHead() {
+        showPage(overview = null)
+
+        assertEquals(TvType.bodyMedium.fontFamily, styleOf("In release order").fontFamily)
+        assertEquals(FontWeight.SemiBold, styleOf("In release order").fontWeight)
     }
 
     @Test
