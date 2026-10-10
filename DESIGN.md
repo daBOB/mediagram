@@ -323,11 +323,13 @@ value in this palette clears 4.5:1 on Ground, Page, Sunk and Sidebar, held by
 ## Typography
 
 **Display Font:** Fraunces (variable, `wght` 500–600, `opsz` 28–112)
-**Body Font:** Newsreader (variable, `wght` 400–600, `opsz` 16)
+**Body Font:** Newsreader (variable, `wght` 400–600, `opsz` 16; upright, and a true italic for quotes)
 **Interface Font:** Geist (variable, `wght` 400–600)
 
 All three are the exact files the web player loads, decompressed from the same
-woff2 sources; OFL licences ship in `android/core/designsystem/licenses/`.
+woff2 sources — Newsreader's italic too (`newsreader_italic.ttf`), so a quote
+is the web's italic rather than the roman slanted; OFL licences ship in
+`android/core/designsystem/licenses/`.
 
 **Character:** A press catalogue's pairing, now with the web's own third
 voice added for chrome. Fraunces names things — it has the weight and the

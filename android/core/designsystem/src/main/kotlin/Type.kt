@@ -25,6 +25,7 @@ package designsystem
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import com.mediagram.android.core.designsystem.R
@@ -47,16 +48,19 @@ import com.mediagram.android.core.designsystem.R
  * enough to what every call site here actually asks for that neither showed
  * the failure the top note describes, unlike Fraunces.
  */
-private fun read(weight: Int) =
-    Font(
-        resId = R.font.newsreader,
-        weight = FontWeight(weight),
-        variationSettings =
-            FontVariation.Settings(
-                FontVariation.weight(weight),
-                FontVariation.Setting("opsz", READ_OPTICAL),
-            ),
-    )
+private fun read(
+    weight: Int,
+    italic: Boolean = false,
+) = Font(
+    resId = if (italic) R.font.newsreader_italic else R.font.newsreader,
+    weight = FontWeight(weight),
+    style = if (italic) FontStyle.Italic else FontStyle.Normal,
+    variationSettings =
+        FontVariation.Settings(
+            FontVariation.weight(weight),
+            FontVariation.Setting("opsz", READ_OPTICAL),
+        ),
+)
 
 private fun interfaceFont(weight: Int) =
     Font(
@@ -83,8 +87,13 @@ internal val Display =
         Font(resId = R.font.fraunces_display_600, weight = FontWeight.SemiBold),
     )
 
-/** Newsreader: everything meant to be read as a sentence or a figure. */
-internal val Read = FontFamily(read(400), read(500), read(600))
+/**
+ * Newsreader: everything meant to be read as a sentence or a figure. Its
+ * italic is the web's own italic file, not the roman slanted: a pull-quote
+ * asks for `FontStyle.Italic` and gets the true cut, single-storey *a* and
+ * all. Only 400 is set in italic anywhere, so only 400 ships.
+ */
+internal val Read = FontFamily(read(400), read(500), read(600), read(400, italic = true))
 
 /**
  * Geist: the web's interface face — navigation, captions, the spaced-caps
