@@ -12,6 +12,10 @@ import designsystem.LocalIndicationTone
  * dialog on the page's colours, the notice bar on their inverse. The focus
  * ring stays the stage coral (`copy(ink = )` leaves it): intended, it shows on
  * either surface.
+ *
+ * Also for controls over artwork, the cover and the Featured reel, which are
+ * dark in either theme: they tint in the artwork's light ink, where the light
+ * theme's page ink would be dark on dark and vanish.
  */
 @Composable
 internal fun IndicationInk(

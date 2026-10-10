@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import designsystem.LocalReducedMotion
 import kotlinx.coroutines.delay
 import model.MediaSet
+import ui.chrome.IndicationInk
 
 /** The cover's own outer bounds, for a test to check what sits under it never overlaps them. */
 internal const val HOME_COVER_TEST_TAG = "home-cover"
@@ -152,45 +153,47 @@ internal fun HomeCover(
                     }
                 },
     ) {
-        val columnWidth = maxWidth
-        val set = films[page]
-        // The old slide goes at once and the new one comes up out of the black
-        // ground (`home.css:15,18`, `home-cover.js:62`), so two films never
-        // share the screen. Keyed by id, so a refresh handing over the same
-        // film with new details redraws it in place rather than turning.
-        key(set.setId) {
-            // Decided once per slide, so the flag flipping mid-fade doesn't
-            // strip the modifiers from the slide that set it.
-            val fromArrival = remember { turnedTo == null && !arrived.value }
-            val turning = remember { fromArrival || turnedTo == set.setId }
-            CoverSlide(
-                set = set,
-                width = width,
-                columnWidth = columnWidth,
-                compact = compact,
-                minHeight = coverMinHeight,
-                watchlisted = set.setId in watchlist,
-                turning = turning,
-                arrived = if (fromArrival) arrived else null,
-                onPlay = { onPlay(set) },
-                onDetails = { onOpenTitle(set.setId) },
-                onToggleWatchlist = { listed -> onToggleWatchlist(set.setId, listed) },
-            )
-        }
-        if (fading && set.setId == turnedTo) CoverTapShield()
-        if (films.size > 1) {
-            CoverPager(
-                count = films.size,
-                current = page,
-                rotates = rotates,
-                paused = paused,
-                onTogglePause = { paused = !paused },
-                onPick = turn,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = gutterFor(width), bottom = if (compact) 40.dp else 18.dp),
-            )
+        IndicationInk(OnImage) {
+            val columnWidth = maxWidth
+            val set = films[page]
+            // The old slide goes at once and the new one comes up out of the black
+            // ground (`home.css:15,18`, `home-cover.js:62`), so two films never
+            // share the screen. Keyed by id, so a refresh handing over the same
+            // film with new details redraws it in place rather than turning.
+            key(set.setId) {
+                // Decided once per slide, so the flag flipping mid-fade doesn't
+                // strip the modifiers from the slide that set it.
+                val fromArrival = remember { turnedTo == null && !arrived.value }
+                val turning = remember { fromArrival || turnedTo == set.setId }
+                CoverSlide(
+                    set = set,
+                    width = width,
+                    columnWidth = columnWidth,
+                    compact = compact,
+                    minHeight = coverMinHeight,
+                    watchlisted = set.setId in watchlist,
+                    turning = turning,
+                    arrived = if (fromArrival) arrived else null,
+                    onPlay = { onPlay(set) },
+                    onDetails = { onOpenTitle(set.setId) },
+                    onToggleWatchlist = { listed -> onToggleWatchlist(set.setId, listed) },
+                )
+            }
+            if (fading && set.setId == turnedTo) CoverTapShield()
+            if (films.size > 1) {
+                CoverPager(
+                    count = films.size,
+                    current = page,
+                    rotates = rotates,
+                    paused = paused,
+                    onTogglePause = { paused = !paused },
+                    onPick = turn,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = gutterFor(width), bottom = if (compact) 40.dp else 18.dp),
+                )
+            }
         }
     }
 }

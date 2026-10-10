@@ -43,6 +43,8 @@ import model.MediaSet
 import ui.common.catalog.rememberTitleInfo
 import uniffi.mediagram_core.TitleInfo
 import ui.chrome.NoDialogAnimation
+import ui.chrome.IndicationInk
+import ui.catalog.home.OnImage
 
 /** How long a slide holds before the next — the web's `HOLD_MS`. */
 private const val HOLD_MS = 7_000L
@@ -81,37 +83,39 @@ internal fun FeaturedReel(
             index = stepFrom(index, 1, films.size)
         }
 
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            // The web's `.featured-slide` opacity transition, `1200ms ease`
-            // (`playback.css:477`). "Remove animations" scales it to nothing,
-            // as the web's reduced motion removes it, and the poster's drift
-            // reads the setting itself, so the reel needs no read of its own.
-            Crossfade(targetState = index, animationSpec = tween(FADE_MS, easing = Motion.CssEase), label = "featured") { at ->
-                val set = films[at]
-                FeaturedSlide(
-                    set = set,
-                    count = "Featured · ${at + 1} / ${films.size}",
-                    info = rememberTitleInfo(set.posterKey, titleInfo),
-                    paused = paused,
-                    onTogglePause = { paused = !paused },
-                    onPlay = { onClose(); onPlay(set) },
-                    onDetails = { onClose(); onDetails(set) },
+        IndicationInk(OnImage) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                // The web's `.featured-slide` opacity transition, `1200ms ease`
+                // (`playback.css:477`). "Remove animations" scales it to nothing,
+                // as the web's reduced motion removes it, and the poster's drift
+                // reads the setting itself, so the reel needs no read of its own.
+                Crossfade(targetState = index, animationSpec = tween(FADE_MS, easing = Motion.CssEase), label = "featured") { at ->
+                    val set = films[at]
+                    FeaturedSlide(
+                        set = set,
+                        count = "Featured · ${at + 1} / ${films.size}",
+                        info = rememberTitleInfo(set.posterKey, titleInfo),
+                        paused = paused,
+                        onTogglePause = { paused = !paused },
+                        onPlay = { onClose(); onPlay(set) },
+                        onDetails = { onClose(); onDetails(set) },
+                    )
+                }
+                CatalogueTextButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .semantics { contentDescription = "Close" },
+                ) { Text("✕", color = Color.White) }
+                FeaturedNav(
+                    films = films,
+                    current = index,
+                    onStep = { by -> index = stepFrom(index, by, films.size) },
+                    onJump = { index = it },
+                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing),
                 )
             }
-            CatalogueTextButton(
-                onClick = onClose,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .semantics { contentDescription = "Close" },
-            ) { Text("✕", color = Color.White) }
-            FeaturedNav(
-                films = films,
-                current = index,
-                onStep = { by -> index = stepFrom(index, by, films.size) },
-                onJump = { index = it },
-                modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing),
-            )
         }
     }
 }
