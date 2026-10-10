@@ -3,6 +3,7 @@ package ui.tv.catalog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
@@ -34,9 +35,6 @@ import ui.common.catalog.GENRE_ROW_TILE_ASPECT
 import ui.common.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.rememberStableRequester
-
-/** How wide a poster is on a department page's film and entry rows. */
-internal val DeptTileWidth = 160.dp
 
 /**
  * How wide a genre tile is on the Movies department's own row: the phone's
@@ -78,26 +76,29 @@ internal fun DeptRow(
     val inRow = remember { mutableStateOf(false) }
     val state = rememberRowState(films.map(MediaSet::setId), rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
-    LazyRow(
-        state = state,
-        modifier =
-            Modifier
-                .padding(top = RowHeadBelow)
-                .onFocusChanged { s ->
-                    inRow.value = s.hasFocus
-                    if (s.hasFocus) onSectionFocused?.invoke()
-                },
-        horizontalArrangement = Arrangement.spacedBy(StripGap),
-    ) {
-        itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
-            TvPlate(
-                title = set.title,
-                posterPath = set.posterPath?.let(::File),
-                onOpen = { onOpenTitle(set.setId) },
-                modifier = Modifier.width(DeptTileWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
-                caption = factsLine(set.year, set.durationSecs),
-                held = set.setId in heldIds,
-            )
+    BoxWithConstraints {
+        val plateWidth = stripPlateWidth(maxWidth)
+        LazyRow(
+            state = state,
+            modifier =
+                Modifier
+                    .padding(top = RowHeadBelow)
+                    .onFocusChanged { s ->
+                        inRow.value = s.hasFocus
+                        if (s.hasFocus) onSectionFocused?.invoke()
+                    },
+            horizontalArrangement = Arrangement.spacedBy(StripGap),
+        ) {
+            itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
+                TvPlate(
+                    title = set.title,
+                    posterPath = set.posterPath?.let(::File),
+                    onOpen = { onOpenTitle(set.setId) },
+                    modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
+                    caption = factsLine(set.year, set.durationSecs),
+                    held = set.setId in heldIds,
+                )
+            }
         }
     }
 }
@@ -123,26 +124,29 @@ internal fun DeptEntryRow(
     val inRow = remember { mutableStateOf(false) }
     val state = rememberRowState(entries.map { keyOf(it) }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
-    LazyRow(
-        state = state,
-        modifier =
-            Modifier
-                .padding(top = RowHeadBelow)
-                .onFocusChanged { s ->
-                    inRow.value = s.hasFocus
-                    if (s.hasFocus) onSectionFocused?.invoke()
-                },
-        horizontalArrangement = Arrangement.spacedBy(StripGap),
-    ) {
-        itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
-            TvEntryPlate(
-                entry = entry,
-                positions = positions,
-                watchedIds = watchedIds,
-                onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
-                modifier = Modifier.width(DeptTileWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
-                heldIds = heldIds,
-            )
+    BoxWithConstraints {
+        val plateWidth = stripPlateWidth(maxWidth)
+        LazyRow(
+            state = state,
+            modifier =
+                Modifier
+                    .padding(top = RowHeadBelow)
+                    .onFocusChanged { s ->
+                        inRow.value = s.hasFocus
+                        if (s.hasFocus) onSectionFocused?.invoke()
+                    },
+            horizontalArrangement = Arrangement.spacedBy(StripGap),
+        ) {
+            itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
+                TvEntryPlate(
+                    entry = entry,
+                    positions = positions,
+                    watchedIds = watchedIds,
+                    onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
+                    modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
+                    heldIds = heldIds,
+                )
+            }
         }
     }
 }

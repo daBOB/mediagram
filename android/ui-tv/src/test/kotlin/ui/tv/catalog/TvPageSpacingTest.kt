@@ -16,9 +16,11 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import designsystem.TvScale
 import kotlin.test.assertEquals
 import model.Kind
@@ -160,6 +162,16 @@ class TvPageSpacingTest : TvScreenStateTest() {
         assertEquals(44 * TvScale, head.top.value, OnePixel, "`.dept-row` margin-top")
         assertEquals(20 * TvScale, (first.top - head.bottom).value, OnePixel, "`.row-head` margin-bottom")
         assertEquals(14 * TvScale, (second.left - first.right).value, OnePixel, "`.grid.plates.strip` gap")
+        assertEquals((960 - 7 * 14 * TvScale) / 8, first.width.value, OnePixel, "an eighth of the screen-wide row, less its gaps")
+    }
+
+    /** `.grid.plates.strip`'s `minmax(8.5rem, calc((100% - 7 * 14px) / 8))`, where every row of posters used to be 160dp. */
+    @Test
+    fun aStripPlateIsAnEighthOfItsRowAndNeverUnderTheFloor() {
+        assertEquals(136 * TvScale, StripPlateFloor.value, "8.5rem")
+        assertEquals(StripPlateFloor, stripPlateWidth(800.dp), "an 800dp row's eighth is under the floor")
+        assertEquals((1000 - 7 * 14 * TvScale) / 8, stripPlateWidth(1000.dp).value, 0.001f, "a wide row's eighth, less seven gaps")
+        assertEquals(StripPlateFloor, stripPlateWidth(Dp.Infinity), "a row with no bound")
     }
 
     @Test

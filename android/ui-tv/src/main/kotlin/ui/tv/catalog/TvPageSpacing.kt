@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.isFinite
 import designsystem.tvDp
 
 /*
@@ -24,6 +26,19 @@ internal val DeptRowTop = 44.tvDp
 
 /** `.grid.plates.strip`'s gap (`catalog.css:36`): a row of posters on Home and in a department. */
 internal val StripGap = 14.tvDp
+
+/** `.grid.plates.strip`'s column floor, `8.5rem` (`catalog.css:35`). */
+internal val StripPlateFloor = 136.tvDp
+
+/**
+ * A plate's width in a row of posters [rowWidth] wide: `.grid.plates.strip`'s
+ * `minmax(8.5rem, calc((100% - 7 * 14px) / 8))` (`catalog.css:35`), an eighth
+ * of the row less its gaps, never under the floor. The web's columns are a
+ * share of their own row, so each row measures itself and asks this rather
+ * than taking one fixed width; a row with no bound (inside a sideways scroll)
+ * takes the floor.
+ */
+internal fun stripPlateWidth(rowWidth: Dp): Dp = if (rowWidth.isFinite) maxOf(StripPlateFloor, (rowWidth - StripGap * 7) / 8) else StripPlateFloor
 
 /** `.resume-strip`'s gap (`home.css:218`): Continue's cards. */
 internal val ResumeGap = 16.tvDp
