@@ -19,7 +19,7 @@ import designsystem.Spacing
 import setup.LibraryOption
 import setup.LibraryPrompt
 import setup.libraryPromptFor
-import ui.catalog.CenteredMessage
+import ui.catalog.CenteredLoading
 
 private const val HEADING = "Which library should this device read?"
 
@@ -45,8 +45,8 @@ fun LibraryScreen(
     onLookAgain: () -> Unit,
 ) {
     when (val prompt = libraryPromptFor(choices, error)) {
-        // The web's words for the same wait (settings-telegram-forms.js:15).
-        LibraryPrompt.Waiting -> CenteredMessage("Reading the account's channels…")
+        // The web's words for the same wait (settings-telegram-forms.js:15), under the leader.
+        LibraryPrompt.Waiting -> CenteredLoading("Reading the account's channels…")
 
         is LibraryPrompt.LookAgain -> {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {

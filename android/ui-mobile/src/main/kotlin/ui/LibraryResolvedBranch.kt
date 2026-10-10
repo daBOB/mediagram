@@ -3,7 +3,7 @@ package ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
-import ui.catalog.CenteredMessage
+import ui.catalog.CenteredLoading
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
 import ui.common.FrameResolution
@@ -40,6 +40,6 @@ internal fun <T> ResolvedBranch(
     // arrives after it opened keeps the turn it opened with rather than
     // rising in a second time.
     LibraryBranch(if (outcome is FrameResolution.Resolved) destinationOf(outcome.value) else loading, menu, profile, browse, at, at::pop) {
-        if (outcome is FrameResolution.Resolved) content(outcome.value) else CenteredMessage("Loading your library…")
+        if (outcome is FrameResolution.Resolved) content(outcome.value) else CenteredLoading("Loading your library…")
     }
 }

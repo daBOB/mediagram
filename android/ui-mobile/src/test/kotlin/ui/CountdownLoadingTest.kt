@@ -69,8 +69,9 @@ class CountdownLoadingTest {
         assertNothingSpins()
     }
 
-    @Test fun choosingALibraryWaitsInTheWebsWords() {
+    @Test fun choosingALibraryWaitsUnderTheLeaderInTheWebsWords() {
         show { LibraryScreen(choices = null, error = null, onChoose = {}, onLookAgain = {}) }
+        assertLeaderShows()
         compose.onNodeWithText("Reading the account's channels…").assertIsDisplayed()
         assertNothingSpins()
     }
@@ -82,15 +83,23 @@ class CountdownLoadingTest {
         assertNothingSpins()
     }
 
-    @Test fun noScreenDrawsASpinner() {
+    /** The sources under `src/main/kotlin` whose text matches [pattern]. */
+    private fun sourcesMatching(pattern: Regex): List<String> {
         val sources = File("src/main/kotlin")
         assertTrue(sources.isDirectory, "the guard must run from ui-mobile, found no ${sources.absolutePath}")
-        val spinner = Regex("""^import androidx\.compose\.material3\.CircularProgressIndicator$""", RegexOption.MULTILINE)
-        val offenders =
-            sources.walkTopDown()
-                .filter { it.isFile && it.extension == "kt" && spinner.containsMatchIn(it.readText()) }
-                .map { it.path }
-                .toList()
+        return sources.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" && pattern.containsMatchIn(it.readText()) }
+            .map { it.path }
+            .toList()
+    }
+
+    @Test fun noScreenDrawsASpinner() {
+        val offenders = sourcesMatching(Regex("""^import androidx\.compose\.material3\.CircularProgressIndicator$""", RegexOption.MULTILINE))
         assertTrue(offenders.isEmpty(), "loading shows the countdown leader; spinners remain in: $offenders")
+    }
+
+    @Test fun noWaitIsStillWords() {
+        val offenders = sourcesMatching(Regex("""CenteredMessage\("Loading"""))
+        assertTrue(offenders.isEmpty(), "a wait shows the countdown leader (CenteredLoading); still words remain in: $offenders")
     }
 }

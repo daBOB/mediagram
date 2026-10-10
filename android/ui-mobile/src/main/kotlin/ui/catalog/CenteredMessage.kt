@@ -1,6 +1,8 @@
 package ui.catalog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -9,7 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import designsystem.CountdownLeader
 import designsystem.Spacing
+
+/** The leader stands this far above the words, as in the library's own wait (`shell.css:175`, `gap: 24px`). */
+private val LEADER_GAP = 24.dp
 
 /**
  * What a screen says when it has nothing to show.
@@ -25,11 +32,36 @@ internal fun CenteredMessage(message: String) {
         modifier = Modifier.fillMaxSize().padding(Spacing.extraLarge),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        MessageText(message)
     }
+}
+
+/**
+ * A wait inside a page: the film leader counting down (`index.html:100-116`)
+ * above [message], in [CenteredMessage]'s words. On the page's own ground,
+ * so the leader takes the page's inks, not its fixed ones for the dark.
+ *
+ * The web's in-page waits are words alone (`settings-telegram-forms.js:15`);
+ * the leader beside them is deliberate, so every wait in this app is the same one.
+ */
+@Composable
+internal fun CenteredLoading(message: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(Spacing.extraLarge),
+        verticalArrangement = Arrangement.spacedBy(LEADER_GAP, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CountdownLeader(ink = MaterialTheme.colorScheme.onSurfaceVariant, numeralInk = MaterialTheme.colorScheme.onSurface)
+        MessageText(message)
+    }
+}
+
+@Composable
+private fun MessageText(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+    )
 }

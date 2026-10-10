@@ -30,7 +30,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** The leader always stands on a dark ground, so its inks are the web's fixed ones over artwork (`styles/theme.css:99-100`). */
+/** The web's inks over artwork (`styles/theme.css:99-100`): the leader's own, where it stands on a dark ground. */
 private val RingInk = Color(0xD1F6F2EA)
 private val NumeralInk = Color(0xFFF6F2EA)
 
@@ -53,6 +53,10 @@ private var SemanticsPropertyReceiver.countdownNumeral by CountdownNumeral
  * once a second, and a numeral stepping 3 → 2 → 1 as each turn completes.
  * Decorative: whoever places it gives the wait its words.
  *
+ * [ink] draws the rings and the crosshair, [numeralInk] the figure. They
+ * default to the web's inks over artwork, for a dark ground; a wait on the
+ * page's own ground passes the page's inks, or the drawing vanishes on paper.
+ *
  * One clock drives both, turning [TURNS] times a cycle, so the numeral
  * steps on the frame the sweep completes. The sweep reads it only while
  * drawing; the numeral recomposes once a second. Under reduced motion there
@@ -64,6 +68,8 @@ fun CountdownLeader(
     modifier: Modifier = Modifier,
     size: Dp = 96.dp,
     accent: Color = MaterialTheme.colorScheme.primary,
+    ink: Color = RingInk,
+    numeralInk: Color = NumeralInk,
 ) {
     val turns =
         if (LocalReducedMotion.current) {
@@ -101,7 +107,7 @@ fun CountdownLeader(
                     measurer.measure(
                         numeral.toString(),
                         TextStyle(
-                            color = NumeralInk,
+                            color = numeralInk,
                             fontFamily = Display,
                             fontWeight = FontWeight.Medium,
                             fontSize = (44 * u).toSp(),
@@ -124,10 +130,10 @@ fun CountdownLeader(
                         )
                     }
                     // The rings, r 46 at 1.5 and r 38 at 1 (`index.html:106-107`).
-                    drawCircle(RingInk, radius = 46 * u, style = Stroke(1.5f * u))
-                    drawCircle(RingInk, radius = 38 * u, style = Stroke(u))
+                    drawCircle(ink, radius = 46 * u, style = Stroke(1.5f * u))
+                    drawCircle(ink, radius = 38 * u, style = Stroke(u))
                     // The faintest line on the frame, at half the rings' ink (`film-leader.css:13-14`).
-                    drawPath(cross, RingInk, alpha = 0.5f, style = Stroke(u))
+                    drawPath(cross, ink, alpha = 0.5f, style = Stroke(u))
                     drawText(figure, topLeft = figureAt)
                 }
             },

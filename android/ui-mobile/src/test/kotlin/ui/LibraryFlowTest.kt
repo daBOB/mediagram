@@ -8,10 +8,12 @@ import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
+import designsystem.COUNTDOWN_LEADER_TEST_TAG
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkStatic
@@ -187,6 +189,8 @@ class LibraryFlowTest {
         title()
         restoreWhileLoading()
         compose.onNodeWithText("Loading your library…").assertIsDisplayed()
+        // The page's own wait, inside its frame: the leader in the page's inks.
+        compose.onNodeWithTag(COUNTDOWN_LEADER_TEST_TAG).assertIsDisplayed()
         compose.onNodeWithText("▶ Play").assertDoesNotExist()
         compose.runOnUiThread { fixture.catalogReady.complete(Unit) }
         compose.onNodeWithText("▶ Play").assertIsDisplayed()
