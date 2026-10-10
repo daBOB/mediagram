@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -57,6 +59,13 @@ private class CatalogueIndicationNode(
 
     override fun onAttach() {
         coroutineScope.launch {
+            // A lazy list parks a card mid-press and cancels this collector
+            // before its Release arrives; the reused node must start at rest.
+            presses.clear()
+            hovers.clear()
+            focuses.clear()
+            tint.snapTo(0f)
+            invalidateDraw()
             source.interactions.collect { interaction ->
                 when (interaction) {
                     is PressInteraction.Press -> presses += interaction
@@ -86,8 +95,17 @@ private class CatalogueIndicationNode(
             drawContent()
             drawRect(tone.ink.copy(alpha = tint.value))
         }
-        // ponytail: drawn on the bounds, not 4dp outside them as the web's
+        // ponytail: drawn inside the bounds, not 4dp outside them as the web's
         // outline-offset is; a clipped control would cut an outside ring off.
-        if (focuses.isNotEmpty()) drawRect(tone.ring, style = Stroke(RING.toPx()))
+        // Inset by half the stroke so the whole 2dp lands inside.
+        if (focuses.isNotEmpty()) {
+            val half = RING.toPx() / 2
+            drawRect(
+                tone.ring,
+                topLeft = Offset(half, half),
+                size = Size(size.width - 2 * half, size.height - 2 * half),
+                style = Stroke(RING.toPx()),
+            )
+        }
     }
 }
