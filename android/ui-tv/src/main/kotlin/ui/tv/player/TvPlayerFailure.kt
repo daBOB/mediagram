@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -16,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.CountdownLeader
+import designsystem.LocalCountdownStart
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
@@ -49,7 +51,8 @@ private fun TvPreparingLeader() {
         modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
         contentAlignment = Alignment.Center,
     ) {
-        CountdownLeader(size = TvLeaderSize, accent = Accent.CORAL.dark)
+        // A wait of its own, so its count starts at 3, not where the cold start's had got to.
+        CompositionLocalProvider(LocalCountdownStart provides null) { CountdownLeader(size = TvLeaderSize, accent = Accent.CORAL.dark) }
     }
 }
 

@@ -1,5 +1,8 @@
 package ui.tv
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -130,6 +133,38 @@ class TvLoadingLeaderTest : TvScreenStateTest() {
         assertDp(96.tvDp, drawing.right - drawing.left)
         compose.onNodeWithContentDescription("Loading").assertExists()
         compose.onNodeWithText("Loading", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun oneCountRunsThroughTheColdStartsWaitsButAPageWaitStartsAtThree() {
+        var wait by mutableIntStateOf(0)
+        compose.mainClock.autoAdvance = false
+        show {
+            TvColdStart {
+                when (wait) {
+                    0 -> TvLibraryLoading()
+                    1 -> TvProfilePicker(state = ProfileUiState.Loading, onChoose = {}, onStay = {}, onRetry = {})
+                    else -> TvCentredLoading("Reading the account's channels…")
+                }
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+
+        compose.mainClock.advanceTimeBy(1100)
+        assertEquals(2, numeral())
+        compose.runOnUiThread { wait = 1 }
+        compose.mainClock.advanceTimeByFrame()
+        assertEquals(2, numeral())
+        compose.runOnUiThread { wait = 2 }
+        compose.mainClock.advanceTimeByFrame()
+        assertEquals(3, numeral())
+    }
+
+    /** The leader's figure, read by name: its key is the design system's own, not visible from here. */
+    private fun numeral(): Int {
+        compose.waitForIdle()
+        val config = leader().fetchSemanticsNode().config
+        return config.single { it.key.name == "CountdownNumeral" }.value as Int
     }
 
     private fun leader() = compose.onNodeWithTag(COUNTDOWN_LEADER_TEST_TAG)

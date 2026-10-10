@@ -2,7 +2,9 @@ package ui.tv
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
@@ -14,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
+import designsystem.CountdownStart
+import designsystem.LocalCountdownStart
 import designsystem.Overscan
 import setup.AppearanceViewModel
 import setup.SetupUiState
@@ -51,15 +55,32 @@ fun TvApp() {
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
-        TvShell {
-            if (setupState is SetupUiState.Ready) {
-                TvProfileGate { profile ->
-                    TvLibrary(profile, onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
-                }
-            } else {
-                TvSetupStep(state = setupState, viewModel = setupViewModel)
-            }
+        TvShell { TvColdStart { TvStep(setupState, setupViewModel) } }
+    }
+}
+
+/**
+ * A cold start waits three times, on the setup check, the profile gate and
+ * the library. One count runs through all three, as the phone's does; a wait
+ * inside a page opts out with a `null` of its own.
+ */
+@Composable
+internal fun TvColdStart(content: @Composable () -> Unit) {
+    val coldStart = remember { CountdownStart() }
+    CompositionLocalProvider(LocalCountdownStart provides coldStart, content = content)
+}
+
+@Composable
+private fun TvStep(
+    setupState: SetupUiState,
+    setupViewModel: SetupViewModel,
+) {
+    if (setupState is SetupUiState.Ready) {
+        TvProfileGate { profile ->
+            TvLibrary(profile, onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
         }
+    } else {
+        TvSetupStep(state = setupState, viewModel = setupViewModel)
     }
 }
 

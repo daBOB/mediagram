@@ -3,12 +3,14 @@ package ui.tv
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.CountdownLeader
+import designsystem.LocalCountdownStart
 import designsystem.TvType
 import designsystem.tvDp
 
@@ -48,13 +50,16 @@ internal fun TvLibraryLoading() {
 @Composable
 internal fun TvPageLeader(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    CountdownLeader(
-        modifier = modifier,
-        size = TvLeaderSize,
-        accent = colors.primary,
-        ink = colors.onSurfaceVariant,
-        numeralInk = colors.onSurface,
-    )
+    // A wait of its own, so its count starts at 3, not where the cold start's had got to.
+    CompositionLocalProvider(LocalCountdownStart provides null) {
+        CountdownLeader(
+            modifier = modifier,
+            size = TvLeaderSize,
+            accent = colors.primary,
+            ink = colors.onSurfaceVariant,
+            numeralInk = colors.onSurface,
+        )
+    }
 }
 
 /** A wait that fills a page: [TvPageLeader] centred above [message], in [ui.tv.catalog.TvCenteredMessage]'s words. */
