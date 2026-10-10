@@ -52,7 +52,11 @@ internal fun TvPlayerTopBar(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(TvBarGap), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
             set?.takeIf { titleShown }?.let {
-                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
+                // Two lines where the web's `.what` keeps one (`playback.css:72-77`): a
+                // long series name ("Raumschiff Enterprise: Das nächste Jahrhundert")
+                // otherwise fills the TV's narrower title column and the episode
+                // label after it — the one part that says which episode — is cut.
+                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = Palette.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
                 // As stored, not shouted: the web prints the container and codecs in the case the index recorded them.
                 technicalLine(it).takeIf(String::isNotEmpty)?.let { line ->
                     Text(text = line, style = TvPlayerType.figures, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
