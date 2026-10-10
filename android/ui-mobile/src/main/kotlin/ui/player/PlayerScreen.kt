@@ -112,7 +112,7 @@ fun PlayerScreen(
     // A title with no run left has nothing to list.
     LaunchedEffect(episodes == null) { if (episodes == null) card.sidebarOpen = false }
     // A menu cannot outlive the card it opened from: with the card gone (an
-    // error, the preparing spinner) Back must not close something unseen.
+    // error, the title still opening) Back must not close something unseen.
     LaunchedEffect(barShown) { if (!barShown) card.closeMenu() }
     // A sidebar that takes the whole window covers the card and the top bar;
     // leaving them out keeps their buttons from sitting under it, in view or
@@ -173,7 +173,7 @@ fun PlayerScreen(
             episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list -> PlayerEpisodeSidebar(list, card, viewModel) }
 
             when (state) {
-                PlayerUiState.Preparing -> CenteredSpinner()
+                PlayerUiState.Preparing -> PreparingNote()
                 is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
                 PlayerUiState.Playing, PlayerUiState.Paused -> Unit
             }

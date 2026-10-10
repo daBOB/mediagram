@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +36,7 @@ import catalog.profile.WHO_RUNS_THIS
 import catalog.profile.kidsTag
 import designsystem.Spacing
 import model.Profile
+import ui.catalog.home.LibraryLoading
 import ui.settings.QuietPill
 
 private const val HEADING = "Who's watching?"
@@ -69,7 +69,8 @@ internal fun ProfilePickerScreen(
     actions: PickerActions,
 ) {
     when (state) {
-        ProfileUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        // Between the setup check and the library on every cold start: the same block, so the wait never flashes.
+        ProfileUiState.Loading -> LibraryLoading()
         is ProfileUiState.Picking -> PickerBody(state, actions)
         is ProfileUiState.Chosen -> Unit
     }

@@ -26,6 +26,16 @@ internal fun gutterFor(width: Dp): Dp = fluid(16f, 0.032f, 56f, width.value).dp
 /** Below this, the web drops to its phone layout: the cover grows with its own content, features stack in one column (`home.css:348`). */
 internal val CompactBreakpoint = 900.dp
 
+/**
+ * The cover story's height: 84% of the window on a phone, the web's
+ * `--cover-height` clamp beside (`theme.css:116`, `home.css:9`). The block the
+ * library loads under is the same height, so the cover arrives where it stood.
+ */
+internal fun coverHeightFor(
+    compact: Boolean,
+    windowHeight: Dp,
+): Dp = if (compact) (windowHeight.value * 0.84f).dp else fluid(620f, 0.635f, 705f, windowHeight.value).dp
+
 /** Below this (and above [CompactBreakpoint]), features hold two columns and the cover's own side column is hidden — the tablet's own width (`home.css:342`). */
 internal val WideBreakpoint = 1180.dp
 

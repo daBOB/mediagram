@@ -129,8 +129,7 @@ internal fun HomeCover(
     // this `LazyColumn` item's own unbounded height — the trap that once
     // collapsed a `HorizontalPager` here — and a short window (split
     // screen) can grow the text past the floor instead of clipping it.
-    val coverMinHeight =
-        if (compact) (windowHeight.value * 0.84f).dp else fluid(620f, 0.635f, 705f, windowHeight.value).dp
+    val coverMinHeight = coverHeightFor(compact, windowHeight)
 
     BoxWithConstraints(
         modifier =

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +24,7 @@ import setup.AppearanceViewModel
 import setup.SetupUiState
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import ui.catalog.home.LibraryLoading
 import ui.chrome.LibraryScaffold
 import ui.common.setup.SignInCompletion
 import ui.setup.LibraryScreen
@@ -78,8 +78,10 @@ private fun SetupStep(
     viewModel: SetupViewModel,
 ) {
     when (state) {
+        // The app's first paint, as the web's is (index.html:119-121): every launch
+        // but the first goes on to open the library, under the same block.
         SetupUiState.Checking -> {
-            LoadingIndicator()
+            LibraryLoading()
         }
 
         is SetupUiState.NeedsApplication -> {
@@ -166,12 +168,5 @@ private fun CentredText(message: String) {
         contentAlignment = Alignment.Center,
     ) {
         Text(text = message)
-    }
-}
-
-@Composable
-private fun LoadingIndicator() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
     }
 }

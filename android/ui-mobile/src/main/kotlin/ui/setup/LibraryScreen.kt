@@ -2,26 +2,24 @@ package ui.setup
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import designsystem.Spacing
 import setup.LibraryOption
 import setup.LibraryPrompt
 import setup.libraryPromptFor
+import ui.catalog.CenteredMessage
 
 private const val HEADING = "Which library should this device read?"
 
@@ -47,12 +45,8 @@ fun LibraryScreen(
     onLookAgain: () -> Unit,
 ) {
     when (val prompt = libraryPromptFor(choices, error)) {
-        LibraryPrompt.Waiting -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
-        }
+        // The web's words for the same wait (settings-telegram-forms.js:15).
+        LibraryPrompt.Waiting -> CenteredMessage("Reading the account's channels…")
 
         is LibraryPrompt.LookAgain -> {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.magazineHomeOf
+import ui.catalog.home.LibraryLoading
 import ui.common.catalog.DepartmentScrollStates
 import uniffi.mediagram_core.TitleInfo
 
@@ -62,7 +63,7 @@ internal fun CatalogScreen(
     titleInfo: suspend (String) -> TitleInfo? = { null },
 ) {
     when (state) {
-        CatalogUiState.Loading -> CenteredMessage("Loading your library…")
+        CatalogUiState.Loading -> LibraryLoading()
         CatalogUiState.Empty -> CenteredMessage("The library is empty.")
         is CatalogUiState.KidsEmpty -> CenteredMessage(state.message)
         is CatalogUiState.Failed -> CenteredMessage(state.message)
