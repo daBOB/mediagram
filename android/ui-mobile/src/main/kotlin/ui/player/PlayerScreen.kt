@@ -29,11 +29,7 @@ import player.PlayerViewModel
 import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
-import player.createListAndAdd
 import player.retry
-import player.setInList
-import player.setKidsMark
-import player.toggleWatchlist
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -141,21 +137,20 @@ fun PlayerScreen(
         ) {
             player?.let { current ->
                 VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
-                if (cardShown) {
-                    PlayerCardLayer(
-                        player = current,
-                        viewModel = viewModel,
-                        card = card,
-                        choices = choices,
-                        upNext = upNext,
-                        statsShown = statsShown,
-                        hasEpisodes = episodes != null,
-                        catalogedDurationSecs = openSet?.durationSecs,
-                        onToggleStats = { statsShown = !statsShown },
-                        onEnterPip = pip.enterPip.takeIf { pip.supported },
-                        onScrubbingChanged = { scrubbing = it },
-                    )
-                }
+                PlayerCardLayer(
+                    shown = cardShown,
+                    player = current,
+                    viewModel = viewModel,
+                    card = card,
+                    choices = choices,
+                    upNext = upNext,
+                    statsShown = statsShown,
+                    hasEpisodes = episodes != null,
+                    catalogedDurationSecs = openSet?.durationSecs,
+                    onToggleStats = { statsShown = !statsShown },
+                    onEnterPip = pip.enterPip.takeIf { pip.supported },
+                    onScrubbingChanged = { scrubbing = it },
+                )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
                 if (!isInPip) {
@@ -190,19 +185,7 @@ fun PlayerScreen(
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
-                marks = {
-                    PlayerMarks(
-                        marks = marks,
-                        notice = actionNotice,
-                        actions =
-                            PlayerMarksActions(
-                                onToggleWatchlist = viewModel::toggleWatchlist,
-                                onKidsMark = viewModel::setKidsMark,
-                                onSetInList = viewModel::setInList,
-                                onCreateList = viewModel::createListAndAdd,
-                            ),
-                    )
-                },
+                marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }
