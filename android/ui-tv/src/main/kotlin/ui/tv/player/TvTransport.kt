@@ -22,6 +22,7 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberSeekBackButtonState
 import androidx.media3.ui.compose.state.rememberSeekForwardButtonState
 import designsystem.Spacing
+import designsystem.tvDp
 import ui.common.player.TransportIcons
 
 /**
@@ -37,6 +38,13 @@ import ui.common.player.TransportIcons
  * the start of this one". ☰ is there while the run has an episode list.
  *
  * Up from any of them reaches the tools, at CC — the first of them.
+ *
+ * Drawn as the tablet draws it — its characters and its icons, −15 and +15
+ * as words in the interface face — at the web's sizes: 44px controls
+ * [TransportGap] apart, play/pause the larger `.tsp.big`, a skip as wide as
+ * its label plus [SkipPadding]. ⓘ and ☰ follow ⏭ in the one centred row,
+ * as on the tablet, where the web stands them at the row's far end
+ * (`.card-end`, `player-card.css:49-55`).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -57,11 +65,11 @@ internal fun TvTransport(
 
     FlowRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(TransportGap, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        TvGlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = extras.onRestart, modifier = toTools.then(atStart), padding = Spacing.small)
+        TvGlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = extras.onRestart, modifier = toTools.then(atStart))
         if (run.inRun) {
             TvIconButton(icon = TransportIcons.Previous, description = "Previous", enabled = run.hasPrevious, onClick = extras.onPrevious, modifier = toTools)
         }
@@ -71,7 +79,7 @@ internal fun TvTransport(
             enabled = seekBack.isEnabled,
             onClick = seekBack::onClick,
             modifier = toTools,
-            padding = Spacing.small,
+            padding = SkipPadding,
         )
         TvIconButton(
             icon = if (playPause.showPlay) TransportIcons.Play else TransportIcons.Pause,
@@ -79,6 +87,7 @@ internal fun TvTransport(
             enabled = playPause.isEnabled,
             onClick = playPause::onClick,
             modifier = toTools.focusRequester(focus.playPause),
+            big = true,
         )
         TvGlyphButton(
             glyph = "+${seekForward.seekForwardAmountMs / 1_000}",
@@ -86,7 +95,7 @@ internal fun TvTransport(
             enabled = seekForward.isEnabled,
             onClick = seekForward::onClick,
             modifier = toTools,
-            padding = Spacing.small,
+            padding = SkipPadding,
         )
         if (run.inRun) {
             TvIconButton(icon = TransportIcons.Next, description = "Next", enabled = run.hasNext, onClick = extras.onPlayNext, modifier = toTools)
@@ -97,11 +106,16 @@ internal fun TvTransport(
             enabled = true,
             onClick = extras.onToggleStats,
             modifier = (if (extras.onOpenEpisodes == null) toTools.then(atEnd) else toTools).semantics { stateDescription = if (extras.statsShown) "On" else "Off" },
-            padding = Spacing.small,
             dimmed = !extras.statsShown,
         )
         extras.onOpenEpisodes?.let { open ->
-            TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toTools.then(atEnd).focusRequester(focus.episodes), padding = Spacing.small)
+            TvGlyphButton(glyph = "☰", description = "Episodes", enabled = true, onClick = open, modifier = toTools.then(atEnd).focusRequester(focus.episodes))
         }
     }
 }
+
+/** `.transport`'s gap, 0.6rem (`playback.css:174-178`). */
+private val TransportGap = 9.6.tvDp
+
+/** `#skip-back`/`#skip-forward`'s padding either side, 0.5rem (`playback.css:207-214`). */
+private val SkipPadding = 8.tvDp

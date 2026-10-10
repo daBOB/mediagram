@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
+import designsystem.tvDp
 import model.MediaSet
 import player.PlayerMarksState
 import player.technicalLine
@@ -31,6 +32,12 @@ internal const val TvPlayerTitleTag = "tv-player-title"
  * straight back to it. Beside the episode list there is room for the marks
  * or the title, not both: the marks stay, being pressed, and the list's
  * "Now playing" row names the title meanwhile ([titleShown]).
+ *
+ * Set as the web's `.hud-top`: the title in Fraunces at `.hud .what`'s size,
+ * the marks and Notes as `.ghost` labels in the interface face, [TvBarGap]
+ * between them — transparent until focused, as the tablet's are, where the
+ * web rims each in a hairline. The file line under the title is the
+ * television's own: the web's and the tablet's bars carry the title alone.
  */
 @Composable
 internal fun TvPlayerTopBar(
@@ -42,21 +49,21 @@ internal fun TvPlayerTopBar(
     modifier: Modifier = Modifier,
     titleShown: Boolean = true,
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.medium), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(TvBarGap), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
             set?.takeIf { titleShown }?.let {
-                Text(text = titleLine(it), style = TvPlayerType.title, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
+                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = Palette.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
                 // As stored, not shouted: the web prints the container and codecs in the case the index recorded them.
                 technicalLine(it).takeIf(String::isNotEmpty)?.let { line ->
-                    Text(text = line, style = TvPlayerType.body, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = line, style = TvPlayerType.figures, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
         TvMarksRail(marks = marks, actions = markActions, first = focus.marks, down = focus.seekBar, lastInBar = onToggleNotes == null)
         onToggleNotes?.let { toggle ->
-            TvOverlayButton(
+            TvCardButton(
                 text = "Notes",
-                style = TvPlayerType.body,
+                style = TvPlayerType.ghost,
                 enabled = true,
                 onClick = toggle,
                 modifier =
@@ -66,8 +73,14 @@ internal fun TvPlayerTopBar(
                             right = FocusRequester.Cancel
                             if (marks == null) left = FocusRequester.Cancel
                         }.focusRequester(focus.notes),
-                padding = Spacing.medium,
+                padding = TvGhostPadding,
             )
         }
     }
 }
+
+/** `.hud-top`'s gap, 1.2rem (`playback.css:48-61`): between the title and the bar's buttons, and between those. */
+internal val TvBarGap = 19.2.tvDp
+
+/** `.ghost`'s padding either side, 0.85rem (`playback.css:95`). */
+internal val TvGhostPadding = 13.6.tvDp

@@ -91,7 +91,7 @@ class TvPlayerSubtitleSettingsTest : TvPlayerScreenHarness() {
         compose.waitForIdle()
 
         compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
-        compose.onNodeWithText("CC ●").assertExists()
+        ccStands("On")
         compose.waitUntil(timeoutMillis = 5_000) {
             compose.onAllNodesWithText("Hello.").fetchSemanticsNodes().isNotEmpty()
         }

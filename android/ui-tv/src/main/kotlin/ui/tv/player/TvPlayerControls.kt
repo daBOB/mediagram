@@ -26,6 +26,7 @@ import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import designsystem.Overscan
 import designsystem.Spacing
+import designsystem.tvDp
 import model.MediaSet
 import player.READOUT_TICK_MS
 import player.UpNextPhase
@@ -37,8 +38,13 @@ import ui.common.player.playerCard
 internal const val TvTopBandTag = "tv-player-top-band"
 internal const val TvBottomBandTag = "tv-player-bottom-band"
 
-/** The card's width on a television: the web's card, narrowed to what reads across a room without turning the head. */
-internal val TvCardWidth = 760.dp
+/** The card's widest: `.card-dock`'s 880px (`player-card.css:6-12`). */
+internal val TvCardWidth = 880.tvDp
+
+/** `.control-card`'s padding, 0.75rem by 1rem, and its gap between rows, 0.5rem (`player-card.css:19-31`). */
+private val CardPaddingVertical = 12.tvDp
+private val CardPaddingHorizontal = 16.tvDp
+private val CardRowGap = 8.tvDp
 
 /** How far the card stands off the bottom — and off the episode list beside it: clear of the overscan margin, with room to breathe. */
 private val TvCardInset = 32.dp
@@ -141,8 +147,8 @@ internal fun TvPlayerControls(
                         bands.card = at.boundsInRoot().roundToIntRect()
                     }.testTag(TvBottomBandTag)
                     .playerCard()
-                    .padding(Spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                    .padding(horizontal = CardPaddingHorizontal, vertical = CardPaddingVertical),
+            verticalArrangement = Arrangement.spacedBy(CardRowGap),
         ) {
             TvSeekRow(
                 positionMs = positionMs,

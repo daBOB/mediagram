@@ -2,10 +2,13 @@ package ui.tv.player
 
 import android.view.KeyEvent
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -122,6 +125,11 @@ abstract class TvPlayerScreenHarness {
     internal fun openMenu(description: String) {
         toTool(hasContentDescription(description))
         press(Key.DirectionCenter)
+    }
+
+    /** CC reads "CC" either way, faint while off, as the tablet's does: which way it stands is in what a screen reader hears. */
+    internal fun ccStands(state: String) {
+        compose.onNodeWithContentDescription("Subtitles").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, state))
     }
 
     /** Back through the dispatcher alone, as a gesture delivers it: no key for focus to take first. */

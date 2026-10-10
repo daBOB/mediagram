@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Palette
-import designsystem.Spacing
+import designsystem.tvDp
 import player.clockTime
 
 /** Finds the seek bar in a test without depending on how it is drawn. */
@@ -108,7 +108,8 @@ private val Thumb = 12.dp
  * Row one of the card, as on the phone and the web: where the film is, the
  * bar, then how long it runs and, after a dot, when it will end by the clock
  * on the wall. [ends] is blank while neither the catalogue nor media3 knows
- * the length.
+ * the length. The times are the web's `.at` (`player-card.css:57-63`), the
+ * bar [SeekRowGap] from either.
  */
 @Composable
 internal fun TvSeekRow(
@@ -120,8 +121,8 @@ internal fun TvSeekRow(
     onFocusChanged: (Boolean) -> Unit,
     up: FocusRequester? = null,
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-        Text(text = clockTime(positionMs), style = TvPlayerType.body, color = Palette.Text)
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SeekRowGap)) {
+        Text(text = clockTime(positionMs), style = TvPlayerType.time, color = Palette.Text)
         TvSeekBar(
             positionMs = positionMs,
             durationMs = durationMs,
@@ -131,6 +132,9 @@ internal fun TvSeekRow(
             onFocusChanged = onFocusChanged,
             modifier = Modifier.weight(1f),
         )
-        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvPlayerType.body, color = Palette.Figures)
+        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvPlayerType.time, color = Palette.Figures)
     }
 }
+
+/** `.card-row`'s gap, 0.75rem (`player-card.css:34-39`). */
+private val SeekRowGap = 12.tvDp

@@ -94,11 +94,11 @@ class TvPlayerCcButtonTest : TvPlayerScreenHarness() {
     @Test
     fun onePressTurnsTheSubtitlesOn() {
         compose.waitUntil(timeoutMillis = 5_000) { controller.get().playerViewModel.choices.value.ccVisible }
-        compose.onNodeWithText("CC ○").assertExists()
+        ccStands("Off")
 
         compose.onNodeWithContentDescription("Subtitles").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
-        compose.onNodeWithText("CC ●").assertExists()
+        ccStands("On")
     }
 }

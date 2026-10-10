@@ -11,10 +11,16 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
+import designsystem.TvScale
+import designsystem.TvType
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +30,7 @@ import player.CONTROLS_LINGER_MS
 import player.PlayerUiState
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
@@ -180,8 +187,27 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
     fun theCardIsCentredAtMostItsWidthAndStandsOffTheBottom() {
         val card = compose.onNodeWithTag(TvBottomBandTag).getBoundsInRoot()
         assertEquals(TvCardWidth, card.width)
-        assertEquals(100.dp, card.left)
+        assertEquals(880 * TvScale, card.width.value, "`.card-dock`'s max-width")
+        assertEquals(150.dp, card.left)
         assertEquals(508.dp, card.bottom)
+    }
+
+    /** The skips are the tablet's words in the interface face, not Fraunces, at the web's size. */
+    @Test
+    fun theSkipsAreSetInTheInterfaceFaceAtTheWebsSize() {
+        for (label in listOf("−15", "+15")) {
+            val style = textStyleOf(label)
+            assertEquals(TvType.labelLarge.fontFamily, style.fontFamily, "$label in Geist")
+            assertNotEquals(TvType.headlineSmall.fontFamily, style.fontFamily, "$label not in Fraunces")
+            assertEquals(15 * TvScale, style.fontSize.value, 0.001f, "$label at `.tsp svg`'s 20px as a character")
+        }
+        assertEquals(14 * TvScale, textStyleOf("CC").fontSize.value, 0.001f, "CC a `.tool`")
+    }
+
+    private fun textStyleOf(text: String): TextStyle {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single().layoutInput.style
     }
 
     @Test

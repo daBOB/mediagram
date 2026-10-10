@@ -46,7 +46,7 @@ internal fun TvMarksRail(
 
     FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.End),
+        horizontalArrangement = Arrangement.spacedBy(TvBarGap, Alignment.End),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
@@ -76,5 +76,5 @@ private fun MarkButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    TvOverlayButton(text = label, style = TvPlayerType.body, enabled = enabled, onClick = onClick, modifier = modifier, padding = Spacing.medium)
+    TvCardButton(text = label, style = TvPlayerType.ghost, enabled = enabled, onClick = onClick, modifier = modifier, padding = TvGhostPadding)
 }
