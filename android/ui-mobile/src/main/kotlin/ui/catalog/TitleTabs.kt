@@ -1,11 +1,13 @@
 package ui.catalog
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import designsystem.entrance
 
 /**
  * The tab last chosen, kept by its own label rather than its position, and
@@ -65,6 +68,10 @@ internal fun TitleTabRow(
     }
 }
 
+/** `.tab-panel { animation: panel-in 520ms var(--ease) }`, from 8px below (`title-page.css:133-134`). */
+internal const val PANEL_IN_MS = 520
+internal val PANEL_IN_RISE = 8.dp
+
 /**
  * A title page's own tab row and body together — Overview/Cast/Similar/
  * Details on a film, whose bodies are all short enough to sit inside the
@@ -80,6 +87,12 @@ internal fun TitleTabs(
     val (shown, onSelect) = rememberChosenTab(labels)
     Column(modifier = modifier) {
         TitleTabRow(labels, shown, onSelect)
-        content(shown)
+        // The web replays the rise whenever a panel is shown (`tabs.js:85-97`
+        // un-hides it). A new tab is a new key and so a new node, which plays;
+        // a redraw keeps the key and the node; a page come back to is
+        // composed anew and plays it again, as on the web.
+        key(shown) {
+            Box(Modifier.entrance(PANEL_IN_MS, fromY = PANEL_IN_RISE)) { content(shown) }
+        }
     }
 }
