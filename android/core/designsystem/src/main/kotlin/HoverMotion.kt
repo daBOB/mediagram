@@ -75,6 +75,9 @@ private class HoverMotionNode(var spec: HoverMotionElement) : Modifier.Node(), L
         presses.clear()
         listening =
             coroutineScope.launch {
+                // A reused node comes back with its tween cut off wherever it
+                // was; with no interaction active it must rest.
+                progress.snapTo(0f)
                 spec.source.interactions.collect { interaction ->
                     when (interaction) {
                         is HoverInteraction.Enter -> hovers += interaction

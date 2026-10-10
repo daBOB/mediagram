@@ -76,18 +76,22 @@ class EntranceReuseTest {
     fun aNodeHandedToAnotherItemPlaysThatItemsEntrance() {
         var active by mutableStateOf(true)
         var seen by mutableStateOf(mutableStateOf(false))
+        val other = mutableStateOf(false)
         show { ReusableContentHost(active) { Box(Modifier.size(100.dp).entrance(1100, fromY = 28.dp, seen = seen).testTag("e")) } }
         compose.mainClock.advanceTimeBy(1_200)
         compose.runOnUiThread { active = false }
         compose.waitForIdle()
         compose.mainClock.advanceTimeByFrame()
         compose.runOnUiThread {
-            seen = mutableStateOf(false)
+            seen = other
             active = true
         }
         compose.waitForIdle()
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeByFrame()
         assertTrue(top() > 55f, "the other item rises in from below, top was ${top()}")
+        compose.mainClock.advanceTimeBy(1_200)
+        assertEquals(50f, top(), 0.5f)
+        assertTrue(other.value, "the other item's flag is set once its entrance plays")
     }
 }
