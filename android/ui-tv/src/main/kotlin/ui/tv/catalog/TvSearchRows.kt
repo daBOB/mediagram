@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.MaterialTheme
@@ -97,7 +96,7 @@ internal fun TvSearchRow(
         locationOf(set)?.let { TvQuietLine(it) }
         // The reason a summary hit is worth showing at all.
         row.excerpt?.let { TvQuietLine(it) }
-        searchWhy(row.matched)?.let { Text(text = it, style = TvType.bodySmall, fontStyle = FontStyle.Italic, color = quiet) }
+        searchWhy(row.matched)?.let { Text(text = it, style = TvType.bodySmall, color = quiet) }
         searchMetaLineOf(set).takeIf(String::isNotEmpty)?.let { TvQuietLine(it) }
         TvItemMarks(progress, row.held)
     }
