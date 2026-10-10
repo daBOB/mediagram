@@ -1,5 +1,6 @@
 package ui.chrome
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,9 +16,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -28,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import catalog.profileInitial
+import designsystem.Motion
 import designsystem.StatusDot
 import designsystem.catalogueIndication
 
@@ -120,12 +124,16 @@ internal fun Pill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // `.departments a { transition: background-color var(--hover) }` (`shell.css:50,55`).
+    // Only the choice fades: [ink] follows the bar's scroll blend frame by frame,
+    // and a tween chasing it would leave the bar trailing the page.
+    val fill by animateFloatAsState(if (active) 1f else 0f, animationSpec = Motion.hover(), label = "pill fill")
     Box(
         modifier =
             modifier
                 .heightIn(min = 44.dp)
                 .clip(CircleShape)
-                .then(if (active) Modifier.background(ink.copy(alpha = 0.12f)) else Modifier)
+                .drawBehind { drawRect(ink.copy(alpha = 0.12f * fill)) }
                 // A link on the web (`index.html:76-82`), and links don't shrink when pressed.
                 .selectable(selected = active, interactionSource = null, indication = catalogueIndication(pressScale = 1f), role = Role.Tab, onClick = onClick)
                 .semantics(mergeDescendants = true) {}

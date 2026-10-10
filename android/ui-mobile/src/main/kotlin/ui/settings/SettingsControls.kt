@@ -4,14 +4,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -25,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -128,34 +124,6 @@ internal fun SettingsChip(
             color = if (selected) colors.onBackground else colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
         )
-    }
-}
-
-/**
- * A picture of a theme or an artwork mode: 16:9, at [Radius.card], ringed
- * in the accent, with the page's own ground as the gap between the ring and
- * the picture, when selected. Purely presentational: the caller owns
- * `selectable` and the merge boundary, the same way an accent dot's own
- * wrapping column does —
- * putting `selectable` on this nested box instead left it out of the
- * caller's merged semantics node entirely.
- */
-@Composable
-internal fun SwatchCard(
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit = {},
-) {
-    val shape = RoundedCornerShape(Radius.card)
-    val colors = MaterialTheme.colorScheme
-    val ring =
-        if (selected) {
-            Modifier.border(2.dp, colors.primary, shape).padding(4.dp)
-        } else {
-            Modifier.border(1.dp, colors.outlineVariant, shape)
-        }
-    Box(modifier = modifier.aspectRatio(16f / 9f).then(ring)) {
-        Box(modifier = Modifier.fillMaxSize().clip(shape), content = content)
     }
 }
 

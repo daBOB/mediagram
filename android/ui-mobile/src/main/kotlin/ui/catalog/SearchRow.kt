@@ -1,6 +1,8 @@
 package ui.catalog
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,6 +11,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -38,16 +41,18 @@ import ui.common.catalog.searchMetaLineOf
 internal fun SearchResultRow(row: SearchRow, progress: Progress?, watched: Boolean, onPlay: (String) -> Unit) {
     val set = row.set
     val playable = isPlayable(set)
+    val source = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .let { if (playable) it.clickable(role = Role.Button) { onPlay(set.setId) } else it }
+            .let { if (playable) it.clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button) { onPlay(set.setId) } else it }
             .padding(vertical = Spacing.small),
     ) {
-        Text(
+        HoverTitle(
             text = "${if (watched) "✓ " else ""}${set.title}",
             style = MaterialTheme.typography.bodyLarge,
-            color = if (playable) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
+            source = source,
+            rest = if (playable) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (!playable) {
             Text(DOCUMENT_REASON, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

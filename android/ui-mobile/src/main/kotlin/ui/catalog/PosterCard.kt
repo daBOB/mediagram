@@ -1,25 +1,19 @@
 package ui.catalog
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import designsystem.Motion
 import designsystem.Spacing
 import designsystem.hoverMotion
 
@@ -77,7 +71,14 @@ internal fun PosterCard(
             progress = progress,
             watched = watched,
         )
-        PlateName(title, source)
+        HoverTitle(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            source = source,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = Spacing.small),
+        )
         if (meta != null) {
             Text(
                 text = meta,
@@ -96,28 +97,4 @@ internal fun PosterCard(
         }
         if (held) OfflineBadge(modifier = Modifier.padding(top = 2.dp))
     }
-}
-
-/**
- * `.card .name` turns accent over `--hover` while hovered (`catalog.css:44,48`);
- * a finger has no hover, so its press stands in. Kept in its own scope so only
- * this Text recomposes while the colour fades.
- */
-@Composable
-private fun PlateName(title: String, source: MutableInteractionSource) {
-    val hovered by source.collectIsHoveredAsState()
-    val pressed by source.collectIsPressedAsState()
-    val ink by animateColorAsState(
-        if (hovered || pressed) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-        animationSpec = Motion.hover(),
-        label = "plate name",
-    )
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        color = ink,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = Spacing.small),
-    )
 }

@@ -1,6 +1,8 @@
 package ui.catalog
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +13,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -78,11 +81,13 @@ internal fun LazyListScope.items(
 @Composable
 private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boolean, held: Boolean, onPlay: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
+    val source = remember { MutableInteractionSource() }
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
-        Text(
+        HoverTitle(
             text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}",
             style = MaterialTheme.typography.bodyLarge,
-            color = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+            source = source,
+            rest = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
             modifier = Modifier
                 .fillMaxWidth()
                 // The whole line is the target, and the role is what tells a
@@ -91,7 +96,7 @@ private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boole
                     if (document) {
                         Modifier
                     } else {
-                        Modifier.clickable(role = Role.Button) { onPlay(row.set.setId) }
+                        Modifier.clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button) { onPlay(row.set.setId) }
                     },
                 )
                 .padding(top = Spacing.small, bottom = if (document) 0.dp else Spacing.small),

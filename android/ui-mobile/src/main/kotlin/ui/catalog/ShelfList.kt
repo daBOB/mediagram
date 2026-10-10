@@ -1,6 +1,8 @@
 package ui.catalog
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +15,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import catalog.Entry
@@ -75,13 +78,14 @@ private fun ShelfRow(
     held: Boolean = false,
     progress: Float? = null,
 ) {
+    val source = remember { MutableInteractionSource() }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button, onClick = onClick)
             .padding(vertical = Spacing.medium),
     ) {
-        Text(if (watched) "✓ $title" else title, style = MaterialTheme.typography.bodyLarge)
+        HoverTitle(if (watched) "✓ $title" else title, MaterialTheme.typography.bodyLarge, source)
         caption?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

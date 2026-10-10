@@ -1,23 +1,18 @@
 package ui.catalog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.SearchDestination
@@ -109,42 +104,6 @@ internal fun SearchGroupsView(
             }
         }
     }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SearchFilterChips(filters: List<Pair<SearchFilter, Int>>, chosen: SearchFilter, onChoose: (SearchFilter) -> Unit) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium, vertical = Spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-    ) {
-        for ((kind, count) in filters) {
-            val selected = kind == chosen
-            Text(
-                text = "${filterLabel(kind)} $count",
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(16.dp),
-                    )
-                    .clickable(role = Role.Button) { onChoose(kind) }
-                    .padding(horizontal = Spacing.medium, vertical = Spacing.extraSmall),
-            )
-        }
-    }
-}
-
-private fun filterLabel(filter: SearchFilter): String = when (filter) {
-    SearchFilter.ALL -> "All"
-    SearchFilter.MOVIES -> "Movies"
-    SearchFilter.SERIES -> "Series"
-    SearchFilter.ANIME -> "Anime"
-    SearchFilter.DOCUMENTARIES -> "Documentaries"
-    SearchFilter.TUTORIALS -> "Tutorials"
-    SearchFilter.PEOPLE -> "People"
-    SearchFilter.COLLECTIONS -> "Collections"
 }
 
 @OptIn(ExperimentalLayoutApi::class)

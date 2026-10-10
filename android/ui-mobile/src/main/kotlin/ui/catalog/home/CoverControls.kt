@@ -1,5 +1,6 @@
 package ui.catalog.home
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,9 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -25,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import designsystem.Motion
 
 /** Filled, on the artwork's own light — "Watch now" (`.pill-solid`, `home.css:73-74`). */
 @Composable
@@ -105,6 +109,13 @@ internal fun CoverPager(
             }
         }
         for (index in 0 until count) {
+            // `.cover-dot { transition: background-color var(--hover) }` (`home.css:123,125`): the
+            // current story's bar fades over as the cover turns. The Featured reel's dots snap, as the web's do.
+            val bar by animateColorAsState(
+                if (index == current) OnImage else Color(0x52F6F2EA),
+                animationSpec = Motion.hover(),
+                label = "cover bar",
+            )
             Box(
                 // Also 48dp — was 28dp, centred here rather than padded to
                 // it so the visual bar stays the same 20x4dp.
@@ -128,7 +139,7 @@ internal fun CoverPager(
                         Modifier
                             .size(width = 20.dp, height = 4.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(if (index == current) OnImage else Color(0x52F6F2EA)),
+                            .drawBehind { drawRect(bar) },
                 )
             }
         }

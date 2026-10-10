@@ -1,5 +1,7 @@
 package ui.chrome
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,9 +28,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -41,6 +47,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
+import designsystem.Motion
 import designsystem.Radius
 import designsystem.StatusDot
 import designsystem.catalogueIndication
@@ -143,7 +150,15 @@ private fun RailRow(
     apart: Boolean = false,
     dot: String? = null,
 ) {
-    val ink = if (active) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
+    // `.rail-nav a { transition: color, background-color var(--hover) }` (`shell.css:50,55`).
+    val fill by animateFloatAsState(if (active) 1f else 0f, animationSpec = Motion.hover(), label = "rail fill")
+    val activeFill = MaterialTheme.colorScheme.onBackground
+    // Handed on as State and read only by the icon and the label, so just those two recompose during the fade.
+    val ink = animateColorAsState(
+        if (active) activeFill else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = Motion.hover(),
+        label = "rail ink",
+    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -153,7 +168,7 @@ private fun RailRow(
                 .fillMaxWidth()
                 .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(Radius.control))
-                .then(if (active) Modifier.background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.10f)) else Modifier)
+                .drawBehind { drawRect(activeFill.copy(alpha = 0.10f * fill)) }
                 // A link on the web (`index.html:55-65`), and links don't shrink when pressed.
                 .selectable(selected = active, interactionSource = null, indication = catalogueIndication(pressScale = 1f), role = Role.Tab, onClick = { onSelect(item) })
                 // The icon carries no description of its own; merging lets a
@@ -164,21 +179,21 @@ private fun RailRow(
     ) {
         // On the icon's corner, as on the web and the television: the dot is there in every width.
         Box {
-            Icon(painter = painterResource(item.icon), contentDescription = null, tint = ink, modifier = Modifier.size(21.dp))
+            RailIcon(item, ink)
             dot?.let {
                 StatusDot(MaterialTheme.colorScheme.tertiary, Modifier.align(Alignment.TopEnd).offset(x = 2.dp, y = (-2).dp), description = it)
             }
         }
-        Text(
-            item.label,
-            style = MaterialTheme.typography.labelLarge,
-            color = ink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        RailLabel(item.label, ink, Modifier.weight(1f))
         if (count != null) {
             Text(count.toString(), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
         }
     }
 }
+
+@Composable
+private fun RailIcon(item: RailItem, ink: State<Color>) = Icon(painter = painterResource(item.icon), contentDescription = null, tint = ink.value, modifier = Modifier.size(21.dp))
+
+@Composable
+private fun RailLabel(label: String, ink: State<Color>, modifier: Modifier) =
+    Text(label, style = MaterialTheme.typography.labelLarge, color = ink.value, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier)
