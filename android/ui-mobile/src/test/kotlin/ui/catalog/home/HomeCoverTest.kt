@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
+import designsystem.LocalReducedMotion
 import model.Kind
 import model.MediaSet
 import org.junit.After
@@ -134,9 +135,14 @@ class HomeCoverTest {
                 film.copy(setId = "c", title = "Film C"),
             )
         val films = mutableStateOf(threeFilms)
+        // Held still: a slide's 14s settle outlasts the 9s hold, so this
+        // test's auto-advancing clock would turn the cover for ever. The dots
+        // still pick.
         show(
             content = {
-                HomeCover(films = films.value, watchlist = emptySet(), width = 1164.dp, onPlay = {}, onOpenTitle = {}, onToggleWatchlist = { _, _ -> })
+                CompositionLocalProvider(LocalReducedMotion provides true) {
+                    HomeCover(films = films.value, watchlist = emptySet(), width = 1164.dp, onPlay = {}, onOpenTitle = {}, onToggleWatchlist = { _, _ -> })
+                }
             },
         )
         compose.onNodeWithContentDescription("Cover story 3 of 3").performClick()

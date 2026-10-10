@@ -1,5 +1,6 @@
 package ui.catalog.home
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -41,3 +42,10 @@ internal fun countOf(
     count: Int,
     noun: String,
 ): String = catalog.spelledCountOf(count, noun)
+
+/** Type set over artwork keeps the same two colours in both themes — the web's `--on-image`/`--on-image-2` (`theme.css:99-100`); shared with the pills and pager in `CoverControls.kt`. */
+internal val OnImage = Color(0xFFF6F2EA)
+internal val OnImage2 = Color(0xD1F6F2EA)
+
+/** What a cover slide comes up out of: the web's `.cover` ground, near-black in both themes (`home.css:15`). */
+internal val CoverGround = Color(0xFF0A0A0B)
