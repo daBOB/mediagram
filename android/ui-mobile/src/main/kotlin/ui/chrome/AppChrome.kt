@@ -144,7 +144,9 @@ fun LibraryScaffold(
                 // scrim, which all fade into this same ground.
                 containerColor = MaterialTheme.colorScheme.pageGround,
             ) { innerPadding ->
-                Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) { content() }
+                // The page turns under the bar, never the bar or the rail, as
+                // the web's turn moves `main` and leaves the masthead put.
+                Box(modifier = Modifier.fillMaxSize().padding(innerPadding).pageTurn()) { content() }
             }
         }
     }

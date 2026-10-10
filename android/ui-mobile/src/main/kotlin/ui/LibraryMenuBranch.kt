@@ -1,6 +1,8 @@
 package ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import catalog.CatalogUiState
 import catalog.MenuScreen
 import catalog.libraryTallyLines
@@ -9,6 +11,7 @@ import system.FetchViewModel
 import ui.chrome.BrowseActions
 import ui.chrome.LibraryScaffold
 import ui.chrome.ProfileBarState
+import ui.chrome.pageTurn
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.settings.SettingsSection
@@ -35,32 +38,41 @@ internal fun MenuBranch(
     browse: BrowseActions,
 ) {
     when (menuScreen) {
+        // Settings and System draw no bar of their own, so the whole screen
+        // is the page, and it turns as the web's settings page does.
         MenuScreen.System ->
-            SettingsScreen(
-                initial = SettingsSection.SYSTEM,
-                leavesFromSection = true,
-                tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
-                onLeave = at::pop,
-            )
+            Box(Modifier.pageTurn()) {
+                SettingsScreen(
+                    initial = SettingsSection.SYSTEM,
+                    leavesFromSection = true,
+                    tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                    onLeave = at::pop,
+                )
+            }
 
         MenuScreen.Settings ->
-            SettingsScreen(
-                initial = null,
-                leavesFromSection = false,
-                tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
-                onLeave = at::pop,
-            )
+            Box(Modifier.pageTurn()) {
+                SettingsScreen(
+                    initial = null,
+                    leavesFromSection = false,
+                    tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                    onLeave = at::pop,
+                )
+            }
 
         // A film page's own "Raise the cache budget" link — the
         // same direct-section shape MenuScreen.System already uses.
         MenuScreen.Storage ->
-            SettingsScreen(
-                initial = SettingsSection.STORAGE,
-                leavesFromSection = true,
-                tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
-                onLeave = at::pop,
-            )
+            Box(Modifier.pageTurn()) {
+                SettingsScreen(
+                    initial = SettingsSection.STORAGE,
+                    leavesFromSection = true,
+                    tally = libraryTallyLines(catalogState.shelvesOrEmpty()),
+                    onLeave = at::pop,
+                )
+            }
 
+        // Through LibraryBranch's scaffold, which turns its own page.
         MenuScreen.TmdbKey ->
             LibraryBranch(destinationOf(menuScreen), menuActions, profileBar, browse, at, at::pop) {
                 TmdbKeyScreen(hasKey = fetchState.hasKey, onSave = fetchViewModel::saveKey)

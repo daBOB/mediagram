@@ -31,13 +31,15 @@ internal fun <T> ResolvedBranch(
     destinationOf: (T) -> Destination,
     content: @Composable (T) -> Unit,
 ) {
-    when (val outcome = resolveFrame(resolved, catalogState is CatalogUiState.Ready)) {
-        is FrameResolution.Resolved -> LibraryBranch(destinationOf(outcome.value), menu, profile, browse, at, at::pop) {
-            content(outcome.value)
-        }
-        FrameResolution.Loading -> LibraryBranch(loading, menu, profile, browse, at, at::pop) {
-            CenteredMessage("Loading your library…")
-        }
-        FrameResolution.Stale -> LaunchedEffect(Unit) { at.pop() }
+    val outcome = resolveFrame(resolved, catalogState is CatalogUiState.Ready)
+    if (outcome == FrameResolution.Stale) {
+        LaunchedEffect(Unit) { at.pop() }
+        return
+    }
+    // One scaffold whichever the frame shows, so a page whose catalog
+    // arrives after it opened keeps the turn it opened with rather than
+    // rising in a second time.
+    LibraryBranch(if (outcome is FrameResolution.Resolved) destinationOf(outcome.value) else loading, menu, profile, browse, at, at::pop) {
+        if (outcome is FrameResolution.Resolved) content(outcome.value) else CenteredMessage("Loading your library…")
     }
 }
