@@ -730,13 +730,16 @@ differs on purpose:
   "Loading your library…" waits**, in the page's inks. The web shows words only
   in its channel list and never shows in-page waits (it waits under one block
   before routing). A deliberate addition: loading is the leader on every surface.
+- **The cold-start block shifts once when the library chrome arrives**: the
+  setup check and the profile gate have no rail or bar to sit beside.
 - **The TV gets the countdown leader later**; its loading screens live on the
   unmerged TV branch.
 - **The library's "fetching" line** (`CatalogShelves.kt`) is still an
   indeterminate progress bar; the web's counterpart is to be checked before it
   changes.
 - **Tab labels are the accent, the web's are ink** (`title-page.css:126,131-132`).
-- **The tab row does not auto-scroll** to the chosen tab, as the web's does.
+- **The tab row scrolls the chosen tab into view** (Material's, about 250 ms);
+  the web's tab list never scrolls itself.
 - **The player tool does not turn accent while its menu is open**
   (`player-card.css:82`).
 - **The marks' popups (Add to list, Kids) do not hold the controls**; the web's
