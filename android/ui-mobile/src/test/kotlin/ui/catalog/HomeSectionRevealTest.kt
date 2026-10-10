@@ -147,6 +147,7 @@ class HomeSectionRevealTest {
         compose.mainClock.advanceTimeBy(200)
         assertTrue(featuresOffset() > 5f, "still rising when flung away")
         scrollTo(5)
+        compose.onNodeWithTag(HOME_FEATURES_TEST_TAG).assertDoesNotExist()
         scrollTo(0)
         assertEquals(0f, featuresOffset(), 0.5f)
     }
