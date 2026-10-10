@@ -2,6 +2,8 @@ package ui.catalog.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,8 +59,11 @@ internal fun ResumeRow(
     onPlay: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Rests with a card at its start, as the web's strip does (`home.css:220,234`); other rows coast.
+    val state = rememberRowState(cards.map { it.set.setId })
     LazyRow(
-        state = rememberRowState(cards.map { it.set.setId }),
+        state = state,
+        flingBehavior = rememberSnapFlingBehavior(state, SnapPosition.Start),
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 8.dp),
