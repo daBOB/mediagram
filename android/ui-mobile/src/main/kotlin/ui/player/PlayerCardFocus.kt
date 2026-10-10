@@ -30,20 +30,22 @@ internal fun FocusRequester.requestFocusIfOnScreen() {
  * Hands focus back to the button that opened a menu, or the sidebar, when it
  * closes — unless the close was the first half of opening something else
  * (☰ closes a menu as it opens the sidebar), which has its own place to put
- * it. A viewer who closed it by touch gets the same: focus only decides where
- * the next swipe of a screen reader starts.
+ * it. Nothing is returned to while the card is fading out ([shown] false):
+ * the opener is still composed, but a screen reader would land on a control
+ * on its way out. A viewer who closed it by touch gets the same: focus only
+ * decides where the next swipe of a screen reader starts.
  */
 @Composable
-internal fun CardFocusReturn(card: PlayerCardState) {
+internal fun CardFocusReturn(card: PlayerCardState, shown: Boolean) {
     var lastMenu by remember { mutableStateOf<CardMenu?>(null) }
     LaunchedEffect(card.menu) {
         val now = card.menu
-        if (now == null && !card.sidebarOpen) lastMenu?.let { card.focusOf(it).requestFocusIfOnScreen() }
+        if (shown && now == null && !card.sidebarOpen) lastMenu?.let { card.focusOf(it).requestFocusIfOnScreen() }
         lastMenu = now
     }
     var sidebarWasOpen by remember { mutableStateOf(false) }
     LaunchedEffect(card.sidebarOpen) {
-        if (!card.sidebarOpen && sidebarWasOpen) card.focusOf(null).requestFocusIfOnScreen()
+        if (shown && !card.sidebarOpen && sidebarWasOpen) card.focusOf(null).requestFocusIfOnScreen()
         sidebarWasOpen = card.sidebarOpen
     }
 }

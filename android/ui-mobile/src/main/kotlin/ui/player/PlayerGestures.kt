@@ -31,8 +31,9 @@ import playback.Framing
  *
  * Attached to the whole screen rather than measured against the video box:
  * the card, its menus, the episode sidebar and the up-next card all consume
- * their own taps before this modifier ever sees one, so nothing here has to
- * carve the video area out by hand — see `PlayerScreen`.
+ * their own taps before this modifier ever sees one (the card too, except
+ * while it fades out, when it deliberately lets them through to here), so
+ * nothing here has to carve the video area out by hand — see `PlayerScreen`.
  */
 @Composable
 internal fun PlayerGestureLayer(

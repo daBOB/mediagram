@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -66,6 +67,9 @@ internal fun BoxScope.PlayerCardLayer(
         exit = fadeOut(HudFade),
         label = "player card",
     ) {
+        // The bounds the subtitles and the up-next card clear stay the card's
+        // until it has finished fading out, then go with it.
+        DisposableEffect(Unit) { onDispose { card.bounds = null } }
         Box(modifier = Modifier.fillMaxWidth()) {
             PlayerControlCard(
                 player = player,
