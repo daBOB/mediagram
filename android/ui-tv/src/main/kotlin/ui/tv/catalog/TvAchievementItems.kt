@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.Text
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
@@ -35,7 +36,8 @@ internal fun LazyListScope.tvAchievementItems(achievements: AchievementsUi) {
     }
     if (achievements.next.isEmpty()) return
     item(key = "achievements-next") {
-        Text(text = NEXT_HEADING, style = TvType.labelMedium.copy(color = LocalCatalogueTones.current.quiet))
+        // `.stats-achievements h3` is Geist 500 (`stats.css:32`), heavier than the figures this role is for.
+        Text(text = NEXT_HEADING, style = TvType.labelMedium.copy(fontWeight = FontWeight.Medium, color = LocalCatalogueTones.current.quiet))
     }
     items(items = achievements.next, key = { "next:${it.id}" }) { line ->
         TvStatsStop { focused ->

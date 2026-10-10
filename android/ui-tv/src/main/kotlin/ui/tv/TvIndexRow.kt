@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -149,7 +148,7 @@ internal fun TvIndexRow(
             }
             trailing?.let {
                 // `.n`: 0.625rem, 40% ink (`shell.css:60`).
-                Text(text = it, style = TvType.labelSmall.copy(fontSize = 10.tvSp, fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
+                Text(text = it, style = TvType.labelSmall.copy(fontSize = 10.tvSp), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
             }
         }
     }

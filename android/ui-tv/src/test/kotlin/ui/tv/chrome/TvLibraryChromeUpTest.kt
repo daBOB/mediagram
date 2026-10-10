@@ -144,7 +144,7 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
          */
         val OverflowingPills =
             listOf(
-                "Home", "Movies and more films", "Series to watch tonight", "Anime and animation", "Documentaries and true stories",
+                "Home", "Movies and more films", "Series to watch tonight", "Anime and animation from Japan", "Documentaries and true stories",
                 "Tutorials and courses", "Collections",
             )
     }

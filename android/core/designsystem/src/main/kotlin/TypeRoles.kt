@@ -13,8 +13,10 @@ import androidx.compose.ui.unit.sp
  * so a television screen reads a role here directly, and
  * `CatalogueType.bodyMedium` there is the phone's
  * `MaterialTheme.typography.bodyMedium`, size for size. Each starts from
- * M3's own baseline, so the line heights and tracking the phone has always
- * drawn with come along.
+ * M3's own baseline, so the line heights the phone has always drawn with
+ * come along; the baseline's tracking does not, since the web sets these
+ * lines at `letter-spacing: normal` and M3's +0.1 to +0.5sp loosened every
+ * one of them against it.
  *
  * The numbers are the web's: Geist 13/14/15, Newsreader 17, Fraunces
  * 16/18/23/26, counts 11. A call site reaching a size the web sets and no
@@ -27,16 +29,16 @@ object CatalogueType {
         baseline.headlineSmall.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 26.sp, letterSpacing = (-0.1).sp)
     val titleLarge: TextStyle =
         baseline.titleLarge.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 23.sp, letterSpacing = (-0.1).sp)
-    val titleMedium: TextStyle = baseline.titleMedium.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 18.sp)
-    val titleSmall: TextStyle = baseline.titleSmall.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 16.sp)
+    val titleMedium: TextStyle = baseline.titleMedium.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 18.sp, letterSpacing = 0.sp)
+    val titleSmall: TextStyle = baseline.titleSmall.copy(fontFamily = Display, fontWeight = FontWeight.Medium, fontSize = 16.sp, letterSpacing = 0.sp)
 
     /** The web's own reading-copy size: whole sentences (loading, empty, failure states) stay in the serif, not the interface face. */
-    val bodyLarge: TextStyle = baseline.bodyLarge.copy(fontFamily = Read, fontSize = 17.sp)
-    val bodyMedium: TextStyle = baseline.bodyMedium.copy(fontFamily = Interface, fontSize = 15.sp)
-    val bodySmall: TextStyle = baseline.bodySmall.copy(fontFamily = Interface, fontSize = 13.sp)
-    val labelLarge: TextStyle = baseline.labelLarge.copy(fontFamily = Interface, fontWeight = FontWeight.Medium)
-    val labelMedium: TextStyle = baseline.labelMedium.copy(fontFamily = Interface, fontSize = 13.sp, fontFeatureSettings = TABULAR)
-    val labelSmall: TextStyle = baseline.labelSmall.copy(fontFamily = Interface, fontSize = 11.sp, fontFeatureSettings = TABULAR)
+    val bodyLarge: TextStyle = baseline.bodyLarge.copy(fontFamily = Read, fontSize = 17.sp, letterSpacing = 0.sp)
+    val bodyMedium: TextStyle = baseline.bodyMedium.copy(fontFamily = Interface, fontSize = 15.sp, letterSpacing = 0.sp)
+    val bodySmall: TextStyle = baseline.bodySmall.copy(fontFamily = Interface, fontSize = 13.sp, letterSpacing = 0.sp)
+    val labelLarge: TextStyle = baseline.labelLarge.copy(fontFamily = Interface, fontWeight = FontWeight.Medium, letterSpacing = 0.sp)
+    val labelMedium: TextStyle = baseline.labelMedium.copy(fontFamily = Interface, fontSize = 13.sp, letterSpacing = 0.sp, fontFeatureSettings = TABULAR)
+    val labelSmall: TextStyle = baseline.labelSmall.copy(fontFamily = Interface, fontSize = 11.sp, letterSpacing = 0.sp, fontFeatureSettings = TABULAR)
 }
 
 /**

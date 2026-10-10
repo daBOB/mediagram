@@ -1,6 +1,7 @@
 package designsystem
 
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,11 @@ fun TextStyle.onTv(): TextStyle = copy(fontSize = fontSize.onTv(), lineHeight = 
  * The catalogue's roles as a television sets them: [CatalogueType] and the
  * page roles beside it, each the web's px through [TvScale]. The phone keeps
  * [CatalogueType] itself.
+ *
+ * The two figure roles are Geist 400, as the web's meta and figure lines
+ * are; [CatalogueType]'s inherit M3's 500. The phone's still do: some of its
+ * call sites are 500 on the web and lean on that, so the weight moves into
+ * [CatalogueType] once each of them says so itself, as the television's do.
  */
 object TvType {
     val headlineSmall: TextStyle = CatalogueType.headlineSmall.onTv()
@@ -41,8 +47,8 @@ object TvType {
     val bodyMedium: TextStyle = CatalogueType.bodyMedium.onTv()
     val bodySmall: TextStyle = CatalogueType.bodySmall.onTv()
     val labelLarge: TextStyle = CatalogueType.labelLarge.onTv()
-    val labelMedium: TextStyle = CatalogueType.labelMedium.onTv()
-    val labelSmall: TextStyle = CatalogueType.labelSmall.onTv()
+    val labelMedium: TextStyle = CatalogueType.labelMedium.onTv().copy(fontWeight = FontWeight.Normal)
+    val labelSmall: TextStyle = CatalogueType.labelSmall.onTv().copy(fontWeight = FontWeight.Normal)
     val Eyebrow: TextStyle = designsystem.Eyebrow.onTv()
     val SectionHead: TextStyle = designsystem.SectionHead.onTv()
     val LedgerLabel: TextStyle = designsystem.LedgerLabel.onTv()

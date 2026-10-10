@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -131,7 +132,8 @@ private fun TvQuote(
         // `.pull-quote figcaption`: 24 above, its rule 4 + 18 around (`home.css:296,302`).
         Box(modifier = Modifier.padding(top = (24 + 4).tvDp, bottom = 18.tvDp).width(32.tvDp).height(1.dp).background(MaterialTheme.colorScheme.border))
         val credit = listOfNotNull(set.title, set.year?.takeIf { it > 0 }?.toString()).joinToString(", ").uppercase()
-        Text(text = credit, style = TvType.labelSmall.copy(letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // `.pull-quote figcaption`: Geist 500 (`home.css:298`), heavier than the figures this role is for.
+        Text(text = credit, style = TvType.labelSmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
