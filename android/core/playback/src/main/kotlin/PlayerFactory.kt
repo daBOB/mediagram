@@ -135,6 +135,7 @@ suspend fun buildPlayer(
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                 .build()
+            addAnalyticsListener(VideoFilterLog(this))
         }
 
 /**
