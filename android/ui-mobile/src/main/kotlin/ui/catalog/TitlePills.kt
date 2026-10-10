@@ -6,12 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import ui.chrome.CatalogueButton
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import ui.chrome.CatalogueOutlinedButton
 import androidx.compose.material3.Text
 import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import ui.chrome.CatalogueMenu
+import ui.chrome.CatalogueMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,9 +95,9 @@ internal fun TitlePills(
                 onClick = { expanded = true },
                 modifier = Modifier.heightIn(min = MIN_TOUCH_TARGET).semantics { contentDescription = "More" },
             ) { Text("⋯") }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            CatalogueMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 if (onToggleEditorsChoice != null) {
-                    DropdownMenuItem(
+                    CatalogueMenuItem(
                         text = { Text(if (editorsChoicePinned) "Remove as editor's choice" else "Make editor's choice") },
                         onClick = {
                             expanded = false

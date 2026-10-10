@@ -2,12 +2,12 @@ package ui.player
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import ui.chrome.CatalogueMenu
+import ui.chrome.CatalogueMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,9 +80,10 @@ private fun KidsMark(
     var open by remember { mutableStateOf(false) }
     Box {
         MarkButton(label = kidsLabel(marks), onClick = { open = true }, enabled = marks.kidsVerdict == KidsVerdict.UNRATED)
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        // The web's player menus are shown and hidden, never animated (player-card.css:89-119).
+        CatalogueMenu(expanded = open, onDismissRequest = { open = false }, still = true) {
             KIDS_CHOICES.forEach { choice ->
-                DropdownMenuItem(
+                CatalogueMenuItem(
                     text = { Text(choice.label) },
                     onClick = {
                         open = false
