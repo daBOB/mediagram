@@ -64,12 +64,12 @@ private data class DriftElement(
 private class DriftNode(var spec: DriftElement) : Modifier.Node(), LayoutModifierNode, CompositionLocalConsumerModifierNode {
     private val clock = Animatable(0f)
     private var job: Job? = null
-    private var still = false
 
-    override fun onAttach() {
-        still = currentValueOf(LocalReducedMotion)
-        sync()
-    }
+    // Read where it is used, not once on attach, so a new value reaches a
+    // node that stays attached.
+    private val still get() = currentValueOf(LocalReducedMotion)
+
+    override fun onAttach() = sync()
 
     fun sync() {
         if (!isAttached || still) return
