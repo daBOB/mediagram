@@ -2,9 +2,16 @@
 
 2026-10-10, worktree `mediagram-tv`, branch `feat/tv-parity`. Not pushed, not released, no device touched.
 
-- `fe85a285` fix(tv): draw the TV a quarter smaller, text and spacing from one scale
-- `f55ab9e1` chore: release 0.120.1 — the TV is a quarter smaller (Cargo.toml, web/package.json, versionName, Cargo.lock, changelog)
-- `be6f837a` fix(tv): page spacing and the end gutter through the TV scale (folded into 0.120.1; the changelog entry amended)
+In order (the release commit is last, as the tree that ships):
+
+1. `fe85a285` fix(tv): draw the TV a quarter smaller, text and spacing from one scale
+2. `a8c0bc23` fix(tv): page spacing and the end gutter through the TV scale
+3. `5e21d7c5` docs(plan): this report
+4. `f83269b0` fix(tv): wall margins, card and pill insets and the cover's edge from the web (the review's fixes)
+5. docs(plan): this report's review rows
+6. chore: release 0.120.1 — the TV is a quarter smaller (Cargo.toml, web/package.json, versionName, Cargo.lock, changelog)
+
+The first release commit (`f55ab9e1`) was dropped with a non-interactive `git rebase --onto f55ab9e1^ f55ab9e1` and made again at the end. Its changelog entry was conflicted and dropped in that rebase, then written whole in the new release commit.
 
 ## How the brief moved
 
@@ -19,7 +26,7 @@ The margin fix and the size fix landed as one change.
 `designsystem/TvTypeScale.kt`:
 
 - **`const val TvScale = 960f / 1280f`.** One number to retune.
-- **`Number.webDp` / `Number.webSp`:** web px through the scale.
+- **`Number.tvDp` / `Number.tvSp`:** web px through the scale.
 - **`TextStyle.onTv()`:** scales the size, the sp line height and the sp tracking.
 - **`TvType`:** the ten `CatalogueType` roles plus `Eyebrow`, `SectionHead`, `LedgerLabel` and `LedgerValue`, all through the scale.
 - **The phone is unaffected.** `CatalogueType` itself is unchanged.
@@ -27,9 +34,9 @@ The margin fix and the size fix landed as one change.
 What changed in `:ui-tv`:
 
 - Every `CatalogueType.` is now `TvType.`: 130 references in 53 files.
-- Every literal `N.sp` outside `player/` is now `N.webSp`: 28 files.
+- Every literal `N.sp` outside `player/` is now `N.tvSp`: 28 files.
 - The tv-material slots in `TvTheme` hold the `TvType` roles.
-- The rail, the departments bar and the page gutter take their px through `webDp`.
+- The rail, the departments bar and the page gutter take their px through `tvDp`.
 
 **The floor is dropped.** The web sets no minimum size, so the 11sp floor is gone. The rail count and tally use the web's own 10px, which is now 7.5sp.
 
@@ -43,7 +50,7 @@ The web has no collapsed rail at 1280px; under 900px the rail turns into a heade
 | Icon inset from screen edge | 30 (18 + 12) | 56 (overscan 48 + 8) | 22.5 | 22.5 |
 | Icon size | 21 | 16 collapsed (squeezed), 22 open | 15.75 both | |
 | Open width | 224 (14rem; 184 under 1180) | 224 | 168 | 168 |
-| Rail padding L / R / T / B | 18 / 18 / 26 / 28 | 48 / 16 / 27 / 27 | 13.5 / 13.5 / 19.5 / 21 | |
+| Rail padding L / R / T / B | 18 / 18 / 26 / 28 | 48 / 16 / 27 / 27 | 13.5 / 13.5 / 27 / 27 (top and bottom on the vertical overscan) | wordmark top 27, on the bar's top line |
 | Row padding | 12 × 10 | 8 × 8 | 9 × 7.5 | |
 | Row min height | 44 | 44 | 33 | |
 | Icon → label gap | 12 | 16 | 9 | label at 47.25 → 47.5 |
@@ -164,9 +171,26 @@ Added with the spacing:
 - **`TvDepartmentsBarTest.theAvatarAndThePageEndOneGutterInFromTheEdge`:** replaces the 48dp end check. The avatar's end and the page's end padding equal the gutter at both sides.
 - **`TvAnimeDepartmentPageStateTest`:** two tests run in a taller window. At the wall's 36px line gap, the Films line fell under a 1080dp window.
 
+Added with the review's fixes (every expectation is web px × `TvScale`):
+- **`TvPageSpacingTest.aWallsHeadAndHeadingsKeepTheirOwnMargins`:**
+  - a real `TvShelfHead` as the head, measured from its title: 20 + 1dp rule + 36 down to the first line;
+  - the "Films" heading 40 above and 20 below.
+  - A mutation run that put back the 16dp under the rule failed it: 59 against 43.
+- **`aWallOfTilesStandsUnderItsHeadByTheHeadsMargin`:** 36, not the tiles' 14.
+- **`anArtTileAndAPagePillAreInsetAsTheWebsAre`:**
+  - genre tile 18 / 16 / 4;
+  - destination 22 / 6;
+  - pill 52 tall, 28 in.
+- **`theCoverActionsStandOnThePageEdgeAtTheWebsGap`:** Watch now on the page's start gutter; 12 to My List.
+- **`TvResumeCardTest`:** the caption is 12 in and 10 from the foot; the 42% check reads the scaled inset.
+- **`TvLibraryRailSizesTest`:** the wordmark's top is on the vertical overscan.
+
 Runs, all green:
 - `:core:designsystem:testDebugUnitTest`: 23 tests, 0 failed.
-- `:ui-tv:testDebugUnitTest`: 597 tests, 0 failed (forced rerun), then 601 tests, 0 failed with the spacing.
+- `:ui-tv:testDebugUnitTest`:
+  - 597 tests, 0 failed (forced rerun);
+  - then 601 tests, 0 failed with the spacing;
+  - then 605 tests, 0 failed (forced rerun) after the review's fixes.
 - `:ui-tv:compileDebugAndroidTestKotlin` and `:ui-mobile:compileDebugKotlin` pass.
 - `:ui-tv:lintDebug` passes with no errors. The warning count was not read, because the hook blocks reading the build directory.
 
@@ -190,6 +214,17 @@ Each value is the web's px at 1280 × 0.75. All of them live in `catalog/TvPageS
 | Collections' card gap / "New list" top | 16 / 20 (departments.css:97,106) | 16 / 20 | 12 / 15 |
 | Wall of plates: between lines × across | 36 × 22 (`.grid.plates`, catalog.css:30) | 16 × 16 | 27 × 16.5 |
 | Shelf head: title → rule; title → sub | 20 / 24 (`.shelf-head`, catalog.css:11) | 20 (counted head 8) / 24 | 15 / 18 |
+| Shelf head's rule → a wall's first line | 36 (`.shelf-head` margin, catalog.css:11) | 16 + 16 grid gap = 32 (43 after the first round: 16 + 27) | 27, in plate and tile walls alike |
+| Wall section heading ("Movies", "Series", "Films"): above / below | 40 / 20 (`.shelf-sub`, catalog.css:98) | 16 / 16 (27 / 27 after the first round) | 30 / 15 |
+| Course or series page: head → resume line → rows | 36 (`.shelf-head` margin) | 16 under the rule | 27 (less the rows' own 8 before the rows) |
+| List page: head → Play all / Rename row | 36 | 16 | 27 |
+| Continue caption: padding T / sides / B, line gap | 26 / 12 / 10, 3 (`.resume-text`, home.css:265-267) | 26 / 12 / 10, 3 | 19.5 / 9 / 7.5, 2.25 |
+| Genre tile inset / name → count | 16 × 18 / 4 (`.genre-tile`, catalog.css:140,147) | 16 × 18 / 4 | 12 × 13.5 / 3 |
+| Destination inset / name → meta | 20 × 22 / 6 (`.destination`, departments.css:98,105) | 20 × 22 / 6 | 15 × 16.5 / 4.5 |
+| Page pill ("All N films", "New list"): height / inset | 52 / 28 (`.dept-all`, departments.css:72-74) | 52 / 28 | 39 / 21 |
+| Cover actions: gap; start | 12 (`.cover-actions`, home.css:70); the page's gutter | 16; 32 | 9; 30.72, where the bar and the bands start |
+| Cover words: start and end | the page's gutter | 32 | 30.72 |
+| Movies row genre tile width | 12rem floor (departments.css:67); the phone keeps 240 | 240 (sized for the old 24sp name) | 180 (the phone's 240 through the scale) |
 | Pull quote: text → rule → credit; rule width | 24 + 4 / 18; 32 (home.css:296,302) | 16 / 8; 32 | 21 / 13.5; 24 |
 | This month: inset, row padding, gap, number column, title → list | 28, 10, 8, 2.2rem, 8 (home.css:307-321) | 16, 8, 8, 35, 8 | 21, 7.5, 6, 26.4, 6 |
 | Feature copy: padding, width, eyebrow → title | 36 × `clamp(24px, 2.6vw, 40px)` = 33.28, 26rem, 18 (home.css:169-170) | 16 × 24, 480, 8 | 27 × 24.96, 312, 13.5 |
@@ -200,7 +235,6 @@ Each value is the web's px at 1280 × 0.75. All of them live in `catalog/TvPageS
 ### Left as they are, and why
 
 - **TV-specific and not taken from the web:**
-  - the 16dp under a shelf head's rule, which leaves room for a focused first plate's 1.08 grow (the web's 36 margin is the wall's own line gap below);
   - the pill ring room (8dp) and the bar's edge-fade width (24dp);
   - the focus scale and the bring-into-view clearance;
   - the quote mark's 8dp, since the TV hangs the mark above the text where the web hangs it in the margin.
@@ -211,6 +245,8 @@ Each value is the web's px at 1280 × 0.75. All of them live in `catalog/TvPageS
 - **Sizes of things, which the brief was about spacing, not:** card, plate and tile widths (160 / 240dp), hero heights (360 / 380dp), feature card heights (300 / 220), and the poster aspect.
 - **The player overlay**, still left for batch 5.
 - **Pages with three left edges** (the wall's padding added again by department pages). That is batch 3's "one left edge", a layout fix rather than a number.
+- **The list page's controls → its first line** takes the head's 27 under the controls, where the web's `.list-controls` margin is 16 (12dp). The wall puts one space under its head, and the head and the controls are one header.
+- **The page pill takes `.dept-all`'s 52 / 28 for "New list" too,** where the web's `.make` is 44 / 22. One TV pill serves both.
 - **The feature card's rule.** The TV draws none, so the deck keeps its 8dp under the title.
 
 ## Concerns
