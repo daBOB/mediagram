@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.120.0 — the TV reads at the web's size
+
+**Changed** (Android TV, and the tablet for the toolbar)
+
+- **The television's text follows the web's sizes.** Every label sat at 18sp and every heading at 34sp; the TV now reads the web's CSS at a 960px window, one px to one sp, never under 11sp. Display titles take the web's 1920px sizes halved (department 60, cover 56, spread 46, shelf head 28.8sp), and the faces match the web's: Newsreader for decks, overviews, quotes and the department line, Fraunces for plate names, Geist 600 for row heads (`a6549c1c`).
+- **The departments bar fits the box.** Pills drop their counts (the rail's foot keeps the totals), the avatar opens the menu, which now leads with Switch profile, and a row that still overflows fades only the end it clips. The rail opens at the web's 224dp (`a6549c1c`).
+- **The Continue card's episode line no longer runs under its progress bar**: the line is capped at 42% of the caption, the bar sits at its far end, and the caption has a scrim of its own height (`a6549c1c`).
+- **Search and the avatar stand at the bar's far end**, on the TV and the tablet, as the web's toolbar does (`a53e29a0`).
+
 ## 0.119.2 — "Stay as I am" hands the TV remote back to the avatar
 
 **Fixed** (Android TV)
