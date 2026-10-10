@@ -16,7 +16,7 @@ import androidx.tv.material3.MaterialTheme
 import catalog.initialsOf
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import kotlin.math.roundToInt
 
 /**
@@ -73,4 +73,4 @@ private const val InitialShare = 0.26f
 private const val InitialLeading = 1.1f
 
 /** Letters standing in for artwork are set apart, the way the phone plate's are. */
-private val InitialTracking = 2.webSp
+private val InitialTracking = 2.tvSp

@@ -32,7 +32,7 @@ import catalog.spelledCountOf
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import java.io.File
 import ui.tv.TvFocus
 import ui.tv.catalog.StripGap
@@ -107,14 +107,14 @@ internal fun TvPosterStrip(
                         }
                         Text(
                             text = show.name,
-                            style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.25.em),
+                            style = TvType.titleSmall.copy(fontSize = 15.tvSp, lineHeight = 1.25.em),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
                         )
                         Text(
                             text = "${spelledCountOf(show.count, "episode")} · ${spelledCountOf(show.chapters, "season")}",
-                            style = TvType.labelSmall.copy(fontSize = 12.webSp),
+                            style = TvType.labelSmall.copy(fontSize = 12.tvSp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,

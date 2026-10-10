@@ -92,7 +92,8 @@ fun TvList(
     }
 
     val header: @Composable () -> Unit = {
-        Column {
+        // `.shelf-head`'s margin between the head and the list's controls.
+        Column(verticalArrangement = Arrangement.spacedBy(ShelfHeadBelow)) {
             // The web's `heading()` over a list (`renderList`), counting what
             // the list names — the number its Collections card shows too —
             // rather than only the titles this library could still resolve.

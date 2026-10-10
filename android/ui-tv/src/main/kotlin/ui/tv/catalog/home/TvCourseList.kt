@@ -30,7 +30,7 @@ import catalog.initialsOf
 import catalog.spelledCountOf
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -90,7 +90,7 @@ internal fun TvCourseList(
                             Text(text = course.name, style = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, lineHeight = 1.35.em), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 text = "${spelledCountOf(course.count, "lesson")} · ${spelledCountOf(course.chapters, "chapter")}",
-                                style = TvType.labelSmall.copy(fontSize = 13.webSp),
+                                style = TvType.labelSmall.copy(fontSize = 13.tvSp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 2.dp),
                             )

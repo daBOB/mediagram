@@ -25,6 +25,7 @@ import catalog.GenreIndexEntry
 import catalog.factsLine
 import catalog.keyOf
 import catalog.spelledCountOf
+import designsystem.tvDp
 import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
@@ -38,12 +39,12 @@ import ui.tv.rememberStableRequester
 internal val DeptTileWidth = 160.dp
 
 /**
- * How wide a genre tile is on the Movies department's own row: the web's
- * 12rem floor would leave a 16:8 tile 96dp tall, short of a two-line genre
- * name at television's 24sp, so the row takes the same ten-foot step up its
- * name does.
+ * How wide a genre tile is on the Movies department's own row: the phone's
+ * 240, wider than the web's 12rem floor (`departments.css:67`), which leaves
+ * a two-line name and its count no room. It went through the same scale as
+ * the name it makes room for, where it used to be the 240dp of a 24sp name.
  */
-private val GenreRowTileWidth = 240.dp
+private val GenreRowTileWidth = 240.tvDp
 
 /** How far past a department row's own edge it keeps plates composed — [TvWall]'s own reasoning, at a single row's smaller scale. */
 private val DeptCacheAhead = 320.dp

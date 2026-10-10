@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.webSp
+import designsystem.tvSp
 import ui.tv.catalog.RowHead
 
 /**
@@ -45,7 +45,7 @@ internal fun TvBandHeading(
             text =
                 buildAnnotatedString {
                     append(title)
-                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.webSp, fontWeight = FontWeight.Normal)) { append(" · $count") }
+                    if (count != null) withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.tvSp, fontWeight = FontWeight.Normal)) { append(" · $count") }
                 },
             style = style,
         )

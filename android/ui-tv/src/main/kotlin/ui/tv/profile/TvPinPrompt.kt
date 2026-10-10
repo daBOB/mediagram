@@ -39,7 +39,7 @@ import catalog.profile.PinPrompt
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
 import ui.tv.rememberStableRequester
@@ -76,7 +76,7 @@ internal fun TvPinPrompt(
         modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(prompt.heading, style = TvType.titleMedium.copy(fontSize = 19.5.webSp, lineHeight = 1.25.em))
+        Text(prompt.heading, style = TvType.titleMedium.copy(fontSize = 19.5.tvSp, lineHeight = 1.25.em))
         prompt.error?.let {
             Text(it, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.small))
         }
@@ -179,4 +179,4 @@ private fun TvPinKey(
 }
 
 /** `.pin-prompt input` (`library-controls.css:71`): Geist 500 at 1.5rem — the dots, and the pad's digits that type them. */
-private val PinFigures = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.webSp, lineHeight = 1.em)
+private val PinFigures = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.tvSp, lineHeight = 1.em)

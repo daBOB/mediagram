@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -150,7 +151,6 @@ fun <T> TvWall(
                     .onFocusChanged { wallHasFocus.value = it.hasFocus },
             contentPadding = LocalTvPagePadding.current.asPaddingValues(),
             horizontalArrangement = Arrangement.spacedBy(if (columns == Columns) WallPlateGap else TileGap),
-            verticalArrangement = Arrangement.spacedBy(if (columns == Columns) WallLineGap else TileGap),
         ) {
             items(
                 items = cells,
@@ -162,34 +162,35 @@ fun <T> TvWall(
                     }
                 },
                 span = { cell -> if (cell is WallCell.Plate) GridItemSpan(1) else GridItemSpan(maxLineSpan) },
-                // A plate scrolled off is recomposed as the next plate scrolled
-                // on, never as a heading — the reuse a lazy grid only does
-                // between items of one declared type.
+                // A plate scrolled off is recomposed as the next plate scrolled on, never as a
+                // heading — the reuse a lazy grid only does between items of one declared type.
                 contentType = { cell -> cell::class },
             ) { cell ->
-                when (cell) {
-                    WallCell.Header ->
-                        CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
-                            val plate = focusIndex?.let { cells.indexOf(WallCell.Plate(it)) } ?: -1
-                            val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
-                            Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
+                Box(Modifier.padding(top = spaceAbove(cell, header != null, headings, columns))) {
+                    when (cell) {
+                        WallCell.Header ->
+                            CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
+                                val plate = focusIndex?.let { cells.indexOf(WallCell.Plate(it)) } ?: -1
+                                val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
+                                Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
+                            }
+                        is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = ShelfSub)
+                        is WallCell.Plate -> {
+                            val item = items[cell.index]
+                            val crossingRequester = crossingFocusRequesters[cell.index]
+                            val upTarget = crossings.up[cell.index]?.let(crossingFocusRequesters::getValue)
+                            val downTarget = crossings.down[cell.index]?.let(crossingFocusRequesters::getValue)
+                            var itemModifier: Modifier = Modifier.focusRequester(rememberStableRequester(focusRequester.takeIf { cell.index == focusIndex }))
+                            if (crossingRequester != null) itemModifier = itemModifier.focusRequester(crossingRequester)
+                            if (upTarget != null || downTarget != null) {
+                                itemModifier =
+                                    itemModifier.focusProperties {
+                                        upTarget?.let { up = it }
+                                        downTarget?.let { down = it }
+                                    }
+                            }
+                            plate(item, itemModifier) { onOpen(item) }
                         }
-                    is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = ShelfSub)
-                    is WallCell.Plate -> {
-                        val item = items[cell.index]
-                        val crossingRequester = crossingFocusRequesters[cell.index]
-                        val upTarget = crossings.up[cell.index]?.let(crossingFocusRequesters::getValue)
-                        val downTarget = crossings.down[cell.index]?.let(crossingFocusRequesters::getValue)
-                        var itemModifier: Modifier = Modifier.focusRequester(rememberStableRequester(focusRequester.takeIf { cell.index == focusIndex }))
-                        if (crossingRequester != null) itemModifier = itemModifier.focusRequester(crossingRequester)
-                        if (upTarget != null || downTarget != null) {
-                            itemModifier =
-                                itemModifier.focusProperties {
-                                    upTarget?.let { up = it }
-                                    downTarget?.let { down = it }
-                                }
-                        }
-                        plate(item, itemModifier) { onOpen(item) }
                     }
                 }
             }

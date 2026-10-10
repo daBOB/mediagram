@@ -29,7 +29,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import java.io.File
 import model.MediaSet
 import ui.tv.TvFocus
@@ -128,7 +128,7 @@ private fun TvRecentPosterRow(
                         } else {
                             Text(
                                 text = set.title,
-                                style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.3.em),
+                                style = TvType.titleSmall.copy(fontSize = 15.tvSp, lineHeight = 1.3.em),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis,

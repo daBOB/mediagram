@@ -34,7 +34,7 @@ import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 
 /**
  * One line typed through the system keyboard — the field every television
@@ -122,4 +122,4 @@ internal fun TvTextField(
 }
 
 /** The web's text inputs, `font-size: 1rem` (`library-controls.css:12,51`). */
-private val FieldText = TvType.bodyMedium.copy(fontSize = 16.webSp)
+private val FieldText = TvType.bodyMedium.copy(fontSize = 16.tvSp)

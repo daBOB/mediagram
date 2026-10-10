@@ -22,15 +22,15 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.Dp
 import catalog.ChromeCounts
 import designsystem.Overscan
-import designsystem.webDp
+import designsystem.tvDp
 import ui.common.RailItem
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
-internal val TvDepartmentsBarHeight = 76.webDp
+internal val TvDepartmentsBarHeight = 76.tvDp
 
 /** The page's and the bar's side gutter, off the collapsed rail's edge at the start and off the screen's at the end: the web's `--gutter`, 3.2vw at 1280px (`theme.css:112`), the same on both sides as the web's `main` and `.masthead`. */
-internal val TvContentGutter = 40.96.webDp
+internal val TvContentGutter = 40.96.tvDp
 
 /**
  * Where the bar and the content both start, regardless of whether the rail

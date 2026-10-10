@@ -1,14 +1,18 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import catalog.CollectionKind
 import catalog.Entry
 import catalog.SeriesResumePick
 import catalog.courseExtentOf
 import catalog.rowsOf
 import data.PortraitRequestLog
+import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
 import uniffi.mediagram_core.TitleInfo
@@ -96,7 +100,8 @@ private fun TvCoursePage(
             onPlay = onPlay,
             restoreKey = restoreKey,
             header = {
-                Column {
+                // `.shelf-head`'s margin under the head, and before the rows, less the gap the rows keep themselves.
+                Column(modifier = Modifier.padding(bottom = ShelfHeadBelow - Spacing.small), verticalArrangement = Arrangement.spacedBy(ShelfHeadBelow)) {
                     TvShelfHead(collection.name, extent)
                     resume?.let { pick -> SeriesResumeRow(pick, onResume) }
                 }

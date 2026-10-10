@@ -1,5 +1,8 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
 /**
  * One line of a wall as the grid lays it out: the optional header across
  * the top, a section's label, or one plate — so a plate's place in the grid
@@ -69,3 +72,29 @@ internal fun sectionCrossingsOf(
     }
     return SectionCrossings(up, down)
 }
+
+/**
+ * The space above [cell] in a wall, carried by each cell rather than by the grid's arrangement,
+ * which would put one gap around the head, a section's heading and the lines alike. Between two
+ * lines of a section, the grid's line gap; under the head, `.shelf-head`'s margin; around a
+ * heading, `.shelf-sub`'s 40 above and 20 below (`catalog.css:11,98`).
+ */
+internal fun spaceAbove(
+    cell: WallCell,
+    hasHeader: Boolean,
+    headings: Map<Int, String>,
+    columns: Int,
+): Dp =
+    when (cell) {
+        WallCell.Header -> 0.dp
+        is WallCell.Heading -> if (!hasHeader && headings[0] == cell.label) 0.dp else ShelfSubAbove
+        is WallCell.Plate -> {
+            val sectionStart = headings.keys.filter { it <= cell.index }.maxOrNull()
+            when {
+                cell.index - (sectionStart ?: 0) >= columns -> if (columns == Columns) WallLineGap else TileGap
+                sectionStart != null -> ShelfSubBelow
+                hasHeader -> ShelfHeadBelow
+                else -> 0.dp
+            }
+        }
+    }

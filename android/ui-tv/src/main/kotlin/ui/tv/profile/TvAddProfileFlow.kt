@@ -18,7 +18,7 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import model.KIDS_LIMITS
 import ui.tv.TvTextRow
 import ui.tv.setup.TvTextQuestion
@@ -78,7 +78,7 @@ private fun TvKidsLimitChoice(
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
     Column(Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
-        Text(name, style = TvType.titleLarge.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em))
+        Text(name, style = TvType.titleLarge.copy(fontSize = 21.6.tvSp, lineHeight = 1.1.em))
         KIDS_LIMITS.forEachIndexed { index, age ->
             TvTextRow(
                 text = "FSK $age",

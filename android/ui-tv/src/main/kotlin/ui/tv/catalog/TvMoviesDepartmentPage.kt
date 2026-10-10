@@ -27,7 +27,7 @@ import catalog.Department
 import catalog.MoviesDepartment
 import catalog.moviesLineOf
 import designsystem.Spacing
-import designsystem.webDp
+import designsystem.tvDp
 import kotlinx.coroutines.flow.first as firstOf
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
@@ -172,7 +172,7 @@ internal fun TvMoviesDepartmentPage(
             item(key = MoviesSection.ALL) {
                 // The web's `.dept-all` and the phone's `PagePill`: a round
                 // outline link at the page's foot, 56 under the last row.
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.webDp, bottom = Spacing.medium)) {
+                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.tvDp, bottom = Spacing.medium)) {
                     TvPagePill(
                         text = "All ${dept.filmCount} films →",
                         onClick = onOpenAllFilms,

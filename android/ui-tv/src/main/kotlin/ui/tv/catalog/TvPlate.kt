@@ -24,7 +24,7 @@ import catalog.initialsOf
 import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import java.io.File
 import ui.tv.TvFocus
 
@@ -168,10 +168,10 @@ internal fun TvPlateArt(
 }
 
 /** `.grid.plates .name` (`catalog.css:54`): Fraunces 500 at 17px. */
-private val PlateName = TvType.titleSmall.copy(fontSize = 17.webSp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
+private val PlateName = TvType.titleSmall.copy(fontSize = 17.tvSp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
 
 /** `.grid.plates .meta` (`catalog.css:55`). */
-private val PlateMeta = TvType.labelSmall.copy(fontSize = 12.webSp)
+private val PlateMeta = TvType.labelSmall.copy(fontSize = 12.tvSp)
 
 /** A poster's own proportions, the same ratio the phone plate is cut to. */
 private const val PosterAspectRatio = 2f / 3f

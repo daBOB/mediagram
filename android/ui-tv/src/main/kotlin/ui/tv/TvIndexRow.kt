@@ -43,7 +43,7 @@ import designsystem.Radius
 import designsystem.Spacing
 import designsystem.StatusDot
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 
 /**
  * One row of an index — an icon, a label, and whatever [status] or
@@ -149,7 +149,7 @@ internal fun TvIndexRow(
             }
             trailing?.let {
                 // `.n`: 0.625rem, 40% ink (`shell.css:60`).
-                Text(text = it, style = TvType.labelSmall.copy(fontSize = 10.webSp, fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
+                Text(text = it, style = TvType.labelSmall.copy(fontSize = 10.tvSp, fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
             }
         }
     }

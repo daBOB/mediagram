@@ -13,8 +13,8 @@ class TvTypeScaleTest {
     @Test
     fun theScaleIsA1280ViewportOnA960Screen() {
         assertEquals(0.75f, TvScale)
-        assertEquals(7.5f, 10.webSp.value, "`.n`, 0.625rem: no floor lifts it")
-        assertEquals(30.72f, 40.96.webDp.value, 0.001f, "`--gutter`, 3.2vw at 1280px")
+        assertEquals(7.5f, 10.tvSp.value, "`.n`, 0.625rem: no floor lifts it")
+        assertEquals(30.72f, 40.96.tvDp.value, 0.001f, "`--gutter`, 3.2vw at 1280px")
     }
 
     @Test

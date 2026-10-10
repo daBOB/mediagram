@@ -16,7 +16,7 @@ import catalog.profile.WHO_RUNS_THIS
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import model.Profile
 import ui.tv.TvTextRow
 
@@ -93,7 +93,7 @@ internal fun TvAdminQuestion(
     focus: TvPickerSpot,
     focusRequester: FocusRequester,
 ) {
-    Text(WHO_RUNS_THIS, style = TvType.titleLarge.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em), modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium))
+    Text(WHO_RUNS_THIS, style = TvType.titleLarge.copy(fontSize = 21.6.tvSp, lineHeight = 1.1.em), modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium))
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.large), modifier = Modifier.padding(top = Spacing.small)) {
         grownUps.forEach { profile ->
             key(profile.id) {

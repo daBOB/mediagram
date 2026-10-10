@@ -40,7 +40,7 @@ import coil3.compose.AsyncImage
 import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import java.io.File
 import ui.common.catalog.isPlayable
 import ui.common.catalog.locationOf
@@ -163,7 +163,7 @@ internal fun TvPersonCard(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = Spacing.small),
         )
-        sub?.let { TvQuietLine(it, textAlign = TextAlign.Center, style = TvType.bodySmall.copy(fontSize = 12.webSp)) }
+        sub?.let { TvQuietLine(it, textAlign = TextAlign.Center, style = TvType.bodySmall.copy(fontSize = 12.tvSp)) }
     }
 }
 

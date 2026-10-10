@@ -26,7 +26,8 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import java.io.File
 import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
@@ -74,15 +75,16 @@ internal fun TvArtTile(
                 modifier =
                     Modifier
                         .align(Alignment.BottomStart)
-                        .padding(horizontal = if (destination) 22.dp else 18.dp, vertical = if (destination) 20.dp else 16.dp),
+                        // `.destination` 20 by 22, `.genre-tile` 16 by 18 (`departments.css:98`, `catalog.css:140`).
+                        .padding(horizontal = if (destination) 22.tvDp else 18.tvDp, vertical = if (destination) 20.tvDp else 16.tvDp),
             ) {
                 Text(
                     text = if (destination) name.uppercase() else name,
                     style =
                         if (destination) {
-                            TvType.headlineSmall.copy(fontSize = 25.6.webSp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
+                            TvType.headlineSmall.copy(fontSize = 25.6.tvSp, lineHeight = 1.05.em, letterSpacing = (-0.015).em)
                         } else {
-                            TvType.headlineSmall.copy(fontSize = 21.6.webSp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
+                            TvType.headlineSmall.copy(fontSize = 21.6.tvSp, lineHeight = 1.1.em, letterSpacing = (-0.01).em)
                         },
                     color = ink,
                     maxLines = if (destination) 3 else 2,
@@ -90,9 +92,10 @@ internal fun TvArtTile(
                 )
                 Text(
                     text = meta,
-                    style = if (destination) TvType.labelMedium else TvType.labelMedium.copy(fontSize = 12.webSp, letterSpacing = 0.08.em),
+                    style = if (destination) TvType.labelMedium else TvType.labelMedium.copy(fontSize = 12.tvSp, letterSpacing = 0.08.em),
                     color = ink.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(top = if (destination) 6.dp else 4.dp),
+                    // `.destination-meta` 6, `.genre-tile-count` 4 (`departments.css:105`, `catalog.css:147`).
+                    modifier = Modifier.padding(top = if (destination) 6.tvDp else 4.tvDp),
                 )
             }
         }
@@ -116,7 +119,8 @@ internal fun TvPagePill(
     val ink = MaterialTheme.colorScheme.onSurface
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 52.dp),
+        // `.dept-all`: at least 52 tall, 28 in at either end (`departments.css:72-74`).
+        modifier = modifier.heightIn(min = 52.tvDp),
         shape = TvFocus.surfaceShape(shape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -135,7 +139,7 @@ internal fun TvPagePill(
             ),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Box(modifier = Modifier.heightIn(min = 52.dp).padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.heightIn(min = 52.tvDp).padding(horizontal = 28.tvDp), contentAlignment = Alignment.Center) {
             Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium))
         }
     }

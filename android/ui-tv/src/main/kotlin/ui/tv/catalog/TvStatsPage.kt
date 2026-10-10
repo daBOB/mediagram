@@ -29,7 +29,7 @@ import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import stats.HISTORY_HEADING
 import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
@@ -118,4 +118,4 @@ internal fun TvStatsStop(
 }
 
 /** `.stats-total dd` (`appearance.css:157`): Fraunces 600, `clamp(1.6rem, 3vw, 2.4rem)` at 1280px, its ceiling. */
-private val StatsTotal = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 38.4.webSp, lineHeight = 1.1.em, fontFeatureSettings = "tnum")
+private val StatsTotal = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 38.4.tvSp, lineHeight = 1.1.em, fontFeatureSettings = "tnum")

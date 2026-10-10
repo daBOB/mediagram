@@ -63,6 +63,11 @@ class TvResumeCardTest : TvScreenStateTest() {
         assertEquals(14 * TvScale, compose.fontSizeOf("Tatort").value, "`.resume-name`, 0.875rem")
         assertEquals(12 * TvScale, compose.fontSizeOf(SUB).value, "`.resume-sub`, 0.75rem")
         assertEquals(12 * TvScale, compose.fontSizeOf("offline").value, "`.badge`, 0.75rem")
+        val card = compose.onNodeWithTag(TvResumeCardTag).getUnclippedBoundsInRoot()
+        val name = compose.onNodeWithText("Tatort", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val badge = compose.onNodeWithTag(TvOfflineBadgeTag, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(12 * TvScale, (name.left - card.left).value, 0.5f, "`.resume-text` 12 in")
+        assertEquals(10 * TvScale, (card.bottom - badge.bottom).value, 0.5f, "and 10 from the foot")
     }
 
     private fun subBounds(): DpRect = compose.onNodeWithText(SUB, useUnmergedTree = true).getUnclippedBoundsInRoot()
@@ -80,7 +85,7 @@ class TvResumeCardTest : TvScreenStateTest() {
         const val SUB = "S1E2 · Der Fall Charly und die lange Nacht"
 
         /** `.resume-text{padding: … 12px …}` on either side. */
-        val CaptionInset = androidx.compose.ui.unit.Dp(12f)
+        val CaptionInset = androidx.compose.ui.unit.Dp(12 * TvScale)
 
         /** Text measures to fractions of a dp. */
         val Slack = androidx.compose.ui.unit.Dp(1f)

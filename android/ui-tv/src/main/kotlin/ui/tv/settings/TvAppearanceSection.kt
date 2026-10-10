@@ -28,7 +28,7 @@ import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.SectionHead
-import designsystem.webSp
+import designsystem.tvSp
 import ui.tv.TvFocus
 import ui.tv.rememberStableRequester
 
@@ -118,7 +118,7 @@ private fun TvAccentSwatch(
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
         ) {}
-        Text(text = label, style = TvType.bodySmall.copy(fontSize = 12.webSp))
+        Text(text = label, style = TvType.bodySmall.copy(fontSize = 12.tvSp))
     }
 }
 
@@ -148,7 +148,7 @@ private fun TvArtworkSwatch(
             glow = TvFocus.surfaceGlow(),
         ) {}
         Text(text = backdrop.label, style = TvType.labelLarge)
-        Text(text = backdrop.note, style = TvType.bodySmall.copy(fontSize = 12.webSp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = backdrop.note, style = TvType.bodySmall.copy(fontSize = 12.tvSp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

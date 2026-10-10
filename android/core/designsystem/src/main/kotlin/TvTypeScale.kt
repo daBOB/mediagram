@@ -16,11 +16,11 @@ import androidx.compose.ui.unit.sp
  */
 const val TvScale = 960f / 1280f
 
-/** [this] web px, in sp on a television. */
-val Number.webSp: TextUnit get() = (toFloat() * TvScale).sp
+/** [this] web CSS px as a television sets it, in sp. Television only: the phone reads a web px as one sp. */
+val Number.tvSp: TextUnit get() = (toFloat() * TvScale).sp
 
-/** [this] web px, in dp on a television. */
-val Number.webDp: Dp get() = (toFloat() * TvScale).dp
+/** [this] web CSS px as a television sets it, in dp. Television only, as [tvSp] is. */
+val Number.tvDp: Dp get() = (toFloat() * TvScale).dp
 
 private fun TextUnit.onTv(): TextUnit = if (isSp) this * TvScale else this
 
@@ -59,23 +59,23 @@ object TvType {
  */
 object TvTypeScale {
     /** `.dept-title` 7.5rem (`departments.css:32`), also the Settings and System page title (`settings-page.js:55`). */
-    val DepartmentTitle: TextUnit = (120 / 2).webSp
+    val DepartmentTitle: TextUnit = (120 / 2f).tvSp
 
     /** `.franchise-hero .dept-title` 5rem (`departments.css:108`). */
-    val FranchiseTitle: TextUnit = (80 / 2).webSp
+    val FranchiseTitle: TextUnit = (80 / 2f).tvSp
 
     /** `.cover-title` 7rem (`home.css:50`). */
-    val CoverTitle: TextUnit = (112 / 2).webSp
+    val CoverTitle: TextUnit = (112 / 2f).tvSp
 
     /** `.cover-title.long` 4.6rem (`home.css:56`). */
-    val CoverTitleLong: TextUnit = (73.6 / 2).webSp
+    val CoverTitleLong: TextUnit = (73.6f / 2f).tvSp
 
     /** `.spread-title` 5.75rem (`title-page.css:89`). */
-    val SpreadTitle: TextUnit = (92 / 2).webSp
+    val SpreadTitle: TextUnit = (92 / 2f).tvSp
 
     /** `.spread-title.long` 4.25rem (`title-page.css:93`). */
-    val SpreadTitleLong: TextUnit = (68 / 2).webSp
+    val SpreadTitleLong: TextUnit = (68 / 2f).tvSp
 
     /** `.shelf-head h1` 3.6rem (`catalog.css:7`). */
-    val ShelfHead: TextUnit = (57.6 / 2).webSp
+    val ShelfHead: TextUnit = (57.6f / 2f).tvSp
 }

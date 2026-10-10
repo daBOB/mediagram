@@ -623,8 +623,8 @@ says what it is.
 - **Television** (`TvArtTile`): the same tile as a focusable card with the
   one TV focus treatment (accent ring, 1.08 scale) on the same 12dp corner,
   at the web's sizes through the Television Rule — a 16.2sp genre name, a
-  19.2sp destination name, the count at 9sp and 9.75sp. Genres four across on the Genres page; 240dp wide in the Movies
-  row, where the web's 12rem would leave a two-line name no room; franchises
+  19.2sp destination name, the count at 9sp and 9.75sp. Genres four across on the Genres page; the phone's 240 wide in the Movies
+  row through the same scale (180dp), where the web's 12rem would leave a two-line name no room; franchises
   and lists three across on Collections and in Search's Collections part.
   The scrim and proportions are the phone's own, shared (`ArtTileScrim`).
 

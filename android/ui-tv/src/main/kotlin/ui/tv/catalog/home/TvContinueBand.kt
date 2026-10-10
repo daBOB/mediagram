@@ -33,8 +33,8 @@ import catalog.SetCard
 import designsystem.CoverTitle
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import model.MediaSet
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
@@ -101,7 +101,7 @@ internal fun TvContinueBand(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(HomeBandGap)) {
                 Box(Modifier.weight(2.6f)) { continueBlock() }
                 // `.home-band`'s `minmax(16rem, 1fr)` column.
-                Box(Modifier.weight(1f).widthIn(min = 256.webDp)) { quoteBlock() }
+                Box(Modifier.weight(1f).widthIn(min = 256.tvDp)) { quoteBlock() }
             }
     }
 }
@@ -121,7 +121,7 @@ private fun TvQuote(
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) }),
     ) {
-        Text(text = "“", style = CoverTitle.copy(fontSize = 40.webSp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
+        Text(text = "“", style = CoverTitle.copy(fontSize = 40.tvSp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
         Text(
             text = tagline,
             style = TvFocus.textStyle(QuoteTagline, focused),
@@ -129,11 +129,11 @@ private fun TvQuote(
             overflow = TextOverflow.Ellipsis,
         )
         // `.pull-quote figcaption`: 24 above, its rule 4 + 18 around (`home.css:296,302`).
-        Box(modifier = Modifier.padding(top = (24 + 4).webDp, bottom = 18.webDp).width(32.webDp).height(1.dp).background(MaterialTheme.colorScheme.border))
+        Box(modifier = Modifier.padding(top = (24 + 4).tvDp, bottom = 18.tvDp).width(32.tvDp).height(1.dp).background(MaterialTheme.colorScheme.border))
         val credit = listOfNotNull(set.title, set.year?.takeIf { it > 0 }?.toString()).joinToString(", ").uppercase()
         Text(text = credit, style = TvType.labelSmall.copy(letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 /** `.pull-quote p` (`home.css:286-291`): Newsreader italic, `clamp(1.6rem, 2.3vw, 2.35rem)` at 1280px, 29.44. */
-private val QuoteTagline = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 29.44.webSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+private val QuoteTagline = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 29.44.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

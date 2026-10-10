@@ -29,8 +29,8 @@ import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import ui.tv.TvSafeArea
 
 /**
@@ -59,7 +59,7 @@ internal fun TvShelfHead(
                 style = ShelfHeadTitle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(end = 24.webDp).semantics { heading() },
+                modifier = Modifier.weight(1f).padding(end = 24.tvDp).semantics { heading() },
             )
             sub?.let {
                 Text(
@@ -72,7 +72,7 @@ internal fun TvShelfHead(
         Box(
             modifier =
                 Modifier
-                    .padding(top = ShelfHeadRuleTop, bottom = Spacing.medium)
+                    .padding(top = ShelfHeadRuleTop)
                     .fillMaxWidth()
                     .height(1.dp)
                     .background(MaterialTheme.colorScheme.borderVariant),
@@ -112,7 +112,7 @@ internal fun TvCountedHeading(
         Box(
             modifier =
                 Modifier
-                    .padding(top = ShelfHeadRuleTop, bottom = Spacing.medium)
+                    .padding(top = ShelfHeadRuleTop)
                     .fillMaxWidth()
                     .height(0.5.dp)
                     .background(MaterialTheme.colorScheme.borderVariant),
@@ -190,10 +190,10 @@ internal val DisplayFace = TextStyle(fontFamily = TvType.headlineSmall.fontFamil
 internal val SeasonHeading = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
 
 /** `.season.depth-0 > h2` (`catalog.css:73`). */
-internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.webSp)
+internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.tvSp)
 
 /** `.shelf-sub` (`catalog.css:98`): a wall's own sections ("Films", "Series") and Search's groups — the phone's `ShelfHead` sub. */
-internal val ShelfSub = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.webSp, lineHeight = 1.2.em)
+internal val ShelfSub = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.tvSp, lineHeight = 1.2.em)
 
 /** `.row-head h2` (`home.css:195`): Home's bands and a department's rows — the phone's `BandHeading`. */
-internal val RowHead = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.webSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+internal val RowHead = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

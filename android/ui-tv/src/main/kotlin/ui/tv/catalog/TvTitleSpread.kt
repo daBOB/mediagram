@@ -31,7 +31,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
-import designsystem.webSp
+import designsystem.tvSp
 import ui.common.catalog.HeroArtwork
 import ui.tv.catalog.home.OnImage
 
@@ -110,7 +110,7 @@ internal fun TvTitleSpread(
             facts?.takeIf(String::isNotEmpty)?.let {
                 Text(
                     text = it,
-                    style = TvType.bodyMedium.copy(fontSize = 14.webSp, fontFeatureSettings = "tnum"),
+                    style = TvType.bodyMedium.copy(fontSize = 14.tvSp, fontFeatureSettings = "tnum"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Spacing.medium),
                 )
@@ -178,7 +178,7 @@ private val SpreadQuoteMaxWidth = 272.dp
 private const val LongTitle = 22
 
 /** `clamp(1.4rem, 2.1vw, 2rem)` at 1280px (`title-page.css:113`). */
-private val QuoteSize = 26.88.webSp
+private val QuoteSize = 26.88.tvSp
 
 /** For a test to find the spread without matching on its own words. */
 internal const val TvTitleSpreadTag = "tv-title-spread"

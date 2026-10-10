@@ -30,7 +30,7 @@ import androidx.tv.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
 import designsystem.Overscan
 import designsystem.Spacing
-import designsystem.webDp
+import designsystem.tvDp
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own ink over a hero, while [blend] is below `1f`. */
@@ -122,7 +122,7 @@ internal fun TvDepartmentsBar(
         Row(
             modifier = scrollWidth.fadeClippedEdges(fades).horizontalScroll(scroll).padding(PillRingRoom),
             // `.departments` gap 4, `.library-toolbar` gap 16 (`shell.css:89,91`).
-            horizontalArrangement = Arrangement.spacedBy(4.webDp),
+            horizontalArrangement = Arrangement.spacedBy(4.tvDp),
         ) {
             pills.forEachIndexed { index, pill ->
                 key(pill) {
@@ -133,7 +133,7 @@ internal fun TvDepartmentsBar(
             }
         }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.webDp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.tvDp), verticalAlignment = Alignment.CenterVertically) {
             // Left goes to the last pill by name, not by where it is drawn: scrolled out of the
             // row's view, Tutorials and Collections were no candidates for a geometric search,
             // which skipped them for the nearest pill still in sight. The pill taking the remote

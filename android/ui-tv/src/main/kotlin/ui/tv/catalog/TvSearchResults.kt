@@ -28,7 +28,7 @@ import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 import model.WatchSnapshot
 import ui.common.catalog.SearchResultsView
 import ui.common.catalog.countOf
@@ -203,7 +203,7 @@ private fun TvSearchFilterChips(
     ) {
         for ((kind, count) in filters) {
             val marker = if (kind == selected) "●" else "○"
-            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) }, style = TvType.bodyMedium.copy(fontSize = 14.webSp))
+            TvTextRow(text = "$marker  ${labelFor(kind)} · $count", onClick = { onSelect(kind) }, style = TvType.bodyMedium.copy(fontSize = 14.tvSp))
         }
     }
 }

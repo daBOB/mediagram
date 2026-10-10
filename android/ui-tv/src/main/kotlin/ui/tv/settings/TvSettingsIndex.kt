@@ -24,7 +24,7 @@ import designsystem.Spacing
 import designsystem.StatusDot
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
-import designsystem.webSp
+import designsystem.tvSp
 import ui.common.settings.IndexStatus
 import ui.common.settings.SettingsSection
 import ui.tv.TvIndexRow
@@ -132,7 +132,7 @@ private fun TvSettingsIndexStatus(status: IndexStatus) {
         }
         Text(
             text = status.text,
-            style = TvType.bodySmall.copy(fontSize = 12.webSp),
+            style = TvType.bodySmall.copy(fontSize = 12.tvSp),
             color = tones.quiet,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

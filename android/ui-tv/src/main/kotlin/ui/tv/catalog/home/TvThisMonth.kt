@@ -22,8 +22,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import model.MediaSet
 
 /**
@@ -39,12 +39,12 @@ internal fun TvThisMonth(
     Row(modifier = Modifier.height(IntrinsicSize.Max)) {
         Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.border))
         // `.this-month` (`home.css:307-321`): 28 in from its rule, rows 10 tall above and below, gap 8.
-        Column(modifier = Modifier.padding(start = 28.webDp)) {
+        Column(modifier = Modifier.padding(start = 28.tvDp)) {
             Text(
                 text = "This month".uppercase(),
                 style = Eyebrow,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.webDp),
+                modifier = Modifier.padding(bottom = 8.tvDp),
             )
             for ((index, set) in films.withIndex()) {
                 Column {
@@ -53,22 +53,22 @@ internal fun TvThisMonth(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) })
-                                .padding(vertical = 10.webDp),
-                        horizontalArrangement = Arrangement.spacedBy(8.webDp),
+                                .padding(vertical = 10.tvDp),
+                        horizontalArrangement = Arrangement.spacedBy(8.tvDp),
                     ) {
                         Text(
                             text = (index + 1).toString().padStart(2, '0'),
-                            style = TvType.titleMedium.copy(fontSize = 20.8.webSp, lineHeight = 1.em),
+                            style = TvType.titleMedium.copy(fontSize = 20.8.tvSp, lineHeight = 1.em),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(35.2.webDp),
+                            modifier = Modifier.width(35.2.tvDp),
                         )
                         Column {
-                            Text(text = set.title, style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.3.em), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(text = set.title, style = TvType.titleSmall.copy(fontSize = 15.tvSp, lineHeight = 1.3.em), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             val meta = listOfNotNull(set.year?.takeIf { it > 0 }?.toString(), set.genres.firstOrNull()).joinToString(" · ")
                             if (meta.isNotEmpty()) {
                                 Text(
                                     text = meta,
-                                    style = TvType.labelSmall.copy(fontSize = 12.webSp),
+                                    style = TvType.labelSmall.copy(fontSize = 12.tvSp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(top = 2.dp),
                                 )

@@ -30,8 +30,8 @@ import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import model.MediaSet
 import ui.common.catalog.HeroArtwork
 import ui.tv.chrome.LocalTvPagePadding
@@ -130,8 +130,8 @@ internal fun TvDepartmentHero(
                         )
                     }
                     // `.dept-title` 14 above the line, `.franchise-overview` 18 (`departments.css:31,109`).
-                    Text(text = line, style = DeptLine, color = tones.quiet, modifier = Modifier.padding(top = 14.webDp))
-                    overview?.let { Box(modifier = Modifier.padding(top = 18.webDp)) { it() } }
+                    Text(text = line, style = DeptLine, color = tones.quiet, modifier = Modifier.padding(top = 14.tvDp))
+                    overview?.let { Box(modifier = Modifier.padding(top = 18.tvDp)) { it() } }
                 }
             },
             quote =
@@ -163,7 +163,7 @@ private fun TvDeptQuote(
         Text(
             text = "“$tagline”",
             // `.dept-quote blockquote`: `clamp(1.3rem, 1.9vw, 1.8rem)` at 1280px (`departments.css:47`).
-            style = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 24.32.webSp, lineHeight = 1.2.em),
+            style = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 24.32.tvSp, lineHeight = 1.2.em),
             color = Color.White,
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
@@ -173,7 +173,7 @@ private fun TvDeptQuote(
             style = Eyebrow.copy(letterSpacing = 0.28.em, lineHeight = 1.6.em),
             color = Color.White.copy(alpha = 0.75f),
             // `.dept-quote figcaption` (`departments.css:48`).
-            modifier = Modifier.padding(top = 14.webDp),
+            modifier = Modifier.padding(top = 14.tvDp),
         )
     }
 }
@@ -192,7 +192,7 @@ private const val ArtWidthFraction = 0.7f
 internal val TvDepartmentHeroHeight = 360.dp
 
 /** `.dept-line` (`departments.css:36`): Newsreader at 20px, figures tabular — the tablet's own. */
-private val DeptLine = TvType.bodyLarge.copy(fontSize = 20.webSp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
+private val DeptLine = TvType.bodyLarge.copy(fontSize = 20.tvSp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
 
 /**
  * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap

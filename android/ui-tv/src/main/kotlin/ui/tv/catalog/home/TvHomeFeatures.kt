@@ -32,8 +32,8 @@ import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import java.io.File
 import model.Kind
 import ui.tv.TvFocus
@@ -130,16 +130,16 @@ private fun TvFeatureCard(
             Box(modifier = Modifier.matchParentSize().background(Brush.verticalGradient(0.45f to Color(0x00080809), 1f to Color(0xB3080809))))
 
             // `.feature-copy`: 26rem wide, padded 36 by `clamp(24px, 2.6vw, 40px)` at 1280px; its eyebrow 18 above the title (`home.css:169-170`).
-            Column(modifier = Modifier.align(Alignment.BottomStart).widthIn(max = 416.webDp).padding(horizontal = 33.28.webDp, vertical = 36.webDp)) {
+            Column(modifier = Modifier.align(Alignment.BottomStart).widthIn(max = 416.tvDp).padding(horizontal = 33.28.tvDp, vertical = 36.tvDp)) {
                 Text(
                     text = feature.kind.label.uppercase(),
                     style = Eyebrow,
                     color = OnImage2,
-                    modifier = Modifier.padding(bottom = 18.webDp),
+                    modifier = Modifier.padding(bottom = 18.tvDp),
                 )
                 Text(
                     text = if (secondCard) title else title.uppercase(),
-                    style = DisplayFace.copy(fontSize = if (secondCard) 26.webSp else 24.webSp),
+                    style = DisplayFace.copy(fontSize = if (secondCard) 26.tvSp else 24.tvSp),
                     color = OnImage,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -148,7 +148,7 @@ private fun TvFeatureCard(
                 if (deck != null) {
                     Text(
                         text = deck,
-                        style = TvType.bodyLarge.copy(fontSize = 16.webSp, lineHeight = 1.4.em),
+                        style = TvType.bodyLarge.copy(fontSize = 16.tvSp, lineHeight = 1.4.em),
                         color = OnImage2,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -161,4 +161,4 @@ private fun TvFeatureCard(
 }
 
 /** `.features`' gap (`home.css:134`). */
-private val FeatureGap = 12.webDp
+private val FeatureGap = 12.tvDp

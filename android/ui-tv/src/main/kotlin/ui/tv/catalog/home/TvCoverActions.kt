@@ -27,9 +27,11 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The cover's own stops, in the web's own order — Watch now, + My List,
@@ -71,9 +73,11 @@ internal fun TvCoverActions(
 ) {
     val up = Modifier.focusProperties { up = upExit }
     Row(
-        modifier = modifier.padding(start = Spacing.extraLarge, bottom = Spacing.extraLarge),
+        // On the page's start edge, where the bar's first pill and the bands below start.
+        modifier = modifier.padding(start = LocalTvPagePadding.current.start, bottom = Spacing.extraLarge),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        // `.cover-actions` (`home.css:70`).
+        horizontalArrangement = Arrangement.spacedBy(12.tvDp),
     ) {
         TvCoverPill(
             text = "▶  Watch now",
@@ -89,7 +93,7 @@ internal fun TvCoverActions(
             onClick = { onToggleWatchlist(!watchlisted) },
             modifier = up,
         )
-        TvTextRow(text = "Details", onClick = onDetails, modifier = up, style = TvType.bodyMedium.copy(fontSize = 14.webSp))
+        TvTextRow(text = "Details", onClick = onDetails, modifier = up, style = TvType.bodyMedium.copy(fontSize = 14.tvSp))
         if (dotCount > 1) {
             Row(modifier = Modifier.padding(start = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 for (index in 0 until dotCount) {

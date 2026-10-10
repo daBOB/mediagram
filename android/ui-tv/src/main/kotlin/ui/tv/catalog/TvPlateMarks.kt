@@ -19,7 +19,7 @@ import androidx.tv.material3.Text
 import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvSp
 
 /** The progress rule's own tag, so a test can tell it apart from the tick. */
 internal const val TvPlateProgressTag = "tv-plate-progress"
@@ -96,7 +96,7 @@ private val ProgressHeight = 4.dp
 internal fun TvOfflineBadge(modifier: Modifier = Modifier) {
     Text(
         text = "offline",
-        style = TvType.labelSmall.copy(fontSize = 12.webSp),
+        style = TvType.labelSmall.copy(fontSize = 12.tvSp),
         color = MaterialTheme.colorScheme.onSecondaryContainer,
         modifier =
             modifier

@@ -24,12 +24,13 @@ import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import model.MediaSet
 import ui.common.catalog.CoverScrim
 import ui.common.catalog.HeroArtwork
 import ui.tv.catalog.TvBarClearance
+import ui.tv.chrome.LocalTvPagePadding
 
 /** Past this many characters the title steps down a size, the phone cover's own rule (`HOME_COVER`, `CoverSlide.kt`). */
 private const val LONG_TITLE = 18
@@ -72,8 +73,9 @@ internal fun TvCoverSlide(
                     .align(Alignment.BottomStart)
                     .widthIn(max = CoverTextMaxWidth)
                     .padding(
-                        start = Spacing.extraLarge,
-                        end = Spacing.extraLarge,
+                        // The page's own gutters, as the bar's first pill and the bands below take.
+                        start = LocalTvPagePadding.current.start,
+                        end = LocalTvPagePadding.current.end,
                         // See `TvBarClearance`'s own doc: this is what
                         // actually keeps the words clear of the bar when
                         // they need more room than the cover's own floor
@@ -92,7 +94,7 @@ internal fun TvCoverSlide(
                 style = Eyebrow,
                 color = OnImage2,
                 // `.cover-eyebrow` 22, `.cover-deck` 28 and `.cover-meta` 18 apart (`home.css:47,59,64`).
-                modifier = Modifier.padding(bottom = 22.webDp),
+                modifier = Modifier.padding(bottom = 22.tvDp),
             )
             val long = set.title.length > LONG_TITLE
             Text(
@@ -106,19 +108,19 @@ internal fun TvCoverSlide(
                 Text(
                     text = tagline,
                     // `.cover-deck`: `clamp(1.1rem, 1.4vw, 1.3rem)` at 1280px (`home.css:60`).
-                    style = TvType.bodyLarge.copy(fontSize = 17.92.webSp, lineHeight = 1.4.em),
+                    style = TvType.bodyLarge.copy(fontSize = 17.92.tvSp, lineHeight = 1.4.em),
                     color = OnImage2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 28.webDp),
+                    modifier = Modifier.padding(top = 28.tvDp),
                 )
             }
             coverFactsLine(set)?.let { meta ->
                 Text(
                     text = meta,
-                    style = TvType.labelSmall.copy(fontSize = 13.webSp, letterSpacing = 0.06.em),
+                    style = TvType.labelSmall.copy(fontSize = 13.tvSp, letterSpacing = 0.06.em),
                     color = OnImage2,
-                    modifier = Modifier.padding(top = 18.webDp),
+                    modifier = Modifier.padding(top = 18.tvDp),
                 )
             }
         }

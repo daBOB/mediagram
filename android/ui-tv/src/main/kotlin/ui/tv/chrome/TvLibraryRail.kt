@@ -35,9 +35,10 @@ import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
 import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
+import designsystem.Overscan
 import designsystem.TvType
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import stats.NEW_ACHIEVEMENT
 import ui.common.RailItem
 import ui.tv.TvIndexRow
@@ -48,19 +49,19 @@ import ui.tv.TvIndexRow
  * header), so collapsed is the open rail's icon column, 18 + 12 + 21 + 12 + 18, and opening it
  * moves no icon. Held to the 48dp overscan margin, the icons stood 56dp in: more than the web's.
  */
-private val RailSide = 18.webDp
-private val RailRowPadding = PaddingValues(horizontal = 12.webDp, vertical = 10.webDp)
-private val RailIcon = 21.webDp
-internal val RailCollapsedWidth = RailSide + 12.webDp + RailIcon + 12.webDp + RailSide
-internal val RailOpenWidth = 224.webDp
+private val RailSide = 18.tvDp
+private val RailRowPadding = PaddingValues(horizontal = 12.tvDp, vertical = 10.tvDp)
+private val RailIcon = 21.tvDp
+internal val RailCollapsedWidth = RailSide + 12.tvDp + RailIcon + 12.tvDp + RailSide
+internal val RailOpenWidth = 224.tvDp
 
 /** The rows drawn before System's own gap — [RailItem.SYSTEM] is added apart, after this list. */
 private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
 
 /** The web's `.brand`: Fraunces 600 at 1.7rem, tracked in (`shell.css:29-37`) — the tablet's own `Wordmark`. */
-private val TvWordmark = TvType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.2.webSp, letterSpacing = (-0.02).em)
+private val TvWordmark = TvType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.2.tvSp, letterSpacing = (-0.02).em)
 
-private val WordmarkBelow = 36.webDp // `.brand`'s `margin-bottom`; its `padding: 0 10px` is the start inset.
+private val WordmarkBelow = 36.tvDp // `.brand`'s `margin-bottom`; its `padding: 0 10px` is the start inset.
 
 /**
  * Whether the chosen profile has earned something this device has not shown
@@ -124,7 +125,8 @@ internal fun TvLibraryRail(
                 }
                 .focusGroup()
                 .verticalScroll(rememberScrollState())
-                .padding(start = RailSide, end = RailSide, top = 26.webDp, bottom = 28.webDp),
+                // Top and bottom on the screen's vertical overscan, the bar's own top line, not the web's 26 / 28.
+                .padding(start = RailSide, end = RailSide, top = Overscan.vertical, bottom = Overscan.vertical),
     ) {
         // Laid out either way, and only hidden while collapsed, so the rows land at the same height.
         Text(
@@ -132,24 +134,24 @@ internal fun TvLibraryRail(
             style = TvWordmark,
             maxLines = 1,
             softWrap = false,
-            modifier = Modifier.padding(start = 10.webDp, bottom = WordmarkBelow).then(if (expanded) Modifier else Modifier.alpha(0f).clearAndSetSemantics {}),
+            modifier = Modifier.padding(start = 10.tvDp, bottom = WordmarkBelow).then(if (expanded) Modifier else Modifier.alpha(0f).clearAndSetSemantics {}),
         )
 
         // `.rail-nav`'s 2px gap, and System's `.apart` 12 on top of it.
-        Column(verticalArrangement = Arrangement.spacedBy(2.webDp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.tvDp)) {
             for (item in RailRowsBeforeSystem) {
                 RailRow(item = item, active = item == active, counts = counts, expanded = expanded, focusRequester = rowRequesters.getValue(item), onSelect = onSelect)
             }
             val system = RailItem.SYSTEM
-            RailRow(system, system == active, counts, expanded, rowRequesters.getValue(system), onSelect, Modifier.padding(top = 12.webDp))
+            RailRow(system, system == active, counts, expanded, rowRequesters.getValue(system), onSelect, Modifier.padding(top = 12.tvDp))
         }
 
         if (expanded && tally.isNotEmpty()) {
             val tallyStyle =
-                TvType.labelSmall.copy(fontSize = 10.webSp, fontWeight = FontWeight.Medium, letterSpacing = 0.34.em, lineHeight = 2.em)
+                TvType.labelSmall.copy(fontSize = 10.tvSp, fontWeight = FontWeight.Medium, letterSpacing = 0.34.em, lineHeight = 2.em)
             // `.rail-masthead`: margin 28 10 0 carries the rule, padding 24 6 0 the lines.
-            Box(modifier = Modifier.padding(start = 10.webDp, end = 10.webDp, top = 28.webDp).fillMaxWidth().height(1.dp).background(tones.ruleSoft))
-            Column(modifier = Modifier.padding(start = 16.webDp, end = 16.webDp, top = 24.webDp)) {
+            Box(modifier = Modifier.padding(start = 10.tvDp, end = 10.tvDp, top = 28.tvDp).fillMaxWidth().height(1.dp).background(tones.ruleSoft))
+            Column(modifier = Modifier.padding(start = 16.tvDp, end = 16.tvDp, top = 24.tvDp)) {
                 for (line in tally) {
                     Text(text = line.uppercase(), style = tallyStyle, color = tones.quiet)
                 }
@@ -176,10 +178,10 @@ private fun RailRow(
         onSelect = { onSelect(item) },
         modifier = modifier,
         expanded = expanded,
-        minHeight = 44.webDp,
+        minHeight = 44.tvDp,
         contentPadding = RailRowPadding,
         iconSize = RailIcon,
-        iconGap = 12.webDp,
+        iconGap = 12.tvDp,
         alignment = Alignment.CenterVertically,
         // Counts only once open: the web's icons-only form shows none.
         trailing = if (expanded) countFor(item, counts)?.toString() else null,

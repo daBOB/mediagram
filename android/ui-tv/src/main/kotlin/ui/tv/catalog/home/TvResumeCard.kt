@@ -36,7 +36,8 @@ import catalog.factsLine
 import catalog.initialsOf
 import coil3.compose.AsyncImage
 import designsystem.TvType
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import java.io.File
 import model.Kind
 import model.episodeLabel
@@ -132,9 +133,10 @@ private fun TvResumeCaption(
     held: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    // `.resume-text`: padded 26 12 10, a gap of 3 (`home.css:265-267`).
     Column(
-        modifier = modifier.fillMaxWidth().background(CaptionScrim).padding(start = 12.dp, end = 12.dp, top = 26.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
+        modifier = modifier.fillMaxWidth().background(CaptionScrim).padding(start = 12.tvDp, end = 12.tvDp, top = 26.tvDp, bottom = 10.tvDp),
+        verticalArrangement = Arrangement.spacedBy(3.tvDp),
     ) {
         Text(text = name, style = ResumeName, color = OnImage, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (sub.isNotEmpty() || progress != null) {
@@ -172,8 +174,8 @@ private const val BarShare = 0.52f
 /** The caption block's own scrim, 0.9 at its foot to nothing at its top. */
 private val CaptionScrim = Brush.verticalGradient(0f to Color(0x00080809), 0.4f to Color(0x99080809), 1f to Color(0xE6080809))
 
-private val ResumeName = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.webSp)
-private val ResumeSub = TvType.bodyMedium.copy(fontSize = 12.webSp)
+private val ResumeName = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.tvSp)
+private val ResumeSub = TvType.bodyMedium.copy(fontSize = 12.tvSp)
 
 /** `.resume-initial`: Fraunces 600 at 2rem. */
-private val ResumeInitial = DisplayFace.copy(fontWeight = FontWeight.SemiBold, fontSize = 32.webSp)
+private val ResumeInitial = DisplayFace.copy(fontWeight = FontWeight.SemiBold, fontSize = 32.tvSp)

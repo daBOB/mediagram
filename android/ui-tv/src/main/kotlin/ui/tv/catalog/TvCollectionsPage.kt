@@ -37,7 +37,7 @@ import catalog.collectionsLineOf
 import catalog.listArtOf
 import catalog.spelledCountOf
 import designsystem.Spacing
-import designsystem.webDp
+import designsystem.tvDp
 import kotlinx.coroutines.flow.first
 import model.ListOfSets
 import model.MediaSet
@@ -56,7 +56,7 @@ import ui.tv.rememberStableRequester
 internal const val DestinationColumns = 3
 
 /** `.destinations{gap:16px}`. */
-private val DestinationGap = 16.webDp
+private val DestinationGap = 16.tvDp
 
 /** Lets a test scroll this page's own list directly, the same reason [TvMoviesDepartmentPageTestTag] exists. */
 internal const val TvCollectionsPageTestTag = "tv-collections-page"
@@ -181,7 +181,7 @@ internal fun TvCollectionsPage(
                 }
             }
             item(key = NEW) {
-                Box(modifier = Modifier.padding(top = 20.webDp)) {
+                Box(modifier = Modifier.padding(top = 20.tvDp)) {
                     TvPagePill(text = "＋ New list", onClick = { naming = true }, modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.item == NEW })))
                 }
             }

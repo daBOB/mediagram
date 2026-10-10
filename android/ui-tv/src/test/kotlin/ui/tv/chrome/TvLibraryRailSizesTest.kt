@@ -23,7 +23,11 @@ import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import catalog.ChromeCounts
+import designsystem.Overscan
 import designsystem.TvScale
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -32,9 +36,6 @@ import org.robolectric.annotation.GraphicsMode
 import ui.common.RailItem
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.fontSizeOf
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /**
  * The rail at the web's rail for the TV's 1280px reading (`shell.css:17-70`),
@@ -83,7 +84,7 @@ class TvLibraryRailSizesTest : TvScreenStateTest() {
         open()
         val opened = openRow(RailItem.MY_LIST)
         val wordmark = compose.onNodeWithText("mediagram").getUnclippedBoundsInRoot()
-        assertEquals(26 * TvScale, wordmark.top.value, OnePixel, "`.library-rail` 26 on top")
+        assertEquals(Overscan.vertical.value, wordmark.top.value, OnePixel, "on the bar's top line, the screen's vertical overscan")
         assertEquals(wordmark.bottom.value + 36 * TvScale, opened.top.value, OnePixel, "`.brand`'s 36 below it")
         assertEquals(collapsed.left, opened.left, "the row keeps its start as the rail opens")
         assertEquals(collapsed.top, opened.top, "the rows land at the same height either way")

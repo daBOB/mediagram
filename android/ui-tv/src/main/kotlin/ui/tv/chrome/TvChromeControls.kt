@@ -23,8 +23,8 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import catalog.profileInitial
 import designsystem.TvType
-import designsystem.webDp
-import designsystem.webSp
+import designsystem.tvDp
+import designsystem.tvSp
 import ui.tv.TvFocus
 import ui.tv.profile.TvChosenProfile
 
@@ -64,7 +64,7 @@ internal fun TvPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(
-            modifier = Modifier.heightIn(min = 44.webDp).padding(horizontal = 16.webDp, vertical = 10.webDp),
+            modifier = Modifier.heightIn(min = 44.tvDp).padding(horizontal = 16.tvDp, vertical = 10.tvDp),
             contentAlignment = Alignment.Center,
         ) {
             Text(text = title, style = TvType.labelLarge)
@@ -87,7 +87,7 @@ internal fun TvRoundIconButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(44.webDp).semantics { contentDescription = description },
+        modifier = modifier.size(44.tvDp).semantics { contentDescription = description },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -100,12 +100,12 @@ internal fun TvRoundIconButton(
         border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Box(modifier = Modifier.size(44.webDp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(44.tvDp), contentAlignment = Alignment.Center) {
             Image(
                 painter = icon,
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(ink),
-                modifier = Modifier.size(21.webDp),
+                modifier = Modifier.size(21.tvDp),
             )
         }
     }
@@ -124,7 +124,7 @@ internal fun TvAvatar(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(44.webDp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
+        modifier = modifier.size(44.tvDp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
         colors =
             ClickableSurfaceDefaults.colors(
@@ -137,8 +137,8 @@ internal fun TvAvatar(
         border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
         glow = TvFocus.surfaceGlow(),
     ) {
-        Box(modifier = Modifier.size(44.webDp), contentAlignment = Alignment.Center) {
-            Text(text = profileInitial(profile.name), style = TvType.labelLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.webSp))
+        Box(modifier = Modifier.size(44.tvDp), contentAlignment = Alignment.Center) {
+            Text(text = profileInitial(profile.name), style = TvType.labelLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.tvSp))
         }
     }
 }
