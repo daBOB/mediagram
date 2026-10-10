@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -17,6 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.Player
 import designsystem.Accent
 import designsystem.CountdownLeader
+import designsystem.LocalCountdownStart
 import designsystem.Spacing
 import model.MediaSet
 import playback.PlaybackTotals
@@ -43,7 +45,8 @@ internal fun PreparingNote() {
         modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
         contentAlignment = Alignment.Center,
     ) {
-        CountdownLeader(accent = Accent.CORAL.dark)
+        // A wait of its own, so its count starts at 3, not where the cold start's had got to.
+        CompositionLocalProvider(LocalCountdownStart provides null) { CountdownLeader(accent = Accent.CORAL.dark) }
     }
 }
 

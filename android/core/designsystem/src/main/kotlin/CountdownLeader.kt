@@ -1,17 +1,15 @@
 package designsystem
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -43,6 +41,31 @@ private const val TURNS = 3
 
 const val COUNTDOWN_LEADER_TEST_TAG = "countdown-leader"
 
+/**
+ * One count for waits that hand over to one another, so the leader runs on
+ * across them instead of going back to 3 at each: the web's boot is one
+ * element through all of them (`index.html:119-121`). The first leader to
+ * draw under it sets the start.
+ */
+class CountdownStart {
+    private var startedAt: Long? = null
+
+    /** Where the count is, in turns of the sweep, 0 until [TURNS]; held here so a leader taking over draws it at once. */
+    internal val turns = mutableFloatStateOf(0f)
+
+    internal fun advanceTo(frameMillis: Long) {
+        val start = startedAt ?: frameMillis.also { startedAt = it }
+        turns.floatValue = (frameMillis - start) % (TURN_MS * TURNS) / TURN_MS.toFloat()
+    }
+}
+
+/**
+ * The count a leader follows. None by default: each leader counts on its own
+ * from 3, as each of the web's waits does. A wait of its own inside a run
+ * that provides one (a page, the stage) provides `null` again.
+ */
+val LocalCountdownStart = staticCompositionLocalOf<CountdownStart?> { null }
+
 /** The figure the leader shows, for tests: the drawing itself says nothing to a screen reader. */
 internal val CountdownNumeral = SemanticsPropertyKey<Int>("CountdownNumeral")
 private var SemanticsPropertyReceiver.countdownNumeral by CountdownNumeral
@@ -59,9 +82,10 @@ private var SemanticsPropertyReceiver.countdownNumeral by CountdownNumeral
  *
  * One clock drives both, turning [TURNS] times a cycle, so the numeral
  * steps on the frame the sweep completes. The sweep reads it only while
- * drawing; the numeral recomposes once a second. Under reduced motion there
- * is no clock: no sweep, the 3 alone, as the web's still default
- * (`film-leader.css:7-9`, `theme.css:180-182`).
+ * drawing; the numeral recomposes once a second. The clock is the
+ * [LocalCountdownStart] when one is provided, else the leader's own, from 3.
+ * Under reduced motion there is no clock: no sweep, the 3 alone, as the
+ * web's still default (`film-leader.css:7-9`, `theme.css:180-182`).
  */
 @Composable
 fun CountdownLeader(
@@ -71,21 +95,18 @@ fun CountdownLeader(
     ink: Color = RingInk,
     numeralInk: Color = NumeralInk,
 ) {
-    val turns =
-        if (LocalReducedMotion.current) {
-            null
-        } else {
-            // Linear and restarting, a projector's clock (`film-leader.css:30-32`).
-            rememberInfiniteTransition(label = "countdown-leader").animateFloat(
-                initialValue = 0f,
-                targetValue = TURNS.toFloat(),
-                animationSpec = infiniteRepeatable(tween(TURN_MS * TURNS, easing = LinearEasing), RepeatMode.Restart),
-                label = "turns",
-            )
-        }
+    val still = LocalReducedMotion.current
+    // Its own is new each time motion returns: a still leader has no count to resume.
+    val own = remember(still) { CountdownStart() }
+    val clock = LocalCountdownStart.current ?: own
+    if (!still) {
+        // Linear and restarting, a projector's clock (`film-leader.css:30-32`).
+        LaunchedEffect(clock) { while (true) withInfiniteAnimationFrameMillis(clock::advanceTo) }
+    }
+    val turns = if (still) null else clock.turns
     // 3 for the first second, 2 for the next, 1 for the last (`film-leader.css:46-54`).
     // Read here, so a step recomposes once and the frames between do not.
-    val numeral = remember(turns) { derivedStateOf { TURNS - (turns?.value?.toInt() ?: 0).coerceAtMost(TURNS - 1) } }.value
+    val numeral = remember(turns) { derivedStateOf { TURNS - (turns?.floatValue?.toInt() ?: 0).coerceAtMost(TURNS - 1) } }.value
     val measurer = rememberTextMeasurer()
     Spacer(
         modifier
@@ -122,7 +143,7 @@ fun CountdownLeader(
                         drawArc(
                             color = accent,
                             startAngle = -90f,
-                            sweepAngle = it.value % 1f * 360f,
+                            sweepAngle = it.floatValue % 1f * 360f,
                             useCenter = true,
                             topLeft = Offset(10 * u, 10 * u),
                             size = Size(76 * u, 76 * u),

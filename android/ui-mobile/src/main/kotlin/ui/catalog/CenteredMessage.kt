@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import designsystem.CountdownLeader
+import designsystem.LocalCountdownStart
 import designsystem.Spacing
 import ui.catalog.home.LEADER_GAP
 
@@ -48,7 +50,10 @@ internal fun CenteredLoading(message: String) {
         verticalArrangement = Arrangement.spacedBy(LEADER_GAP, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CountdownLeader(ink = MaterialTheme.colorScheme.onSurfaceVariant, numeralInk = MaterialTheme.colorScheme.onSurface)
+        // A wait of its own, so its count starts at 3, not where the cold start's had got to.
+        CompositionLocalProvider(LocalCountdownStart provides null) {
+            CountdownLeader(ink = MaterialTheme.colorScheme.onSurfaceVariant, numeralInk = MaterialTheme.colorScheme.onSurface)
+        }
         MessageText(message)
     }
 }

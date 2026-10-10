@@ -11,13 +11,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import designsystem.CountdownStart
+import designsystem.LocalCountdownStart
 import designsystem.MediagramTheme
 import designsystem.Spacing
 import setup.AppearanceViewModel
@@ -57,15 +61,21 @@ fun MobileApp() {
             // not load.
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { setupViewModel.recheck() }
 
-            if (setupState is SetupUiState.Ready) {
-                CatalogAndPlayer(onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
-            } else {
-                // The app draws edge to edge. Every setup screen is prose
-                // and controls a person has to read and reach, and without
-                // this the row along the bottom sits underneath the
-                // navigation bar, where it cannot be tapped at all.
-                Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                    SetupStep(setupState, setupViewModel)
+            // A cold start waits three times, on the setup check, the profile
+            // gate and the library, each under its own block. One count runs
+            // through all three, as through the web's one boot block.
+            val coldStart = remember { CountdownStart() }
+            CompositionLocalProvider(LocalCountdownStart provides coldStart) {
+                if (setupState is SetupUiState.Ready) {
+                    CatalogAndPlayer(onStartOver = setupViewModel::startOver, onSignedOut = setupViewModel::recheck)
+                } else {
+                    // The app draws edge to edge. Every setup screen is prose
+                    // and controls a person has to read and reach, and without
+                    // this the row along the bottom sits underneath the
+                    // navigation bar, where it cannot be tapped at all.
+                    Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                        SetupStep(setupState, setupViewModel)
+                    }
                 }
             }
         }

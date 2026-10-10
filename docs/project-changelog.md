@@ -21,7 +21,9 @@ to `main`. Full phase-by-phase detail lives in
   one, and dialogs open without the window animation.
 - **Loading is the film leader's 3·2·1 countdown on every surface**: the web
   (`film-leader.css`, `lib/film-leader.js`) and Android (`CountdownLeader.kt`)
-  share it, replacing the spinners and "Loading…" text. The TV adopts it later.
+  share it, replacing the spinners and "Loading…" text. A cold start counts down
+  once, through the setup check, the profile gate and the library, rather than
+  starting again at 3 at each. The TV adopts it later.
 - **The player's controls fade in and out over 260 ms**, and ignore taps once
   they start to fade.
 - **"Remove animations" stops all of it**, as reduced motion does on the web.
