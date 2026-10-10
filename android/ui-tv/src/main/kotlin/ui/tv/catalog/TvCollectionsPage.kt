@@ -31,13 +31,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import catalog.Franchise
 import catalog.KeptKind
 import catalog.collectionsLineOf
 import catalog.listArtOf
 import catalog.spelledCountOf
 import designsystem.Spacing
+import designsystem.webDp
 import kotlinx.coroutines.flow.first
 import model.ListOfSets
 import model.MediaSet
@@ -56,7 +56,7 @@ import ui.tv.rememberStableRequester
 internal const val DestinationColumns = 3
 
 /** `.destinations{gap:16px}`. */
-private val DestinationGap = 16.dp
+private val DestinationGap = 16.webDp
 
 /** Lets a test scroll this page's own list directly, the same reason [TvMoviesDepartmentPageTestTag] exists. */
 internal const val TvCollectionsPageTestTag = "tv-collections-page"
@@ -181,7 +181,7 @@ internal fun TvCollectionsPage(
                 }
             }
             item(key = NEW) {
-                Box(modifier = Modifier.padding(top = 20.dp)) {
+                Box(modifier = Modifier.padding(top = 20.webDp)) {
                     TvPagePill(text = "＋ New list", onClick = { naming = true }, modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.item == NEW })))
                 }
             }
@@ -208,7 +208,7 @@ private fun <T> LazyListScope.destinationRows(
     rows.forEachIndexed { index, row ->
         item(key = "$section-row:$index") {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = if (index == 0) Spacing.small else DestinationGap),
+                modifier = Modifier.fillMaxWidth().padding(top = if (index == 0) RowHeadBelow else DestinationGap),
                 horizontalArrangement = Arrangement.spacedBy(DestinationGap),
             ) {
                 // Keyed by the card's own identity, not its slot, so a
@@ -226,7 +226,7 @@ private fun <T> LazyListScope.destinationRows(
 
 @Composable
 private fun SectionHeading(title: String) {
-    Column(modifier = Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
+    Column(modifier = Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = title, count = null) }
 }
 
 /**

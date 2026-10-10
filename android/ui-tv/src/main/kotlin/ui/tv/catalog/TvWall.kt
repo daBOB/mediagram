@@ -25,7 +25,6 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
-import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.chrome.LocalTvPagePadding
@@ -150,8 +149,8 @@ fun <T> TvWall(
                     .toTopWhenLeftForTheBar { if (header != null) gridState.animateScrollToItem(0) }
                     .onFocusChanged { wallHasFocus.value = it.hasFocus },
             contentPadding = LocalTvPagePadding.current.asPaddingValues(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(if (columns == Columns) WallPlateGap else TileGap),
+            verticalArrangement = Arrangement.spacedBy(if (columns == Columns) WallLineGap else TileGap),
         ) {
             items(
                 items = cells,

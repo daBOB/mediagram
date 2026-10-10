@@ -22,7 +22,6 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
-import designsystem.Overscan
 import designsystem.TvScale
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -81,14 +80,22 @@ class TvDepartmentsBarTest : TvScreenStateTest() {
         assertTrue(row.top <= pill.top - grown && row.bottom >= pill.bottom + grown, "the ring fits the layer: pill $pill, layer $row")
     }
 
-    /** `.library-toolbar { margin-left: auto }` (`shell.css:91`): search and the avatar stand at the bar's end, not straight after Collections. */
+    /**
+     * `.library-toolbar { margin-left: auto }` (`shell.css:91`): search and the avatar stand at
+     * the bar's end, not straight after Collections, one `--gutter` in from the screen's edge as
+     * the page is: the web pads `.masthead` and `main` by the same gutter on both sides.
+     */
     @Test
-    fun theAvatarEndsAtTheBarsEndGutter() {
-        show { chrome() }
+    @Config(qualifiers = "w960dp-h540dp-xhdpi")
+    fun theAvatarAndThePageEndOneGutterInFromTheEdge() {
+        var page: TvPagePadding? = null
+        show { chrome { page = LocalTvPagePadding.current } }
         val width = compose.onRoot().getUnclippedBoundsInRoot().right
         val avatar = compose.onNodeWithContentDescription(AVATAR).getUnclippedBoundsInRoot()
 
-        assertEquals((width - Overscan.horizontal).value, avatar.right.value, 0.5f)
+        assertEquals(width.value - 40.96f * TvScale, avatar.right.value, 0.5f, "`--gutter`, 3.2vw at 1280px")
+        assertEquals(40.96f * TvScale, page!!.end.value, 0.001f, "the page's end gutter")
+        assertEquals(page!!.start, page!!.end, "the same gutter at either side")
     }
 
     /** `.masthead` and `main` both pad by `--gutter` off the rail (`shell.css:81,158`): the first pill and the page share one edge. */
@@ -147,7 +154,10 @@ class TvDepartmentsBarTest : TvScreenStateTest() {
     private fun fades(): EdgeFades = compose.onNode(SemanticsMatcher.keyIsDefined(EdgeFadesKey)).fetchSemanticsNode().config[EdgeFadesKey]
 
     @Composable
-    private fun chrome(onMenu: () -> Unit = {}) =
+    private fun chrome(
+        onMenu: () -> Unit = {},
+        inPage: @Composable () -> Unit = {},
+    ) =
         TvLibraryChrome(
             pills = DEPARTMENTS,
             selectedPill = 0,
@@ -160,7 +170,10 @@ class TvDepartmentsBarTest : TvScreenStateTest() {
             profile = TvChosenProfile(name = "Ada", onChoose = {}),
             onMenu = onMenu,
             focus = rememberTvChromeFocus(),
-        ) { Box(Modifier.size(200.dp).testTag(CONTENT).focusable()) }
+        ) {
+            inPage()
+            Box(Modifier.size(200.dp).testTag(CONTENT).focusable())
+        }
 
     private companion object {
         val DEPARTMENTS = listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Collections")

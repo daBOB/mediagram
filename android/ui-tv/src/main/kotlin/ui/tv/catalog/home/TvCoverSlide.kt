@@ -24,6 +24,7 @@ import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
+import designsystem.webDp
 import designsystem.webSp
 import model.MediaSet
 import ui.common.catalog.CoverScrim
@@ -90,7 +91,8 @@ internal fun TvCoverSlide(
                 text = listOfNotNull("Featured today", genre).joinToString(" · ").uppercase(),
                 style = Eyebrow,
                 color = OnImage2,
-                modifier = Modifier.padding(bottom = Spacing.medium),
+                // `.cover-eyebrow` 22, `.cover-deck` 28 and `.cover-meta` 18 apart (`home.css:47,59,64`).
+                modifier = Modifier.padding(bottom = 22.webDp),
             )
             val long = set.title.length > LONG_TITLE
             Text(
@@ -108,7 +110,7 @@ internal fun TvCoverSlide(
                     color = OnImage2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = Spacing.large),
+                    modifier = Modifier.padding(top = 28.webDp),
                 )
             }
             coverFactsLine(set)?.let { meta ->
@@ -116,7 +118,7 @@ internal fun TvCoverSlide(
                     text = meta,
                     style = TvType.labelSmall.copy(fontSize = 13.webSp, letterSpacing = 0.06.em),
                     color = OnImage2,
-                    modifier = Modifier.padding(top = Spacing.small),
+                    modifier = Modifier.padding(top = 18.webDp),
                 )
             }
         }

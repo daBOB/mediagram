@@ -20,9 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
+import designsystem.webDp
 import designsystem.webSp
 import model.MediaSet
 
@@ -38,12 +38,13 @@ internal fun TvThisMonth(
 ) {
     Row(modifier = Modifier.height(IntrinsicSize.Max)) {
         Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.border))
-        Column(modifier = Modifier.padding(start = Spacing.medium)) {
+        // `.this-month` (`home.css:307-321`): 28 in from its rule, rows 10 tall above and below, gap 8.
+        Column(modifier = Modifier.padding(start = 28.webDp)) {
             Text(
                 text = "This month".uppercase(),
                 style = Eyebrow,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = Spacing.small),
+                modifier = Modifier.padding(bottom = 8.webDp),
             )
             for ((index, set) in films.withIndex()) {
                 Column {
@@ -52,14 +53,14 @@ internal fun TvThisMonth(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) })
-                                .padding(vertical = Spacing.small),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                                .padding(vertical = 10.webDp),
+                        horizontalArrangement = Arrangement.spacedBy(8.webDp),
                     ) {
                         Text(
                             text = (index + 1).toString().padStart(2, '0'),
                             style = TvType.titleMedium.copy(fontSize = 20.8.webSp, lineHeight = 1.em),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(35.dp),
+                            modifier = Modifier.width(35.2.webDp),
                         )
                         Column {
                             Text(text = set.title, style = TvType.titleSmall.copy(fontSize = 15.webSp, lineHeight = 1.3.em), maxLines = 2, overflow = TextOverflow.Ellipsis)

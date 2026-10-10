@@ -32,6 +32,7 @@ import coil3.compose.AsyncImage
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
+import designsystem.webDp
 import designsystem.webSp
 import java.io.File
 import model.Kind
@@ -60,7 +61,7 @@ internal fun TvHomeFeatures(
     focus: FocusRequester? = null,
 ) {
     if (features.isEmpty()) return
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FeatureGap)) {
         features.getOrNull(0)?.let { feature ->
             key(feature.set.setId) {
                 TvFeatureCard(
@@ -72,7 +73,7 @@ internal fun TvHomeFeatures(
             }
         }
         if (features.size > 1) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(FeatureGap)) {
                 for (index in 1 until features.size) {
                     key(features[index].set.setId) {
                         TvFeatureCard(
@@ -128,12 +129,13 @@ private fun TvFeatureCard(
             )
             Box(modifier = Modifier.matchParentSize().background(Brush.verticalGradient(0.45f to Color(0x00080809), 1f to Color(0xB3080809))))
 
-            Column(modifier = Modifier.align(Alignment.BottomStart).widthIn(max = 480.dp).padding(horizontal = Spacing.large, vertical = Spacing.medium)) {
+            // `.feature-copy`: 26rem wide, padded 36 by `clamp(24px, 2.6vw, 40px)` at 1280px; its eyebrow 18 above the title (`home.css:169-170`).
+            Column(modifier = Modifier.align(Alignment.BottomStart).widthIn(max = 416.webDp).padding(horizontal = 33.28.webDp, vertical = 36.webDp)) {
                 Text(
                     text = feature.kind.label.uppercase(),
                     style = Eyebrow,
                     color = OnImage2,
-                    modifier = Modifier.padding(bottom = Spacing.small),
+                    modifier = Modifier.padding(bottom = 18.webDp),
                 )
                 Text(
                     text = if (secondCard) title else title.uppercase(),
@@ -157,3 +159,6 @@ private fun TvFeatureCard(
         }
     }
 }
+
+/** `.features`' gap (`home.css:134`). */
+private val FeatureGap = 12.webDp

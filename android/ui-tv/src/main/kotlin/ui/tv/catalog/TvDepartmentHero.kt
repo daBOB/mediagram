@@ -30,6 +30,7 @@ import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
 import designsystem.TvTypeScale
+import designsystem.webDp
 import designsystem.webSp
 import model.MediaSet
 import ui.common.catalog.HeroArtwork
@@ -128,8 +129,9 @@ internal fun TvDepartmentHero(
                             modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
                         )
                     }
-                    Text(text = line, style = DeptLine, color = tones.quiet, modifier = Modifier.padding(top = Spacing.small))
-                    overview?.let { Box(modifier = Modifier.padding(top = Spacing.medium)) { it() } }
+                    // `.dept-title` 14 above the line, `.franchise-overview` 18 (`departments.css:31,109`).
+                    Text(text = line, style = DeptLine, color = tones.quiet, modifier = Modifier.padding(top = 14.webDp))
+                    overview?.let { Box(modifier = Modifier.padding(top = 18.webDp)) { it() } }
                 }
             },
             quote =
@@ -170,7 +172,8 @@ private fun TvDeptQuote(
             text = "— ${leadName.uppercase()}",
             style = Eyebrow.copy(letterSpacing = 0.28.em, lineHeight = 1.6.em),
             color = Color.White.copy(alpha = 0.75f),
-            modifier = Modifier.padding(top = Spacing.small),
+            // `.dept-quote figcaption` (`departments.css:48`).
+            modifier = Modifier.padding(top = 14.webDp),
         )
     }
 }

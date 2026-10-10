@@ -27,6 +27,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w1920dp-h1080dp")
 class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
+    private companion object {
+        /** The hero, both headings and both lines of plates at the wall's 36px line gap, all on screen at once. */
+        const val TALL_ENOUGH_FOR_BOTH_LINES = "w1920dp-h1400dp"
+    }
+
     private fun show(name: String) =
         Entry.Collection(
             key = "ANIME/$name", kind = CollectionKind.SHOW, name = name, posterPath = null, posterKey = null,
@@ -37,6 +42,7 @@ class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
     private fun film(id: String, addedAt: Long = 0) = set(id, Kind.MOVIE, id, addedAt = addedAt)
 
     @Test
+    @Config(qualifiers = TALL_ENOUGH_FOR_BOTH_LINES)
     fun aShowDrawsUnderSeriesAndAFilmUnderFilms() {
         val library = AnimeLibrary(shows = listOf(show("Dragonball")), films = listOf(film("your-name")))
         val dept = animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!
@@ -50,6 +56,7 @@ class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
     }
 
     @Test
+    @Config(qualifiers = TALL_ENOUGH_FOR_BOTH_LINES)
     fun aShowOpensTheShowAndAFilmOpensItsTitlePageNeverPlayingDirectly() {
         val library = AnimeLibrary(shows = listOf(show("Dragonball")), films = listOf(film("your-name")))
         val dept = animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!

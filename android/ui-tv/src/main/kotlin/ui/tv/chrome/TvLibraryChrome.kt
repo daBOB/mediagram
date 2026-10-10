@@ -29,7 +29,7 @@ import ui.tv.profile.TvChosenProfile
 /** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
 internal val TvDepartmentsBarHeight = 76.webDp
 
-/** The gutter between the collapsed rail's edge and the bar's first pill and the page: the web's `--gutter`, 3.2vw at 1280px (`theme.css:112`). [Overscan.horizontal] is the screen's own safe margin from x=0; this is measured from the rail's far edge instead. */
+/** The page's and the bar's side gutter, off the collapsed rail's edge at the start and off the screen's at the end: the web's `--gutter`, 3.2vw at 1280px (`theme.css:112`), the same on both sides as the web's `main` and `.masthead`. */
 internal val TvContentGutter = 40.96.webDp
 
 /**
@@ -180,7 +180,7 @@ internal fun TvLibraryChrome(
     // same band is then hidden by the bar drawn on top of it, one hero's
     // worth of bleed away from becoming visible instead once a cover here
     // has one to bleed under it.
-    val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = Overscan.horizontal, bottom = Overscan.vertical) }
+    val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = TvContentGutter, bottom = Overscan.vertical) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Box(

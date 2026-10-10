@@ -35,6 +35,7 @@ import designsystem.TvType
 import designsystem.webSp
 import java.io.File
 import ui.tv.TvFocus
+import ui.tv.catalog.StripGap
 import ui.tv.rememberStableRequester
 
 private val PosterWidth = 160.dp
@@ -64,7 +65,7 @@ internal fun TvPosterStrip(
     if (shows.isEmpty()) return
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(StripGap),
     ) {
         shows.forEachIndexed { index, show ->
             key(show.key) {

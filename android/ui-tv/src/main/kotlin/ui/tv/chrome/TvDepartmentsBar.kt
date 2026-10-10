@@ -102,7 +102,7 @@ internal fun TvDepartmentsBar(
                 .fillMaxWidth()
                 .height(TvDepartmentsBarHeight + Overscan.vertical)
                 .background(color = bg)
-                .padding(top = Overscan.vertical, start = TvContentGutter - PillRingRoom, end = Overscan.horizontal),
+                .padding(top = Overscan.vertical, start = TvContentGutter - PillRingRoom, end = TvContentGutter),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Filling, so search and the avatar stand at the bar's far end, as the

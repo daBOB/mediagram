@@ -34,6 +34,9 @@ import java.io.File
 import model.MediaSet
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.catalog.HomeBandGap
+import ui.tv.catalog.RowHeadBelow
+import ui.tv.catalog.StripGap
 import ui.tv.rememberStableRequester
 
 private val RecentPosterWidth = 160.dp
@@ -75,7 +78,7 @@ internal fun TvRecentBand(
         recentlyAdded.isEmpty() -> Box(Modifier.fillMaxWidth()) { monthBlock() }
         thisMonth.isEmpty() -> Box(Modifier.fillMaxWidth()) { recentBlock() }
         else ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(HomeBandGap)) {
                 Box(Modifier.weight(2.6f)) { recentBlock() }
                 Box(Modifier.weight(1f)) { monthBlock() }
             }
@@ -98,8 +101,8 @@ private fun TvRecentPosterRow(
     lastStop: Modifier,
 ) {
     Row(
-        modifier = Modifier.padding(top = Spacing.medium).horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        modifier = Modifier.padding(top = RowHeadBelow).horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(StripGap),
     ) {
         films.forEachIndexed { index, set ->
             key(set.setId) {

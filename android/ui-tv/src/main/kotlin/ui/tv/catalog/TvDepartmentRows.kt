@@ -25,7 +25,6 @@ import catalog.GenreIndexEntry
 import catalog.factsLine
 import catalog.keyOf
 import catalog.spelledCountOf
-import designsystem.Spacing
 import java.io.File
 import kotlinx.coroutines.flow.first
 import model.MediaSet
@@ -74,7 +73,7 @@ internal fun DeptRow(
     trailing: @Composable () -> Unit = {},
 ) {
     if (films.isEmpty()) return
-    Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null, trailing = trailing) }
+    Box(Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = title, count = null, trailing = trailing) }
     val inRow = remember { mutableStateOf(false) }
     val state = rememberRowState(films.map(MediaSet::setId), rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
@@ -82,12 +81,12 @@ internal fun DeptRow(
         state = state,
         modifier =
             Modifier
-                .padding(top = Spacing.small)
+                .padding(top = RowHeadBelow)
                 .onFocusChanged { s ->
                     inRow.value = s.hasFocus
                     if (s.hasFocus) onSectionFocused?.invoke()
                 },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(StripGap),
     ) {
         itemsIndexed(films, key = { _, set -> set.setId }) { index, set ->
             TvPlate(
@@ -119,7 +118,7 @@ internal fun DeptEntryRow(
     onSectionFocused: (() -> Unit)? = null,
 ) {
     if (entries.isEmpty()) return
-    Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
+    Box(Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = title, count = null) }
     val inRow = remember { mutableStateOf(false) }
     val state = rememberRowState(entries.map { keyOf(it) }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
@@ -127,12 +126,12 @@ internal fun DeptEntryRow(
         state = state,
         modifier =
             Modifier
-                .padding(top = Spacing.small)
+                .padding(top = RowHeadBelow)
                 .onFocusChanged { s ->
                     inRow.value = s.hasFocus
                     if (s.hasFocus) onSectionFocused?.invoke()
                 },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(StripGap),
     ) {
         itemsIndexed(entries, key = { _, entry -> keyOf(entry) }) { index, entry ->
             TvEntryPlate(
@@ -169,9 +168,9 @@ internal fun GenreTileRow(
         state = state,
         modifier =
             Modifier
-                .padding(top = Spacing.small)
+                .padding(top = RowHeadBelow)
                 .let { if (onSectionFocused != null) it.onFocusChanged { s -> if (s.hasFocus) onSectionFocused() } else it },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(TileGap),
     ) {
         itemsIndexed(genres, key = { _, genre -> genre.name }) { index, genre ->
             TvArtTile(

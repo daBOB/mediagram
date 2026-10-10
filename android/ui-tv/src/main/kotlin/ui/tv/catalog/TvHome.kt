@@ -1,6 +1,7 @@
 package ui.tv.catalog
 
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,7 +32,6 @@ import catalog.KeptKind
 import catalog.Latest
 import catalog.MagazineHome
 import designsystem.Overscan
-import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import model.WatchSnapshot
@@ -278,7 +278,7 @@ internal fun TvHome(
             }
             if (TvHomeSection.FEATURES in drawn) {
                 item(key = "features") {
-                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.FEATURES)) {
+                    Box(gutter.padding(top = HomeFeaturesTop).remembersBand(TvHomeSection.FEATURES)) {
                         // No `takesFocus` of its own to gate: this row has no
                         // internal scrolling effect at all — the top-level
                         // effect above is what calls `requestFocus()` for
@@ -289,7 +289,7 @@ internal fun TvHome(
             }
             if (TvHomeSection.CONTINUE in drawn) {
                 item(key = "continue") {
-                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.CONTINUE)) {
+                    Box(gutter.padding(top = HomeBandTop).remembersBand(TvHomeSection.CONTINUE)) {
                         // Reset to the platform's own default for this band's
                         // inner, sideways-scrolling row of cards — see this
                         // function's own doc on `homeBringIntoView` above.
@@ -309,7 +309,7 @@ internal fun TvHome(
             }
             if (TvHomeSection.RECENT in drawn) {
                 item(key = "recent") {
-                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.RECENT)) {
+                    Box(gutter.padding(top = HomeBandTop).remembersBand(TvHomeSection.RECENT)) {
                         CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                             TvRecentBand(
                                 recentlyAdded = magazine.recentlyAdded,
@@ -326,8 +326,8 @@ internal fun TvHome(
             }
             if (TvHomeSection.SERIES in drawn) {
                 item(key = "series") {
-                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.SERIES)) {
-                        Column {
+                    Box(gutter.padding(top = HomeSectionTop).remembersBand(TvHomeSection.SERIES)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(RowHeadBelow)) {
                             TvBandHeading(title = "Latest series", count = latest.seriesTotal)
                             CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                                 TvPosterStrip(
@@ -343,8 +343,8 @@ internal fun TvHome(
             }
             if (TvHomeSection.COURSES in drawn) {
                 item(key = "courses") {
-                    Box(gutter.padding(top = Spacing.extraLarge).remembersBand(TvHomeSection.COURSES)) {
-                        Column {
+                    Box(gutter.padding(top = HomeSectionTop).remembersBand(TvHomeSection.COURSES)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(RowHeadBelow)) {
                             TvBandHeading(title = "Latest courses", count = latest.coursesTotal)
                             TvCourseList(
                                 courses = courses,

@@ -29,6 +29,7 @@ import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
+import designsystem.webDp
 import designsystem.webSp
 import ui.tv.TvSafeArea
 
@@ -58,7 +59,7 @@ internal fun TvShelfHead(
                 style = ShelfHeadTitle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(end = 24.dp).semantics { heading() },
+                modifier = Modifier.weight(1f).padding(end = 24.webDp).semantics { heading() },
             )
             sub?.let {
                 Text(
@@ -71,7 +72,7 @@ internal fun TvShelfHead(
         Box(
             modifier =
                 Modifier
-                    .padding(top = 20.dp, bottom = Spacing.medium)
+                    .padding(top = ShelfHeadRuleTop, bottom = Spacing.medium)
                     .fillMaxWidth()
                     .height(1.dp)
                     .background(MaterialTheme.colorScheme.borderVariant),
@@ -111,7 +112,7 @@ internal fun TvCountedHeading(
         Box(
             modifier =
                 Modifier
-                    .padding(top = Spacing.small, bottom = Spacing.medium)
+                    .padding(top = ShelfHeadRuleTop, bottom = Spacing.medium)
                     .fillMaxWidth()
                     .height(0.5.dp)
                     .background(MaterialTheme.colorScheme.borderVariant),

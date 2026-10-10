@@ -33,10 +33,14 @@ import catalog.SetCard
 import designsystem.CoverTitle
 import designsystem.Spacing
 import designsystem.TvType
+import designsystem.webDp
 import designsystem.webSp
 import model.MediaSet
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
+import ui.tv.catalog.HomeBandGap
+import ui.tv.catalog.ResumeGap
+import ui.tv.catalog.RowHeadBelow
 
 /**
  * Continue watching beside a pull-quote, one band sharing a baseline — the
@@ -71,8 +75,8 @@ internal fun TvContinueBand(
                     TvTextRow(text = "See all", onClick = onSeeAllContinue, modifier = link.seeAll, focusRequester = link.focus, style = TvType.bodySmall)
                 }
                 Row(
-                    modifier = Modifier.padding(top = Spacing.medium).horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                    modifier = Modifier.padding(top = RowHeadBelow).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(ResumeGap),
                 ) {
                     cards.forEachIndexed { index, card ->
                         key(card.set.setId) {
@@ -94,9 +98,10 @@ internal fun TvContinueBand(
         cards.isEmpty() -> Box(Modifier.fillMaxWidth()) { quoteBlock() }
         quote == null -> Box(Modifier.fillMaxWidth()) { continueBlock() }
         else ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.extraLarge)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(HomeBandGap)) {
                 Box(Modifier.weight(2.6f)) { continueBlock() }
-                Box(Modifier.weight(1f).widthIn(min = 240.dp)) { quoteBlock() }
+                // `.home-band`'s `minmax(16rem, 1fr)` column.
+                Box(Modifier.weight(1f).widthIn(min = 256.webDp)) { quoteBlock() }
             }
     }
 }
@@ -123,7 +128,8 @@ private fun TvQuote(
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
         )
-        Box(modifier = Modifier.padding(top = Spacing.medium, bottom = Spacing.small).width(32.dp).height(1.dp).background(MaterialTheme.colorScheme.border))
+        // `.pull-quote figcaption`: 24 above, its rule 4 + 18 around (`home.css:296,302`).
+        Box(modifier = Modifier.padding(top = (24 + 4).webDp, bottom = 18.webDp).width(32.webDp).height(1.dp).background(MaterialTheme.colorScheme.border))
         val credit = listOfNotNull(set.title, set.year?.takeIf { it > 0 }?.toString()).joinToString(", ").uppercase()
         Text(text = credit, style = TvType.labelSmall.copy(letterSpacing = 0.28.em), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
