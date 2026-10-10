@@ -1,16 +1,9 @@
 package ui.tv.setup
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,18 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import setup.SetupUiState
 import setup.SetupViewModel
-import ui.tv.TvFocus
+import ui.tv.TvLibraryLoading
 import ui.tv.TvTextRow
 
 /**
@@ -47,7 +36,9 @@ fun TvSetupStep(
     viewModel: SetupViewModel,
 ) {
     when (state) {
-        SetupUiState.Checking -> TvLoadingIndicator()
+        // The app's first paint, as the web's is (`index.html:119-121`): every
+        // launch but the first goes on to open the library, under the same wait.
+        SetupUiState.Checking -> TvLibraryLoading()
 
         is SetupUiState.NeedsApplication ->
             TvApplicationScreen(error = state.error, onSubmit = viewModel::submitApplication)
@@ -168,40 +159,5 @@ internal fun TvCentredMessage(message: String) {
         contentAlignment = Alignment.Center,
     ) {
         Text(text = message, style = TvType.bodyLarge)
-    }
-}
-
-/**
- * A plain rotating arc, not a Material widget: `:ui-tv` never has material3
- * on its compile classpath, and tv-material 1.1.0 ships no progress
- * indicator of its own to stand in for one.
- */
-@Composable
-internal fun TvLoadingIndicator() {
-    val transition = rememberInfiniteTransition(label = "tv-loading")
-    val angle by
-        transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1000, easing = LinearEasing)),
-            label = "tv-loading-angle",
-        )
-
-    // The always-focused accent this spinner spins in: the same border a
-    // focused field draws, since neither is a ClickableSurface state.
-    val accent = TvFocus.fieldBorder(focused = true).border
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(48.dp)) {
-            rotate(angle) {
-                drawArc(
-                    brush = accent.brush,
-                    startAngle = 0f,
-                    sweepAngle = 270f,
-                    useCenter = false,
-                    style = Stroke(width = accent.width.toPx(), cap = StrokeCap.Round),
-                )
-            }
-        }
     }
 }

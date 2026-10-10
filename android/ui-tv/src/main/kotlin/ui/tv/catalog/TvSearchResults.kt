@@ -3,6 +3,7 @@ package ui.tv.catalog
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +34,8 @@ import model.WatchSnapshot
 import ui.common.catalog.SearchResultsView
 import ui.common.catalog.countOf
 import ui.common.catalog.searchResultsView
+import ui.tv.TvLeaderGap
+import ui.tv.TvPageLeader
 import ui.tv.TvTextRow
 import ui.tv.rememberStableRequester
 
@@ -86,7 +89,12 @@ internal fun TvSearchResults(
     if (state !is SearchUiState.Ready) return
     val entries = remember(sections) { sections.flatMap { it.entries } }
     when (searchResultsView(catalogReady, entries.isEmpty())) {
-        SearchResultsView.LOADING -> Said("Loading your library…")
+        // The leader above the words, under the field where the words already stood.
+        SearchResultsView.LOADING ->
+            Column(modifier = Modifier.padding(vertical = Spacing.medium), verticalArrangement = Arrangement.spacedBy(TvLeaderGap)) {
+                TvPageLeader()
+                TvQuietLine("Loading your library…")
+            }
         SearchResultsView.EMPTY -> Said("No title, folder or summary in the library mentions that.")
         SearchResultsView.ROWS -> {
             val marks = rememberWatchMarks(watch)

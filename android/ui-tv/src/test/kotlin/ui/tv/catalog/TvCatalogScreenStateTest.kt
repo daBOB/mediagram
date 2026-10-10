@@ -12,6 +12,7 @@ import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
@@ -19,6 +20,7 @@ import catalog.CatalogUiState
 import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
+import designsystem.COUNTDOWN_LEADER_TEST_TAG
 import model.Kind
 import model.MediaSet
 import model.Progress
@@ -362,6 +364,15 @@ class TvCatalogScreenStateTest {
             compose.onNodeWithText("Home").assertDoesNotExist()
             close()
         }
+    }
+
+    /** The cold start the viewer sees longest: the film leader counting down above the words. */
+    @Test
+    fun theLibraryLoadingCountsDownAboveItsWords() {
+        show(CatalogUiState.Loading)
+
+        compose.onNodeWithTag(COUNTDOWN_LEADER_TEST_TAG).assertExists()
+        compose.onNodeWithText("Loading your library…").assertExists()
     }
 
     /** Start over is behind the avatar's menu, and a library that cannot be read is exactly when it is needed. */

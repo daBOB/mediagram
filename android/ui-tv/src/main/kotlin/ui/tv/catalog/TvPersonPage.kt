@@ -10,7 +10,7 @@ import catalog.PersonPage
 import catalog.keyOf
 import java.io.File
 import model.WatchSnapshot
-import ui.tv.setup.TvLoadingIndicator
+import ui.tv.TvCentredLoading
 
 /**
  * How wide a person's own round portrait sits in their page's head — near
@@ -48,7 +48,7 @@ internal fun TvPersonPage(
 ) {
     if (page == null) {
         if (loading) {
-            TvLoadingIndicator()
+            TvCentredLoading("Loading your library…")
         } else {
             TvCenteredMessage("Nobody by that number is credited on anything in your library.")
         }

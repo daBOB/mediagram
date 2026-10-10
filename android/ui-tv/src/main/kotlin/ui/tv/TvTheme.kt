@@ -15,9 +15,11 @@ import androidx.tv.material3.darkColorScheme
 import designsystem.Accent
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
+import designsystem.LocalReducedMotion
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.TvType
+import designsystem.rememberReducedMotion
 
 /**
  * Dark, always: a media library read from the couch is read in the dark,
@@ -105,7 +107,13 @@ fun TvTheme(
     content: @Composable () -> Unit,
 ) {
     val accentColor = accent.dark
-    CompositionLocalProvider(LocalBackdrop provides backdrop) {
+    // The web's `prefers-reduced-motion` (`theme.css:180`), read once at the
+    // root as the phone's theme reads it, so the film leader stands still for
+    // a viewer who turned animations off.
+    CompositionLocalProvider(
+        LocalBackdrop provides backdrop,
+        LocalReducedMotion provides rememberReducedMotion(),
+    ) {
         MaterialTheme(
             colorScheme = tvColorScheme(accentColor),
             typography = TvTypography,

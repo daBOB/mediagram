@@ -5,6 +5,7 @@ plugins {
 
 android {
     namespace = "com.mediagram.android.core.designsystem"
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
@@ -22,4 +23,12 @@ dependencies {
     // this runs under Robolectric. androidx-junit brings ApplicationProvider.
     testImplementation(libs.findLibrary("robolectric").get())
     testImplementation(libs.findLibrary("androidx.junit").get())
+
+    // The motion modifiers are tested by composing them and reading their
+    // layer-mapped bounds on a paused test clock, as ui-mobile's tests do.
+    // setContent comes from activity-compose, which ui-test-junit4 only
+    // brings at runtime.
+    testImplementation(libs.findLibrary("androidx.activity.compose").get())
+    testImplementation(libs.findLibrary("androidx.compose.ui.test.junit4").get())
+    debugImplementation(libs.findLibrary("androidx.compose.ui.test.manifest").get())
 }

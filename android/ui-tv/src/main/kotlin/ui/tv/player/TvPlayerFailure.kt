@@ -1,22 +1,28 @@
 package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.Text
+import designsystem.Accent
+import designsystem.CountdownLeader
 import designsystem.Overscan
 import designsystem.Palette
 import designsystem.Spacing
 import player.PlayerUiState
-import ui.tv.setup.TvLoadingIndicator
+import ui.tv.TvLeaderSize
 
-/** What the stage says while there is no film to show: the spinner while it prepares, the failure once it has failed. */
+/** What the stage says while there is no film to show: the film leader while it prepares, the failure once it has failed. */
 @Composable
 internal fun TvPlayerStatus(
     state: PlayerUiState,
@@ -24,9 +30,26 @@ internal fun TvPlayerStatus(
     onRetry: () -> Unit,
 ) {
     when (state) {
-        PlayerUiState.Preparing -> TvLoadingIndicator()
+        PlayerUiState.Preparing -> TvPreparingLeader()
         is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry)
         PlayerUiState.Playing, PlayerUiState.Paused -> Unit
+    }
+}
+
+/**
+ * The stage while the title opens: the film leader alone, centred, as the
+ * web's stage shows it (`index.html:147`, `film-leader.css:56-58`). Its sweep
+ * is the stage's fixed coral (`--stage-accent`, `theme.css:97`;
+ * `film-leader.css:34`), whatever the viewer's accent, because the stage is
+ * always black. The leader says nothing, so TalkBack hears "Loading" here.
+ */
+@Composable
+private fun TvPreparingLeader() {
+    Box(
+        modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
+        contentAlignment = Alignment.Center,
+    ) {
+        CountdownLeader(size = TvLeaderSize, accent = Accent.CORAL.dark)
     }
 }
 

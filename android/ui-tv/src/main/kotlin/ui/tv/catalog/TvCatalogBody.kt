@@ -15,6 +15,7 @@ import catalog.latestOf
 import model.MediaSet
 import ui.common.RailItem
 import ui.common.catalog.DepartmentScrollStates
+import ui.tv.TvLibraryLoading
 
 /**
  * What shows below the bar once a tab is chosen — Home, a shelf's wall (or
@@ -50,7 +51,7 @@ internal fun TvCatalogBody(
     choose: (CatalogTab) -> Unit,
 ) {
     when {
-        state is CatalogUiState.Loading -> TvCenteredMessage("Loading your library…")
+        state is CatalogUiState.Loading -> TvLibraryLoading()
         state is CatalogUiState.KidsEmpty -> TvCenteredMessage(state.message)
         state is CatalogUiState.Failed -> TvCenteredMessage(state.message)
         ready == null -> TvCenteredMessage("The library is empty.")

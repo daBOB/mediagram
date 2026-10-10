@@ -20,6 +20,7 @@ import designsystem.TvType
 import setup.LibraryOption
 import setup.LibraryPrompt
 import setup.libraryPromptFor
+import ui.tv.TvCentredLoading
 import ui.tv.TvTextRow
 
 private const val HEADING = "Which library should this device read?"
@@ -51,7 +52,8 @@ fun TvLibraryChoiceScreen(
     onLookAgain: () -> Unit,
 ) {
     when (val prompt = libraryPromptFor(choices, error)) {
-        LibraryPrompt.Waiting -> TvLoadingIndicator()
+        // The web's words for the same wait (`settings-telegram-forms.js:15`), under the leader.
+        LibraryPrompt.Waiting -> TvCentredLoading("Reading the account's channels…")
 
         is LibraryPrompt.LookAgain ->
             LookAgainScreen(explanation = prompt.explanation, onLookAgain = onLookAgain)

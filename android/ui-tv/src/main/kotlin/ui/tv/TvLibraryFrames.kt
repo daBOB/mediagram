@@ -20,7 +20,6 @@ import ui.tv.catalog.TvSearch
 import ui.tv.catalog.destinationKey
 import ui.tv.catalog.personKey
 import ui.tv.catalog.showKey
-import ui.tv.setup.TvLoadingIndicator
 
 /**
  * Search, over whatever it was opened from. A film's poster opens its page
@@ -126,7 +125,7 @@ internal fun <T> TvResolvedBranch(
         }
         FrameResolution.Loading -> {
             BackHandler(onBack = leave)
-            TvLoadingIndicator()
+            TvCentredLoading("Loading your library…")
         }
         FrameResolution.Stale -> LaunchedEffect(Unit) { leave() }
     }

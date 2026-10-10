@@ -1,5 +1,6 @@
 package ui.tv
 
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.unit.TextUnit
 import androidx.tv.material3.MaterialTheme
 import designsystem.Accent
+import designsystem.LocalReducedMotion
 import designsystem.Palette
 import designsystem.TvType
 import org.junit.After
@@ -16,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
@@ -53,6 +56,19 @@ class TvThemeTest {
         var primary: Color? = null
         show(accent = Accent.TEAL) { primary = MaterialTheme.colorScheme.primary }
         assertEquals(Accent.TEAL.dark, primary)
+    }
+
+    /** "Remove animations" reaches every TV screen through the theme, as the web's `prefers-reduced-motion` does. */
+    @Test
+    fun reducedMotionFollowsTheSystemsAnimatorScale() {
+        var still: Boolean? = null
+        show { still = LocalReducedMotion.current }
+        assertEquals(false, still)
+        close()
+
+        Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+        show { still = LocalReducedMotion.current }
+        assertEquals(true, still)
     }
 
     @Test

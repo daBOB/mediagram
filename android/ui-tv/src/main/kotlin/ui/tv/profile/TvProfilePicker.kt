@@ -35,8 +35,8 @@ import catalog.profile.ProfileUiState
 import catalog.profile.WAITING_FOR_HOUSEHOLD
 import designsystem.Overscan
 import designsystem.Spacing
+import ui.tv.TvLibraryLoading
 import ui.tv.TvTextRow
-import ui.tv.setup.TvLoadingIndicator
 
 private const val HEADING = "Who's watching?"
 private const val TRY_AGAIN = "Try again"
@@ -78,7 +78,7 @@ internal fun TvProfilePicker(
     tiles: LazyListState = rememberLazyListState(),
 ) {
     when (state) {
-        ProfileUiState.Loading -> TvLoadingIndicator()
+        ProfileUiState.Loading -> TvLibraryLoading()
         is ProfileUiState.Picking -> TvPickerBody(state, TvPickerActions(onChoose, onStay, onRetry, onClaim, onCreateFirst, onManage), landing, tiles)
         is ProfileUiState.Chosen -> Unit
     }

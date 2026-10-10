@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
+import designsystem.COUNTDOWN_LEADER_TEST_TAG
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -54,6 +56,14 @@ class TvSetupStepTest {
     fun checkingOffersNoStartOver() {
         show(SetupUiState.Checking)
         compose.onNodeWithText("Start over").assertDoesNotExist()
+    }
+
+    /** The app's first paint is the library loading, as the web's is: the leader above its words. */
+    @Test
+    fun checkingCountsDownAboveTheLibrarysWords() {
+        show(SetupUiState.Checking)
+        compose.onNodeWithTag(COUNTDOWN_LEADER_TEST_TAG).assertExists()
+        compose.onNodeWithText("Loading your library…").assertExists()
     }
 
     @Test

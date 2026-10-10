@@ -35,8 +35,7 @@ internal const val TvOfflineBadgeTag = "tv-offline-badge"
 
 /**
  * The progress rule along the foot of a plate. Not tv-material's own — it
- * ships no progress indicator ([ui.tv.setup.TvLoadingIndicator] hits the
- * same wall for its spinner) — so this is the plain fractional-width box
+ * ships no progress indicator — so this is the plain fractional-width box
  * that stands in for one, drawn in the catalogue's one accent. [modifier]
  * carries the `align` the caller's `BoxWithConstraints` scope alone can
  * grant — a scoped modifier only resolves inside the scope that produced it,

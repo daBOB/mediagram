@@ -1,8 +1,11 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -13,6 +16,8 @@ import catalog.genreShelf
 import catalog.keyOf
 import catalog.spelledCountOf
 import model.WatchSnapshot
+import ui.tv.TvLeaderGap
+import ui.tv.TvPageLeader
 import ui.tv.TvSafeArea
 
 /**
@@ -36,7 +41,7 @@ internal fun TvGenre(
     restoreKey: String?,
 ) {
     if (catalogState !is CatalogUiState.Ready) {
-        GenreMessage("Loading your library…")
+        GenreMessage("Loading your library…", leader = true)
         return
     }
     val shelf = remember(catalogState.shelves, name) { genreShelf(catalogState.shelves, name) }
@@ -88,13 +93,20 @@ internal fun TvGenreWall(
  * The phone's centred sentence, as a stop the remote rests on: a genre page
  * (or the Genres page itself) with nothing to open would otherwise leave
  * the remote on nothing at all, with only Back to tell it apart from a
- * frozen screen.
+ * frozen screen. A wait ([leader]) stands the film leader above it, as the
+ * tablet's genre page does while the library loads.
  */
 @Composable
-internal fun GenreMessage(text: String) {
+internal fun GenreMessage(
+    text: String,
+    leader: Boolean = false,
+) {
     val focus = remember { FocusRequester() }
     TvSafeArea {
-        TvReadableParagraph(text, modifier = Modifier.focusRequester(focus))
+        Column(verticalArrangement = Arrangement.spacedBy(TvLeaderGap), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (leader) TvPageLeader()
+            TvReadableParagraph(text, modifier = Modifier.focusRequester(focus))
+        }
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
 }
