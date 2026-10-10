@@ -228,3 +228,7 @@ Commit `0cf9a990` `fix(chrome): search and the avatar stand at the bar's far end
 **On the tablet:** `tv-audit/batch1b-tablet-bar.jpg` shows the toolbar at the gutter while loading (two pills) and once loaded. The tablet was left on Home with no playback.
 
 **Ledgered, not now:** meta at weight 400, loose caption line heights, the `CoverTitle` naming clash, consolidating the 12px meta role, and long lines.
+
+## Released
+
+0.120.0 (`198d5af2`) published to the channel 2026-10-10 04:28 as message 28584, pinned, with its profile. The box was off the network (asleep) at publish; it moves to 0.120.0 on its own when it next comes to the foreground. After it does, `dumpsys package dexopt` should show `install-dm`.
