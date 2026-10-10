@@ -139,12 +139,12 @@ fun <T> TvWall(
         }
     }
 
-    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+    GlidesOnEntry(gridState, rule = barClearance) { glide ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
             modifier =
-                Modifier
+                glide
                     .fillMaxSize()
                     // Only a wall with a hero over it: a kept wall leaves for the rail and keeps its place.
                     .toTopWhenLeftForTheBar { if (header != null) gridState.animateScrollToItem(0) }
@@ -171,7 +171,7 @@ fun <T> TvWall(
                         WallCell.Header ->
                             CompositionLocalProvider(LocalBringIntoViewSpec provides defaultBringIntoView) {
                                 val plate = focusIndex?.let { cells.indexOf(WallCell.Plate(it)) } ?: -1
-                                val passOn: suspend () -> Unit = { gridState.scrollToItem(plate).also { focusRequester.requestFocus() } }
+                                val passOn: suspend () -> Unit = { if (gridState.layoutInfo.visibleItemsInfo.none { it.index == plate }) gridState.scrollToItem(plate); focusRequester.requestFocus() }
                                 Box(Modifier.passesEntryOn(headerHoldsNoStop && plate >= 0 && !wallHasFocus.value, passOn)) { header?.invoke() }
                             }
                         is WallCell.Heading -> TvBandHeading(title = cell.label, count = null, style = headingStyle)

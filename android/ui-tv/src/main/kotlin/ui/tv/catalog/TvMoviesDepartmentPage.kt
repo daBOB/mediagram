@@ -92,92 +92,94 @@ internal fun TvMoviesDepartmentPage(
 
     val pagePadding = LocalTvPagePadding.current
     TvPage(takesArrivalFocus = takesFocus) {
-        LazyColumn(
-            state = listState,
-            // Scoped to this list alone — the rail's Right, a blind entry
-            // naming no row of its own, is what this is for; every
-            // restore-key arrival above already requests a named plate
-            // directly, which never defers to this restorer's own search.
-            modifier = Modifier.fillMaxSize().testTag(TvMoviesDepartmentPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
-            contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
-        ) {
-            item(key = "hero") {
-                Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                    TvDepartmentHero(title = Department.MOVIES.label, line = moviesLineOf(dept), lead = dept.lead)
-                }
-            }
-            if (MoviesSection.FEATURED in included) {
-                item(key = MoviesSection.FEATURED) {
+        GlidesOnEntry(listState) { glide ->
+            LazyColumn(
+                state = listState,
+                // Scoped to this list alone — the rail's Right, a blind entry
+                // naming no row of its own, is what this is for; every
+                // restore-key arrival above already requests a named plate
+                // directly, which never defers to this restorer's own search.
+                modifier = glide.fillMaxSize().testTag(TvMoviesDepartmentPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
+                contentPadding = PaddingValues(top = pagePadding.top, bottom = pagePadding.bottom),
+            ) {
+                item(key = "hero") {
                     Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        DeptRow(
-                            "Featured",
-                            dept.featured,
-                            onOpenTitle,
-                            focusAt = target.stopAt(MoviesSection.FEATURED),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            heldIds = heldIds,
-                            onSectionFocused = { lastSection = MoviesSection.FEATURED },
-                        )
+                        TvDepartmentHero(title = Department.MOVIES.label, line = moviesLineOf(dept), lead = dept.lead)
                     }
                 }
-            }
-            if (MoviesSection.GENRES in included) {
-                item(key = MoviesSection.GENRES) {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        Box(Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = "Genres", count = null) }
-                        GenreTileRow(
-                            dept.genres,
-                            onOpenGenre,
-                            focusAt = target.stopAt(MoviesSection.GENRES),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            onSectionFocused = { lastSection = MoviesSection.GENRES },
-                        )
+                if (MoviesSection.FEATURED in included) {
+                    item(key = MoviesSection.FEATURED) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            DeptRow(
+                                "Featured",
+                                dept.featured,
+                                onOpenTitle,
+                                focusAt = target.stopAt(MoviesSection.FEATURED),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                heldIds = heldIds,
+                                onSectionFocused = { lastSection = MoviesSection.FEATURED },
+                            )
+                        }
                     }
                 }
-            }
-            if (MoviesSection.ACCLAIMED in included) {
-                item(key = MoviesSection.ACCLAIMED) {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        DeptRow(
-                            "Acclaimed, not yet seen",
-                            dept.acclaimed,
-                            onOpenTitle,
-                            focusAt = target.stopAt(MoviesSection.ACCLAIMED),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            heldIds = heldIds,
-                            onSectionFocused = { lastSection = MoviesSection.ACCLAIMED },
-                        )
+                if (MoviesSection.GENRES in included) {
+                    item(key = MoviesSection.GENRES) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            Box(Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = "Genres", count = null) }
+                            GenreTileRow(
+                                dept.genres,
+                                onOpenGenre,
+                                focusAt = target.stopAt(MoviesSection.GENRES),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                onSectionFocused = { lastSection = MoviesSection.GENRES },
+                            )
+                        }
                     }
                 }
-            }
-            if (MoviesSection.RECENTLY_ADDED in included) {
-                item(key = MoviesSection.RECENTLY_ADDED) {
-                    Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                        DeptRow(
-                            "Recently added",
-                            dept.recentlyAdded,
-                            onOpenTitle,
-                            focusAt = target.stopAt(MoviesSection.RECENTLY_ADDED),
-                            focus = focus,
-                            takesFocus = rowTakesFocus,
-                            heldIds = heldIds,
-                            onSectionFocused = { lastSection = MoviesSection.RECENTLY_ADDED },
-                        )
+                if (MoviesSection.ACCLAIMED in included) {
+                    item(key = MoviesSection.ACCLAIMED) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            DeptRow(
+                                "Acclaimed, not yet seen",
+                                dept.acclaimed,
+                                onOpenTitle,
+                                focusAt = target.stopAt(MoviesSection.ACCLAIMED),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                heldIds = heldIds,
+                                onSectionFocused = { lastSection = MoviesSection.ACCLAIMED },
+                            )
+                        }
                     }
                 }
-            }
-            item(key = MoviesSection.ALL) {
-                // The web's `.dept-all` and the phone's `PagePill`: a round
-                // outline link at the page's foot, 56 under the last row.
-                Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.tvDp, bottom = Spacing.medium)) {
-                    TvPagePill(
-                        text = "All ${dept.filmCount} films →",
-                        onClick = onOpenAllFilms,
-                        modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.section == MoviesSection.ALL })),
-                    )
+                if (MoviesSection.RECENTLY_ADDED in included) {
+                    item(key = MoviesSection.RECENTLY_ADDED) {
+                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
+                            DeptRow(
+                                "Recently added",
+                                dept.recentlyAdded,
+                                onOpenTitle,
+                                focusAt = target.stopAt(MoviesSection.RECENTLY_ADDED),
+                                focus = focus,
+                                takesFocus = rowTakesFocus,
+                                heldIds = heldIds,
+                                onSectionFocused = { lastSection = MoviesSection.RECENTLY_ADDED },
+                            )
+                        }
+                    }
+                }
+                item(key = MoviesSection.ALL) {
+                    // The web's `.dept-all` and the phone's `PagePill`: a round
+                    // outline link at the page's foot, 56 under the last row.
+                    Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, top = 56.tvDp, bottom = Spacing.medium)) {
+                        TvPagePill(
+                            text = "All ${dept.filmCount} films →",
+                            onClick = onOpenAllFilms,
+                            modifier = Modifier.focusRequester(rememberStableRequester(focus.takeIf { target.section == MoviesSection.ALL })),
+                        )
+                    }
                 }
             }
         }

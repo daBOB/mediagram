@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -139,12 +138,12 @@ internal fun TvCollectionsPage(
     // each item inside it: a heading Down scrolled to the top landed half
     // behind the bar the same way a plate once did.
     val barClearance = rememberTvBarClearanceBringIntoView()
-    CompositionLocalProvider(LocalBringIntoViewSpec provides barClearance) {
+    GlidesOnEntry(listState, rule = barClearance) { glide ->
         LazyColumn(
             state = listState,
             // Scoped to this list alone — [TvMoviesDepartmentPage]'s own doc on
             // why this coexists with the explicit request above.
-            modifier = Modifier.fillMaxSize().testTag(TvCollectionsPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
+            modifier = glide.fillMaxSize().testTag(TvCollectionsPageTestTag).toTopWhenLeftForTheBar { listState.animateScrollToItem(0) }.focusRestorer(fallback = focus),
             contentPadding = PaddingValues(start = pagePadding.start, top = pagePadding.top, end = pagePadding.end, bottom = pagePadding.bottom),
         ) {
             item(key = HERO) {

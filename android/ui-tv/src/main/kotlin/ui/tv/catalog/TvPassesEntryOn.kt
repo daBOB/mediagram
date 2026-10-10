@@ -21,7 +21,9 @@ import kotlinx.coroutines.launch
  * rail asks the page to take focus, and Compose gives it to the first stop
  * already laid out. Under a hero that fills the screen no plate is laid out
  * yet, so the remote stayed where it was. The header takes the entry
- * instead, and [passOn] scrolls a plate in and focuses it. The wall turns
+ * instead, and [passOn] focuses a plate: at once when it is laid out at the
+ * screen's foot, as under a department hero, and the wall glides up to it
+ * ([GlidesOnEntry]); scrolled to first only when it is not. The wall turns
  * [enabled] off while it holds focus, so Up from the plates still leaves for
  * the bar instead of landing here.
  */

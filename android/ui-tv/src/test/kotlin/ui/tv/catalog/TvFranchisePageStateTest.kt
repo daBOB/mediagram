@@ -157,22 +157,22 @@ class TvFranchisePageStateTest : TvScreenStateTest() {
         compose.onNode(isFocused()).performKeyInput { pressKey(key) }
         compose.waitForIdle()
     }
+}
 
-    /**
-     * Compose's own `PivotBringIntoViewSpec`, which it applies on a leanback
-     * device: what takes focus has its leading edge moved to 30% of the way
-     * down, unless that would push a child that fits off the far end.
-     */
-    @OptIn(ExperimentalFoundationApi::class)
-    private object LeanbackPivot : BringIntoViewSpec {
-        override fun calculateScrollDistance(
-            offset: Float,
-            size: Float,
-            containerSize: Float,
-        ): Float {
-            val target = 0.3f * containerSize
-            val leading = if (size <= containerSize && containerSize - target < size) containerSize - size else target
-            return offset - leading
-        }
+/**
+ * Compose's own `PivotBringIntoViewSpec`, which it applies on a leanback
+ * device: what takes focus has its leading edge moved to 30% of the way
+ * down, unless that would push a child that fits off the far end.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+internal object LeanbackPivot : BringIntoViewSpec {
+    override fun calculateScrollDistance(
+        offset: Float,
+        size: Float,
+        containerSize: Float,
+    ): Float {
+        val target = 0.3f * containerSize
+        val leading = if (size <= containerSize && containerSize - target < size) containerSize - size else target
+        return offset - leading
     }
 }
