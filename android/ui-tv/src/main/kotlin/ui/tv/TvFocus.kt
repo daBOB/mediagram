@@ -30,37 +30,23 @@ import designsystem.TvStyle
 
 /**
  * One focus treatment for every TV screen, so a card or a text row reads
- * "this is what the remote is on" the same way wherever it appears instead
- * of each screen inventing its own emphasis. A call site takes its shape,
- * scale, border and glow from here together — never the border alone — so
- * the frame a focused card grows a border in is always the frame the card
- * itself is already drawn in.
+ * "this is what the remote is on" the same way wherever it appears. A call
+ * site takes its shape, scale, border and glow from here together — never
+ * the border alone — so a focused card's border is cut from the frame the
+ * card is drawn in. Each value reads the style's [TvLook].
  *
- * A television is worked from a couch several metres away, where a phone's
- * subtle tap states would be invisible. Focus has to read across a room:
- * the focused element grows ([Scale], enough to separate it from its
- * unfocused neighbours) and gains the catalogue's one accent as a border.
- * Imprint red already means "the title this viewer is in the middle of" on
- * the phone; TV reuses it for "the row the remote is currently on", so the
- * accent keeps one meaning across both surfaces instead of TV picking a
- * second colour for the same idea.
+ * A television is worked from a couch several metres away, so focus has to
+ * read across a room: the focused element grows and gains a cue. In
+ * mediagram the cue is the catalogue's one accent as a border — imprint red
+ * already means "the title this viewer is in the middle of" on the phone,
+ * so it keeps one meaning — on square corners, as the web player draws its
+ * plates. Apple TV style lifts the card on a soft shadow and Google TV
+ * style rings it white; both round the corner ([TvLook.cardShape]).
  *
- * Square corners, not tv-material's own rounded default: the web player —
- * this catalogue's reference — draws every plate with square corners and
- * hairline rules, and a television plate is the same catalogue, not a
- * second design. That is mediagram's look; Apple TV and Google TV styles
- * round the corner ([TvLook.cardShape]). [Shape] is the one constant the container and its focus
- * border are both cut from, so there is nowhere for a call site to pass a
- * shape to the card and forget to pass the same one to the border.
- *
- * No glow, anywhere, on a card or on a plain surface. A blurred highlight
- * reads against a bright wallpaper carousel; on this catalogue's ink
- * ground it only softens into another warm smear next to the one accent
- * this app allows itself, rather than reading as a second cue. A text-only
- * row — a menu line, a toggle — has no card shape to put a border on at
- * all, so it carries that same accent colour plus an underline instead of
- * a frame. Apple TV style is the one exception: its focused card lifts on a
- * soft shadow, the way that home screen says focus.
+ * No glow otherwise: on this catalogue's ink ground a blurred highlight
+ * only softens into a smear beside the accent. A text-only row — a menu
+ * line, a toggle — has no frame to border, so it takes the accent plus an
+ * underline instead.
  */
 object TvFocus {
     /** How far a focused element grows. Legible from the couch, not just the palm. */
@@ -77,9 +63,9 @@ object TvFocus {
     val BorderWidth: Dp = 3.dp
 
     /**
-     * Every TV container's corner in the current style — square for mediagram, like the web player's plates.
-     * Not exposed as a per-call parameter — a shape a caller could vary here is
-     * a shape that could drift from the border built on top of it.
+     * Every TV container's corner in the current style. Not a per-call
+     * parameter: a shape a caller could vary here could drift from the
+     * border built on top of it.
      */
     private val Shape: Shape
         @Composable
@@ -108,12 +94,9 @@ object TvFocus {
     fun cardScale(): CardScale = CardDefaults.scale(focusedScale = currentTvLook.focusScale, pressedScale = currentTvLook.focusScale)
 
     /**
-     * `CardBorder` has no disabled slot to leave unset — only `border`,
-     * `focusedBorder` and `pressedBorder` — and tv-material defaults the
-     * two left here to values already cut from [Shape]: `border` falls
-     * back to `Border.None`, itself a `RectangleShape`, and `pressedBorder`
-     * falls back to whatever `focusedBorder` resolved to, which is the
-     * square one passed below. Nothing here can default to a rounded shape.
+     * Only `focusedBorder` is set: `border` falls back to `Border.None` and
+     * `pressedBorder` to the focused one, so nothing falls back to
+     * tv-material's own corner.
      */
     @Composable
     fun cardBorder(shape: Shape = Shape): CardBorder =
@@ -141,15 +124,10 @@ object TvFocus {
         ClickableSurfaceDefaults.scale(focusedScale = currentTvLook.focusScale, pressedScale = currentTvLook.focusScale)
 
     /**
-     * `ClickableSurfaceBorder` carries two states `CardBorder` does not:
-     * `disabledBorder`, which falls back to `border` (`Border.None`, a
-     * `RectangleShape` — already square), and `focusedDisabledBorder`,
-     * which does not chain from anything passed here and instead falls
-     * back to tv-material's own default — a rounded `ShapeDefaults.Small`
-     * corner nothing on this screen ever draws intentionally. Passed
-     * explicitly here, on [Shape], so a surface that is ever both focused
-     * and disabled still reads as this catalogue's square plate rather
-     * than tv-material's own rounded one.
+     * `focusedDisabledBorder` chains from nothing passed here and would fall
+     * back to tv-material's rounded `ShapeDefaults.Small`, so it is cut from
+     * [shape] too: a surface both focused and disabled keeps the style's
+     * corner — square in mediagram, [TvLook.cardShape] otherwise.
      *
      * [selected] rings an unfocused surface — a swatch that is the current
      * choice, which would otherwise only say so to a screen reader — in
