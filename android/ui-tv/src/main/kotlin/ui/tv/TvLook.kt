@@ -27,7 +27,7 @@ internal data class TvNeutrals(
     val ruleStrong: Color,
 )
 
-/** How a focused card says so: mediagram's accent border, Apple TV's lift and shadow, Google TV's white ring. */
+/** How a focused card says so: mediagram's accent border, Apple TV's lift, Google TV's white ring. */
 internal enum class TvCardFocus { ACCENT_BORDER, LIFT, RING }
 
 /**

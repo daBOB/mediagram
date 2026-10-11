@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceBorder
 import androidx.tv.material3.ClickableSurfaceColors
@@ -20,9 +19,12 @@ internal fun focusedCardBorderOf(look: TvLook, accent: Color, shape: Shape): Bor
         TvCardFocus.LIFT -> Border.None
     }
 
-/** Apple TV style's lift: a soft shadow under the grown card. Null — no glow — in every other style. */
-internal fun focusedCardGlowOf(look: TvLook): Glow? =
-    if (look.cardFocus == TvCardFocus.LIFT) Glow(elevationColor = Color.Black.copy(alpha = 0.6f), elevation = 16.dp) else null
+/**
+ * Null — no glow — in every style. Apple TV style's lift is the grown card
+ * alone: a soft shadow under it made the box's frames measurably slower
+ * than mediagram's, whose focus draws none.
+ */
+internal fun focusedCardGlowOf(look: TvLook): Glow? = null
 
 /** The ring a focused plain surface (a swatch, a settings block, a dot) wears: the accent for mediagram, white otherwise. */
 internal fun focusInkOf(look: TvLook, accent: Color): Color = if (look.cardFocus == TvCardFocus.ACCENT_BORDER) accent else Color.White

@@ -24,11 +24,9 @@ class TvFocusStylesTest {
     }
 
     @Test
-    fun appleCardsLiftWithAShadowAndNoBorder() {
+    fun appleCardsLiftWithNoBorderAndNoShadow() {
         assertEquals(Border.None, focusedCardBorderOf(TvStyle.APPLE.look, accent, RoundedCornerShape(12.dp)))
-        val glow = checkNotNull(focusedCardGlowOf(TvStyle.APPLE.look))
-        assertEquals(16.dp, glow.elevation)
-        assertEquals(Color.Black.copy(alpha = 0.6f), glow.elevationColor)
+        assertNull(focusedCardGlowOf(TvStyle.APPLE.look))
     }
 
     @Test

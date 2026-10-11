@@ -40,8 +40,8 @@ import designsystem.TvStyle
  * mediagram the cue is the catalogue's one accent as a border — imprint red
  * already means "the title this viewer is in the middle of" on the phone,
  * so it keeps one meaning — on square corners, as the web player draws its
- * plates. Apple TV style lifts the card on a soft shadow and Google TV
- * style rings it white; both round the corner ([TvLook.cardShape]).
+ * plates. Apple TV style lifts the card and Google TV style rings it
+ * white; both round the corner ([TvLook.cardShape]).
  *
  * No glow otherwise: on this catalogue's ink ground a blurred highlight
  * only softens into a smear beside the accent. A text-only row — a menu
@@ -104,7 +104,7 @@ object TvFocus {
             focusedBorder = focusedCardBorderOf(currentTvLook, MaterialTheme.colorScheme.primary, shape),
         )
 
-    /** Explicit, not just the tv-material default: only Apple TV style's lift glows. */
+    /** Explicit, not just the tv-material default: no style's card glows ([focusedCardGlowOf]). */
     @Composable
     fun cardGlow(): CardGlow =
         focusedCardGlowOf(currentTvLook)?.let { CardDefaults.glow(focusedGlow = it, pressedGlow = it) } ?: CardDefaults.glow()
