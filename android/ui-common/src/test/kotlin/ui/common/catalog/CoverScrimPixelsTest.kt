@@ -26,7 +26,6 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CoverScrimPixelsTest {
-    private val paper = Color(0xFF0D0D0E)
     private val backdrop = Color(0xFFC0885A)
 
     private fun render(width: Int, height: Int, scrim: DrawScope.() -> Unit): IntArray {
@@ -39,7 +38,7 @@ class CoverScrimPixelsTest {
     }
 
     /** What `Modifier.background(brush)` drew per layer: the brush over the whole cover, back-to-front. */
-    private fun DrawScope.fullSizeLayers() {
+    private fun DrawScope.fullSizeLayers(paper: Color) {
         drawRect(CoverTopScrim)
         drawRect(coverPaperFade(paper))
         drawRect(CoverSideScrim)
@@ -48,10 +47,13 @@ class CoverScrimPixelsTest {
     private fun largestChannelGap(a: IntArray, b: IntArray): Int =
         a.indices.maxOf { i -> (0..24 step 8).maxOf { shift -> abs((a[i] shr shift and 0xFF) - (b[i] shr shift and 0xFF)) } }
 
+    /** Dark paper and a light one: the light theme is where a wrong layer order once showed. */
     private fun assertSamePixels(width: Int, height: Int) {
-        val expected = render(width, height) { fullSizeLayers() }
-        val banded = render(width, height) { drawCoverScrim(coverPaperFade(paper)) }
-        assertEquals(0, largestChannelGap(expected, banded), "banded scrim at ${width}x$height")
+        for (paper in listOf(Color(0xFF0D0D0E), Color(0xFFF4EFE7))) {
+            val expected = render(width, height) { fullSizeLayers(paper) }
+            val banded = render(width, height) { drawCoverScrim(coverPaperFade(paper)) }
+            assertEquals(0, largestChannelGap(expected, banded), "banded scrim at ${width}x$height on $paper")
+        }
     }
 
     @Test
