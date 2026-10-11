@@ -49,7 +49,7 @@ import ui.tv.setup.TvSetupStep
 fun TvApp() {
     val appearanceViewModel: AppearanceViewModel = hiltViewModel()
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
-    TvTheme(accent = appearance.accent, backdrop = appearance.backdrop) {
+    TvTheme(accent = appearance.accent, backdrop = appearance.backdrop, style = appearance.style) {
         val setupViewModel: SetupViewModel = hiltViewModel()
         val setupState by setupViewModel.state.collectAsStateWithLifecycle()
 

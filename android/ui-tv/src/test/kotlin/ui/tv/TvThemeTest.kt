@@ -10,7 +10,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.tv.material3.MaterialTheme
 import designsystem.Accent
 import designsystem.LocalReducedMotion
+import designsystem.LocalTvStyle
 import designsystem.Palette
+import designsystem.TvStyle
 import designsystem.TvType
 import org.junit.After
 import org.junit.Rule
@@ -114,13 +116,41 @@ class TvThemeTest {
         assertEquals(Palette.Sage, colours.tertiary)
     }
 
+    @Test
+    fun appleAndGoogleSetTheirOwnNeutralsButKeepTheAccent() {
+        val apple = tvColorScheme(Accent.Default.dark, TvStyle.APPLE.look.neutrals)
+        assertEquals(Color(0xFF000000), apple.background)
+        assertEquals(Color(0xFFFFFFFF), apple.onSurface)
+        assertEquals(Color(0xFF1C1C1E), apple.surface)
+        assertEquals(Accent.Default.dark, apple.primary)
+
+        val google = tvColorScheme(Accent.Default.dark, TvStyle.GOOGLE.look.neutrals)
+        assertEquals(Color(0xFF202124), google.background)
+        assertEquals(Color(0xFFE8EAED), google.onSurface)
+        assertEquals(Color(0xFF3C4043), google.surfaceVariant)
+        assertEquals(Palette.Ochre, google.error)
+    }
+
+    @Test
+    fun theThemeHandsItsStyleAndGroundToEveryScreen() {
+        var style: TvStyle? = null
+        var ground: Color? = null
+        show(style = TvStyle.GOOGLE) {
+            style = LocalTvStyle.current
+            ground = MaterialTheme.colorScheme.background
+        }
+        assertEquals(TvStyle.GOOGLE, style)
+        assertEquals(Color(0xFF202124), ground)
+    }
+
     private fun show(
         accent: Accent = Accent.Default,
+        style: TvStyle = TvStyle.Default,
         content: @Composable () -> Unit,
     ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { TvTheme(accent = accent) { content() } }
+            controller.get().setContent { TvTheme(accent = accent, style = style) { content() } }
         }
         compose.waitForIdle()
     }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import designsystem.TvStyle
 import org.junit.After
 import org.junit.Rule
 import org.robolectric.Robolectric
@@ -50,11 +51,14 @@ abstract class TvScreenStateTest {
         return layouts.single().layoutInput.style
     }
 
-    protected fun show(content: @Composable () -> Unit) {
+    protected fun show(
+        style: TvStyle = TvStyle.Default,
+        content: @Composable () -> Unit,
+    ) {
         compose.runOnUiThread {
             val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller = built
-            built.get().setContent { TvTheme { content() } }
+            built.get().setContent { TvTheme(style = style) { content() } }
         }
         compose.waitForIdle()
     }

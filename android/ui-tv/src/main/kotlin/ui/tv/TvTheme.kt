@@ -16,8 +16,10 @@ import designsystem.Accent
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.LocalReducedMotion
+import designsystem.LocalTvStyle
 import designsystem.Overscan
 import designsystem.Palette
+import designsystem.TvStyle
 import designsystem.TvType
 import designsystem.rememberReducedMotion
 
@@ -34,41 +36,42 @@ import designsystem.rememberReducedMotion
  * `:ui-tv` never has material3 on its compile classpath, so
  * `designsystem.MediagramTheme` cannot reach this surface at all, and this
  * is the adapter that stands in for it. The colours handed to
- * `darkColorScheme` below are [Palette]'s own values, not a second set
- * retyped for the television, so both theme adapters read one palette the
- * same way and a hex changed in one place changes on both surfaces.
+ * `darkColorScheme` below are [Palette]'s own values for mediagram — not a
+ * second set retyped for the television — and a style's [TvNeutrals]
+ * otherwise, so both theme adapters read one palette the same way and a hex
+ * changed in one place changes on both surfaces.
  */
-internal fun tvColorScheme(accent: Color): ColorScheme =
+internal fun tvColorScheme(accent: Color, neutrals: TvNeutrals = MediagramLook.neutrals): ColorScheme =
     darkColorScheme(
         primary = accent,
-        onPrimary = Palette.Ground,
-        primaryContainer = Palette.Sunk,
+        onPrimary = neutrals.ground,
+        primaryContainer = neutrals.sunk,
         onPrimaryContainer = accent,
         inversePrimary = accent,
-        secondary = Palette.Figures,
-        onSecondary = Palette.Ground,
-        secondaryContainer = Palette.Sunk,
-        onSecondaryContainer = Palette.Text,
+        secondary = neutrals.figures,
+        onSecondary = neutrals.ground,
+        secondaryContainer = neutrals.sunk,
+        onSecondaryContainer = neutrals.text,
         tertiary = Palette.Sage,
-        onTertiary = Palette.Ground,
-        tertiaryContainer = Palette.Sunk,
+        onTertiary = neutrals.ground,
+        tertiaryContainer = neutrals.sunk,
         onTertiaryContainer = Palette.Sage,
-        background = Palette.Ground,
-        onBackground = Palette.Text,
-        surface = Palette.Page,
-        onSurface = Palette.Text,
-        surfaceVariant = Palette.Sunk,
-        onSurfaceVariant = Palette.Figures,
+        background = neutrals.ground,
+        onBackground = neutrals.text,
+        surface = neutrals.page,
+        onSurface = neutrals.text,
+        surfaceVariant = neutrals.sunk,
+        onSurfaceVariant = neutrals.figures,
         surfaceTint = accent,
-        inverseSurface = Palette.Text,
-        inverseOnSurface = Palette.Ground,
+        inverseSurface = neutrals.text,
+        inverseOnSurface = neutrals.ground,
         error = Palette.Ochre,
-        onError = Palette.Ground,
-        errorContainer = Palette.Sunk,
+        onError = neutrals.ground,
+        errorContainer = neutrals.sunk,
         onErrorContainer = Palette.Ochre,
-        border = Palette.RuleStrong,
-        borderVariant = Palette.Rule,
-        scrim = Palette.Ground,
+        border = neutrals.ruleStrong,
+        borderVariant = neutrals.rule,
+        scrim = neutrals.ground,
     )
 
 /**
@@ -98,12 +101,14 @@ private val TvTypography =
  * Like [accent] and unlike theme, [backdrop] is not a phone-only question —
  * see [LocalBackdrop]'s own doc for why a `CompositionLocal` carries it to
  * every hero rather than each one reading the settings `StateFlow` for
- * itself.
+ * itself. [style] picks the TV's look ([TvLook]) and is provided as
+ * [LocalTvStyle] for the seams whose layout differs by style.
  */
 @Composable
 fun TvTheme(
     accent: Accent = Accent.Default,
     backdrop: Backdrop = Backdrop.Default,
+    style: TvStyle = TvStyle.Default,
     content: @Composable () -> Unit,
 ) {
     val accentColor = accent.dark
@@ -113,9 +118,10 @@ fun TvTheme(
     CompositionLocalProvider(
         LocalBackdrop provides backdrop,
         LocalReducedMotion provides rememberReducedMotion(),
+        LocalTvStyle provides style,
     ) {
         MaterialTheme(
-            colorScheme = tvColorScheme(accentColor),
+            colorScheme = tvColorScheme(accentColor, style.look.neutrals),
             typography = TvTypography,
             content = content,
         )
