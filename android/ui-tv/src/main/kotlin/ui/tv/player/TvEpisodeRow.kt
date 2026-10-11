@@ -18,9 +18,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.LocalContentColor
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.humanDuration
-import designsystem.Palette
 import designsystem.Spacing
 import player.EpisodeRow
 
@@ -58,7 +58,7 @@ internal fun TvEpisodeRow(
                 Text(text = if (row.current) NOW_PLAYING else humanDuration(row.runtimeSecs).orEmpty(), style = TvPlayerType.body)
             }
             row.progress?.let { done ->
-                Box(modifier = Modifier.padding(top = Spacing.extraSmall).fillMaxWidth().height(ProgressHeight).background(Palette.RuleStrong)) {
+                Box(modifier = Modifier.padding(top = Spacing.extraSmall).fillMaxWidth().height(ProgressHeight).background(MaterialTheme.colorScheme.border)) {
                     Box(modifier = Modifier.fillMaxWidth(done).fillMaxHeight().background(LocalContentColor.current))
                 }
             }

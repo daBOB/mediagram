@@ -13,8 +13,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import player.UpNextPhase
 import player.UpNextUiState
@@ -48,7 +48,7 @@ internal fun TvUpNextCard(
                 .widthIn(max = CARD_MAX_WIDTH)
                 // Opaque, unlike the scrims: it floats over the film itself,
                 // and a countdown read through a bright scene is not read.
-                .background(Palette.Page)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(Spacing.medium)
                 .testTag(TvUpNextCardTag),
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
@@ -58,7 +58,7 @@ internal fun TvUpNextCard(
         // the controls along the bottom, and on a 540dp-high television a
         // heading-sized line more would reach the one or the other.
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            Text(text = "Up next", style = TvPlayerType.body, color = Palette.Figures)
+            Text(text = "Up next", style = TvPlayerType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 text =
                     if (state.phase == UpNextPhase.COUNTING) {
@@ -67,11 +67,11 @@ internal fun TvUpNextCard(
                         "When this ends"
                     },
                 style = TvPlayerType.body,
-                color = Palette.Text,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
         if (state.titleLine.isNotEmpty()) {
-            Text(text = state.titleLine, style = TvPlayerType.body.copy(fontWeight = FontWeight.SemiBold), color = Palette.Text)
+            Text(text = state.titleLine, style = TvPlayerType.body.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
             TvOverlayButton(

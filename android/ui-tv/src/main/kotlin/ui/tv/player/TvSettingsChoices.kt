@@ -14,8 +14,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import playback.AudioOption
 import playback.Framing
@@ -92,7 +92,7 @@ internal fun TvSettingsHeading(text: String) {
     Text(
         text = text,
         style = TvPlayerType.body,
-        color = Palette.Figures,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = Spacing.medium, bottom = Spacing.extraSmall),
     )
 }

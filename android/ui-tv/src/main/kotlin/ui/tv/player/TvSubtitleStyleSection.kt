@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import playback.CUE_BACKINGS
 import playback.CUE_SIZES
@@ -61,8 +61,8 @@ internal fun TvSubtitleStyleSection(
         modifier = Modifier.fillMaxWidth().padding(top = Spacing.small),
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
-        Text(text = "Sync", style = TvPlayerType.body, color = Palette.Figures)
-        Text(text = cueOffsetLabel(offsetMs / 1000.0), style = TvPlayerType.body, color = Palette.Text)
+        Text(text = "Sync", style = TvPlayerType.body, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = cueOffsetLabel(offsetMs / 1000.0), style = TvPlayerType.body, color = MaterialTheme.colorScheme.onSurface)
     }
     Row(
         modifier = Modifier.fillMaxWidth().testTag(TvSyncButtonsTag),

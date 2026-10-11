@@ -24,7 +24,6 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.Backdrop
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.SectionHead
@@ -157,10 +156,10 @@ private fun TvArtworkSwatch(
 private fun artworkSwatchColor(backdrop: Backdrop): Color {
     val accent = MaterialTheme.colorScheme.primary
     return when (backdrop) {
-        Backdrop.DEFAULT -> Palette.Sunk
+        Backdrop.DEFAULT -> MaterialTheme.colorScheme.surfaceVariant
         Backdrop.BLURRED -> accent.copy(alpha = 0.55f)
         Backdrop.ARTWORK -> accent.copy(alpha = 0.7f)
-        Backdrop.SOLID -> Palette.Page
+        Backdrop.SOLID -> MaterialTheme.colorScheme.surface
     }
 }
 

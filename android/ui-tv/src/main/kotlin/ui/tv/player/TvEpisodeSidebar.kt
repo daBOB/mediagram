@@ -24,9 +24,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Overscan
-import designsystem.Palette
 import designsystem.Spacing
 import player.EpisodeList
 import ui.common.player.playerCard
@@ -90,7 +90,7 @@ internal fun TvEpisodeSidebar(
             Text(
                 text = section.title,
                 style = TvPlayerType.body,
-                color = Palette.Text,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),

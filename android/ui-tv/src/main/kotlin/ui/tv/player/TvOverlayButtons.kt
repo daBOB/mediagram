@@ -21,7 +21,6 @@ import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.tvDp
 import ui.common.player.TransportIcon
@@ -189,13 +188,13 @@ internal fun TvOverlaySurface(
         colors =
             ClickableSurfaceDefaults.colors(
                 containerColor = Color.Transparent,
-                contentColor = Palette.Text,
-                focusedContainerColor = Palette.Sunk,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 focusedContentColor = MaterialTheme.colorScheme.primary,
-                pressedContainerColor = Palette.Sunk,
+                pressedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 pressedContentColor = MaterialTheme.colorScheme.primary,
                 disabledContainerColor = Color.Transparent,
-                disabledContentColor = Palette.Figures,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
         scale = if (LocalFlatControls.current) ClickableSurfaceDefaults.scale(focusedScale = 1f, pressedScale = 1f) else TvFocus.surfaceScale(),
         border = TvFocus.surfaceBorder(),

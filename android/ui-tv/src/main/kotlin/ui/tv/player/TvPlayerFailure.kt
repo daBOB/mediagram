@@ -14,12 +14,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.CountdownLeader
 import designsystem.LocalCountdownStart
 import designsystem.Overscan
-import designsystem.Palette
 import designsystem.Spacing
 import player.PlayerUiState
 import ui.tv.TvLeaderSize
@@ -76,7 +76,7 @@ internal fun TvPlayerFailure(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.large),
     ) {
-        Text(text = message, style = TvPlayerType.body, color = Palette.Text, textAlign = TextAlign.Center)
+        Text(text = message, style = TvPlayerType.body, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
         TvOverlayButton(
             text = "Retry",
             style = TvPlayerType.body,

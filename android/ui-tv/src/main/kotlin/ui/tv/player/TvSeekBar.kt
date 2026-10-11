@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.tvDp
 import player.clockTime
 
@@ -66,7 +65,8 @@ internal fun TvSeekBar(
     var focused by remember { mutableStateOf(false) }
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val track = if (focused) FocusedTrack else Track
-    val fill = if (focused) MaterialTheme.colorScheme.primary else Palette.Text
+    val fill = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    val trackColor = MaterialTheme.colorScheme.border
 
     Box(
         modifier =
@@ -89,7 +89,7 @@ internal fun TvSeekBar(
                 }.drawBehind {
                     val thickness = track.toPx()
                     val top = (size.height - thickness) / 2
-                    drawRect(color = Palette.RuleStrong, topLeft = Offset(0f, top), size = Size(size.width, thickness))
+                    drawRect(color = trackColor, topLeft = Offset(0f, top), size = Size(size.width, thickness))
                     drawRect(color = fill, topLeft = Offset(0f, top), size = Size(size.width * fraction, thickness))
                     if (focused) {
                         drawCircle(color = fill, radius = Thumb.toPx(), center = Offset(size.width * fraction, size.height / 2))
@@ -122,7 +122,7 @@ internal fun TvSeekRow(
     up: FocusRequester? = null,
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SeekRowGap)) {
-        Text(text = clockTime(positionMs), style = TvPlayerType.time, color = Palette.Text)
+        Text(text = clockTime(positionMs), style = TvPlayerType.time, color = MaterialTheme.colorScheme.onSurface)
         TvSeekBar(
             positionMs = positionMs,
             durationMs = durationMs,
@@ -132,7 +132,7 @@ internal fun TvSeekRow(
             onFocusChanged = onFocusChanged,
             modifier = Modifier.weight(1f),
         )
-        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvPlayerType.time, color = Palette.Figures)
+        Text(text = listOf(clockTime(durationMs), ends).filter(String::isNotEmpty).joinToString(" · "), style = TvPlayerType.time, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

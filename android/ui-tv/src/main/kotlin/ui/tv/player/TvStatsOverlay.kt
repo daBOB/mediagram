@@ -13,8 +13,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import playback.PlaybackTotals
 import ui.common.player.SCRIM_ALPHA
@@ -50,10 +50,10 @@ internal fun TvStatsOverlay(
                 Text(
                     text = stat.label,
                     style = Mono,
-                    color = Palette.Figures,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(LabelWidth),
                 )
-                Text(text = stat.value, style = Mono, color = Palette.Text)
+                Text(text = stat.value, style = Mono, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

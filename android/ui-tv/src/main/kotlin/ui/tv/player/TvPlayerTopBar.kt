@@ -11,8 +11,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.tvDp
 import model.MediaSet
@@ -56,10 +56,10 @@ internal fun TvPlayerTopBar(
                 // long series name ("Raumschiff Enterprise: Das nächste Jahrhundert")
                 // otherwise fills the TV's narrower title column and the episode
                 // label after it — the one part that says which episode — is cut.
-                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = Palette.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
+                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
                 // As stored, not shouted: the web prints the container and codecs in the case the index recorded them.
                 technicalLine(it).takeIf(String::isNotEmpty)?.let { line ->
-                    Text(text = line, style = TvPlayerType.figures, color = Palette.Figures, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(text = line, style = TvPlayerType.figures, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

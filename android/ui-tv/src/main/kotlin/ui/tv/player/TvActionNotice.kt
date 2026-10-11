@@ -9,8 +9,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import kotlinx.coroutines.delay
 import ui.common.player.SCRIM_ALPHA
@@ -47,7 +47,7 @@ internal fun TvActionNotice(
     Text(
         text = notice,
         style = TvPlayerType.body,
-        color = Palette.Text,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier =
             modifier
                 .background(Color.Black.copy(alpha = SCRIM_ALPHA))

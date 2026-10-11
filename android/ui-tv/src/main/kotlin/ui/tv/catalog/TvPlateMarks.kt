@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.tvSp
@@ -47,7 +46,7 @@ internal fun TvProgressRule(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.testTag(TvPlateProgressTag).fillMaxWidth().height(ProgressHeight).background(Palette.Rule),
+        modifier = modifier.testTag(TvPlateProgressTag).fillMaxWidth().height(ProgressHeight).background(MaterialTheme.colorScheme.borderVariant),
     ) {
         Box(
             modifier =
