@@ -1,5 +1,7 @@
 package ui.tv.chrome
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -59,7 +61,7 @@ internal val RailOpenWidth = 224.tvDp
 private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
 
 /** The web's `.brand`: Fraunces 600 at 1.7rem, tracked in (`shell.css:29-37`) — the tablet's own `Wordmark`. */
-private val TvWordmark = TvType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.2.tvSp, letterSpacing = (-0.02).em)
+private val TvWordmark: TextStyle @Composable @ReadOnlyComposable get() = TvType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.2.tvSp, letterSpacing = (-0.02).em)
 
 private val WordmarkBelow = 36.tvDp // `.brand`'s `margin-bottom`; its `padding: 0 10px` is the start inset.
 

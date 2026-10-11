@@ -197,8 +197,8 @@ class TvPlayerScreenTest : TvPlayerScreenHarness() {
     fun theSkipsAreSetInTheInterfaceFaceAtTheWebsSize() {
         for (label in listOf("−15", "+15")) {
             val style = textStyleOf(label)
-            assertEquals(TvType.labelLarge.fontFamily, style.fontFamily, "$label in Geist")
-            assertNotEquals(TvType.headlineSmall.fontFamily, style.fontFamily, "$label not in Fraunces")
+            assertEquals(TvType.Base.labelLarge.fontFamily, style.fontFamily, "$label in Geist")
+            assertNotEquals(TvType.Base.headlineSmall.fontFamily, style.fontFamily, "$label not in Fraunces")
             assertEquals(15 * TvScale, style.fontSize.value, 0.001f, "$label at `.tsp svg`'s 20px as a character")
         }
         assertEquals(14 * TvScale, textStyleOf("CC").fontSize.value, 0.001f, "CC a `.tool`")

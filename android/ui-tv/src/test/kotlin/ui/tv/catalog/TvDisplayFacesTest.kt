@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performScrollToNode
@@ -55,7 +56,7 @@ class TvDisplayFacesTest : TvScreenStateTest() {
     fun theDepartmentQuoteIsNewsreaderItalic() {
         show { TvDepartmentHero(title = "Movies", line = "four films", lead = lead) }
         val quote = styleOf("“A tagline”")
-        assertEquals(TvType.bodyLarge.fontFamily, quote.fontFamily)
+        assertEquals(TvType.Base.bodyLarge.fontFamily, quote.fontFamily)
         assertEquals(FontStyle.Italic, quote.fontStyle)
     }
 
@@ -73,15 +74,17 @@ class TvDisplayFacesTest : TvScreenStateTest() {
     @Test
     fun theSmallerDisplayLinesAreFraunces600() {
         // Home's feature titles and a resume card's initial: `.feature-title` and `.resume-initial` are 600.
-        assertEquals(TvType.headlineSmall.fontFamily, DisplaySemiBold.fontFamily)
-        assertEquals(FontWeight.SemiBold, DisplaySemiBold.fontWeight)
+        var style: TextStyle? = null
+        show { style = DisplaySemiBold }
+        assertEquals(TvType.Base.headlineSmall.fontFamily, style?.fontFamily)
+        assertEquals(FontWeight.SemiBold, style?.fontWeight)
     }
 
     @Test
     fun aHomeFeatureTitleIsFraunces600() {
         show { TvHomeFeatures(listOf(Feature(FeatureKind.EDITOR, lead)), onOpenTitle = {}) }
         val title = styleOf("LEAD FILM")
-        assertEquals(DisplaySemiBold.fontFamily, title.fontFamily)
+        assertEquals(TvType.Base.headlineSmall.fontFamily, title.fontFamily)
         assertEquals(FontWeight.SemiBold, title.fontWeight)
     }
 

@@ -1,5 +1,7 @@
 package ui.tv.profile
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -141,7 +143,7 @@ private fun TvProfileAvatar(letters: String) {
 }
 
 /** `.who-card h1` (`library-controls.css:4`): Geist 600, `clamp(1.75rem, 4vw, 2.5rem)` at 1280px, its 40 ceiling — Who's watching and Manage profiles. */
-internal val WhoHeading = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 40.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.035).em)
+internal val WhoHeading: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 40.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.035).em)
 
 /** `.who-note` (`library-controls.css:17`): what the picker and its PIN say beside the tiles. */
-internal val WhoNote = TvType.bodyMedium.copy(fontSize = 14.tvSp)
+internal val WhoNote: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontSize = 14.tvSp)

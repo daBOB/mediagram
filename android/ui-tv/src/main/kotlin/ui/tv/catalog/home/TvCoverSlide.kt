@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.coverFactsLine
+import designsystem.inTvStyle
 import designsystem.Backdrop
 import designsystem.CoverTitle
 import designsystem.LocalBackdrop
@@ -99,7 +100,7 @@ internal fun TvCoverSlide(
             val long = set.title.length > LONG_TITLE
             Text(
                 text = set.title.uppercase(),
-                style = CoverTitle.copy(fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight),
+                style = CoverTitle.inTvStyle().copy(fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight),
                 color = OnImage,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

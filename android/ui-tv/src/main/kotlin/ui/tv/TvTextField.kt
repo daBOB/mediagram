@@ -1,5 +1,7 @@
 package ui.tv
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -122,4 +124,4 @@ internal fun TvTextField(
 }
 
 /** The web's text inputs, `font-size: 1rem` (`library-controls.css:12,51`). */
-private val FieldText = TvType.bodyMedium.copy(fontSize = 16.tvSp)
+private val FieldText: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontSize = 16.tvSp)

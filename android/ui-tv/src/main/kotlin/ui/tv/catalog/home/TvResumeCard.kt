@@ -1,5 +1,7 @@
 package ui.tv.catalog.home
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -174,8 +176,8 @@ private const val BarShare = 0.52f
 /** The caption block's own scrim, 0.9 at its foot to nothing at its top. */
 private val CaptionScrim = Brush.verticalGradient(0f to Color(0x00080809), 0.4f to Color(0x99080809), 1f to Color(0xE6080809))
 
-private val ResumeName = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.tvSp)
-private val ResumeSub = TvType.bodyMedium.copy(fontSize = 12.tvSp)
+private val ResumeName: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 14.tvSp)
+private val ResumeSub: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontSize = 12.tvSp)
 
 /** `.resume-initial`: Fraunces 600 at 2rem. */
-private val ResumeInitial = DisplaySemiBold.copy(fontSize = 32.tvSp)
+private val ResumeInitial: TextStyle @Composable @ReadOnlyComposable get() = DisplaySemiBold.copy(fontSize = 32.tvSp)

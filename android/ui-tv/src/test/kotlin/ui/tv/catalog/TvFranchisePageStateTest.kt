@@ -59,7 +59,7 @@ class TvFranchisePageStateTest : TvScreenStateTest() {
     fun theFilmsHeadIsGeist600AsTheWebsRowHead() {
         showPage(overview = null)
 
-        assertEquals(TvType.bodyMedium.fontFamily, styleOf("In release order").fontFamily)
+        assertEquals(TvType.Base.bodyMedium.fontFamily, styleOf("In release order").fontFamily)
         assertEquals(FontWeight.SemiBold, styleOf("In release order").fontWeight)
     }
 

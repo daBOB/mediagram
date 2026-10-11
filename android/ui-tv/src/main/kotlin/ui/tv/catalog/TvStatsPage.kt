@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,4 +120,4 @@ internal fun TvStatsStop(
 }
 
 /** `.stats-total dd` (`appearance.css:157`): Fraunces 600, `clamp(1.6rem, 3vw, 2.4rem)` at 1280px, its ceiling. */
-private val StatsTotal = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 38.4.tvSp, lineHeight = 1.1.em, fontFeatureSettings = "tnum")
+private val StatsTotal: TextStyle @Composable @ReadOnlyComposable get() = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 38.4.tvSp, lineHeight = 1.1.em, fontFeatureSettings = "tnum")

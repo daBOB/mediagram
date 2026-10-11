@@ -40,6 +40,7 @@ internal fun TvPlateInitials(
     val initials = initialsOf(title)
     val measurer = rememberTextMeasurer(cacheSize = 0)
     val color = MaterialTheme.colorScheme.onSurfaceVariant
+    val role = TvType.titleMedium
     Spacer(
         modifier =
             modifier
@@ -51,7 +52,7 @@ internal fun TvPlateInitials(
                         measurer.measure(
                             text = initials,
                             style =
-                                TvType.titleMedium.copy(
+                                role.copy(
                                     color = color,
                                     fontSize = fontSize,
                                     lineHeight = fontSize * InitialLeading,

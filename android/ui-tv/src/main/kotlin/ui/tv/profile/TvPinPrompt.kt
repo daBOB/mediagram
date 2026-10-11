@@ -1,5 +1,7 @@
 package ui.tv.profile
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -179,4 +181,4 @@ private fun TvPinKey(
 }
 
 /** `.pin-prompt input` (`library-controls.css:71`): Geist 500 at 1.5rem — the dots, and the pad's digits that type them. */
-private val PinFigures = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.tvSp, lineHeight = 1.em)
+private val PinFigures: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 24.tvSp, lineHeight = 1.em)

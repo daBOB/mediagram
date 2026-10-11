@@ -66,7 +66,7 @@ class TvAnimeDepartmentPageStateTest : TvScreenStateTest() {
         show { TvAnimeDepartmentPage(animeDepartmentOf(library, emptyMap(), WatchSnapshot.Empty)!!, WatchSnapshot.Empty, onOpenTitle = {}, onOpenCollection = {}, onPlay = {}) }
 
         for (head in listOf("Series", "Films")) {
-            assertEquals(TvType.bodyMedium.fontFamily, styleOf(head).fontFamily)
+            assertEquals(TvType.Base.bodyMedium.fontFamily, styleOf(head).fontFamily)
             assertEquals(FontWeight.SemiBold, styleOf(head).fontWeight)
         }
     }

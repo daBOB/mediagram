@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -168,10 +170,10 @@ internal fun TvPlateArt(
 }
 
 /** `.grid.plates .name` (`catalog.css:54`): Fraunces 500 at 17px. */
-private val PlateName = TvType.titleSmall.copy(fontSize = 17.tvSp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
+private val PlateName: TextStyle @Composable @ReadOnlyComposable get() = TvType.titleSmall.copy(fontSize = 17.tvSp, lineHeight = 1.25.em, letterSpacing = (-0.005).em)
 
 /** `.grid.plates .meta` (`catalog.css:55`). */
-private val PlateMeta = TvType.labelSmall.copy(fontSize = 12.tvSp)
+private val PlateMeta: TextStyle @Composable @ReadOnlyComposable get() = TvType.labelSmall.copy(fontSize = 12.tvSp)
 
 /** A poster's own proportions, the same ratio the phone plate is cut to. */
 private const val PosterAspectRatio = 2f / 3f

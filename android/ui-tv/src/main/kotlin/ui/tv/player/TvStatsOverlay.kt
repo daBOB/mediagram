@@ -1,5 +1,7 @@
 package ui.tv.player
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,7 +61,7 @@ internal fun TvStatsOverlay(
     }
 }
 
-private val Mono = TvPlayerType.body.copy(fontFamily = FontFamily.Monospace)
+private val Mono: TextStyle @Composable @ReadOnlyComposable get() = TvPlayerType.body.copy(fontFamily = FontFamily.Monospace)
 
 /** Wide enough for `dropped`, the longest label, at the television's reading size, so every value starts at the same x. */
 private val LabelWidth = 88.dp

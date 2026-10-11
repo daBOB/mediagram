@@ -1,5 +1,6 @@
 package ui.tv.player
 
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -181,6 +182,8 @@ private fun TvNotesLine(spans: List<Span>) {
 private fun tvNotesText(spans: List<Span>) = rememberNotesText(spans, linkColor = MaterialTheme.colorScheme.primary, codeBackground = MaterialTheme.colorScheme.surfaceVariant, uriHandler = null)
 
 /** By [notesHeadingLevel]'s floor; a size between the body and the head, so a section heading never outranks "Notes". */
+@Composable
+@ReadOnlyComposable
 private fun headingStyle(level: Int): TextStyle =
     when (notesHeadingLevel(level)) {
         2 -> TvPlayerType.title.copy(fontSize = 26.sp)

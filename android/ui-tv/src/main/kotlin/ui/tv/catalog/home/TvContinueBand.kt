@@ -1,5 +1,7 @@
 package ui.tv.catalog.home
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.SetCard
+import designsystem.inTvStyle
 import designsystem.CoverTitle
 import designsystem.Spacing
 import designsystem.TvType
@@ -122,7 +125,7 @@ private fun TvQuote(
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(role = Role.Button, onClick = { onOpenTitle(set.setId) }),
     ) {
-        Text(text = "“", style = CoverTitle.copy(fontSize = 40.tvSp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
+        Text(text = "“", style = CoverTitle.inTvStyle().copy(fontSize = 40.tvSp, lineHeight = 1.em), modifier = Modifier.padding(bottom = Spacing.small))
         Text(
             text = tagline,
             style = TvFocus.textStyle(QuoteTagline, focused),
@@ -138,4 +141,4 @@ private fun TvQuote(
 }
 
 /** `.pull-quote p` (`home.css:286-291`): Newsreader italic, `clamp(1.6rem, 2.3vw, 2.35rem)` at 1280px, 29.44. */
-private val QuoteTagline = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 29.44.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+private val QuoteTagline: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyLarge.copy(fontStyle = FontStyle.Italic, fontSize = 29.44.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

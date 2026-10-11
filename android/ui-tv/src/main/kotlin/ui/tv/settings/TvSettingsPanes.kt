@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
+import designsystem.inTvStyle
 import designsystem.LocalCatalogueTones
 import designsystem.Overscan
 import designsystem.PageHead
@@ -136,7 +137,7 @@ internal fun TvSettingsPanes(
                     eyebrowColor = tones.quiet,
                     maxTitleSize = TvTypeScale.DepartmentTitle,
                     eyebrowStyle = TvType.Eyebrow,
-                    titleStyle = PageTitle,
+                    titleStyle = PageTitle.inTvStyle(),
                 )
                 content(section, focusInContent, entryRequester)
             }

@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,8 +177,7 @@ internal fun TvCenteredMessage(message: String) {
 }
 
 /** `.shelf-head h1` (`catalog.css:5-10`): Fraunces 600 at the television's display size for it — a reference page's head, and Stats'. */
-internal val ShelfHeadTitle =
-    TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
+internal val ShelfHeadTitle: TextStyle @Composable @ReadOnlyComposable get() = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = TvTypeScale.ShelfHead, lineHeight = 1.em, letterSpacing = (-0.03).em)
 
 /**
  * Fraunces 600 on its own metrics, unsized, in the opsz-28 text cut: Home's
@@ -187,16 +187,16 @@ internal val ShelfHeadTitle =
  * [TvType] role — those carry M3's line heights in sp, which a large line
  * would overrun.
  */
-internal val DisplaySemiBold = TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.SemiBold)
+internal val DisplaySemiBold: TextStyle @Composable @ReadOnlyComposable get() = TextStyle(fontFamily = TvType.headlineSmall.fontFamily, fontWeight = FontWeight.SemiBold)
 
 /** `.season h2` (`catalog.css:71`): Geist 600 at 15px. A course's top level is set at 18 (`.season.depth-0`), [TopSeasonHeading]. */
-internal val SeasonHeading = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+internal val SeasonHeading: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
 
 /** `.season.depth-0 > h2` (`catalog.css:73`). */
-internal val TopSeasonHeading = SeasonHeading.copy(fontSize = 18.tvSp)
+internal val TopSeasonHeading: TextStyle @Composable @ReadOnlyComposable get() = SeasonHeading.copy(fontSize = 18.tvSp)
 
 /** `.shelf-sub` (`catalog.css:98`): a wall's own sections ("Films", "Series") and Search's groups — the phone's `ShelfHead` sub. */
-internal val ShelfSub = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.tvSp, lineHeight = 1.2.em)
+internal val ShelfSub: TextStyle @Composable @ReadOnlyComposable get() = TvType.headlineSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 24.tvSp, lineHeight = 1.2.em)
 
 /** `.row-head h2` (`home.css:195`): Home's bands and a department's rows — the phone's `BandHeading`. */
-internal val RowHead = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)
+internal val RowHead: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.8.tvSp, lineHeight = 1.2.em, letterSpacing = (-0.01).em)

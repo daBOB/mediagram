@@ -1,5 +1,7 @@
 package ui.tv
 
+import designsystem.inStyle
+import androidx.compose.ui.text.TextStyle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -77,7 +79,14 @@ class TvThemeTest {
     fun titleSlotHoldsTheTelevisionsTitleRole() {
         var titleSize: TextUnit? = null
         show { titleSize = MaterialTheme.typography.titleLarge.fontSize }
-        assertEquals(TvType.titleLarge.fontSize, titleSize)
+        assertEquals(TvType.Base.titleLarge.fontSize, titleSize)
+    }
+
+    @Test
+    fun theTypographySlotsTakeTheStylesFace() {
+        var body: TextStyle? = null
+        show(style = TvStyle.APPLE) { body = MaterialTheme.typography.bodyMedium }
+        assertEquals(TvType.Base.bodyMedium.inStyle(TvStyle.APPLE), body)
     }
 
     @Test
@@ -88,8 +97,8 @@ class TvThemeTest {
             body = MaterialTheme.typography.bodyMedium.fontSize
             label = MaterialTheme.typography.labelLarge.fontSize
         }
-        assertEquals(TvType.bodyMedium.fontSize, body)
-        assertEquals(TvType.labelLarge.fontSize, label)
+        assertEquals(TvType.Base.bodyMedium.fontSize, body)
+        assertEquals(TvType.Base.labelLarge.fontSize, label)
     }
 
     /**

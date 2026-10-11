@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,6 +22,7 @@ import designsystem.Overscan
 import designsystem.Palette
 import designsystem.TvStyle
 import designsystem.TvType
+import designsystem.inStyle
 import designsystem.rememberReducedMotion
 
 /**
@@ -82,18 +84,18 @@ internal fun tvColorScheme(accent: Color, neutrals: TvNeutrals = MediagramLook.n
  * screen here that names its role directly. Display and headline slots
  * above `headlineSmall` keep tv-material's baseline, as the phone's keep M3's.
  */
-private val TvTypography =
+private fun tvTypography(style: TvStyle): Typography =
     Typography().copy(
-        headlineSmall = TvType.headlineSmall,
-        titleLarge = TvType.titleLarge,
-        titleMedium = TvType.titleMedium,
-        titleSmall = TvType.titleSmall,
-        bodyLarge = TvType.bodyLarge,
-        bodyMedium = TvType.bodyMedium,
-        bodySmall = TvType.bodySmall,
-        labelLarge = TvType.labelLarge,
-        labelMedium = TvType.labelMedium,
-        labelSmall = TvType.labelSmall,
+        headlineSmall = TvType.Base.headlineSmall.inStyle(style),
+        titleLarge = TvType.Base.titleLarge.inStyle(style),
+        titleMedium = TvType.Base.titleMedium.inStyle(style),
+        titleSmall = TvType.Base.titleSmall.inStyle(style),
+        bodyLarge = TvType.Base.bodyLarge.inStyle(style),
+        bodyMedium = TvType.Base.bodyMedium.inStyle(style),
+        bodySmall = TvType.Base.bodySmall.inStyle(style),
+        labelLarge = TvType.Base.labelLarge.inStyle(style),
+        labelMedium = TvType.Base.labelMedium.inStyle(style),
+        labelSmall = TvType.Base.labelSmall.inStyle(style),
     )
 
 /**
@@ -122,7 +124,7 @@ fun TvTheme(
     ) {
         MaterialTheme(
             colorScheme = tvColorScheme(accentColor, style.look.neutrals),
-            typography = TvTypography,
+            typography = remember(style) { tvTypography(style) },
             content = content,
         )
     }

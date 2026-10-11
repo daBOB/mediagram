@@ -62,7 +62,7 @@ private fun read(
         ),
 )
 
-private fun interfaceFont(weight: Int) =
+internal fun interfaceFont(weight: Int) =
     Font(
         resId = R.font.geist,
         weight = FontWeight(weight),

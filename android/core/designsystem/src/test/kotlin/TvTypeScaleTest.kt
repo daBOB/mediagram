@@ -20,24 +20,24 @@ class TvTypeScaleTest {
     @Test
     fun theRolesAreTheWebsPxThroughTheScale() {
         // `.departments a`, `.rail-nav a`, `.person-name`: 0.875rem (shell.css:47, title-page.css:182).
-        assertEquals(14 * TvScale, TvType.labelLarge.fontSize.value)
+        assertEquals(14 * TvScale, TvType.Base.labelLarge.fontSize.value)
         // `.pill`, `.tab`, `.fact dd`, `.row .title b`: 0.9375rem (title-page.css:14,127,141; catalog.css:81).
-        assertEquals(15 * TvScale, TvType.bodyMedium.fontSize.value)
+        assertEquals(15 * TvScale, TvType.Base.bodyMedium.fontSize.value)
         // `.cover-meta`, `.row .meta`, `.see-all`: 0.8125rem (home.css:65,203; catalog.css:84).
-        assertEquals(13 * TvScale, TvType.bodySmall.fontSize.value)
+        assertEquals(13 * TvScale, TvType.Base.bodySmall.fontSize.value)
         // `.spread-overview`, `.cast-crew`: Newsreader 1.0625rem (title-page.css:101,174).
-        assertEquals(17 * TvScale, TvType.bodyLarge.fontSize.value)
-        assertEquals(Read, TvType.bodyLarge.fontFamily)
+        assertEquals(17 * TvScale, TvType.Base.bodyLarge.fontSize.value)
+        assertEquals(Read, TvType.Base.bodyLarge.fontFamily)
         // `.eyebrow`: 0.6875rem (theme.css:200).
-        assertEquals(11 * TvScale, TvType.Eyebrow.fontSize.value)
+        assertEquals(11 * TvScale, TvType.Base.Eyebrow.fontSize.value)
         // `.setting-title`: Geist 600 1rem (appearance.css:31).
-        assertEquals(16 * TvScale, TvType.SectionHead.fontSize.value)
+        assertEquals(16 * TvScale, TvType.Base.SectionHead.fontSize.value)
     }
 
     @Test
     fun aRolesLineHeightShrinksWithItsSize() {
-        assertEquals(CatalogueType.bodyMedium.lineHeight.value * TvScale, TvType.bodyMedium.lineHeight.value)
-        assertEquals(Eyebrow.lineHeight, TvType.Eyebrow.lineHeight, "an `em` line height already follows the size")
+        assertEquals(CatalogueType.bodyMedium.lineHeight.value * TvScale, TvType.Base.bodyMedium.lineHeight.value)
+        assertEquals(Eyebrow.lineHeight, TvType.Base.Eyebrow.lineHeight, "an `em` line height already follows the size")
     }
 
     @Test

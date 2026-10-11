@@ -1,5 +1,7 @@
 package designsystem
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -37,22 +39,47 @@ fun TextStyle.onTv(): TextStyle = copy(fontSize = fontSize.onTv(), lineHeight = 
  * are; [CatalogueType]'s inherit M3's 500. The phone's still do: some of its
  * call sites are 500 on the web and lean on that, so the weight moves into
  * [CatalogueType] once each of them says so itself, as the television's do.
+ *
+ * Each role is read through the TV's style ([inTvStyle]); [Base] holds them as mediagram sets them.
  */
 object TvType {
-    val headlineSmall: TextStyle = CatalogueType.headlineSmall.onTv()
-    val titleLarge: TextStyle = CatalogueType.titleLarge.onTv()
-    val titleMedium: TextStyle = CatalogueType.titleMedium.onTv()
-    val titleSmall: TextStyle = CatalogueType.titleSmall.onTv()
-    val bodyLarge: TextStyle = CatalogueType.bodyLarge.onTv()
-    val bodyMedium: TextStyle = CatalogueType.bodyMedium.onTv()
-    val bodySmall: TextStyle = CatalogueType.bodySmall.onTv()
-    val labelLarge: TextStyle = CatalogueType.labelLarge.onTv()
-    val labelMedium: TextStyle = CatalogueType.labelMedium.onTv().copy(fontWeight = FontWeight.Normal)
-    val labelSmall: TextStyle = CatalogueType.labelSmall.onTv().copy(fontWeight = FontWeight.Normal)
-    val Eyebrow: TextStyle = designsystem.Eyebrow.onTv()
-    val SectionHead: TextStyle = designsystem.SectionHead.onTv()
-    val LedgerLabel: TextStyle = designsystem.LedgerLabel.onTv()
-    val LedgerValue: TextStyle = designsystem.LedgerValue.onTv()
+    /**
+     * The roles exactly as mediagram sets them — the sizes, weights and
+     * faces every style starts from. Read here wherever no composition is
+     * running (a test, the theme's typography); a screen reads the getters
+     * below, which set the same role in the TV's chosen style.
+     */
+    object Base {
+        val headlineSmall: TextStyle = CatalogueType.headlineSmall.onTv()
+        val titleLarge: TextStyle = CatalogueType.titleLarge.onTv()
+        val titleMedium: TextStyle = CatalogueType.titleMedium.onTv()
+        val titleSmall: TextStyle = CatalogueType.titleSmall.onTv()
+        val bodyLarge: TextStyle = CatalogueType.bodyLarge.onTv()
+        val bodyMedium: TextStyle = CatalogueType.bodyMedium.onTv()
+        val bodySmall: TextStyle = CatalogueType.bodySmall.onTv()
+        val labelLarge: TextStyle = CatalogueType.labelLarge.onTv()
+        val labelMedium: TextStyle = CatalogueType.labelMedium.onTv().copy(fontWeight = FontWeight.Normal)
+        val labelSmall: TextStyle = CatalogueType.labelSmall.onTv().copy(fontWeight = FontWeight.Normal)
+        val Eyebrow: TextStyle = designsystem.Eyebrow.onTv()
+        val SectionHead: TextStyle = designsystem.SectionHead.onTv()
+        val LedgerLabel: TextStyle = designsystem.LedgerLabel.onTv()
+        val LedgerValue: TextStyle = designsystem.LedgerValue.onTv()
+    }
+
+    val headlineSmall: TextStyle @Composable @ReadOnlyComposable get() = Base.headlineSmall.inTvStyle()
+    val titleLarge: TextStyle @Composable @ReadOnlyComposable get() = Base.titleLarge.inTvStyle()
+    val titleMedium: TextStyle @Composable @ReadOnlyComposable get() = Base.titleMedium.inTvStyle()
+    val titleSmall: TextStyle @Composable @ReadOnlyComposable get() = Base.titleSmall.inTvStyle()
+    val bodyLarge: TextStyle @Composable @ReadOnlyComposable get() = Base.bodyLarge.inTvStyle()
+    val bodyMedium: TextStyle @Composable @ReadOnlyComposable get() = Base.bodyMedium.inTvStyle()
+    val bodySmall: TextStyle @Composable @ReadOnlyComposable get() = Base.bodySmall.inTvStyle()
+    val labelLarge: TextStyle @Composable @ReadOnlyComposable get() = Base.labelLarge.inTvStyle()
+    val labelMedium: TextStyle @Composable @ReadOnlyComposable get() = Base.labelMedium.inTvStyle()
+    val labelSmall: TextStyle @Composable @ReadOnlyComposable get() = Base.labelSmall.inTvStyle()
+    val Eyebrow: TextStyle @Composable @ReadOnlyComposable get() = Base.Eyebrow.inTvStyle()
+    val SectionHead: TextStyle @Composable @ReadOnlyComposable get() = Base.SectionHead.inTvStyle()
+    val LedgerLabel: TextStyle @Composable @ReadOnlyComposable get() = Base.LedgerLabel.inTvStyle()
+    val LedgerValue: TextStyle @Composable @ReadOnlyComposable get() = Base.LedgerValue.inTvStyle()
 }
 
 /**

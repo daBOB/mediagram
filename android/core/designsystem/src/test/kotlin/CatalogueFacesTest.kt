@@ -37,7 +37,7 @@ class CatalogueFacesTest {
 
     @Test
     fun theTelevisionsFiguresAreGeist400AsTheWebsMetaLinesAre() {
-        for (role in listOf(TvType.labelSmall, TvType.labelMedium)) {
+        for (role in listOf(TvType.Base.labelSmall, TvType.Base.labelMedium)) {
             assertEquals(Interface, role.fontFamily)
             assertEquals(FontWeight.Normal, role.fontWeight)
         }

@@ -1,5 +1,7 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import designsystem.inTvStyle
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.LocalCatalogueTones
@@ -116,7 +119,7 @@ internal fun TvDepartmentHero(
                     if (franchiseTitle) {
                         Text(
                             text = title.uppercase(),
-                            style = PageTitleCompact.copy(fontSize = TvTypeScale.FranchiseTitle, lineHeight = 0.92.em),
+                            style = PageTitleCompact.inTvStyle().copy(fontSize = TvTypeScale.FranchiseTitle, lineHeight = 0.92.em),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
@@ -125,7 +128,7 @@ internal fun TvDepartmentHero(
                     } else {
                         BasicText(
                             text = title.uppercase(),
-                            style = PageTitle.copy(color = MaterialTheme.colorScheme.onSurface),
+                            style = PageTitle.inTvStyle().copy(color = MaterialTheme.colorScheme.onSurface),
                             autoSize = TextAutoSize.StepBased(maxFontSize = TvTypeScale.DepartmentTitle),
                             maxLines = 1,
                             modifier = Modifier.testTag(TvDepartmentHeroTitleTestTag),
@@ -194,7 +197,7 @@ private const val ArtWidthFraction = 0.7f
 internal val TvDepartmentHeroHeight = 360.dp
 
 /** `.dept-line` (`departments.css:36`): Newsreader at 20px, figures tabular — the tablet's own. */
-private val DeptLine = TvType.bodyLarge.copy(fontSize = 20.tvSp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
+private val DeptLine: TextStyle @Composable @ReadOnlyComposable get() = TvType.bodyLarge.copy(fontSize = 20.tvSp, lineHeight = 1.4.em, fontFeatureSettings = "tnum")
 
 /**
  * Narrower than the tablet's own [DEPT_COPY_MAX_WIDTH] (640dp): that cap
