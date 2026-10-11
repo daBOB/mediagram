@@ -1,6 +1,6 @@
 # TV themes — mediagram, Apple TV style, Google TV style
 
-Status: design approved in conversation 2026-10-10/11; this file awaits the user's review.
+Status: approved 2026-10-11 ("go on"). Planning corrections are marked *(planning)*; see the plan's Rulings.
 Branch: `feat/tv-themes` (worktree `../mediagram-themes`), cut from `feat/tv-parity` at `b640660d`.
 
 ## Goal
@@ -63,6 +63,7 @@ Pushed frames (title, search, genre, Settings…) have no chrome today and still
 | Value | mediagram | Apple TV style | Google TV style |
 |---|---|---|---|
 | Ground | today's `Palette` values | `#000000` | `#202124` |
+| Plate / sunk / text / figures / rules *(planning)* | `Palette` | `#1C1C1E` / `#2C2C2E` / `#FFFFFF` / `#A1A1A6` / `#2C2C2E`, `#3A3A3C` | `#303134` / `#3C4043` / `#E8EAED` / `#9AA0A6` / `#3C4043`, `#5F6368` |
 | Body font | today (Newsreader / Geist) | Geist | Google Sans Flex |
 | Display / cover title | Fraunces, as today | Geist 700 | Google Sans Flex 700 |
 | Card radius | 0 (square) | 12 dp | 16 dp |
@@ -75,7 +76,7 @@ Sizes are in the same units `TvFocus` uses today (its `FeatureCardShape` is 12 d
 - Fonts: Google Sans Flex is OFL 1.1 (released 2025-11); bundle it with its licence text.
   Apple's SF is not licensed off Apple devices, so the Apple theme uses Geist (already bundled).
   Every weight a theme asks for that sits away from the font's default instance ships as a
-  **static cut** made with fontTools' instancer (Geist 700; Google Sans Flex 400/500/700),
+  **static cut** made with fontTools' instancer (Geist 700; Google Sans Flex 400/500/600/700),
   per `Type.kt`'s top note: variable axes went unhonoured on-device for Fraunces.
 
 ### Focus
@@ -101,7 +102,9 @@ mediagram value of the look. Every card and pill already routes through these fu
 ### Home cover
 `TvHomeCover` keeps its rotation (9 s hold, 1.4 s crossfade), dots, focus pause and
 `TvCoverActions`; only the slide inside the crossfade is picked by theme:
-`TvCoverSlide` (mediagram), `TvFullBleedSlide` (Apple), `TvInsetCardSlide` (Google).
+`TvCoverSlide` (mediagram, and Apple with its title set title-case in bold sans —
+*(planning)* today's slide is already full-bleed, so Apple needs no second one),
+`TvInsetCardSlide` (Google).
 The actions take the theme's pill look (Apple: white Play pill). Both new slides use
 `set.backdropPath` and honour `Backdrop.SOLID` like today's slide. Copy is unchanged
 (D5): the "Featured today" kicker, genre, tagline and facts line keep their wording.
@@ -109,10 +112,14 @@ The actions take the theme's pill look (Apple: white Play pill). Both new slides
 ### Rows
 - In Apple/Google, row cards are 16:9: art is `backdropPath ?: posterPath` (poster cropped,
   as `TvResumeCard` already does); name and meta stay under the card.
-- Strip width for landscape: `max(204 dp, (rowWidth − 4·StripGap) / 5)` beside the portrait
-  rule in `TvPageSpacing.kt`.
-- `TvPosterStrip` and `TvRecentBand` draw their own poster `Card`s today; they move onto
-  `TvPlate` so every row switches shape in one place.
+- Strip width for landscape: `max(1.5 × StripPlateFloor, (rowWidth − 4·StripGap) / 5)` beside
+  the portrait rule in `TvPageSpacing.kt` *(planning: "204 dp" fitted only four across; the floor
+  is 204 web px, 153 dp)*.
+- `TvPosterStrip` and `TvRecentBand` keep their own `Card`s *(planning: folding them onto
+  `TvPlate` would change mediagram's fill, captions and sizes)*; every row reads its shape, art
+  and width from one shared helper instead, so rows still switch in one place.
+- Shows carry a backdrop: `Entry.Collection` takes its first member's `backdropPath`, as it
+  already takes the first poster *(planning)*.
 
 ### Settings › Appearance
 `TvAppearanceSection` gains a third row, "Theme", of three swatches shaped like
