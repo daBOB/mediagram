@@ -3,59 +3,45 @@ package ui.tv.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ClickableSurfaceDefaults
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import designsystem.Accent
 import designsystem.Backdrop
 import designsystem.Spacing
-import designsystem.TvType
+import designsystem.TvStyle
 import designsystem.TvType.SectionHead
-import designsystem.tvSp
-import ui.tv.TvFocus
-import ui.tv.rememberStableRequester
 
 /**
  * Settings › Appearance, television-side: the accent swatches the phone's
  * own `AppearanceSection` offers, then the same Artwork question the web
- * and the phone ask — how a hero treats its own picture. Theme (Dark/Light/
- * Auto) is not asked here — a deliberate difference from the phone,
- * `ui.tv.TvTheme`'s own doc says why (a television stays dark regardless of
- * the choice, so the question would have nothing to answer).
+ * and the phone ask — how a hero treats its own picture — then the TV's own
+ * question, Theme: mediagram, Apple TV style or Google TV style ([TvStyle]),
+ * which the phone does not ask yet. Dark/Light/Auto is not asked here — a
+ * deliberate difference from the phone, `ui.tv.TvTheme`'s own doc says why
+ * (a television stays dark regardless of the choice, so the question would
+ * have nothing to answer).
  *
- * [entryFocusRequester] lands on the first accent swatch — both rows are
+ * [entryFocusRequester] lands on the first accent swatch — all three rows are
  * static lists, always ready the moment this section mounts, so there is no
  * loading state to wait on the way [TvCacheBudgetBlock]/[TvSystemSection]
  * do for their own first control.
  *
- * Square, not the web's and the phone's rounded swatches: [TvFocus] draws
- * every television plate with the same square corner, and a swatch that
- * bent that rule would be a second shape for the remote to learn.
+ * Square under mediagram, where [TvFocus] draws every television plate square;
+ * a style that rounds its cards rounds these too.
  */
 @Composable
 internal fun TvAppearanceSection(
     accent: Accent,
     backdrop: Backdrop,
+    style: TvStyle,
     focusInContent: Boolean,
     entryFocusRequester: FocusRequester,
     onSelectAccent: (Accent) -> Unit,
     onSelectBackdrop: (Backdrop) -> Unit,
+    onSelectStyle: (TvStyle) -> Unit,
 ) {
     LaunchedEffect(focusInContent) { if (focusInContent) entryFocusRequester.requestFocus() }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
@@ -79,8 +65,10 @@ internal fun TvAppearanceSection(
                     // Shares the row rather than a fixed card width: the content
                     // pane beside the index is narrower than four fixed cards,
                     // and the last ones were squeezed to a sliver.
-                    TvArtworkSwatch(
-                        backdrop = entry,
+                    TvChoiceSwatch(
+                        label = entry.label,
+                        note = entry.note,
+                        colour = artworkSwatchColor(entry),
                         isSelected = entry == backdrop,
                         onSelect = { onSelectBackdrop(entry) },
                         modifier = Modifier.weight(1f),
@@ -88,79 +76,13 @@ internal fun TvAppearanceSection(
                 }
             }
         }
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Text(text = "Theme", style = SectionHead)
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+                for (entry in TvStyle.entries) {
+                    TvStyleSwatch(style = entry, isSelected = entry == style, onSelect = { onSelectStyle(entry) }, modifier = Modifier.weight(1f))
+                }
+            }
+        }
     }
 }
-
-@Composable
-private fun TvAccentSwatch(
-    accent: Accent,
-    isSelected: Boolean,
-    onSelect: () -> Unit,
-    focusRequester: FocusRequester? = null,
-) {
-    val label = accent.name.lowercase().replaceFirstChar(Char::uppercase)
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
-        Surface(
-            onClick = onSelect,
-            modifier =
-                Modifier
-                    .size(SwatchSize)
-                    .focusRequester(rememberStableRequester(focusRequester))
-                    .semantics {
-                        contentDescription = label
-                        role = Role.RadioButton
-                        selected = isSelected
-                    },
-            shape = TvFocus.surfaceShape(),
-            colors = ClickableSurfaceDefaults.colors(containerColor = accent.dark),
-            scale = TvFocus.surfaceScale(),
-            border = TvFocus.surfaceBorder(selected = isSelected),
-            glow = TvFocus.surfaceGlow(),
-        ) {}
-        Text(text = label, style = TvType.bodySmall.copy(fontSize = 12.tvSp))
-    }
-}
-
-@Composable
-private fun TvArtworkSwatch(
-    backdrop: Backdrop,
-    isSelected: Boolean,
-    onSelect: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall), modifier = modifier) {
-        Surface(
-            onClick = onSelect,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .semantics {
-                        contentDescription = backdrop.label
-                        role = Role.RadioButton
-                        selected = isSelected
-                    },
-            shape = TvFocus.surfaceShape(),
-            colors = ClickableSurfaceDefaults.colors(containerColor = artworkSwatchColor(backdrop)),
-            scale = TvFocus.surfaceScale(),
-            border = TvFocus.surfaceBorder(selected = isSelected),
-            glow = TvFocus.surfaceGlow(),
-        ) {}
-        Text(text = backdrop.label, style = TvType.labelLarge)
-        Text(text = backdrop.note, style = TvType.bodySmall.copy(fontSize = 12.tvSp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-/** A flat preview of each mode's own weight — [Palette] roles and the live accent, not the web's own decorative gradient, so no new hex joins this screen. */
-@Composable
-private fun artworkSwatchColor(backdrop: Backdrop): Color {
-    val accent = MaterialTheme.colorScheme.primary
-    return when (backdrop) {
-        Backdrop.DEFAULT -> MaterialTheme.colorScheme.surfaceVariant
-        Backdrop.BLURRED -> accent.copy(alpha = 0.55f)
-        Backdrop.ARTWORK -> accent.copy(alpha = 0.7f)
-        Backdrop.SOLID -> MaterialTheme.colorScheme.surface
-    }
-}
-
-private val SwatchSize = 48.dp

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performSemanticsAction
 import designsystem.Accent
 import designsystem.Backdrop
+import designsystem.TvStyle
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -29,10 +30,12 @@ class TvAppearanceSectionTest {
     private lateinit var controller: ActivityController<ComponentActivity>
     private var pickedAccent: Accent? = null
     private var pickedBackdrop: Backdrop? = null
+    private var pickedStyle: TvStyle? = null
 
     private fun show(
         accent: Accent,
         backdrop: Backdrop = Backdrop.Default,
+        style: TvStyle = TvStyle.Default,
     ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
@@ -40,10 +43,12 @@ class TvAppearanceSectionTest {
                 TvAppearanceSection(
                     accent = accent,
                     backdrop = backdrop,
+                    style = style,
                     focusInContent = true,
                     entryFocusRequester = remember { FocusRequester() },
                     onSelectAccent = { pickedAccent = it },
                     onSelectBackdrop = { pickedBackdrop = it },
+                    onSelectStyle = { pickedStyle = it },
                 )
             }
         }
@@ -85,5 +90,19 @@ class TvAppearanceSectionTest {
         show(accent = Accent.CORAL)
         compose.onNodeWithContentDescription("Solid").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(Backdrop.SOLID, pickedBackdrop)
+    }
+
+    @Test
+    fun theSelectedThemeIsAnnouncedAsSelected() {
+        show(accent = Accent.CORAL, style = TvStyle.APPLE)
+        compose.onNodeWithContentDescription("Apple TV style").assertIsSelected()
+        compose.onNodeWithContentDescription("mediagram").assertIsNotSelected()
+    }
+
+    @Test
+    fun pressingAThemeReachesChooseStyle() {
+        show(accent = Accent.CORAL)
+        compose.onNodeWithContentDescription("Google TV style").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(TvStyle.GOOGLE, pickedStyle)
     }
 }

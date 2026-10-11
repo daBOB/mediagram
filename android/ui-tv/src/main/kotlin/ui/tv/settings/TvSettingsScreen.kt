@@ -106,7 +106,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
             mapOf(
                 SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
-                SettingsSection.APPEARANCE to IndexStatus("${appearance.accent.label} · ${appearance.backdrop.label}"),
+                SettingsSection.APPEARANCE to IndexStatus("${appearance.style.label} · ${appearance.accent.label} · ${appearance.backdrop.label}"),
                 SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
             )
@@ -147,10 +147,12 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                     TvAppearanceSection(
                         accent = appearance.accent,
                         backdrop = appearance.backdrop,
+                        style = appearance.style,
                         focusInContent = entered,
                         entryFocusRequester = entryRequester,
                         onSelectAccent = appearanceViewModel::chooseAccent,
                         onSelectBackdrop = appearanceViewModel::chooseBackdrop,
+                        onSelectStyle = appearanceViewModel::chooseStyle,
                     )
 
                 SettingsSection.PROFILE ->
