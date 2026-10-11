@@ -7,11 +7,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** This device's theme, accent and artwork mode together — Settings › Appearance's whole answer. */
+/** This device's theme, accent, artwork mode and TV style together — Settings › Appearance's whole answer. */
 data class Appearance(
     val theme: ThemeChoice = ThemeChoice.Default,
     val accent: Accent = Accent.Default,
     val backdrop: Backdrop = Backdrop.Default,
+    val style: TvStyle = TvStyle.Default,
 )
 
 /**
@@ -27,6 +28,8 @@ interface AppearanceSettings {
     fun chooseAccent(accent: Accent)
 
     fun chooseBackdrop(backdrop: Backdrop)
+
+    fun chooseStyle(style: TvStyle)
 }
 
 /** In-memory implementation for tests; nothing here ever touches disk. */
@@ -45,11 +48,15 @@ class InMemoryAppearanceSettings(initial: Appearance = Appearance()) : Appearanc
     override fun chooseBackdrop(backdrop: Backdrop) {
         _appearance.value = _appearance.value.copy(backdrop = backdrop)
     }
+
+    override fun chooseStyle(style: TvStyle) {
+        _appearance.value = _appearance.value.copy(style = style)
+    }
 }
 
 /**
  * Plain preferences, not the encrypted ones the setup flow uses: a theme,
- * an accent and a backdrop are not a secret, and a keystore failure should
+ * an accent, a backdrop and a TV style are not a secret, and a keystore failure should
  * never be able to cost a viewer their Appearance choice.
  */
 class SharedPreferencesAppearanceSettings(private val context: Context) : AppearanceSettings {
@@ -60,6 +67,7 @@ class SharedPreferencesAppearanceSettings(private val context: Context) : Appear
                 theme = ThemeChoice.fromStorageKey(preferences.getString(KEY_THEME, null)),
                 accent = Accent.fromStorageKey(preferences.getString(KEY_ACCENT, null)),
                 backdrop = Backdrop.fromStorageKey(preferences.getString(KEY_BACKDROP, null)),
+                style = TvStyle.fromStorageKey(preferences.getString(KEY_STYLE, null)),
             ),
         )
     override val appearance: StateFlow<Appearance> = _appearance.asStateFlow()
@@ -104,10 +112,16 @@ class SharedPreferencesAppearanceSettings(private val context: Context) : Appear
         preferences.edit().putString(KEY_BACKDROP, backdrop.storageKey).apply()
     }
 
+    override fun chooseStyle(style: TvStyle) {
+        _appearance.value = _appearance.value.copy(style = style)
+        preferences.edit().putString(KEY_STYLE, style.storageKey).apply()
+    }
+
     private companion object {
         const val PREFS_FILE_NAME = "appearance_settings"
         const val KEY_THEME = "theme"
         const val KEY_ACCENT = "accent"
         const val KEY_BACKDROP = "backdrop"
+        const val KEY_STYLE = "style"
     }
 }

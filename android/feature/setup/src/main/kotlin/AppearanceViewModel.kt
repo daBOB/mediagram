@@ -7,6 +7,7 @@ import designsystem.Appearance
 import designsystem.AppearanceSettings
 import designsystem.Backdrop
 import designsystem.ThemeChoice
+import designsystem.TvStyle
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
@@ -31,4 +32,6 @@ class AppearanceViewModel
         fun chooseAccent(accent: Accent) = appearanceSettings.chooseAccent(accent)
 
         fun chooseBackdrop(backdrop: Backdrop) = appearanceSettings.chooseBackdrop(backdrop)
+
+        fun chooseStyle(style: TvStyle) = appearanceSettings.chooseStyle(style)
     }

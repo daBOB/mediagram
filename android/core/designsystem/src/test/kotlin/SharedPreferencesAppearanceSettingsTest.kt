@@ -43,12 +43,22 @@ class SharedPreferencesAppearanceSettingsTest {
     }
 
     @Test
+    fun choosingATvStyleSurvivesAFreshInstance() {
+        SharedPreferencesAppearanceSettings(context).chooseStyle(TvStyle.APPLE)
+
+        val reopened = SharedPreferencesAppearanceSettings(context).appearance.value
+
+        assertEquals(TvStyle.APPLE, reopened.style)
+    }
+
+    @Test
     fun anUnrecognisedStoredValueFallsBackToTheDefault() {
         context.getSharedPreferences("appearance_settings", Context.MODE_PRIVATE)
             .edit()
             .putString("theme", "sepia")
             .putString("accent", "magenta")
             .putString("backdrop", "sepia")
+            .putString("style", "sepia")
             .apply()
 
         assertEquals(Appearance(), SharedPreferencesAppearanceSettings(context).appearance.value)

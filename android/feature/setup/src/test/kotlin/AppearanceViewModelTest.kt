@@ -5,6 +5,7 @@ import designsystem.Appearance
 import designsystem.Backdrop
 import designsystem.InMemoryAppearanceSettings
 import designsystem.ThemeChoice
+import designsystem.TvStyle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -39,5 +40,16 @@ class AppearanceViewModelTest {
 
         assertEquals(Backdrop.SOLID, model.state.value.backdrop)
         assertEquals(Backdrop.SOLID, settings.appearance.value.backdrop)
+    }
+
+    @Test
+    fun choosingATvStyleReachesTheSharedSettings() {
+        val settings = InMemoryAppearanceSettings()
+        val model = AppearanceViewModel(settings)
+
+        model.chooseStyle(TvStyle.GOOGLE)
+
+        assertEquals(TvStyle.GOOGLE, model.state.value.style)
+        assertEquals(TvStyle.GOOGLE, settings.appearance.value.style)
     }
 }
