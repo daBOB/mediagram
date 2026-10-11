@@ -7,6 +7,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
+import designsystem.CatalogueTones
+import designsystem.DarkTones
 import designsystem.LocalTvStyle
 import designsystem.Palette
 import designsystem.TvStyle
@@ -103,6 +105,15 @@ internal val TvStyle.look: TvLook
             TvStyle.APPLE -> AppleLook
             TvStyle.GOOGLE -> GoogleLook
         }
+
+/**
+ * The tones Settings' sidebar, its soft rules and its quiet lines take:
+ * mediagram's are the phone's dark ones. The other styles sit the sidebar on
+ * their own page, not on mediagram's near-black, and keep the quiet line —
+ * text, such as a count under a heading — in their readable figures grey.
+ */
+internal val TvStyle.catalogueTones: CatalogueTones
+    get() = if (this == TvStyle.MEDIAGRAM) DarkTones else with(look.neutrals) { CatalogueTones(sidebar = page, ruleSoft = rule, quiet = figures) }
 
 /** Only mediagram keeps the library rail; the other two styles put its rows behind the avatar. */
 internal val TvStyle.hasRail: Boolean get() = this == TvStyle.MEDIAGRAM

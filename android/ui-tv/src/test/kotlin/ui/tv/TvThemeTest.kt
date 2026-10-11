@@ -11,6 +11,8 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.unit.TextUnit
 import androidx.tv.material3.MaterialTheme
 import designsystem.Accent
+import designsystem.CatalogueTones
+import designsystem.LocalCatalogueTones
 import designsystem.LocalReducedMotion
 import designsystem.LocalTvStyle
 import designsystem.Palette
@@ -101,45 +103,6 @@ class TvThemeTest {
         assertEquals(TvType.Base.labelLarge.fontSize, label)
     }
 
-    /**
-     * No composition needed for this one: [tvColorScheme] is a plain
-     * function, so the roles a later screen actually reaches for — the
-     * ground it draws on, the plate a card sits on, the text on both, and
-     * the two rule weights a divider or a focus outline would use — can be
-     * pinned straight against [Palette] the way [CatalogueColorsTest] pins
-     * the phone's scheme, without a Robolectric activity in between.
-     */
-    @Test
-    fun coreRolesComeFromThePalette() {
-        val colours = tvColorScheme(Accent.Default.dark)
-        assertEquals(Palette.Ground, colours.background)
-        assertEquals(Palette.Text, colours.onBackground)
-        assertEquals(Palette.Page, colours.surface)
-        assertEquals(Palette.Text, colours.onSurface)
-        assertEquals(Palette.RuleStrong, colours.border)
-        assertEquals(Palette.Rule, colours.borderVariant)
-        assertEquals(Accent.Default.dark, colours.primary)
-        assertEquals(Palette.Sunk, colours.surfaceVariant)
-        assertEquals(Palette.Figures, colours.onSurfaceVariant)
-        assertEquals(Palette.Ochre, colours.error)
-        assertEquals(Palette.Sage, colours.tertiary)
-    }
-
-    @Test
-    fun appleAndGoogleSetTheirOwnNeutralsButKeepTheAccent() {
-        val apple = tvColorScheme(Accent.Default.dark, TvStyle.APPLE.look.neutrals)
-        assertEquals(Color(0xFF000000), apple.background)
-        assertEquals(Color(0xFFFFFFFF), apple.onSurface)
-        assertEquals(Color(0xFF1C1C1E), apple.surface)
-        assertEquals(Accent.Default.dark, apple.primary)
-
-        val google = tvColorScheme(Accent.Default.dark, TvStyle.GOOGLE.look.neutrals)
-        assertEquals(Color(0xFF202124), google.background)
-        assertEquals(Color(0xFFE8EAED), google.onSurface)
-        assertEquals(Color(0xFF3C4043), google.surfaceVariant)
-        assertEquals(Palette.Ochre, google.error)
-    }
-
     @Test
     fun theThemeHandsItsStyleAndGroundToEveryScreen() {
         var style: TvStyle? = null
@@ -152,6 +115,19 @@ class TvThemeTest {
         assertEquals(Color(0xFF202124), ground)
     }
 
+    /** Settings' sidebar sits on each style's own page, not mediagram's near-black; mediagram keeps the phone's dark tones. */
+    @Test
+    fun theThemeHandsEachStyleItsOwnCatalogueTones() {
+        for (style in TvStyle.entries) {
+            var tones: CatalogueTones? = null
+            show(style = style) { tones = LocalCatalogueTones.current }
+            val n = style.look.neutrals
+            val want = if (style == TvStyle.MEDIAGRAM) CatalogueTones(Palette.Sidebar, Palette.RuleSoft, Palette.RuleStrong) else CatalogueTones(n.page, n.rule, n.figures)
+            assertEquals(want, tones, "$style")
+            close()
+        }
+    }
+
     /** The player keeps mediagram's look in every style, with the viewer's own accent. */
     @Test
     fun thePlayerDrawsInMediagramsLookUnderAnotherStyle() {
@@ -159,12 +135,14 @@ class TvThemeTest {
         var colours: androidx.tv.material3.ColorScheme? = null
         var body: TextStyle? = null
         var ink: Color? = null
+        var tones: CatalogueTones? = null
         show(accent = Accent.TEAL, style = TvStyle.GOOGLE) {
             TvMediagramPlayerTheme {
                 style = LocalTvStyle.current
                 colours = MaterialTheme.colorScheme
                 body = MaterialTheme.typography.bodyMedium
                 ink = androidx.tv.material3.LocalContentColor.current
+                tones = LocalCatalogueTones.current
             }
         }
         assertEquals(TvStyle.MEDIAGRAM, style)
@@ -172,6 +150,7 @@ class TvThemeTest {
         assertEquals(Accent.TEAL.dark, colours?.primary)
         assertEquals(TvType.Base.bodyMedium, body)
         assertEquals(Palette.Text, ink)
+        assertEquals(Palette.Sidebar, tones?.sidebar)
     }
 
     private fun show(

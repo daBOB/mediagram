@@ -17,6 +17,7 @@ import androidx.tv.material3.darkColorScheme
 import designsystem.Accent
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
+import designsystem.LocalCatalogueTones
 import designsystem.LocalReducedMotion
 import designsystem.LocalTvStyle
 import designsystem.Overscan
@@ -105,7 +106,8 @@ private fun tvTypography(style: TvStyle): Typography =
  * see [LocalBackdrop]'s own doc for why a `CompositionLocal` carries it to
  * every hero rather than each one reading the settings `StateFlow` for
  * itself. [style] picks the TV's look ([TvLook]) and is provided as
- * [LocalTvStyle] for the seams whose layout differs by style.
+ * [LocalTvStyle] for the seams whose layout differs by style, with its
+ * [catalogueTones] as [LocalCatalogueTones].
  */
 @Composable
 fun TvTheme(
@@ -122,6 +124,7 @@ fun TvTheme(
         LocalBackdrop provides backdrop,
         LocalReducedMotion provides rememberReducedMotion(),
         LocalTvStyle provides style,
+        LocalCatalogueTones provides style.catalogueTones,
     ) {
         MaterialTheme(
             colorScheme = tvColorScheme(accentColor, style.look.neutrals),
@@ -132,7 +135,7 @@ fun TvTheme(
 }
 
 /**
- * The player's theme in every style: mediagram's scheme, faces and focus
+ * The player's theme in every style: mediagram's scheme, tones, faces and focus
  * with the viewer's live accent. Its layouts are measured against
  * mediagram's faces, and a style changes how the library looks, never
  * playback. [LocalBackdrop] and [LocalReducedMotion] pass through from
@@ -142,7 +145,7 @@ fun TvTheme(
 @Composable
 internal fun TvMediagramPlayerTheme(content: @Composable () -> Unit) {
     val scheme = tvColorScheme(MaterialTheme.colorScheme.primary)
-    CompositionLocalProvider(LocalTvStyle provides TvStyle.MEDIAGRAM) {
+    CompositionLocalProvider(LocalTvStyle provides TvStyle.MEDIAGRAM, LocalCatalogueTones provides TvStyle.MEDIAGRAM.catalogueTones) {
         MaterialTheme(colorScheme = scheme, typography = remember { tvTypography(TvStyle.MEDIAGRAM) }) {
             CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
         }

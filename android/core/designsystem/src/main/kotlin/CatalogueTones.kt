@@ -15,13 +15,13 @@ data class CatalogueTones(
     val quiet: Color,
 )
 
-internal val DarkTones = CatalogueTones(Palette.Sidebar, Palette.RuleSoft, Palette.RuleStrong)
+/** The phone's dark tones, and the television's in its mediagram style. */
+val DarkTones = CatalogueTones(Palette.Sidebar, Palette.RuleSoft, Palette.RuleStrong)
 internal val LightTones = CatalogueTones(Palette.LightSidebar, Palette.LightRuleSoft, Palette.LightRuleStrong)
 
 /**
- * Dark by default: [ui.tv.TvTheme] is dark-only and never provides this, and
- * a `@Preview` or a bare test composes without [MediagramTheme] too, so both
- * land on the same tones the phone's own dark theme uses rather than on an
- * unstyled fallback.
+ * Dark by default: a `@Preview` or a bare test composes without
+ * [MediagramTheme] or [ui.tv.TvTheme], and lands on the same tones the
+ * phone's own dark theme uses rather than on an unstyled fallback.
  */
 val LocalCatalogueTones = staticCompositionLocalOf { DarkTones }
