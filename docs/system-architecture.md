@@ -851,17 +851,19 @@ stored per device under `appearance_settings/style`): **mediagram** (the default
 from its face (`TvType` in `core/designsystem/TvTypeScale.kt` reads each role through
 `inTvStyle()`; `TvType.Base` holds mediagram's). Focus (`ui/tv/TvFocusStyles.kt`,
 `TvFocus`), colours (every TV colour reads the scheme, pinned by
-`TvColoursComeFromTheSchemeTest`) and type follow the style everywhere. Layout differs
-in three places only: the chrome (`chrome/TvChromeBar.kt` selects `TvDepartmentsBar`
-with the rail, `TvCentredTabBar` or `TvTopBar`; no rail outside mediagram, its rows in
-the avatar's menu, every rail-row focus request through `TvChromeFocus.railTarget`), the
-Home cover (`TvCoverSlide` / `TvInsetCardSlide`) and rows of titles (16:9 stills,
-`catalog/TvRowCards.kt`; walls stay posters). No style blurs anything: TV blur measured
-too slow on the box (2026-10-10).
+`TvColoursComeFromTheSchemeTest`) and type follow the style everywhere except the
+player, which keeps mediagram's look in every style (`TvMediagramPlayerTheme`; the spec
+keeps the player as it was). Layout differs in three places only: the chrome
+(`chrome/TvChromeBar.kt` selects `TvDepartmentsBar` with the rail, `TvCentredTabBar` or
+`TvTopBar`; no rail outside mediagram, its rows in the avatar's menu, every rail-row
+focus request through `TvChromeFocus.railTarget`), the Home cover (`TvCoverSlide` /
+`TvInsetCardSlide`) and rows of titles (16:9 stills, `catalog/TvRowCards.kt`; walls
+stay posters). No style blurs anything: TV blur measured too slow on the box
+(2026-10-10).
 
 **Deliberate difference:** the phone, the tablet and the web have no themes yet. The
-phone and tablet store the setting, or ignore it; each gets its own design round, TV
-first at the user's choice (2026-10-10).
+phone and tablet store the setting and ignore it; the web does not have it. Each gets
+its own design round, TV first at the user's choice (2026-10-10).
 
 ### Television differs from the web player
 
