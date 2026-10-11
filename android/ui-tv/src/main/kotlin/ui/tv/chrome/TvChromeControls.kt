@@ -17,7 +17,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -26,11 +26,15 @@ import designsystem.TvType
 import designsystem.tvDp
 import designsystem.tvSp
 import ui.tv.TvFocus
+import ui.tv.currentTvLook
+import ui.tv.pillBorder
+import ui.tv.pillColors
 import ui.tv.profile.TvChosenProfile
 
 /**
  * One department pill on [TvDepartmentsBar] — [TvFocus.PillShape], the
- * accent ring only while focused; [active] fills it at ink@12% instead of
+ * accent ring only while focused — or, in Apple TV and Google TV styles, a white
+ * fill with dark ink ([TvFocus.pillColors]); [active] fills it at ink@12% instead of
  * ringing it, the tablet's own `Pill` treatment (`ChromeControls.kt`), so a
  * chosen department still reads as chosen once the remote has moved on to
  * something else on the bar. Set as the web's `.departments a` at the
@@ -50,17 +54,9 @@ internal fun TvPill(
         onClick = onClick,
         modifier = modifier.semantics { role = Role.Tab; selected = active },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = fill,
-                contentColor = ink,
-                focusedContainerColor = fill,
-                focusedContentColor = ink,
-                pressedContainerColor = ink.copy(alpha = 0.12f),
-                pressedContentColor = ink,
-            ),
+        colors = TvFocus.pillColors(container = fill, content = ink, pressed = ink.copy(alpha = 0.12f)),
         scale = TvFocus.surfaceScale(),
-        border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
+        border = TvFocus.pillBorder(),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(
@@ -89,22 +85,16 @@ internal fun TvRoundIconButton(
         onClick = onClick,
         modifier = modifier.size(44.tvDp).semantics { contentDescription = description },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = Color.Transparent,
-                contentColor = ink,
-                focusedContainerColor = Color.Transparent,
-                focusedContentColor = ink,
-            ),
+        colors = TvFocus.pillColors(container = Color.Transparent, content = ink),
         scale = TvFocus.surfaceScale(),
-        border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
+        border = TvFocus.pillBorder(),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.size(44.tvDp), contentAlignment = Alignment.Center) {
             Image(
                 painter = icon,
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(ink),
+                colorFilter = ColorFilter.tint(LocalContentColor.current),
                 modifier = Modifier.size(21.tvDp),
             )
         }
@@ -122,19 +112,16 @@ internal fun TvAvatar(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val fills = currentTvLook.pillFocusFills
+    val container = if (fills) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.onBackground
+    val content = if (fills) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.background
     Surface(
         onClick = onClick,
         modifier = modifier.size(44.tvDp).semantics { contentDescription = "Menu, watching as ${profile.name}" },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.onBackground,
-                contentColor = MaterialTheme.colorScheme.background,
-                focusedContainerColor = MaterialTheme.colorScheme.onBackground,
-                focusedContentColor = MaterialTheme.colorScheme.background,
-            ),
+        colors = TvFocus.pillColors(container = container, content = content),
         scale = TvFocus.surfaceScale(),
-        border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
+        border = TvFocus.pillBorder(),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.size(44.tvDp), contentAlignment = Alignment.Center) {

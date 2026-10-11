@@ -30,6 +30,8 @@ import designsystem.TvType
 import designsystem.tvDp
 import designsystem.tvSp
 import ui.tv.TvFocus
+import ui.tv.pillBorder
+import ui.tv.pillColors
 import ui.tv.TvTextRow
 import ui.tv.chrome.LocalTvPagePadding
 
@@ -117,21 +119,13 @@ private fun TvCoverPill(
         onClick = onClick,
         modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = if (filled) OnImage else Color(0x47080809),
-                contentColor = ink,
-                focusedContainerColor = if (filled) OnImage else Color(0x47080809),
-                focusedContentColor = ink,
-                pressedContainerColor = if (filled) OnImage else Color(0x47080809),
-                pressedContentColor = ink,
-            ),
+        colors = TvFocus.pillColors(container = if (filled) OnImage else Color(0x47080809), content = ink),
         scale = TvFocus.surfaceScale(),
-        border = TvFocus.surfaceBorder(shape = TvFocus.PillShape),
+        border = TvFocus.pillBorder(),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.padding(horizontal = Spacing.large, vertical = Spacing.small)) {
-            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = ink))
+            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium))
         }
     }
 }

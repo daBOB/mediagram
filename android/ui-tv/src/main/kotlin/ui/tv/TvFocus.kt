@@ -4,9 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
@@ -46,7 +46,8 @@ import designsystem.Radius
  * Square corners, not tv-material's own rounded default: the web player —
  * this catalogue's reference — draws every plate with square corners and
  * hairline rules, and a television plate is the same catalogue, not a
- * second design. [Shape] is the one constant the container and its focus
+ * second design. That is mediagram's look; Apple TV and Google TV styles
+ * round the corner ([TvLook.cardShape]). [Shape] is the one constant the container and its focus
  * border are both cut from, so there is nowhere for a call site to pass a
  * shape to the card and forget to pass the same one to the border.
  *
@@ -56,7 +57,8 @@ import designsystem.Radius
  * this app allows itself, rather than reading as a second cue. A text-only
  * row — a menu line, a toggle — has no card shape to put a border on at
  * all, so it carries that same accent colour plus an underline instead of
- * a frame.
+ * a frame. Apple TV style is the one exception: its focused card lifts on a
+ * soft shadow, the way that home screen says focus.
  */
 object TvFocus {
     /** How far a focused element grows. Legible from the couch, not just the palm. */
@@ -73,12 +75,14 @@ object TvFocus {
     val BorderWidth: Dp = 3.dp
 
     /**
-     * Every TV container's corner, focused or not: square, like the web
-     * player's plates. Not exposed as a per-call parameter — a shape a
-     * caller could vary here is a shape that could drift from the border
-     * built on top of it, which is the bug this constant exists to close off.
+     * Every TV container's corner in the current style — square for mediagram, like the web player's plates.
+     * Not exposed as a per-call parameter — a shape a caller could vary here is
+     * a shape that could drift from the border built on top of it.
      */
-    private val Shape: Shape = RectangleShape
+    private val Shape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = currentTvLook.cardShape
 
     /** A department pill, a cover button — fully round, matching the web's own pill-shaped controls. */
     val PillShape: Shape = CircleShape
@@ -93,7 +97,7 @@ object TvFocus {
     fun cardShape(shape: Shape = Shape): CardShape = CardDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape)
 
     @Composable
-    fun cardScale(): CardScale = CardDefaults.scale(focusedScale = Scale, pressedScale = Scale)
+    fun cardScale(): CardScale = CardDefaults.scale(focusedScale = currentTvLook.focusScale, pressedScale = currentTvLook.focusScale)
 
     /**
      * `CardBorder` has no disabled slot to leave unset — only `border`,
@@ -106,12 +110,13 @@ object TvFocus {
     @Composable
     fun cardBorder(shape: Shape = Shape): CardBorder =
         CardDefaults.border(
-            focusedBorder = Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
+            focusedBorder = focusedCardBorderOf(currentTvLook, MaterialTheme.colorScheme.primary, shape),
         )
 
-    /** Explicit, not just the tv-material default: this catalogue never glows. */
+    /** Explicit, not just the tv-material default: only Apple TV style's lift glows. */
     @Composable
-    fun cardGlow(): CardGlow = CardDefaults.glow()
+    fun cardGlow(): CardGlow =
+        focusedCardGlowOf(currentTvLook)?.let { CardDefaults.glow(focusedGlow = it, pressedGlow = it) } ?: CardDefaults.glow()
 
     @Composable
     fun surfaceShape(shape: Shape = Shape): ClickableSurfaceShape =
@@ -125,7 +130,7 @@ object TvFocus {
 
     @Composable
     fun surfaceScale(): ClickableSurfaceScale =
-        ClickableSurfaceDefaults.scale(focusedScale = Scale, pressedScale = Scale)
+        ClickableSurfaceDefaults.scale(focusedScale = currentTvLook.focusScale, pressedScale = currentTvLook.focusScale)
 
     /**
      * `ClickableSurfaceBorder` carries two states `CardBorder` does not:
@@ -151,7 +156,8 @@ object TvFocus {
                 } else {
                     Border.None
                 },
-            focusedBorder = Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
+            focusedBorder =
+                Border(border = BorderStroke(BorderWidth, focusInkOf(currentTvLook, MaterialTheme.colorScheme.primary)), shape = shape),
             focusedDisabledBorder =
                 Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.border), shape = shape),
         )
