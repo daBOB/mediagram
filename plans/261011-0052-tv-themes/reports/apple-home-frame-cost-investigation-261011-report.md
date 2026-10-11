@@ -25,3 +25,20 @@ Recommendation: 2, measured on the box against today's numbers, then 3 if the ro
 ## Unresolved questions
 - Exact per-layer GPU split of the cover: the box exposes no GPU counters. Option 2's effect needs a build and a box run to confirm.
 - Whether SurfaceFlinger scaling the 1080p UI onto the 4K output shares the GPU with the app's frames. The `dequeueBuffer` waits suggest the display side is part of the limit.
+
+## Option 2 measured (2026-10-12, 00:00–00:35)
+The change: `CoverScrim` draws each of its three layers only over the band where it shows (`perf/cover-scrim` b1366cbf; pixel-identical by `CoverScrimPixelsTest`). On the box, a build with the same code but versionName 0.122.0 was installed with `install-multiple -r` (`speed-profile` / `install-dm`, sha256 matched), so the release floor stays ≥ 0.122.1.
+
+The before run used today's build, and the after run came right after it, in the same session. Both used the same script (Home at rest 20 s, Home scroll 8 down / 8 up; warm round discarded, three runs). Median of three, in ms:
+
+| walk | style | p90 before → after | p50 | p99 | GPU p90 | janky % |
+|---|---|---|---|---|---|---|
+| Home at rest | mediagram | 42 → **36** | 36 → 26 | 65 → 42 | 22 → 13 | 6.28 → 3.79 |
+| Home at rest | Apple TV | 48 → **36** | 34 → 26 | 69 → 42 | 24 → 14 | 6.50 → 4.35 |
+| Home scroll | mediagram | 48 → **40** | 31 → 27 | 73 → 57 | 22 → 17 | 4.02 → 1.47 |
+| Home scroll | Apple TV | 48 → **44** | 26 → 26 | 73 → 65 | 24 → 18 | 5.34 → 1.88 |
+
+- **Both styles got faster.** GPU p90 dropped 6–10 ms, and p90 frame time 4–12 ms.
+- **Apple is now level with mediagram at rest (36/36)** and 4 ms over it on scroll (44 vs 40). That is still below what mediagram itself measured before (48).
+- **The cover looks the same on the box,** with no seams at the band edges.
+- **Google TV style is unaffected:** its inset card has its own scrim.
