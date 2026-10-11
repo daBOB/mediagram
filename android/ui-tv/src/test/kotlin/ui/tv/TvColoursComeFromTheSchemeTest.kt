@@ -3,6 +3,7 @@ package ui.tv
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Every TV colour comes from the scheme, so a style's neutrals reach it:
@@ -12,8 +13,10 @@ import kotlin.test.assertEquals
 class TvColoursComeFromTheSchemeTest {
     @Test
     fun onlyTheThemeAndTheLooksReadThePalette() {
+        val sources = File("src/main/kotlin")
+        assertTrue(sources.isDirectory, "run from the module, where the sources are: ${sources.absolutePath}")
         val readers =
-            File("src/main/kotlin")
+            sources
                 .walk()
                 .filter { it.extension == "kt" && it.name !in setOf("TvTheme.kt", "TvLook.kt") }
                 .filter { file ->
