@@ -12,7 +12,7 @@
 - Modify: `docs/system-architecture.md`, `docs/project-changelog.md`, `plans/261011-0052-tv-themes/plan.md`
 - Modify: `Cargo.toml`, `web/package.json`, `android/app/build.gradle.kts` (version)
 
-- [ ] **Step 1: Choose the version**
+- [x] **Step 1: Choose the version**
 
 ```bash
 for ref in main feat/motion feat/tv-parity HEAD; do printf "%s " $ref; git show $ref:android/app/build.gradle.kts | grep -m1 -o 'versionName = "[^"]*"'; done
@@ -30,7 +30,7 @@ git diff --stat   # exactly three files, one line each
 
 If `Cargo.lock` carries the workspace crates' version, run `cargo metadata --format-version 1 >/dev/null` (refreshes it without fetching) and include it.
 
-- [ ] **Step 2: Write the docs**
+- [x] **Step 2: Write the docs**
 
 `docs/system-architecture.md`, in its TV section (find it with `grep -n "TV\|television" docs/system-architecture.md | head`), add a subsection:
 
@@ -70,7 +70,7 @@ at the user's choice (2026-10-10).
 
 `plan.md`: set phases 01–07 to `done` (08 stays `in progress` until Task 8.2 ends).
 
-- [ ] **Step 3: Check and commit**
+- [x] **Step 3: Check and commit**
 
 Run: `scripts/check.sh` — expected green (fix anything it reports before committing).
 
@@ -87,7 +87,7 @@ Only with nobody else on the box: if `adb -s 192.168.0.46:5555 shell dumpsys act
 - Create: `plans/261011-0052-tv-themes/reports/box-walk-and-frame-times-261011-report.md`
 - Modify: `plans/261011-0052-tv-themes/plan.md` (phase 08 done, Review section)
 
-- [ ] **Step 1: Build the release APK and its profile without publishing**
+- [x] **Step 1: Build the release APK and its profile without publishing**
 
 Write this to the session scratchpad as `build-tv-release.sh` (a hook blocks shell lines containing the path segment `build`, so it runs as a file):
 
@@ -114,7 +114,7 @@ aapt2 dump badging "$2/app-release.apk" | grep -o "versionCode='[0-9]*' versionN
 
 A fresh checkout lacks the FFmpeg audio libraries: copy `android/core/ffmpeg/src/main/jniLibs/` from `../mediagram-tv` first if it is missing. Run `bash <scratch>/build-tv-release.sh /home/andre/Workspace/mediagram-themes <scratch>/tv-themes-0.122.0`. Expected: `versionCode='122000' versionName='0.122.0'`.
 
-- [ ] **Step 2: Install, keeping data**
+- [x] **Step 2: Install, keeping data**
 
 ```bash
 adb connect 192.168.0.46:5555
@@ -122,7 +122,7 @@ adb -s 192.168.0.46:5555 install-multiple -r <scratch>/tv-themes-0.122.0/app-rel
 adb -s 192.168.0.46:5555 shell dumpsys package dexopt | grep -A3 '\[com.mediagram.android\]'   # speed-profile / install-dm
 ```
 
-- [ ] **Step 3: Walk each style**
+- [x] **Step 3: Walk each style**
 
 Rules: navigate only (D-pad, Back; OK on pills, plates, the avatar, the menu's rows and the rail's Settings row). The one setting this walk changes is Settings › Appearance › Theme. Check the avatar shows **T** before anything plays (nothing in this walk plays). Before each OK, confirm where focus is with `adb -s 192.168.0.46:5555 shell uiautomator dump /sdcard/ui.xml && adb -s 192.168.0.46:5555 pull /sdcard/ui.xml <scratch>/ui.xml` and the `focused="true"` node.
 
@@ -132,17 +132,17 @@ For each of mediagram → Apple TV style → Google TV style:
 3. Screenshot Home (`adb -s 192.168.0.46:5555 exec-out screencap -p > <scratch>/theme-<style>-home.png`), Movies (Up, Right, OK on the pill, Down twice), My List (mediagram: the rail; Apple/Google: avatar → My List), the avatar menu, and Settings.
 4. Note anything that reads wrong: focus lost, a control unreachable, text clipped, a colour left from another style.
 
-- [ ] **Step 4: Frame times**
+- [x] **Step 4: Frame times**
 
 Define the frost report's helpers (`k`, `n`, `dump`, `round`) with `D=<scratch>/themes-frames-261011`. For each style, set it (Step 3.1–3.2), then `round <style> warm; for r in 1 2 3; do round <style> $r; done` — W1 Home at rest, W2 Movies rows, W3 Series hero, the warm round discarded. Take each walk's median p90 per style.
 
 Rule (spec): if Apple's median p90 is more than 2 ms above mediagram's on any walk, drop the shadow and keep the lift: `focusedCardGlowOf` returns `null` for every style, `TvFocusStylesTest.appleCardsLiftWithAShadowAndNoBorder` becomes `appleCardsLiftWithNoBorderAndNoShadow` asserting `assertNull(focusedCardGlowOf(TvStyle.APPLE.look))`, the `TvFocus` KDoc's Apple sentence drops "on a soft shadow", commit `perf(tv): Apple TV style's lift without its shadow`, rebuild, reinstall and measure Apple once more. Google and mediagram add no drawing cost; record their numbers anyway.
 
-- [ ] **Step 5: Put the box back**
+- [x] **Step 5: Put the box back**
 
 Set Theme back to **mediagram** (Step 3.1–3.2) and leave the remote on Home. The box keeps 0.122.0 installed: say in the report that the next channel release must be **≥ 0.122.1**.
 
-- [ ] **Step 6: Report and close the plan**
+- [x] **Step 6: Report and close the plan**
 
 The report holds: the build (versionCode, cert, dexopt), a table per walk (style × run: frames, janky %, p50, p90, p99, GPU p90) with medians, the rule's verdict, the screenshots' paths, what read wrong per style, and "Unresolved questions". `plan.md`: phase 08 `done`, and a `## Review` section of three to five lines (what shipped, the measurement verdict, open items).
 

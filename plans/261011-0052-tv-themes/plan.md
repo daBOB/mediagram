@@ -40,7 +40,7 @@
 | 05 | [Chrome without a rail](phase-05-chrome-without-a-rail.md) | 01, 03 | done |
 | 06 | [Home cover per style](phase-06-home-cover-per-style.md) | 02, 03 | done |
 | 07 | [Landscape rows](phase-07-landscape-rows.md) | 01, 03 | done |
-| 08 | [Docs, version, box walk and frame times](phase-08-docs-version-and-box.md) | all | in progress |
+| 08 | [Docs, version, box walk and frame times](phase-08-docs-version-and-box.md) | all | done |
 
 ## Rulings made while planning
 
@@ -48,3 +48,10 @@
 - **Colours through the scheme.** 65 direct `Palette.*` reads in ui-tv would keep mediagram's ink under every style; each maps one-to-one onto a scheme slot `tvColorScheme` already fills, so mediagram's values are unchanged.
 - **Spec corrections** (marked *(planning)* in the spec): Apple's cover is today's slide with its own title rule; Home strips keep their own cards and share a row helper; landscape floor is 1.5× the portrait floor; shows gain a backdrop; neutral greys per style; Google Sans Flex gets a 600 cut because `TvType` asks for 600.
 - **Rail-less focus:** one `TvChromeFocus.railTarget(item)` replaces every direct rail-row request; rail-less pages inset by `Overscan.horizontal` on both sides.
+
+## Review
+
+- **Shipped:** Settings › Appearance › Theme (mediagram, Apple TV style, Google TV style) on TV. Each style was walked on the box, and the box ends on mediagram with 0.122.0 installed, so the next channel release must be ≥ 0.122.1.
+- **Measured** ([report](reports/box-walk-and-frame-times-261011-report.md)): mediagram matches 0.120.5. Apple tripped the shadow rule, so the shadow was dropped. Apple without it is +2 or less on Movies and Series but still +5–6 ms p90 on Home. Google is level with or below mediagram everywhere.
+- **The walk found four branch defects, all fixed:** Up lost under the floating bar, swatches hiding their preview, the shadow, and Settings' tones. It found three issues mediagram already had (the cover scroll on Right, Series' double inset, a row's first card clipped), which are left for a separate round.
+- **Open for the user:** Apple's Home cost, R16 (cream-at-rest Watch now / Play beside a white focused pill), and the lighter sidebar under Apple and Google.

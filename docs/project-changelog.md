@@ -13,6 +13,13 @@ to `main`. Full phase-by-phase detail lives in
 - **Shows carry their episodes' backdrop**, so a row of shows has a still to show.
 - **Fonts:** Geist 700 and Google Sans Flex 400–700 ship as static Latin cuts (OFL).
 
+**Fixed** (Android TV, found walking the box)
+
+- **Up from a page's top row always reaches the bar**, even when the row has scrolled up under it. Under the floating bars of Apple TV style and Google TV style, Up there did nothing, and only Back left the page.
+- **A focused swatch keeps the colour it previews.** In Settings › Appearance, focus filled the swatch with the text colour, which hid a theme's "Aa" and an Artwork mode's colour.
+- Apple TV style's cards lift without a shadow: the shadow cost frame time on the box.
+- Settings' sidebar, quiet lines and soft rules take each style's own greys.
+
 ## 0.120.3 — Down off the bar glides the page in
 
 **Fixed** (Android TV)
