@@ -6,6 +6,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,6 +20,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import designsystem.LocalTvStyle
+import designsystem.TvStyle
 import kotlinx.coroutines.delay
 import model.MediaSet
 
@@ -55,6 +58,10 @@ private val CoverBarClearance = 72.dp
  * none" before this composable ever sees it; a missing or unrecognised id
  * (the film left the lineup between composing and now) falls back to the
  * first film rather than crashing on a lookup that found nothing.
+ *
+ * Google TV style draws its slide as an inset card ([TvInsetCardSlide]) and the
+ * buttons inside it; the rotation, the pause and the buttons are the same in
+ * every style.
  */
 @Composable
 internal fun TvHomeCover(
@@ -108,8 +115,9 @@ internal fun TvHomeCover(
         // shrunk since (a title dropped by a refresh, pinned elsewhere) an
         // index into the new list could point past its end — a `MediaSet`
         // value stays valid to draw regardless of what the list looks like now.
+        val inset = LocalTvStyle.current == TvStyle.GOOGLE
         Crossfade(targetState = current, animationSpec = tween(CROSSFADE_MS), label = "tvHomeCover") { set ->
-            TvCoverSlide(set = set, minHeight = coverHeight)
+            if (inset) TvInsetCardSlide(set = set, minHeight = coverHeight) else TvCoverSlide(set = set, minHeight = coverHeight)
         }
         TvCoverActions(
             title = current.title,
@@ -122,7 +130,8 @@ internal fun TvHomeCover(
             onFocusDot = { index -> currentId = films[index].setId },
             watchNowFocus = arrivalFocus,
             upExit = upExit,
-            modifier = Modifier.align(Alignment.BottomStart),
+            // Inside Google TV's card, at its words' own inset.
+            modifier = Modifier.align(Alignment.BottomStart).then(if (inset) Modifier.padding(start = InsetCardPadding, bottom = InsetCardMargin) else Modifier),
         )
     }
 }

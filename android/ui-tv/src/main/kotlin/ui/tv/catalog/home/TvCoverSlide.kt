@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -21,6 +24,8 @@ import designsystem.inTvStyle
 import designsystem.Backdrop
 import designsystem.CoverTitle
 import designsystem.LocalBackdrop
+import designsystem.LocalTvStyle
+import designsystem.TvStyle
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvType.Eyebrow
@@ -53,6 +58,8 @@ private const val LONG_TITLE = 18
  * too — [LocalBackdrop] is read directly here rather than taking a flag for
  * that split, since this composable never draws a department's own hero at
  * all.
+ *
+ * Apple TV style draws this same slide with the title as written, in [sansCoverTitle].
  */
 @Composable
 internal fun TvCoverSlide(
@@ -68,7 +75,17 @@ internal fun TvCoverSlide(
         }
         CoverScrim(compact = false, paper = MaterialTheme.colorScheme.background, modifier = Modifier.matchParentSize())
 
-        Column(
+        val long = set.title.length > LONG_TITLE
+        val capitals = LocalTvStyle.current == TvStyle.MEDIAGRAM
+        TvCoverWords(
+            set = set,
+            title = if (capitals) set.title.uppercase() else set.title,
+            titleStyle =
+                if (capitals) {
+                    CoverTitle.inTvStyle().copy(fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight)
+                } else {
+                    sansCoverTitle(long)
+                },
             modifier =
                 Modifier
                     .align(Alignment.BottomStart)
@@ -88,45 +105,70 @@ internal fun TvCoverSlide(
                         top = TvBarClearance,
                         bottom = CoverActionsReservedHeight,
                     ),
-        ) {
-            val genre = set.genres.firstOrNull()
+        )
+    }
+}
+
+/**
+ * A cover story's words — kicker, title, tagline, facts — at the web's
+ * spacing (`home.css:47,59,64`), shared by every style's slide so the
+ * story reads the same in each; [title] and [titleStyle] are the only part a
+ * style sets for itself.
+ */
+@Composable
+internal fun TvCoverWords(
+    set: MediaSet,
+    title: String,
+    titleStyle: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        val genre = set.genres.firstOrNull()
+        Text(
+            text = listOfNotNull("Featured today", genre).joinToString(" · ").uppercase(),
+            style = Eyebrow,
+            color = OnImage2,
+            // `.cover-eyebrow` 22, `.cover-deck` 28 and `.cover-meta` 18 apart (`home.css:47,59,64`).
+            modifier = Modifier.padding(bottom = 22.tvDp),
+        )
+        Text(text = title, style = titleStyle, color = OnImage, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        set.tagline?.takeIf(String::isNotEmpty)?.let { tagline ->
             Text(
-                text = listOfNotNull("Featured today", genre).joinToString(" · ").uppercase(),
-                style = Eyebrow,
+                text = tagline,
+                // `.cover-deck`: `clamp(1.1rem, 1.4vw, 1.3rem)` at 1280px (`home.css:60`).
+                style = TvType.bodyLarge.copy(fontSize = 17.92.tvSp, lineHeight = 1.4.em),
                 color = OnImage2,
-                // `.cover-eyebrow` 22, `.cover-deck` 28 and `.cover-meta` 18 apart (`home.css:47,59,64`).
-                modifier = Modifier.padding(bottom = 22.tvDp),
-            )
-            val long = set.title.length > LONG_TITLE
-            Text(
-                text = set.title.uppercase(),
-                style = CoverTitle.inTvStyle().copy(fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle, lineHeight = if (long) 0.9.em else CoverTitle.lineHeight),
-                color = OnImage,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 28.tvDp),
             )
-            set.tagline?.takeIf(String::isNotEmpty)?.let { tagline ->
-                Text(
-                    text = tagline,
-                    // `.cover-deck`: `clamp(1.1rem, 1.4vw, 1.3rem)` at 1280px (`home.css:60`).
-                    style = TvType.bodyLarge.copy(fontSize = 17.92.tvSp, lineHeight = 1.4.em),
-                    color = OnImage2,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 28.tvDp),
-                )
-            }
-            coverFactsLine(set)?.let { meta ->
-                Text(
-                    text = meta,
-                    style = TvType.labelSmall.copy(fontSize = 13.tvSp, letterSpacing = 0.06.em),
-                    color = OnImage2,
-                    modifier = Modifier.padding(top = 18.tvDp),
-                )
-            }
+        }
+        coverFactsLine(set)?.let { meta ->
+            Text(
+                text = meta,
+                style = TvType.labelSmall.copy(fontSize = 13.tvSp, letterSpacing = 0.06.em),
+                color = OnImage2,
+                modifier = Modifier.padding(top = 18.tvDp),
+            )
         }
     }
 }
+
+/**
+ * The cover title in a sans style: the film's name as written, bold and
+ * tight — the wordmark those home screens set over their picture, drawn
+ * as text since the library holds no logo art. [long] steps it down as
+ * mediagram's does.
+ */
+@Composable
+@ReadOnlyComposable
+internal fun sansCoverTitle(long: Boolean): TextStyle =
+    CoverTitle.inTvStyle().copy(
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.02).em,
+        fontSize = if (long) TvTypeScale.CoverTitleLong else TvTypeScale.CoverTitle,
+        lineHeight = if (long) 0.95.em else 1.0.em,
+    )
 
 /**
  * Type set over artwork keeps the same two colours in both themes — the
