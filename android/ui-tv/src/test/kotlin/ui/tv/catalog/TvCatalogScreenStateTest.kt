@@ -2,7 +2,10 @@ package ui.tv.catalog
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
@@ -17,6 +20,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
+import designsystem.TvStyle
+import ui.common.RailItem
 import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
@@ -461,6 +466,50 @@ class TvCatalogScreenStateTest {
         compose.waitForIdle()
     }
 
+    /** A rail row chosen from the menu waits for the library, then runs once. */
+    @Test
+    fun aRailRowChosenFromTheMenuRunsOnceTheLibraryIsReady() {
+        var latest = 0
+        // Read in composition below, so it is state: the screen sees the hand-off and drops the request.
+        var handled by mutableIntStateOf(0)
+        var state by mutableStateOf<CatalogUiState>(CatalogUiState.Loading)
+        compose.runOnUiThread {
+            val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
+                TvTheme(style = TvStyle.APPLE) {
+                    TvCatalogScreen(
+                        state = state,
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenMenu = {},
+                        onOpenTitle = {},
+                        onOpenCollection = {},
+                        onOpenList = {},
+                        onCreateList = {},
+                        onOpenLatest = { latest++ },
+                        pendingRail = RailItem.LATEST.takeIf { handled == 0 },
+                        onPendingRailHandled = { handled++ },
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(0, latest, "nothing to open Latest over yet")
+
+        state = ready(films(2))
+        compose.waitForIdle()
+
+        assertEquals(1, latest)
+        assertEquals(1, handled)
+    }
+
+    /** An empty My List in a style with no rail hands the remote to the avatar, the rail's stand-in. */
+    @Test
+    fun anEmptyMyListWithNoRailRestsOnTheAvatar() {
+        show(ready(films(2)), style = TvStyle.APPLE, pendingRail = RailItem.MY_LIST)
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
+    }
+
     private fun show(
         state: CatalogUiState,
         onOpenMenu: () -> Unit = {},
@@ -468,12 +517,16 @@ class TvCatalogScreenStateTest {
         onOpenCollection: (String) -> Unit = {},
         fetching: Boolean = false,
         restoreKey: String? = null,
+        style: TvStyle = TvStyle.Default,
+        pendingRail: RailItem? = null,
+        onPendingRailHandled: () -> Unit = {},
+        onOpenLatest: () -> Unit = {},
     ) {
         compose.runOnUiThread {
             val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller = built
             built.get().setContent {
-                TvTheme {
+                TvTheme(style = style) {
                     TvCatalogScreen(
                         state = state,
                         profile = TvChosenProfile(name = "Ada", onChoose = {}),
@@ -484,6 +537,9 @@ class TvCatalogScreenStateTest {
                         onCreateList = {},
                         fetching = fetching,
                         restoreKey = restoreKey,
+                        pendingRail = pendingRail,
+                        onPendingRailHandled = onPendingRailHandled,
+                        onOpenLatest = onOpenLatest,
                     )
                 }
             }

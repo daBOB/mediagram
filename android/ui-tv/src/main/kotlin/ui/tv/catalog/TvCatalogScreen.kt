@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.layout.LazyLayoutCacheWindow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -96,6 +97,8 @@ fun TvCatalogScreen(
     onOpenMoviesPage: () -> Unit = {},
     onPlay: (setId: String) -> Unit = onOpenTitle,
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit = { _, _ -> },
+    pendingRail: RailItem? = null,
+    onPendingRailHandled: () -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.hasContent() }
     val shelves = ready?.shelves.orEmpty()
@@ -145,6 +148,15 @@ fun TvCatalogScreen(
             RailItem.SETTINGS -> menu.onSettings()
             RailItem.SYSTEM -> menu.onSystem()
         }
+    }
+
+    // A rail row chosen from the avatar's menu in a style with no rail: run
+    // it as the rail would have, once there is a library to run it over.
+    LaunchedEffect(pendingRail, ready != null) {
+        val item = pendingRail ?: return@LaunchedEffect
+        if (ready == null) return@LaunchedEffect
+        onRailSelect(item)
+        onPendingRailHandled()
     }
 
     // Computed once here, not inside `TvCatalogBody`'s own Home branch: the
@@ -232,7 +244,7 @@ fun TvCatalogScreen(
                             tab = selected,
                             wallKey = nav.wallKey,
                             railActive = nav.railActive,
-                            railRowFocus = nav.chromeFocus.railRowFocus,
+                            railTarget = nav.chromeFocus::railTarget,
                             selectedPillFocus = nav.chromeFocus.selectedPillFocus,
                             homeListState = homeListState,
                             homeMagazine = homeMagazine,

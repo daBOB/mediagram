@@ -22,6 +22,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import ui.common.MenuActions
+import ui.common.RailItem
 import ui.tv.TvTextRow
 import ui.tv.catalog.TvQuietLine
 import ui.tv.setup.START_OVER_BODY
@@ -55,12 +56,22 @@ internal fun TvMenuPage(
     restoreKey: String?,
     watchingAs: String,
     onSwitchProfile: () -> Unit,
+    railItems: List<RailItem> = emptyList(),
+    onRailItem: (RailItem) -> Unit = {},
     onBack: () -> Unit,
 ) {
     var askingStartOver by rememberSaveable { mutableStateOf(false) }
     val rows = remember { MenuRow.entries.associateWith { FocusRequester() } }
     val landing = MenuRow.entries.firstOrNull { it.key != null && it.key == restoreKey } ?: MenuRow.SwitchProfile
-    LaunchedEffect(Unit) { rows.getValue(landing).requestFocus() }
+    val railRows = remember { RailItem.entries.associateWith { FocusRequester() } }
+    // Back from Settings or System — which open over this page — lands on its own row.
+    val railLanding =
+        when (restoreKey) {
+            menuRestoreKey(MenuScreen.Settings) -> RailItem.SETTINGS
+            menuRestoreKey(MenuScreen.System) -> RailItem.SYSTEM
+            else -> null
+        }?.takeIf { it in railItems }
+    LaunchedEffect(Unit) { (railLanding?.let(railRows::getValue) ?: rows.getValue(landing)).requestFocus() }
     BackHandler(onBack = onBack)
 
     Column(
@@ -71,6 +82,9 @@ internal fun TvMenuPage(
         Column {
             TvTextRow(text = "Switch profile", onClick = onSwitchProfile, focusRequester = rows.getValue(MenuRow.SwitchProfile))
             TvQuietLine("Watching as $watchingAs", Modifier.padding(top = Spacing.extraSmall))
+        }
+        for (item in railItems) {
+            TvTextRow(text = item.label, onClick = { onRailItem(item) }, focusRequester = railRows.getValue(item))
         }
         Column {
             TvTextRow(

@@ -136,7 +136,7 @@ internal fun rememberTvCatalogRestore(
     }
     LaunchedEffect(railTarget, ready) {
         if (railTarget != null && ready) {
-            chromeFocus.railRowFocus.getValue(railTarget).requestFocus()
+            chromeFocus.railTarget(railTarget).requestFocus()
             onEntryRestored()
         }
     }

@@ -33,7 +33,7 @@ internal fun TvCatalogBody(
     tab: CatalogTab,
     wallKey: String?,
     railActive: RailItem?,
-    railRowFocus: Map<RailItem, FocusRequester>,
+    railTarget: (RailItem) -> FocusRequester,
     selectedPillFocus: FocusRequester,
     homeListState: LazyListState,
     homeMagazine: MagazineHome?,
@@ -112,10 +112,11 @@ internal fun TvCatalogBody(
                     onOpenTitle = onOpenTitle,
                     // My List and Continue have no pill of their own
                     // (the rail chooses either directly), so a wall that
-                    // empties under the viewer falls back to its own rail row
+                    // empties under the viewer falls back to its own rail row (or whatever stands for it:
+                    // [ui.tv.chrome.TvChromeFocus.railTarget])
                     // rather than to a pill that was never selected in the
                     // first place.
-                    tabFocus = railRowFocus.getValue(railActive ?: RailItem.MY_LIST),
+                    tabFocus = railTarget(railActive ?: RailItem.MY_LIST),
                     restoreKey = wallKey,
                     heldIds = ready.heldIds,
                     onFinish = onFinish,

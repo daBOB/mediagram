@@ -2,12 +2,10 @@ package ui.tv.chrome
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,11 +17,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
+import designsystem.LocalTvStyle
 import designsystem.Overscan
 import designsystem.tvDp
 import ui.common.RailItem
+import ui.tv.hasRail
 import ui.tv.profile.TvChosenProfile
 
 /** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
@@ -40,49 +40,6 @@ internal val TvContentGutter = 40.96.tvDp
  * `main` and `.masthead` both pad by `--gutter` off the rail.
  */
 internal val TvContentStart = RailCollapsedWidth
-
-/**
- * What a page under the chrome is padded by, read instead of [Overscan]
- * directly by every composable [TvCatalogBody] can show — [TvWall],
- * [TvHome], a kept wall, the Collections and Movies department pages.
- * Provided only by [TvLibraryChrome]; every pushed frame (a title, Latest,
- * Search…) never sits under it, so those composables read the default
- * here instead — plain [Overscan] on every side, the inset they always
- * used — without any of them needing to ask which is true.
- */
-internal data class TvPagePadding(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp)
-
-internal val LocalTvPagePadding =
-    compositionLocalOf { TvPagePadding(Overscan.horizontal, Overscan.vertical, Overscan.horizontal, Overscan.vertical) }
-
-/** [TvPagePadding] as a [PaddingValues] — every reader wants it as one, not as four separate [Dp]s. */
-internal fun TvPagePadding.asPaddingValues(): PaddingValues = PaddingValues(start = start, top = top, end = end, bottom = bottom)
-
-/**
- * Everything [TvLibraryChrome] hands its own rows and pills their focus
- * through, and everything a restore key resolves to once it names one of
- * them — built once per [ui.tv.catalog.TvCatalogScreen] by
- * [rememberTvChromeFocus] so a screen coming back to "the search button"
- * or "the Latest row" always reaches the very requester [TvLibraryChrome]
- * itself renders onto.
- */
-internal class TvChromeFocus(
-    val selectedPillFocus: FocusRequester,
-    val searchFocus: FocusRequester,
-    val avatarFocus: FocusRequester,
-    val railRowFocus: Map<RailItem, FocusRequester>,
-    val contentFocus: FocusRequester,
-)
-
-@Composable
-internal fun rememberTvChromeFocus(): TvChromeFocus =
-    TvChromeFocus(
-        selectedPillFocus = remember { FocusRequester() },
-        searchFocus = remember { FocusRequester() },
-        avatarFocus = remember { FocusRequester() },
-        railRowFocus = remember { RailItem.entries.associateWith { FocusRequester() } },
-        contentFocus = remember { FocusRequester() },
-    )
 
 /**
  * The chrome around the catalogue's own body: [TvLibraryRail] overlaying
@@ -103,6 +60,12 @@ internal fun rememberTvChromeFocus(): TvChromeFocus =
  * indistinguishable from genuinely resting on the rail and finish the
  * activity uninvited; the fourth [BackHandler] below exists only to catch
  * that gap, never to redirect focus anywhere on its own.
+ *
+ * Apple TV and Google TV styles draw no rail ([TvStyle.hasRail]): the page
+ * starts at the screen's overscan, Left at its start goes nowhere, and
+ * [TvChromeFocus.railTarget] stands in for every rail row — the avatar,
+ * whose menu lists them, or Google TV's gear for Settings. Back from the bar
+ * then closes the app, as Back from the rail does here.
  *
  * [focus] is [rememberTvChromeFocus]'s own bundle — built by the caller so
  * a restore key it already knows about (`masthead:search`, `rail:latest`…)
@@ -146,7 +109,9 @@ internal fun TvLibraryChrome(
     // player) and the rail's Right from a plate into the bar's pill.
     var lastInBar by remember { mutableStateOf(false) }
 
-    fun railArrivalTarget(): FocusRequester = focus.railRowFocus.getValue(railActive ?: RailItem.MY_LIST)
+    val hasRail = LocalTvStyle.current.hasRail
+
+    fun railArrivalTarget(): FocusRequester = focus.railTarget(railActive ?: RailItem.MY_LIST)
 
     // "Back: page -> the selected pill (no pill selected, i.e. a kept wall
     // -> its rail row)" — enabled only while the remote is actually inside
@@ -156,7 +121,7 @@ internal fun TvLibraryChrome(
     }
     // "bar (pill, search, avatar) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
-    BackHandler(enabled = barHasFocus) {
+    BackHandler(enabled = barHasFocus && hasRail) {
         railArrivalTarget().requestFocus()
     }
     // Rail: still no handler that goes anywhere — Back there falls
@@ -180,14 +145,23 @@ internal fun TvLibraryChrome(
     // same band is then hidden by the bar drawn on top of it, one hero's
     // worth of bleed away from becoming visible instead once a cover here
     // has one to bleed under it.
-    val padding = remember { TvPagePadding(start = TvContentGutter, top = TvDepartmentsBarHeight + Overscan.vertical, end = TvContentGutter, bottom = Overscan.vertical) }
+    val padding =
+        remember(hasRail) {
+            val top = TvDepartmentsBarHeight + Overscan.vertical
+            // With no rail to stand off, the page keeps the screen's own overscan on both sides.
+            if (hasRail) {
+                TvPagePadding(start = TvContentGutter, top = top, end = TvContentGutter, bottom = Overscan.vertical)
+            } else {
+                TvPagePadding(start = Overscan.horizontal, top = top, end = Overscan.horizontal, bottom = Overscan.vertical)
+            }
+        }
 
     Box(modifier = modifier.fillMaxSize()) {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(start = TvContentStart)
+                    .padding(start = if (hasRail) TvContentStart else 0.dp)
                     // The one exit rule for bar and page both: a focus target
                     // keeps a single `onExit`, and this outer one is the one it
                     // keeps, so a second rule on the page's own Box below never
@@ -195,7 +169,7 @@ internal fun TvLibraryChrome(
                     .focusProperties {
                         onExit = {
                             when (requestedFocusDirection) {
-                                FocusDirection.Left -> railArrivalTarget().requestFocus()
+                                FocusDirection.Left -> if (hasRail) railArrivalTarget().requestFocus() else cancelFocusChange()
                                 FocusDirection.Up ->
                                     if (contentHasFocus) (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
                                 else -> Unit
@@ -234,16 +208,18 @@ internal fun TvLibraryChrome(
             )
         }
 
-        TvLibraryRail(
-            active = railActive,
-            counts = counts,
-            tally = tally,
-            rowRequesters = focus.railRowFocus,
-            onSelect = onRailSelect,
-            // The page's own restorer puts the remote back on the plate it left.
-            onRight = { (if (lastInBar && selectedPill >= 0) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
-            onHasFocusChanged = { railHasFocus = it },
-            modifier = Modifier.align(Alignment.CenterStart),
-        )
+        if (hasRail) {
+            TvLibraryRail(
+                active = railActive,
+                counts = counts,
+                tally = tally,
+                rowRequesters = focus.railRowFocus,
+                onSelect = onRailSelect,
+                // The page's own restorer puts the remote back on the plate it left.
+                onRight = { (if (lastInBar && selectedPill >= 0) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
+                onHasFocusChanged = { railHasFocus = it },
+                modifier = Modifier.align(Alignment.CenterStart),
+            )
+        }
     }
 }

@@ -13,6 +13,7 @@ import catalog.runFor
 import stats.AchievementDotViewModel
 import ui.common.LibraryPositions
 import ui.common.MenuActions
+import ui.common.RailItem
 import ui.tv.catalog.TvCatalogScreen
 import ui.tv.catalog.TvGenresRailKey
 import ui.tv.catalog.TvLatestRailKey
@@ -66,6 +67,8 @@ internal fun TvLibraryHomeFrame(
     at: LibraryPositions,
     catalogViewModel: CatalogViewModel,
     menu: MenuActions,
+    pendingRail: RailItem?,
+    onPendingRailHandled: () -> Unit,
     onOpenMenu: () -> Unit,
 ) {
     // Only this frame draws the rail, so only here is the dot worked out: nothing reads while a
@@ -80,6 +83,8 @@ internal fun TvLibraryHomeFrame(
                 fetching = fetching,
                 restoreKey = restore.of(here),
                 menu = menu,
+                pendingRail = pendingRail,
+                onPendingRailHandled = onPendingRailHandled,
                 onOpenTitle = { setId ->
                     restore.opened(here, setId)
                     at.openTitle(setId)

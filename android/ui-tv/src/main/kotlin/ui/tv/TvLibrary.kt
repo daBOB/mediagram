@@ -24,6 +24,8 @@ import ui.common.LibraryPositions
 import ui.common.rememberLibraryPositions
 import ui.common.resolve
 import ui.common.settings.SettingsOutcomes
+import designsystem.LocalTvStyle
+import ui.common.RailItem
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvMenuEntryKey
 import ui.tv.catalog.TvProfileEntryKey
@@ -97,6 +99,10 @@ internal fun TvLibrary(
     val allShows = remember(shelves) {
         shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Collection>().toList()
     }
+    // A rail row chosen from the menu in a style with no rail, for the
+    // catalogue to run the way the rail would have once it is composed again.
+    var pendingRail by remember { mutableStateOf<RailItem?>(null) }
+    val hasRail = LocalTvStyle.current.hasRail
     val top = at.top
     val here = at.depth
     val leave = {
@@ -155,6 +161,18 @@ internal fun TvLibrary(
                     restore.opened(here, TvProfileEntryKey)
                     profile.onChoose()
                 },
+                railItems = if (hasRail) emptyList() else RailItem.entries,
+                onRailItem = { item ->
+                    when (item) {
+                        // Opened over this page, so Back comes back to it, as from the rail.
+                        RailItem.SETTINGS -> menu.onSettings()
+                        RailItem.SYSTEM -> menu.onSystem()
+                        else -> {
+                            menuOpen = false
+                            pendingRail = item
+                        }
+                    }
+                },
             ) {
                 menuOpen = false
                 restore.opened(here, TvMenuEntryKey)
@@ -162,7 +180,7 @@ internal fun TvLibrary(
 
         // Nothing open: the shelves.
         null ->
-            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu) { menuOpen = true }
+            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
     }
 
     // Every branch but the player, for the phone's reason: a result held
