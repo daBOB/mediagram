@@ -107,7 +107,8 @@ internal val TvStyle.look: TvLook
         }
 
 /**
- * The tones Settings' sidebar, its soft rules and its quiet lines take:
+ * The tones every sidebar, soft rule and quiet line on the TV takes —
+ * Settings, the title page's facts, a department hero's count line:
  * mediagram's are the phone's dark ones. The other styles sit the sidebar on
  * their own page, not on mediagram's near-black, and keep the quiet line —
  * text, such as a count under a heading — in their readable figures grey.
