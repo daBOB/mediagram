@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ui.tv.catalog.TvBarClearance
 import ui.tv.catalog.TvScreenStateTest
 import ui.tv.catalog.set
 
@@ -53,8 +54,25 @@ class TvCoverStylesTest : TvScreenStateTest() {
     fun googlesCoverStillTurnsToTheNextFilm() {
         compose.mainClock.autoAdvance = false
         show(TvStyle.GOOGLE) { cover(listOf(film, second)) }
+        compose.onNodeWithText("Heat").assertDoesNotExist()
         compose.mainClock.advanceTimeBy(9_000 + 1_400 + 100)
         compose.onNodeWithText("Heat").assertExists()
+    }
+
+    @Test
+    fun googlesCardHoldsALongStoryAtTheCoversMinimum() {
+        val long =
+            set("f3", Kind.MOVIE, "The Lord of the Rings: The Fellowship of the Ring", addedAt = 3, year = 1995, durationSecs = 7200)
+                .copy(tagline = "A meek hobbit of the Shire and eight companions set out on a journey to destroy the powerful One Ring and save Middle-earth from the Dark Lord Sauron.")
+        show(TvStyle.GOOGLE) { cover(listOf(long)) }
+        val card = compose.onNodeWithTag(InsetCardTag).getUnclippedBoundsInRoot()
+        val kicker = compose.onNodeWithText("FEATURED TODAY").getUnclippedBoundsInRoot()
+        val watch = compose.onNodeWithContentDescription("Watch now: ${long.title}").getUnclippedBoundsInRoot()
+        val bounds = "card $card, kicker $kicker, watch $watch"
+        println("MEASURED $bounds")
+        assertTrue(kicker.top >= card.top + InsetCardPadding - 0.5.dp, "words start inside the card: $bounds")
+        assertTrue(watch.bottom <= card.bottom, "buttons end inside the card: $bounds")
+        assertTrue(card.top >= TvBarClearance, "card clears the bar: $bounds")
     }
 
     @androidx.compose.runtime.Composable
