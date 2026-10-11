@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.ColorScheme
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
@@ -127,6 +128,24 @@ fun TvTheme(
             typography = remember(style) { tvTypography(style) },
             content = content,
         )
+    }
+}
+
+/**
+ * The player's theme in every style: mediagram's scheme, faces and focus
+ * with the viewer's live accent. Its layouts are measured against
+ * mediagram's faces, and a style changes how the library looks, never
+ * playback. [LocalBackdrop] and [LocalReducedMotion] pass through from
+ * the [TvTheme] above; the content colour is reset because [TvShell] set
+ * the outer style's ink.
+ */
+@Composable
+internal fun TvMediagramPlayerTheme(content: @Composable () -> Unit) {
+    val scheme = tvColorScheme(MaterialTheme.colorScheme.primary)
+    CompositionLocalProvider(LocalTvStyle provides TvStyle.MEDIAGRAM) {
+        MaterialTheme(colorScheme = scheme, typography = remember { tvTypography(TvStyle.MEDIAGRAM) }) {
+            CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
+        }
     }
 }
 

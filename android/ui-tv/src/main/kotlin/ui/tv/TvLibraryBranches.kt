@@ -32,7 +32,8 @@ import ui.tv.profile.TvChosenProfile
  * so Back still leaves to whatever opened the player.
  *
  * The player answers Back itself: the first press puts its controls away,
- * and only a press with them already gone leaves.
+ * and only a press with them already gone leaves. It draws in mediagram's
+ * look whatever the style ([TvMediagramPlayerTheme]).
  */
 @Composable
 internal fun TvPlayerBranch(
@@ -43,10 +44,12 @@ internal fun TvPlayerBranch(
     val setId = at.setId ?: return
     val set = catalogState.mediaSet(setId)
     val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
-    TvPlayerScreen(
-        setId = setId, set = set, run = run, handPicked = at.run != null,
-        onBack = leave, onSwitch = at::replacePlayer,
-    )
+    TvMediagramPlayerTheme {
+        TvPlayerScreen(
+            setId = setId, set = set, run = run, handPicked = at.run != null,
+            onBack = leave, onSwitch = at::replacePlayer,
+        )
+    }
 }
 
 /**

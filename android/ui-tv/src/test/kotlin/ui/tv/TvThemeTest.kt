@@ -152,6 +152,28 @@ class TvThemeTest {
         assertEquals(Color(0xFF202124), ground)
     }
 
+    /** The player keeps mediagram's look in every style, with the viewer's own accent. */
+    @Test
+    fun thePlayerDrawsInMediagramsLookUnderAnotherStyle() {
+        var style: TvStyle? = null
+        var colours: androidx.tv.material3.ColorScheme? = null
+        var body: TextStyle? = null
+        var ink: Color? = null
+        show(accent = Accent.TEAL, style = TvStyle.GOOGLE) {
+            TvMediagramPlayerTheme {
+                style = LocalTvStyle.current
+                colours = MaterialTheme.colorScheme
+                body = MaterialTheme.typography.bodyMedium
+                ink = androidx.tv.material3.LocalContentColor.current
+            }
+        }
+        assertEquals(TvStyle.MEDIAGRAM, style)
+        assertEquals(Palette.Ground, colours?.background)
+        assertEquals(Accent.TEAL.dark, colours?.primary)
+        assertEquals(TvType.Base.bodyMedium, body)
+        assertEquals(Palette.Text, ink)
+    }
+
     private fun show(
         accent: Accent = Accent.Default,
         style: TvStyle = TvStyle.Default,
