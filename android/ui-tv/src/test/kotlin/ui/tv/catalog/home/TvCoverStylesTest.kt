@@ -69,7 +69,6 @@ class TvCoverStylesTest : TvScreenStateTest() {
         val kicker = compose.onNodeWithText("FEATURED TODAY").getUnclippedBoundsInRoot()
         val watch = compose.onNodeWithContentDescription("Watch now: ${long.title}").getUnclippedBoundsInRoot()
         val bounds = "card $card, kicker $kicker, watch $watch"
-        println("MEASURED $bounds")
         assertTrue(kicker.top >= card.top + InsetCardPadding - 0.5.dp, "words start inside the card: $bounds")
         assertTrue(watch.bottom <= card.bottom, "buttons end inside the card: $bounds")
         assertTrue(card.top >= TvBarClearance, "card clears the bar: $bounds")
