@@ -40,6 +40,13 @@ internal val StripPlateFloor = 136.tvDp
  */
 internal fun stripPlateWidth(rowWidth: Dp): Dp = if (rowWidth.isFinite) maxOf(StripPlateFloor, (rowWidth - StripGap * 7) / 8) else StripPlateFloor
 
+/** A row of stills' floor: half again the poster floor, 204 web px, so five still fit the box's row. */
+internal val LandscapeStripPlateFloor = StripPlateFloor * 1.5f
+
+/** A still's width in a row [rowWidth] wide: a fifth of the row less its gaps, never under [LandscapeStripPlateFloor]; an unbounded row takes the floor. */
+internal fun landscapeStripPlateWidth(rowWidth: Dp): Dp =
+    if (rowWidth.isFinite) maxOf(LandscapeStripPlateFloor, (rowWidth - StripGap * 4) / 5) else LandscapeStripPlateFloor
+
 /** `.resume-strip`'s gap (`home.css:218`): Continue's cards. */
 internal val ResumeGap = 16.tvDp
 

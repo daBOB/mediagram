@@ -37,7 +37,10 @@ import ui.tv.TvTextRow
 import ui.tv.catalog.HomeBandGap
 import ui.tv.catalog.RowHeadBelow
 import ui.tv.catalog.StripGap
-import ui.tv.catalog.stripPlateWidth
+import ui.tv.catalog.rowArtOf
+import ui.tv.catalog.rowArtRatio
+import ui.tv.catalog.rowCardsAreLandscape
+import ui.tv.catalog.rowPlateWidth
 import ui.tv.rememberStableRequester
 
 /**
@@ -102,7 +105,8 @@ private fun TvRecentPosterRow(
     lastStop: Modifier,
 ) {
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val landscape = rowCardsAreLandscape
+        val plateWidth = rowPlateWidth(maxWidth)
         Row(
             modifier = Modifier.padding(top = RowHeadBelow).horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(StripGap),
@@ -124,10 +128,10 @@ private fun TvRecentPosterRow(
                         glow = TvFocus.cardGlow(),
                         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
-                        Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
-                            val poster = set.posterPath
-                            if (poster != null) {
-                                AsyncImage(model = File(poster), contentDescription = set.title, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                        Box(modifier = Modifier.fillMaxWidth().aspectRatio(rowArtRatio)) {
+                            val art = rowArtOf(landscape, set.posterPath, set.backdropPath)
+                            if (art != null) {
+                                AsyncImage(model = File(art), contentDescription = set.title, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                             } else {
                                 Text(
                                     text = set.title,

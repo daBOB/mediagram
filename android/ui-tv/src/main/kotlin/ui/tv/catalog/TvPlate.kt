@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,10 @@ import ui.tv.TvFocus
  * [held] puts [TvOfflineBadge] under the lines, where the phone's plate
  * puts its own.
  *
+ * [inRow] says the plate sits in a row of titles rather than on a wall: in a
+ * style whose rows are stills ([rowCardsAreLandscape]) it then shows
+ * [backdropPath] — or the poster, cropped — at 16:9.
+ *
  * A `Card`, not a plain `Surface`: tv-material's own focus scale and border
  * are built to sit on a `Card`'s container, and [TvFocus] hands the same
  * four pieces every other card on this surface takes, so this plate's
@@ -79,7 +84,10 @@ fun TvPlate(
     progress: Float? = null,
     watched: Boolean = false,
     held: Boolean = false,
+    backdropPath: File? = null,
+    inRow: Boolean = false,
 ) {
+    val landscape = inRow && rowCardsAreLandscape
     Card(
         onClick = onOpen,
         modifier = modifier.semantics(mergeDescendants = true) {},
@@ -90,7 +98,13 @@ fun TvPlate(
         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column {
-            TvPlateArt(posterPath = posterPath, title = title, progress = progress, watched = watched)
+            TvPlateArt(
+                posterPath = rowArtOf(landscape, posterPath, backdropPath),
+                title = title,
+                progress = progress,
+                watched = watched,
+                ratio = if (landscape) StillAspectRatio else PosterAspectRatio,
+            )
             Text(
                 text = title,
                 style = PlateName,
@@ -130,12 +144,14 @@ internal fun TvPlateArt(
     progress: Float?,
     watched: Boolean,
     modifier: Modifier = Modifier,
+    ratio: Float = PosterAspectRatio,
 ) {
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .aspectRatio(PosterAspectRatio)
+                .aspectRatio(ratio)
+                .testTag(PlateArtTag)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
@@ -176,6 +192,9 @@ private val PlateName: TextStyle @Composable @ReadOnlyComposable get() = TvType.
 private val PlateMeta: TextStyle @Composable @ReadOnlyComposable get() = TvType.labelSmall.copy(fontSize = 12.tvSp)
 
 /** A poster's own proportions, the same ratio the phone plate is cut to. */
-private const val PosterAspectRatio = 2f / 3f
+internal const val PosterAspectRatio = 2f / 3f
+
+/** The art box of a plate, for a test to measure; a resource id on the box too. */
+internal const val PlateArtTag = "plate-art"
 
 private val Hairline = 0.5.dp

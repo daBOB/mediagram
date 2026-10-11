@@ -31,6 +31,7 @@ internal fun TvEntryPlate(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
     heldIds: Set<String> = emptySet(),
+    inRow: Boolean = false,
 ) {
     when (entry) {
         is Entry.Film -> {
@@ -45,6 +46,8 @@ internal fun TvEntryPlate(
                 progress = watchedFractionOf(positions[entry.set.setId]),
                 watched = entry.set.setId in watchedIds,
                 held = entry.set.setId in heldIds,
+                backdropPath = entry.set.backdropPath?.let(::File),
+                inRow = inRow,
             )
         }
 
@@ -55,6 +58,8 @@ internal fun TvEntryPlate(
                 onOpen = onOpen,
                 modifier = modifier,
                 caption = extentOf(entry),
+                backdropPath = entry.backdropPath?.let(::File),
+                inRow = inRow,
             )
         }
     }

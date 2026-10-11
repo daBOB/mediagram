@@ -120,6 +120,11 @@ private fun collectionOf(
             divisions.firstNotNullOfOrNull { level ->
                 level.items.firstNotNullOfOrNull(MediaSet::posterKey)
             },
+        // The show's backdrop, taken the way its poster is: every episode carries the same art.
+        backdropPath =
+            divisions.firstNotNullOfOrNull { level ->
+                level.items.firstNotNullOfOrNull(MediaSet::backdropPath)
+            },
         count = divisions.sumOf { it.items.size },
         chapters = divisions.count { it.items.isNotEmpty() },
         divisions = root.children,

@@ -37,14 +37,17 @@ import designsystem.tvSp
 import java.io.File
 import ui.tv.TvFocus
 import ui.tv.catalog.StripGap
-import ui.tv.catalog.stripPlateWidth
+import ui.tv.catalog.rowArtOf
+import ui.tv.catalog.rowArtRatio
+import ui.tv.catalog.rowCardsAreLandscape
+import ui.tv.catalog.rowPlateWidth
 import ui.tv.rememberStableRequester
 
 /**
  * Latest series: one scrolling row of poster cards, each captioned with its
  * name and how much of it this library holds — "21 episodes · three
  * seasons" — the television twin of the phone's `HomeShelfRow`, cut to
- * [ui.tv.TvPlate]'s own poster shape with a Fraunces caption, each poster
+ * [ui.tv.TvPlate]'s own poster shape — or, in a style whose rows are stills, to a still ([rowCardsAreLandscape]) — with a Fraunces caption, each poster
  * [stripPlateWidth] of the row as the web's strip sets it. A plain row,
  * always fully composed (at most
  * [catalog.HOME_POSTER_ROW_LIMIT] posters): Compose's own scrollable-
@@ -64,7 +67,8 @@ internal fun TvPosterStrip(
 ) {
     if (shows.isEmpty()) return
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val landscape = rowCardsAreLandscape
+        val plateWidth = rowPlateWidth(maxWidth)
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(StripGap),
@@ -94,10 +98,10 @@ internal fun TvPosterStrip(
                         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Column {
-                            Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
-                                val poster = show.posterPath
-                                if (poster != null) {
-                                    AsyncImage(model = File(poster), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                            Box(modifier = Modifier.fillMaxWidth().aspectRatio(rowArtRatio)) {
+                                val art = rowArtOf(landscape, show.posterPath, show.backdropPath)
+                                if (art != null) {
+                                    AsyncImage(model = File(art), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                                 } else {
                                     Text(
                                         text = initialsOf(show.name),

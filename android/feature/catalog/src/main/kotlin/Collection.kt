@@ -38,6 +38,7 @@ sealed interface Entry {
         val count: Int,
         val chapters: Int,
         val divisions: List<Division>,
+        val backdropPath: String? = null,
     ) : Entry
 }
 

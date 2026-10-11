@@ -77,7 +77,7 @@ internal fun DeptRow(
     val state = rememberRowState(films.map(MediaSet::setId), rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val plateWidth = rowPlateWidth(maxWidth)
         LazyRow(
             state = state,
             modifier =
@@ -97,6 +97,8 @@ internal fun DeptRow(
                     modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                     caption = factsLine(set.year, set.durationSecs),
                     held = set.setId in heldIds,
+                    backdropPath = set.backdropPath?.let(::File),
+                    inRow = true,
                 )
             }
         }
@@ -125,7 +127,7 @@ internal fun DeptEntryRow(
     val state = rememberRowState(entries.map { keyOf(it) }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = DeptCacheAhead, behind = DeptCacheBehind) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val plateWidth = rowPlateWidth(maxWidth)
         LazyRow(
             state = state,
             modifier =
@@ -145,6 +147,7 @@ internal fun DeptEntryRow(
                     onOpen = { openEntry(entry, onOpenTitle, onOpenCollection) },
                     modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focus?.takeIf { index == focusAt })),
                     heldIds = heldIds,
+                    inRow = true,
                 )
             }
         }

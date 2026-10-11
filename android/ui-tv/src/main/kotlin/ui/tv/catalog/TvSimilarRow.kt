@@ -46,7 +46,7 @@ internal fun TvSimilarFilms(
             restoreKey?.let { wanted -> films.indexOfFirst { it.setId == wanted } }?.takeIf { it >= 0 } ?: 0
         }
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val plateWidth = rowPlateWidth(maxWidth)
         // Not gated on `LocalTakesArrivalFocus` — see the same note on
         // [TvCastRow]. Inside the constraints' own composition, beside the
         // plates it focuses: that composition runs at layout, after the
@@ -64,6 +64,8 @@ internal fun TvSimilarFilms(
                         onOpen = { onOpenTitle(set.setId) },
                         modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                         caption = factsLine(set.year, set.durationSecs),
+                        backdropPath = set.backdropPath?.let(::File),
+                        inRow = true,
                     )
                 }
             }
@@ -85,7 +87,7 @@ internal fun TvSimilarShows(
             restoreKey?.let { wanted -> shows.indexOfFirst { it.key == wanted } }?.takeIf { it >= 0 } ?: 0
         }
     BoxWithConstraints {
-        val plateWidth = stripPlateWidth(maxWidth)
+        val plateWidth = rowPlateWidth(maxWidth)
         // Not gated on `LocalTakesArrivalFocus` — see the same note on
         // [TvCastRow]. Inside the constraints' own composition, beside the
         // plates it focuses: that composition runs at layout, after the
@@ -103,6 +105,8 @@ internal fun TvSimilarShows(
                         onOpen = { onOpenCollection(entry.key) },
                         modifier = Modifier.width(plateWidth).focusRequester(rememberStableRequester(focusRequester.takeIf { index == focusIndex })),
                         caption = extentOf(entry),
+                        backdropPath = entry.backdropPath?.let(::File),
+                        inRow = true,
                     )
                 }
             }
