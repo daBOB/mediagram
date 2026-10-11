@@ -51,6 +51,8 @@ internal class TvCatalogRestore(
     val chromeFocus: TvChromeFocus,
     val takesArrivalFocus: Boolean,
     val wallKey: String?,
+    /** A fresh arrival: forgets a pill press, so the page below takes the remote again. */
+    val arrive: () -> Unit = {},
 )
 
 @Composable
@@ -141,5 +143,5 @@ internal fun rememberTvCatalogRestore(
         }
     }
 
-    return TvCatalogRestore(selectedPill, onSelectPill, railActive, chromeFocus, takesArrivalFocus, wallKey)
+    return TvCatalogRestore(selectedPill, onSelectPill, railActive, chromeFocus, takesArrivalFocus, wallKey, arrive = { pillPressed = false })
 }

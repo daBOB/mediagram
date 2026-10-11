@@ -169,6 +169,8 @@ internal fun TvLibrary(
                         RailItem.SYSTEM -> menu.onSystem()
                         else -> {
                             menuOpen = false
+                            // Drops the key Settings or System left, which would read as Back from them.
+                            restore.forget(here)
                             pendingRail = item
                         }
                     }

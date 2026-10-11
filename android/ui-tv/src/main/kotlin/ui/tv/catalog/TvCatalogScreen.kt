@@ -155,6 +155,8 @@ fun TvCatalogScreen(
     LaunchedEffect(pendingRail, ready != null) {
         val item = pendingRail ?: return@LaunchedEffect
         if (ready == null) return@LaunchedEffect
+        // A fresh arrival, not a pill press: the page this opens takes the remote.
+        nav.arrive()
         onRailSelect(item)
         onPendingRailHandled()
     }

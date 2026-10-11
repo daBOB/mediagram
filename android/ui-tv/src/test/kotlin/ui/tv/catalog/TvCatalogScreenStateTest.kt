@@ -510,6 +510,39 @@ class TvCatalogScreenStateTest {
         compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
     }
 
+    /** A menu hand-off is a fresh arrival: an earlier pill press must not leave the page below without the remote. */
+    @Test
+    fun aRailRowChosenAfterAPillPressStillLandsTheRemote() {
+        var pending by mutableStateOf<RailItem?>(null)
+        compose.runOnUiThread {
+            val built = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
+            controller = built
+            built.get().setContent {
+                TvTheme(style = TvStyle.APPLE) {
+                    TvCatalogScreen(
+                        state = ready(films(2)),
+                        profile = TvChosenProfile(name = "Ada", onChoose = {}),
+                        onOpenMenu = {},
+                        onOpenTitle = {},
+                        onOpenCollection = {},
+                        onOpenList = {},
+                        onCreateList = {},
+                        pendingRail = pending,
+                        onPendingRailHandled = { pending = null },
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Movies").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        pending = RailItem.MY_LIST
+        compose.waitForIdle()
+
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
+    }
+
     private fun show(
         state: CatalogUiState,
         onOpenMenu: () -> Unit = {},

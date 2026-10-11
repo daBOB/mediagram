@@ -37,7 +37,8 @@ import ui.tv.setup.TvConfirmDialog
  * three the tablet's own `AndroidOnlyMenu` keeps once its rail already
  * carries My List, Continue, Latest, Genres, Stats, Settings and System.
  * This television's own rail carries the same seven, so this page never
- * offers them either. Update library says under itself what the phone's
+ * offers them either. A style that draws no rail ([railItems] non-empty)
+ * lists those seven here instead, under the profile switch. Update library says under itself what the phone's
  * item says — why it is waiting, or what it will leave out — and is drawn
  * faint while it waits.
  *
