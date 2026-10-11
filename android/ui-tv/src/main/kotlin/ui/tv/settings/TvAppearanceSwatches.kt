@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.ClickableSurfaceColors
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
@@ -55,7 +56,7 @@ internal fun TvAccentSwatch(
                         selected = isSelected
                     },
             shape = TvFocus.surfaceShape(),
-            colors = ClickableSurfaceDefaults.colors(containerColor = accent.dark),
+            colors = swatchColors(accent.dark),
             scale = TvFocus.surfaceScale(),
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
@@ -92,7 +93,7 @@ internal fun TvChoiceSwatch(
                         selected = isSelected
                     },
             shape = TvFocus.surfaceShape(),
-            colors = ClickableSurfaceDefaults.colors(containerColor = colour),
+            colors = swatchColors(colour),
             scale = TvFocus.surfaceScale(),
             border = TvFocus.surfaceBorder(selected = isSelected),
             glow = TvFocus.surfaceGlow(),
@@ -123,6 +124,17 @@ internal fun TvStyleSwatch(
         face = { Text(text = "Aa", style = TvType.Base.titleLarge.inStyle(style).copy(fontSize = 28.tvSp), color = neutrals.text) },
     )
 }
+
+/**
+ * A swatch is the colour it previews, focused and pressed too: tv-material's
+ * own focused fill is `inverseSurface`, the style's light ink, which turned
+ * a focused Theme swatch into a blank card — its "Aa" is drawn in that same
+ * ink — and took an Artwork or accent swatch's colour away. Focus shows by
+ * [TvFocus.surfaceBorder] and [TvFocus.surfaceScale] instead.
+ */
+@Composable
+internal fun swatchColors(colour: Color): ClickableSurfaceColors =
+    ClickableSurfaceDefaults.colors(containerColor = colour, focusedContainerColor = colour, pressedContainerColor = colour)
 
 /** A flat preview of each mode's own weight — [Palette] roles and the live accent, not the web's own decorative gradient, so no new hex joins this screen. */
 @Composable
