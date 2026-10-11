@@ -101,12 +101,12 @@ internal fun TvLibraryChrome(
 
     fun railArrivalTarget(): FocusRequester = focus.railTarget(railActive ?: RailItem.MY_LIST)
 
-    // "Back: page -> the selected pill (no pill selected, i.e. a kept wall
-    // -> its rail row)" — enabled only while the remote is actually inside
-    // content.
-    BackHandler(enabled = contentHasFocus) {
-        if (selectedPill >= 0) focus.selectedPillFocus.requestFocus() else railArrivalTarget().requestFocus()
-    }
+    // Where Back and Up leave the page for: the selected pill, or — a kept
+    // wall, with no pill selected — its rail row.
+    fun pageExitTarget(): FocusRequester = if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()
+
+    // Enabled only while the remote is actually inside content.
+    BackHandler(enabled = contentHasFocus) { pageExitTarget().requestFocus() }
     // "bar (pill, search, avatar) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
     BackHandler(enabled = barHasFocus && hasRail) {
@@ -144,8 +144,7 @@ internal fun TvLibraryChrome(
                         onExit = {
                             when (requestedFocusDirection) {
                                 FocusDirection.Left -> if (hasRail) railArrivalTarget().requestFocus() else if (contentHasFocus) cancelFocusChange()
-                                FocusDirection.Up ->
-                                    if (contentHasFocus) (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
+                                FocusDirection.Up -> if (contentHasFocus) pageExitTarget().requestFocus()
                                 else -> Unit
                             }
                         }
@@ -156,6 +155,8 @@ internal fun TvLibraryChrome(
                     Modifier
                         .fillMaxSize()
                         .focusRequester(focus.contentFocus)
+                        // `onExit` above only hears an Up that found a stop; this one hears the rest.
+                        .upWithNothingAboveLeavesFor(::pageExitTarget)
                         .onFocusChanged { state ->
                             contentHasFocus = state.hasFocus
                             if (state.hasFocus) lastInBar = false

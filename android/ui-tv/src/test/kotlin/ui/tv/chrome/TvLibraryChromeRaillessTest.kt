@@ -26,11 +26,13 @@ import catalog.ChromeCounts
 import designsystem.TvStyle
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import ui.tv.catalog.TvScreenStateTest
+import ui.tv.catalog.toTopWhenLeftForTheBar
 import ui.tv.profile.TvChosenProfile
 
 /**
@@ -97,6 +99,55 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
         compose.onNodeWithText("Movies").assertIsFocused()
     }
 
+    /**
+     * A row scrolled up under the floating bar puts its card's top above the
+     * pills' own, and 2-D search only takes a stop whose top is higher still:
+     * on the box it found none, Up did nothing, and only Back got out.
+     */
+    @Test
+    fun upFromAStopUnderTheBarStillReachesTheSelectedPill() {
+        var toTop = false
+        show(TvStyle.APPLE) {
+            chrome(selectedPill = 1) {
+                LazyColumn(Modifier.toTopWhenLeftForTheBar { toTop = true }) {
+                    item { Box(Modifier.size(200.dp).testTag(CONTENT).focusable()) }
+                }
+            }
+        }
+        val content = compose.onNodeWithTag(CONTENT)
+        val pill = compose.onNodeWithText("Movies")
+        val (stop, pills) = content.getUnclippedBoundsInRoot().top to pill.getUnclippedBoundsInRoot().top
+        assertTrue(stop < pills, "the stop starts above the pills: $stop against $pills")
+        content.performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+
+        content.performKeyInput { pressKey(Key.DirectionUp) }
+        compose.waitForIdle()
+
+        pill.assertIsFocused()
+        assertTrue(toTop, "leaving for the bar still takes the page back to its top")
+    }
+
+    @Test
+    fun upWithAStopAboveItInThePageStaysInThePage() {
+        show(TvStyle.GOOGLE) {
+            chrome {
+                LazyColumn {
+                    item { Box(Modifier.size(200.dp).testTag(ABOVE).focusable()) }
+                    item { Box(Modifier.size(200.dp).testTag(CONTENT).focusable()) }
+                }
+            }
+        }
+        val content = compose.onNodeWithTag(CONTENT)
+        content.performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+
+        content.performKeyInput { pressKey(Key.DirectionUp) }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(ABOVE).assertIsFocused()
+    }
+
     @Test
     fun backFromAKeptWallReachesTheAvatar() {
         show(TvStyle.APPLE) { chrome(selectedPill = -1) }
@@ -110,6 +161,13 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
     private fun chrome(
         selectedPill: Int = 0,
         plateStart: Dp = 0.dp,
+        page: @Composable () -> Unit = {
+            // A scrolling page below the bar, as a real one is: a lone focusable never reports Up leaving it.
+            LazyColumn {
+                item { Spacer(Modifier.height(120.dp)) }
+                item { Box(Modifier.padding(start = plateStart).size(200.dp).testTag(CONTENT).focusable()) }
+            }
+        },
     ) =
         TvLibraryChrome(
             pills = DEPARTMENTS,
@@ -123,17 +181,13 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
             profile = TvChosenProfile(name = "Ada", onChoose = {}),
             onMenu = {},
             focus = rememberTvChromeFocus(),
-        ) {
-            // A scrolling page below the bar, as a real one is: a lone focusable never reports Up leaving it.
-            LazyColumn {
-                item { Spacer(Modifier.height(120.dp)) }
-                item { Box(Modifier.padding(start = plateStart).size(200.dp).testTag(CONTENT).focusable()) }
-            }
-        }
+            content = page,
+        )
 
     private companion object {
         val DEPARTMENTS = listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Collections")
         const val AVATAR = "Menu, watching as Ada"
         const val CONTENT = "content"
+        const val ABOVE = "above"
     }
 }
