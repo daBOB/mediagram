@@ -61,14 +61,23 @@ internal class TvChromeFocus(
         }
 }
 
+/**
+ * One instance per style, so the readers handed it (and its [TvChromeFocus.railTarget])
+ * see the same object every frame and skip. A style changes only from Settings, which
+ * the catalogue is not composed under, so no requester is ever replaced under focus.
+ */
 @Composable
-internal fun rememberTvChromeFocus(): TvChromeFocus =
-    TvChromeFocus(
-        selectedPillFocus = remember { FocusRequester() },
-        searchFocus = remember { FocusRequester() },
-        avatarFocus = remember { FocusRequester() },
-        settingsFocus = remember { FocusRequester() },
-        railRowFocus = remember { RailItem.entries.associateWith { FocusRequester() } },
-        contentFocus = remember { FocusRequester() },
-        style = LocalTvStyle.current,
-    )
+internal fun rememberTvChromeFocus(): TvChromeFocus {
+    val style = LocalTvStyle.current
+    return remember(style) {
+        TvChromeFocus(
+            selectedPillFocus = FocusRequester(),
+            searchFocus = FocusRequester(),
+            avatarFocus = FocusRequester(),
+            settingsFocus = FocusRequester(),
+            railRowFocus = RailItem.entries.associateWith { FocusRequester() },
+            contentFocus = FocusRequester(),
+            style = style,
+        )
+    }
+}

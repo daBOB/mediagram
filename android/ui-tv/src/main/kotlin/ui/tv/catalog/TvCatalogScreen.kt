@@ -246,7 +246,7 @@ fun TvCatalogScreen(
                             tab = selected,
                             wallKey = nav.wallKey,
                             railActive = nav.railActive,
-                            railTarget = nav.chromeFocus::railTarget,
+                            railTarget = remember(nav.chromeFocus) { nav.chromeFocus::railTarget },
                             selectedPillFocus = nav.chromeFocus.selectedPillFocus,
                             homeListState = homeListState,
                             homeMagazine = homeMagazine,
