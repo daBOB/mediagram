@@ -111,9 +111,9 @@ private fun TvFeatureCard(
     Card(
         onClick = { onOpenTitle(set.setId) },
         modifier = modifier.semantics(mergeDescendants = true) {},
-        shape = TvFocus.cardShape(TvFocus.FeatureCardShape),
+        shape = TvFocus.cardShape(TvFocus.featureCardShape),
         scale = TvFocus.cardScale(),
-        border = TvFocus.cardBorder(TvFocus.FeatureCardShape),
+        border = TvFocus.cardBorder(TvFocus.featureCardShape),
         glow = TvFocus.cardGlow(),
         colors = CardDefaults.colors(containerColor = Color(0xFF141416)),
     ) {

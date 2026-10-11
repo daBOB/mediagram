@@ -26,7 +26,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
-import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -36,6 +35,8 @@ import designsystem.TvType
 import model.MediaSet
 import model.WatchSnapshot
 import ui.tv.TvFocus
+import ui.tv.linePillBorder
+import ui.tv.pillColors
 import ui.tv.rememberStableRequester
 
 /**
@@ -44,8 +45,9 @@ import ui.tv.rememberStableRequester
  * on paper reversed); the rest are line pills (`.pill-line`, a rule border
  * over a faint wash). [accent] draws a line pill's border and words in the
  * accent instead — the phone's line pill for an affirmative action, which a
- * film's Preload is while it waits to be started. Focus is this surface's
- * one treatment — the accent ring and the scale every other control carries.
+ * film's Preload is while it waits to be started. Focus is the style's pill
+ * treatment — mediagram's accent ring, or Apple TV and Google TV styles'
+ * white fill — with the scale every other control carries.
  */
 @Composable
 internal fun TvSpreadPill(
@@ -67,25 +69,13 @@ internal fun TvSpreadPill(
                 .heightIn(min = PillHeight)
                 .semantics(mergeDescendants = true) { description?.let { contentDescription = it } },
         shape = TvFocus.surfaceShape(TvFocus.PillShape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = container,
-                contentColor = content,
-                focusedContainerColor = container,
-                focusedContentColor = content,
-                pressedContainerColor = container,
-                pressedContentColor = content,
-            ),
+        colors = TvFocus.pillColors(container = container, content = content),
         scale = TvFocus.surfaceScale(),
-        border =
-            ClickableSurfaceDefaults.border(
-                border = if (solid) Border.None else Border(BorderStroke(1.dp, line), shape = TvFocus.PillShape),
-                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, MaterialTheme.colorScheme.primary), shape = TvFocus.PillShape),
-            ),
+        border = TvFocus.linePillBorder(if (solid) Border.None else Border(BorderStroke(1.dp, line), shape = TvFocus.PillShape)),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = PillHeight).padding(horizontal = Spacing.large), contentAlignment = Alignment.Center) {
-            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium, color = content))
+            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium))
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.tv.material3.ClickableSurfaceBorder
 import androidx.tv.material3.ClickableSurfaceColors
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Glow
+import androidx.tv.material3.MaterialTheme
 
 /** A focused card's border in [look]: the accent (mediagram), a white ring (Google TV), or none (Apple TV lifts instead). */
 internal fun focusedCardBorderOf(look: TvLook, accent: Color, shape: Shape): Border =
@@ -64,3 +65,12 @@ internal fun TvFocus.pillColors(
 @Composable
 internal fun TvFocus.pillBorder(): ClickableSurfaceBorder =
     if (currentTvLook.pillFocusFills) ClickableSurfaceDefaults.border() else surfaceBorder(shape = PillShape)
+
+/** A line pill's border: [rest] at rest; focused, mediagram's accent ring, or none where the fill says focus instead. */
+@Composable
+internal fun TvFocus.linePillBorder(rest: Border): ClickableSurfaceBorder =
+    ClickableSurfaceDefaults.border(
+        border = rest,
+        focusedBorder =
+            if (currentTvLook.pillFocusFills) Border.None else Border(BorderStroke(BorderWidth, MaterialTheme.colorScheme.primary), shape = PillShape),
+    )

@@ -45,7 +45,10 @@ import ui.common.catalog.isPlayable
 import ui.common.catalog.locationOf
 import ui.common.catalog.rememberPortrait
 import ui.common.catalog.searchMetaLineOf
+import ui.tv.TvCardFocus
 import ui.tv.TvFocus
+import ui.tv.currentTvLook
+import ui.tv.focusInkOf
 import ui.tv.rememberStableRequester
 
 /**
@@ -111,8 +114,8 @@ internal fun TvSearchRow(
  * portrait is fetched lazily and at most once per session, the rule every
  * cast row on this surface follows.
  *
- * Focus wears the one treatment every card here does — the accent ring and
- * [TvFocus.Scale] — drawn on the round face by hand, since a tv-material
+ * Focus wears the style's card treatment — its ring and its scale
+ * ([ui.tv.TvLook]) — drawn on the round face by hand, since a tv-material
  * `Card` clips its content to its shape and the name has to sit under the
  * circle rather than inside it. Both modifiers are always present and only
  * their values follow focus, so the chain never changes shape under the
@@ -131,7 +134,10 @@ internal fun TvPersonCard(
 ) {
     val portrait = rememberPortrait(personId, portraitPath, portraits, fetchPortrait)
     var focused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (focused) TvFocus.Scale else 1f, label = "person-card-scale")
+    val look = currentTvLook
+    val scale by animateFloatAsState(if (focused) look.focusScale else 1f, label = "person-card-scale")
+    // Apple TV style lifts a card rather than ringing it.
+    val ring = if (look.cardFocus == TvCardFocus.LIFT) Color.Transparent else focusInkOf(look, MaterialTheme.colorScheme.primary)
     Column(
         modifier =
             modifier
@@ -152,7 +158,7 @@ internal fun TvPersonCard(
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
-                    }.border(TvFocus.BorderWidth, if (focused) MaterialTheme.colorScheme.primary else Color.Transparent, CircleShape),
+                    }.border(TvFocus.BorderWidth, if (focused) ring else Color.Transparent, CircleShape),
         )
         Text(
             text = name,

@@ -24,7 +24,9 @@ import androidx.tv.material3.ClickableSurfaceGlow
 import androidx.tv.material3.ClickableSurfaceScale
 import androidx.tv.material3.ClickableSurfaceShape
 import androidx.tv.material3.MaterialTheme
+import designsystem.LocalTvStyle
 import designsystem.Radius
+import designsystem.TvStyle
 
 /**
  * One focus treatment for every TV screen, so a card or a text row reads
@@ -91,7 +93,13 @@ object TvFocus {
     val ControlShape: Shape = RoundedCornerShape(Radius.control)
 
     /** Home's own feature card, at [Radius.card] like the phone's. */
-    val FeatureCardShape: Shape = RoundedCornerShape(Radius.card)
+    private val FeatureCardShape: Shape = RoundedCornerShape(Radius.card)
+
+    /** A feature card's or an art tile's corner: [FeatureCardShape] in mediagram, the style's card corner otherwise. */
+    val featureCardShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = if (LocalTvStyle.current == TvStyle.MEDIAGRAM) FeatureCardShape else currentTvLook.cardShape
 
     @Composable
     fun cardShape(shape: Shape = Shape): CardShape = CardDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape)

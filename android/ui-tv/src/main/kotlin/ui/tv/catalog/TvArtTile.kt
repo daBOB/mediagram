@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.em
 import androidx.tv.material3.Border
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
-import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
@@ -31,6 +30,8 @@ import designsystem.tvSp
 import java.io.File
 import ui.common.catalog.ArtTileScrim
 import ui.tv.TvFocus
+import ui.tv.linePillBorder
+import ui.tv.pillColors
 import ui.tv.catalog.home.OnImage
 
 /**
@@ -41,7 +42,7 @@ import ui.tv.catalog.home.OnImage
  * the way a plate's does. With no art the tile is the sunk ground with the
  * name in ink, as the web's `:not(:has(img))` rule draws it.
  *
- * A `Card` at [TvFocus.FeatureCardShape] — the rounded picture-card corner
+ * A `Card` at [TvFocus.featureCardShape] — the rounded picture-card corner
  * Home's feature cards already take — with this surface's one focus
  * treatment. Sizes are the web's px through the television's scale, as on
  * every other television card.
@@ -60,9 +61,9 @@ internal fun TvArtTile(
     Card(
         onClick = onOpen,
         modifier = modifier.aspectRatio(aspectRatio).semantics(mergeDescendants = true) {},
-        shape = TvFocus.cardShape(TvFocus.FeatureCardShape),
+        shape = TvFocus.cardShape(TvFocus.featureCardShape),
         scale = TvFocus.cardScale(),
-        border = TvFocus.cardBorder(TvFocus.FeatureCardShape),
+        border = TvFocus.cardBorder(TvFocus.featureCardShape),
         glow = TvFocus.cardGlow(),
         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
@@ -106,8 +107,9 @@ internal fun TvArtTile(
  * A round outline link set on the page itself — the web's `.dept-row
  * .make` ("＋ New list" under Your lists) and `.dept-all` ("All N films →"
  * at the foot of Movies), the phone's `PagePill`: the rule
- * colour at rest, this surface's accent ring and scale once the remote is
- * on it. [modifier] carries the caller's own `focusRequester`.
+ * colour at rest, the style's pill focus (mediagram's accent ring, the
+ * other styles' white fill) and scale once the remote is on it.
+ * [modifier] carries the caller's own `focusRequester`.
  */
 @Composable
 internal fun TvPagePill(
@@ -122,21 +124,9 @@ internal fun TvPagePill(
         // `.dept-all`: at least 52 tall, 28 in at either end (`departments.css:72-74`).
         modifier = modifier.heightIn(min = 52.tvDp),
         shape = TvFocus.surfaceShape(shape),
-        colors =
-            ClickableSurfaceDefaults.colors(
-                containerColor = Color.Transparent,
-                contentColor = ink,
-                focusedContainerColor = Color.Transparent,
-                focusedContentColor = ink,
-                pressedContainerColor = Color.Transparent,
-                pressedContentColor = ink,
-            ),
+        colors = TvFocus.pillColors(container = Color.Transparent, content = ink),
         scale = TvFocus.surfaceScale(),
-        border =
-            ClickableSurfaceDefaults.border(
-                border = Border(BorderStroke(1.dp, MaterialTheme.colorScheme.borderVariant), shape = shape),
-                focusedBorder = Border(BorderStroke(TvFocus.BorderWidth, MaterialTheme.colorScheme.primary), shape = shape),
-            ),
+        border = TvFocus.linePillBorder(Border(BorderStroke(1.dp, MaterialTheme.colorScheme.borderVariant), shape = shape)),
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = 52.tvDp).padding(horizontal = 28.tvDp), contentAlignment = Alignment.Center) {

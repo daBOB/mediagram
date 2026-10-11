@@ -1,10 +1,14 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -24,6 +28,10 @@ import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.TvType
+import ui.tv.FocusFill
+import ui.tv.FocusFillInk
+import ui.tv.TvFocus
+import ui.tv.currentTvLook
 
 /**
  * A title page's own tabs — Overview/Cast/Similar/Details on a film, Episodes/
@@ -55,6 +63,9 @@ internal fun TvSectionTabs(
 
     fun requesterOf(title: String) = requesters.getOrPut(title) { FocusRequester() }
 
+    // Apple TV and Google TV styles say focus with the bar pills' white fill, mediagram with the accent.
+    val fills = currentTvLook.pillFocusFills
+
     TabRow(
         selectedTabIndex = selected,
         // Held to the start like the masthead's tabs, so they line up over the title below.
@@ -83,6 +94,9 @@ internal fun TvSectionTabs(
     ) {
         titles.forEachIndexed { index, title ->
             key(title) {
+                val interaction = remember { MutableInteractionSource() }
+                val focused by interaction.collectIsFocusedAsState()
+                val focusInk = if (fills) FocusFillInk else MaterialTheme.colorScheme.primary
                 Tab(
                     selected = index == selected,
                     onFocus = {},
@@ -92,14 +106,17 @@ internal fun TvSectionTabs(
                         TabDefaults.underlinedIndicatorTabColors(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             selectedContentColor = MaterialTheme.colorScheme.onSurface,
-                            focusedContentColor = MaterialTheme.colorScheme.primary,
-                            focusedSelectedContentColor = MaterialTheme.colorScheme.primary,
+                            focusedContentColor = focusInk,
+                            focusedSelectedContentColor = focusInk,
                         ),
+                    interactionSource = interaction,
                 ) {
                     Text(
                         text = title,
                         style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        modifier = Modifier.padding(horizontal = Spacing.small, vertical = Spacing.small),
+                        modifier =
+                            (if (fills && focused) Modifier.background(FocusFill, TvFocus.PillShape) else Modifier)
+                                .padding(horizontal = Spacing.small, vertical = Spacing.small),
                     )
                 }
             }
