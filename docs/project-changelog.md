@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.122.1 — a cheaper cover scrim
+
+**Changed** (Android TV, phone, tablet)
+
+- **The Home cover's scrim draws each of its three layers only where it shows**: the top shade over the top 22%, the paper fade over the bottom 26%, the side shade over the left 76%. The pixels are unchanged, pinned by `CoverScrimPixelsTest`. The scrim fills about 1.24 covers' worth of pixels per slide instead of 3, and a crossfade draws two slides. On the TV box, the full-bleed cover is what held Home's frames past one display interval in mediagram and Apple TV style.
+
 ## 0.122.0 — three TV themes
 
 **Added** (Android TV)
