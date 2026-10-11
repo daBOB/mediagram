@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
+import catalog.MenuScreen
 import designsystem.TvStyle
 import ui.common.RailItem
 import catalog.factsLine
@@ -40,6 +41,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.tv.TvTheme
+import ui.tv.system.menuRestoreKey
 import ui.tv.profile.TvChosenProfile
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -507,6 +509,18 @@ class TvCatalogScreenStateTest {
     @Test
     fun anEmptyMyListWithNoRailRestsOnTheAvatar() {
         show(ready(films(2)), style = TvStyle.APPLE, pendingRail = RailItem.MY_LIST)
+        compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
+    }
+
+    @Test
+    fun backFromSettingsWithNoRailLandsOnTheGear() {
+        show(ready(films(2)), style = TvStyle.GOOGLE, restoreKey = menuRestoreKey(MenuScreen.Settings))
+        compose.onNodeWithContentDescription("Settings").assertIsFocused()
+    }
+
+    @Test
+    fun backFromLatestWithNoRailLandsOnTheAvatar() {
+        show(ready(films(2)), style = TvStyle.APPLE, restoreKey = TvLatestRailKey)
         compose.onNodeWithContentDescription("Menu, watching as Ada").assertIsFocused()
     }
 
