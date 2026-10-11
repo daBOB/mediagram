@@ -1,6 +1,12 @@
 package ui.tv.chrome
 
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
@@ -50,6 +56,12 @@ class TvCentredTabBarTest : TvScreenStateTest() {
         compose.onNodeWithContentDescription("Search").assertIsFocused()
         compose.onNodeWithContentDescription("Search").performKeyInput { pressKey(Key.DirectionRight) }
         compose.onNodeWithText("Home").assertIsFocused()
+        compose.onNodeWithContentDescription("Search").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithContentDescription("Search").performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithTag(CONTENT).assertIsFocused()
+        compose.onNodeWithContentDescription(AVATAR).performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.onNodeWithContentDescription(AVATAR).performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onNodeWithTag(CONTENT).assertIsFocused()
     }
 
     @Test
@@ -59,11 +71,28 @@ class TvCentredTabBarTest : TvScreenStateTest() {
         compose.onNodeWithText("Collections").performSemanticsAction(SemanticsActions.RequestFocus)
         compose.onNodeWithText("Collections").assertIsFocused()
         compose.onNodeWithText("Collections").performKeyInput { pressKey(Key.DirectionRight) }
+        compose.waitForIdle()
         compose.onNodeWithContentDescription(AVATAR).assertIsFocused()
         val fades = compose.onNode(SemanticsMatcher.keyIsDefined(EdgeFadesKey)).fetchSemanticsNode().config[EdgeFadesKey]
         assertEquals(EdgeFades(start = true, end = false), fades)
         val bar = compose.onNodeWithContentDescription(AVATAR).getUnclippedBoundsInRoot()
         assertTrue(bar.right <= 640.dp, "the avatar stays on screen: $bar")
+
+        compose.onNodeWithContentDescription(AVATAR).performKeyInput { pressKey(Key.DirectionLeft) }
+        compose.waitForIdle()
+        compose.onNodeWithText("Collections").assertIsFocused()
+
+        compose.onNodeWithContentDescription(AVATAR).performKeyInput { pressKey(Key.DirectionDown) }
+        compose.waitForIdle()
+        compose.onNodeWithTag(CONTENT).assertIsFocused()
+
+        compose.onNodeWithContentDescription("Search").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Search").performKeyInput { pressKey(Key.DirectionRight) }
+        compose.waitForIdle()
+        compose.onNodeWithText("Home").assertIsFocused()
+        val search = compose.onNodeWithContentDescription("Search").getUnclippedBoundsInRoot()
+        assertTrue(search.left >= 0.dp && search.right <= 640.dp, "search stays on screen: $search")
     }
 
     @Composable
@@ -80,10 +109,11 @@ class TvCentredTabBarTest : TvScreenStateTest() {
             profile = TvChosenProfile(name = "Ada", onChoose = {}),
             onMenu = {},
             focus = rememberTvChromeFocus(),
-        ) {}
+        ) { Box(Modifier.size(200.dp).testTag(CONTENT).focusable()) }
 
     private companion object {
         val DEPARTMENTS = listOf("Home", "Movies", "Series", "Anime", "Documentaries", "Tutorials", "Collections")
+        const val CONTENT = "content"
         const val AVATAR = "Menu, watching as Ada"
     }
 }

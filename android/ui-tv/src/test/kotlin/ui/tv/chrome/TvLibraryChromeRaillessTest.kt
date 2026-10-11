@@ -4,6 +4,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.TvStyle
@@ -64,6 +66,18 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
     }
 
     @Test
+    fun leftFromAPlateBelowTheBarDoesNotJumpToTheBarsControls() {
+        // Search sits above and to the left of the plate: a geometric Left would take it.
+        show(TvStyle.APPLE) { chrome(plateStart = 400.dp) }
+        val content = compose.onNodeWithTag(CONTENT)
+        content.performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        content.performKeyInput { pressKey(Key.DirectionLeft) }
+        compose.waitForIdle()
+        content.assertIsFocused()
+    }
+
+    @Test
     fun backFromThePageReachesTheSelectedPillThenLeavesTheApp() {
         show(TvStyle.GOOGLE) { chrome() }
         compose.onNodeWithTag(CONTENT).performSemanticsAction(SemanticsActions.RequestFocus)
@@ -93,7 +107,10 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
     }
 
     @Composable
-    private fun chrome(selectedPill: Int = 0) =
+    private fun chrome(
+        selectedPill: Int = 0,
+        plateStart: Dp = 0.dp,
+    ) =
         TvLibraryChrome(
             pills = DEPARTMENTS,
             selectedPill = selectedPill,
@@ -110,7 +127,7 @@ class TvLibraryChromeRaillessTest : TvScreenStateTest() {
             // A scrolling page below the bar, as a real one is: a lone focusable never reports Up leaving it.
             LazyColumn {
                 item { Spacer(Modifier.height(120.dp)) }
-                item { Box(Modifier.size(200.dp).testTag(CONTENT).focusable()) }
+                item { Box(Modifier.padding(start = plateStart).size(200.dp).testTag(CONTENT).focusable()) }
             }
         }
 
