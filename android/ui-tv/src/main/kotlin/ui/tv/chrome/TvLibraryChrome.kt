@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.LocalTvStyle
 import designsystem.Overscan
+import designsystem.TvStyle
 import designsystem.tvDp
 import ui.common.RailItem
 import ui.tv.hasRail
@@ -169,7 +170,7 @@ internal fun TvLibraryChrome(
                     .focusProperties {
                         onExit = {
                             when (requestedFocusDirection) {
-                                FocusDirection.Left -> if (hasRail) railArrivalTarget().requestFocus() else cancelFocusChange()
+                                FocusDirection.Left -> if (hasRail) railArrivalTarget().requestFocus() else if (contentHasFocus) cancelFocusChange()
                                 FocusDirection.Up ->
                                     if (contentHasFocus) (if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()).requestFocus()
                                 else -> Unit
@@ -189,23 +190,44 @@ internal fun TvLibraryChrome(
             ) {
                 CompositionLocalProvider(LocalTvPagePadding provides padding, content = content)
             }
-            TvDepartmentsBar(
-                pills = pills,
-                selected = selectedPill,
-                onSelect = onSelectPill,
-                onSearch = onSearch,
-                profile = profile,
-                onMenu = onMenu,
-                downTarget = focus.contentFocus,
-                selectedPillFocus = focus.selectedPillFocus,
-                searchFocus = focus.searchFocus,
-                avatarFocus = focus.avatarFocus,
-                blend = blend,
-                modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
-                        barHasFocus = state.hasFocus
-                        if (state.hasFocus) lastInBar = true
-                    },
-            )
+            when (LocalTvStyle.current) {
+                TvStyle.APPLE ->
+                    TvCentredTabBar(
+                        pills = pills,
+                        selected = selectedPill,
+                        onSelect = onSelectPill,
+                        onSearch = onSearch,
+                        profile = profile,
+                        onMenu = onMenu,
+                        downTarget = focus.contentFocus,
+                        selectedPillFocus = focus.selectedPillFocus,
+                        searchFocus = focus.searchFocus,
+                        avatarFocus = focus.avatarFocus,
+                        blend = blend,
+                        modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
+                                barHasFocus = state.hasFocus
+                                if (state.hasFocus) lastInBar = true
+                            },
+                    )
+                else ->
+                    TvDepartmentsBar(
+                        pills = pills,
+                        selected = selectedPill,
+                        onSelect = onSelectPill,
+                        onSearch = onSearch,
+                        profile = profile,
+                        onMenu = onMenu,
+                        downTarget = focus.contentFocus,
+                        selectedPillFocus = focus.selectedPillFocus,
+                        searchFocus = focus.searchFocus,
+                        avatarFocus = focus.avatarFocus,
+                        blend = blend,
+                        modifier = Modifier.align(Alignment.TopStart).onFocusChanged { state ->
+                                barHasFocus = state.hasFocus
+                                if (state.hasFocus) lastInBar = true
+                            },
+                    )
+            }
         }
 
         if (hasRail) {
