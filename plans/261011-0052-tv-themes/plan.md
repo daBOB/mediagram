@@ -33,14 +33,14 @@
 
 | # | Phase | Depends on | Status |
 |---|---|---|---|
-| 01 | [Setting and look](phase-01-setting-and-look.md) | none | pending |
-| 02 | [Colours and fonts reach every TV screen](phase-02-colours-and-fonts.md) | 01 | pending |
-| 03 | [Focus per style](phase-03-focus-per-style.md) | 01 | pending |
-| 04 | [Settings › Appearance › Theme](phase-04-settings-theme-row.md) | 01, 03 | pending |
-| 05 | [Chrome without a rail](phase-05-chrome-without-a-rail.md) | 01, 03 | pending |
-| 06 | [Home cover per style](phase-06-home-cover-per-style.md) | 02, 03 | pending |
-| 07 | [Landscape rows](phase-07-landscape-rows.md) | 01, 03 | pending |
-| 08 | [Docs, version, box walk and frame times](phase-08-docs-version-and-box.md) | all | pending |
+| 01 | [Setting and look](phase-01-setting-and-look.md) | none | done |
+| 02 | [Colours and fonts reach every TV screen](phase-02-colours-and-fonts.md) | 01 | done |
+| 03 | [Focus per style](phase-03-focus-per-style.md) | 01 | done |
+| 04 | [Settings › Appearance › Theme](phase-04-settings-theme-row.md) | 01, 03 | done |
+| 05 | [Chrome without a rail](phase-05-chrome-without-a-rail.md) | 01, 03 | done |
+| 06 | [Home cover per style](phase-06-home-cover-per-style.md) | 02, 03 | done |
+| 07 | [Landscape rows](phase-07-landscape-rows.md) | 01, 03 | done |
+| 08 | [Docs, version, box walk and frame times](phase-08-docs-version-and-box.md) | all | in progress |
 
 ## Rulings made while planning
 

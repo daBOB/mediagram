@@ -842,6 +842,27 @@ reached straight from the rail; Settings there includes cache volume choice ("Wh
 a USB drive must be set up as *portable* storage to appear; adopted storage never
 shows), and the home cache server status and pairing.
 
+### TV themes
+
+Settings › Appearance › Theme picks one of three TV styles (`designsystem.TvStyle`,
+stored per device under `appearance_settings/style`): **mediagram** (the default),
+**Apple TV style** and **Google TV style**. `ui.tv.TvTheme` provides it as
+`LocalTvStyle` and builds the scheme from the style's `TvLook` neutrals and the type
+from its face (`TvType` in `core/designsystem/TvTypeScale.kt` reads each role through
+`inTvStyle()`; `TvType.Base` holds mediagram's). Focus (`ui/tv/TvFocusStyles.kt`,
+`TvFocus`), colours (every TV colour reads the scheme, pinned by
+`TvColoursComeFromTheSchemeTest`) and type follow the style everywhere. Layout differs
+in three places only: the chrome (`chrome/TvChromeBar.kt` selects `TvDepartmentsBar`
+with the rail, `TvCentredTabBar` or `TvTopBar`; no rail outside mediagram, its rows in
+the avatar's menu, every rail-row focus request through `TvChromeFocus.railTarget`), the
+Home cover (`TvCoverSlide` / `TvInsetCardSlide`) and rows of titles (16:9 stills,
+`catalog/TvRowCards.kt`; walls stay posters). No style blurs anything: TV blur measured
+too slow on the box (2026-10-10).
+
+**Deliberate difference:** the phone, the tablet and the web have no themes yet. The
+phone and tablet store the setting, or ignore it; each gets its own design round, TV
+first at the user's choice (2026-10-10).
+
 ### Television differs from the web player
 
 Deliberate differences between television and web, all in the context of the Surface

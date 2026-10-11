@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.122.0 — three TV themes
+
+**Added** (Android TV)
+
+- **Settings › Appearance › Theme: mediagram (default), Apple TV style and Google TV style.** Apple TV style is black, Geist, a centred tab bar and wide cards that lift on focus. Google TV style is dark grey, Google Sans Flex, a top bar with the avatar and gear, an inset rounded cover and wide cards with a white ring on focus. Row and tab names are the same in every style.
+- **Shows carry their episodes' backdrop**, so a row of shows has a still to show.
+- **Fonts:** Geist 700 and Google Sans Flex 400–700 ship as static Latin cuts (OFL).
+
 ## 0.120.3 — Down off the bar glides the page in
 
 **Fixed** (Android TV)
