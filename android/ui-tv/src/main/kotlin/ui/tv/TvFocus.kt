@@ -151,16 +151,17 @@ object TvFocus {
      * and disabled still reads as this catalogue's square plate rather
      * than tv-material's own rounded one.
      *
-     * [selected] rings an unfocused surface in the ink colour — a swatch
-     * that is the current choice, which would otherwise only say so to a
-     * screen reader; focus still wins with the accent ring.
+     * [selected] rings an unfocused surface — a swatch that is the current
+     * choice, which would otherwise only say so to a screen reader — in
+     * [selectedInkOf]'s colour, never the one focus rings in.
      */
     @Composable
     fun surfaceBorder(selected: Boolean = false, shape: Shape = Shape): ClickableSurfaceBorder =
         ClickableSurfaceDefaults.border(
             border =
                 if (selected) {
-                    Border(border = BorderStroke(BorderWidth, MaterialTheme.colorScheme.onSurface), shape = shape)
+                    val ink = selectedInkOf(currentTvLook, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onSurface)
+                    Border(border = BorderStroke(BorderWidth, ink), shape = shape)
                 } else {
                     Border.None
                 },

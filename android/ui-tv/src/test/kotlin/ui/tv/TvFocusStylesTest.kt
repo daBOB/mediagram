@@ -47,6 +47,15 @@ class TvFocusStylesTest {
         assertEquals(Color.White, focusInkOf(TvStyle.GOOGLE.look, accent))
     }
 
+    /** The current swatch never wears the focused one's ring: the ink beside mediagram's accent focus, the accent beside the white. */
+    @Test
+    fun aChosenSurfaceRingsInAColourFocusDoesNotUse() {
+        val ink = Color(0xFFF6F2EA)
+        assertEquals(ink, selectedInkOf(TvStyle.MEDIAGRAM.look, accent, ink))
+        assertEquals(accent, selectedInkOf(TvStyle.APPLE.look, accent, ink))
+        assertEquals(accent, selectedInkOf(TvStyle.GOOGLE.look, accent, ink))
+    }
+
     @Test
     fun aFocusedPillFillsWhiteWithDarkInkOnlyWhereTheStyleSaysSo() {
         val rest = Color(0x1FFFFFFF) to Color(0xFFF6F2EA)

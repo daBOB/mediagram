@@ -27,6 +27,9 @@ internal fun focusedCardGlowOf(look: TvLook): Glow? =
 /** The ring a focused plain surface (a swatch, a settings block, a dot) wears: the accent for mediagram, white otherwise. */
 internal fun focusInkOf(look: TvLook, accent: Color): Color = if (look.cardFocus == TvCardFocus.ACCENT_BORDER) accent else Color.White
 
+/** The ring a chosen, unfocused surface (the current swatch) wears: [ink] beside mediagram's accent focus, the accent beside the white. */
+internal fun selectedInkOf(look: TvLook, accent: Color, ink: Color): Color = if (look.cardFocus == TvCardFocus.ACCENT_BORDER) ink else accent
+
 /** The fill a focused pill or button takes in Apple TV and Google TV styles, and the ink set on it. */
 internal val FocusFill = Color(0xFFFFFFFF)
 internal val FocusFillInk = Color(0xFF0A0A0B)
