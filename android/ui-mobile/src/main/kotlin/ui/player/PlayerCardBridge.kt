@@ -3,15 +3,19 @@ package ui.player
 import player.PlayerViewModel
 import player.chooseAudioTrack
 import player.chooseFraming
+import player.createListAndAdd
 import player.chooseSubtitleLanguage
 import player.nudgeSubtitleOffset
 import player.previous
 import player.resetSubtitleOffset
 import player.restart
+import player.setInList
+import player.setKidsMark
 import player.setSpeed
 import player.setSubtitleBacking
 import player.setSubtitleSize
 import player.toggleSubtitles
+import player.toggleWatchlist
 
 /**
  * The card's and its menus' actions over [PlayerViewModel] and the card's
@@ -48,4 +52,13 @@ internal fun PlayerViewModel.cardMenuActions(): CardMenuActions =
         onNudge = this::nudgeSubtitleOffset,
         onResetOffset = this::resetSubtitleOffset,
         onFraming = this::chooseFraming,
+    )
+
+/** The marks' writes for the top bar's [PlayerMarks], beside the card's, so the screen hands over one call. */
+internal fun PlayerViewModel.marksActions(): PlayerMarksActions =
+    PlayerMarksActions(
+        onToggleWatchlist = this::toggleWatchlist,
+        onKidsMark = this::setKidsMark,
+        onSetInList = this::setInList,
+        onCreateList = this::createListAndAdd,
     )

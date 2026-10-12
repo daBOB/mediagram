@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +17,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.media3.common.Player
 import androidx.media3.common.util.Util
+import designsystem.LocalIndicationTone
 import playback.Framing
 
 /**
@@ -31,8 +33,9 @@ import playback.Framing
  *
  * Attached to the whole screen rather than measured against the video box:
  * the card, its menus, the episode sidebar and the up-next card all consume
- * their own taps before this modifier ever sees one, so nothing here has to
- * carve the video area out by hand — see `PlayerScreen`.
+ * their own taps before this modifier ever sees one (the card too, except
+ * while it fades out, when it deliberately lets them through to here), so
+ * nothing here has to carve the video area out by hand — see `PlayerScreen`.
  */
 @Composable
 internal fun PlayerGestureLayer(
@@ -56,8 +59,11 @@ internal fun PlayerGestureLayer(
             .pointerInput(Unit) { detectPinchFraming(onPinchFraming) },
         contentAlignment = Alignment.Center,
     ) {
-        content()
-        SeekRipple(flash = flash, modifier = Modifier.align(Alignment.Center))
+        // Everything in here is drawn over the video: presses tint white ([OverVideoTone]).
+        CompositionLocalProvider(LocalIndicationTone provides OverVideoTone) {
+            content()
+            SeekRipple(flash = flash, modifier = Modifier.align(Alignment.Center))
+        }
     }
 }
 

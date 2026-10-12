@@ -705,6 +705,57 @@ address, the phone keeps it in the shelves' saved state, which a title opened
 over them no longer clears. What differs on purpose, and why, is recorded in
 `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md` §9.
 
+**Motion.** The phone and tablet move as the web player does: the web's tokens
+(`--ease`, `--ease-out`, `--hover`) and its entrances, drifts, hover lifts and
+nudges live once in `core/designsystem` (`Motion.kt`, `Entrance.kt`, `Drift.kt`,
+`HoverMotion.kt`, `CatalogueIndication.kt`), and each screen applies them at its
+own call sites. Ripple is gone: `MediagramTheme` provides the web's press
+feedback (a quiet tint, a 2dp focus ring, a snapped 0.98 press), and Material's
+buttons are drawn through `ui.chrome`'s `Catalogue*Button` wrappers, since they
+hard-code their ripple. "Remove animations" is the web's reduced motion. Loading
+is the film leader's 3·2·1 countdown on both surfaces, a shared feature: on the
+web `web/public/styles/film-leader.css`, the `index.html` template and
+`lib/film-leader.js`, on Android `core/designsystem`'s `CountdownLeader.kt`. What
+differs on purpose:
+
+- **The player's controls linger 4 s, not the web's 2.6 s.** A finger has to
+  reach the controls; a mouse is already there.
+- **The phone's compact header is quick-return.** It hides on scroll down and
+  returns on any scroll up; the web's phone masthead only reappears at the top.
+  The phone's screen is short.
+- **The cover holds still for TalkBack** (`HomeCover.kt`).
+- **The first page after a cold start rises in**, where the web's first draw
+  is still.
+- **The countdown leader also shows in the channel picker and the in-page
+  "Loading your library…" waits**, in the page's inks. The web shows words only
+  in its channel list and never shows in-page waits (it waits under one block
+  before routing). A deliberate addition: loading is the leader on every surface.
+- **The cold-start block shifts once when the library chrome arrives**: the
+  setup check and the profile gate have no rail or bar to sit beside.
+- **The TV gets the countdown leader later**; its loading screens live on the
+  unmerged TV branch.
+- **The library's "fetching" line** (`CatalogShelves.kt`) is still an
+  indeterminate progress bar; the web's counterpart is to be checked before it
+  changes.
+- **Tab labels are the accent, the web's are ink** (`title-page.css:126,131-132`).
+- **The tab row scrolls the chosen tab into view** (Material's, about 250 ms);
+  the web's tab list never scrolls itself.
+- **The player tool does not turn accent while its menu is open**
+  (`player-card.css:82`).
+- **The marks' popups (Add to list, Kids) do not hold the controls**; the web's
+  `holding()` does (`player-hud.js:28-31`).
+- **The resting player controls cannot be woken by TalkBack or a keyboard, and
+  the controls do not hold while a control is focused**; the web holds on
+  focusin (`player-hud.js:31-45`). A known gap, for a follow-up.
+- **The player's top-bar marks and Notes have no outline**, so on hover or press
+  their label turns the stage accent where the web's `.ghost` outline does
+  (`web/public/styles/playback.css:97-99`).
+- **GenreLinks looks unlike the web's `.genre` pill** (`catalog.css:96-97`).
+- **SettingsIndex's chosen-row fill snaps**; the web has no counterpart.
+- **The cover's tap shield is a timer**, not tied to the fade.
+- **Under the Blurred backdrop the cover's drift is the one thing to watch**:
+  see the changelog's 0.121.0 entry for the frame times.
+
 ### Settings and System
 
 Settings is a two-pane index — Telegram, Storage, Appearance, Profile, System — on phone,

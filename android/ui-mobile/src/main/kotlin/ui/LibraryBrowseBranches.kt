@@ -22,6 +22,7 @@ import catalog.personPageOf
 import catalog.resolvableQueueRows
 import model.WatchSnapshot
 import player.TitlePreloadViewModel
+import ui.catalog.CenteredLoading
 import ui.catalog.CenteredMessage
 import ui.catalog.FilmShelfActions
 import ui.catalog.FranchiseScreen
@@ -81,7 +82,7 @@ internal fun GenresFrame(
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
     LibraryBranch(Destination.Genres, menuActions, profileBar, browse, at, at::pop) {
         if (shelves == null) {
-            CenteredMessage("Loading your library…")
+            CenteredLoading("Loading your library…")
         } else {
             val genres = remember(shelves) { genreIndex(allTitles(shelves)) }
             GenresIndexScreen(genres = genres, onOpenGenre = at::openGenre)
@@ -102,7 +103,7 @@ internal fun LatestFrame(
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
     LibraryBranch(Destination.Latest, menuActions, profileBar, browse, at, at::pop) {
         if (shelves == null) {
-            CenteredMessage("Loading your library…")
+            CenteredLoading("Loading your library…")
         } else {
             LatestScreen(shelves, watch, catalogState.heldIdsOrEmpty(), columns, at::openTitle, at::openCollection)
         }
@@ -124,7 +125,7 @@ internal fun MoviesPageFrame(
     val shelf = (catalogState as? CatalogUiState.Ready)?.shelves?.firstOrNull { it.department == Department.MOVIES }
     LibraryBranch(Destination.MoviesPage, menuActions, profileBar, browse, at, at::pop) {
         if (shelf == null) {
-            CenteredMessage("Loading your library…")
+            CenteredLoading("Loading your library…")
         } else {
             val shelfViewModel: ShelfViewModel = hiltViewModel()
             val chosenView by shelfViewModel.view.collectAsStateWithLifecycle()
@@ -207,21 +208,21 @@ internal fun PersonFrame(
     val person = lookup.person
     val shelves = (catalogState as? CatalogUiState.Ready)?.shelves
 
-    when {
-        lookup.loading || shelves == null -> LibraryBranch(Destination.Person(LOADING), menuActions, profileBar, browse, at, at::pop) {
-            CenteredMessage("Loading your library…")
-        }
-        else -> {
-            val page = remember(person, shelves) { personPageOf(person, shelves) }
-            if (page == null) {
-                LibraryBranch(Destination.Person("Person"), menuActions, profileBar, browse, at, at::pop) {
-                    CenteredMessage("Nobody by that number is credited on anything in your library.")
-                }
-            } else {
+    val loading = lookup.loading || shelves == null
+    val page = remember(person, shelves, loading) { if (loading || shelves == null) null else personPageOf(person, shelves) }
+    val destination = when {
+        loading -> Destination.Person(LOADING)
+        page == null -> Destination.Person("Person")
+        else -> Destination.Person(page.person.name)
+    }
+    // One scaffold whichever it shows, so the page keeps its turn when the lookup answers.
+    LibraryBranch(destination, menuActions, profileBar, browse, at, at::pop) {
+        when {
+            loading -> CenteredLoading("Loading your library…")
+            page == null -> CenteredMessage("Nobody by that number is credited on anything in your library.")
+            else -> {
                 val portrait = rememberPortrait(id, page.person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
-                LibraryBranch(Destination.Person(page.person.name), menuActions, profileBar, browse, at, at::pop) {
-                    PersonScreen(page, portrait, watch, columns, at::openTitle, at::openCollection)
-                }
+                PersonScreen(page, portrait, watch, columns, at::openTitle, at::openCollection)
             }
         }
     }

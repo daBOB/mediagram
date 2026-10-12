@@ -1,7 +1,7 @@
 package ui.catalog
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,11 +15,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -34,8 +34,10 @@ import catalog.initialsOf
 import coil3.compose.AsyncImage
 import data.PortraitRequestLog
 import designsystem.Spacing
+import designsystem.hoverMotion
 import model.Credit
 import model.TitleCredits
+import ui.chrome.linkClickable
 import ui.common.catalog.rememberPortrait
 import java.io.File
 
@@ -106,11 +108,22 @@ private fun PersonCard(
     portraits: PortraitRequestLog,
 ) {
     val portrait = rememberPortrait(person.personId, person.portraitPath, portraits, fetchPortrait)
+    val source = remember { MutableInteractionSource() }
     Column(
-        modifier = Modifier.width(PERSON_WIDTH).clickable(role = Role.Button, onClick = onClick),
+        modifier =
+            Modifier
+                .width(PERSON_WIDTH)
+                // A person is a link (`cast.js:49`), and links don't shrink.
+                .linkClickable(source, onClick = onClick),
     ) {
         Box(
-            modifier = Modifier.size(FACE_SIZE).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+            // `.person:hover .person-face` rises 3px over 520ms (`title-page.css:178,180`).
+            modifier =
+                Modifier
+                    .hoverMotion(source, durationMs = 520, lift = (-3).dp)
+                    .size(FACE_SIZE)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
             if (portrait != null) {

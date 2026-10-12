@@ -2,14 +2,15 @@ package ui.player
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import ui.chrome.CatalogueMenu
+import ui.chrome.CatalogueMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -80,9 +81,10 @@ private fun KidsMark(
     var open by remember { mutableStateOf(false) }
     Box {
         MarkButton(label = kidsLabel(marks), onClick = { open = true }, enabled = marks.kidsVerdict == KidsVerdict.UNRATED)
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        // The web's player menus are shown and hidden, never animated (player-card.css:89-119).
+        CatalogueMenu(expanded = open, onDismissRequest = { open = false }, still = true) {
             KIDS_CHOICES.forEach { choice ->
-                DropdownMenuItem(
+                CatalogueMenuItem(
                     text = { Text(choice.label) },
                     onClick = {
                         open = false
@@ -100,12 +102,13 @@ private fun MarkButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
-    TextButton(onClick = onClick, enabled = enabled) {
+    val source = remember { MutableInteractionSource() }
+    CatalogueTextButton(onClick = onClick, enabled = enabled, interactionSource = source) {
         // Dimmed rather than hidden when it cannot be pressed: the rating
         // it reports is still worth reading.
         Text(
             text = label,
-            color = if (enabled) Color.White else Color.White.copy(alpha = DISABLED_ALPHA),
+            color = toolInk(source, enabled, rest = if (enabled) Color.White else Color.White.copy(alpha = DISABLED_ALPHA)),
             style = MaterialTheme.typography.labelLarge,
         )
     }

@@ -172,7 +172,8 @@ main.turning { animation: page-in 420ms var(--ease) backwards; }
 }
 /* Shaped like the cover story, not a shelf the home page no longer has, so the
    catalogue arrives into the page it is loading instead of replacing another. */
-.loading-state { display: flex; align-items: flex-end; height: var(--cover-height); padding: 0 var(--gutter) 96px;
+.loading-state { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 24px;
+  height: var(--cover-height); padding: 0 var(--gutter) 96px;
   margin: calc(-1 * (var(--main-top) + var(--masthead-height))) calc(-1 * var(--gutter)) 0; background: #0a0a0b; }
 .loading-state p { margin: 0; color: var(--on-image-2); }
 

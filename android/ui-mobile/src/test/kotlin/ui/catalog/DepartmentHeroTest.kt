@@ -68,7 +68,7 @@ class DepartmentHeroTest {
                     CompositionLocalProvider(LocalBackdrop provides backdrop) {
                         DepartmentHero(
                             title = title, line = "48 shows", lead = lead,
-                            onOpenTitle = onOpenTitle, franchiseTitle = franchiseTitle,
+                            onOpenTitle = onOpenTitle, reveals = rememberReveals(), franchiseTitle = franchiseTitle,
                         )
                     }
                 }

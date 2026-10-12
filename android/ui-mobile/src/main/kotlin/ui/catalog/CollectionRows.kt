@@ -1,6 +1,9 @@
 package ui.catalog
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +13,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -26,25 +30,29 @@ import model.Progress
  * file should carry alongside the layout that places these rows.
  */
 
+/** [modifier] goes on every row, so a show's Episodes panel rises as one. */
 internal fun LazyListScope.items(
     rows: List<CollectionRow>,
     positions: Map<String, Progress>,
     watchedIds: Set<String>,
     heldIds: Set<String>,
     onPlay: (setId: String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     items(
         count = rows.size,
         key = { index -> keyOf(rows[index], index) },
     ) { index ->
-        when (val row = rows[index]) {
-            is CollectionRow.Heading -> Text(
-                text = row.title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
-            )
+        Box(modifier) {
+            when (val row = rows[index]) {
+                is CollectionRow.Heading -> Text(
+                    text = row.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = indentOf(row.depth), top = Spacing.medium),
+                )
 
-            is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onPlay)
+                is CollectionRow.Item -> ItemRow(row, positions[row.set.setId], row.set.setId in watchedIds, row.set.setId in heldIds, onPlay)
+            }
         }
     }
 }
@@ -73,11 +81,16 @@ internal fun LazyListScope.items(
 @Composable
 private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boolean, held: Boolean, onPlay: (setId: String) -> Unit) {
     val document = row.set.kind == Kind.DOCUMENT
+    val source = remember { MutableInteractionSource() }
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
-        Text(
+        HoverTitle(
             text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}",
             style = MaterialTheme.typography.bodyLarge,
-            color = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+            source = source,
+            // A `.row` (`course-view.js:48`): its title snaps to accent (`catalog.css:78`); the
+            // row's `--surface` hover background is the catalogue indication's hover tint.
+            snap = true,
+            rest = if (document) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
             modifier = Modifier
                 .fillMaxWidth()
                 // The whole line is the target, and the role is what tells a
@@ -86,7 +99,7 @@ private fun ItemRow(row: CollectionRow.Item, progress: Progress?, watched: Boole
                     if (document) {
                         Modifier
                     } else {
-                        Modifier.clickable(role = Role.Button) { onPlay(row.set.setId) }
+                        Modifier.clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button) { onPlay(row.set.setId) }
                     },
                 )
                 .padding(top = Spacing.small, bottom = if (document) 0.dp else Spacing.small),

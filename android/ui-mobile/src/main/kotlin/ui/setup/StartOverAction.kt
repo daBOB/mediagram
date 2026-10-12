@@ -2,12 +2,13 @@ package ui.setup
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import ui.chrome.NoDialogAnimation
 
 /**
  * Starting over signs this device out of Telegram and forgets everything
@@ -19,7 +20,7 @@ import androidx.compose.runtime.setValue
 fun StartOverAction(onConfirm: () -> Unit) {
     var asking by remember { mutableStateOf(false) }
 
-    TextButton(onClick = { asking = true }) { Text("Start over") }
+    CatalogueTextButton(onClick = { asking = true }) { Text("Start over") }
 
     StartOverConfirmation(asking = asking, onDismiss = { asking = false }, onConfirm = onConfirm)
 }
@@ -39,7 +40,10 @@ internal fun StartOverConfirmation(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Start over?") },
+        title = {
+            NoDialogAnimation()
+            Text("Start over?")
+        },
         text = {
             Text(
                 "This signs this device out of Telegram and forgets the api_id and " +
@@ -49,7 +53,7 @@ internal fun StartOverConfirmation(
             )
         },
         confirmButton = {
-            TextButton(
+            CatalogueTextButton(
                 onClick = {
                     onDismiss()
                     onConfirm()
@@ -59,7 +63,7 @@ internal fun StartOverConfirmation(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            CatalogueTextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
 }

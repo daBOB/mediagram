@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,7 @@ internal fun ShelfBar(
             Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.weight(1f))
-        onFeatured?.let { TextButton(onClick = it) { Text("Featured") } }
+        onFeatured?.let { CatalogueTextButton(onClick = it) { Text("Featured") } }
         ShelfModeToggle(view.chosen, view.onChoose)
     }
 }

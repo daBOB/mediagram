@@ -2,11 +2,12 @@ package ui.profile
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import catalog.profile.REMOVE
 import catalog.profile.removeQuestion
 import model.Profile
+import ui.chrome.NoDialogAnimation
 
 /**
  * Asked before Manage removes anyone, in the web's words — its
@@ -20,13 +21,16 @@ internal fun RemoveProfileDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(removeQuestion(profile)) },
+        title = {
+            NoDialogAnimation()
+            Text(removeQuestion(profile))
+        },
         confirmButton = {
-            TextButton(onClick = {
+            CatalogueTextButton(onClick = {
                 onRemove()
                 onDismiss()
             }) { Text(REMOVE) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

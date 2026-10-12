@@ -88,7 +88,7 @@ internal fun GenreBranch(
     onOpenCollection: (key: String) -> Unit,
 ) {
     if (catalogState !is CatalogUiState.Ready) {
-        CenteredMessage("Loading your library…")
+        CenteredLoading("Loading your library…")
         return
     }
     val columns = posterColumnsFor(currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass)

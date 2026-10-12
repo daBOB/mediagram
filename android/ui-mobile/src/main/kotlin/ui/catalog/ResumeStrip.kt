@@ -4,6 +4,8 @@ import catalog.factsLine
 import catalog.initialsOf
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,8 +52,11 @@ internal fun ResumeStrip(
     modifier: Modifier = Modifier,
 ) {
     if (cards.isEmpty()) return
+    // A department's Continue strip rests on a card too: every web `.resume-strip` snaps (`home.css:220,234`).
+    val state = rememberRowState(cards.map { it.set.setId })
     LazyRow(
-        state = rememberRowState(cards.map { it.set.setId }),
+        state = state,
+        flingBehavior = rememberSnapFlingBehavior(state, SnapPosition.Start),
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.medium),

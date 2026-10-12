@@ -1,7 +1,7 @@
 package ui.chrome
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mediagram.android.core.designsystem.R
 import designsystem.LocalCatalogueTones
+import designsystem.Motion
 import ui.common.MenuActions
 import ui.common.RailItem
 
@@ -84,7 +86,8 @@ internal fun CompactLibraryHeader(
                 fontSize = wordmarkSize,
                 modifier =
                     Modifier
-                        .clickable(onClick = onHome)
+                        // A link on the web (`index.html:51`), and links don't shrink when pressed.
+                        .linkClickable(null, role = null, onClick = onHome)
                         .semantics { contentDescription = "mediagram — home" },
             )
             Row(
@@ -100,9 +103,7 @@ internal fun CompactLibraryHeader(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (item in RailItem.entries) {
-                    val selected = item == activeRailItem
-                    val itemInk = if (selected) ink else MaterialTheme.colorScheme.onSurfaceVariant
-                    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = { onRailSelect(item) }, dot = rail.dotFor(item))
+                    RailIconButton(item, selected = item == activeRailItem, ink = ink, onClick = { onRailSelect(item) }, dot = rail.dotFor(item))
                 }
             }
         }
@@ -140,7 +141,8 @@ private fun SearchFieldLookAlike(
             modifier
                 .clip(RoundedCornerShape(percent = 50))
                 .background(tones.ruleSoft)
-                .clickable(onClick = onSearch)
+                // A link on the web (`index.html:89, an `<input>`, which `button:active` doesn't reach`), and links don't shrink when pressed.
+                .linkClickable(null, role = null, onClick = onSearch)
                 .semantics { contentDescription = "Search" }
                 .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
@@ -163,3 +165,16 @@ private fun Modifier.fadeTrailingEdge(background: Color): Modifier =
             brush = Brush.horizontalGradient(colors = listOf(Color.Transparent, background), startX = size.width - fadeWidth, endX = size.width),
         )
     }
+
+/** A rail row drawn as an icon. Its own composable so only it recomposes while the icon's colour fades. */
+@Composable
+private fun RailIconButton(item: RailItem, selected: Boolean, ink: Color, onClick: () -> Unit, dot: String?) {
+    // The rail rows' colour fade (`shell.css:50`), here on their icons. [ink] is
+    // the theme's own here, not a scroll blend, so it is safe to animate.
+    val itemInk by animateColorAsState(
+        if (selected) ink else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = Motion.hover(),
+        label = "rail icon",
+    )
+    CircleIconButton(icon = item.icon, description = item.label, tint = itemInk, selected = selected, onClick = onClick, dot = dot)
+}

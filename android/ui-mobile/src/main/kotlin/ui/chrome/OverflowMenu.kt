@@ -3,10 +3,7 @@ package ui.chrome
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,30 +50,30 @@ internal fun OverflowMenu(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    IconButton(
+    CatalogueIconButton(
         onClick = { menuExpanded = true },
         modifier = Modifier.semantics { contentDescription = "Menu" },
     ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null) }
-    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-        DropdownMenuItem(
+    CatalogueMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+        CatalogueMenuItem(
             text = { Text("System") },
             onClick = {
                 menuExpanded = false
                 menu.onSystem()
             },
         )
-        DropdownMenuItem(
+        CatalogueMenuItem(
             text = { Text("Settings") },
             onClick = {
                 menuExpanded = false
                 menu.onSettings()
             },
         )
-        DropdownMenuItem(text = { Text("My List") }, onClick = { menuExpanded = false; browse.onMyList() })
-        DropdownMenuItem(text = { Text("Continue") }, onClick = { menuExpanded = false; browse.onContinueWatching() })
-        DropdownMenuItem(text = { Text("Latest") }, onClick = { menuExpanded = false; browse.onLatest() })
-        DropdownMenuItem(text = { Text("Genres") }, onClick = { menuExpanded = false; browse.onGenres() })
-        DropdownMenuItem(text = { Text("Stats") }, onClick = { menuExpanded = false; browse.onStats() })
+        CatalogueMenuItem(text = { Text("My List") }, onClick = { menuExpanded = false; browse.onMyList() })
+        CatalogueMenuItem(text = { Text("Continue") }, onClick = { menuExpanded = false; browse.onContinueWatching() })
+        CatalogueMenuItem(text = { Text("Latest") }, onClick = { menuExpanded = false; browse.onLatest() })
+        CatalogueMenuItem(text = { Text("Genres") }, onClick = { menuExpanded = false; browse.onGenres() })
+        CatalogueMenuItem(text = { Text("Stats") }, onClick = { menuExpanded = false; browse.onStats() })
         AndroidOnlyItems(menu = menu, onAskStartOver = onAskStartOver, close = { menuExpanded = false })
     }
 }
@@ -100,11 +97,11 @@ internal fun AndroidOnlyMenu(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    IconButton(
+    CatalogueIconButton(
         onClick = { menuExpanded = true },
         modifier = Modifier.semantics { contentDescription = "Menu" },
     ) { Icon(imageVector = Icons.Default.MoreVert, contentDescription = null, tint = tint) }
-    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+    CatalogueMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
         AndroidOnlyItems(menu = menu, onAskStartOver = onAskStartOver, close = { menuExpanded = false })
     }
 }
@@ -117,7 +114,7 @@ private fun AndroidOnlyItems(
     close: () -> Unit,
 ) {
     menu.onPreloads?.let { onPreloads ->
-        DropdownMenuItem(text = { Text("Preloads · ${menu.preloadCount}") }, onClick = { close(); onPreloads() })
+        CatalogueMenuItem(text = { Text("Preloads · ${menu.preloadCount}") }, onClick = { close(); onPreloads() })
     }
     MenuItem(
         label = "Update library",
@@ -128,14 +125,14 @@ private fun AndroidOnlyItems(
             menu.onUpdate()
         },
     )
-    DropdownMenuItem(
+    CatalogueMenuItem(
         text = { Text("TMDB key…") },
         onClick = {
             close()
             menu.onTmdbKey()
         },
     )
-    DropdownMenuItem(
+    CatalogueMenuItem(
         text = { Text("Start over") },
         onClick = {
             close()
@@ -159,7 +156,7 @@ private fun MenuItem(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    DropdownMenuItem(
+    CatalogueMenuItem(
         text = {
             Column {
                 Text(label)

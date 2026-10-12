@@ -1,6 +1,5 @@
 package ui.catalog
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -9,12 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import catalog.FactRow
 import catalog.FactValue
 import designsystem.Spacing
+import ui.chrome.linkClickable
 
 private val FACT_LABEL_WIDTH = 96.dp
 
@@ -78,7 +77,8 @@ internal fun linkFact(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             textDecoration = TextDecoration.Underline,
-            modifier = Modifier.clickable(role = Role.Button, onClick = onOpen),
+            // A link on the web (`film-page.js:88`), and links don't shrink when pressed.
+            modifier = Modifier.linkClickable(null, onClick = onOpen),
         )
     }
 

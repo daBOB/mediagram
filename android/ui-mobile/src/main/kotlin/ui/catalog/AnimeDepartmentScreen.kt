@@ -89,6 +89,7 @@ internal fun AnimeDepartmentScreen(
     val resumeCards = remember(department.continuing, department.nextUp, watch, heldIds) {
         resumeCardsOf(department.continuing, department.nextUp, watch, heldIds)
     }
+    val reveals = rememberReveals()
 
     LazyVerticalGrid(
         columns = GutteredCells(columns, Spacing.medium),
@@ -104,32 +105,25 @@ internal fun AnimeDepartmentScreen(
                 line = animeLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
+                reveals = reveals,
             )
         }
         if (resumeCards.isNotEmpty()) {
-            item(key = "continue-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "Continue watching")
-            }
-            item(key = "continue", span = { GridItemSpan(maxLineSpan) }) {
-                ResumeStrip(cards = resumeCards, onOpenTitle = onPlay)
-            }
+            revealItem(reveals, "continue-heading") { DeptRowHeading(title = "Continue watching") }
+            revealItem(reveals, "continue") { ResumeStrip(cards = resumeCards, onOpenTitle = onPlay) }
         }
         if (department.shows.isNotEmpty()) {
-            item(key = "series-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "Series")
-            }
+            revealItem(reveals, "series-heading") { DeptRowHeading(title = "Series") }
             itemsIndexed(items = department.shows, key = { _, entry -> "series/${entry.key}" }) { index, entry ->
-                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                Box(Modifier.reveal(reveals, "series").gutteredCell(index, columns, Spacing.medium)) {
                     EntryCard(entry, positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
                 }
             }
         }
         if (department.films.isNotEmpty()) {
-            item(key = "films-heading", span = { GridItemSpan(maxLineSpan) }) {
-                DeptRowHeading(title = "Films")
-            }
+            revealItem(reveals, "films-heading") { DeptRowHeading(title = "Films") }
             itemsIndexed(items = department.films, key = { _, set -> "film/${set.setId}" }) { index, set ->
-                Box(Modifier.gutteredCell(index, columns, Spacing.medium)) {
+                Box(Modifier.reveal(reveals, "films").gutteredCell(index, columns, Spacing.medium)) {
                     EntryCard(Entry.Film(set), positions, watchedIds, onOpenTitle, onOpenCollection, heldIds)
                 }
             }

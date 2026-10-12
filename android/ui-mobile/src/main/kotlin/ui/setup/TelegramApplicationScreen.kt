@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
+import ui.chrome.CatalogueButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -67,7 +67,7 @@ fun TelegramApplicationScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         )
-        Button(
+        CatalogueButton(
             onClick = { onSubmit(apiId, apiHash) },
             enabled = apiId.isNotBlank() && apiHash.isNotBlank(),
         ) {

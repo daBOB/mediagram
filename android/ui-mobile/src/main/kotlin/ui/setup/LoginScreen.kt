@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
+import ui.chrome.CatalogueButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,6 +70,6 @@ fun LoginScreen(
                     keyboardType = if (isSecret) KeyboardType.Password else KeyboardType.Text,
                 ),
         )
-        Button(onClick = { onSubmit(input) }) { Text("Continue") }
+        CatalogueButton(onClick = { onSubmit(input) }) { Text("Continue") }
     }
 }

@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,7 +81,7 @@ internal fun KeptWall(
                     // same reason: a control of its own, not one tap away
                     // from starting the film by mistake.
                     if (onFinish != null) {
-                        TextButton(onClick = { onFinish(set.setId) }, modifier = Modifier.align(Alignment.End)) {
+                        CatalogueTextButton(onClick = { onFinish(set.setId) }, modifier = Modifier.align(Alignment.End)) {
                             Text("Mark finished")
                         }
                     }

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import catalog.CatalogTab
+import designsystem.LocalReducedMotion
 import kotlin.math.roundToInt
 import ui.common.MenuActions
 import ui.common.RailItem
@@ -118,10 +119,11 @@ internal fun LibraryHome(
             // its first TMDB fetch, a kids profile with no editor's pick) —
             // every one of those reads solid instead of ramping as if item 0
             // were a hero it does not have.
-            val blend by remember(heroState, barHeightPx) {
+            val reducedMotion = LocalReducedMotion.current
+            val blend by remember(heroState, barHeightPx, reducedMotion) {
                 derivedStateOf {
                     val hero = heroState
-                    if (hero == null) 1f else coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx)
+                    if (hero == null) 1f else coverBlend(hero.firstVisibleItemIndex, hero.firstVisibleItemScrollOffset, hero.heroHeightPx, barHeightPx, reducedMotion)
                 }
             }
             // Created once and read through the same `var ... by remember`

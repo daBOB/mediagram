@@ -160,7 +160,7 @@ private fun SearchResults(
     } ?: true
 
     when (searchResultsView(catalogReady, empty)) {
-        SearchResultsView.LOADING -> CenteredMessage("Loading your library…")
+        SearchResultsView.LOADING -> CenteredLoading("Loading your library…")
         SearchResultsView.EMPTY -> CenteredMessage("No title, person, folder or summary in the library mentions that.")
         SearchResultsView.ROWS -> {
             val checked = groups ?: return

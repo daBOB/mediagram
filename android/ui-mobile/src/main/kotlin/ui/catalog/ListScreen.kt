@@ -14,7 +14,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +27,7 @@ import catalog.spelledCountOf
 import designsystem.Spacing
 import model.ListOfSets
 import model.MediaSet
+import ui.chrome.NoDialogAnimation
 
 /**
  * One list's titles, in the order they were filed — `renderList` and
@@ -70,8 +71,8 @@ internal fun ListScreen(
             ) {
                 onPlayAll?.let { PlayAllButton(onClick = it) }
                 Row {
-                    TextButton(onClick = { renaming = true }) { Text("Rename") }
-                    TextButton(onClick = { deleting = true }) { Text("Delete list") }
+                    CatalogueTextButton(onClick = { renaming = true }) { Text("Rename") }
+                    CatalogueTextButton(onClick = { deleting = true }) { Text("Delete list") }
                 }
             }
         }
@@ -117,7 +118,7 @@ private fun ListedRow(set: MediaSet, held: Boolean, onPlay: () -> Unit, onRemove
             Text(set.title, style = MaterialTheme.typography.bodyLarge)
             if (held) OfflineBadge(modifier = Modifier.padding(top = Spacing.extraSmall))
         }
-        TextButton(onClick = onRemove) { Text("Remove") }
+        CatalogueTextButton(onClick = onRemove) { Text("Remove") }
     }
 }
 
@@ -126,9 +127,12 @@ private fun ListedRow(set: MediaSet, held: Boolean, onPlay: () -> Unit, onRemove
 private fun DeleteListConfirmation(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete \"$name\"?") },
+        title = {
+            NoDialogAnimation()
+            Text("Delete \"$name\"?")
+        },
         text = { Text("The titles stay in the library.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete list") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { CatalogueTextButton(onClick = onConfirm) { Text("Delete list") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

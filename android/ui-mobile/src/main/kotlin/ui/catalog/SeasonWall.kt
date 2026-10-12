@@ -2,16 +2,17 @@ package ui.catalog
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import ui.chrome.CatalogueMenu
+import ui.chrome.CatalogueMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,8 @@ import model.WatchSnapshot
  * state rather than this function's own: the same season must still be
  * shown once a watch-state update recomposes the whole series page, as
  * the chosen tab is ([rememberChosenTab]).
+ *
+ * [modifier] goes on every item this adds: the Episodes panel's rise.
  */
 internal fun LazyListScope.seriesEpisodes(
     collection: Entry.Collection,
@@ -53,15 +56,16 @@ internal fun LazyListScope.seriesEpisodes(
     watch: WatchSnapshot,
     heldIds: Set<String>,
     onPlay: (setId: String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
     if (collection.divisions.size > 1) {
-        item(key = "season-picker") { SeasonPicker(collection.divisions, shown, onSelectSeason) }
+        item(key = "season-picker") { Box(modifier) { SeasonPicker(collection.divisions, shown, onSelectSeason) } }
     }
     val rows = rowsOf(listOf(shown))
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-    items(rows, positions, watchedIds, heldIds, onPlay)
+    items(rows, positions, watchedIds, heldIds, onPlay, modifier)
 }
 
 @Composable
@@ -84,9 +88,9 @@ private fun SeasonPicker(
             Text(text = seasonOptionOf(shown), style = MaterialTheme.typography.titleMedium)
             Text(text = "▾", style = MaterialTheme.typography.titleMedium)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        CatalogueMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (division in divisions) {
-                DropdownMenuItem(
+                CatalogueMenuItem(
                     text = { Text(seasonOptionOf(division)) },
                     onClick = {
                         expanded = false

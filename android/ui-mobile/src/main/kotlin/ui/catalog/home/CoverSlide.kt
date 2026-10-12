@@ -1,7 +1,6 @@
 package ui.catalog.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +13,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
@@ -28,17 +28,30 @@ import androidx.compose.ui.unit.sp
 import catalog.coverFactsLine
 import designsystem.CoverTitle
 import designsystem.Eyebrow
+import designsystem.Motion
 import designsystem.Spacing
+import designsystem.drift
+import designsystem.entrance
 import model.MediaSet
 import ui.chrome.LocalTopChrome
+import ui.chrome.linkClickable
 import ui.common.catalog.HeroArtwork
 
 /** Past this many characters a title steps down a size, so it still fits in three lines (`home-cover.js:22`). */
 private const val LONG_TITLE = 18
 
+/** Each slide's picture settles once from 1.06 to its own size — `cover-drift 14s var(--ease-out)` (`home.css:27,128`). */
+private const val DRIFT_FROM = 1.06f
+private const val DRIFT_MS = 14_000
+
 /**
  * One cover story's own picture, headline and actions, over its own
- * backdrop — a `Crossfade` slide in [HomeCover].
+ * backdrop — one slide of [HomeCover].
+ *
+ * [turning]: the page arrived on this film or a turn brought it in, so the
+ * slide comes up out of the cover's ground and its picture settles. A film a
+ * refresh swapped in is drawn at rest, as on the web's settled page.
+ * [arrived], when given, is the page's note that the arrival has played.
  *
  * [minHeight] is a floor, not an exact height: this root `Box`'s own
  * `heightIn(min = ...)` is what actually reserves the cover's usual size —
@@ -57,11 +70,13 @@ internal fun CoverSlide(
     compact: Boolean,
     minHeight: Dp,
     watchlisted: Boolean,
+    turning: Boolean,
+    arrived: MutableState<Boolean>?,
     onPlay: () -> Unit,
     onDetails: () -> Unit,
     onToggleWatchlist: (Boolean) -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxWidth().heightIn(min = minHeight)) {
+    Box(modifier = Modifier.fillMaxWidth().heightIn(min = minHeight).then(if (turning) Modifier.entrance(COVER_FADE_MS, seen = arrived) else Modifier)) {
         val backdropPath = set.backdropPath
         // Blurred is the only Artwork mode that changes the cover's own
         // picture: `appearance.css:22` lists `.cover-stage` on its blur rule
@@ -70,7 +85,18 @@ internal fun CoverSlide(
         // under Solid too, unlike the title spread or a department hero.
         // `HeroArtwork` already carries exactly that split.
         if (backdropPath != null) {
-            HeroArtwork(path = backdropPath, modifier = Modifier.matchParentSize())
+            // Clipped here, so the settling picture never spills past the
+            // cover (`.cover { overflow: hidden }`, `home.css:13`). Outside
+            // HeroArtwork, so Blurred's own 1.12 overscan multiplies with the
+            // settle instead of being overridden by it as the web's is.
+            HeroArtwork(
+                path = backdropPath,
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .clipToBounds()
+                        .then(if (turning) Modifier.drift(DRIFT_FROM, 1f, DRIFT_MS, Motion.EaseOut) else Modifier),
+            )
         } else {
             Box(modifier = Modifier.matchParentSize().background(MaterialTheme.colorScheme.surfaceVariant))
         }
@@ -161,7 +187,8 @@ internal fun CoverSlide(
                         Modifier
                             .align(Alignment.CenterVertically)
                             .padding(start = 16.dp)
-                            .clickable(role = Role.Button, onClick = onDetails)
+                            // A link on the web (`home-cover.js:140`), and links don't shrink when pressed.
+                            .linkClickable(null, onClick = onDetails)
                             .semantics { contentDescription = "Details: ${set.title}" }
                             .padding(vertical = 12.dp),
                 )

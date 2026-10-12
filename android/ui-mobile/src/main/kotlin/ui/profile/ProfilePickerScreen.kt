@@ -14,11 +14,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ import catalog.profile.WHO_RUNS_THIS
 import catalog.profile.kidsTag
 import designsystem.Spacing
 import model.Profile
+import ui.catalog.home.LibraryLoading
 import ui.settings.QuietPill
 
 private const val HEADING = "Who's watching?"
@@ -69,7 +69,8 @@ internal fun ProfilePickerScreen(
     actions: PickerActions,
 ) {
     when (state) {
-        ProfileUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        // Between the setup check and the library on every cold start: the same block, so the wait never flashes.
+        ProfileUiState.Loading -> LibraryLoading()
         is ProfileUiState.Picking -> PickerBody(state, actions)
         is ProfileUiState.Chosen -> Unit
     }
@@ -96,7 +97,7 @@ private fun PickerBody(
             Text(WAITING_FOR_HOUSEHOLD, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.medium))
         }
         if (state.error != null || state.awaitingHousehold) {
-            TextButton(onClick = actions.onRetry) { Text("Try again") }
+            CatalogueTextButton(onClick = actions.onRetry) { Text("Try again") }
         }
         // A load that just failed is answered by trying again, not by starting a household.
         when {
@@ -113,7 +114,7 @@ private fun PickerBody(
             items(items = state.profiles, key = Profile::id) { profile -> ProfileTile(profile, onClick = { actions.onPick(profile.id) }) }
         }
         if (state.grownUps.isNotEmpty()) {
-            TextButton(onClick = actions.onManage) { Text(MANAGE_PROFILES) }
+            CatalogueTextButton(onClick = actions.onManage) { Text(MANAGE_PROFILES) }
         }
         Text(
             text = PICKER_NOTE,
@@ -122,7 +123,7 @@ private fun PickerBody(
             modifier = Modifier.padding(top = Spacing.small),
         )
         if (state.canStay) {
-            TextButton(onClick = actions.onStay, modifier = Modifier.padding(top = Spacing.small)) { Text("Stay as I am") }
+            CatalogueTextButton(onClick = actions.onStay, modifier = Modifier.padding(top = Spacing.small)) { Text("Stay as I am") }
         }
     }
 }

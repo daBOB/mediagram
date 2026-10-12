@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -73,6 +73,7 @@ internal fun MoviesDepartmentScreen(
     val featured = remember(films, watchedIds) { pickFeatured(films, watchedIds, Random, 1) }
     // Figures, not spelled — the web builds this label from the length itself.
     val allFilms = "All ${department.filmCount} films"
+    val reveals = rememberReveals()
 
     LazyColumn(state = state, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.large)) {
         item {
@@ -81,32 +82,34 @@ internal fun MoviesDepartmentScreen(
                 line = moviesLineOf(department),
                 lead = department.lead,
                 onOpenTitle = onOpenTitle,
+                reveals = reveals,
             )
         }
         if (department.featured.isNotEmpty()) {
-            item {
+            revealItem(reveals, "featured-heading") {
                 DeptRowHeading(
                     title = "Featured Movies",
                     onSeeAll = onSeeAllFilms,
                     seeAllLabel = allFilms,
-                    extra = { if (featured.isNotEmpty()) TextButton(onClick = { reel = pickFeatured(films, watchedIds, Random) }) { Text("Featured") } },
+                    extra = { if (featured.isNotEmpty()) CatalogueTextButton(onClick = { reel = pickFeatured(films, watchedIds, Random) }) { Text("Featured") } },
                 )
             }
-            item { FilmRow(department.featured, watchedIds, onOpenTitle) }
+            revealItem(reveals, "featured") { FilmRow(department.featured, watchedIds, onOpenTitle) }
         }
         if (department.genres.isNotEmpty()) {
-            item { DeptRowHeading(title = "Genres", onSeeAll = onOpenGenresIndex, seeAllLabel = "Every genre") }
-            item { GenreRow(department.genres, onOpenGenre) }
+            revealItem(reveals, "genres-heading") { DeptRowHeading(title = "Genres", onSeeAll = onOpenGenresIndex, seeAllLabel = "Every genre") }
+            revealItem(reveals, "genres") { GenreRow(department.genres, onOpenGenre) }
         }
         if (department.acclaimed.isNotEmpty()) {
-            item { DeptRowHeading(title = "Acclaimed, not yet seen") }
-            item { FilmRow(department.acclaimed, watchedIds, onOpenTitle) }
+            revealItem(reveals, "acclaimed-heading") { DeptRowHeading(title = "Acclaimed, not yet seen") }
+            revealItem(reveals, "acclaimed") { FilmRow(department.acclaimed, watchedIds, onOpenTitle) }
         }
         if (department.recentlyAdded.isNotEmpty()) {
-            item { DeptRowHeading(title = "Recently added", onSeeAll = onOpenLatest, seeAllLabel = "Latest") }
-            item { FilmRow(department.recentlyAdded, watchedIds, onOpenTitle) }
+            revealItem(reveals, "recent-heading") { DeptRowHeading(title = "Recently added", onSeeAll = onOpenLatest, seeAllLabel = "Latest") }
+            revealItem(reveals, "recent") { FilmRow(department.recentlyAdded, watchedIds, onOpenTitle) }
         }
-        // The way into the whole shelf at the page's foot, the web's `.dept-all`.
+        // The way into the whole shelf at the page's foot, the web's `.dept-all`,
+        // which is not a revealed section.
         item {
             PagePill(
                 text = "$allFilms →",

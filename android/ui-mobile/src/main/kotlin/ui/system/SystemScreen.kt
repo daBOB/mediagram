@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,7 +70,7 @@ internal fun SystemContent(
         if (failure != null) {
             Column {
                 Text(failure, color = MaterialTheme.colorScheme.error)
-                TextButton(onClick = onRetry) { Text("Try again") }
+                CatalogueTextButton(onClick = onRetry) { Text("Try again") }
             }
         }
         when {

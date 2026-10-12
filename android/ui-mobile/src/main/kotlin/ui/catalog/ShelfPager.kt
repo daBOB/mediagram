@@ -1,5 +1,6 @@
 package ui.catalog
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -7,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.runtime.CompositionLocalProvider
+import designsystem.catalogueIndication
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,32 +44,36 @@ internal fun ShelfPager(
 ) {
     val links = pageLinks(page, pages)
     if (links.isEmpty()) return
-    FlowRow(
-        modifier = modifier.fillMaxWidth().padding(vertical = Spacing.medium),
-        horizontalArrangement = Arrangement.Center,
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = { onPage(page - 1) }, enabled = page > 1) { Text("‹ Prev") }
-        for (link in links) {
-            when (link) {
-                PageLink.Gap -> Text("…", modifier = Modifier.padding(horizontal = Spacing.small))
-                is PageLink.To ->
-                    if (link.page == page) {
-                        // The page on screen, marked rather than offered.
-                        Text(
-                            text = link.page.toString(),
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = Spacing.medium).semantics { selected = true },
-                        )
-                    } else {
-                        TextButton(onClick = { onPage(link.page) }, modifier = Modifier.semantics { role = Role.Button }) {
-                            Text(link.page.toString())
+    // The web's pager steps and pages are links (`pager.js:85,100`), and links
+    // don't shrink when pressed; the buttons below read this indication.
+    CompositionLocalProvider(LocalIndication provides catalogueIndication(pressScale = 1f)) {
+        FlowRow(
+            modifier = modifier.fillMaxWidth().padding(vertical = Spacing.medium),
+            horizontalArrangement = Arrangement.Center,
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            CatalogueTextButton(onClick = { onPage(page - 1) }, enabled = page > 1) { Text("‹ Prev") }
+            for (link in links) {
+                when (link) {
+                    PageLink.Gap -> Text("…", modifier = Modifier.padding(horizontal = Spacing.small))
+                    is PageLink.To ->
+                        if (link.page == page) {
+                            // The page on screen, marked rather than offered.
+                            Text(
+                                text = link.page.toString(),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = Spacing.medium).semantics { selected = true },
+                            )
+                        } else {
+                            CatalogueTextButton(onClick = { onPage(link.page) }, modifier = Modifier.semantics { role = Role.Button }) {
+                                Text(link.page.toString())
+                            }
                         }
-                    }
+                }
             }
+            CatalogueTextButton(onClick = { onPage(page + 1) }, enabled = page < pages) { Text("Next ›") }
         }
-        TextButton(onClick = { onPage(page + 1) }, enabled = page < pages) { Text("Next ›") }
     }
 }
 

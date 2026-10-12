@@ -72,4 +72,12 @@ class CoverBlendTest {
     ) {
         kotlin.test.assertTrue(kotlin.math.abs(expected - actual) <= absoluteTolerance, "expected $expected, was $actual")
     }
+
+    @Test
+    fun underReducedMotionTheBarIsSolidEvenOverTheCoversTop() {
+        // The web settles its masthead over a cover only with
+        // `prefers-reduced-motion: no-preference` (shell.css:230); otherwise
+        // it is the ordinary paper bar.
+        assertEquals(1f, coverBlend(firstVisibleItemIndex = 0, firstVisibleItemScrollOffset = 0, coverHeightPx = coverHeight, barHeightPx = barHeight, reducedMotion = true))
+    }
 }

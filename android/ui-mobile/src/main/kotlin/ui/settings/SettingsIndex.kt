@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import ui.chrome.CatalogueIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,7 +86,7 @@ internal fun SettingsIndex(
                 .selectableGroup(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = Spacing.extraLarge)) {
-            IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back to the library" }) {
+            CatalogueIconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back to the library" }) {
                 Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
             Wordmark()

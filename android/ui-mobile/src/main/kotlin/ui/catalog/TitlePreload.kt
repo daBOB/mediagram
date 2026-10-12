@@ -4,11 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import ui.chrome.CatalogueMenuItem
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
@@ -61,7 +61,7 @@ internal fun PreloadPill(
 /** The ⋯ menu's own "Remove preload" row, offered only once a film is [FilmPreloadState.Done]. */
 @Composable
 internal fun PreloadRemoveMenuItem(onRemove: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenuItem(text = { Text("Remove preload") }, onClick = { onDismiss(); onRemove() })
+    CatalogueMenuItem(text = { Text("Remove preload") }, onClick = { onDismiss(); onRemove() })
 }
 
 /**

@@ -9,7 +9,11 @@ package player
  * today.
  */
 
-/** How long the bar stays after a tap, while the film is running. */
+/**
+ * How long the bar stays after a tap, while the film is running. Longer than
+ * the web's 2.6s (`player-hud.js:9`) on purpose: a finger has to travel to the
+ * controls, where a mouse is already over them.
+ */
 const val CONTROLS_LINGER_MS = 4_000L
 
 /**

@@ -18,7 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +44,7 @@ internal fun NotesPanel(blocks: List<Block>, onClose: () -> Unit, modifier: Modi
     Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = Spacing.medium)) {
             Text("Notes", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = onClose, modifier = Modifier.semantics { contentDescription = "Close notes" }) { Text("✕") }
+            CatalogueTextButton(onClick = onClose, modifier = Modifier.semantics { contentDescription = "Close notes" }) { Text("✕") }
         }
         HorizontalDivider()
         SelectionContainer {

@@ -1,33 +1,24 @@
 package ui.catalog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import catalog.BrowseViewModel
 import catalog.Entry
 import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchGroups
 import catalog.SearchRow
-import catalog.VisiblePerson
 import catalog.extentOf
 import catalog.factsLine
 import catalog.spelledCountOf
@@ -35,7 +26,6 @@ import designsystem.Spacing
 import model.Progress
 import model.WatchSnapshot
 import ui.common.catalog.DESTINATION_ASPECT
-import ui.common.catalog.rememberPortrait
 
 private val SEARCH_CARD_WIDTH = 120.dp
 
@@ -118,42 +108,6 @@ internal fun SearchGroupsView(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SearchFilterChips(filters: List<Pair<SearchFilter, Int>>, chosen: SearchFilter, onChoose: (SearchFilter) -> Unit) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.medium, vertical = Spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-    ) {
-        for ((kind, count) in filters) {
-            val selected = kind == chosen
-            Text(
-                text = "${filterLabel(kind)} $count",
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(16.dp),
-                    )
-                    .clickable(role = Role.Button) { onChoose(kind) }
-                    .padding(horizontal = Spacing.medium, vertical = Spacing.extraSmall),
-            )
-        }
-    }
-}
-
-private fun filterLabel(filter: SearchFilter): String = when (filter) {
-    SearchFilter.ALL -> "All"
-    SearchFilter.MOVIES -> "Movies"
-    SearchFilter.SERIES -> "Series"
-    SearchFilter.ANIME -> "Anime"
-    SearchFilter.DOCUMENTARIES -> "Documentaries"
-    SearchFilter.TUTORIALS -> "Tutorials"
-    SearchFilter.PEOPLE -> "People"
-    SearchFilter.COLLECTIONS -> "Collections"
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
 private fun PosterSection(title: String, cards: List<@Composable () -> Unit>) {
     Column(modifier = Modifier.padding(top = Spacing.small)) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
@@ -195,34 +149,6 @@ private fun RowSection(title: String, rows: List<SearchRow>, positions: Map<Stri
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
         for (row in rows) {
             SearchResultRow(row, positions[row.set.setId], row.set.setId in watchedIds, onPlay)
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PeopleSection(people: List<VisiblePerson>, onOpenPerson: (Long) -> Unit) {
-    val browseViewModel: BrowseViewModel = hiltViewModel()
-    Column(modifier = Modifier.padding(top = Spacing.medium)) {
-        Text("People", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = Spacing.small))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-            for (person in people) {
-                // Fetched lazily, at most once per session per person — the
-                // same [rememberPortrait] a person's own page asks with.
-                val portrait = rememberPortrait(person.personId, person.portraitPath, browseViewModel.portraits, browseViewModel::fetchPortrait)
-                Column(
-                    modifier = Modifier.clickable(role = Role.Button) { onOpenPerson(person.personId) }.padding(Spacing.small),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    PersonFace(name = person.name, portraitPath = portrait, size = 64.dp)
-                    Text(person.name, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = Spacing.extraSmall))
-                    Text(
-                        spelledCountOf(person.titles, "title"),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
         }
     }
 }

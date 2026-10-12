@@ -2,8 +2,9 @@ package ui.settings
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import ui.chrome.NoDialogAnimation
 
 /**
  * Asked before signing out, and worded against start over's: this ends the
@@ -19,7 +20,10 @@ internal fun SignOutConfirmation(
     if (!asking) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sign out?") },
+        title = {
+            NoDialogAnimation()
+            Text("Sign out?")
+        },
         text = {
             Text(
                 "This signs this device out of Telegram and removes the library it " +
@@ -28,11 +32,11 @@ internal fun SignOutConfirmation(
             )
         },
         confirmButton = {
-            TextButton(onClick = {
+            CatalogueTextButton(onClick = {
                 onDismiss()
                 onConfirm()
             }) { Text("Sign out") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

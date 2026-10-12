@@ -2,8 +2,9 @@ package ui.catalog
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import ui.chrome.NoDialogAnimation
 
 /** What a fetch reported, or what stopped it — shown over whichever library screen is up when it finishes. */
 @Composable
@@ -15,8 +16,11 @@ internal fun FetchResultDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Update library") },
+        title = {
+            NoDialogAnimation()
+            Text("Update library")
+        },
         text = { Text(message) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+        confirmButton = { CatalogueTextButton(onClick = onDismiss) { Text("OK") } },
     )
 }

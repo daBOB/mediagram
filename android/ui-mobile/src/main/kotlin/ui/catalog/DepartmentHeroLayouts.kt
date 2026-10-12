@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -41,6 +42,7 @@ internal fun BoxScope.WideDeptHero(
     artFraction: Float,
     franchiseTitle: Boolean,
     overview: String?,
+    reveals: Reveals,
 ) {
     if (art != null) {
         // `ui.pageGround`, not `colorScheme.surface` — the window's own
@@ -61,7 +63,9 @@ internal fun BoxScope.WideDeptHero(
         // gradient layers below actually need.
         Box(Modifier.matchParentSize()) {
             val artModifier = Modifier.fillMaxHeight().fillMaxWidth(artFraction).align(Alignment.CenterEnd)
-            HeroArtwork(path = art, modifier = artModifier)
+            // `.dept-art img` alone settles in, clipped by `.dept-art` (`departments.css:16-17`);
+            // the scrims below are its still `::after`. One flag for both widths: the page's.
+            HeroArtwork(path = art, modifier = artModifier.clipToBounds().artIn(reveals.of(HERO_ART)))
             // CSS paints the *first*-declared background layer on top (the
             // same rule `CoverSlide`'s own scrim already carries) — built
             // back-to-front here to land in `.dept-art::after`'s own order
@@ -109,6 +113,7 @@ internal fun BoxScope.WideDeptHero(
             leadName = quote.second,
             width = width,
             onOpen = onOpenLead,
+            reveals = reveals,
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
@@ -145,6 +150,7 @@ internal fun CompactDeptHero(
     width: Dp,
     franchiseTitle: Boolean,
     overview: String?,
+    reveals: Reveals,
 ) {
     val artHeight = width * 0.64f
     Box(Modifier.fillMaxWidth()) {
@@ -153,7 +159,7 @@ internal fun CompactDeptHero(
             // layout's own scrim above.
             val paper = MaterialTheme.colorScheme.pageGround
             Box(Modifier.fillMaxWidth().height(artHeight)) {
-                HeroArtwork(path = art, modifier = Modifier.matchParentSize())
+                HeroArtwork(path = art, modifier = Modifier.matchParentSize().clipToBounds().artIn(reveals.of(HERO_ART)))
                 Box(
                     Modifier.matchParentSize().background(
                         Brush.verticalGradient(0f to Color.Transparent, 0.2f to Color.Transparent, 0.55f to paper.copy(alpha = 0.4f), 1f to paper),

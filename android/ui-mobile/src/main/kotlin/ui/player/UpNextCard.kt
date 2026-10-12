@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -84,8 +84,8 @@ internal fun UpNextCard(
             style = MaterialTheme.typography.bodySmall,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
-            TextButton(onClick = onPlayNow) { Text("Play now", color = Color.White) }
-            TextButton(onClick = onCancel) { Text("Cancel", color = Color.White) }
+            CatalogueTextButton(onClick = onPlayNow) { Text("Play now", color = Color.White) }
+            CatalogueTextButton(onClick = onCancel) { Text("Cancel", color = Color.White) }
         }
     }
 }

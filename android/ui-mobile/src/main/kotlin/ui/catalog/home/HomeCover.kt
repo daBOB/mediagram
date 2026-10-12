@@ -1,23 +1,20 @@
 package ui.catalog.home
 
-import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -33,8 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import designsystem.LocalReducedMotion
 import kotlinx.coroutines.delay
 import model.MediaSet
+import ui.chrome.IndicationInk
 
 /** The cover's own outer bounds, for a test to check what sits under it never overlaps them. */
 internal const val HOME_COVER_TEST_TAG = "home-cover"
@@ -42,12 +40,8 @@ internal const val HOME_COVER_TEST_TAG = "home-cover"
 /** How long one cover story holds before advancing — the web's own `HOLD_MS` (`home-cover.js:20`). */
 private const val HOLD_MS = 9_000L
 
-/** How long one slide takes to cross-fade into the next — the web's own `cover-fade` (`home.css:18`, `1400ms`). */
-internal const val CROSSFADE_MS = 1_400
-
-/** Type set over artwork keeps the same two colours in both themes — the web's `--on-image`/`--on-image-2` (`theme.css:99-100`); shared with the pills and pager in `CoverControls.kt`. */
-internal val OnImage = Color(0xFFF6F2EA)
-internal val OnImage2 = Color(0xD1F6F2EA)
+/** How long a slide takes to come up out of the ground — the web's own `cover-fade` (`home.css:18`, `1400ms`). */
+internal const val COVER_FADE_MS = 1_400
 
 /**
  * The cover story: one film at a time, full bleed under the chrome, its
@@ -66,13 +60,14 @@ internal fun HomeCover(
     onPlay: (MediaSet) -> Unit,
     onOpenTitle: (String) -> Unit,
     onToggleWatchlist: (String, Boolean) -> Unit,
+    // Whether the page has already played the cover's arrival. Held by the
+    // page, never saved: a lazy list recycling the cover's slot, or a sync,
+    // must not replay it, while a new visit does (`catalog.css:136`).
+    arrived: MutableState<Boolean> = remember { mutableStateOf(false) },
 ) {
     if (films.isEmpty()) return
     val context = LocalContext.current
-    val reducedMotion =
-        remember {
-            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-        }
+    val reducedMotion = LocalReducedMotion.current
     // The web holds rotation on pointerenter/focusin (`home-cover.js:77-80`);
     // a TalkBack/switch-access user relies on touch exploration instead of a
     // resting finger, so rotation never starts for one at all.
@@ -85,31 +80,43 @@ internal fun HomeCover(
     var pointerDown by remember { mutableStateOf(false) }
     var hasFocus by remember { mutableStateOf(false) }
     val rotates = films.size > 1 && !reducedMotion && !touchExplorationEnabled
+    val page = currentPage.coerceIn(0, films.lastIndex)
 
-    if (rotates) {
-        LaunchedEffect(currentPage, paused, pointerDown, hasFocus) {
-            if (paused || pointerDown || hasFocus) return@LaunchedEffect
-            delay(HOLD_MS)
-            currentPage = (currentPage + 1) % films.size
+    // Which film the last turn brought in, by the timer or a dot. Only it and
+    // the film the page first arrived on come up out of the ground and settle;
+    // one a refresh moves into view, its predecessor gone from the lineup, is
+    // simply there, as on the web's settled redraw (`catalog.css:136`). Counted
+    // from the page shown, so a shrunk lineup never "turns" to the film it
+    // shows, and dropped once the shown film stops being it.
+    var turnedTo by remember { mutableStateOf<String?>(null) }
+    val turn = { next: Int ->
+        if (next != page) {
+            turnedTo = films[next].setId
+            currentPage = next
         }
     }
 
-    // A fade in progress swallows its own taps below: both slides are
-    // composed during a `Crossfade`, the incoming one on top, so without
-    // this a tap 150ms into the fade — while the screen still reads as
-    // almost entirely the outgoing film — would act on the film not shown.
-    // Skipped on the very first composition (`firstSlide`): nothing is
-    // actually fading yet then, only the one slide `Crossfade` starts on.
-    var fading by remember { mutableStateOf(false) }
-    var firstSlide by remember { mutableStateOf(true) }
-    LaunchedEffect(currentPage) {
-        if (firstSlide) {
-            firstSlide = false
-        } else {
-            fading = true
-            delay(CROSSFADE_MS.toLong())
-            fading = false
+    if (rotates) {
+        LaunchedEffect(page, paused, pointerDown, hasFocus, films) {
+            if (paused || pointerDown || hasFocus) return@LaunchedEffect
+            delay(HOLD_MS)
+            turn((page + 1) % films.size)
         }
+    }
+
+    // A turn swallows taps while its film is still coming up out of the dark,
+    // so a press lands on nothing rather than on a control the viewer can
+    // barely see. The first film comes up as the page arrives and takes taps,
+    // as any arriving page does; under reduced motion nothing fades at all.
+    var fading by remember { mutableStateOf(false) }
+    LaunchedEffect(films[page].setId) { if (turnedTo != films[page].setId) turnedTo = null }
+    // A timer guarding taps, not motion, so it is not a tween delay.
+    LaunchedEffect(turnedTo) {
+        fading = false
+        if (turnedTo == null || reducedMotion) return@LaunchedEffect
+        fading = true
+        delay(COVER_FADE_MS.toLong())
+        fading = false
     }
 
     val windowHeight = LocalConfiguration.current.screenHeightDp.dp
@@ -117,22 +124,20 @@ internal fun HomeCover(
     // A minimum, not an exact height — `CoverSlide`'s own root `Box` is
     // what enforces this floor (the `heightIn(min=)` + `matchParentSize()`
     // pattern `HomeFeatures.kt` already uses, see its own note); neither
-    // this `BoxWithConstraints` nor `Crossfade` below carry a size modifier
-    // of their own, so both just wrap whatever height `CoverSlide` resolves
-    // to. Nothing here ever asks a child to `fillMaxSize()` under this
-    // `LazyColumn` item's own unbounded height — the trap that once
+    // this `BoxWithConstraints` nor the keyed slide below carry a size
+    // modifier of their own, so both just wrap whatever height `CoverSlide`
+    // resolves to. Nothing here ever asks a child to `fillMaxSize()` under
+    // this `LazyColumn` item's own unbounded height — the trap that once
     // collapsed a `HorizontalPager` here — and a short window (split
     // screen) can grow the text past the floor instead of clipping it.
-    val coverMinHeight =
-        if (compact) (windowHeight.value * 0.84f).dp else fluid(620f, 0.635f, 705f, windowHeight.value).dp
-
-    val page = currentPage.coerceIn(0, films.lastIndex)
+    val coverMinHeight = coverHeightFor(compact, windowHeight)
 
     BoxWithConstraints(
         modifier =
             Modifier
                 .testTag(HOME_COVER_TEST_TAG)
                 .fillMaxWidth()
+                .background(CoverGround)
                 .focusGroup()
                 .onFocusChanged { hasFocus = it.hasFocus }
                 // `Initial`, not `Main`: sees every down/up even when a
@@ -148,56 +153,47 @@ internal fun HomeCover(
                     }
                 },
     ) {
-        val columnWidth = maxWidth
-        // A cross-fade, not `HorizontalPager`'s own slide-past — the web's
-        // own cover turns by fading (`.cover-slide{animation:cover-fade}`,
-        // `home.css:18`), never sliding; a fade also never leaves a title
-        // clipped at a page edge mid-turn the way a slide briefly can.
-        //
-        // Keyed on the film itself (`MediaSet`, a data class), not an
-        // index: the outgoing slide during a fade still reads `films[shown]`
-        // through this same lambda, and if the lineup has shrunk since the
-        // fade began (a film pinned elsewhere, marked watched, or dropped
-        // by a library refresh), the old index can be past the new list's
-        // end. A `MediaSet` value stays valid to draw regardless of what the
-        // list it came from looks like now.
-        Crossfade(targetState = films[page], animationSpec = tween(CROSSFADE_MS), label = "cover") { set ->
-            CoverSlide(
-                set = set,
-                width = width,
-                columnWidth = columnWidth,
-                compact = compact,
-                minHeight = coverMinHeight,
-                watchlisted = set.setId in watchlist,
-                onPlay = { onPlay(set) },
-                onDetails = { onOpenTitle(set.setId) },
-                onToggleWatchlist = { listed -> onToggleWatchlist(set.setId, listed) },
-            )
-        }
-        if (fading) {
-            // Consumes every tap without doing anything with it — no
-            // ripple, no callback — so a press mid-fade lands on nothing
-            // rather than on whichever slide happens to be on top.
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
-            )
-        }
-        if (films.size > 1) {
-            CoverPager(
-                count = films.size,
-                current = page,
-                rotates = rotates,
-                paused = paused,
-                onTogglePause = { paused = !paused },
-                onPick = { index -> currentPage = index },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = gutterFor(width), bottom = if (compact) 40.dp else 18.dp),
-            )
+        IndicationInk(OnImage) {
+            val columnWidth = maxWidth
+            val set = films[page]
+            // The old slide goes at once and the new one comes up out of the black
+            // ground (`home.css:15,18`, `home-cover.js:62`), so two films never
+            // share the screen. Keyed by id, so a refresh handing over the same
+            // film with new details redraws it in place rather than turning.
+            key(set.setId) {
+                // Decided once per slide, so the flag flipping mid-fade doesn't
+                // strip the modifiers from the slide that set it.
+                val fromArrival = remember { turnedTo == null && !arrived.value }
+                val turning = remember { fromArrival || turnedTo == set.setId }
+                CoverSlide(
+                    set = set,
+                    width = width,
+                    columnWidth = columnWidth,
+                    compact = compact,
+                    minHeight = coverMinHeight,
+                    watchlisted = set.setId in watchlist,
+                    turning = turning,
+                    arrived = if (fromArrival) arrived else null,
+                    onPlay = { onPlay(set) },
+                    onDetails = { onOpenTitle(set.setId) },
+                    onToggleWatchlist = { listed -> onToggleWatchlist(set.setId, listed) },
+                )
+            }
+            if (fading && set.setId == turnedTo) CoverTapShield()
+            if (films.size > 1) {
+                CoverPager(
+                    count = films.size,
+                    current = page,
+                    rotates = rotates,
+                    paused = paused,
+                    onTogglePause = { paused = !paused },
+                    onPick = turn,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = gutterFor(width), bottom = if (compact) 40.dp else 18.dp),
+                )
+            }
         }
     }
 }

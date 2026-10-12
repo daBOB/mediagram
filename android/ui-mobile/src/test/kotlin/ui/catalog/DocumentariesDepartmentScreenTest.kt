@@ -146,7 +146,7 @@ class DocumentariesDepartmentScreenTest {
     @Test
     fun theFoldersAllLinkOnItsHeadingOpensTheCollectionRatherThanPlaying() {
         show()
-        val matcher = hasText("All 15 →")
+        val matcher = hasText("All 15")
         compose.onNodeWithTag(DOCUMENTARIES_DEPT_TEST_TAG).performScrollToNode(matcher)
         compose.onNode(matcher).performClick()
         assertEquals("DOCUMENTARY/Terra X", openedCollection)

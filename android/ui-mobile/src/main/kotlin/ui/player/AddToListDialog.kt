@@ -12,7 +12,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import model.ListOfSets
+import ui.chrome.IndicationInk
+import ui.chrome.NoDialogAnimation
 
 /**
  * Filing the open title into one or more lists, from the player.
@@ -45,48 +47,55 @@ internal fun AddToListDialog(
 ) {
     var newName by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add to list") },
-        text = {
-            Column {
-                notice?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                if (lists.isEmpty()) {
-                    Text("No lists yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)) {
-                        items(items = lists, key = ListOfSets::id) { list ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(
-                                    checked = list.id in memberOf,
-                                    onCheckedChange = { checked -> onToggle(list.id, checked) },
-                                )
-                                Text(list.name)
+    // Opened from over the video, where presses tint white: the dialog is the
+    // page's own surface, so its buttons tint in the page's ink.
+    IndicationInk(MaterialTheme.colorScheme.onSurface) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                NoDialogAnimation()
+                Text("Add to list")
+            },
+            text = {
+                Column {
+                    notice?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (lists.isEmpty()) {
+                        Text("No lists yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp)) {
+                            items(items = lists, key = ListOfSets::id) { list ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(
+                                        checked = list.id in memberOf,
+                                        onCheckedChange = { checked -> onToggle(list.id, checked) },
+                                    )
+                                    Text(list.name)
+                                }
                             }
                         }
                     }
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it },
+                        singleLine = true,
+                        placeholder = { Text("New list") },
+                        modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium),
+                    )
                 }
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    placeholder = { Text("New list") },
-                    modifier = Modifier.fillMaxWidth().padding(top = Spacing.medium),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onCreate(newName.trim())
-                    newName = ""
-                },
-                enabled = newName.isNotBlank(),
-            ) { Text("New list") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Done") } },
-    )
+            },
+            confirmButton = {
+                CatalogueTextButton(
+                    onClick = {
+                        onCreate(newName.trim())
+                        newName = ""
+                    },
+                    enabled = newName.isNotBlank(),
+                ) { Text("New list") }
+            },
+            dismissButton = { CatalogueTextButton(onClick = onDismiss) { Text("Done") } },
+        )
+    }
 }

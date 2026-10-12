@@ -29,11 +29,7 @@ import player.PlayerViewModel
 import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
-import player.createListAndAdd
 import player.retry
-import player.setInList
-import player.setKidsMark
-import player.toggleWatchlist
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -98,7 +94,6 @@ fun PlayerScreen(
     // turned the phone to read a wider row did not ask for the numbers back.
     var statsShown by rememberSaveable { mutableStateOf(false) }
     val card = remember { PlayerCardState() }
-    CardFocusReturn(card)
     ControlsAutoHide(controlsShown, isPlaying = state is PlayerUiState.Playing, scrubbing, menuOrSidebarOpen = card.somethingOpen, onHide = { controlsShown = false })
     // Composed after the library's own Back, so it answers first — and only
     // while the card has something open to close.
@@ -112,14 +107,15 @@ fun PlayerScreen(
     // A title with no run left has nothing to list.
     LaunchedEffect(episodes == null) { if (episodes == null) card.sidebarOpen = false }
     // A menu cannot outlive the card it opened from: with the card gone (an
-    // error, the preparing spinner) Back must not close something unseen.
+    // error, the title still opening) Back must not close something unseen.
     LaunchedEffect(barShown) { if (!barShown) card.closeMenu() }
     // A sidebar that takes the whole window covers the card and the top bar;
     // leaving them out keeps their buttons from sitting under it, in view or
     // in the screen reader's reach.
     val sidebarFull = card.sidebarOpen && sidebarCoversScreen()
     val cardShown = barShown && !sidebarFull
-    val barTop = card.bounds?.top?.toFloat()?.takeIf { cardShown }
+    CardFocusReturn(card, shown = cardShown)
+    val barTop = card.bounds?.top?.toFloat()
 
     // Root-coordinate measurements the up-next card clamps to; see UpNextCard.
     var screenBottom by remember { mutableStateOf<Float?>(null) }
@@ -141,21 +137,20 @@ fun PlayerScreen(
         ) {
             player?.let { current ->
                 VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
-                if (cardShown) {
-                    PlayerCardLayer(
-                        player = current,
-                        viewModel = viewModel,
-                        card = card,
-                        choices = choices,
-                        upNext = upNext,
-                        statsShown = statsShown,
-                        hasEpisodes = episodes != null,
-                        catalogedDurationSecs = openSet?.durationSecs,
-                        onToggleStats = { statsShown = !statsShown },
-                        onEnterPip = pip.enterPip.takeIf { pip.supported },
-                        onScrubbingChanged = { scrubbing = it },
-                    )
-                }
+                PlayerCardLayer(
+                    shown = cardShown,
+                    player = current,
+                    viewModel = viewModel,
+                    card = card,
+                    choices = choices,
+                    upNext = upNext,
+                    statsShown = statsShown,
+                    hasEpisodes = episodes != null,
+                    catalogedDurationSecs = openSet?.durationSecs,
+                    onToggleStats = { statsShown = !statsShown },
+                    onEnterPip = pip.enterPip.takeIf { pip.supported },
+                    onScrubbingChanged = { scrubbing = it },
+                )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
                 if (!isInPip) {
@@ -173,7 +168,7 @@ fun PlayerScreen(
             episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list -> PlayerEpisodeSidebar(list, card, viewModel) }
 
             when (state) {
-                PlayerUiState.Preparing -> CenteredSpinner()
+                PlayerUiState.Preparing -> PreparingNote()
                 is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
                 PlayerUiState.Playing, PlayerUiState.Paused -> Unit
             }
@@ -190,19 +185,7 @@ fun PlayerScreen(
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
-                marks = {
-                    PlayerMarks(
-                        marks = marks,
-                        notice = actionNotice,
-                        actions =
-                            PlayerMarksActions(
-                                onToggleWatchlist = viewModel::toggleWatchlist,
-                                onKidsMark = viewModel::setKidsMark,
-                                onSetInList = viewModel::setInList,
-                                onCreateList = viewModel::createListAndAdd,
-                            ),
-                    )
-                },
+                marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }

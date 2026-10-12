@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,8 @@ private const val LONG_TITLE = 22
  * No room is left for a masthead: the web's spread reaches up under its
  * departments bar, while a title page here is a pushed page under its own
  * back bar, so the art starts beneath that instead.
+ *
+ * [reveals] is [TitleSpread]'s holder, so both widths share one played flag.
  */
 @Composable
 internal fun WideTitleSpread(
@@ -72,6 +75,7 @@ internal fun WideTitleSpread(
     overview: String?,
     tagline: String?,
     actions: @Composable () -> Unit,
+    reveals: Reveals,
     modifier: Modifier = Modifier,
 ) {
     val width = LocalConfiguration.current.screenWidthDp.dp
@@ -87,7 +91,9 @@ internal fun WideTitleSpread(
             Box(Modifier.matchParentSize()) {
                 val fraction = if (LocalBackdrop.current == Backdrop.ARTWORK) 1f else SPREAD_ART_FRACTION
                 val strip = Modifier.fillMaxHeight().fillMaxWidth(fraction).align(Alignment.CenterEnd)
-                HeroArtwork(path = art, modifier = strip)
+                // `.spread-art img` alone settles in (`title-page.css:63`), clipped by its
+                // block (`:62`); the scrims below are the still `::after` and never move.
+                HeroArtwork(path = art, modifier = strip.clipToBounds().artIn(reveals.of(HERO_ART)))
                 // `.spread-art::after`, back to front: CSS paints its first
                 // layer on top, so the left fade into the page is drawn last.
                 Box(strip.background(Brush.verticalGradient(0f to paper.copy(alpha = 0.55f), 0.22f to Color.Transparent, 1f to Color.Transparent)))
@@ -136,6 +142,10 @@ internal fun WideTitleSpread(
             actions()
         }
         if (art != null && !tagline.isNullOrBlank()) {
+            // `.spread-quote`'s art-in, 200ms behind its picture (`title-page.css:115`).
+            // Its flag is made here, as late as the quote: a tagline that arrives
+            // after the page is drawn plays it then (`title-spread.js:44-46`).
+            val quoteIn = Modifier.artIn(reveals.of(HERO_QUOTE), delayMs = QUOTE_IN_DELAY_MS)
             // `bottom: 22%` of the spread's own final height — read once it
             // has one, not guessed from the floor.
             BoxWithConstraints(Modifier.matchParentSize()) {
@@ -153,7 +163,8 @@ internal fun WideTitleSpread(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = gutter, bottom = maxHeight * 0.22f)
-                            .widthIn(max = SPREAD_QUOTE_MAX_WIDTH),
+                            .widthIn(max = SPREAD_QUOTE_MAX_WIDTH)
+                            .then(quoteIn),
                 )
             }
         }

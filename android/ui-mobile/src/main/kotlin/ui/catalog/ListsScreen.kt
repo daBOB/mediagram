@@ -24,6 +24,7 @@ import ui.common.catalog.DESTINATION_ASPECT
  * "Your lists" half of `collections-page.js#renderCollectionsPage`. Titles
  * are filed onto a list from the player's "Add to list" dialog, not from
  * here.
+ * [modifier] goes on every item this adds, so the section reveals as one (see [reveal]).
  *
  * With no lists at all, one line says so where the web leaves the section
  * empty above its button: on a phone an empty band under a heading reads as
@@ -35,6 +36,7 @@ internal fun LazyListScope.listsSection(
     columns: Int,
     onOpen: (id: String) -> Unit,
     onNewList: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (lists.isEmpty()) {
         // Not [CenteredMessage]: its own `fillMaxSize()` wants a bounded
@@ -45,23 +47,23 @@ internal fun LazyListScope.listsSection(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(Spacing.medium),
+                modifier = modifier.fillMaxWidth().padding(Spacing.medium),
             )
         }
     } else {
-        tileLines("lists", lists, columns, ListOfSets::id, Modifier.padding(horizontal = Spacing.medium)) { list, modifier ->
+        tileLines("lists", lists, columns, ListOfSets::id, modifier.padding(horizontal = Spacing.medium)) { list, tile ->
             ArtTile(
                 name = list.name,
                 meta = spelledCountOf(list.items.size, "title"),
                 art = listArtOf(list, setsById),
                 aspectRatio = DESTINATION_ASPECT,
                 onClick = { onOpen(list.id) },
-                modifier = modifier,
+                modifier = tile,
                 destination = true,
             )
         }
     }
     item(key = "new-list") {
-        PagePill(text = "＋ New list", onClick = onNewList, modifier = Modifier.padding(start = Spacing.medium, top = 20.dp))
+        PagePill(text = "＋ New list", onClick = onNewList, modifier = modifier.padding(start = Spacing.medium, top = 20.dp))
     }
 }

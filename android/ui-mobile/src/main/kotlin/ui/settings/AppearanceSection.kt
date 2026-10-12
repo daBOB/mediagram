@@ -1,14 +1,13 @@
 package ui.settings
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
@@ -28,10 +27,12 @@ import designsystem.Accent
 import designsystem.Appearance
 import designsystem.Backdrop
 import designsystem.LocalCatalogueTones
+import designsystem.Motion
 import designsystem.Palette
 import designsystem.SectionHead
 import designsystem.Spacing
 import designsystem.ThemeChoice
+import designsystem.catalogueIndication
 
 /**
  * Settings › Appearance: theme, accent colour, and the web's own Artwork
@@ -68,7 +69,7 @@ private fun ThemeGroup(
                     modifier =
                         Modifier
                             .width(220.dp)
-                            .selectable(selected = isSelected, onClick = { onSelect(choice) }, role = Role.RadioButton)
+                            .selectable(selected = isSelected, interactionSource = null, indication = LABEL_PRESS, onClick = { onSelect(choice) }, role = Role.RadioButton)
                             .semantics(mergeDescendants = true) {},
                     verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
                 ) {
@@ -104,18 +105,27 @@ private fun AccentGroup(
                 Column(
                     modifier =
                         Modifier
-                            .selectable(selected = isSelected, onClick = { onSelect(accent) }, role = Role.RadioButton)
+                            .selectable(selected = isSelected, interactionSource = null, indication = LABEL_PRESS, onClick = { onSelect(accent) }, role = Role.RadioButton)
                             .semantics(mergeDescendants = true) {},
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    val ring =
-                        if (isSelected) {
-                            Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground, CircleShape).padding(4.dp)
-                        } else {
+                    // `.dot { transition: box-shadow var(--hover) }` (`appearance.css:57-58`): the
+                    // ring is in the ink and fades in, and the dot itself never shrinks.
+                    val shown = animateFloatAsState(if (isSelected) 1f else 0f, animationSpec = Motion.hover(), label = "accent ring")
+                    Box(
+                        modifier =
                             Modifier
-                        }
-                    Box(modifier = Modifier.size(40.dp).then(ring).clip(CircleShape).background(accent.dark))
+                                .size(ACCENT_DOT)
+                                .selectionRing(
+                                    shown,
+                                    ring = MaterialTheme.colorScheme.onBackground,
+                                    ground = MaterialTheme.colorScheme.background,
+                                    radius = ACCENT_DOT / 2,
+                                )
+                                .clip(CircleShape)
+                                .background(accent.dark),
+                    )
                     Text(text = accent.label, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -137,7 +147,7 @@ private fun ArtworkGroup(
                     modifier =
                         Modifier
                             .width(220.dp)
-                            .selectable(selected = isSelected, onClick = { onSelect(backdrop) }, role = Role.RadioButton)
+                            .selectable(selected = isSelected, interactionSource = null, indication = LABEL_PRESS, onClick = { onSelect(backdrop) }, role = Role.RadioButton)
                             .semantics(mergeDescendants = true) {},
                     verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
                 ) {
@@ -162,3 +172,9 @@ private fun artworkSwatchBrush(backdrop: Backdrop): Brush {
         Backdrop.SOLID -> Brush.linearGradient(listOf(Palette.Sunk, Palette.Sunk))
     }
 }
+
+/** An accent dot's size; its ring is drawn inside it. */
+private val ACCENT_DOT = 40.dp
+
+/** Each option is a `<label>` around a radio (`appearance.css:38-58`), which `button:active` (`theme.css:167`) doesn't reach, so pressing one never shrinks it. */
+private val LABEL_PRESS = catalogueIndication(pressScale = 1f)

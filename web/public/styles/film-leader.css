@@ -1,0 +1,58 @@
+/* The film leader (lib/film-leader.js): the countdown threaded ahead of a reel,
+   drawn on a 96-unit square at 96px wherever it shows. Its geometry is in the
+   drawing in index.html; its paint and motion are here. In the library it
+   stands 24px above the words (shell.css, .loading-state); on the stage it is
+   centred, below.
+
+   Still is the default: no sweep, the 3 alone. The animations below only
+   reveal the sweep and step the numerals, so reduced motion (theme.css turns
+   every animation off) leaves a leader that is complete without them. */
+.film-leader { display: block; }
+.leader-ring,
+.leader-cross { fill: none; stroke: var(--on-image-2); }
+/* The crosshair is the faintest line on the frame. */
+.leader-cross { stroke-opacity: 0.5; }
+
+/* The sweep, a pie sector turning clockwise from 12 o'clock inside the inner
+   ring. Drawn as a dash along a circle of radius 19 stroked 38 wide, i.e. a
+   disc of radius 38; the dash grows from nothing to the circle's whole length,
+   2π × 19 = 119.381, so the sector opens from 0° to 360°. A dash rather than a
+   conic-gradient mask because it is plain SVG paint, as the rings are. */
+.leader-sweep {
+  fill: none;
+  stroke: var(--accent);
+  /* A tint, so the numeral and the hairlines read through it. */
+  stroke-opacity: 0.3;
+  stroke-dasharray: 119.381 119.381;
+  stroke-dashoffset: 119.381;
+  /* One full turn a second, linear: a projector's leader is a clock, not an
+     ease. Each turn starts empty again. */
+  animation: leader-sweep 1s linear infinite;
+}
+@keyframes leader-sweep { to { stroke-dashoffset: 0; } }
+/* Over the picture, the stage's fixed accent, as every control there uses. */
+.stage-leader .leader-sweep { stroke: var(--stage-accent); }
+
+/* The numerals, 3 then 2 then 1, one per completed turn of the sweep: a 3 s
+   cycle with each shown for its own second. All three hold the same keyframes,
+   offset by a negative delay into the cycle; only the 3 shows when still. */
+.leader-count {
+  fill: var(--on-image);
+  /* The display serif, its figures 32 tall inside the inner ring's 76; ones
+     that keep one width and sit on the line, so each stands where the last did. */
+  font: 500 44px var(--display);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-anchor: middle;
+  animation: leader-count 3s step-end infinite;
+}
+.leader-count + .leader-count { opacity: 0; }
+.leader-count:nth-of-type(2) { animation-delay: -2s; }
+.leader-count:nth-of-type(3) { animation-delay: -1s; }
+@keyframes leader-count {
+  0% { opacity: 1; }
+  33.333%, 100% { opacity: 0; }
+}
+
+/* Centred over the stage while a title opens, under the controls, and never
+   taking a click from the picture. */
+.stage-leader { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }

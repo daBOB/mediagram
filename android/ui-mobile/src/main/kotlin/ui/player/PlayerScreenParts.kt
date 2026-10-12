@@ -9,12 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.Player
+import designsystem.Accent
+import designsystem.CountdownLeader
+import designsystem.LocalCountdownStart
 import designsystem.Spacing
 import model.MediaSet
 import playback.PlaybackTotals
@@ -28,10 +32,21 @@ import player.titleLine
  * and proved.
  */
 
+/**
+ * The stage while the title opens: the film leader alone, centred, as the
+ * web's stage shows it (`index.html:147`, `film-leader.css:56-58`). Its sweep
+ * is the stage's fixed coral (`--stage-accent`, `theme.css:97`;
+ * `film-leader.css:34`), whatever the page's accent, because the stage is
+ * always black. The leader says nothing, so TalkBack hears "Loading" here.
+ */
 @Composable
-internal fun CenteredSpinner() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Color.White)
+internal fun PreparingNote() {
+    Box(
+        modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
+        contentAlignment = Alignment.Center,
+    ) {
+        // A wait of its own, so its count starts at 3, not where the cold start's had got to.
+        CompositionLocalProvider(LocalCountdownStart provides null) { CountdownLeader(accent = Accent.CORAL.dark) }
     }
 }
 
