@@ -69,3 +69,12 @@ labels are *kinds of curation*, each spotlighting one title. Rule: when translat
 reference, keep each label's meaning and find a real signal that honestly backs it
 (a user pin, TMDB popularity, rating). Don't swap in a different concept because the
 data is convenient. If no honest signal exists, ask.
+
+## 2026-10-09 — "The TV UI is ugly" asks for parity, not a redesign
+
+I answered "the tv ui is still crazy ugly" by offering three new design directions and
+building mockups. The user stopped it: they want the gaps between the current design
+(web player, tablet) and the TV filled, not a new look. Rule: a look complaint about one
+surface is a parity defect in that surface (CLAUDE.md § Surface Parity). Audit it screen by
+screen against the reference surface and fix within the existing tokens, fonts and layouts,
+adapting only for 10-foot/D-pad needs. Offer new directions only when asked for a redesign.
