@@ -32,6 +32,10 @@ import ui.tv.profile.TvChosenProfile
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
  * under the bar, every other tab draws it opaque.
  *
+ * Unlike the phone and tablet bar this one is not frosted: the blur measured
+ * too slow on the box (`plans/reports/frosted-masthead-261009-report.md`,
+ * "TV measurement").
+ *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
  *

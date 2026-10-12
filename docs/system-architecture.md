@@ -739,7 +739,9 @@ up on and logged, and the screens are shown what the channel holds with a
 own echo, which `follow` would otherwise ignore, so the screen that made the
 move follows the channel again rather than stay on a state nobody else has.
 A last leave or end that throws is retried the same way, so it is still written
-and the message deleted once Telegram is back. On Android a thrown edit also
+and the message deleted if Telegram is back within the three tries; one given
+up with its bundle is not re-queued yet, which can leave the departed screen
+listed until the session goes stale (a known gap). On Android a thrown edit also
 makes `available` false until a read or an edit answers, and a screen in a
 session says "Telegram isn't reachable" when it does. The web lets act, leave
 and end queue while Telegram is unreachable, and an act answered then carries
