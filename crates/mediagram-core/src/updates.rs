@@ -16,6 +16,8 @@ use mlib_spec::index_caption::PREFIX as INDEX_CAPTION_PREFIX;
 /// What every watch-state caption begins with, space included:
 /// `#mlib-state v=1 device=…`.
 const STATE_PREFIX: &str = "#mlib-state ";
+/// What every watch-together session message begins with (`docs/mlib-spec.md` §7b).
+pub(crate) const TOGETHER_PREFIX: &str = "#mlib-together ";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,6 +36,9 @@ pub struct ChannelUpdate {
     pub kind: UpdateKind,
     /// Bare channel id (no -100 prefix).
     pub channel: i64,
+    /// The message id, for `New` and `Edit`.
+    #[serde(default)]
+    pub id: Option<i32>,
     /// The message's text or caption, for `New` and `Edit`.
     #[serde(default)]
     pub caption: Option<String>,
@@ -50,9 +55,13 @@ pub struct ChannelUpdate {
 pub enum LibraryEvent {
     State,
     Index,
+    /// A watch-together session message was sent or edited. Delivered at
+    /// once, never debounced; the message itself is `Core::together_heard`.
+    Together,
 }
 
 /// Released in this order when both are due at once, so every port agrees.
+/// Never `Together`: it skips the debouncer.
 const ORDER: [LibraryEvent; 2] = [LibraryEvent::State, LibraryEvent::Index];
 
 pub fn classify(update: &ChannelUpdate, channel: i64, own_device: &str) -> Option<LibraryEvent> {
@@ -67,6 +76,9 @@ pub fn classify(update: &ChannelUpdate, channel: i64, own_device: &str) -> Optio
         _ => return None,
     }
     let caption = update.caption.as_deref().unwrap_or("");
+    if caption.starts_with(TOGETHER_PREFIX) {
+        return Some(LibraryEvent::Together);
+    }
     if caption.starts_with(STATE_PREFIX) {
         // This device's own write comes back to it on some libraries; it is not news.
         return device_from_caption(caption)
@@ -122,16 +134,16 @@ impl Debouncer {
         }
     }
 
+    /// `Together` is never held, so offering it does nothing.
     pub fn offer(&mut self, event: LibraryEvent, now_ms: u64) {
-        let slot = &mut self.due[slot_of(event)];
-        slot.get_or_insert(now_ms + self.window_ms);
+        let Some(slot) = slot_of(event) else { return };
+        self.due[slot].get_or_insert(now_ms + self.window_ms);
     }
 
     /// Events whose window has ended, removed from the pending set.
     pub fn take(&mut self, now_ms: u64) -> Vec<LibraryEvent> {
         let mut ready = Vec::new();
-        for event in ORDER {
-            let slot = &mut self.due[slot_of(event)];
+        for (event, slot) in ORDER.into_iter().zip(&mut self.due) {
             if slot.is_some_and(|due| due <= now_ms) {
                 *slot = None;
                 ready.push(event);
@@ -146,9 +158,10 @@ impl Debouncer {
     }
 }
 
-fn slot_of(event: LibraryEvent) -> usize {
+fn slot_of(event: LibraryEvent) -> Option<usize> {
     match event {
-        LibraryEvent::State => 0,
-        LibraryEvent::Index => 1,
+        LibraryEvent::State => Some(0),
+        LibraryEvent::Index => Some(1),
+        LibraryEvent::Together => None,
     }
 }

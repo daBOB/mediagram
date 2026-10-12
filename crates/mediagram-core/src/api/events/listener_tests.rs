@@ -7,6 +7,7 @@ use grammers_tl_types::{self as tl, Deserializable, Serializable};
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
 use super::*;
+use crate::api::together::TogetherMessage;
 
 const LIBRARY: i64 = 3816522481;
 const ELSEWHERE: i64 = 1234567890;
@@ -208,4 +209,57 @@ async fn an_event_keeps_the_listener_for_the_next_wait() {
     assert_eq!(event.unwrap(), LibraryEvent::State);
     assert!(slot.is_some());
     assert!(session::is_current(&core, &handle).await);
+}
+
+/// A session's edit is its whole state: it comes out the moment it arrives,
+/// with no window, and the message it carried is what the core heard.
+#[tokio::test(start_paused = true)]
+async fn together_is_delivered_without_waiting_for_a_window() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let (updates, listener) = listening(&core).await;
+    *core.events.lock().await = Some(listener);
+    let text = "#mlib-together v=1\n{}";
+    let start = Instant::now();
+    send(&updates, post(LIBRARY, text, 1));
+
+    let event = tokio::time::timeout(Duration::from_secs(60), next(&core, LIBRARY, OWN))
+        .await
+        .expect("delivered without a window")
+        .unwrap();
+
+    assert_eq!(event, LibraryEvent::Together);
+    assert_eq!(start.elapsed(), Duration::ZERO);
+    let heard = TogetherMessage {
+        message_id: 1,
+        text: text.into(),
+    };
+    assert_eq!(core.together_heard(), Some(heard));
+}
+
+/// An upload's window still runs to its end, but a session edit inside it is
+/// not held back by it.
+#[tokio::test(start_paused = true)]
+async fn together_inside_an_open_window_comes_out_before_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let (updates, mut listener) = listening(&core).await;
+    let start = Instant::now();
+    send(&updates, pin(LIBRARY, true, 1));
+    let session = updates.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        send(&session, post(LIBRARY, "#mlib-together v=1\n{}", 2));
+    });
+
+    assert_eq!(
+        listener.wait(LIBRARY, OWN).await.unwrap(),
+        LibraryEvent::Together
+    );
+    assert_eq!(start.elapsed(), Duration::from_secs(1));
+    assert_eq!(
+        listener.wait(LIBRARY, OWN).await.unwrap(),
+        LibraryEvent::Index
+    );
+    assert_at_window_end(start);
 }

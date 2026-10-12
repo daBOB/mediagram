@@ -32,6 +32,7 @@ import model.ageLabel
 import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.togetherJoinOf
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -45,7 +46,8 @@ import uniffi.mediagram_core.TitleInfo
  * where [progress] is a place the player will actually carry on from —
  * [ResumePoint.resumeAt], the rule the player and the web's film page both
  * start by, so a glance at the opening or a position in the credits says
- * Play.
+ * Play. While a watch-together session plays this film it is Join instead,
+ * the same pill, so it takes the remote as Play does.
  *
  * Its genres open their own pages through [onOpenGenre], its franchise
  * through [onOpenFranchise]; coming back from one, [restoreKey] names it
@@ -90,6 +92,7 @@ internal fun TvTitlePage(
     onToggleWatchlist: () -> Unit = {},
 ) {
     val play = remember { FocusRequester() }
+    val join = togetherJoinOf(set.setId)
     val preloadPlate = remember { FocusRequester() }
     val resumeAt = remember(progress) { progress?.let { ResumePoint.resumeAt(ProgressPoint(it.at, it.duration)) } }
     val franchise =
@@ -134,8 +137,8 @@ internal fun TvTitlePage(
             ) {
                 TvPillRow {
                     TvSpreadPill(
-                        text = resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
-                        onClick = onPlay,
+                        text = join?.let { "▶ Join" } ?: resumeAt?.let { "▶ Resume from ${clockTime(it)}" } ?: "▶ Play",
+                        onClick = join?.join ?: onPlay,
                         solid = true,
                         modifier = Modifier.focusRequester(play),
                     )

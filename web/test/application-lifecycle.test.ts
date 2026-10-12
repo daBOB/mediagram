@@ -10,6 +10,9 @@ import { TranscodeRegistry } from "../src/transcode/registry";
 import { CatalogEvents } from "../src/catalog-events";
 import { startServer } from "../src/server";
 import type { LibraryEvent } from "../src/telegram/updates";
+import { FollowedChannel, UpdatesBinding } from "../src/application/telegram-binding";
+import { TelegramConnection } from "../src/telegram/connection";
+import type { Telegram } from "../src/telegram/client";
 import { deferred, library } from "./application-fixture";
 
 let root: string;
@@ -34,6 +37,25 @@ test("subscription precedes initial sync and attaching a follower always request
   event("state");
   expect(followed).toBe(2);
   expect(order).toEqual(["subscribe", "sync", "unsubscribe"]);
+});
+
+test("a together edit reaches the sink set after subscribing, and starts no round", async () => {
+  let event!: (kind: LibraryEvent, heard?: { id: number; text: string }) => void;
+  let syncs = 0;
+  let refreshes = 0;
+  const binding = new UpdatesBinding(
+    TelegramConnection.fixed({ client: {} } as unknown as Telegram), new FollowedChannel(-1003816522481, 1n, null), "device",
+    { once: async () => { syncs++; return { pulled: 0, pushed: false }; } }, { refresh: async () => { refreshes++; } },
+    (_source, _context, onEvent) => { event = onEvent; return () => {}; },
+  );
+  await binding.start();
+  await binding.followCatalog();
+  const heard: unknown[] = [];
+  binding.setTogether((id, text) => heard.push({ id, text }));
+  event("together", { id: 7, text: "#mlib-together v=1\n{}" });
+  expect(heard).toEqual([{ id: 7, text: "#mlib-together v=1\n{}" }]);
+  expect({ syncs, refreshes }).toEqual({ syncs: 1, refreshes: 1 });
+  binding.stop();
 });
 
 test("start subscribes without waiting for a slow initial sync round", async () => {

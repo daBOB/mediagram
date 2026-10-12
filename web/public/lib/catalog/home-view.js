@@ -22,6 +22,7 @@ import { resumeCards } from "./home-resume.js";
 import { pullQuote, thisMonth } from "./home-break.js";
 import { revealWithin } from "../reveal.js";
 import { href } from "../address.js";
+import { togetherNotice } from "./together-join.js";
 
 /**
  * A row's header: its name, and the way to the whole shelf.
@@ -69,6 +70,8 @@ export function renderHome(main, shelves, editorial, { play, open, openFilm }) {
     // Tells the stylesheet the masthead is over artwork, not paper.
     document.body.dataset.cover = "";
   }
+  // Under the cover, not above it: the cover bleeds up under the masthead and would cover it.
+  main.append(togetherNotice());
   if (editorial.features.length > 0) main.append(featureStrip(editorial.features));
 
   // Resuming beside a line of type: the quiet tool, and the pause after the

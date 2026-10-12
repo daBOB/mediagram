@@ -39,13 +39,13 @@ const stateBy = (device: string) => `#mlib-state v=1 device=${device}`;
 
 describe("toChannelUpdate", () => {
   test("a message edit keeps its channel and caption", () => {
-    expect(toChannelUpdate(edited(stateBy("dev-tv")))).toEqual({ kind: "edit", channel: CHANNEL, caption: stateBy("dev-tv") });
+    expect(toChannelUpdate(edited(stateBy("dev-tv")))).toEqual({ kind: "edit", channel: CHANNEL, id: 7, caption: stateBy("dev-tv") });
   });
 
   test("a pin notice is a service message, not a caption", () => {
     const notice = new Api.MessageService({ id: 8, peerId: peer(CHANNEL), date: 0, action: new Api.MessageActionPinMessage() } as never);
     const update = new Api.UpdateNewChannelMessage({ message: notice, pts: 0, ptsCount: 0 });
-    expect(toChannelUpdate(update)).toEqual({ kind: "new", channel: CHANNEL, service: true });
+    expect(toChannelUpdate(update)).toEqual({ kind: "new", channel: CHANNEL, id: 8, service: true });
   });
 
   test("pin and unpin say which", () => {
@@ -82,9 +82,14 @@ function harness() {
     clearTimeout: (id) => void timers.delete(id as number),
   };
   const events: LibraryEvent[] = [];
-  const stop = listenForLibraryEvents(source, { channel: CHANNEL, ownDevice: ME }, (e) => events.push(e), clock, 5000);
+  const heard: unknown[] = [];
+  const stop = listenForLibraryEvents(source, { channel: CHANNEL, ownDevice: ME }, (e, h) => {
+    events.push(e);
+    if (h) heard.push(h);
+  }, clock, 5000);
   return {
     events,
+    heard,
     stop,
     push: (update: unknown) => handler?.(update),
     listening: () => handler !== null,
@@ -109,6 +114,17 @@ describe("listenForLibraryEvents", () => {
     expect(h.events).toEqual([]);
     h.advance(1);
     expect(h.events).toEqual(["state"]);
+  });
+
+  test("a together edit reaches its sink at once, with its id and text", () => {
+    const h = harness();
+    const text = '#mlib-together v=1\n{"session":"s"}';
+    h.push(edited(stateBy("dev-tv")));
+    h.push(edited(text));
+    expect(h.events).toEqual(["together"]);
+    expect(h.heard).toEqual([{ id: 7, text }]);
+    h.advance(5000);
+    expect(h.events).toEqual(["together", "state"]);
   });
 
   test("this device's own write is not news", () => {

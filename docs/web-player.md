@@ -386,7 +386,8 @@ hash at all fall back the same way.
 | `HEAD`/`GET` | `/api/sets/:id/stream` | Playable file, Range-responding |
 | `GET` | `/api/sets/:id/subtitles/:n.vtt` | One subtitle track's WebVTT, by its position in the catalog's own list |
 | `GET` | `/api/sets/:id/cached-stream` | Cache-only stream (for thumbnail generation) |
-| `GET` | `/api/events` | Server-sent events (catalog refresh, index install) |
+| `GET` | `/api/events` | Server-sent events (catalog refresh, index install, `together`) |
+| `GET`/`POST` | `/api/together` | Watch together: the live session; start, join, act, leave, end |
 | `POST` | `/api/settings/unlock` | Mint admin session (own-network only, token required) |
 | `GET` | `/api/settings/*` | Settings endpoints (admin-gated: Telegram/cache/library) |
 | `GET` | `/api/settings/sessions` | Active sessions list |
@@ -666,6 +667,57 @@ Settings screen** (§8): the phone has no gate at all, because the account
 holder's own phone does not need one, while the web player can be reached by
 anyone on the household's network or CGNAT range. Everything else — sections,
 rows, wording, the sessions list — is the same on both.
+
+## Watch together
+
+Screens in one household play a title in step; the format and the rules are in
+`docs/mlib-spec.md` §7b and `docs/system-architecture.md` (Watch together).
+
+- **The tool.** The control card carries one button: **Watch together** to
+  start, **Join** while a live session plays elsewhere, **Leave watch
+  together** inside one. It is disabled, with the reason as its title, when
+  Telegram is unreachable ("Telegram isn't reachable") or the session's title
+  isn't on this profile.
+- **The label.** In a session the top bar shows **Together · TV, Tablet**, the
+  members' surface kinds.
+- **The notices.** A two-second status line says what another screen did:
+  "Paused by TV", "Resumed by Tablet", "Skipped to 41:20 by Browser",
+  "1.5× by TV", "Next episode by Tablet", "Tablet joined", "Tablet left".
+  The words are `public/lib/playback/together-words.js`, which the Android
+  surfaces copy. It also says "Watch together ended" when the session is
+  deleted or ends under the screen (the player plays on alone), and "That
+  title isn't on this profile" / "Left watch together: ..." for a title a kids
+  profile may not see.
+- **Home.** The first line is "Watching together: *Title* · TV, Tablet" with
+  a Join button (`public/lib/catalog/together-join.js`). It updates in place
+  and is hidden, not greyed, while Telegram is unreachable.
+- **Title pages.** Join replaces Play/Resume on the page of the title (or on
+  a course page, one of its lessons) a live session is playing.
+- **`GET /api/together`** answers `{available, reason, live, serverNow}`;
+  `live` is the newest live session with its message id, or `null`.
+  **`POST /api/together`** takes `op` = `start`, `join`, `act`, `leave` or
+  `end` with the tab's `screen` id (and the message `id` for the last four);
+  `start` answers 409 with the live session when another screen started
+  first, `join` of a deleted message 404. While Telegram is unreachable a
+  `start` or `join` answers 503 with the reason, since both read the channel;
+  an `act`, `leave` or `end` is still queued, and an `act` answers the session
+  with `reason` set, so the tab says why. `leave` and `end` answer 204 once
+  queued. The server holds no rules and writes the label `Browser`.
+- **Retries.** The hub's sender (`src/together/sender.ts`) sends one edit at
+  a time. One that throws is tried again after 30 s, never sooner, with the
+  moves made since composed after it; after three throws the move is given up
+  on and logged, and every tab is told what the channel holds, marked `lost`.
+  A flood wait is not a throw: the move goes again once Telegram's wait ends,
+  and is never given up on.
+- **The `together` SSE event** on `/api/events` carries
+  `{id, session, serverNow}` (`session` is `null` when it is over), and
+  `lost: true` when a move of this server's was given up on: the tab that made
+  it then follows that session too, though it is its own echo. It is delivered
+  at once and never debounced. The browser corrects its clock from `serverNow`.
+  A hidden tab that is in a session keeps the stream open.
+- **Known limitation.** A converted (ffmpeg) title is never drift-seeked, so it
+  trails the session by the converter's start-up (1-3 s) after a seek. A title
+  picked in a session starts at the session's place.
 
 ## Updates Telegram pushes
 

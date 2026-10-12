@@ -2,10 +2,12 @@ package ui.player
 
 import player.PlayerViewModel
 import player.chooseAudioTrack
+import player.createListAndAdd
 import player.chooseFraming
 import player.createListAndAdd
 import player.chooseSubtitleLanguage
 import player.nudgeSubtitleOffset
+import player.onTogetherButton
 import player.previous
 import player.resetSubtitleOffset
 import player.restart
@@ -39,6 +41,7 @@ internal fun playerCardActions(
         onEnterPip = onEnterPip,
         onAnchor = card::anchor,
         focusOf = card::focusOf,
+        onTogether = viewModel::onTogetherButton,
     )
 
 /** Every write a card menu makes — kept as the one place that names them. */

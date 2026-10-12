@@ -37,11 +37,11 @@ export function toChannelUpdate(update: unknown): ChannelUpdate | null {
     const message: unknown = update.message;
     if (message instanceof Api.MessageService) {
       const channel = channelOf(message.peerId);
-      return channel === null ? null : { kind, channel, service: true };
+      return channel === null ? null : { kind, channel, id: message.id, service: true };
     }
     if (message instanceof Api.Message) {
       const channel = channelOf(message.peerId);
-      return channel === null ? null : { kind, channel, caption: message.message };
+      return channel === null ? null : { kind, channel, id: message.id, caption: message.message };
     }
     return null;
   }
@@ -74,12 +74,13 @@ const realClock: Clock = {
 
 /**
  * Calls `onEvent` for each library change worth a round, at most once per
- * kind per window. Answers the function that stops listening.
+ * kind per window, and for each watch-together edit at once, with what it
+ * says. Answers the function that stops listening.
  */
 export function listenForLibraryEvents(
   source: UpdateSource,
   context: ClassifyContext,
-  onEvent: (event: LibraryEvent) => void,
+  onEvent: (event: LibraryEvent, heard?: { id: number; text: string }) => void,
   clock: Clock = realClock,
   windowMs?: number,
 ): () => void {
@@ -109,6 +110,11 @@ export function listenForLibraryEvents(
     const update = toChannelUpdate(raw);
     const event = update && classify(update, context);
     if (!event) return;
+    if (event === "together") {
+      // Watch together is minded in seconds, not windows: every edit is the session's whole state, and the newest wins.
+      if (update.id !== undefined) onEvent(event, { id: update.id, text: update.caption ?? "" });
+      return;
+    }
     debouncer.offer(event, clock.now());
     arm();
   };

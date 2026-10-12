@@ -4,6 +4,7 @@ import playback.PlaybackTotals
 import player.PlayerChoices
 import player.PlayerMarksState
 import player.UpNextUiState
+import player.together.TogetherUi
 
 /** What the controls show beyond the player's own state, and what pressing them does. */
 internal class TvPlayerExtras(
@@ -29,4 +30,7 @@ internal class TvPlayerExtras(
     val onToggleNotes: (() -> Unit)? = null,
     /** Whether the episode list is open down the right, which the card then stands clear of. */
     val sidebarOpen: Boolean = false,
+    /** Watch together's tool and label, as the player decides them, and what its OK does. */
+    val together: TogetherUi = TogetherUi(),
+    val onTogether: () -> Unit = {},
 )

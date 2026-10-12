@@ -1,9 +1,9 @@
 //! Kotlin's UniFFI surface: authentication, library refresh, playback and
 //! enrichment. Calls orchestrate domain modules over one [`Core`].
 //!
-//! Kotlin never receives connections, clients, or Telegram chat/message/doc
-//! IDs, including through [`CoreError`]: the player learns what it can play,
-//! never where the bytes live.
+//! Kotlin never receives connections, clients, or the Telegram chat/message/doc
+//! IDs behind a set, including through [`CoreError`]: the player learns what it
+//! can play, never where the bytes live.
 
 mod account;
 mod blocking;
@@ -23,6 +23,7 @@ mod subtitles;
 #[cfg(test)]
 mod test_support;
 mod store;
+mod together;
 
 pub use crate::dto::{AuthOutcome, LibraryChoice};
 pub use crate::error::CoreError;
@@ -67,6 +68,9 @@ pub struct Core {
     sync_memo: AsyncMutex<crate::state::sync::SyncMemo>,
     /// The folded catalog `Core::search` ranks against — blocking, like `state_db`.
     search_cache: std::sync::Mutex<search::cache::SearchCache>,
+    /// The newest watch-together message the listener heard, apart from
+    /// `events` so reading it never waits on a listen.
+    together_heard: std::sync::Mutex<Option<together::TogetherMessage>>,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -85,25 +89,8 @@ impl Core {
             events: AsyncMutex::new(None),
             sync_memo: AsyncMutex::new(crate::state::sync::SyncMemo::default()),
             search_cache: std::sync::Mutex::new(search::cache::SearchCache::default()),
+            together_heard: std::sync::Mutex::new(None),
         })
-    }
-
-    /// Whether a login has ever completed. Reads the persisted auth key
-    /// only: cheap, and needs no connection.
-    pub fn is_authorized(&self) -> bool {
-        account::session::load_auth_key(&self.data_dir).is_some()
-    }
-
-    pub async fn request_code(&self, phone: String) -> Result<String, CoreError> {
-        account::auth::request_code(self, phone).await
-    }
-
-    pub async fn sign_in(&self, token: String, code: String) -> Result<AuthOutcome, CoreError> {
-        account::auth::sign_in(self, token, code).await
-    }
-
-    pub async fn check_password(&self, password: String) -> Result<(), CoreError> {
-        account::auth::check_password(self, password).await
     }
 
     /// The libraries this account could choose from — its broadcast

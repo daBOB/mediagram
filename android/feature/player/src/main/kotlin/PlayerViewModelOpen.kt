@@ -46,10 +46,13 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     if (!sameTitle) choicesController.reset()
     val progress = repository.snapshot.value.progress.find { it.setId == setId }
     val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
-    val startAtMs = ((resumeSeconds ?: 0.0) * 1000).toLong()
+    // A title opened in a watch-together session, or to join one, starts at
+    // the session's place and play state, not where this profile left off.
+    val together = if (sameTitle) null else togetherController.open(setId)
+    val startAtMs = ((together?.pos ?: resumeSeconds ?: 0.0) * 1000).toLong()
     // False only for the one title a gated up-next switch is headed to
     // — asked before `startTitle`, which consumes the same pending gate.
-    handle.open(setId, startAtMs, upNextController.playWhenReadyFor(setId))
+    handle.open(setId, startAtMs, upNextController.playWhenReadyFor(setId) && together?.playing != false)
     // Alongside the handle, not gated on `sameTitle`: a rotation's own
     // reopen must find the service already running exactly as often as it
     // must find the player already loaded, and starting an

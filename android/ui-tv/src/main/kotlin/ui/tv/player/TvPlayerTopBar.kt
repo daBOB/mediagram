@@ -10,6 +10,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -27,7 +29,8 @@ internal const val TvPlayerTitleTag = "tv-player-title"
  * The slim bar along the top: what is playing and what the file is — the
  * shared [titleLine] over [technicalLine], set quieter because it answers a
  * question a viewer only sometimes has — and beside it the marks and
- * Notes, the web's top bar. The title is only read; the marks and Notes
+ * Notes, the web's top bar. In watch together [label] names who is in the
+ * session beside the title ("Together · TV, Tablet"). The title is only read; the marks and Notes
  * are pressed, one press up from the seek bar, and Down from them goes
  * straight back to it. Beside the episode list there is room for the marks
  * or the title, not both: the marks stay, being pressed, and the list's
@@ -48,15 +51,39 @@ internal fun TvPlayerTopBar(
     focus: TvPlayerFocus,
     modifier: Modifier = Modifier,
     titleShown: Boolean = true,
+    label: String? = null,
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(TvBarGap), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
             set?.takeIf { titleShown }?.let {
-                // Two lines where the web's `.what` keeps one (`playback.css:72-77`): a
-                // long series name ("Raumschiff Enterprise: Das nächste Jahrhundert")
-                // otherwise fills the TV's narrower title column and the episode
-                // label after it — the one part that says which episode — is cut.
-                Text(text = titleLine(it), style = TvPlayerType.barTitle, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.testTag(TvPlayerTitleTag))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Two lines where the web's `.what` keeps one (`playback.css:72-77`): a
+                    // long series name ("Raumschiff Enterprise: Das nächste Jahrhundert")
+                    // otherwise fills the TV's narrower title column and the episode
+                    // label after it — the one part that says which episode — is cut.
+                    Text(
+                        text = titleLine(it),
+                        style = TvPlayerType.barTitle,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false).testTag(TvPlayerTitleTag),
+                    )
+                    // The web's `.together-label`, beside the title, in capitals a screen reader hears as written.
+                    // Unlike the web's it goes with the title beside the episode list.
+                    label?.let { words ->
+                        Text(
+                            text = words.uppercase(),
+                            style = TvPlayerType.togetherLabel,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            modifier = Modifier.semantics { contentDescription = words },
+                        )
+                    }
+                }
                 // As stored, not shouted: the web prints the container and codecs in the case the index recorded them.
                 technicalLine(it).takeIf(String::isNotEmpty)?.let { line ->
                     Text(text = line, style = TvPlayerType.figures, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)

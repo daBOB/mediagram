@@ -56,6 +56,17 @@ fn classify_fixtures() {
     }
 }
 
+#[test]
+fn together_fixtures() {
+    let Some(cases) = load::<ClassifyCase>("together.json") else {
+        return;
+    };
+    for case in cases {
+        let got = classify(&case.update, case.context.channel, &case.context.own_device);
+        assert_eq!(got, case.expect, "{}", case.name);
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Step {

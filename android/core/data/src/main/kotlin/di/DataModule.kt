@@ -11,8 +11,10 @@ import data.CatalogRepository
 import data.CoreLibraryEvents
 import data.CoreProvider
 import data.CoreStorage
+import data.CoreTogetherChannel
 import data.DefaultCatalogRepository
 import data.DefaultPlayerPreferences
+import data.DefaultTogetherLive
 import data.DefaultWatchStateRepository
 import data.DeviceBackdropWidth
 import data.DefaultWatchSync
@@ -21,6 +23,8 @@ import data.LibraryEvents
 import data.PlayerPreferences
 import data.RefreshLog
 import data.SharedLibraryEvents
+import data.TogetherChannel
+import data.TogetherLive
 import data.WatchStateRepository
 import data.WatchSync
 import data.settings.EncryptedLanCacheTokenSettings
@@ -147,6 +151,26 @@ object DataModule {
     @Singleton
     fun providePlayerPreferences(coreProvider: CoreProvider): PlayerPreferences =
         DefaultPlayerPreferences(coreProvider)
+
+    @Provides
+    @Singleton
+    fun provideTogetherChannel(
+        coreProvider: CoreProvider,
+        settings: LibrarySettings,
+        libraryEvents: LibraryEvents,
+    ): TogetherChannel = CoreTogetherChannel(coreProvider, settings, libraryEvents)
+
+    // One per process, on the app's scope rather than a screen's: a leave or
+    // an end is still sent after the player that asked for it has gone, and
+    // every screen sees the one session this device holds.
+    @Provides
+    @Singleton
+    fun provideTogetherLive(
+        channel: TogetherChannel,
+        catalog: CatalogRepository,
+        @AppScope scope: CoroutineScope,
+    ): TogetherLive =
+        DefaultTogetherLive(channel, scope, durationOf = { catalog.mediaSet(it)?.durationSecs?.toDouble() })
 
     @Provides
     @Singleton

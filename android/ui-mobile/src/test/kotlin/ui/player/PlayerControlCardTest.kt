@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +29,10 @@ import player.PlayerChoices
 import player.SUBTITLES_OFF
 import player.SubtitleOption
 import player.UpNextUiState
+import java.time.Duration
+import java.time.LocalTime
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * What the card offers for what is open: ⏮ ⏭ and ☰ follow the run, CC is
@@ -58,11 +62,13 @@ class PlayerControlCardTest {
         choices: PlayerChoices = PlayerChoices(),
         upNext: UpNextUiState = UpNextUiState(),
         hasEpisodes: Boolean = false,
+        playing: Float = choices.speed,
     ) {
         val player =
             mockk<Player>(relaxed = true) {
                 every { seekBackIncrement } returns 15_000L
                 every { seekForwardIncrement } returns 15_000L
+                every { playbackParameters } returns PlaybackParameters(playing)
             }
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
@@ -138,6 +144,27 @@ class PlayerControlCardTest {
 
         compose.onNodeWithText("1.5×").assertExists()
         compose.onNodeWithText("Fill").assertExists()
+    }
+
+    /** As on the web: another screen in a watch-together session changed it, and this one plays at its speed. */
+    @Test
+    fun speedSaysTheSpeedPlayingWhereThatIsNotTheOneChosen() {
+        show(PlayerChoices(speed = 1f), playing = 1.5f)
+
+        compose.onNodeWithText("1.5×").assertExists()
+        compose.onNodeWithText("1×").assertDoesNotExist()
+    }
+
+    /** Ten minutes left, played at 1.5×, end in six minutes forty: the "ends" clock counts the speed playing. */
+    @Test
+    fun theEndsLineCountsTheSpeedPlaying() {
+        val before = LocalTime.now()
+        show(PlayerChoices(speed = 1f), playing = 1.5f)
+
+        val ends = compose.onNodeWithText("ends ", substring = true).fetchSemanticsNode().config[SemanticsProperties.Text].first().text
+        val at = LocalTime.parse(ends.substringAfter("ends "))
+        val ahead = Math.floorMod(Duration.between(before.withSecond(0).withNano(0), at).toMinutes(), 24 * 60)
+        assertTrue(ahead in 6L..7L, "ends $ahead minutes from now")
     }
 
     @Test

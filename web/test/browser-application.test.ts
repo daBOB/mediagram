@@ -146,6 +146,41 @@ test("hide/show owns one event stream and refreshes the chosen profile", async (
   expect(env.node("n-continue").textContent).toBe("1");
 });
 
+test("each open of the event stream reads watch together again, for an edit missed while it was gone", async () => {
+  await start();
+  const reads = () => env.requests.filter((request) => request.url === "/api/together" && !request.options?.method).length;
+  const before = reads();
+  stream().fire("open"); await settle();
+  expect(reads()).toBe(before + 1);
+});
+
+test("a session heard on the stream offers Join on Home and on its title's page, and Join opens it in the session", async () => {
+  const live = { session: "s-1", set: "First", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  intercept = (url, init) => (url === "/api/together" && init?.method === "POST" ? Response.json({ id: 7, session: live, serverNow: 0 }) : null);
+  await start();
+  await env.navigate("#/home");
+  stream().fire("together", { id: 7, session: live, serverNow: 0 });
+  expect(page()).toContain("Watching together: First · TV");
+  await env.navigate("#/film/First");
+  const join = byClass(env.node("main"), "film-play");
+  expect(textOf(join)).toBe("Join");
+  join.fire("click");
+  await settle();
+  const posted = env.requests.filter((request) => request.url === "/api/together" && request.options?.method === "POST");
+  expect(posted.map((request) => JSON.parse(String(request.options!.body)))).toMatchObject([{ op: "join", id: 7 }]);
+  expect(env.video.attachments).toEqual(["/api/sets/First/stream"]);
+});
+
+test("a course's page offers Join while a session plays one of its lessons", async () => {
+  catalog = JSON.stringify([{ ...film("Lesson"), kind: "tut", show: "Course", path: "Basics" }]);
+  await start();
+  await env.navigate("#/tutorials/Course");
+  expect(page()).not.toContain("Join");
+  const live = { session: "s-1", set: "Lesson", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  stream().fire("together", { id: 7, session: live, serverNow: 0 });
+  expect(textOf(byClass(env.node("main"), "film-play"))).toBe("Join");
+});
+
 for (const outcome of ["success", "failure"] as const) {
   test(`old search ${outcome} cannot overwrite a different route`, async () => {
     await start();

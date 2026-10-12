@@ -6,6 +6,7 @@
 package ui.common.player
 
 import androidx.compose.runtime.Composable
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
@@ -59,10 +60,10 @@ fun playbackStats(
 
     // The decoded formats and the renderer's counters belong to ExoPlayer,
     // not to the Player interface this is handed. It is this app's own
-    // player, so the cast holds; writing it as one that can fail means an
-    // overlay that reports less rather than one that crashes if that stops
-    // being true.
-    val exo = player as? ExoPlayer
+    // player, under the viewer's wrapper, so the cast holds; writing it as
+    // one that can fail means an overlay that reports less rather than one
+    // that crashes if that stops being true.
+    val exo = ((player as? ForwardingPlayer)?.wrappedPlayer ?: player) as? ExoPlayer
     val video = exo?.videoFormat
     val audio = exo?.audioFormat
     val counted = totals()

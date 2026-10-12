@@ -26,6 +26,9 @@ internal object TvPlayerType {
     /** `.hud .what` (`playback.css:72-83`): what is playing, Fraunces 500 at 1.15rem. */
     val barTitle: TextStyle @Composable @ReadOnlyComposable get() = TvType.titleSmall.copy(fontSize = 18.4.tvSp, lineHeight = 1.5.em)
 
+    /** `.together-label` (`together.css:11-21`): who is watching together, 0.75rem 600, set wide. */
+    val togetherLabel: TextStyle @Composable @ReadOnlyComposable get() = TvType.labelLarge.copy(fontSize = 12.tvSp, lineHeight = 1.5.em, fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em)
+
     /** `.ghost` (`playback.css:85-98`): My List, Kids, Add to list and Notes, 0.8125rem. */
     val ghost: TextStyle @Composable @ReadOnlyComposable get() = TvType.labelLarge.copy(fontSize = 13.tvSp, lineHeight = 1.5.em)
 

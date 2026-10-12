@@ -1,0 +1,82 @@
+/* Watch together: the player's label and notice (`lib/playback/together.js`)
+   and Home's Join line (`lib/catalog/together-join.js`).
+
+   The player is a stage, dark in both themes, so its two take the stage's
+   colours. `--warn` is a colour for paper: the light theme's is a dark ochre
+   that would vanish over a picture. Home's line is on paper, and takes it. */
+
+/* "Together · TV, Tablet", beside the title; it rests with the top bar. It
+   shares what room there is with the title, as the title does (`.hud .what`),
+   rather than leaving the title none of it. */
+.together-label {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--stage-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* What another screen just did, at the top centre of the picture. Outside
+   the HUD, so it shows while the controls rest. Empty in between, and drawn as
+   nothing then while staying a status region. */
+.together-note {
+  position: absolute;
+  top: 4.5rem;
+  right: 1rem;
+  left: 1rem;
+  z-index: 3;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stage) 70%, transparent);
+  color: var(--stage-ink);
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
+.together-note:empty { padding: 0; border: 0; background: none; }
+/* Where the top bar wraps, on a phone or beside the episode sidebar, the title
+   has a row to itself: the label takes the next, and the notice goes below both. */
+@media (max-width: 767px) {
+  .together-label { flex-basis: 100%; text-align: left; }
+  .together-note { top: 8rem; }
+}
+@media (min-width: 768px) {
+  dialog.sidebar-open .together-label { flex-basis: 100%; text-align: left; }
+  dialog.sidebar-open .together-note { top: 8rem; right: calc(var(--sidebar-width) + 1rem); }
+}
+
+/* Join in place of a title page's Play: the pill sits in the row as Play would. */
+.together-slot { display: contents; }
+
+/* Home: one line above the shelf, never instead of it. */
+.together-join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 1.5rem;
+  color: var(--warn);
+  font-size: 0.8125rem;
+}
+.together-join-button {
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}

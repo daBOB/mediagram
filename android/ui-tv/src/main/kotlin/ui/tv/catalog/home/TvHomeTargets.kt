@@ -6,7 +6,7 @@ import ui.tv.catalog.firstStopOf
 import ui.tv.catalog.restoreTargetOf
 
 /** Which band of the magazine layout a stop belongs to, in the order they draw down the page. */
-internal enum class TvHomeSection { COVER, FEATURES, CONTINUE, RECENT, SERIES, COURSES }
+internal enum class TvHomeSection { COVER, TOGETHER, FEATURES, CONTINUE, RECENT, SERIES, COURSES }
 
 /**
  * Where Home's arrival focus — on first appearing, and on every restore key
@@ -21,9 +21,16 @@ internal enum class TvHomeSection { COVER, FEATURES, CONTINUE, RECENT, SERIES, C
  * page must find that film again. With no match, the first band with any
  * stops, at its first one; `null` only when every band is empty, which a
  * caller never draws a page for.
+ *
+ * A live watch-together session's plate goes before that default although it
+ * draws under the cover: Join is what Home is for while one runs, and the
+ * spec puts it first.
  */
 internal fun homeTargetOf(
     sections: List<DeptSection<TvHomeSection>>,
     restoreKey: String?,
     lastSection: TvHomeSection? = null,
-): SectionStop<TvHomeSection>? = restoreTargetOf(sections, restoreKey, lastSection) ?: firstStopOf(sections)
+): SectionStop<TvHomeSection>? =
+    restoreTargetOf(sections, restoreKey, lastSection)
+        ?: firstStopOf(sections.filter { it.id == TvHomeSection.TOGETHER })
+        ?: firstStopOf(sections)

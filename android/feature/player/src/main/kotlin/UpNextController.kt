@@ -126,6 +126,9 @@ class UpNextController(
         if (setId != session.openSetId && setId in run) switchTo(setId, gate = false)
     }
 
+    /** The title a watch-together session moved to, asked for as Next asks: at once, so a countdown here stops. */
+    fun requestTitle(id: String) = switchTo(id, gate = false, run.takeIf { id in it }.orEmpty())
+
     /** Remembered for this title only, so watching the last moments again does not start the countdown a second time. */
     fun cancel() {
         session.openSetId?.let { cancelledIds += it }
@@ -173,7 +176,7 @@ class UpNextController(
         countdownJob?.cancel(); countdownJob = null; countdownLeft = null
     }
 
-    private fun switchTo(id: String, gate: Boolean) {
+    private fun switchTo(id: String, gate: Boolean, run: List<String> = this.run) {
         stopCountdown()
         ended = false
         // The existing save path: wherever the ending title is, saved as it

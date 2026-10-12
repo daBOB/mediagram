@@ -29,6 +29,7 @@ import player.PlayerViewModel
 import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
+import player.pauseForPipDismissal
 import player.retry
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
@@ -75,6 +76,7 @@ fun PlayerScreen(
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
+    val together by viewModel.together.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -150,6 +152,7 @@ fun PlayerScreen(
                     onToggleStats = { statsShown = !statsShown },
                     onEnterPip = pip.enterPip.takeIf { pip.supported },
                     onScrubbingChanged = { scrubbing = it },
+                    together = together,
                 )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
@@ -184,6 +187,8 @@ fun PlayerScreen(
                 onBack = onBack,
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
+                together = together,
+                sidebarBeside = card.sidebarOpen,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )

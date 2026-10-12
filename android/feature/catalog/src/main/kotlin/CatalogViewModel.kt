@@ -8,6 +8,7 @@ import data.CatalogRepository
 import data.LibraryEvents
 import data.LibraryUpdateCoordinator
 import data.LibraryUpdateKind
+import data.TogetherLive
 import data.WatchStateRepository
 import data.coreSentence
 import data.orDefault
@@ -27,7 +28,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.TitleCredits
-import model.forKidsProfile
 import playback.FilmPreloading
 import playback.HeldSetsQuery
 import playback.SeriesPreloading
@@ -47,6 +47,7 @@ class CatalogViewModel
         private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
         filmPreloader: FilmPreloading = FilmPreloading.Noop,
+        private val togetherLive: TogetherLive,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
@@ -54,12 +55,6 @@ class CatalogViewModel
 
         /** The sets behind the last Ready state, before any profile's filter. */
         private var lastSets: List<MediaSet> = emptyList()
-
-        /** What a kids profile is shown by: the hand marks by age, and its own limit. */
-        private data class KidsView(
-            val marks: Map<String, Int>,
-            val limit: Int,
-        )
 
         /**
          * The chosen kid's [KidsView], `null` for a grown-up. Distinct, so
@@ -71,10 +66,7 @@ class CatalogViewModel
                 .distinctUntilChanged()
 
         /** [kidsFilter] as a synchronous read, for a value computed outside collection. */
-        private fun currentKids(): KidsView? {
-            val kid = watchState.chosenProfile.value?.takeIf { it.kids } ?: return null
-            return KidsView(watchState.snapshot.value.kidsMarks, kid.kidsLimit)
-        }
+        private fun currentKids(): KidsView? = watchState.kidsView()
 
         /**
          * Whether the chosen profile is a kids profile — the title page's own
@@ -181,18 +173,21 @@ class CatalogViewModel
                 }
             }
 
-        /** One place the filter applies: every wall and title page on the phone is built from these shelves. */
         private fun project(
             shown: CatalogUiState,
             kids: KidsView?,
-        ): CatalogUiState =
-            when {
-                shown is CatalogUiState.Ready && kids != null -> {
-                    val shelves = shelvesOf(forKidsProfile(lastSets, kids.marks, kids.limit))
-                    if (!shelves.hasContent()) CatalogUiState.KidsEmpty(kids.limit) else shown.copy(shelves = shelves)
-                }
-                else -> shown
-            }
+        ): CatalogUiState = projected(shown, kids, lastSets)
+
+        /**
+         * Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one
+         * shows it. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
+         */
+        val together: StateFlow<TogetherOffer?> =
+            togetherOffers(togetherLive, state)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
+
+        /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */
+        fun join(offer: TogetherOffer) = togetherLive.joinOnOpen(offer.id)
 
         /** Settings changed the library; its first read is separate from enrichment requests. */
         fun reload() {

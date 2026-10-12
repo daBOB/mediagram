@@ -2,8 +2,10 @@ package ui.tv.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,9 +19,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.roundToIntRect
+import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.tvDp
 import player.speedLabel
+import player.together.TogetherUi
+import player.together.description
+import player.together.words
 
 /**
  * The card's middle row: its tools ([TvCardTools]), wrapping rather than
@@ -33,6 +39,7 @@ internal fun TvToolGroup(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     bands: TvStageBands,
+    speed: Float,
 ) {
     val between =
         Modifier.focusProperties {
@@ -45,7 +52,7 @@ internal fun TvToolGroup(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        TvCardTools(focus = focus, extras = extras, bands = bands, each = between)
+        TvCardTools(focus = focus, extras = extras, bands = bands, speed = speed, each = between)
     }
 }
 
@@ -53,9 +60,12 @@ internal fun TvToolGroup(
  * The card's tools, in the web's order: CC, which turns subtitles on or off
  * in one press, and ▾ beside it for the languages and their style; then
  * Speed, Audio — only with more than one track to choose from — and
- * Framing, each naming what is chosen and opening a short menu of the rest
- * above itself. CC with no regular track is drawn but dimmed, still there
+ * Framing, each opening a short menu of the rest above itself. Speed names
+ * the [speed] playing, as the web's does: in watch together it can be
+ * another screen's while the menu marks this viewer's choice. Audio and
+ * Framing name what is chosen. CC with no regular track is drawn but dimmed, still there
  * to be read with nothing to turn on, and ▾ the same with no track at all.
+ * Watch together ends the row, as on the web ([TvTogetherTool]).
  *
  * Drawn as the tablet's tools are — "CC" alone, faint while subtitles are
  * off — at the size of the web's `.tool`s: one size of word, [ToolPadding]
@@ -63,13 +73,14 @@ internal fun TvToolGroup(
  * rest [ToolGap] apart.
  *
  * [each] is laid on every one of them: where the remote goes from the row.
- * Left from CC and Right from Framing do nothing: they end the row.
+ * Left from CC and Right from Watch together do nothing: they end the row.
  */
 @Composable
 internal fun TvCardTools(
     focus: TvPlayerFocus,
     extras: TvPlayerExtras,
     bands: TvStageBands,
+    speed: Float,
     each: Modifier = Modifier,
 ) {
     val choices = extras.choices
@@ -95,11 +106,39 @@ internal fun TvCardTools(
             style = TvPlayerType.tool,
         )
     }
-    TvMenuTool(speedLabel(choices.speed), "Speed", each.focusRequester(focus.speed).opens(bands, TvCardMenu.Speed)) { extras.onOpenMenu(TvCardMenu.Speed) }
+    TvMenuTool(speedLabel(speed), "Speed", each.focusRequester(focus.speed).opens(bands, TvCardMenu.Speed)) { extras.onOpenMenu(TvCardMenu.Speed) }
     if (choices.audioOptions.isNotEmpty()) {
         TvMenuTool("Audio", "Audio", each.focusRequester(focus.audio).opens(bands, TvCardMenu.Audio)) { extras.onOpenMenu(TvCardMenu.Audio) }
     }
-    TvMenuTool(choices.framing.label, "Framing", each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    TvMenuTool(choices.framing.label, "Framing", each.focusRequester(focus.framing).opens(bands, TvCardMenu.Framing)) { extras.onOpenMenu(TvCardMenu.Framing) }
+    TvTogetherTool(
+        ui = extras.together,
+        modifier = each.focusProperties { right = FocusRequester.Cancel }.focusRequester(focus.together),
+        onClick = extras.onTogether,
+    )
+}
+
+/**
+ * Watch together, Join or Leave watch together, as the web's tool says.
+ * Greyed out it still takes the remote and gives the reason as a second
+ * line, where the web shows it on hover — a television has no hover.
+ */
+@Composable
+private fun TvTogetherTool(
+    ui: TogetherUi,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    TvOverlaySurface(
+        onClick = onClick,
+        enabled = ui.enabled,
+        modifier = modifier.semantics { contentDescription = ui.description },
+    ) {
+        Column(modifier = Modifier.padding(horizontal = Spacing.medium, vertical = Spacing.small)) {
+            Text(text = ui.button.words, style = TvPlayerType.tool)
+            ui.reason?.let { Text(text = it, style = TvPlayerType.figures) }
+        }
+    }
 }
 
 @Composable

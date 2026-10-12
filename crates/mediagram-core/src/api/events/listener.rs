@@ -8,6 +8,7 @@ use grammers_mtsender::{InvocationError, SenderPoolFatHandle};
 use tokio::time::Instant;
 
 use crate::api::account::{revoked, session};
+use crate::api::together::TogetherMessage;
 use crate::api::{Core, CoreError};
 use crate::updates::{Debouncer, LibraryEvent, classify};
 
@@ -22,6 +23,8 @@ pub(in crate::api) struct Listener {
     debouncer: Debouncer,
     ready: VecDeque<LibraryEvent>,
     started: Instant,
+    /// The session message behind the `Together` just returned, until `next` hands it to the core.
+    heard: Option<TogetherMessage>,
 }
 
 impl Listener {
@@ -32,6 +35,7 @@ impl Listener {
             debouncer: Debouncer::new(WINDOW_MS),
             ready: VecDeque::new(),
             started: Instant::now(),
+            heard: None,
         }
     }
 }
@@ -55,6 +59,12 @@ pub(super) async fn next(
         .expect("just set")
         .wait(channel, own_device)
         .await;
+    if let Some(message) = slot.as_mut().and_then(|listener| listener.heard.take()) {
+        *core
+            .together_heard
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(message);
+    }
     finish_wait(core, &mut slot, result).await
 }
 
@@ -113,11 +123,25 @@ impl Listener {
                 }
                 None => self.stream.next_raw().await?,
             };
-            let event =
-                channel_update(&raw.0).and_then(|update| classify(&update, channel, own_device));
-            if let Some(event) = event {
-                let now = self.now_ms();
-                self.debouncer.offer(event, now);
+            let Some(update) = channel_update(&raw.0) else {
+                continue;
+            };
+            match classify(&update, channel, own_device) {
+                // A session's edit is its whole state and the newest wins, so it is never held for a window.
+                Some(LibraryEvent::Together) => {
+                    if let (Some(id), Some(text)) = (update.id, update.caption) {
+                        self.heard = Some(TogetherMessage {
+                            message_id: id,
+                            text,
+                        });
+                    }
+                    return Ok(LibraryEvent::Together);
+                }
+                Some(event) => {
+                    let now = self.now_ms();
+                    self.debouncer.offer(event, now);
+                }
+                None => {}
             }
         }
     }

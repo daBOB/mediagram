@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import player.PlayerViewModel
 import player.open
+import player.screenShown
 
 /**
  * Keeps playback through Activity recreation and stops when navigation
@@ -23,7 +24,8 @@ import player.open
  * swiped, the process trimmed — sits alongside it: an Activity can reach
  * `ON_STOP` (screen off, task-switched away) while the Composition it hosts
  * is still there, primed to resume, which the dispose effect alone would
- * not catch.
+ * not catch. `ON_START` and `ON_STOP` also tell it whether its screen is
+ * started: out of a watch-together session, it listens for one only then.
  */
 @Composable
 fun PlayerLifecycle(viewModel: PlayerViewModel) {
@@ -41,7 +43,14 @@ fun PlayerLifecycle(viewModel: PlayerViewModel) {
     DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_STOP) viewModel.save()
+                when (event) {
+                    Lifecycle.Event.ON_START -> viewModel.screenShown(true)
+                    Lifecycle.Event.ON_STOP -> {
+                        viewModel.save()
+                        viewModel.screenShown(false)
+                    }
+                    else -> Unit
+                }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }

@@ -1,9 +1,14 @@
 package player
 
+import android.content.Context
+import data.TogetherLive
 import data.WatchStateRepository
+import io.mockk.mockk
 import data.WatchSync
 import playback.PlaybackCounters
 import playback.SummarySource
+import player.together.ViewerRelay
+import testing.FakeTogetherLive
 import testing.FakeHeldSets
 import testing.FakeSeriesPreloader
 import testing.WatchStateFixture
@@ -33,6 +38,9 @@ internal fun buildViewModel(
     seriesPreloader: FakeSeriesPreloader = FakeSeriesPreloader(),
     heldSets: FakeHeldSets = FakeHeldSets(),
     summarySource: SummarySource = SummarySource.None,
+    together: TogetherLive = FakeTogetherLive(),
+    relay: ViewerRelay = ViewerRelay(),
+    context: Context = mockk(relaxed = true),
 ) = PlayerViewModel(
     handle,
     PlaybackCounters(),
@@ -46,4 +54,7 @@ internal fun buildViewModel(
     seriesPreloader,
     heldSets,
     summarySource,
+    together,
+    relay,
+    context,
 )

@@ -43,11 +43,19 @@ export class LibraryUpdates {
   private unsubscribe: (() => void) | null = null;
   private onIndex: () => void = () => {};
 
-  constructor(private readonly subscribe: (event: (kind: LibraryEvent) => void) => () => void, private readonly sync: Sync) {}
+  constructor(
+    private readonly subscribe: (event: (kind: LibraryEvent, heard?: { id: number; text: string }) => void) => () => void,
+    private readonly sync: Sync,
+    private readonly together: (id: number, text: string) => void = () => {},
+  ) {}
 
   async start(): Promise<void> {
-    this.unsubscribe = this.subscribe((event) => {
+    this.unsubscribe = this.subscribe((event, heard) => {
       if (this.stopped) return;
+      if (event === "together") {
+        if (heard) this.together(heard.id, heard.text);
+        return;
+      }
       if (event === "state") void syncOnce(this.sync, "push");
       else this.onIndex();
     });

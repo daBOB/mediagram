@@ -67,16 +67,28 @@ const ROOT = join(import.meta.dir, "..");
  * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
  * Lowered the same day for `src/state/store.ts`, once its foreign-key check
  * read the SQLite code through `errorCode`.
+ * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
+ * push sink, its recheck timer and its route. Raised the same day for `app.js`,
+ * by 2, to hand the library session watch together's share of the event stream.
+ * Raised the same day for `player.js`, by 11, for watch together's hooks: the
+ * viewer's play, pause, seek, speed and next title, the media keys, and leaving
+ * as the player closes. Raised again for `app.js`, by 3, to register how Join
+ * opens a title and finds it in this profile's catalog. Raised again for
+ * `player.js`, by 2, so a held seek-bar drag reports as it moves and a title
+ * opened in a session starts at the session's place; and for
+ * `catalog/course-view.js`, by 3, for Join on a course's page. Raised again for
+ * `player.js`, by 1, to say why a title started at the session's place isn't
+ * announced as carrying on from this profile's own.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 693,
-  "public/lib/catalog/course-view.js": 234,
+  "public/app.js": 698,
+  "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
   "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 994,
+  "public/lib/playback/player.js": 1008,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
@@ -89,7 +101,7 @@ const CEILINGS: Record<string, number> = {
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 446,
+  "src/index.ts": 451,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

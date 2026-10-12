@@ -682,11 +682,7 @@ internal object IntegrityCheckingUniffiLib {
     }
     external fun uniffi_mediagram_core_checksum_method_core_catalog_facts(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_check_password(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_fetch_missing(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_list_libraries(
     ): Int
@@ -700,13 +696,17 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_refresh_library(
     ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_request_code(
-    ): Int
-    external fun uniffi_mediagram_core_checksum_method_core_sign_in(
-    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_title_info(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_total_size(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_check_password(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_is_authorized(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_request_code(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_sign_in(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_account(
     ): Int
@@ -806,6 +806,18 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_subtitle_text(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_delete(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_edit(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_heard(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_read(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_recent(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_together_send(
+    ): Int
     external fun uniffi_mediagram_core_checksum_constructor_core_new(
     ): Int
     external fun ffi_mediagram_core_uniffi_contract_version(
@@ -834,12 +846,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_catalog_facts(`ptr`: Long,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_fetch_missing(`ptr`: Long,`tmdbKey`: RustBuffer.ByValue,`language`: RustBuffer.ByValue,`backdropWidth`: Int,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
     external fun uniffi_mediagram_core_fn_method_core_list_libraries(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_list_sets(`ptr`: Long,
@@ -852,13 +860,17 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_refresh_library(`ptr`: Long,`handle`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_mediagram_core_fn_method_core_sign_in(`ptr`: Long,`token`: RustBuffer.ByValue,`code`: RustBuffer.ByValue,
-    ): Long
     external fun uniffi_mediagram_core_fn_method_core_title_info(`ptr`: Long,`posterKey`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_total_size(`ptr`: Long,`setId`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_check_password(`ptr`: Long,`password`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_is_authorized(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+    external fun uniffi_mediagram_core_fn_method_core_request_code(`ptr`: Long,`phone`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_sign_in(`ptr`: Long,`token`: RustBuffer.ByValue,`code`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_account(`ptr`: Long,
     ): Long
@@ -957,6 +969,18 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_hold_subtitles(`ptr`: Long,`setId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_subtitle_text(`ptr`: Long,`setId`: RustBuffer.ByValue,`track`: Int,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_together_delete(`ptr`: Long,`handle`: RustBuffer.ByValue,`messageId`: Int,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_together_edit(`ptr`: Long,`handle`: RustBuffer.ByValue,`messageId`: Int,`text`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_together_heard(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+    external fun uniffi_mediagram_core_fn_method_core_together_read(`ptr`: Long,`handle`: RustBuffer.ByValue,`messageId`: Int,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_together_recent(`ptr`: Long,`handle`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_together_send(`ptr`: Long,`handle`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,
     ): Long
     external fun ffi_mediagram_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1080,13 +1104,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_catalog_facts() and 0xFFFF) != 36812) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 58515) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_missing() and 0xFFFF) != 44413) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 30182) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_list_libraries() and 0xFFFF) != 44487) {
@@ -1107,16 +1125,22 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_refresh_library() and 0xFFFF) != 57976) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6400) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 53031) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_info() and 0xFFFF) != 51771) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_total_size() and 0xFFFF) != 8277) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_check_password() and 0xFFFF) != 31418) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_is_authorized() and 0xFFFF) != 46348) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_request_code() and 0xFFFF) != 6393) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_sign_in() and 0xFFFF) != 7933) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_account() and 0xFFFF) != 26652) {
@@ -1149,7 +1173,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_credits() and 0xFFFF) != 3782) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 13174) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 41951) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
@@ -1264,6 +1288,24 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_subtitle_text() and 0xFFFF) != 55375) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_delete() and 0xFFFF) != 54623) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_edit() and 0xFFFF) != 60478) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_heard() and 0xFFFF) != 35484) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_read() and 0xFFFF) != 39093) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_recent() and 0xFFFF) != 63523) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_together_send() and 0xFFFF) != 14738) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_constructor_core_new() and 0xFFFF) != 35315) {
@@ -1816,8 +1858,6 @@ public interface CoreInterface {
      */
     suspend fun `catalogFacts`(): CatalogFacts
 
-    suspend fun `checkPassword`(`password`: kotlin.String)
-
     /**
      * Fetches missing TMDB posters, backdrops and descriptions together, once per title.
      *
@@ -1828,12 +1868,6 @@ public interface CoreInterface {
      * Kotlin owns the key; this call uses it without storing it.
      */
     suspend fun `fetchMissing`(`tmdbKey`: kotlin.String, `language`: kotlin.String, `backdropWidth`: kotlin.UInt): FetchReport
-
-    /**
-     * Whether a login has ever completed. Reads the persisted auth key
-     * only: cheap, and needs no connection.
-     */
-    fun `isAuthorized`(): kotlin.Boolean
 
     /**
      * The libraries this account could choose from — its broadcast
@@ -1880,10 +1914,6 @@ public interface CoreInterface {
      */
     suspend fun `refreshLibrary`(`handle`: kotlin.String): kotlin.ULong
 
-    suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
-
-    suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
-
     /**
      * What is known about a title, or nothing. The index answers first and
      * what this device fetched fills the gaps — see `enrich::details::title_info`.
@@ -1893,6 +1923,18 @@ public interface CoreInterface {
     suspend fun `titleInfo`(`posterKey`: kotlin.String): TitleInfo?
 
     suspend fun `totalSize`(`setId`: kotlin.String): kotlin.ULong
+
+    suspend fun `checkPassword`(`password`: kotlin.String)
+
+    /**
+     * Whether a login has ever completed. Reads the persisted auth key
+     * only: cheap, and needs no connection.
+     */
+    fun `isAuthorized`(): kotlin.Boolean
+
+    suspend fun `requestCode`(`phone`: kotlin.String): kotlin.String
+
+    suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String): AuthOutcome
 
     /**
      * The signed-in account's name and username.
@@ -1970,8 +2012,10 @@ public interface CoreInterface {
      * round: another device's watch state (`State`) or a newly published
      * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
      * and run one when you start listening, since nothing missed while not
-     * listening is replayed. `own_device` is this device's watch-state id,
-     * so its own writes are not reported back. Cancelling the call stops
+     * listening is replayed. A watch-together session message (`Together`)
+     * comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
+     * so its own watch-state writes are not reported back; a `Together` edit
+     * is, since this device hears its own session edits too. Cancelling the call stops
      * the wait; an error means listening stopped — back off and call again.
      */
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
@@ -2217,6 +2261,30 @@ public interface CoreInterface {
      */
     suspend fun `subtitleText`(`setId`: kotlin.String, `track`: kotlin.UInt): kotlin.String?
 
+    suspend fun `togetherDelete`(`handle`: kotlin.String, `messageId`: kotlin.Int)
+
+    suspend fun `togetherEdit`(`handle`: kotlin.String, `messageId`: kotlin.Int, `text`: kotlin.String): TogetherEdit
+
+    /**
+     * The newest watch-together message the listener heard. Read it after a `LibraryEvent::Together`.
+     */
+    fun `togetherHeard`(): TogetherMessage?
+
+    /**
+     * A session message's current text, or `None` once it is deleted.
+     */
+    suspend fun `togetherRead`(`handle`: kotlin.String, `messageId`: kotlin.Int): kotlin.String?
+
+    /**
+     * Session messages among the newest channel messages, newest first.
+     */
+    suspend fun `togetherRecent`(`handle`: kotlin.String): List<TogetherMessage>
+
+    /**
+     * Sends a new session message, never pinned, and answers its id.
+     */
+    suspend fun `togetherSend`(`handle`: kotlin.String, `text`: kotlin.String): kotlin.Int
+
     companion object
 }
 
@@ -2363,29 +2431,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
-    @Throws(CoreException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `checkPassword`(`password`: kotlin.String) {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_check_password(
-                uniffiHandle,
-
-        FfiConverterString.lower(`password`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
-        // lift function
-        { Unit },
-
-        // Error FFI converter
-        CoreException.ErrorHandler,
-    )
-    }
-
-
     /**
      * Fetches missing TMDB posters, backdrops and descriptions together, once per title.
      *
@@ -2417,23 +2462,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         CoreException.ErrorHandler,
     )
     }
-
-
-    /**
-     * Whether a login has ever completed. Reads the persisted auth key
-     * only: cheap, and needs no connection.
-     */override fun `isAuthorized`(): kotlin.Boolean {
-            return FfiConverterBoolean.lift(
-    callWithHandle {
-    uniffiRustCall() { _status ->
-    UniffiLib.uniffi_mediagram_core_fn_method_core_is_authorized(
-        it,
-        _status)
-}
-    }
-    )
-    }
-
 
 
     /**
@@ -2602,51 +2630,6 @@ open class Core: Disposable, AutoCloseable, CoreInterface
     }
 
 
-    @Throws(CoreException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `requestCode`(`phone`: kotlin.String) : kotlin.String {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_request_code(
-                uniffiHandle,
-
-        FfiConverterString.lower(`phone`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterString.lift(it) },
-        // Error FFI converter
-        CoreException.ErrorHandler,
-    )
-    }
-
-
-    @Throws(CoreException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
-        return uniffiRustCallAsync(
-        callWithHandle { uniffiHandle ->
-            UniffiLib.uniffi_mediagram_core_fn_method_core_sign_in(
-                uniffiHandle,
-
-        FfiConverterString.lower(`token`),
-        FfiConverterString.lower(`code`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterTypeAuthOutcome.lift(it) },
-        // Error FFI converter
-        CoreException.ErrorHandler,
-    )
-    }
-
-
     /**
      * What is known about a title, or nothing. The index answers first and
      * what this device fetched fills the gaps — see `enrich::details::title_info`.
@@ -2690,6 +2673,91 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_u64(future) },
         // lift function
         { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `checkPassword`(`password`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_check_password(
+                uniffiHandle,
+
+        FfiConverterString.lower(`password`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Whether a login has ever completed. Reads the persisted auth key
+     * only: cheap, and needs no connection.
+     */override fun `isAuthorized`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_is_authorized(
+        it,
+        _status)
+}
+    }
+    )
+    }
+
+
+
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `requestCode`(`phone`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_request_code(
+                uniffiHandle,
+
+        FfiConverterString.lower(`phone`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `signIn`(`token`: kotlin.String, `code`: kotlin.String) : AuthOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_sign_in(
+                uniffiHandle,
+
+        FfiConverterString.lower(`token`),
+        FfiConverterString.lower(`code`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeAuthOutcome.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -2958,8 +3026,10 @@ open class Core: Disposable, AutoCloseable, CoreInterface
      * round: another device's watch state (`State`) or a newly published
      * index (`Index`). Only a hint — run the ordinary sync or refresh on it,
      * and run one when you start listening, since nothing missed while not
-     * listening is replayed. `own_device` is this device's watch-state id,
-     * so its own writes are not reported back. Cancelling the call stops
+     * listening is replayed. A watch-together session message (`Together`)
+     * comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
+     * so its own watch-state writes are not reported back; a `Together` edit
+     * is, since this device hears its own session edits too. Cancelling the call stops
      * the wait; an error means listening stopped — back off and call again.
      */
     @Throws(CoreException::class)
@@ -3983,6 +4053,147 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { FfiConverterOptionalString.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `togetherDelete`(`handle`: kotlin.String, `messageId`: kotlin.Int) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_together_delete(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+        FfiConverterInt.lower(`messageId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `togetherEdit`(`handle`: kotlin.String, `messageId`: kotlin.Int, `text`: kotlin.String) : TogetherEdit {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_together_edit(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+        FfiConverterInt.lower(`messageId`),
+        FfiConverterString.lower(`text`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeTogetherEdit.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * The newest watch-together message the listener heard. Read it after a `LibraryEvent::Together`.
+     */override fun `togetherHeard`(): TogetherMessage? {
+            return FfiConverterOptionalTypeTogetherMessage.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_together_heard(
+        it,
+        _status)
+}
+    }
+    )
+    }
+
+
+
+    /**
+     * A session message's current text, or `None` once it is deleted.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `togetherRead`(`handle`: kotlin.String, `messageId`: kotlin.Int) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_together_read(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+        FfiConverterInt.lower(`messageId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Session messages among the newest channel messages, newest first.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `togetherRecent`(`handle`: kotlin.String) : List<TogetherMessage> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_together_recent(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeTogetherMessage.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Sends a new session message, never pinned, and answers its id.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `togetherSend`(`handle`: kotlin.String, `text`: kotlin.String) : kotlin.Int {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_together_send(
+                uniffiHandle,
+
+        FfiConverterString.lower(`handle`),
+        FfiConverterString.lower(`text`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i32(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i32(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i32(future) },
+        // lift function
+        { FfiConverterInt.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -5902,6 +6113,44 @@ public object FfiConverterTypeTitleInfo: FfiConverterRustBuffer<TitleInfo> {
 
 
 
+data class TogetherMessage (
+    var `messageId`: kotlin.Int
+    ,
+    var `text`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTogetherMessage: FfiConverterRustBuffer<TogetherMessage> {
+    override fun read(buf: ByteBuffer): TogetherMessage {
+        return TogetherMessage(
+            FfiConverterInt.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: TogetherMessage) = (
+            FfiConverterInt.allocationSize(value.`messageId`) +
+            FfiConverterString.allocationSize(value.`text`)
+    )
+
+    override fun write(value: TogetherMessage, buf: ByteBuffer) {
+            FfiConverterInt.write(value.`messageId`, buf)
+            FfiConverterString.write(value.`text`, buf)
+    }
+}
+
+
+
 /**
  * One title a profile watched to the end, and when.
  */
@@ -6198,7 +6447,12 @@ public object FfiConverterTypeHistoryKind: FfiConverterRustBuffer<HistoryKind> {
 enum class LibraryEvent {
 
     STATE,
-    INDEX;
+    INDEX,
+    /**
+     * A watch-together session message was sent or edited. Delivered at
+     * once, never debounced; the message itself is `Core::together_heard`.
+     */
+    TOGETHER;
 
 
 
@@ -6416,6 +6670,99 @@ public object FfiConverterTypeProfileOutcome : FfiConverterRustBuffer<ProfileOut
             }
             is ProfileOutcome.NotSynced -> {
                 buf.putInt(9)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+sealed class TogetherEdit {
+
+    object Ok : TogetherEdit()
+
+
+    /**
+     * The message is gone: the session is over.
+     */
+    object Gone : TogetherEdit()
+
+
+    /**
+     * Telegram asked for a pause longer than grammers sleeps through on its own.
+     */
+    data class Wait(
+        val `seconds`: kotlin.UInt) : TogetherEdit()
+
+    {
+
+
+        companion object
+    }
+
+
+
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTogetherEdit : FfiConverterRustBuffer<TogetherEdit>{
+    override fun read(buf: ByteBuffer): TogetherEdit {
+        return when(buf.getInt()) {
+            1 -> TogetherEdit.Ok
+            2 -> TogetherEdit.Gone
+            3 -> TogetherEdit.Wait(
+                FfiConverterUInt.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: TogetherEdit): ULong = when(value) {
+        is TogetherEdit.Ok -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is TogetherEdit.Gone -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is TogetherEdit.Wait -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUInt.allocationSize(value.`seconds`)
+            )
+        }
+    }
+
+    override fun write(value: TogetherEdit, buf: ByteBuffer) {
+        when(value) {
+            is TogetherEdit.Ok -> {
+                buf.putInt(1)
+                Unit
+            }
+            is TogetherEdit.Gone -> {
+                buf.putInt(2)
+                Unit
+            }
+            is TogetherEdit.Wait -> {
+                buf.putInt(3)
+                FfiConverterUInt.write(value.`seconds`, buf)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -6836,6 +7183,38 @@ public object FfiConverterOptionalTypeTitleInfo: FfiConverterRustBuffer<TitleInf
         } else {
             buf.put(1)
             FfiConverterTypeTitleInfo.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeTogetherMessage: FfiConverterRustBuffer<TogetherMessage?> {
+    override fun read(buf: ByteBuffer): TogetherMessage? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeTogetherMessage.read(buf)
+    }
+
+    override fun allocationSize(value: TogetherMessage?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeTogetherMessage.allocationSize(value)
+        }
+    }
+
+    override fun write(value: TogetherMessage?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeTogetherMessage.write(value, buf)
         }
     }
 }
@@ -7312,6 +7691,34 @@ public object FfiConverterSequenceTypeSubtitleTrack: FfiConverterRustBuffer<List
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeSubtitleTrack.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeTogetherMessage: FfiConverterRustBuffer<List<TogetherMessage>> {
+    override fun read(buf: ByteBuffer): List<TogetherMessage> {
+        val len = buf.getInt()
+        return List<TogetherMessage>(len) {
+            FfiConverterTypeTogetherMessage.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<TogetherMessage>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeTogetherMessage.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<TogetherMessage>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeTogetherMessage.write(it, buf)
         }
     }
 }

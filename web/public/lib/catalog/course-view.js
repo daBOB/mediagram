@@ -20,7 +20,8 @@ import { el } from "../dom.js";
 import { crumbs, heading } from "./shelf-view.js";
 import { SECTIONS } from "./sections.js";
 import { codecLine, countOf, episodeLabel, humanDuration, humanSize } from "../format.js";
-import { countsUnder, divisionAt, isDocument, levelEntries } from "../library.js";
+import { countsUnder, divisionAt, flattenCollection, isDocument, levelEntries } from "../library.js";
+import { joinOr } from "./together-join.js";
 import { offlineBadge, progressRuleFor, transcodeBadge, watchedTick } from "./set-badge.js";
 
 /**
@@ -221,6 +222,8 @@ function viewCourseLevel(main, section, collection, folders, { play, open }) {
   // Both counts, because a folder of workbooks holds no lessons at all and
   // "zero lessons" is a worse description of it than "two documents".
   heading(main, level.title ?? collection.name, extentOf(level));
+  // A course has no Play of its own to stand in for: Join appears while a session plays one of its lessons.
+  main.append(joinOr(flattenCollection(collection).map((set) => set.setId), null));
 
   main.append(
     levelBlock(

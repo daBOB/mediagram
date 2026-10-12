@@ -20,6 +20,8 @@ import type { AchievementLibrary } from "./state/achievements";
 import { statsRoute } from "./state/stats-routes";
 import type { WatchState } from "./state/store";
 import { beginTranscode, hlsResponse, type HlsServer } from "./transcode/routes";
+import type { TogetherHub } from "./together/hub";
+import { togetherRoute } from "./together/routes";
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const CACHED_STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/cached-stream$/;
@@ -48,6 +50,8 @@ export interface RouterOptions extends CatalogRouterOptions {
   preload?: SeriesPreload;
   events?: CatalogEvents;
   state?: WatchState;
+  /** `/api/together`, read and written: watch together (`docs/mlib-spec.md` §7b). */
+  together?: TogetherHub;
   /** Maximum remote-link bitrate, in bits per second. */
   maxBitrate?: number;
   /**
@@ -134,7 +138,9 @@ export function createRouter(options: RouterOptions) {
     // A conversion holds an encoder until released, so starting one is a guarded write, not a GET.
     const begin = TRANSCODE_PATH.exec(request.path);
     if (begin) return request.method === "POST" ? beginTranscode(db, hls, request, begin[1]!, maxBitrate) : bodiless(405);
-    // Preload and transcode start, the two POSTs, are answered above this gate.
+    const together = await togetherRoute(request, options.together, db);
+    if (together) return together;
+    // Preload, transcode start and watch together, the POSTs, are answered above this gate.
     if (request.method !== "GET" && request.method !== "HEAD") return bodiless(405);
     const headOnly = request.method === "HEAD";
 

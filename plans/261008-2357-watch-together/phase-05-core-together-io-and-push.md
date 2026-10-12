@@ -250,3 +250,11 @@ mod tests;
 
 - **UniFFI's checksum.** A stale `.so` crashes the app at launch, so regenerate the bindings and the `.so`s together, and reinstall on the devices in phase 09.
 - **`iter_messages` on a busy channel during an upload.** It reads one page of 100. A session older than 100 messages is found only through the push. This is accepted in the spec.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- **`crates/mediagram-core/src/api/mod.rs` is already exactly 200 lines** (the `code_standards.rs` limit). Before adding `mod together;` and the `together_heard` field, move one cohesive existing group out of `mod.rs` into a submodule with no behaviour change (your choice of which; say which in the report), so `mod.rs` stays ≤ 200.
+- Tasks 5.1–5.3 are one dispatch. Create the `TogetherMessage` record and the `together_heard` getter in 5.1, where they're first used.
+- Reuse `crate::updates::TOGETHER_PREFIX` (`pub(crate)`) in `together.rs`, not a second constant. `Debouncer::take` calls `slot_of` too (updates.rs ~134): update it for the `Option` return.
+- **FakeCore** gets failure knobs (`togetherFailure`, or one per call) that phase 07's tests use for "Telegram unreachable" and flood/gone outcomes.
+- There's no exhaustive Kotlin `when` over `LibraryEvent` today. Add a `TOGETHER` branch only where a `when` would otherwise fail to compile.

@@ -1,6 +1,7 @@
 package player
 
 import androidx.media3.common.Player
+import model.together.PlaybackChange
 
 /*
  * The card's own steps through the run and back to the top of the title.
@@ -26,10 +27,12 @@ fun PlayerViewModel.playFromRun(setId: String) = upNextController.playFromRun(se
  * media3 still holds play-when-ready: that is paused first, so the viewer
  * who pressed ↺ on a stopped picture gets the stopped first frame, as on
  * the web. A countdown already running after the credits stops, since the
- * seek has left the end (`UpNextController.onSeeked`).
+ * seek has left the end (`UpNextController.onSeeked`). In a watch-together
+ * session it is the viewer's seek to the top, as on the web.
  */
 fun PlayerViewModel.restart() {
     val player = handle.player.value ?: return
     if (player.playbackState == Player.STATE_ENDED) player.pause()
     player.seekTo(0L)
+    togetherController.viewer(PlaybackChange(pos = 0.0))
 }

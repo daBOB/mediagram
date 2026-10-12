@@ -41,6 +41,8 @@ import type { StartupFacts } from "./status/facts";
 import { Telegram } from "./telegram/client";
 import { TelegramConnection } from "./telegram/connection";
 import { TelegramSource } from "./telegram/source";
+import { TelegramTogetherChannel } from "./telegram/together-channel";
+import { TOGETHER_RECHECK_MS, TogetherHub } from "./together/hub";
 import { SeriesPreload } from "./cache/series-preload";
 import { CatalogEvents } from "./catalog-events";
 import { findNewestChannelIndex, type FoundIndex } from "./channel-index/find-newest-channel-index";
@@ -249,6 +251,9 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
     const updatesBinding = new UpdatesBinding(connection, channel, state.deviceId(), sync, null, io.listen);
     resources.updates = { stop: () => updatesBinding.stop() };
     await updatesBinding.start();
+    const together = new TogetherHub(new TelegramTogetherChannel(connection), (id, session, lost) => events.together(id, session, Date.now(), lost));
+    updatesBinding.setTogether((id, text) => together.heard(id, text));
+    resources.timers.push(setInterval(() => void together.recheck(), TOGETHER_RECHECK_MS));
 
     if (sync) {
       console.log(`sync: ${state.deviceId()} every ${Math.round(config.syncEveryMs / 1000)}s`);
@@ -383,6 +388,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       preload,
       status: statusRouter,
       settings: (request) => settingsBox.route?.(request) ?? Promise.resolve(null),
+      together,
     });
 
     boundUrl = server.baseUrl;

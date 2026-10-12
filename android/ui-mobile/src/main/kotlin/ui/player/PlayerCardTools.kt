@@ -14,6 +14,9 @@ import androidx.compose.ui.unit.roundToIntRect
 import designsystem.Spacing
 import player.PlayerChoices
 import player.speedLabel
+import player.together.TogetherUi
+import player.together.description
+import player.together.words
 
 /**
  * The card's middle row: what changes how the title plays, never where it is.
@@ -22,8 +25,12 @@ import player.speedLabel
  * than hidden for a title without a regular track, so the row does not shift
  * from one title to the next; ▾ beside it opens the languages and the style,
  * and stays open to a forced-only title, whose lines still take a size.
- * Speed and Framing name the current choice. Audio is left out for a single
- * track, which is a label, not a choice. The tools stand at the left and
+ * Speed names the speed playing, which in watch together can be another
+ * screen's while its menu still marks this viewer's choice, as on the web;
+ * Framing names the current choice. Audio is left out for a single
+ * track, which is a label, not a choice. Watch together ends the tools, as
+ * on the web: it says what it does, and greyed out it tells a screen reader
+ * why ([together]). The tools stand at the left and
  * picture-in-picture at the right end, as volume and fullscreen do on the web.
  *
  * The tools wrap rather than squeeze: on a 360dp phone a row of 48dp targets
@@ -33,8 +40,10 @@ import player.speedLabel
 @Composable
 internal fun CardToolsRow(
     choices: PlayerChoices,
+    speed: Float,
     actions: PlayerCardActions,
     openMenu: CardMenu? = null,
+    together: TogetherUi = TogetherUi(),
 ) {
     fun expanded(vararg menus: CardMenu) = if (openMenu in menus) "Expanded" else "Collapsed"
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -60,7 +69,7 @@ internal fun CardToolsRow(
                 state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
             )
             LabelButton(
-                label = speedLabel(choices.speed),
+                label = speedLabel(speed),
                 description = "Speed",
                 onClick = { actions.onOpenMenu(CardMenu.Speed) },
                 modifier = actions.openerFor(CardMenu.Speed),
@@ -81,6 +90,12 @@ internal fun CardToolsRow(
                 onClick = { actions.onOpenMenu(CardMenu.Framing) },
                 modifier = actions.openerFor(CardMenu.Framing),
                 state = expanded(CardMenu.Framing),
+            )
+            LabelButton(
+                label = together.button.words,
+                description = together.description,
+                onClick = actions.onTogether,
+                enabled = together.enabled,
             )
         }
         actions.onEnterPip?.let { enter ->

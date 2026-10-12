@@ -133,7 +133,7 @@ internal fun LabelButton(
         interactionSource = source,
         modifier = modifier.sizeIn(minWidth = MIN_TARGET, minHeight = MIN_TARGET).semantics { contentDescription = description; state?.let { stateDescription = it } },
     ) {
-        Text(text = label, color = toolInk(source, enabled, rest = Color.White), style = MaterialTheme.typography.labelLarge)
+        Text(text = label, color = toolInk(source, enabled, rest = if (enabled) Color.White else Color.White.copy(alpha = DIM_ALPHA)), style = MaterialTheme.typography.labelLarge)
     }
 }
 

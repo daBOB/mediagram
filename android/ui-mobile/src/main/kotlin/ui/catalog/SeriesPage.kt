@@ -29,13 +29,15 @@ import designsystem.entrance
 import model.TitleCredits
 import model.WatchSnapshot
 import ui.common.catalog.rememberTitleCredits
+import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
 
 /**
  * A show's own page, as a feature article with a table of contents: the
  * opening spread, the pills that start it, then tabs — Episodes (a season
  * picker over a readable list), About, Cast (once credits name somebody),
- * Similar. A Compose port of `series-page.js`.
+ * Similar. A Compose port of `series-page.js`. While a watch-together
+ * session plays one of its episodes, Join stands in for the resume pill.
  *
  * [season]/[onSelectSeason] are the caller's own state, not this
  * composable's — a `null` [season] means nobody has chosen one yet, so this
@@ -72,6 +74,7 @@ internal fun SeriesPage(
     val resume = remember(collection, watch) { seriesResumeFor(collection, watch) }
     val credits = rememberTitleCredits(collection.posterKey, titleCredits)
     val facts = remember(collection) { summarize(collection.divisions) }
+    val join = togetherJoinIn(collection)
 
     // Keyed on [resume] too: watch state usually arrives after the first
     // frame, and a default picked once, before it, never opened on the
@@ -129,8 +132,8 @@ internal fun SeriesPage(
             ) {
                 if (firstEpisode != null) {
                     TitlePills(
-                        playLabel = resume?.let(::resumeWordsOf),
-                        onPlay = { resume?.let { onPlay(it.set.setId) } },
+                        playLabel = if (join != null) "Join" else resume?.let(::resumeWordsOf),
+                        onPlay = join?.join ?: { if (resume != null) onPlay(resume.set.setId) },
                         watchlisted = firstEpisode.setId in watch.watchlist,
                         onToggleWatchlist = onToggleWatchlist,
                         editorsChoicePinned = editorsChoice == firstEpisode.setId,

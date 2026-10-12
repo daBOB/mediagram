@@ -220,3 +220,7 @@ fun decide(own: ScreenState, s: Session, now: Long): List<Step> {
 
 - Every case in every `together/*.json` passes in Kotlin with no Kotlin-only case added.
 - `:core:model:test`, detekt and spotless pass.
+
+## Pre-flight rulings (binding; they override the text above where they differ)
+
+- `moves.json` has a `finished` case: the Kotlin moves test dispatches `started`, `joined`, `left`, `acted` **and `finished`**. Every fixture key the JS test reads, the Kotlin test reads too.

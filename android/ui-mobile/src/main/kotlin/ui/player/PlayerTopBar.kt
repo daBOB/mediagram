@@ -30,7 +30,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import designsystem.Spacing
 import kotlin.math.roundToInt
 import ui.chrome.CatalogueIconButton
@@ -44,7 +52,8 @@ private val TOP_GRADIENT = Brush.verticalGradient(listOf(Color.Black.copy(alpha 
  * The slim bar along the top: back, what is playing, and the controls the
  * web keeps in its own top bar — My List, Kids and Add to list ([marks]) and
  * Notes ([onNotes], when the open title has notes). Picture-in-picture rides
- * in the card instead.
+ * in the card instead. In watch together [label] names who is in the
+ * session ("Together · TV, Tablet").
  *
  * The arrow stays up regardless of the card's fade — Android's own way
  * back, not something the web has. Everything else fades with [showTitle],
@@ -65,6 +74,9 @@ internal fun PlayerTopBar(
     marks: @Composable () -> Unit = {},
     /** Where the bar ends in the root, so a menu knows how far up it may reach. */
     onBottom: (Int) -> Unit = {},
+    label: String? = null,
+    /** The episode list standing down the right: the bar runs under its header, so nothing may sit at its right end. */
+    sidebarBeside: Boolean = false,
 ) {
     // Read when drawn, so the scrim's fade redraws the bar and recomposes nothing.
     val scrim by animateFloatAsState(if (showTitle) 1f else 0f, HudFade, label = "top scrim")
@@ -89,9 +101,7 @@ internal fun PlayerTopBar(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(top = Spacing.medium, end = Spacing.small)) {
-                    if (title.isNotEmpty()) {
-                        Text(text = title, color = Color.White, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
+                    TitleAndLabel(title, label, roomBeside = !sidebarBeside)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                         marks()
                         if (onNotes != null) NotesButton(onNotes)
@@ -115,4 +125,68 @@ private fun NotesButton(onClick: () -> Unit) {
     CatalogueTextButton(onClick = onClick, interactionSource = source) {
         Text(text = "Notes", color = toolInk(source, enabled = true, rest = Color.White))
     }
+}
+
+/** Where the web's bar sets the label beside the title rather than under it: its 768px breakpoint. */
+private val LABEL_BESIDE_FROM = 768.dp
+
+/**
+ * The title, and watch together's [label] — the web's `.together-label`:
+ * beside the title on a wide window, each with half the room, and on its own
+ * line under it on a narrow one, and under it too while the episode list
+ * stands beside the picture ([roomBeside] false), as the web's goes beside
+ * its sidebar.
+ */
+@Composable
+private fun TitleAndLabel(
+    title: String,
+    label: String?,
+    roomBeside: Boolean,
+) {
+    val wide = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() } >= LABEL_BESIDE_FROM
+    if (label != null && wide && roomBeside) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+        ) {
+            if (title.isNotEmpty()) TitleText(title, Modifier.weight(1f))
+            TogetherLabel(label, Modifier.weight(1f), TextAlign.End)
+        }
+    } else {
+        if (title.isNotEmpty()) TitleText(title)
+        label?.let { TogetherLabel(it) }
+    }
+}
+
+@Composable
+private fun TitleText(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title,
+        color = Color.White,
+        style = MaterialTheme.typography.titleSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/** Set in capitals, as the web's `text-transform` sets it; a screen reader hears it as written. */
+@Composable
+private fun TogetherLabel(
+    label: String,
+    modifier: Modifier = Modifier,
+    align: TextAlign = TextAlign.Start,
+) {
+    Text(
+        text = label.uppercase(),
+        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.08.em),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = align,
+        modifier = modifier.semantics { contentDescription = label },
+    )
 }

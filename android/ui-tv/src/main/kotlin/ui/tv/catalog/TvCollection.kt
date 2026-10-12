@@ -15,6 +15,7 @@ import data.PortraitRequestLog
 import designsystem.Spacing
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -79,7 +80,8 @@ fun TvCollection(
  * tabs: a course carries no provider entry, so an About tab over it stood
  * empty and Cast never appeared. The one thing kept beyond the web's page
  * is the resume line under the head — see `docs/system-architecture.md`,
- * "Television differs from the web player".
+ * "Television differs from the web player". While a watch-together session
+ * plays one of its lessons that line is Join, which the web puts there.
  */
 @Composable
 private fun TvCoursePage(
@@ -93,6 +95,8 @@ private fun TvCoursePage(
 ) {
     val rows = remember(collection) { rowsOf(collection.divisions) }
     val extent = remember(collection) { courseExtentOf(collection.divisions) }
+    // Read here, not in the head: the head is a lazy item, and scrolled away it would stop listening.
+    val join = togetherJoinIn(collection)
     TvPage {
         TvCollectionRows(
             rows = rows,
@@ -103,7 +107,7 @@ private fun TvCoursePage(
                 // `.shelf-head`'s margin under the head, and before the rows, less the gap the rows keep themselves.
                 Column(modifier = Modifier.padding(bottom = ShelfHeadBelow - Spacing.small), verticalArrangement = Arrangement.spacedBy(ShelfHeadBelow)) {
                     TvShelfHead(collection.name, extent)
-                    resume?.let { pick -> SeriesResumeRow(pick, onResume) }
+                    SeriesResumeRow(resume, onResume, join)
                 }
             },
             heldIds = heldIds,

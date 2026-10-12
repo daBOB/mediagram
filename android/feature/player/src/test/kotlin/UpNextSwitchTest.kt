@@ -154,4 +154,36 @@ class UpNextSwitchTest {
         assertEquals("s2", controller.state.value.titleLine)
         controller.stop()
     }
+
+    /** A watch-together session moving on: asked for at once, never gated, and a countdown counting to another title stops. */
+    @Test
+    fun aTitleTheSessionMovedToIsAskedForAtOnceInsteadOfTheCountdowns() = runTest {
+        val run = listOf("s1", "s2", "s3")
+        val (controller, session) = buildController(this, catalogRepository = FakeCatalogRepository(mapOf("s2" to fakeMediaSet("s2"))))
+        session.open("s1")
+        controller.startTitle("s1", run)
+        runCurrent()
+        controller.onEnded()
+        assertEquals(UpNextPhase.COUNTING, controller.state.value.phase)
+
+        controller.requestTitle("s3")
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        assertEquals(PendingPlayerSwitch("s3", run), controller.pendingSwitch.value)
+        assertTrue(controller.playWhenReadyFor("s3"))
+        controller.stop()
+    }
+
+    @Test
+    fun aTitleTheSessionMovedToOutsideTheRunIsOpenedOnItsOwn() = runTest {
+        val (controller, session) = buildController(this)
+        session.open("s1")
+        controller.startTitle("s1", listOf("s1", "s2"))
+
+        controller.requestTitle("film")
+
+        assertEquals(PendingPlayerSwitch("film", emptyList()), controller.pendingSwitch.value)
+        controller.stop()
+    }
 }

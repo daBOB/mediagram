@@ -14,6 +14,8 @@
  * never ask for again.
  */
 
+import type { Session } from "../public/lib/together/session.js";
+
 /**
  * How often an idle stream says something. Proxies and some browsers close a
  * connection that has been silent for a minute; a comment line costs nothing
@@ -53,6 +55,11 @@ export class CatalogEvents {
   /** Tells every open page that another device's positions or marks arrived. */
   stateChanged(): void {
     this.send("event: state\ndata: {}\n\n");
+  }
+
+  /** Tells every open page what a watch-together session now is; `null` when it is over. `lost`: see `TogetherHub`. */
+  together(id: number, session: Session | null, serverNow: number, lost = false): void {
+    this.send(`event: together\ndata: ${JSON.stringify({ id, session, serverNow, lost: lost || undefined })}\n\n`);
   }
 
   /** Open pages, for the status route and the tests. */

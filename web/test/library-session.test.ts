@@ -38,12 +38,29 @@ function spy() {
   return fn as typeof fn & { calls: number };
 }
 
+/** Watch together's share of the stream, recording what reached it. */
+function fakeTogether() {
+  const heard: unknown[] = [];
+  const reopened = spy();
+  let inSession = false;
+  let left: () => void = () => {};
+  return {
+    heard, reopened,
+    together: {
+      heard: (payload: unknown) => { heard.push(payload); }, reopened, inSession: () => inSession,
+      onLeave: (listener: () => void) => { left = listener; },
+    },
+    join(value: boolean) { inSession = value; if (!value) left(); },
+  };
+}
+
 function session(over: Partial<Parameters<typeof createLibrarySession>[0]> = {}) {
   const fake = fakeLibraryPort(JSON.stringify([film("First")]));
   const state = fakeState();
   const remoteState = spy();
-  const built = createLibrarySession({ port: fake.port, state, remoteState, ...over });
-  return { fake, state, remoteState, session: built };
+  const watch = fakeTogether();
+  const built = createLibrarySession({ port: fake.port, state, remoteState, together: watch.together, ...over });
+  return { fake, state, remoteState, watch, session: built };
 }
 
 test("concurrent catalog events coalesce into one follow-up read, and none is dropped", async () => {
@@ -119,7 +136,7 @@ test("a catalog event before the first load finishes is ignored", async () => {
   const fake = fakeLibraryPort();
   const first = deferred<string>();
   fake.queueFetch(first.promise);
-  const lib = createLibrarySession({ port: fake.port, state: fakeState(), remoteState: () => {} });
+  const lib = createLibrarySession({ port: fake.port, state: fakeState(), remoteState: () => {}, together: fakeTogether().together });
   const starting = lib.start();
   fake.fire("catalog");
   first.resolve(JSON.stringify([film("First")]));
@@ -163,12 +180,48 @@ test("hide/show owns one event stream, and becoming visible refreshes remote sta
   expect(remoteState.calls).toBe(2);
 });
 
+test("a together event reaches watch together, and every open of the stream reads it afresh", () => {
+  const { fake, watch } = session();
+  const payload = { id: 7, session: null, serverNow: 1 };
+  fake.fire("together", payload);
+  expect(watch.heard).toEqual([payload]);
+  fake.fire("open");
+  fake.setVisible(false);
+  fake.setVisible(true);
+  fake.fire("open");
+  expect(watch.reopened.calls).toBe(2);
+});
+
+test("a tab in a watch-together session keeps its stream while hidden, and one out of it does not", () => {
+  const { fake, watch } = session();
+  watch.join(true);
+  fake.setVisible(false);
+  expect(fake.streamOpen).toBe(true);
+  fake.setVisible(true);
+  expect(fake.streamOpens).toBe(1);
+  watch.join(false);
+  fake.setVisible(false);
+  expect(fake.streamOpen).toBe(false);
+});
+
+test("a hidden tab that leaves its session lets its stream go, and a visible one keeps it", () => {
+  const { fake, watch } = session();
+  watch.join(true);
+  fake.setVisible(false);
+  watch.join(false);
+  expect(fake.streamOpen).toBe(false);
+  fake.setVisible(true);
+  watch.join(true);
+  watch.join(false);
+  expect(fake.streamOpen).toBe(true);
+});
+
 describe("a kids profile", () => {
   const rated = (setId: string, fsk: string | null) => film(setId, { fsk });
 
   test("filters on start and again on a refresh", async () => {
     const fake = fakeLibraryPort(JSON.stringify([rated("Family", "6"), rated("Grown", "16")]));
-    const lib = createLibrarySession({ port: fake.port, state: fakeState({ kids: true }), remoteState: () => {} });
+    const lib = createLibrarySession({ port: fake.port, state: fakeState({ kids: true }), remoteState: () => {}, together: fakeTogether().together });
     await lib.start();
     expect(lib.current().library.movies.map((set) => set.setId)).toEqual(["Family"]);
 
@@ -181,7 +234,7 @@ describe("a kids profile", () => {
   test("reapply() switches profile without a fetch", async () => {
     const fake = fakeLibraryPort(JSON.stringify([rated("Family", "6"), rated("Grown", "16")]));
     const state = fakeState(null);
-    const lib = createLibrarySession({ port: fake.port, state, remoteState: () => {} });
+    const lib = createLibrarySession({ port: fake.port, state, remoteState: () => {}, together: fakeTogether().together });
     await lib.start();
     expect(lib.current().library.movies).toHaveLength(2);
     const before = fake.fetches;
@@ -195,7 +248,7 @@ describe("a kids profile", () => {
   test("each kid sees up to its own limit, hand marks included", async () => {
     const fake = fakeLibraryPort(JSON.stringify([rated("Six", "6"), rated("Twelve", "12"), rated("FromSix", null), rated("FromTwelve", null)]));
     const state = fakeState({ kids: true, kidsAge: 6 }, { FromSix: 6, FromTwelve: 12 });
-    const lib = createLibrarySession({ port: fake.port, state, remoteState: () => {} });
+    const lib = createLibrarySession({ port: fake.port, state, remoteState: () => {}, together: fakeTogether().together });
     await lib.start();
     expect(lib.current().library.movies.map((set) => set.setId).sort()).toEqual(["FromSix", "Six"]);
     state.set({ kids: true, kidsAge: 12 });
@@ -261,6 +314,6 @@ test("a failed refresh keeps what is showing", async () => {
 test("start() rejects on a failed first read", async () => {
   const fake = fakeLibraryPort();
   fake.failNextWith(new Error("offline"));
-  const lib = createLibrarySession({ port: fake.port, state: fakeState(), remoteState: () => {} });
+  const lib = createLibrarySession({ port: fake.port, state: fakeState(), remoteState: () => {}, together: fakeTogether().together });
   await expect(lib.start()).rejects.toThrow("offline");
 });

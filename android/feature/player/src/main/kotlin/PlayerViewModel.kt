@@ -1,11 +1,14 @@
 package player
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CatalogRepository
 import data.PlayerPreferences
+import data.TogetherLive
 import data.WatchStateRepository
 import data.WatchSync
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +23,8 @@ import playback.SeriesPreloading
 import playback.SubtitleTrackSource
 import playback.SummarySource
 import playback.TimedCue
+import player.together.TogetherUi
+import player.together.ViewerRelay
 import javax.inject.Inject
 
 /** Tracks what the player is doing for whichever set is currently open. */
@@ -37,6 +42,9 @@ class PlayerViewModel @Inject constructor(
     seriesPreloader: SeriesPreloading,
     heldSets: HeldSetsQuery,
     summarySource: SummarySource = SummarySource.None,
+    togetherLive: TogetherLive,
+    private val relay: ViewerRelay,
+    @ApplicationContext context: Context,
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -57,7 +65,7 @@ class PlayerViewModel @Inject constructor(
      * not part of [state] — [state] stays `Preparing` on its own account
      * while this is still null.
      */
-    val player: StateFlow<Player?> = handle.player
+    val player: StateFlow<Player?> = viewerPlayer(relay)
 
     /** The ten-second save ticker and which set it saves against. */
     internal val session = PlayerSession(viewModelScope, handle, recorder)
@@ -87,6 +95,9 @@ class PlayerViewModel @Inject constructor(
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
     internal val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
     val upNext: StateFlow<UpNextUiState> = upNextController.state
+    /** Watch together in this player; see `PlayerViewModelTogether.kt`. */
+    internal val togetherController = togetherController(togetherLive, relay, catalogRepository, context)
+    val together: StateFlow<TogetherUi> = togetherController.ui
     internal val runIsList = MutableStateFlow(false) // a hand-built list: no sidebar, see episodeListFlow
     val episodes: StateFlow<EpisodeList?> = viewModelScope.episodeListFlow(catalogRepository, _openSetId, upNextController.state, repository.snapshot, runIsList)
 
@@ -127,6 +138,7 @@ class PlayerViewModel @Inject constructor(
         val setId = session.openSetId
         val atMs = handle.positionMs()
         val durationMs = handle.durationMs()
+        togetherController.close()
         handle.stop()
         playbackServiceController.stop()
         session.clear()
@@ -154,22 +166,6 @@ class PlayerViewModel @Inject constructor(
      */
     fun save() = session.save()
 
-    /**
-     * The viewer dismissed the picture-in-picture window (the ✕, or
-     * swiping it away) rather than expanding it back — a pause, not
-     * [stop]: the title stays open (state, choices, up-next all
-     * untouched), so reopening the app finds it exactly where it was,
-     * paused, rather than back at the catalog. The service stops
-     * regardless — nothing plays with the window gone, so there is
-     * nothing left to keep a notification or a foreground state for
-     * until the viewer returns.
-     */
-    fun pauseForPipDismissal() {
-        handle.pause()
-        session.save()
-        playbackServiceController.stop()
-    }
-
     override fun onPlayingChanged(isPlaying: Boolean) {
         _state.value = if (isPlaying) PlayerUiState.Playing else PlayerUiState.Paused
         // A picture-in-picture dismissal pauses and stops the service
@@ -188,7 +184,10 @@ class PlayerViewModel @Inject constructor(
         _state.value = PlayerUiState.Failed(message)
     }
 
-    override fun onEnded() = upNextController.onEnded()
+    override fun onEnded() {
+        upNextController.onEnded()
+        togetherController.onTitleEnded(hasNext = upNext.value.hasNext)
+    }
 
     override fun onSeeked() = upNextController.onSeeked()
 
@@ -196,5 +195,6 @@ class PlayerViewModel @Inject constructor(
         session.stopTicking()
         choicesController.release()
         handle.setListener(null)
+        closeTogether(relay)
     }
 }

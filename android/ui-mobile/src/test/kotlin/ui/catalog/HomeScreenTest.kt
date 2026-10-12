@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -20,6 +21,8 @@ import catalog.KeptKind
 import catalog.Latest
 import catalog.MagazineHome
 import catalog.SetCard
+import catalog.TogetherOffer
+import kotlinx.coroutines.flow.MutableStateFlow
 import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
@@ -33,6 +36,8 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.catalog.home.HOME_COVER_TEST_TAG
 import ui.catalog.home.HOME_FEATURES_TEST_TAG
+import ui.common.catalog.LocalTogetherOffers
+import ui.common.catalog.TogetherOffers
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -89,15 +94,20 @@ class HomeScreenTest {
             coursesTotal = 1,
         )
 
-    private fun show(onSeeAll: (CatalogTab) -> Unit = {}) {
+    private fun show(
+        onSeeAll: (CatalogTab) -> Unit = {},
+        together: TogetherOffer? = null,
+    ) {
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
             controller.get().setContent {
                 MaterialTheme {
-                    HomeScreen(
-                        magazine = magazine, latest = latest, watch = WatchSnapshot.Empty, listState = rememberLazyListState(),
-                        onPlay = {}, onOpenTitle = {}, onOpenCollection = {}, onToggleWatchlist = { _, _ -> }, onSeeAll = onSeeAll,
-                    )
+                    CompositionLocalProvider(LocalTogetherOffers provides TogetherOffers(MutableStateFlow(together)) {}) {
+                        HomeScreen(
+                            magazine = magazine, latest = latest, watch = WatchSnapshot.Empty, listState = rememberLazyListState(),
+                            onPlay = {}, onOpenTitle = {}, onOpenCollection = {}, onToggleWatchlist = { _, _ -> }, onSeeAll = onSeeAll,
+                        )
+                    }
                 }
             }
         }
@@ -124,6 +134,22 @@ class HomeScreenTest {
         val coverBottom = compose.onNodeWithTag(HOME_COVER_TEST_TAG).getUnclippedBoundsInRoot().bottom
         val featuresTop = compose.onNodeWithTag(HOME_FEATURES_TEST_TAG).getUnclippedBoundsInRoot().top
         assertTrue(featuresTop >= coverBottom, "features ($featuresTop) should start at or below the cover's own bottom ($coverBottom)")
+    }
+
+    /** The web's `home-view.js`: under the cover, not above it — the cover bleeds up under the masthead and would cover it. */
+    @Test
+    fun aLiveSessionsLineIsTheFirstRowUnderTheCover() {
+        show(together = TogetherOffer(41, film("feature"), "TV, Tablet"))
+        val line = compose.onNodeWithText("Watching together: Film FEATURE · TV, Tablet").getUnclippedBoundsInRoot()
+        val coverBottom = compose.onNodeWithTag(HOME_COVER_TEST_TAG).getUnclippedBoundsInRoot().bottom
+        val featuresTop = compose.onNodeWithTag(HOME_FEATURES_TEST_TAG).getUnclippedBoundsInRoot().top
+        assertTrue(line.top >= coverBottom && line.bottom <= featuresTop, "the line ($line) sits between the cover and the features")
+    }
+
+    @Test
+    fun noSessionNoLine() {
+        show()
+        compose.onNodeWithText("Watching together", substring = true).assertDoesNotExist()
     }
 
     @Test

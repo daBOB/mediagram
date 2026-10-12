@@ -21,6 +21,7 @@ import { offerCast } from "./cast.js";
 import { movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { href } from "../address.js";
+import { joinOr } from "./together-join.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`.
@@ -35,7 +36,7 @@ export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise 
   const title = set.title ?? set.setId;
   const facts = [set.year, humanDuration(set.duration), ageLabel(set), genresOf(set).slice(0, 3).join(", ")]
     .filter(Boolean).join(" · ");
-  const play = playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set));
+  const play = joinOr([set.setId], playPill(resume ? `Resume from ${clockTime(resume)}` : "Play", () => onPlay(set)));
   const backSection = set.anime ? "anime" : "movies";
   page.append(titleSpread({
     back: { href: href({ page: "department", section: backSection }), label: `Back to ${set.anime ? "Anime" : "Movies"}` },

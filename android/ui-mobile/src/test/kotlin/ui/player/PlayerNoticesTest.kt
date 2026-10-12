@@ -97,4 +97,18 @@ class PlayerNoticesTest {
         )
         verify(exactly = 0) { fixture.media.stop() }
     }
+
+    /**
+     * The card's Watch together reaches the player's own button, and what it
+     * says back shows over the picture: this fixture's Telegram refuses every
+     * start, which the player says in its notice.
+     */
+    @Test
+    fun watchTogetherFromTheCardSaysWhatCameOfItOverThePicture() {
+        compose.waitUntil(timeoutMillis = 5_000) {
+            controller.get().playerViewModel.together.value.enabled
+        }
+        compose.onNodeWithText("Watch together").performClick()
+        compose.onNodeWithText("Telegram isn't reachable").assertIsDisplayed()
+    }
 }

@@ -1,6 +1,7 @@
 package ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +22,8 @@ import player.TitlePreloadViewModel
 import system.FetchViewModel
 import ui.common.FrameKind
 import ui.common.LibraryPositions
+import ui.common.catalog.LocalTogetherOffers
+import ui.common.catalog.rememberTogetherOffers
 import ui.common.rememberLibraryPositions
 import ui.common.resolve
 import ui.common.settings.SettingsOutcomes
@@ -114,75 +117,84 @@ internal fun TvLibrary(
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
     val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
 
-    when (top) {
-        FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
+    // Join opens the session's title in the player, as each frame's own Play does: Home notes what it
+    // opened, so Back comes to the plate; a title page forgets, so Back lands on Join.
+    val togetherOffers =
+        rememberTogetherOffers(catalogViewModel) { setId ->
+            if (top == null) restore.opened(here, setId) else restore.forget(here)
+            at.openPlayer(setId)
+        }
+    CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
+        when (top) {
+            FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
-        FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
+            FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
-        FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
+            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
 
-        FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
+            FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
-        FrameKind.TITLE ->
-            TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
+            FrameKind.TITLE ->
+                TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-        FrameKind.COLLECTION ->
-            TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
+            FrameKind.COLLECTION ->
+                TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-        FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
+            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
-        FrameKind.PERSON ->
-            TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
+            FrameKind.PERSON ->
+                TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
 
-        FrameKind.FRANCHISE ->
-            TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
+            FrameKind.FRANCHISE ->
+                TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
 
-        FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
+            FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-        FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
 
-        FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
+            FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 
-        FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
+            FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
-        FrameKind.STATS -> TvStatsFrame(catalogState, leave)
+            FrameKind.STATS -> TvStatsFrame(catalogState, leave)
 
-        // Nothing open, the trimmed menu page opened from the bar's avatar:
-        // Back from it puts the remote back on that button.
-        null if menuOpen ->
-            TvMenuPage(
-                menu = menu,
-                restoreKey = restore.of(here),
-                watchingAs = profile.name,
-                // The picker replaces the library; noting the avatar first is
-                // what lets "Stay as I am" hand the remote back to it.
-                onSwitchProfile = {
-                    menuOpen = false
-                    restore.opened(here, TvProfileEntryKey)
-                    profile.onChoose()
-                },
-                railItems = if (hasRail) emptyList() else RailItem.entries,
-                onRailItem = { item ->
-                    when (item) {
-                        // Opened over this page, so Back comes back to it, as from the rail.
-                        RailItem.SETTINGS -> menu.onSettings()
-                        RailItem.SYSTEM -> menu.onSystem()
-                        else -> {
-                            menuOpen = false
-                            // Drops the key Settings or System left, which would read as Back from them.
-                            restore.forget(here)
-                            pendingRail = item
+            // Nothing open, the trimmed menu page opened from the bar's avatar:
+            // Back from it puts the remote back on that button.
+            null if menuOpen ->
+                TvMenuPage(
+                    menu = menu,
+                    restoreKey = restore.of(here),
+                    watchingAs = profile.name,
+                    // The picker replaces the library; noting the avatar first is
+                    // what lets "Stay as I am" hand the remote back to it.
+                    onSwitchProfile = {
+                        menuOpen = false
+                        restore.opened(here, TvProfileEntryKey)
+                        profile.onChoose()
+                    },
+                    railItems = if (hasRail) emptyList() else RailItem.entries,
+                    onRailItem = { item ->
+                        when (item) {
+                            // Opened over this page, so Back comes back to it, as from the rail.
+                            RailItem.SETTINGS -> menu.onSettings()
+                            RailItem.SYSTEM -> menu.onSystem()
+                            else -> {
+                                menuOpen = false
+                                // Drops the key Settings or System left, which would read as Back from them.
+                                restore.forget(here)
+                                pendingRail = item
+                            }
                         }
-                    }
-                },
-            ) {
-                menuOpen = false
-                restore.opened(here, TvMenuEntryKey)
-            }
+                    },
+                ) {
+                    menuOpen = false
+                    restore.opened(here, TvMenuEntryKey)
+                }
 
-        // Nothing open: the shelves.
-        null ->
-            TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
+            // Nothing open: the shelves.
+            null ->
+                TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
+        }
     }
 
     // Every branch but the player, for the phone's reason: a result held

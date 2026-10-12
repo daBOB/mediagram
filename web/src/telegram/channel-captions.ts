@@ -1,6 +1,9 @@
 /** Caption conventions shared by pure channel policy and Telegram adapters. */
 export const INDEX_MARKER = "#mlib-index";
 
+/** What every watch-together session message begins with (`docs/mlib-spec.md` §7b). The space is part of it: `#mlib-togetherness` is not one. */
+export const TOGETHER_PREFIX = "#mlib-together ";
+
 /** What a search looks for, and what every state caption begins with. */
 export const STATE_MARKER = "#mlib-state";
 const STATE_VERSION = 1;

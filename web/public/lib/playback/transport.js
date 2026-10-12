@@ -177,7 +177,7 @@ export function mountTransport({ video, menus, onPlay, onPause, onSeekTo, filmTi
    * from, and a viewer pressing `.` has said they want to look at something.
    */
   function step(by) {
-    if (!video.paused) video.pause();
+    if (!video.paused) togglePlay();
     onSeekTo(filmTime() + by);
   }
 

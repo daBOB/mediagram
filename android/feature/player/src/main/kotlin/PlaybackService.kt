@@ -1,6 +1,7 @@
 package player
 
 import android.app.PendingIntent
+import android.content.Intent
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import dagger.hilt.android.AndroidEntryPoint
@@ -11,6 +12,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import player.together.ViewerPlayer
+import player.together.ViewerRelay
 import javax.inject.Inject
 
 /**
@@ -26,7 +29,9 @@ import javax.inject.Inject
  * [PlayerViewModel.open]/`stop` start and stop this service (through
  * [AndroidPlaybackServiceController]) — this class only ever waits for the
  * already-building player to finish and wraps it once, since the app's
- * singleton player is never rebuilt for a second session.
+ * singleton player is never rebuilt for a second session. It wraps it as a
+ * [ViewerPlayer], so a headset's or the lock screen's play, pause and seek
+ * reach a watch-together session as the viewer's own.
  *
  * Declared in this module's own `AndroidManifest.xml`, foreground service
  * type `mediaPlayback` — `:app` does not need to know this service exists.
@@ -37,14 +42,19 @@ class PlaybackService : MediaSessionService() {
     @Inject
     lateinit var handle: PlayerHandle
 
+    @Inject
+    lateinit var relay: ViewerRelay
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var mediaSession: MediaSession? = null
+    private var viewer: ViewerPlayer? = null
 
     override fun onCreate() {
         super.onCreate()
         serviceScope.launch {
             val player = handle.player.filterNotNull().first()
-            val builder = MediaSession.Builder(this@PlaybackService, player)
+            val wrapped = ViewerPlayer(player, relay::report).also { viewer = it }
+            val builder = MediaSession.Builder(this@PlaybackService, wrapped)
             sessionActivityIntent()?.let(builder::setSessionActivity)
             val session = builder.build()
             mediaSession = session
@@ -75,6 +85,18 @@ class PlaybackService : MediaSessionService() {
      */
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
+    /**
+     * media3's own: the app swiped away from Recents while nothing plays
+     * (paused, buffering, at a title's end) pauses the player and stops the
+     * service. It pauses through the session's player, which is the viewer's,
+     * and the app going away is no viewer pausing a watch-together session
+     * for every screen in it, so that pause goes unreported.
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val wrapped = viewer
+        if (wrapped == null) super.onTaskRemoved(rootIntent) else wrapped.unreported { super.onTaskRemoved(rootIntent) }
+    }
+
     override fun onDestroy() {
         serviceScope.cancel()
         mediaSession?.let {
@@ -82,6 +104,7 @@ class PlaybackService : MediaSessionService() {
             it.release()
             mediaSession = null
         }
+        viewer = null
         super.onDestroy()
     }
 }

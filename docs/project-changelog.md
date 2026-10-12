@@ -5,6 +5,24 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.123.0 — watch together, and a frosted bar on the tablet
+
+One release for the work that waited on its own branches: watch together, the phone and tablet's motion (0.121.0), the TV themes (0.122.0), the cheaper cover scrim (0.122.1) and the tablet's frosted bar.
+
+**Added** (web player, core, Android phone, tablet and TV)
+
+- **Screens in one household can play a title in step.** Play, pause, seek, speed and the next episode on one screen happen on the others within about a second, and anyone in the session controls it. A **Watch together** button in the player starts one, **Join** replaces it while one is live, and a label (**Together · TV, Tablet**) and a two-second notice ("Paused by TV") show who did what. Home's first row and a title's page offer Join.
+- The transport is one unpinned `#mlib-together v=1` message per session in the library channel, edited in place (spec §7b). Sessions are found in the newest 100 messages plus the last one heard; a stale one is deleted by whoever reads it next, and the last screen to leave deletes it. Together edits are pushed on both surfaces at once, skipping the 5 s debouncer.
+- The rules are written once, in `web/public/lib/together/`, ported to Kotlin and held to `web/test/fixtures/together/`; the Rust core only does the channel I/O. `GET`/`POST /api/together` and a `together` event on `/api/events` serve the browser.
+- Known limits, documented in the architecture notes: a converted web title trails by the converter's start-up; Join is hidden (not greyed) on Home and title pages while Telegram is unreachable.
+- **The tablet's departments bar is frosted, as the web's is.** Once the page scrolls under it, the bar is paper at 72% over an 18 dp blur with a hairline; over the cover it is unchanged. It needs Android 12 (API 31); below that the bar stays as it was. The television's bar stays unfrosted: the blur measured too slow on the box (`plans/reports/frosted-masthead-261009-report.md`).
+
+**Fixed**
+
+- The core's `next_library_event` doc said own writes are never reported back; a `Together` edit is. The doc is corrected, in the generated Kotlin too.
+- **A move whose edit fails is tried again, and a screen whose move was lost follows the channel.** An edit that threw (Telegram unreachable, or any error but a flood wait) used to be dropped while the screen that made it carried on as if it had landed, out of step with every other screen. It is now retried every 30 s, never sooner; after three failures it is given up on and every screen, the one that moved included, follows what the channel holds. A last leave or end that throws is written once Telegram is back. The web queues act, leave and end while Telegram is unreachable and says why; Android shows "Telegram isn't reachable" when an edit fails.
+- A screen whose read finds another session newest leaves its own instead of staying listed in it; the web's drift check reads again after finding a session stale, so the server deletes it; the web sends the session text as plain text, as the core does, so a label's Markdown can't change it; a web join or re-read across which an edit was heard keeps the newer edit.
+
 ## 0.122.1 — a cheaper cover scrim
 
 **Changed** (Android TV, phone, tablet)

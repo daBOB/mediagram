@@ -35,7 +35,10 @@ export function applicationEnvironment() {
     closed = false;
     constructor(readonly url: string) { super(); streams.push(this); }
     close() { this.closed = true; }
-    fire(type: string) { this.dispatchEvent(new Event(type)); }
+    /** A server event, its payload sent as JSON the way the server writes `data:`. */
+    fire(type: string, payload?: unknown) {
+      this.dispatchEvent(payload === undefined ? new Event(type) : new MessageEvent(type, { data: JSON.stringify(payload) }));
+    }
   }
   const document = Object.assign(new EventTarget(), {
     getElementById: env.node,

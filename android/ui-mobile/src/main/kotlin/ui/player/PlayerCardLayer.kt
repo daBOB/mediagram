@@ -27,6 +27,7 @@ import player.PlayerChoices
 import player.PlayerViewModel
 import player.UpNextUiState
 import player.playFromRun
+import player.together.TogetherUi
 
 /** The web's controls fade: opacity over 260ms on CSS `ease` (`playback.css:41`), shared by the card and the top bar. */
 internal val HudFade: TweenSpec<Float> = tween(260, easing = Motion.CssEase)
@@ -57,6 +58,7 @@ internal fun BoxScope.PlayerCardLayer(
     onToggleStats: () -> Unit,
     onEnterPip: (() -> Unit)?,
     onScrubbingChanged: (Boolean) -> Unit,
+    together: TogetherUi,
 ) {
     if (LocalIsInPictureInPicture.current) return
     val clearance = if (card.sidebarOpen && !sidebarCoversScreen()) SIDEBAR_WIDTH else 0.dp
@@ -76,7 +78,7 @@ internal fun BoxScope.PlayerCardLayer(
                 view =
                     PlayerCardView(
                         choices, upNext, statsShown, hasEpisodes = hasEpisodes, catalogedDurationSecs = catalogedDurationSecs,
-                        openMenu = card.menu, sidebarOpen = card.sidebarOpen,
+                        openMenu = card.menu, sidebarOpen = card.sidebarOpen, together = together,
                     ),
                 actions = playerCardActions(viewModel, card, onToggleStats = onToggleStats, onEnterPip = onEnterPip),
                 onScrubbingChanged = onScrubbingChanged,

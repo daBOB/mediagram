@@ -58,6 +58,28 @@ class TvHomeTargetsTest {
         assertEquals(SectionStop(TvHomeSection.COVER, 0), target)
     }
 
+    /** A live session is what Home is for while it runs: its plate, under the cover, takes an arrival with nothing to return to. */
+    @Test
+    fun aLiveSessionsPlateTakesAPlainArrival() {
+        val together = DeptSection(TvHomeSection.TOGETHER, listOf("film-x"))
+
+        assertEquals(SectionStop(TvHomeSection.TOGETHER, 0), homeTargetOf(listOf(cover, together, continueBand), restoreKey = null))
+    }
+
+    @Test
+    fun aReturnStillLandsOnWhatWasOpenedWithASessionLive() {
+        val together = DeptSection(TvHomeSection.TOGETHER, listOf("film-x"))
+
+        assertEquals(SectionStop(TvHomeSection.CONTINUE, 0), homeTargetOf(listOf(cover, together, continueBand), restoreKey = "film-c"))
+    }
+
+    @Test
+    fun withNoSessionThePlatesBandIsSkipped() {
+        val together = DeptSection(TvHomeSection.TOGETHER, emptyList<String>())
+
+        assertEquals(SectionStop(TvHomeSection.COVER, 0), homeTargetOf(listOf(cover, together, continueBand), restoreKey = null))
+    }
+
     @Test
     fun everySectionEmptyHasNoTarget() {
         val target = homeTargetOf(listOf(series, DeptSection(TvHomeSection.COURSES, emptyList())), restoreKey = null)

@@ -33,11 +33,11 @@ import { subtitlePanel } from "./subtitle-panel.js";
 import { mountSubtitlePicker } from "./subtitle-picker.js";
 import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
+import { mountTogether } from "./together.js";
+// One id per tab, for its playback reports as for watch together.
+import { screen as viewer } from "../together-now.js";
 
 let mounted = null;
-// Not crypto.randomUUID: it exists only in secure contexts, and the player is
-// usually opened over plain http on a LAN address. getRandomValues works there.
-const viewer = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
 
 /**
  * @typedef {import("../library.js").CatalogSet} CatalogSet
@@ -389,14 +389,23 @@ function mountPlayer() {
 
   const transport = mountTransport({
     video, menus,
-    onPlay: playManually,
-    onPause: () => { manualPlayRequest++; },
-    onSeekTo: (seconds) => seekFilmTo(skipTo(seconds, 0, runtimeSeconds())),
+    onPlay: () => { together.viewer({ playing: true }); return playManually(); },
+    onPause: () => { manualPlayRequest++; together.viewer({ playing: false }); },
+    onSeekTo: (seconds) => { const to = skipTo(seconds, 0, runtimeSeconds()); seekFilmTo(to); together.viewer({ pos: to }, { settle: true }); },
     filmTime,
     runtime: runtimeSeconds,
-    recall, remember,
+    recall,
+    remember: (name, value) => { remember(name, value); if (name === "speed") together.viewer({ rate: Number(value) }); },
     toggleSubtitles: () => subtitles.toggle(),
   });
+  // The viewer's own moves reach it only through the calls above; what it does to follow goes out through none of them.
+  const together = mountTogether({
+    video, button: document.getElementById("together"), label: document.getElementById("together-label"),
+    note: document.getElementById("together-note"), filmTime, seekTo: seekFilmTo, converting: () => converting,
+    setRate: (rate) => { video.playbackRate = rate; },
+  });
+  // Media keys and the picture-in-picture window, through the button's own path rather than straight to the element.
+  for (const action of ["play", "pause"]) navigator.mediaSession?.setActionHandler(action, () => { if (video.paused === (action === "play")) transport.act({ do: "playPause" }); });
 
   /** A manual refusal stays retryable and belongs to this request and source. */
   async function playManually() {
@@ -620,6 +629,8 @@ function mountPlayer() {
     // can read it. Nothing below should observe the preceding title's values.
     playing = set;
     upNext.open(set, options);
+    // The session's place, for a title opened in a session or to join one: started there, not seeked to.
+    const sessionAt = together.open(set, options);
     base = 0;
     capBits = null;
     converting = false;
@@ -663,7 +674,7 @@ function mountPlayer() {
     // Where this profile left off, if that is a place worth going back to —
     // `resume-point.js` decides what counts. Announced rather than done
     // silently, because a film that opens 34 minutes in looks broken.
-    const resume = resumeAt(state.progressOf(set.setId)) ?? 0;
+    const resume = sessionAt ?? resumeAt(state.progressOf(set.setId)) ?? 0;
     // Armed before the source is attached, so nothing can become ready in the
     // gap between setting it and starting to watch for it.
     const autoplay = options.autoplay ?? null;
@@ -700,7 +711,8 @@ function mountPlayer() {
           signal: operation.controller.signal,
         },
       );
-      if (resume > 0) {
+      // The session's place is where everyone is, not where this profile left off.
+      if (resume > 0 && sessionAt === null) {
         note.textContent = `Carrying on from ${clockTime(resume)}.`;
         note.hidden = false;
       }
@@ -713,7 +725,7 @@ function mountPlayer() {
       // Conversions are not revisited here — restarting one mid-flight for a
       // position a few seconds different is not worth the encoder churn.
       options.freshResume?.then((at) => {
-        if (at == null || converting || signal.aborted) return;
+        if (at == null || converting || signal.aborted || sessionAt !== null) return;
         if (Math.abs(filmTime() - resume) > RESUME_DRIFT_SECONDS) return;
         if (metadataSeen) video.currentTime = at;
         else operation.resume = at;
@@ -737,7 +749,7 @@ function mountPlayer() {
     convert(
       set,
       resume,
-      resume > 0 ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
+      resume > 0 && sessionAt === null ? `${warning} Carrying on from ${clockTime(resume)}.` : warning,
     );
     if (autoplay) startWhenReady(autoplay);
   }
@@ -921,11 +933,12 @@ function mountPlayer() {
     });
     showSeekAt(bar);
     if (bar.seeksWhileDragging) seekFilmTo(at);
+    together.viewer({ pos: at }, { settle: true });
   });
 
   // Letting go. For a direct file this lands where the drag already went; for a
   // conversion it is the whole of the seek.
-  seekTo.addEventListener("change", () => seekFilmTo(Number(seekTo.value)));
+  seekTo.addEventListener("change", () => { const at = Number(seekTo.value); seekFilmTo(at); together.viewer({ pos: at }, { settle: true }); });
 
   /**
    * The link is losing ground: move to something it can carry.
@@ -961,6 +974,7 @@ function mountPlayer() {
     stop();
     stopReporting?.();
     upNext.clear();
+    together.clear();
     stopWaitingToStart();
     clearInterval(saveTimer);
     saveTimer = null;

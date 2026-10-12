@@ -31,6 +31,7 @@ import setup.login.LoginUiState
 import setup.login.LoginViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
+import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import uniffi.mediagram_core.AuthOutcome
 import java.io.IOException
@@ -193,6 +194,6 @@ class FailureDiagnosticsTest {
 
     private fun catalogModel(repository: CatalogRepository): CatalogViewModel {
         val enrichment = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment))
+        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment), togetherLive = FakeTogetherLive())
     }
 }

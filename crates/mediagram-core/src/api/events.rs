@@ -46,6 +46,7 @@ fn channel_update(update: &tl::enums::Update) -> Option<ChannelUpdate> {
             return Some(ChannelUpdate {
                 kind: UpdateKind::Pinned,
                 channel: u.channel_id,
+                id: None,
                 caption: None,
                 service: false,
                 pinned: u.pinned,
@@ -53,9 +54,9 @@ fn channel_update(update: &tl::enums::Update) -> Option<ChannelUpdate> {
         }
         _ => return None,
     };
-    let (peer, caption, service) = match message {
-        tl::enums::Message::Message(m) => (&m.peer_id, Some(m.message.clone()), false),
-        tl::enums::Message::Service(m) => (&m.peer_id, None, true),
+    let (peer, id, caption, service) = match message {
+        tl::enums::Message::Message(m) => (&m.peer_id, Some(m.id), Some(m.message.clone()), false),
+        tl::enums::Message::Service(m) => (&m.peer_id, None, None, true),
         tl::enums::Message::Empty(_) => return None,
     };
     let tl::enums::Peer::Channel(peer) = peer else {
@@ -64,6 +65,7 @@ fn channel_update(update: &tl::enums::Update) -> Option<ChannelUpdate> {
     Some(ChannelUpdate {
         kind,
         channel: peer.channel_id,
+        id,
         caption,
         service,
         pinned: false,
@@ -76,8 +78,10 @@ impl Core {
     /// round: another device's watch state (`State`) or a newly published
     /// index (`Index`). Only a hint — run the ordinary sync or refresh on it,
     /// and run one when you start listening, since nothing missed while not
-    /// listening is replayed. `own_device` is this device's watch-state id,
-    /// so its own writes are not reported back. Cancelling the call stops
+    /// listening is replayed. A watch-together session message (`Together`)
+    /// comes out at once; `together_heard` then holds it. `own_device` is this device's watch-state id,
+    /// so its own watch-state writes are not reported back; a `Together` edit
+    /// is, since this device hears its own session edits too. Cancelling the call stops
     /// the wait; an error means listening stopped — back off and call again.
     pub async fn next_library_event(
         &self,
