@@ -46,11 +46,12 @@ fun CatalogueTextButton(
     // Material's own name and default: a caller that colours its label on a
     // press or a hover hands in the source it reads.
     interactionSource: MutableInteractionSource? = null,
+    contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     PressTarget(modifier, ButtonDefaults.textShape, source) { inner ->
-        TextButton(onClick = onClick, modifier = inner, enabled = enabled, interactionSource = source, content = content)
+        TextButton(onClick = onClick, modifier = inner, enabled = enabled, interactionSource = source, contentPadding = contentPadding, content = content)
     }
 }
 

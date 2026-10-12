@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Palette
 import designsystem.Spacing
 import ui.common.player.togetherNote
 
@@ -29,7 +29,7 @@ internal fun TvTogetherNotice(
             Text(
                 text = text,
                 style = TvPlayerType.body,
-                color = Palette.Text,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.togetherNote().padding(horizontal = Spacing.medium, vertical = Spacing.small),
             )
         }

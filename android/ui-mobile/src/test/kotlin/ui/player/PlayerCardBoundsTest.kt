@@ -19,6 +19,7 @@ import org.robolectric.annotation.Config
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.UpNextUiState
+import player.together.TogetherUi
 
 /**
  * The subtitles and the up-next card clear the card's top edge, read from its
@@ -41,7 +42,7 @@ class PlayerCardBoundsTest {
                 PlayerCardLayer(
                     shown = shown, player = player, viewModel = viewModel, card = card, choices = PlayerChoices(),
                     upNext = UpNextUiState(), statsShown = false, hasEpisodes = false, catalogedDurationSecs = null,
-                    onToggleStats = {}, onEnterPip = null, onScrubbingChanged = {},
+                    onToggleStats = {}, onEnterPip = null, onScrubbingChanged = {}, together = TogetherUi(),
                 )
             }
         }
