@@ -35,6 +35,11 @@ dependencies {
     // they belong here the same way core:model and core:playback do.
     implementation(project(":core:designsystem"))
     implementation(libs.findLibrary("coil.compose").get())
+    // The departments bar's frost (ui.common.chrome.Frost) — a drawing effect,
+    // not either surface's component library. `api`: both bars take its
+    // HazeState, so it moves with the shared code rather than each surface
+    // declaring it again.
+    api(libs.findLibrary("haze.blur").get())
     implementation(libs.findLibrary("androidx.lifecycle.runtime.compose").get())
     implementation(libs.findLibrary("androidx.hilt.lifecycle.viewmodel.compose").get())
 
