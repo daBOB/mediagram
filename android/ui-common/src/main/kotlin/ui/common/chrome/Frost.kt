@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
@@ -65,17 +66,25 @@ val FrostKey = SemanticsPropertyKey<HazeState>("Frost")
 /** Marks this content as what the bar blurs, and reports [frost] as [FrostKey]; no-op without [frost]. */
 fun Modifier.frostSource(frost: HazeState?): Modifier = if (frost == null) this else semantics { this[FrostKey] = frost }.hazeSource(frost)
 
-// CSS `blur(18px)` is a standard deviation of 18 CSS px; Haze's radius is the same sigma and a CSS px is one dp, so 18.dp carries over unscaled. `saturate(1.15)` is a saturation matrix; noise is off because the web draws none.
-private val FrostStyle =
+/**
+ * The web's `blur(18px) saturate(1.15)` with a blur of [radius]. CSS `blur(18px)` is a standard
+ * deviation of 18 CSS px and Haze's radius is the same sigma. `saturate(1.15)` is a saturation
+ * matrix; noise is off because the web draws none. Held in a `val` by each caller: a new style
+ * every recomposition would hand Haze a changed effect on every frame of a scroll.
+ */
+fun frostBlurStyle(radius: Dp): HazeBlurStyle =
     HazeBlurStyle {
-        blurRadius(18.dp)
+        blurRadius(radius)
         noiseFactor(0f)
         colorEffects(listOf(HazeColorEffect.colorFilter(ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.15f) }))))
     }
 
-/** Blurs what [frost] sources behind this node, and reports [frost] as [FrostKey]; no-op without [frost]. */
-fun Modifier.frostedBackdrop(frost: HazeState?): Modifier =
-    if (frost == null) this else semantics { this[FrostKey] = frost }.hazeBlur(HazeInput.Sources(frost), FrostStyle)
+// A CSS px is one dp on the phone and tablet, so the web's 18px carries over unscaled.
+private val FrostStyle = frostBlurStyle(18.dp)
+
+/** Blurs what [frost] sources behind this node in [style], and reports [frost] as [FrostKey]; no-op without [frost]. */
+fun Modifier.frostedBackdrop(frost: HazeState?, style: HazeBlurStyle = FrostStyle): Modifier =
+    if (frost == null) this else semantics { this[FrostKey] = frost }.hazeBlur(HazeInput.Sources(frost), style)
 
 /** The 1dp bottom border, in [ink] at [HairlineAlpha] scaled by [blend]; no-op without [frost]. */
 fun Modifier.frostHairline(ink: Color, blend: Float, frost: HazeState?): Modifier =

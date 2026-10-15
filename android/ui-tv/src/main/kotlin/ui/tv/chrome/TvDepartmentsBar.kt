@@ -13,10 +13,18 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
+import androidx.tv.material3.MaterialTheme
 import com.mediagram.android.core.designsystem.R
 import designsystem.Overscan
 import designsystem.tvDp
+import dev.chrisbanes.haze.HazeState
+import ui.common.chrome.frostBlurStyle
+import ui.common.chrome.frostHairline
+import ui.common.chrome.frostedBackdrop
 import ui.tv.profile.TvChosenProfile
+
+// The web's `blur(18px)` at the television's scale, as every other web size here is.
+private val TvFrostStyle = frostBlurStyle(18.tvDp)
 
 /**
  * The departments pill bar across the top of [TvLibraryChrome]: Home, the
@@ -28,13 +36,15 @@ import ui.tv.profile.TvChosenProfile
  * down in `docs/system-architecture.md`; without them seven departments,
  * search, the avatar and ⋮ ran past the box's 960dp. The tablet's own
  * `DepartmentsBar` (`ui-mobile/.../ChromeControls.kt`) in tv-material: [blend] runs from
- * translucent over a hero (`0f`) to opaque (`1f`), and comes from
+ * translucent over a hero (`0f`) to solid (`1f`), and comes from
  * `rememberTvCatalogBlend` — Home's cover and the department heroes bleed
- * under the bar, every other tab draws it opaque.
+ * under the bar, every other tab draws it solid.
  *
- * Unlike the phone and tablet bar this one is not frosted: the blur measured
- * too slow on the box (`plans/reports/frosted-masthead-261009-report.md`,
- * "TV measurement").
+ * With [frost] — every tab, as on the tablet and the web, since rows scroll
+ * up under the bar on all of them — the bar blurs the content behind it and
+ * its solid end is the web's 72% paper over that blur, with the web's
+ * hairline; without it (below API 31) the solid end is opaque paper, since
+ * nothing would blur what scrolls under it.
  *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
@@ -71,6 +81,7 @@ internal fun TvDepartmentsBar(
     avatarFocus: FocusRequester,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
+    frost: HazeState? = null,
 ) {
     val ink = barInk(blend)
     val downModifier = Modifier.focusProperties { down = downTarget }
@@ -81,7 +92,9 @@ internal fun TvDepartmentsBar(
             modifier
                 .fillMaxWidth()
                 .height(TvDepartmentsBarHeight + Overscan.vertical)
-                .background(color = barBackground(blend))
+                .frostedBackdrop(frost, TvFrostStyle)
+                .background(color = barBackground(blend, frosted = frost != null))
+                .frostHairline(MaterialTheme.colorScheme.onBackground, blend, frost)
                 .padding(top = Overscan.vertical, start = TvContentGutter - PillRingRoom, end = TvContentGutter),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -24,6 +24,8 @@ import designsystem.Overscan
 import designsystem.TvStyle
 import designsystem.tvDp
 import ui.common.RailItem
+import ui.common.chrome.frostSource
+import ui.common.chrome.rememberFrost
 import ui.tv.hasRail
 import ui.tv.profile.TvChosenProfile
 
@@ -117,8 +119,13 @@ internal fun TvLibraryChrome(
     // settles it a frame later.
     BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus) {}
 
+    // Only the mediagram style's bar is frosted, as the tablet's and the web's are; the
+    // Apple and Google styles keep their own grounds, so their pages are not recorded for a blur.
+    val frost = rememberFrost().takeIf { LocalTvStyle.current == TvStyle.MEDIAGRAM }
+
     // `top` is the bar's rendered height: it draws over this same region, so
-    // a page's first stop needs that much clearance to sit below it.
+    // a page's first stop needs that much clearance to sit below it; rows
+    // scrolling up into it are blurred behind the bar's frost.
     val padding =
         remember(hasRail) {
             val top = TvDepartmentsBarHeight + Overscan.vertical
@@ -154,6 +161,7 @@ internal fun TvLibraryChrome(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .frostSource(frost)
                         .focusRequester(focus.contentFocus)
                         // `onExit` above only hears an Up that found a stop; this one hears the rest.
                         .upWithNothingAboveLeavesFor(::pageExitTarget)
@@ -174,6 +182,7 @@ internal fun TvLibraryChrome(
                 onRailSelect = onRailSelect,
                 focus = focus,
                 blend = blend,
+                frost = frost,
                 modifier =
                     Modifier.align(Alignment.TopStart).onFocusChanged { state ->
                         barHasFocus = state.hasFocus

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import designsystem.LocalTvStyle
 import designsystem.TvStyle
+import dev.chrisbanes.haze.HazeState
 import ui.common.RailItem
 import ui.tv.profile.TvChosenProfile
 
@@ -20,6 +21,7 @@ internal fun TvChromeBar(
     focus: TvChromeFocus,
     modifier: Modifier,
     blend: Float,
+    frost: HazeState?,
 ) {
     when (LocalTvStyle.current) {
         TvStyle.MEDIAGRAM ->
@@ -35,6 +37,7 @@ internal fun TvChromeBar(
                 searchFocus = focus.searchFocus,
                 avatarFocus = focus.avatarFocus,
                 blend = blend,
+                frost = frost,
                 modifier = modifier,
             )
         TvStyle.APPLE ->
