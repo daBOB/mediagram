@@ -29,10 +29,10 @@ import designsystem.tvDp
 /** The bar's own ink over a hero, while [blend] is below `1f`. */
 internal val TvOverCoverInk = Color(0xFFF6F2EA)
 
-/** The bar's ground at [blend]: translucent over a hero (`0f`), the page's own ground once opaque (`1f`). Every bar style shares it. */
+/** The bar's ground at [blend]: translucent over a hero (`0f`), the page's own ground once solid (`1f`) — at the web's 72% over a [frosted] blur. Every bar style shares it. */
 @Composable
 @ReadOnlyComposable
-internal fun barBackground(blend: Float): Color = lerp(TvBarOverCoverBg, MaterialTheme.colorScheme.background, blend)
+internal fun barBackground(blend: Float, frosted: Boolean = false): Color = ui.common.chrome.barBackground(MaterialTheme.colorScheme.background, blend, frosted)
 
 /** The bar's ink at [blend], over a hero or over the page. */
 @Composable
@@ -115,6 +115,3 @@ private fun rememberRoomOnBothSides(room: Dp): BringIntoViewSpec {
     val fallback = LocalBringIntoViewSpec.current
     return remember(density, fallback, room) { RoomOnBothSidesBringIntoViewSpec(with(density) { room.toPx() }, fallback) }
 }
-
-/** The bar's own translucent background over a hero, while [blend] is below `1f`. */
-internal val TvBarOverCoverBg = Color(0x590A0A0B)
