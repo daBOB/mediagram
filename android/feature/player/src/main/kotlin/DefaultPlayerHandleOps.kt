@@ -3,6 +3,8 @@ package player
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import playback.applyVideoFilter
 import playback.setUri
 
 /**
@@ -19,6 +21,7 @@ import playback.setUri
  */
 internal fun Player.openReal(setId: String, startAtMs: Long, playWhenReady: Boolean) {
     setMediaItem(MediaItem.fromUri(setUri(setId)), startAtMs)
+    (this as? ExoPlayer)?.let(::applyVideoFilter)
     prepare()
     this.playWhenReady = playWhenReady
     setPlaybackSpeed(1f)

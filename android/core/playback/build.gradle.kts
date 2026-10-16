@@ -23,6 +23,8 @@ dependencies {
     api(libs.findLibrary("androidx.media3.datasource").get())
     api(libs.findLibrary("androidx.media3.ui.compose").get())
     implementation(libs.findLibrary("androidx.media3.database").get())
+    // The optional sharpening filter (CasSharpenEffect) runs as a media3 GL video effect.
+    implementation(libs.findLibrary("androidx.media3.effect").get())
 
     // MlibDataSource builds a real android.net.Uri and PlayerFactory builds
     // a real, database-backed SimpleCache; the plain unit-test android.jar
