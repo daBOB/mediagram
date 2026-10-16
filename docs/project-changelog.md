@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.124.0 — a frosted bar on the TV, and a sharpening switch to measure
+
+The open branches, merged: `feat/tv-frost`, `spike/video-sharpen` and the superseded `measure/tv-frost`.
+
+**Added** (Android TV)
+
+- **The TV's departments bar is frosted, as the tablet's is, at the TV's scale.** In the mediagram style the bar blurs the page under it on every tab: the web's 18 px at the TV's 0.75 (13.5 dp), saturate 1.15, the 72% paper tint and the hairline. The Apple and Google styles keep their own bars. Below API 31 the bar draws as before. The 18 dp blur measured too slow on the box in 0.123.0 (`plans/reports/frosted-masthead-261009-report.md`); this smaller one has not been measured there yet.
+- **An optional sharpening filter for playback, off unless asked for.** AMD FidelityFX CAS runs as a media3 video effect when the `debug.mediagram.videofilter` system property is `1` (`adb shell setprop debug.mediagram.videofilter 1`), read before each title opens; HDR titles have it taken out. Every player logs the video renderer's frame counters under `MgFilter` every 10 s, so both arms can be compared. Adds the `media3-effect` dependency.
+
+**Fixed**
+
+- The baseline profile generator waits up to 45 s for the library, not 15 s: a cold start on the box shows "Loading your library…" for about 15 s, so it often recorded the launch only.
+
 ## 0.123.2 — a franchise's films show on its page
 
 **Fixed** (web player)
