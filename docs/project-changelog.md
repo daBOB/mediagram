@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.123.2 — a franchise's films show on its page
+
+**Fixed** (web player)
+
+- **A franchise's page lists its films again.** Opening a collection such as "Hot Shots! Filmreihe" showed "2 films · 1991–1993" and nothing under it: the "In release order" row fades in as it scrolls into view, and the franchise page never set that up, so once any other page had turned the fade on the row stayed transparent. It now reveals its rows as every other department page does.
+
 ## 0.123.0 — watch together, and a frosted bar on the tablet
 
 One release for the work that waited on its own branches: watch together, the phone and tablet's motion (0.121.0), the TV themes (0.122.0), the cheaper cover scrim (0.122.1) and the tablet's frosted bar.

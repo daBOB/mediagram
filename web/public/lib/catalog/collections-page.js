@@ -113,6 +113,7 @@ export function renderFranchise(main, id, { library, openFilm }, stillHere) {
   hero.classList.add("franchise-hero");
   main.append(hero);
   main.append(deptRow("In release order", movieGrid(franchise.films, openFilm, { mode: GRID })));
+  revealWithin(main);
   const introduce = (all) => {
     const overview = all.find((f) => f.id === franchise.id)?.overview;
     if (overview && stillHere()) hero.querySelector(".dept-copy")?.append(el("p", "franchise-overview", overview));
