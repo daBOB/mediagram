@@ -61,7 +61,7 @@ class BaselineProfileGenerator {
                 Log.i(TAG, "profile picker is showing; recorded the launch only")
                 return@collect
             }
-            if (!device.wait(Until.hasObject(MOVIES_PILL), UI_TIMEOUT_MS)) {
+            if (!device.wait(Until.hasObject(MOVIES_PILL), LIBRARY_TIMEOUT_MS)) {
                 Log.i(TAG, "no library is showing (setup?); recorded the launch only")
                 return@collect
             }
@@ -170,6 +170,9 @@ class BaselineProfileGenerator {
         const val TAG = "BaselineProfile"
         const val TARGET_PACKAGE = "com.mediagram.android"
         const val UI_TIMEOUT_MS = 15_000L
+
+        // A cold start on the box shows "Loading your library…" for about 15 s before the bar appears.
+        const val LIBRARY_TIMEOUT_MS = 45_000L
         const val SETTLE_MS = 1_500L
         const val HOME_ROW_PRESSES = 6
         const val WALL_PRESSES = 40
