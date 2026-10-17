@@ -6,6 +6,10 @@
  * a parent lowers a limit as often as it raises one. Ties break by device id
  * through `keep`, as every row's do.
  *
+ * **A daily limit: the same, `null` ("none") included.** Said only by
+ * documents that carry it; none saying it leaves it unsaid, and a grown-up
+ * never carries one.
+ *
  * **A PIN: a proven one, then the newest; else the oldest** (`keepPin`). A
  * first PIN — set where its grown-up had none — never replaces one set
  * earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
@@ -50,6 +54,7 @@ export type MergedRoles = Omit<RoleKeys, "kids">;
 export const kidsMarkRank = (row: ListRow): number => (row.age === 6 && !row.removed ? 1 : 0);
 
 type KidsAge = NonNullable<RoleKeys["kidsAge"]>;
+type DailyLimit = NonNullable<RoleKeys["dailyLimit"]>;
 type Pin = NonNullable<RoleKeys["pin"]>;
 
 const FROM_TWELVE: KidsAge = { age: 12, updatedAt: 0 };
@@ -59,6 +64,7 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
   const viewers = new Set<string>();
   const kids = new Set<string>();
   const limits = new Map<string, Held<KidsAge>>();
+  const daily = new Map<string, Held<DailyLimit>>();
   const pins = new Map<string, Held<Pin>>();
   const parents = new Map<string, { name: string; from: string }>();
   const claims = new Map<string, number>();
@@ -71,6 +77,7 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
       viewers.add(name);
       if (profile.kids === true) kids.add(name);
       if (profile.kidsAge) keep(limits, name, profile.kidsAge, device);
+      if (profile.dailyLimit) keep(daily, name, profile.dailyLimit, device);
       if (profile.pin) keepPin(pins, name, profile.pin, device);
       const parent = normalName(profile.parent);
       const standing = parents.get(name);
@@ -86,9 +93,11 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
     const kid = kids.has(name);
     const parent = parents.get(name)?.name;
     const pin = pins.get(name)?.row;
+    const dailyLimit = daily.get(name)?.row;
     merged.set(name, {
       ...(admin === name ? { admin: { claimedAt: claims.get(name)! } } : {}),
       ...(kid ? { kidsAge: limits.get(name)?.row ?? FROM_TWELVE } : {}),
+      ...(kid && dailyLimit !== undefined ? { dailyLimit } : {}),
       ...(kid && parent !== undefined ? { parent } : {}),
       ...(!kid && pin !== undefined ? { pin } : {}),
     });

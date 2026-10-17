@@ -29,6 +29,9 @@ export interface RoleKeys {
   /** A kid's own limit and when it last changed. `updatedAt` 0 is a limit
    * nobody chose — the FSK 12 every kid had before there was a choice. */
   kidsAge?: { age: 6 | 12; updatedAt: number };
+  /** A kid's daily watching limit in minutes, `null` for none, and when it
+   * last changed. `null` is said, not absent: it must beat an older limit. */
+  dailyLimit?: { minutes: number | null; updatedAt: number };
   /** The grown-up who made this kid, by the name sync knows a viewer by. */
   parent?: string;
   /** A grown-up's PIN, salted and hashed. The sync record is the only place
@@ -57,6 +60,12 @@ export function parseRoleKeys(row: Record<string, unknown>): RoleKeys {
   const age = limit?.age;
   const limitAt = numberFromScalar(limit?.updatedAt);
   if ((age === 6 || age === 12) && (limitAt === 0 || isStamp(limitAt))) keys.kidsAge = { age, updatedAt: limitAt };
+
+  const daily = objectRow(row.dailyLimit);
+  const minutes = daily?.minutes;
+  const dailyAt = numberFromScalar(daily?.updatedAt);
+  if ((minutes === null || (typeof minutes === "number" && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440)) &&
+      (dailyAt === 0 || isStamp(dailyAt))) keys.dailyLimit = { minutes, updatedAt: dailyAt };
 
   const parent = text_(row.parent);
   if (parent !== null) keys.parent = parent;

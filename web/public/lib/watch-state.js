@@ -266,9 +266,15 @@ export function inProgress() {
  */
 export function setProgress(setId, at, duration) {
   held.progress.set(setId, { at, duration: duration ?? null, updatedAt: Date.now() });
-  void write(under(`/progress/${encodeURIComponent(setId)}`), "PUT", { at, duration });
+  void write(under(`/progress/${encodeURIComponent(setId)}`), "PUT", { at, duration }).then(heardToday);
   changed();
 }
+
+let toldToday = () => {};
+/** `fn` hears `{ limitMinutes, watchedSeconds }` when the server answers a position write for a kid with a daily limit. */
+export const onToday = (fn) => { toldToday = fn; };
+// Only a limited kid gets a 200 with a body; best-effort, like the write.
+const heardToday = (response) => response?.status === 200 ? response.json().then(toldToday, () => {}) : undefined;
 
 /**
  * The last position of a title being closed, sent so it survives the page.

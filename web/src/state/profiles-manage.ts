@@ -18,7 +18,8 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { cleanName, insertProfile, profileRows, toProfile, writeKidsAge, writePin, type Profile, type ProfileRow } from "./profiles";
+import { cleanName, insertProfile, profileRows, toProfile, type Profile, type ProfileRow } from "./profiles";
+import { writeDailyLimit, writeKidsAge, writePin } from "./profiles-write";
 import { newPin, pinMatches, validPin } from "./profiles-pin";
 import { allowed, nameTaken, type Action } from "./profiles-rules";
 import type { PinWait } from "./profiles-wait";
@@ -38,6 +39,8 @@ export type Outcome = Refused | null;
 
 const refuse = (reason: Refusal): Refused => ({ reason });
 const validAge = (age: unknown): age is 6 | 12 => age === 6 || age === 12;
+const validMinutes = (minutes: unknown): minutes is number | null =>
+  minutes === null || (typeof minutes === "number" && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440);
 const isKid = (row: ProfileRow): boolean => row.kids !== 0;
 
 export class ProfileManager {
@@ -71,10 +74,10 @@ export class ProfileManager {
   }
 
   /** A kid, belonging to whichever grown-up adds it, with its own limit. */
-  createKid(actorId: string, pin: unknown, name: unknown, kidsAge: unknown): Refused | Profile {
-    if (!validAge(kidsAge)) return refuse("invalid");
+  createKid(actorId: string, pin: unknown, name: unknown, kidsAge: unknown, dailyLimit: unknown = null): Refused | Profile {
+    if (!validAge(kidsAge) || !validMinutes(dailyLimit)) return refuse("invalid");
     const refused = this.unusable(name) ?? this.check(actorId, pin, "create-kid", null);
-    return refused ?? insertProfile(this.db, name, { kids: true, kidsAge, parentId: actorId }) ?? refuse("invalid");
+    return refused ?? insertProfile(this.db, name, { kids: true, kidsAge, parentId: actorId, ...(dailyLimit === null ? {} : { dailyLimit }) }) ?? refuse("invalid");
   }
 
   /** Removing a grown-up takes its kids with it; removing a kid takes only it. */
@@ -98,6 +101,15 @@ export class ProfileManager {
     const refused = this.check(actorId, pin, "set-kids-age", id);
     if (refused) return refused;
     writeKidsAge(this.db!, id, age);
+    return null;
+  }
+
+  /** A kid's daily watching limit in minutes, or `null` for none; the age limit's rule. */
+  setDailyLimit(actorId: string, pin: unknown, id: string, minutes: unknown): Outcome {
+    if (!validMinutes(minutes)) return refuse("invalid");
+    const refused = this.check(actorId, pin, "set-kids-age", id);
+    if (refused) return refused;
+    writeDailyLimit(this.db!, id, minutes);
     return null;
   }
 

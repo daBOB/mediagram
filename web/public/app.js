@@ -56,6 +56,7 @@ import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
 import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
 import { loadPlayer } from "./lib/playback/player-loader.js";
+import * as dailyLimit from "./lib/daily-limit-gate.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -304,7 +305,8 @@ async function openTitle(set, queue, options, request) {
     if (request === pendingOpen) main.append(el("p", "error", `Could not start the player: ${error.message}`));
     return;
   }
-  if (request !== pendingOpen) return;
+  // Every way to open a title ends here, so the daily limit is asked once, here.
+  if (request !== pendingOpen || !(await dailyLimit.mayOpen()) || request !== pendingOpen) return;
 
   // `autoplay` is set only by the player handing over to what follows, and
   // says which kind of start that is. Opening a title from a shelf never
@@ -320,6 +322,7 @@ async function openTitle(set, queue, options, request) {
     autoplay,
     freshResume,
   });
+  dailyLimit.opened(freshResume);
 }
 
 /**

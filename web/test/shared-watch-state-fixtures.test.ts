@@ -163,6 +163,7 @@ describe("profile-roles-merge fixtures", () => {
           ...(profile.admin ? { admin: profile.admin } : {}),
           ...(profile.kids ? { kids: profile.kids } : {}),
           ...(profile.kidsAge ? { kidsAge: profile.kidsAge } : {}),
+          ...(profile.dailyLimit ? { dailyLimit: profile.dailyLimit } : {}),
           ...(profile.parent !== undefined ? { parent: profile.parent } : {}),
           ...(profile.pin ? { pin: profile.pin } : {}),
         }))

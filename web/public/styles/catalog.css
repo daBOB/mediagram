@@ -92,6 +92,8 @@
 .empty code { font-family: ui-monospace, monospace; font-size: 0.8125rem; padding: 4px 8px; border-radius: 4px; background: var(--paper-sunk); } /* deslop-ignore 34: code only */
 .error { padding: 24px; border-radius: var(--radius); background: var(--accent-tint); color: var(--accent); max-width: 65ch; overflow-wrap: anywhere; }
 
+.daily-limit-notice { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; }
+
 .genre-links { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.8125rem; }
 .genre { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: border-color var(--hover), color var(--hover); }
 .genre:hover { border-color: var(--accent); color: var(--accent); }
