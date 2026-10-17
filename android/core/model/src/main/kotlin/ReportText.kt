@@ -43,8 +43,8 @@ data class ReportFacts(
     val setId: String,
 )
 
-// (?U) so \s matches the Unicode spaces JavaScript's \s does (NBSP, em space).
-private val WHITESPACE = Regex("""(?U)\s+""")
+// Exactly JavaScript's \s (NBSP, em space, BOM, ...), spelled out: Android's ICU regex rejects the (?U) flag.
+private val WHITESPACE = Regex("""[\s\x0B\p{Z}\uFEFF]+""")
 
 /** `h:mm:ss`, the hour unpadded, as a player's clock reads past an hour; in the web's digits whatever the device's language. */
 private fun clock(seconds: Double): String {

@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.126.1 — Report no longer closes the Android app
+
+**Fixed** (Android phone, tablet and TV)
+
+- **Send in the report sheet closed the app.** The report text's whitespace pattern used the `(?U)` flag, which the desktop JVM running the unit tests accepts and Android's ICU regex rejects, so the first report crashed before anything was sent. The pattern now spells out the same characters as JavaScript's `\s`.
+
 ## 0.126.0 — report a broken video
 
 **Added** (web player, core, Android phone, tablet and TV)
