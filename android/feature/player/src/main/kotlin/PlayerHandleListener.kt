@@ -18,6 +18,7 @@ internal class PlayerHandleListener(
     private val isCurrentlyPlaying: () -> Boolean,
     private val notifyPlaying: (isPlaying: Boolean) -> Unit,
     private val notifyError: (message: String) -> Unit,
+    private val notifyErrorCode: (code: String) -> Unit,
     private val notifyEnded: () -> Unit,
     private val notifySeeked: () -> Unit,
 ) : Player.Listener {
@@ -33,6 +34,7 @@ internal class PlayerHandleListener(
         // Logged in full, reported in words: the exception's own message is
         // media3's, and a viewer is owed a sentence rather than a stack trace.
         Log.w("Player", "playback failed", error)
+        notifyErrorCode(error.errorCodeName)
         notifyError("Playback failed")
     }
 

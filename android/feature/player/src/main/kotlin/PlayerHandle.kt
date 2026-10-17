@@ -84,6 +84,9 @@ interface PlayerHandle {
         fun onPlayingChanged(isPlaying: Boolean)
         fun onError(message: String)
 
+        /** The media3 name of the failure [onError] is about, delivered just before it — a no-op default, since only the report keeps it. */
+        fun onErrorCode(code: String) {}
+
         /** The open title ran out, or was seeked past its last frame — a no-op default, since only the up-next controller acts on it. */
         fun onEnded() {}
 

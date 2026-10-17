@@ -1,12 +1,15 @@
 package player
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CatalogRepository
+import data.ReportChannel
 import data.PlayerPreferences
 import data.TogetherLive
 import data.WatchStateRepository
@@ -17,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.DailyLimitWords
 import model.MediaSet
+import model.ReportFacts
+import model.ReportReason
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
 import playback.PlaybackTotals
@@ -45,7 +50,8 @@ class PlayerViewModel @Inject constructor(
     summarySource: SummarySource = SummarySource.None,
     togetherLive: TogetherLive,
     private val relay: ViewerRelay,
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
+    reportChannel: ReportChannel = NoReportChannel,
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -115,6 +121,39 @@ class PlayerViewModel @Inject constructor(
     internal val runIsList = MutableStateFlow(false) // a hand-built list: no sidebar, see episodeListFlow
     val episodes: StateFlow<EpisodeList?> = viewModelScope.episodeListFlow(catalogRepository, _openSetId, upNextController.state, repository.snapshot, runIsList)
 
+    /** The open title's last error and the broken-video report; the phone and TV sheets render [report]. */
+    internal val reporting = PlayerReport(reportChannel, viewModelScope)
+    val report: StateFlow<ReportUi> = reporting.ui
+    fun openReport(fromFailure: Boolean) = reporting.openReport(fromFailure)
+    fun closeReport() = reporting.closeReport()
+
+    fun sendReport(reason: ReportReason, note: String) {
+        val setId = session.openSetId ?: return
+        reporting.send(
+            ReportFacts(
+                reason = reason,
+                title = titleLine(openSet.value),
+                note = note,
+                profile = repository.chosenProfile.value?.name,
+                screen = labelOf(context),
+                device = "${Build.MANUFACTURER} ${Build.MODEL}",
+                app = "Android ${versionName()}",
+                positionSeconds = handle.positionMs()?.let { it / 1000.0 },
+                played = "direct",
+                held = held.value,
+                error = null, // PlayerReport fills in the open title's last error
+                setId = setId,
+            ),
+        )
+    }
+
+    private fun versionName(): String? =
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+
     /** Takes the next two episodes of an open show into the cache while this one plays. */
     internal val preloadController = PlayerPreloadController(viewModelScope, catalogRepository, seriesPreloader)
 
@@ -164,6 +203,7 @@ class PlayerViewModel @Inject constructor(
         session.clear()
         openFsk.value = null
         _openSetId.value = null
+        reporting.titleOpened()
         marksController.reset()
         choicesController.reset()
         upNextController.stop()
@@ -204,6 +244,8 @@ class PlayerViewModel @Inject constructor(
         _state.value = PlayerUiState.Failed(message)
     }
 
+    override fun onErrorCode(code: String) = reporting.failed(code)
+
     override fun onEnded() {
         upNextController.onEnded()
         togetherController.onTitleEnded(hasNext = upNext.value.hasNext)
@@ -217,4 +259,9 @@ class PlayerViewModel @Inject constructor(
         handle.setListener(null)
         closeTogether(relay)
     }
+}
+
+/** For a view model built without a core, such as a test's: a report has nowhere to go. */
+private object NoReportChannel : ReportChannel {
+    override suspend fun send(text: String) = error("no report channel")
 }

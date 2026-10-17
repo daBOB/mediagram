@@ -30,7 +30,10 @@ import kotlinx.coroutines.launch
 fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null, handPicked: Boolean = false) {
     val sameTitle = session.openSetId == setId
     session.open(setId)
-    if (!sameTitle) marksController.reset()
+    if (!sameTitle) {
+        marksController.reset()
+        reporting.titleOpened()
+    }
     openFsk.value = fsk
     runIsList.value = handPicked
     _openSetId.value = setId

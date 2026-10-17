@@ -60,6 +60,7 @@ class DefaultPlayerHandle(
         isCurrentlyPlaying = { _player.value?.isPlaying ?: false },
         notifyPlaying = ::notifyPlaying,
         notifyError = { message -> listener?.onError(message) },
+        notifyErrorCode = { code -> listener?.onErrorCode(code) },
         notifyEnded = { listener?.onEnded() },
         notifySeeked = { listener?.onSeeked() },
     )
