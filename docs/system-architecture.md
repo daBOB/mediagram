@@ -878,7 +878,11 @@ ported to `ReportText.kt`; both are held to
 identifies the title.
 
 **Web.** `POST /api/report` validates (400), answers 404 when the server has
-no sender, 503 when Telegram is unreachable or the send fails, else 204.
+no sender, 503 when Telegram is unreachable, the send fails or it has not
+answered within 15 s, else 204. The browser waits 20 s, so it hears that 503
+rather than giving up first while the reminder may still land. The title and
+the error are folded onto one line each, so no caller can write a line of its
+own into the report.
 `TelegramReportSender` calls `sendMessage("me", {schedule, parseMode: false})`.
 The video `error` event and conversion errors are recorded per title, so the
 report carries the last one. The preview harness logs reports instead of
@@ -886,7 +890,8 @@ sending.
 
 **Android.** The Rust core exposes `report_send(text)` (grammers
 `schedule_date`); `ReportChannel` calls it and the player keeps
-`PlaybackException.errorCodeName` for the error line. On the TV the note opens
+`PlaybackException.errorCodeName` for the error line. A send that has not
+answered in 20 s fails, as the web's does. On the TV the note opens
 in its own window on OK, so the D-pad never raises the keyboard.
 
 ### Parity with the web player
