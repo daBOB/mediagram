@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mediaError, mountPlayerReport } from "../public/lib/playback/player-report.js";
 import { REPORT_REASONS, REPORT_WORDS } from "../public/lib/report/report-text.js";
-import { browserEnvironment, settle } from "./support/player-environment";
+import { browserEnvironment, deferred, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 beforeEach(() => {
@@ -63,6 +63,42 @@ test("a send that fails says so and leaves the sheet open to try again", async (
   await settle();
   expect(env.node("report-said").textContent).toBe(REPORT_WORDS.failed);
   expect(env.node("report-panel").hidden).toBe(false);
+  expect(env.node("report-send").disabled).toBe(false);
+});
+
+test("a second press while a send is in flight sends nothing, and Report stays shut until it settles", async () => {
+  mount();
+  const answer = deferred<Response>();
+  env.respondWith(() => answer.promise);
+  choices()[0]!.fire("change");
+  env.node("report-send").fire("click");
+  await settle();
+  choices()[1]!.fire("change");
+  expect(env.node("report-send").disabled).toBe(true);
+  expect(env.node("report").disabled).toBe(true);
+  env.node("report-send").fire("click");
+  await settle();
+  expect(env.requests).toHaveLength(1);
+  answer.resolve(new Response(null, { status: 204 }));
+  await settle();
+  expect(env.node("report").textContent).toBe(REPORT_WORDS.sent);
+  expect(env.requests).toHaveLength(1);
+});
+
+test("an answer for an earlier open marks nothing, even when the same title opened again", async () => {
+  const report = mount();
+  const answer = deferred<Response>();
+  env.respondWith(() => answer.promise);
+  choices()[0]!.fire("change");
+  env.node("report-send").fire("click");
+  await settle();
+  report.open(film);
+  answer.resolve(new Response(null, { status: 204 }));
+  await settle();
+  expect(env.node("report").textContent).toBe(REPORT_WORDS.button);
+  expect(env.node("report").disabled).toBe(false);
+  env.node("report").fire("click");
+  choices()[0]!.fire("change");
   expect(env.node("report-send").disabled).toBe(false);
 });
 

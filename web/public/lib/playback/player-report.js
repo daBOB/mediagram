@@ -38,6 +38,10 @@ export function mountPlayerReport({ dialog, facts }) {
   let set = null;
   let reason = null;
   let lastError = null;
+  /** Which open a reply belongs to: `open` and `clear` move it on, so a late answer marks nothing. */
+  let opened = 0;
+  /** A send is in flight: one press, one message, however the viewer clicks meanwhile. */
+  let sending = false;
 
   button.textContent = REPORT_WORDS.button;
   document.getElementById("report-heading").textContent = REPORT_WORDS.heading;
@@ -48,7 +52,7 @@ export function mountPlayerReport({ dialog, facts }) {
     const input = Object.assign(el("input"), { type: "radio", name: "report-reason", value: id });
     input.addEventListener("change", () => {
       reason = id;
-      send.disabled = false;
+      send.disabled = sending;
     });
     const label = el("label", "report-reason");
     label.append(input, words);
@@ -75,34 +79,42 @@ export function mountPlayerReport({ dialog, facts }) {
   }
 
   async function submit() {
-    if (set === null || reason === null) return;
-    const sending = set;
+    if (set === null || reason === null || sending) return;
+    const ticket = opened;
     const { title, position, mode, held } = facts();
+    sending = true;
+    // Not reopened mid-send either: a fresh sheet would offer a Send of its own.
+    button.disabled = true;
     send.disabled = true;
     said.textContent = "";
+    let sent = false;
     try {
       const response = await fetch("/api/report", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          set: sending.setId, reason, title, note: note.value, position,
+          set: set.setId, reason, title, note: note.value, position,
           played: PLAYED[mode] ?? null, held, error: lastError, profileId: state.profileId(),
         }),
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       });
-      if (set !== sending) return;
-      if (response.status !== 204) throw new Error(`report answered ${response.status}`);
+      sent = response.status === 204;
+    } catch {
+      // Unreachable or too slow reads the same as a refusal.
+    }
+    if (ticket !== opened) return;
+    sending = false;
+    if (sent) {
       show(false);
       button.textContent = REPORT_WORDS.sent;
-      button.disabled = true;
       // The focused Send just went away; the dialog keeps the player's keys.
       dialog.focus();
-    } catch {
-      if (set !== sending) return;
-      said.textContent = REPORT_WORDS.failed;
-      send.disabled = false;
-      send.focus();
+      return;
     }
+    button.disabled = false;
+    said.textContent = REPORT_WORDS.failed;
+    send.disabled = false;
+    send.focus();
   }
 
   button.addEventListener("click", () => show(panel.hidden));
@@ -118,6 +130,8 @@ export function mountPlayerReport({ dialog, facts }) {
   return {
     /** A new title: nothing reported, nothing gone wrong yet. */
     open(next) {
+      opened++;
+      sending = false;
       set = next;
       lastError = null;
       button.textContent = REPORT_WORDS.button;
@@ -125,6 +139,8 @@ export function mountPlayerReport({ dialog, facts }) {
       show(false);
     },
     clear() {
+      opened++;
+      sending = false;
       set = null;
       lastError = null;
       show(false);
