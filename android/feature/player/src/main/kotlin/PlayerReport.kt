@@ -19,7 +19,7 @@ data class ReportUi(val stage: ReportStage = ReportStage.IDLE, val open: Boolean
 
 /**
  * The open title's report: the last playback error it had, and a send that happens once.
- * Mirrors the web player's `player-report.js` — one send in flight, and a reply that lands
+ * Mirrors the web player's `player-report.js` — one send per title, and a reply that lands
  * after another title opened is dropped, so it can never mark the new title Reported.
  */
 class PlayerReport(private val channel: ReportChannel, private val scope: CoroutineScope) {
@@ -31,7 +31,6 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
         private set
 
     private var opened = 0
-    private var inFlight = false
 
     /** Another title opened, or the player closed: its error and its Reported are not the next one's. */
     fun titleOpened() {
@@ -57,8 +56,7 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
 
     fun send(facts: ReportFacts) {
         val stage = _ui.value.stage
-        if (inFlight || (stage != ReportStage.IDLE && stage != ReportStage.FAILED)) return
-        inFlight = true
+        if ((stage != ReportStage.IDLE && stage != ReportStage.FAILED)) return
         val title = opened
         _ui.value = _ui.value.copy(stage = ReportStage.SENDING)
         scope.launch {
@@ -70,8 +68,6 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
             } catch (e: Exception) {
                 Log.w("Player", "report not sent", e)
                 ReportStage.FAILED
-            } finally {
-                inFlight = false
             }
             if (title == opened) _ui.value = _ui.value.copy(stage = result, open = result != ReportStage.SENT && _ui.value.open)
         }

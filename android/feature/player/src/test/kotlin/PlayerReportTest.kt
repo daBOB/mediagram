@@ -108,6 +108,24 @@ class PlayerReportTest {
     }
 
     @Test
+    fun aNewTitleCanBeReportedWhileTheOldReportIsStillSending() = runTest {
+        val channel = FakeChannel().apply { gate = CompletableDeferred() }
+        val report = report(channel)
+        report.send(facts)
+        runCurrent()
+        report.titleOpened()
+        val oldGate = channel.gate!!
+        channel.gate = null
+        report.send(facts.copy(setId = "set2"))
+        runCurrent()
+        assertEquals(2, channel.sent.size)
+        assertEquals(ReportStage.SENT, report.ui.value.stage)
+        oldGate.complete(Unit) // the old reply lands late and changes nothing
+        runCurrent()
+        assertEquals(ReportStage.SENT, report.ui.value.stage)
+    }
+
+    @Test
     fun theSheetPresetsWontPlayOnlyFromAFailureAndStaysShutOnceReported() = runTest {
         val report = report(FakeChannel())
         report.openReport(fromFailure = false)
