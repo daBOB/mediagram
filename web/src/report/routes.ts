@@ -15,9 +15,10 @@ const UNREACHABLE = "Telegram isn't reachable";
 const PLAYED = ["direct", "converted", "copied"] as const;
 /**
  * How long a send may take before the viewer is told it failed. The client
- * retries for ever and waits out restarts, so without it a browser gives up
- * first and the reminder lands after "Couldn't send" — inviting a second.
- * Shorter than the browser's 20 s, so the browser hears this 503.
+ * retries for ever and waits out restarts, so without it the browser would
+ * give up first. Shorter than the browser's 20 s, so the browser hears this
+ * 503. It cannot recall the send: teleproto cannot cancel it, so one that
+ * answers after the 503 still lands, and a retry then sends a second.
  */
 const SEND_BOUND_MS = 15_000;
 
