@@ -57,7 +57,7 @@ Plain text, scheduled 60 s ahead into Saved Messages, not silent:
 
 ```
 #mlib-report
-Won't play: Hot Shots! (1991)
+Won't play: Hot Shots!
 "stops right after the intro"
 TV kids · TV · Android 0.126.0 · at 0:12:34
 Played: direct, from cache · Error: ERROR_CODE_DECODER_INIT_FAILED
@@ -65,7 +65,7 @@ Check: mediagram verify --full <set id>
 ```
 
 - Line 2: reason, then the player's title line (show · episode · title for an
-  episode; title (year) for a film) — the same `titleLine` both players show.
+  episode; the title alone for a film, no year) — the same `titleLine` both players show; the set id on the last line is what identifies the title.
 - Line 3: the note in quotes; the line is absent when there is no note.
 - Line 4: profile name · screen label (the label each surface already gives
   itself in watch together; Android's is *TV*, *Tablet* or *Phone*) plus the

@@ -63,6 +63,9 @@ natively, and never transcodes.
   daily watch limit, shared by every screen: a warning near the end, and at
   zero what is playing finishes but nothing new opens until tomorrow. Both
   rules are ported from the web player.
+- Any screen can report a broken video from the player: pick a reason, add a
+  note, and a reminder lands in the account's own Saved Messages a minute
+  later, kids included.
 - The phone reaches the web player's features — search, audio and subtitle
   choice, notes, up next, profile removal — with the differences it keeps on
   purpose written down in the Android system-menu spec, §9. Sync is on by

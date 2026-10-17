@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.126.0 — report a broken video
+
+**Added** (web player, core, Android phone, tablet and TV)
+
+- **A Report button in the player** (top bar; beside Retry on the phone and TV failure screen). Four reasons — Won't play, Picture or sound wrong, Subtitles wrong, Wrong title or poster — and an optional one-line note of up to 200 characters. It reads Reported until another title opens; a failed send says "Couldn't send. Try again later." and queues nothing. Kids may report.
+- **It arrives as a reminder in the account's own Saved Messages**, scheduled 60 s ahead and not silent, because every screen is the same Telegram account and Telegram notifies an account of its own message only when it is scheduled there. It carries the reason, title, note, profile, screen, app version, position, how it played, the last error and the `mediagram verify --full <set id>` command. Never in the library channel; no reader parses `#mlib-report`.
+- The text is written once in `web/public/lib/report/report-text.js`, ported to `ReportText.kt` and held to `web/test/fixtures/report/report-text.json`. New route: `POST /api/report`; new core call `report_send`. On the TV the note opens in its own window on OK.
+
 ## 0.125.0 — a daily watch limit for kids
 
 **Added** (web player, core, Android phone, tablet and TV)

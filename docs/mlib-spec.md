@@ -662,6 +662,12 @@ goes stale.
 Section 8's versioning rule applies: a change to the fields or their meaning
 bumps the marker, and a reader never guesses at a marker it does not know.
 
+## 7c. Broken-video report
+
+`#mlib-report` is the first line of a viewer's broken-video report. It is
+never in the library channel: it is scheduled into the account's own Saved
+Messages, and no reader parses it.
+
 ## 8. Versioning
 
 - `v=4` is written on every new caption; `v=2` and `v=3` remain readable. A
