@@ -22,6 +22,8 @@ import type { WatchState } from "./state/store";
 import { beginTranscode, hlsResponse, type HlsServer } from "./transcode/routes";
 import type { TogetherHub } from "./together/hub";
 import { togetherRoute } from "./together/routes";
+import { reportRoute } from "./report/routes";
+import type { ReportSender } from "./telegram/report-sender";
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const CACHED_STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/cached-stream$/;
@@ -52,6 +54,8 @@ export interface RouterOptions extends CatalogRouterOptions {
   state?: WatchState;
   /** `/api/together`, read and written: watch together (`docs/mlib-spec.md` §7b). */
   together?: TogetherHub;
+  /** `POST /api/report`: a viewer's broken-video report, sent to the account's own chat. */
+  report?: ReportSender;
   /** Maximum remote-link bitrate, in bits per second. */
   maxBitrate?: number;
   /**
@@ -140,6 +144,8 @@ export function createRouter(options: RouterOptions) {
     if (begin) return request.method === "POST" ? beginTranscode(db, hls, request, begin[1]!, maxBitrate) : bodiless(405);
     const together = await togetherRoute(request, options.together, db);
     if (together) return together;
+    const report = await reportRoute(request, options.report, db, options.state);
+    if (report) return report;
     // Preload, transcode start and watch together, the POSTs, are answered above this gate.
     if (request.method !== "GET" && request.method !== "HEAD") return bodiless(405);
     const headOnly = request.method === "HEAD";
