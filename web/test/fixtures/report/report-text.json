@@ -41,9 +41,15 @@
       "name": "an error with nothing played; held alone says nothing",
       "facts": { "reason": "wont-play", "title": "Film", "note": "", "profile": "andre", "screen": "Browser", "device": null, "app": "Web 0.126.0", "position": 0, "played": null, "held": true, "error": "MEDIA_ERR_DECODE", "setId": "f1" },
       "text": "#mlib-report\nWon't play: Film\nandre · Browser · Web 0.126.0 · at 0:00:00\nError: MEDIA_ERR_DECODE\nCheck: mediagram verify --full f1"
+    },
+    {
+      "name": "a copied stream on the web",
+      "facts": { "reason": "picture-sound", "title": "Arrival (2016)", "note": null, "profile": "andre", "screen": "Browser", "device": null, "app": "Web 0.126.0", "position": 10, "played": "copied", "held": false, "error": null, "setId": "c1" },
+      "text": "#mlib-report\nPicture or sound wrong: Arrival (2016)\nandre \u00b7 Browser \u00b7 Web 0.126.0 \u00b7 at 0:00:10\nPlayed: copied\nCheck: mediagram verify --full c1"
     }
   ],
   "notes": [
-    { "name": "cut to 200 and trimmed", "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bcd", "clean": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+    { "name": "cut to 200 and trimmed", "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bcd", "clean": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    { "name": "unicode spaces collapse too", "note": " out of sync ", "clean": "out of sync" }
   ]
 }
