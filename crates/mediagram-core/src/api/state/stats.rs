@@ -37,6 +37,24 @@ impl Core {
         })
         .await
     }
+
+    /// Seconds `profile_id` has watched on `day` (`YYYY-MM-DD` where the
+    /// viewer is), summed over every device. A storage failure reads as 0.
+    pub async fn watched_today(self: Arc<Self>, profile_id: String, day: String) -> f64 {
+        self.blocking(move |core| {
+            core.state_db
+                .with(|conn| {
+                    conn.query_row(
+                        "SELECT COALESCE(SUM(seconds), 0.0) FROM stats_days
+                           WHERE profile_id = ?1 AND day = ?2",
+                        [&profile_id, &day],
+                        |row| row.get(0),
+                    )
+                })
+                .unwrap_or(0.0)
+        })
+        .await
+    }
 }
 
 #[cfg(test)]

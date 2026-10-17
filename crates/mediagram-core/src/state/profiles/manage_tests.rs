@@ -156,7 +156,7 @@ fn grown_up<'c>(actor: &'c str, pin: &'c str, name: &'c str, new_pin: &'c str) -
     Box::new(move |m| m.create_grown_up(actor, pin, name, new_pin))
 }
 fn kid<'c>(actor: &'c str, pin: &'c str, name: &'c str, age: u8) -> Call<'c> {
-    Box::new(move |m| m.create_kid(actor, pin, name, age))
+    Box::new(move |m| m.create_kid(actor, pin, name, age, None))
 }
 fn remove<'c>(actor: &'c str, pin: &'c str, id: &'c str) -> Call<'c> {
     Box::new(move |m| m.remove(actor, pin, id))
@@ -702,6 +702,34 @@ mod a_kids_limit {
         assert_eq!(home.run(kids_age(&andre, "1111", &mia, 12)), NotAllowed);
         assert_eq!(home.run(kids_age(&maja, "2222", &mia, 9)), Invalid);
         assert_eq!(home.run(kids_age(&maja, "2222", &maja, 6)), NotAllowed);
+    }
+
+    /// A daily limit is the age limit's own rule: its parents', stamped even
+    /// when taken off, and refused outside 1..=1440.
+    #[test]
+    fn a_daily_limit_is_set_and_taken_off_by_the_same_people() {
+        let Household {
+            home,
+            andre,
+            maja,
+            mia,
+            ..
+        } = household();
+        let set = |actor: &str, pin: &'static str, id: &str, m: Option<u16>| {
+            let (actor, id) = (actor.to_string(), id.to_string());
+            home.run(Box::new(move |h| h.set_daily_limit(&actor, pin, &id, m)))
+        };
+        assert_eq!(set(&maja, "2222", &mia, Some(60)), Done);
+        assert_eq!(home.column::<Option<i64>>("daily_limit", &mia), Some(60));
+        assert_eq!(home.column::<i64>("daily_limit_updated_at", &mia), T);
+        assert_eq!(set(&maja, "2222", &mia, None), Done);
+        assert_eq!(home.column::<Option<i64>>("daily_limit", &mia), None);
+        assert_eq!(home.column::<i64>("daily_limit_updated_at", &mia), T + 1);
+        assert_eq!(set(&andre, "1111", &mia, Some(30)), NotAllowed);
+        assert_eq!(set(&maja, "0000", &mia, Some(30)), WrongPin);
+        assert_eq!(set(&maja, "2222", &maja, Some(30)), NotAllowed);
+        assert_eq!(set(&maja, "2222", &mia, Some(0)), Invalid);
+        assert_eq!(set(&maja, "2222", &mia, Some(1441)), Invalid);
     }
 
     /// The same limit written again is still a write: it is stamped past the

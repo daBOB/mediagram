@@ -33,6 +33,16 @@ pub struct KidsAge {
     pub updated_at: f64,
 }
 
+/// A kid's daily watching limit in whole minutes, or `None` for none, and
+/// when it last changed. "No limit" is a stamped value, not an absence, so
+/// that taking a limit off keeps winning over the limit it replaced.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DailyLimit {
+    pub minutes: Option<u16>,
+    pub updated_at: f64,
+}
+
 /// A grown-up's PIN as stored: lowercase hex SHA-256 of `salt + pin`, and
 /// the salt. The sync record is the only place it leaves the store.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,6 +67,8 @@ pub struct ProfileRoles {
     pub admin: Option<AdminClaim>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kids_age: Option<KidsAge>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub daily_limit: Option<DailyLimit>,
     /// The grown-up who made this kid, by the name sync knows a viewer by.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent: Option<String>,
@@ -68,6 +80,7 @@ pub(super) fn profile_roles(row: &Map<String, Value>) -> ProfileRoles {
     ProfileRoles {
         admin: admin(row.get("admin")),
         kids_age: kids_age(row.get("kidsAge")),
+        daily_limit: daily_limit(row.get("dailyLimit")),
         parent: text_(row.get("parent")),
         pin: pin(row.get("pin")),
     }
@@ -93,6 +106,24 @@ fn kids_age(raw: Option<&Value>) -> Option<KidsAge> {
     };
     let updated_at = js_number(held.get("updatedAt"));
     (updated_at == 0.0 || is_stamp(updated_at)).then_some(KidsAge { age, updated_at })
+}
+
+/// Whole minutes from 1 to 1440, or the null that says "no limit"; the key
+/// must be there. Its time may be 0, as a limit that was never chosen.
+fn daily_limit(raw: Option<&Value>) -> Option<DailyLimit> {
+    let held = raw?.as_object()?;
+    let minutes = match held.get("minutes")? {
+        Value::Null => None,
+        value => {
+            let n = value.as_f64()?;
+            if n.fract() != 0.0 || !(1.0..=1440.0).contains(&n) {
+                return None;
+            }
+            Some(n as u16)
+        }
+    };
+    let updated_at = js_number(held.get("updatedAt"));
+    (updated_at == 0.0 || is_stamp(updated_at)).then_some(DailyLimit { minutes, updated_at })
 }
 
 fn pin(raw: Option<&Value>) -> Option<PinRecord> {

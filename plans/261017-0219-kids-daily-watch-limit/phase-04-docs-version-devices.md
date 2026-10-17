@@ -8,7 +8,7 @@ Priority medium, status pending (after 2 and 3).
 - Version 0.125.0 in `Cargo.toml`, `web/package.json`, `android/app/build.gradle.kts` (by pattern; renumber if `main` moved).
 - `scripts/check.sh` green.
 - Devices, test profiles only: tablet (`ANDROID_SERIAL=caad49da`) and the box (`adb -s 192.168.0.56:5555`) — set a 30 min limit on a test kid, watch to the warning, cross zero mid-title, confirm finish + no autoplay + refused open; confirm the web's minutes appear on Android after a sync round.
-- Check the live player's `MEDIAGRAM_SYNC_STATE`; report if off.
+- Check the live player's `MEDIAGRAM_SYNC_STATE`; report if off. **Checked 2026-10-17: on** (`web/.env`, live bun on :8770).
 
 ## Todo
 - [ ] docs + changelog

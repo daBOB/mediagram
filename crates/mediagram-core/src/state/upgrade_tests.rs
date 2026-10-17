@@ -142,5 +142,5 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         .unwrap();
     assert_eq!(age, None);
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 9);
+    assert_eq!(version, 10);
 }

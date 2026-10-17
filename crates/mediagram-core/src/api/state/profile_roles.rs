@@ -46,17 +46,19 @@ impl Core {
         .await
     }
 
-    /// A grown-up adds a kid of its own, from 6 or from 12.
+    /// A grown-up adds a kid of its own, from 6 or from 12, with a daily
+    /// limit in minutes (1..=1440) or none.
     pub async fn create_kid(
         self: Arc<Self>,
         actor_id: String,
         pin: String,
         name: String,
         kids_age: u8,
+        daily_limit: Option<u16>,
     ) -> ProfileOutcome {
         self.blocking(move |core| {
             core.state_db
-                .manage(|m| m.create_kid(&actor_id, &pin, &name, kids_age))
+                .manage(|m| m.create_kid(&actor_id, &pin, &name, kids_age, daily_limit))
         })
         .await
     }
@@ -117,6 +119,22 @@ impl Core {
         self.blocking(move |core| {
             core.state_db
                 .manage(|m| m.set_kids_age(&actor_id, &pin, &id, kids_age))
+        })
+        .await
+    }
+
+    /// A parent sets its kid's daily limit in minutes (1..=1440); `None`
+    /// takes it off. Allowed exactly where `set_kids_age` is.
+    pub async fn set_daily_limit(
+        self: Arc<Self>,
+        actor_id: String,
+        pin: String,
+        id: String,
+        minutes: Option<u16>,
+    ) -> ProfileOutcome {
+        self.blocking(move |core| {
+            core.state_db
+                .manage(|m| m.set_daily_limit(&actor_id, &pin, &id, minutes))
         })
         .await
     }

@@ -16,6 +16,7 @@ pub(crate) struct Stored {
     pub(crate) name: String,
     pub(crate) kids: bool,
     pub(crate) kids_age: Option<i64>,
+    pub(crate) daily_limit: Option<i64>,
     pub(crate) parent_id: Option<String>,
     pub(crate) admin_claimed_at: Option<i64>,
     pub(crate) pin_hash: Option<String>,
@@ -44,7 +45,7 @@ impl Stored {
 /// Every profile's row, oldest first.
 pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, kids, kids_age, parent_id, admin_claimed_at, pin_hash, pin_salt
+        "SELECT id, name, kids, kids_age, parent_id, admin_claimed_at, pin_hash, pin_salt, daily_limit
            FROM profiles ORDER BY created_at",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -57,6 +58,7 @@ pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
             admin_claimed_at: row.get(5)?,
             pin_hash: row.get(6)?,
             pin_salt: row.get(7)?,
+            daily_limit: row.get(8)?,
         })
     })?;
     rows.collect()
@@ -68,6 +70,8 @@ pub(crate) struct NewProfile<'a> {
     pub(crate) kids: bool,
     /// A kid's limit, chosen now. `None` is FSK 12, dated 0.
     pub(crate) kids_age: Option<u8>,
+    /// A kid's daily limit in minutes, chosen now. `None` is none, dated 0.
+    pub(crate) daily_limit: Option<u16>,
     /// The grown-up adding this kid.
     pub(crate) parent_id: Option<&'a str>,
     /// A grown-up's first PIN, salted and hashed here.
@@ -104,17 +108,20 @@ pub(crate) fn insert(
         name: clean,
         kids,
         kids_age: kids.then(|| i64::from(role.kids_age.unwrap_or(12))),
+        daily_limit: role.daily_limit.filter(|_| kids).map(i64::from),
         parent_id: role.parent_id.filter(|_| kids).map(str::to_string),
         admin_claimed_at: (!kids && role.admin).then_some(now),
         pin_hash,
         pin_salt,
     };
     let limit_at = if kids && role.kids_age.is_some() { now } else { 0 };
+    let daily_at = if row.daily_limit.is_some() { now } else { 0 };
     let pin_at = if row.pin_hash.is_some() { now } else { 0 };
     conn.execute(
         "INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
-                              admin_claimed_at, pin_hash, pin_salt, pin_updated_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                              admin_claimed_at, pin_hash, pin_salt, pin_updated_at,
+                              daily_limit, daily_limit_updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
         params![
             row.id,
             row.name,
@@ -127,6 +134,8 @@ pub(crate) fn insert(
             row.pin_hash,
             row.pin_salt,
             pin_at,
+            row.daily_limit,
+            daily_at,
         ],
     )?;
     Ok(Some(Profile::from(row)))
@@ -137,7 +146,7 @@ pub(crate) fn insert(
 /// another device's clock, and this one running behind must not write a
 /// change that loses to the value it replaced. Kept below the largest time a
 /// peer keeps, as `set_watched`'s stamps are.
-const LAST_STAMP: i64 = MAX_STAMP as i64 - 1;
+pub(super) const LAST_STAMP: i64 = MAX_STAMP as i64 - 1;
 
 /// A fresh salt, and the hash of `pin` under it. `proven`: set by someone
 /// who knew the PIN before it, or the admin's reset — not a first PIN.

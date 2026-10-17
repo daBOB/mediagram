@@ -15,7 +15,7 @@ use rusqlite::{Connection, params};
 
 use crate::state::merge::MergedProfile;
 use crate::state::profiles;
-use crate::state::record::{AdminClaim, KidsAge, PinRecord, ProfileRoles, normal_name};
+use crate::state::record::{AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles, normal_name};
 
 /// This profile's role keys, as `export_record` writes them beside `kids`.
 /// A claim and a PIN are written whatever the profile is now; the merge
@@ -24,7 +24,7 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
     conn.query_row(
         "SELECT kids, kids_age, kids_age_updated_at, admin_claimed_at, pin_hash, pin_salt,
                 pin_updated_at, (SELECT parent.name FROM profiles AS parent WHERE parent.id = profiles.parent_id),
-                pin_proven
+                pin_proven, daily_limit, daily_limit_updated_at
            FROM profiles WHERE id = ?1",
         [profile_id],
         |row| {
@@ -40,9 +40,14 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
             let pin = row.get::<_, Option<String>>(4)?.zip(row.get::<_, Option<String>>(5)?);
             let pin_at = row.get::<_, i64>(6)? as f64;
             let proven: bool = row.get(8)?;
+            let minutes: Option<u16> = row.get(9)?;
+            let daily_at = row.get::<_, i64>(10)? as f64;
             Ok(ProfileRoles {
                 admin: claimed_at.map(|at| AdminClaim { claimed_at: at as f64 }),
                 kids_age: kids.then_some(limit),
+                // Said once chosen; never-chosen (stamp 0, none) stays unsaid.
+                daily_limit: (kids && (minutes.is_some() || daily_at > 0.0))
+                    .then_some(DailyLimit { minutes, updated_at: daily_at }),
                 // By name, because a name is what sync knows a viewer by; a
                 // parent removed here is simply not said.
                 parent: row.get(7)?,
@@ -76,6 +81,14 @@ pub(super) fn import(conn: &Connection, merged: &[MergedProfile]) -> rusqlite::R
                    WHERE id = ?1 AND (kids_age_updated_at < ?3
                      OR (kids_age_updated_at = ?3 AND kids_age IS NOT ?2))",
                 params![id, limit.age, limit.updated_at as i64],
+            )?;
+        }
+        if let Some(limit) = &roles.daily_limit {
+            changed += conn.execute(
+                "UPDATE profiles SET daily_limit = ?2, daily_limit_updated_at = ?3
+                   WHERE id = ?1 AND (daily_limit_updated_at < ?3
+                     OR (daily_limit_updated_at = ?3 AND daily_limit IS NOT ?2))",
+                params![id, limit.minutes, limit.updated_at as i64],
             )?;
         }
         // In the merge's own order (`merge::tie_break::keep_pin`): over no PIN

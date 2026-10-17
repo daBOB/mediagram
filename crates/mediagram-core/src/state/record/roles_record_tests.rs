@@ -9,6 +9,19 @@ fn roles(value: serde_json::Value) -> ProfileRoles {
     profile_roles(value.as_object().unwrap())
 }
 
+#[test]
+fn a_daily_limit_keeps_null_and_drops_what_is_not_whole_minutes() {
+    let limit = |m: serde_json::Value| {
+        roles(json!({ "dailyLimit": { "minutes": m, "updatedAt": 5 } })).daily_limit
+    };
+    assert_eq!(limit(json!(null)), Some(DailyLimit { minutes: None, updated_at: 5.0 }));
+    assert_eq!(limit(json!(1440.0)).and_then(|l| l.minutes), Some(1440));
+    for bad in [json!(0), json!(1441), json!(2.5), json!("60"), json!(-1)] {
+        assert_eq!(limit(bad), None);
+    }
+    assert_eq!(roles(json!({ "dailyLimit": { "updatedAt": 5 } })).daily_limit, None);
+}
+
 /// JSON `6.0` is the number 6 to the web (`age === 6`); a `null` time is 0
 /// there (`Number(null)`), which a limit may carry.
 #[test]

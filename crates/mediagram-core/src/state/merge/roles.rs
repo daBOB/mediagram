@@ -7,6 +7,9 @@
 //! sticky the way `kids` is — a parent lowers a limit as often as it raises
 //! one.
 //!
+//! **A daily limit: the newest wins too**, `None` minutes included, and
+//! only a kid carries it; a document without the key never unsays one.
+//!
 //! **A PIN: a proven one, then the newest; else the oldest** (`keep_pin`).
 //! A first PIN — set where its grown-up had none — never replaces one set
 //! earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
@@ -33,7 +36,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::tie_break::{Held, keep, keep_pin};
 use crate::state::record::{
-    AdminClaim, KidsAge, ListRow, PinRecord, ProfileRoles, SyncRecord, normal_name,
+    AdminClaim, DailyLimit, KidsAge, ListRow, PinRecord, ProfileRoles, SyncRecord, normal_name,
 };
 
 const FROM_TWELVE: KidsAge = KidsAge {
@@ -60,6 +63,7 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
     // says so, no document lacking the flag undoes it.
     let mut kids = HashSet::new();
     let mut limits: HashMap<String, Held<KidsAge>> = HashMap::new();
+    let mut daily: HashMap<String, Held<DailyLimit>> = HashMap::new();
     let mut pins: HashMap<String, Held<PinRecord>> = HashMap::new();
     let mut parents: HashMap<String, (String, &str)> = HashMap::new();
     let mut claims: HashMap<String, f64> = HashMap::new();
@@ -76,6 +80,9 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
             }
             if let Some(limit) = &roles.kids_age {
                 keep(&mut limits, name.clone(), limit.clone(), device);
+            }
+            if let Some(limit) = &roles.daily_limit {
+                keep(&mut daily, name.clone(), limit.clone(), device);
             }
             if let Some(pin) = &roles.pin {
                 keep_pin(&mut pins, name.clone(), pin.clone(), device);
@@ -106,6 +113,8 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
                     .filter(|(who, _)| **who == name)
                     .map(|(_, claimed_at)| AdminClaim { claimed_at }),
                 kids_age: kid.then(|| limits.remove(&name).map_or(FROM_TWELVE, |held| held.row)),
+                // "No limit" is kept as a value, so it goes on winning.
+                daily_limit: daily.remove(&name).filter(|_| kid).map(|held| held.row),
                 parent: parents
                     .remove(&name)
                     .filter(|_| kid)
