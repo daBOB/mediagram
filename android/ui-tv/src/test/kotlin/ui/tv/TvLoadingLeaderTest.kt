@@ -24,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import player.PlayerUiState
+import player.ReportUi
 import ui.tv.catalog.TvGenre
 import ui.tv.catalog.TvPersonPage
 import ui.tv.catalog.TvScreenStateTest
@@ -127,7 +128,7 @@ class TvLoadingLeaderTest : TvScreenStateTest() {
     @Test
     fun theStageWhileATitleOpensIsTheLeaderAloneAndSaysLoading() {
         val retry = FocusRequester()
-        show { TvPlayerStatus(state = PlayerUiState.Preparing, retry = retry, onRetry = {}, onReport = {}) }
+        show { TvPlayerStatus(state = PlayerUiState.Preparing, retry = retry, onRetry = {}, onReport = {}, report = ReportUi()) }
 
         val drawing = leader().bounds()
         assertDp(96.tvDp, drawing.right - drawing.left)

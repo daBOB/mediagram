@@ -4,13 +4,16 @@ import android.util.Log
 import data.ReportChannel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import model.ReportFacts
 import model.ReportReason
 import model.reportText
+import kotlin.time.Duration.Companion.seconds
 
 enum class ReportStage { IDLE, SENDING, SENT, FAILED }
 
@@ -43,11 +46,14 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
         lastError = code
     }
 
-    /** Ignored while sending or once sent: Reported stays until another title opens. */
+    /**
+     * Ignored while sending or once sent: Reported stays until another title opens. Otherwise a fresh
+     * sheet, as the web's: a failed send the viewer cancelled away is not said again on the next open.
+     */
     fun openReport(fromFailure: Boolean) {
         val stage = _ui.value.stage
         if (stage == ReportStage.SENDING || stage == ReportStage.SENT) return
-        _ui.value = ReportUi(stage, open = true, preset = if (fromFailure) ReportReason.WONT_PLAY else null)
+        _ui.value = ReportUi(open = true, preset = if (fromFailure) ReportReason.WONT_PLAY else null)
     }
 
     fun closeReport() {
@@ -61,8 +67,12 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
         _ui.value = _ui.value.copy(stage = ReportStage.SENDING)
         scope.launch {
             val result = try {
-                channel.send(reportText(facts.copy(error = lastError)))
+                // A dead connection would otherwise hold the sheet at Sending for over a minute; the web gives up at 20 s too.
+                withTimeout(SEND_TIMEOUT) { channel.send(reportText(facts.copy(error = lastError))) }
                 ReportStage.SENT
+            } catch (e: TimeoutCancellationException) {
+                Log.w("Player", "report not sent: no answer in $SEND_TIMEOUT", e)
+                ReportStage.FAILED
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -73,3 +83,5 @@ class PlayerReport(private val channel: ReportChannel, private val scope: Corout
         }
     }
 }
+
+private val SEND_TIMEOUT = 20.seconds

@@ -151,6 +151,21 @@ class TvPlayerReportTest : TvPlayerScreenHarness() {
         press(Key.DirectionRight)
         press(Key.DirectionCenter)
         compose.onNode(inDialog(ReportReason.WONT_PLAY.words)).assertIsSelected()
+
+        // The top bar is gone over a failure, so the row itself says it was sent — and is still no dead end.
+        alongInDialog(inDialog(ReportWords.SEND), listOf(Key.DirectionDown, Key.DirectionRight))
+        pressInDialog(Key.DirectionCenter)
+        assertEquals(1, fixture.reports.size)
+        compose.onNodeWithText(ReportWords.HEADING).assertDoesNotExist()
+        compose.onAllNodes(reportButton).assertCountEquals(0)
+        compose.onNode(sentButton).assertIsNotEnabled()
+        compose.onNode(sentButton).assertIsFocused()
+        press(Key.DirectionLeft)
+        compose.onNodeWithText("Retry").assertIsFocused()
+        press(Key.DirectionRight)
+        compose.onNode(sentButton).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNodeWithText(ReportWords.HEADING).assertDoesNotExist()
     }
 
     /** From play/pause up to Report along the top, and pressed. */

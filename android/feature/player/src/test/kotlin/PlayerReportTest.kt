@@ -3,6 +3,7 @@ package player
 import data.ReportChannel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.ReportReason
@@ -78,6 +79,33 @@ class PlayerReportTest {
         runCurrent()
         assertEquals(2, channel.sent.size)
         assertEquals(ReportStage.SENT, report.ui.value.stage)
+    }
+
+    @Test
+    fun aSheetReopenedAfterAFailedSendStartsFresh() = runTest {
+        val channel = FakeChannel().apply { failWith = IllegalStateException("offline") }
+        val report = report(channel)
+        report.openReport(fromFailure = false)
+        report.send(facts)
+        runCurrent()
+        report.closeReport()
+        report.openReport(fromFailure = true)
+        assertEquals(ReportUi(ReportStage.IDLE, open = true, preset = ReportReason.WONT_PLAY), report.ui.value)
+    }
+
+    @Test
+    fun aSendThatNeverAnswersFailsAfterTwentySeconds() = runTest {
+        val channel = FakeChannel().apply { gate = CompletableDeferred() }
+        val report = report(channel)
+        report.openReport(fromFailure = false)
+        report.send(facts)
+        advanceTimeBy(19_999)
+        runCurrent()
+        assertEquals(ReportStage.SENDING, report.ui.value.stage)
+        advanceTimeBy(2)
+        runCurrent()
+        assertEquals(ReportStage.FAILED, report.ui.value.stage)
+        assertTrue(report.ui.value.open) // the sheet stays, saying it could not send
     }
 
     @Test

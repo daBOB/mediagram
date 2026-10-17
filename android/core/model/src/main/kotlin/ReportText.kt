@@ -1,5 +1,6 @@
 package model
 
+import java.util.Locale
 import kotlin.math.floor
 
 /**
@@ -45,10 +46,10 @@ data class ReportFacts(
 // (?U) so \s matches the Unicode spaces JavaScript's \s does (NBSP, em space).
 private val WHITESPACE = Regex("""(?U)\s+""")
 
-/** `h:mm:ss`, the hour unpadded, as a player's clock reads past an hour. */
+/** `h:mm:ss`, the hour unpadded, as a player's clock reads past an hour; in the web's digits whatever the device's language. */
 private fun clock(seconds: Double): String {
     val s = floor(seconds).toLong()
-    return "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60)
+    return "%d:%02d:%02d".format(Locale.ROOT, s / 3600, s % 3600 / 60, s % 60)
 }
 
 /** One line, at most [REPORT_NOTE_MAX] characters; empty when nothing was said. */

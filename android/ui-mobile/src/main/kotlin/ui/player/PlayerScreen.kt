@@ -173,7 +173,7 @@ fun PlayerScreen(
 
             when (state) {
                 PlayerUiState.Preparing -> PreparingNote()
-                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) })
+                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
                 PlayerUiState.Playing, PlayerUiState.Paused -> Unit
             }
 

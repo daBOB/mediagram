@@ -24,6 +24,8 @@ import designsystem.Overscan
 import designsystem.Spacing
 import model.ReportWords
 import player.PlayerUiState
+import player.ReportStage
+import player.ReportUi
 import ui.tv.TvLeaderSize
 
 /** What the stage says while there is no film to show: the film leader while it prepares, the failure once it has failed. */
@@ -33,10 +35,11 @@ internal fun TvPlayerStatus(
     retry: FocusRequester,
     onRetry: () -> Unit,
     onReport: () -> Unit,
+    report: ReportUi,
 ) {
     when (state) {
         PlayerUiState.Preparing -> TvPreparingLeader()
-        is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry, onReport)
+        is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry, onReport, report)
         PlayerUiState.Playing, PlayerUiState.Paused -> Unit
     }
 }
@@ -64,6 +67,8 @@ private fun TvPreparingLeader() {
  * Retry re-opens the same title at wherever it was last saved to; most
  * failures are the network rather than a broken file, so that is usually
  * enough. Report beside it opens the report on "Won't play" ([onReport]).
+ * The top bar is gone while a title has failed, so this one says Reported
+ * once sent, as the bar's would, and stays a stop the remote can leave.
  *
  * The remote lands on Retry the moment the failure shows ([retry]): it is
  * the first thing to try, and a viewer whose film just stopped should not
@@ -75,7 +80,9 @@ internal fun TvPlayerFailure(
     retry: FocusRequester,
     onRetry: () -> Unit,
     onReport: () -> Unit,
+    report: ReportUi,
 ) {
+    val sent = report.stage == ReportStage.SENT
     Column(
         modifier = Modifier.padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -90,7 +97,12 @@ internal fun TvPlayerFailure(
                 onClick = onRetry,
                 modifier = Modifier.focusRequester(retry),
             )
-            TvOverlayButton(text = ReportWords.BUTTON, style = TvPlayerType.body, enabled = true, onClick = onReport)
+            TvOverlayButton(
+                text = if (sent) ReportWords.SENT else ReportWords.BUTTON,
+                style = TvPlayerType.body,
+                enabled = !sent && report.stage != ReportStage.SENDING,
+                onClick = onReport,
+            )
         }
     }
 }

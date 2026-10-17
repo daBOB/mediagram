@@ -11,6 +11,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -68,6 +69,22 @@ class ReportTextFixtureTest {
         assertEquals(words.str("cancel"), ReportWords.CANCEL)
         assertEquals(words.str("failed"), ReportWords.FAILED)
         assertEquals(fixture.getValue("noteMax").jsonPrimitive.int, REPORT_NOTE_MAX)
+    }
+
+    @Test
+    fun theClockReadsInWesternDigitsWhateverTheDeviceLanguage() {
+        val before = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("ar-EG"))
+        try {
+            val facts =
+                ReportFacts(
+                    reason = ReportReason.WONT_PLAY, title = "Dune", note = null, profile = null, screen = "TV", device = null,
+                    app = "Android 0.126.0", positionSeconds = 4354.0, played = null, held = false, error = null, setId = "set1",
+                )
+            assertTrue("at 1:12:34" in reportText(facts), reportText(facts))
+        } finally {
+            Locale.setDefault(before)
+        }
     }
 
     private fun locate(): File? {
