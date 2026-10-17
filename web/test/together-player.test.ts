@@ -218,6 +218,22 @@ test("a session moving to a title this profile can't see is where this screen le
   expect(button().textContent).toBe("Join");
 });
 
+test("a session move the daily limit refuses is where this screen leaves, and it is not asked again", async () => {
+  await joined();
+  setTogetherOpener((set) => { opened.push(set.setId); return Promise.resolve(false); }, (setId) => sets.get(setId) as never ?? null);
+  heardFromTv({ set: "film-2" });
+  await settle();
+  expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
+  env.advance(6000);
+  await settle();
+  expect(opened).toEqual(["film-2"]);
+  expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
+  expect([button().textContent, inTogether()]).toEqual(["Join", false]);
+  follower.viewer({ playing: false });
+  await settle();
+  expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
+});
+
 test("the button offers to start, to join, or to leave, and says why it can't", async () => {
   follower.open(film("film-1"), { next: null });
   expect([button().textContent, button().disabled]).toEqual(["Watch together", false]);

@@ -117,12 +117,12 @@ export function setTogetherOpener(open, find) {
 /** The set `setId` names in this profile's catalog, or `null`. */
 export const setForTogether = (setId) => setOf(setId);
 
-/** Opens `setId` through the app, joining session `join` as the player opens it; nothing for a title not here. */
+/** Opens `setId` through the app, joining session `join` as the player opens it; nothing for a title not here. Resolves to whether it opened. */
 export function openForTogether(setId, join = null) {
   const set = setOf(setId);
-  if (!set || !opener) return;
+  if (!set || !opener) return Promise.resolve(false);
   joinNext = join;
-  opener(set);
+  return Promise.resolve(opener(set));
 }
 
 export function takeJoin() {

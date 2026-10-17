@@ -12,6 +12,7 @@ import uniffi.mediagram_core.ProfileOutcome
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -138,12 +139,31 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(Profile(kid.id, "Kim", kids = true, kidsAge = 6u, parentId = admin.id), kid)
             assertEquals(ProfileOutcome.Done, core.unlockProfile(kid.id, ""))
             assertEquals(ProfileOutcome.Done, core.setKidsAge(admin.id, PIN, kid.id, 12u))
             assertEquals(12.toUByte(), core.profiles().single { it.id == kid.id }.kidsAge)
+        }
+    }
+
+    @Test
+    fun aKidsDailyLimitIsSetClearedAndRefusedLikeItsAge() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Zed", 6u, 0u))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, 45u))
+            val kid = core.profiles().single { it.name == "Kim" }
+            assertEquals(45u, kid.dailyLimit)
+            assertEquals(ProfileOutcome.Done, core.setDailyLimit(admin.id, PIN, kid.id, 90u))
+            assertEquals(90u, core.profiles().single { it.id == kid.id }.dailyLimit)
+            assertEquals(ProfileOutcome.Invalid, core.setDailyLimit(admin.id, PIN, kid.id, 1441u))
+            assertEquals(ProfileOutcome.WrongPin, core.setDailyLimit(admin.id, "0000", kid.id, 30u))
+            assertEquals(ProfileOutcome.Done, core.setDailyLimit(admin.id, PIN, kid.id, null))
+            assertNull(core.profiles().single { it.id == kid.id }.dailyLimit)
+            assertNull(core.profiles().single { it.id == admin.id }.dailyLimit)
         }
     }
 
@@ -153,10 +173,10 @@ abstract class CoreContract {
         runBlocking {
             val core = core()
             val admin = core.freshProfile("Ada")
-            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Kim", 7u))
-            assertEquals(ProfileOutcome.NameTaken, core.createKid("nobody", PIN, " ADA ", 6u))
-            assertEquals(ProfileOutcome.NotFound, core.createKid("nobody", PIN, "Kim", 6u))
-            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "12a4", "Kim", 6u))
+            assertEquals(ProfileOutcome.Invalid, core.createKid(admin.id, PIN, "Kim", 7u, null))
+            assertEquals(ProfileOutcome.NameTaken, core.createKid("nobody", PIN, " ADA ", 6u, null))
+            assertEquals(ProfileOutcome.NotFound, core.createKid("nobody", PIN, "Kim", 6u, null))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "12a4", "Kim", 6u, null))
             assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, admin.id))
         }
     }
@@ -180,8 +200,8 @@ abstract class CoreContract {
             val core = core()
             val admin = core.freshProfile("Ada")
             val parent = core.freshProfile("Bo")
-            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u))
-            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Lou", 12u))
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null))
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Lou", 12u, null))
 
             assertEquals(ProfileOutcome.Done, core.deleteProfile(admin.id, PIN, parent.id))
 
@@ -206,7 +226,7 @@ abstract class CoreContract {
             val core = core()
             val admin = core.freshProfile("Ada")
             assertEquals(ProfileOutcome.WrongPin, core.unlockProfile(admin.id, "12a4"))
-            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "", "Kim", 6u))
+            assertEquals(ProfileOutcome.WrongPin, core.createKid(admin.id, "", "Kim", 6u, null))
             assertEquals(ProfileOutcome.Done, core.unlockProfile(admin.id, PIN))
         }
     }
@@ -234,11 +254,11 @@ abstract class CoreContract {
             val core = core()
             val admin = core.freshProfile("Ada")
             val parent = core.freshProfile("Bo")
-            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u))
+            assertEquals(ProfileOutcome.Done, core.createKid(parent.id, PIN, "Kim", 12u, null))
             val kid = core.profiles().single { it.name == "Kim" }
             assertEquals(ProfileOutcome.NotAllowed, core.setKidsAge(admin.id, PIN, kid.id, 6u))
             assertEquals(ProfileOutcome.NotAllowed, core.deleteProfile(admin.id, PIN, kid.id))
-            assertEquals(ProfileOutcome.NotAllowed, core.createKid(kid.id, "", "Lou", 6u))
+            assertEquals(ProfileOutcome.NotAllowed, core.createKid(kid.id, "", "Lou", 6u, null))
             assertEquals(ProfileOutcome.Done, core.setKidsAge(parent.id, PIN, kid.id, 6u))
             assertEquals(ProfileOutcome.Done, core.deleteProfile(parent.id, PIN, kid.id))
             assertEquals(listOf("Ada", "Bo"), core.profiles().map { it.name })

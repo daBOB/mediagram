@@ -1,0 +1,27 @@
+{
+  "words": {
+    "label": "Daily limit",
+    "warning": "Only a few minutes of watching left today. This one can finish.",
+    "out": "That's all the watching for today. See you tomorrow."
+  },
+  "choices": [
+    { "minutes": null, "label": "No limit" },
+    { "minutes": 30, "label": "30 min" },
+    { "minutes": 45, "label": "45 min" },
+    { "minutes": 60, "label": "1 h" },
+    { "minutes": 90, "label": "1 h 30 min" },
+    { "minutes": 120, "label": "2 h" },
+    { "minutes": 180, "label": "3 h" }
+  ],
+  "warnSeconds": 300,
+  "cases": [
+    { "name": "no limit is free, however much was watched", "limitMinutes": null, "watchedSeconds": 99999, "expect": { "state": "free", "leftSeconds": null } },
+    { "name": "nothing watched yet leaves the whole limit", "limitMinutes": 60, "watchedSeconds": 0, "expect": { "state": "ok", "leftSeconds": 3600 } },
+    { "name": "just over five minutes left is not yet the warning", "limitMinutes": 60, "watchedSeconds": 3299.5, "expect": { "state": "ok", "leftSeconds": 300.5 } },
+    { "name": "exactly five minutes left is the warning", "limitMinutes": 60, "watchedSeconds": 3300, "expect": { "state": "warn", "leftSeconds": 300 } },
+    { "name": "half a second left is still the warning", "limitMinutes": 60, "watchedSeconds": 3599.5, "expect": { "state": "warn", "leftSeconds": 0.5 } },
+    { "name": "the limit reached exactly is out", "limitMinutes": 60, "watchedSeconds": 3600, "expect": { "state": "out", "leftSeconds": 0 } },
+    { "name": "past the limit is out, with nothing left rather than less than nothing", "limitMinutes": 60, "watchedSeconds": 5000, "expect": { "state": "out", "leftSeconds": 0 } },
+    { "name": "a short limit starts whole too", "limitMinutes": 30, "watchedSeconds": 0, "expect": { "state": "ok", "leftSeconds": 1800 } }
+  ]
+}

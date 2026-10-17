@@ -33,6 +33,7 @@ import { exportCollections, exportTitleMarks, exportWatchlist, importCollections
 import { exportPreferences, importPreferences, isSyncedPreference, preferenceStamp } from "./preferences-record";
 import { exportWatched, importUnwatched, importWatched } from "./watched-exchange";
 import { exportProgress, importProgress, tickKey, writeProgress, type Ticks } from "./stats-recorder";
+import { readToday, type Today } from "./watched-today";
 import { exportStats, importStats, NO_LIBRARY, readStats } from "./stats-exchange";
 
 export interface Progress {
@@ -205,6 +206,11 @@ export class WatchState {
   /** This profile's viewing stats and achievements, as of now on this machine's calendar. */
   stats(profileId: string, library = NO_LIBRARY) {
     return readStats(this.db, profileId, Date.now(), library);
+  }
+
+  /** The profile's daily limit and what it has watched today, or `null` for no such profile. */
+  today(profileId: string, limitedOnly = false): Today | null {
+    return readToday(this.db, profileId, Date.now(), limitedOnly);
   }
 
   /** Forgets a position: started again, or watched to the end. */

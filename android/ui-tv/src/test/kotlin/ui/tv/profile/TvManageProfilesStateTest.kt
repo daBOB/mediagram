@@ -41,8 +41,9 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age -> calls += "addKid $name $age" },
+            onAddKid = { name, age, daily -> calls += "addKid $name $age $daily" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
+            onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
             onRemove = { calls += "remove $it" },
             onAddGrownUp = { calls += "addGrownUp $it" },
             onChangePin = { calls += "pin $it" },
@@ -81,20 +82,43 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         compose.onNodeWithText("As Bea").assertExists()
         compose.onNodeWithText("Grown-ups").assertDoesNotExist()
         compose.onNodeWithText("Add a grown-up").assertDoesNotExist()
-        compose.onNodeWithText("Tom · FSK 12").assertIsFocused()
+        compose.onNodeWithText("Tom · FSK 12 · No limit").assertIsFocused()
         press(Key.DirectionCenter)
         // The current limit holds the remote; the other is one step up.
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(isDialog())).assertIsFocused()
         press(Key.DirectionUp)
         press(Key.DirectionCenter)
         assertEquals(listOf("age t 6"), calls)
-        compose.onNodeWithText("Tom · FSK 12").assertIsFocused()
+        compose.onNodeWithText("Tom · FSK 12 · No limit").assertIsFocused()
+    }
+
+    @Test
+    fun aKidsDailyLimitOpensItsOwnDialogHoldingTheCurrentChoice() {
+        val limited = tom.copy(dailyLimit = 90)
+        manage(ManageUiState.Managing(bea, emptyList(), listOf(limited)))
+        compose.onNodeWithText("Tom · FSK 12 · 1 h 30 min").assertIsFocused()
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        compose.onNode(hasText("Daily limit · 1 h 30 min") and hasAnyAncestor(isDialog())).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNode(hasText("1 h 30 min") and hasAnyAncestor(isDialog())).assertIsFocused()
+        press(Key.DirectionCenter)
+        assertEquals(emptyList(), calls, "the choice already set sends nothing")
+        compose.onNodeWithText("Tom · FSK 12 · 1 h 30 min").assertIsFocused()
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        press(Key.DirectionUp)
+        press(Key.DirectionCenter)
+        assertEquals(listOf("daily t 60"), calls)
     }
 
     @Test
     fun aKidIsRemovedOnlyOnceTheQuestionIsAnswered() {
         manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
         press(Key.DirectionCenter)
+        // FSK 12 -> Daily limit -> Remove.
+        press(Key.DirectionDown)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
         compose.onNodeWithText("Remove Tom and everything they have watched?").assertExists()
@@ -128,7 +152,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     }
 
     @Test
-    fun addingAKidAsksItsNameThenItsLimitStartingOnSix() {
+    fun addingAKidAsksItsNameThenItsLimitStartingOnSixThenItsDailyLimitStartingOnNone() {
         manage(ManageUiState.Managing(bea, emptyList(), emptyList()))
         compose.onNodeWithText("Add a kid").assertIsFocused()
         press(Key.DirectionCenter)
@@ -137,7 +161,11 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         compose.waitForIdle()
         compose.onNodeWithTag(tvKidsLimitTag(6)).assertIsFocused()
         press(Key.DirectionCenter)
-        assertEquals(listOf("addKid Lina 6"), calls)
+        compose.onNodeWithTag(tvDailyLimitTag(null)).assertIsFocused()
+        assertEquals(emptyList(), calls)
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        assertEquals(listOf("addKid Lina 6 30"), calls)
         compose.onNodeWithText("Add a kid").assertExists()
     }
 

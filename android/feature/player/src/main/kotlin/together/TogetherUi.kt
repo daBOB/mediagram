@@ -42,12 +42,12 @@ internal class TogetherView(
     val ui: StateFlow<TogetherUi> = _ui.asStateFlow()
     private var hide: Job? = null
 
-    fun show(text: String) {
+    fun show(text: String, holdMs: Long = NOTICE_MS) {
         _ui.update { it.copy(notice = text) }
         hide?.cancel()
         hide =
             scope.launch {
-                delay(NOTICE_MS)
+                delay(holdMs)
                 _ui.update { it.copy(notice = null) }
             }
     }

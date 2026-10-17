@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.125.0 — a daily watch limit for kids
+
+**Added** (web player, core, Android phone, tablet and TV)
+
+- **A kid profile can have a daily watch limit.** In Manage profiles, beside the age limit and when a kid is added: No limit, 30 min, 45 min, 1 h, 1 h 30 min, 2 h or 3 h, set by whoever may set the kid's age limit, with their PIN. It is the same every day and starts again at local midnight.
+- **Every screen spends the one budget.** The time counted is what the viewing stats already record, summed over every device for today; another device's minutes arrive with its next sync round, up to about five minutes late.
+- **Five minutes before the end**, once per title, over the picture: "Only a few minutes of watching left today. This one can finish."
+- **At zero nothing new opens** — a shelf, a resume, Next up, the next episode, joining watch together — and the viewer stays where they were with "That's all the watching for today. See you tomorrow." What is already playing plays to its end. A household rule like the age filter, not a lock.
+- The rule, words and choices are written once in `web/public/lib/daily-limit.js`, ported to `DailyLimit.kt`, and held to `web/test/fixtures/watch-state/daily-limit.json`. The limit syncs as `dailyLimit` on the kid (web state v14, core state v10; sync format still 1). New routes: `PUT /api/profiles/:id/daily-limit`, `GET /api/profiles/:id/today`.
+
 ## 0.124.1 — Up from Continue reaches the bar
 
 **Fixed** (Android TV)

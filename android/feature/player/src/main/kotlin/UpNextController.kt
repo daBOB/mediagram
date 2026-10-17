@@ -6,6 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import model.MediaSet
 
 /**
@@ -25,6 +26,9 @@ class UpNextController(
     private val session: PlayerSession,
     private val catalogRepository: CatalogRepository,
     private val openSet: StateFlow<MediaSet?>,
+    private val limit: PlayGate = PlayGate.Open,
+    /** The daily limit refused a switch; the open title carries on. */
+    private val onRefused: () -> Unit = {},
 ) {
     private val _state = MutableStateFlow(UpNextUiState())
     val state: StateFlow<UpNextUiState> = _state.asStateFlow()
@@ -50,6 +54,7 @@ class UpNextController(
     private var tickerJob: Job? = null
     private var countdownJob: Job? = null
     private var resolveJob: Job? = null
+    private var switchJob: Job? = null
 
     /** A new title is open; works out what follows it, and — if this is the title a gated switch was headed to — starts the gate poll. */
     fun startTitle(setId: String, run: List<String>) {
@@ -127,7 +132,7 @@ class UpNextController(
     }
 
     /** The title a watch-together session moved to, asked for as Next asks: at once, so a countdown here stops. */
-    fun requestTitle(id: String) = switchTo(id, gate = false, run.takeIf { id in it }.orEmpty())
+    fun requestTitle(id: String, onRefused: () -> Unit = {}) = switchTo(id, gate = false, run.takeIf { id in it }.orEmpty(), onRefused)
 
     /** Remembered for this title only, so watching the last moments again does not start the countdown a second time. */
     fun cancel() {
@@ -140,6 +145,7 @@ class UpNextController(
         tickerJob?.cancel(); tickerJob = null
         stopCountdown()
         resolveJob?.cancel(); resolveJob = null
+        switchJob?.cancel(); switchJob = null
         run = emptyList(); nextId = null; nextSet = null; nextTitleLine = ""; ended = false
         switcher.stop()
         _state.value = UpNextUiState()
@@ -176,7 +182,25 @@ class UpNextController(
         countdownJob?.cancel(); countdownJob = null; countdownLeft = null
     }
 
-    private fun switchTo(id: String, gate: Boolean, run: List<String> = this.run) {
+    /** Every in-player switch — Next, the countdown, the episode list, a joined session's move — ends here, so the daily limit is asked here. */
+    private fun switchTo(id: String, gate: Boolean, run: List<String> = this.run, refused: () -> Unit = {}) {
+        stopCountdown()
+        if (!limit.applies()) return switchNow(id, gate, run)
+        switchJob?.cancel()
+        switchJob = scope.launch {
+            if (limit.mayOpen()) switchNow(id, gate, run) else refuse(refused)
+        }
+    }
+
+    /** Nothing about the title playing changes: it plays to its end, and its countdown does not start over. */
+    private fun refuse(refused: () -> Unit) {
+        session.openSetId?.let { cancelledIds += it }
+        evaluate()
+        onRefused()
+        refused()
+    }
+
+    private fun switchNow(id: String, gate: Boolean, run: List<String>) {
         stopCountdown()
         ended = false
         // The existing save path: wherever the ending title is, saved as it

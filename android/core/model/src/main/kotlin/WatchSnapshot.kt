@@ -48,6 +48,8 @@ data class Profile(
     val admin: Boolean = false,
     /** Whether a PIN is set. Never the PIN or its hash — the core hands out neither. */
     val hasPin: Boolean = false,
+    /** A kid's watching limit per day, in minutes; null is none, and always null on a grown-up. */
+    val dailyLimit: Int? = null,
 ) {
     /**
      * The FSK this kid sees up to. Anything but 6 reads as 12, the limit

@@ -1253,5 +1253,291 @@
       ],
       "kids": []
     }
+  },
+  {
+    "name": "a daily limit changed on two devices: the newer change wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": 60,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": 30,
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "dailyLimit": {
+            "minutes": 30,
+            "updatedAt": 2000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a daily limit taken off later beats the limit it replaced, and is kept so it goes on winning",
+    "records": [
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": 60,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": null,
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "dailyLimit": {
+            "minutes": null,
+            "updatedAt": 2000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a daily limit changed at the same moment on two devices: the larger device id wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": 60,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": null,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "dailyLimit": {
+            "minutes": null,
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a document that says no daily limit does not unsay one another sets",
+    "records": [
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "dailyLimit": {
+              "minutes": 45,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "dailyLimit": {
+            "minutes": 45,
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a grown-up is never given a daily limit",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "dailyLimit": {
+              "minutes": 60,
+              "updatedAt": 5
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André"
+        }
+      ],
+      "kids": []
+    }
   }
 ]

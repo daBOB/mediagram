@@ -3,6 +3,7 @@ package player.together
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import model.DailyLimitWords
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -67,6 +68,21 @@ class TogetherControllerTitleTest {
 
             assertTrue(rig.opened.isEmpty())
             assertEquals(LEFT_NOT_HERE, rig.controller.ui.value.notice)
+            assertEquals(listOf(TV), rig.message(950).members)
+        }
+
+    @Test
+    fun aSessionMoveTheDailyLimitRefusesIsWhereThisScreenLeavesAndItIsNotAskedAgain() =
+        runTest {
+            val rig = TogetherRig(this).joined()
+            rig.refusing = true
+
+            rig.push(950, rig.message(950).copy(set = EP2, pos = 0.0, at = rig.now(), by = TV.screen))
+            assertEquals(DailyLimitWords.OUT, rig.controller.ui.value.notice)
+            advanceTimeBy(DRIFT_CHECK_MS * 3)
+            runCurrent()
+
+            assertEquals(listOf(EP2), rig.opened)
             assertEquals(listOf(TV), rig.message(950).members)
         }
 }

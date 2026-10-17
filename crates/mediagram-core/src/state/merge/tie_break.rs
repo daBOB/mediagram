@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, KidsAge, ListRow, PinRecord, ProgressRow, SyncPreference,
+    CollectionRow, DailyLimit, DayStatRow, KidsAge, ListRow, PinRecord, ProgressRow, SyncPreference,
     TitleStatRow, UnwatchedRow, WatchedRow,
 };
 
@@ -40,7 +40,8 @@ timestamped_by_own_field!(
     SyncPreference,
     TitleStatRow,
     DayStatRow,
-    KidsAge
+    KidsAge,
+    DailyLimit
 );
 
 /// Keeps whichever of two rows should win.

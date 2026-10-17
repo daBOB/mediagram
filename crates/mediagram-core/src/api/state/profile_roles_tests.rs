@@ -33,7 +33,7 @@ async fn wrong_pins_given_to_different_calls_add_up_to_one_wait() {
     let admin = household(&core).await;
     let made = core
         .clone()
-        .create_kid(admin.clone(), PIN.into(), "Mia".into(), 6)
+        .create_kid(admin.clone(), PIN.into(), "Mia".into(), 6, None)
         .await;
     assert_eq!(made, Done);
     let mia = named(&core, "Mia").await.id;
@@ -42,7 +42,7 @@ async fn wrong_pins_given_to_different_calls_add_up_to_one_wait() {
     let answers = [
         p().create_grown_up(a(), wrong(), "Bea".into(), "1111".into())
             .await,
-        p().create_kid(a(), wrong(), "Leo".into(), 12).await,
+        p().create_kid(a(), wrong(), "Leo".into(), 12, None).await,
         p().set_pin(a(), wrong(), a(), "2222".into()).await,
         p().set_kids_age(a(), wrong(), mia.clone(), 12).await,
         p().delete_profile(a(), wrong(), mia).await,

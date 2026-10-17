@@ -4,6 +4,7 @@ import data.LiveSession
 import data.TOGETHER_UNREACHABLE
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import model.DailyLimitWords
 import model.together.PlaybackChange
 import model.together.changeOf
 import model.together.follow
@@ -60,7 +61,7 @@ internal suspend fun TogetherController.keepInStep() {
 /**
  * Brings the player to the session, or opens the title it moved to: asked
  * again on every check until it has opened, as the web player does. One
- * this profile may not see is where this screen leaves.
+ * this profile may not see, or may not open for today's limit, is where this screen leaves.
  */
 private fun TogetherController.apply(drifting: Boolean = false) {
     val session = current ?: return
@@ -70,7 +71,9 @@ private fun TogetherController.apply(drifting: Boolean = false) {
     scope.launch {
         val here = titleOf(set) != null
         if (asked != generation || expecting != set) return@launch
-        if (here) openTitle(set) else leave(LEFT_NOT_HERE)
+        if (!here) return@launch leave(LEFT_NOT_HERE)
+        // A move the daily limit refuses is where this screen leaves, as one above the age limit is.
+        openTitle(set) { if (asked == generation && expecting == set) leave(DailyLimitWords.OUT) }
     }
 }
 

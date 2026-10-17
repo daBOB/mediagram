@@ -1,5 +1,5 @@
 /**
- * Manage profiles: who there is, a kid's age limit, and grown-ups' PINs.
+ * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
  *
  * Opened from the picker only — entering a profile never opens it, so a
  * device left on a grown-up's profile does not hand a child these controls.
@@ -16,6 +16,8 @@ import { el } from "./dom.js";
 import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
+import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
+import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
 import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 
 /** The two limits a kid can have. A new kid starts at the stricter; its parent raises it. */
@@ -152,16 +154,21 @@ export function openManage(parent, onClose) {
         })));
     }
     const newLimit = limitChoice(LIMITS[0], "Age limit for the new kid");
+    const newDaily = dailyChoice(null, `${DAILY_LIMIT_WORDS.label} for the new kid`);
     body.append(section("Kids",
       ...kids.map((kid) => {
         const limit = limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`);
         limit.addEventListener("change", async () =>
           report(await api.setKidsAge(session.actorId, session.pin, kid.id, Number(limit.value))));
-        return row(kid.name, limit,
+        const daily = dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`);
+        daily.addEventListener("change", async () =>
+          report(await api.setDailyLimit(session.actorId, session.pin, kid.id, minutesOf(daily))));
+        return row(kid.name, limit, daily,
           pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)));
       }),
-      addForm("Add a kid", [newLimit], async (name) =>
-        report(await api.create(session.actorId, session.pin, { name, kids: true, kidsAge: Number(newLimit.value) })))));
+      addForm("Add a kid", [newLimit, newDaily], async (name) =>
+        report(await api.create(session.actorId, session.pin,
+          { name, kids: true, kidsAge: Number(newLimit.value), dailyLimit: minutesOf(newDaily) })))));
     body.append(section("Your PIN", pill("Change your PIN", () => void newPin(actor))));
   }
 

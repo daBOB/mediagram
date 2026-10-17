@@ -72,6 +72,9 @@ export const remove = (actorId, pin, id) => change("DELETE", at(id), { actorId, 
 /** Sets the kid `id`'s limit to `age`, 6 or 12. */
 export const setKidsAge = (actorId, pin, id, age) => change("PUT", at(id, "/kids-age"), { actorId, pin, age });
 
+/** Sets the kid `id`'s daily watching limit to `minutes`, or none for `null`. */
+export const setDailyLimit = (actorId, pin, id, minutes) => change("PUT", at(id, "/daily-limit"), { actorId, pin, minutes });
+
 /**
  * A grown-up saying who they are: their PIN, or — for one from before PINs —
  * the one they choose now, which becomes theirs.

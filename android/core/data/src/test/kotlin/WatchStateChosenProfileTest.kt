@@ -46,7 +46,7 @@ class WatchStateChosenProfileTest {
         runTest {
             repository.reload()
             assertEquals(ProfileOutcome.Done, core.claimAdmin("a", "1234"))
-            assertEquals(ProfileOutcome.Done, core.createKid("a", "1234", "Bea", 12u))
+            assertEquals(ProfileOutcome.Done, core.createKid("a", "1234", "Bea", 12u, null))
             repository.reload()
             val created = repository.profiles.value.single { it.name == "Bea" }
 

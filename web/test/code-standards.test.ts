@@ -67,6 +67,10 @@ const ROOT = join(import.meta.dir, "..");
  * `src/state/sync-record.ts`, once `parseRows` moved to `record-scalars.ts`.
  * Lowered the same day for `src/state/store.ts`, once its foreign-key check
  * read the SQLite code through `errorCode`.
+ * Raised 2026-10-17 for `src/state/store.ts`, by 6, and `src/state/profiles-manage.ts`, to 212,
+ * for a kid's daily limit (`today`, `setDailyLimit`); and `public/app.js`, by 3, and
+ * `public/lib/watch-state.js`, by 7, for the open gate and hearing the count back;
+ * `public/app.js` again, by 4, so a refused open drops its pending Join and answers whether it opened.
  * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
  * push sink, its recheck timer and its route. Raised the same day for `app.js`,
  * by 2, to hand the library session watch together's share of the event stream.
@@ -81,7 +85,7 @@ const ROOT = join(import.meta.dir, "..");
  * announced as carrying on from this profile's own.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 698,
+  "public/app.js": 705,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
@@ -92,7 +96,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
-  "public/lib/watch-state.js": 478,
+  "public/lib/watch-state.js": 485,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 625,
   "public/styles/shell.css": 257,
@@ -105,8 +109,9 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
+  "src/state/profiles-manage.ts": 212,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 723,
+  "src/state/store.ts": 729,
   "src/state/sync-record.ts": 293,
   "src/transcode/registry.ts": 338,
 };

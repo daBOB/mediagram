@@ -4,13 +4,14 @@ import catalog.profile.ManageProfilesViewModel
 
 /**
  * What Manage profiles can ask for — the phone's screen and the television's
- * answer the same seven, so they are one bundle here: [ManageProfilesViewModel]'s
+ * answer the same eight, so they are one bundle here: [ManageProfilesViewModel]'s
  * actions ([manageActions]), or a test's record of them.
  */
 class ManageActions(
     val onActAs: (id: String) -> Unit,
-    val onAddKid: (name: String, age: Int) -> Unit,
+    val onAddKid: (name: String, age: Int, dailyLimit: Int?) -> Unit,
     val onSetKidsAge: (id: String, age: Int) -> Unit,
+    val onSetDailyLimit: (id: String, minutes: Int?) -> Unit,
     val onRemove: (id: String) -> Unit,
     val onAddGrownUp: (name: String) -> Unit,
     val onChangePin: (id: String) -> Unit,
@@ -18,4 +19,4 @@ class ManageActions(
 )
 
 fun ManageProfilesViewModel.manageActions(): ManageActions =
-    ManageActions(::actAs, ::addKid, ::setKidsAge, ::remove, ::addGrownUp, ::changePin, ::close)
+    ManageActions(::actAs, ::addKid, ::setKidsAge, ::setDailyLimit, ::remove, ::addGrownUp, ::changePin, ::close)

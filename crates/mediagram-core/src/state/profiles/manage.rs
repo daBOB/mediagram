@@ -27,6 +27,7 @@ use super::{ProfileOutcome::*, pin};
 use crate::state::sync;
 
 mod checks;
+mod daily_limit;
 
 fn valid_age(age: u8) -> bool {
     age == 6 || age == 12
@@ -82,8 +83,15 @@ impl ProfileManager<'_> {
     }
 
     /// A kid, belonging to whichever grown-up adds it, with its own limit.
-    pub fn create_kid(&mut self, actor_id: &str, pin: &str, name: &str, kids_age: u8) -> Answer {
-        if !valid_age(kids_age) {
+    pub fn create_kid(
+        &mut self,
+        actor_id: &str,
+        pin: &str,
+        name: &str,
+        kids_age: u8,
+        daily_limit: Option<u16>,
+    ) -> Answer {
+        if !valid_age(kids_age) || !daily_limit.is_none_or(daily_limit::valid_minutes) {
             return Ok(Invalid);
         }
         if let Some(refused) = self.unusable(name)? {
@@ -93,7 +101,7 @@ impl ProfileManager<'_> {
             return Ok(refused);
         }
         let parent_id = Some(actor_id);
-        let role = NewProfile { kids: true, kids_age: Some(kids_age), parent_id, ..Default::default() };
+        let role = NewProfile { kids: true, kids_age: Some(kids_age), daily_limit, parent_id, ..Default::default() };
         self.insert(name, &role)
     }
 

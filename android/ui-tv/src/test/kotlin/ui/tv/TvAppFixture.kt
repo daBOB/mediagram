@@ -36,6 +36,7 @@ import playback.CacheVolume
 import playback.HeldSetsQuery
 import playback.INTERNAL_VOLUME_ID
 import playback.InMemoryLanCacheSettings
+import player.LibraryPlayGate
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
 import setup.AppearanceViewModel
@@ -326,6 +327,8 @@ internal class TvAppFixture(
                 // through hiltViewModel() too, films only — same reason.
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
+                // The library's daily-limit door, resolved beside the catalog on every draw.
+                LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(), the
                 // same reason every entry here exists — and every library test reaches it.
                 AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),

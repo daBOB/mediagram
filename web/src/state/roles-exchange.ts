@@ -28,6 +28,8 @@ export function exportRoles(db: Database | null): Map<string, RoleKeys> {
       // nothing of limits then goes on treating this viewer as a kid.
       keys.kids = true;
       keys.kidsAge = { age: row.kidsAge === 6 ? 6 : 12, updatedAt: row.kidsAgeUpdatedAt };
+      // Said once it has been dated: a never-set limit (0) says nothing.
+      if (row.dailyLimitUpdatedAt > 0) keys.dailyLimit = { minutes: row.dailyLimit, updatedAt: row.dailyLimitUpdatedAt };
     }
     // By name, because a name is what sync knows a viewer by; a parent
     // removed here is simply not said.
@@ -60,6 +62,12 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
     if (limit && newer(limit.updatedAt, row.kidsAgeUpdatedAt, limit.age !== row.kidsAge)) {
       db.query("UPDATE profiles SET kids_age = ?2, kids_age_updated_at = ?3 WHERE id = ?1")
         .run(row.id, limit.age, limit.updatedAt);
+      changed += 1;
+    }
+    const daily = profile.dailyLimit;
+    if (daily && newer(daily.updatedAt, row.dailyLimitUpdatedAt, daily.minutes !== row.dailyLimit)) {
+      db.query("UPDATE profiles SET daily_limit = ?2, daily_limit_updated_at = ?3 WHERE id = ?1")
+        .run(row.id, daily.minutes, daily.updatedAt);
       changed += 1;
     }
     const pin = profile.pin;

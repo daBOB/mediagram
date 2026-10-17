@@ -14,6 +14,7 @@ class PlayerSession(
     private val scope: CoroutineScope,
     private val handle: PlayerHandle,
     private val recorder: ProgressRecorder,
+    private val onTick: () -> Unit = {},
 ) {
     /** Which set [save] writes against; `null` between titles. */
     var openSetId: String? = null
@@ -69,6 +70,7 @@ class PlayerSession(
             while (true) {
                 delay(TICK_MS)
                 save()
+                onTick()
             }
         }
     }

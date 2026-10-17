@@ -17,7 +17,8 @@ import type { WatchState } from "./store";
 
 const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
-const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age)$`);
+const TODAY = new RegExp(`^/api/profiles/${P}/today$`);
+const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age|daily-limit)$`);
 
 /** A wrong PIN and a refused role are both 403; a taken name, a missing PIN and an unheard household all 409; the body says which. */
 const CODES: Record<Refusal, number> = {
@@ -37,17 +38,23 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
   const list = PROFILES.test(path);
   const named = PROFILE.exec(path);
   const acting = ACTION.exec(path);
-  if (!list && named === null && acting === null) return null;
+  const today = TODAY.exec(path);
+  if (!list && named === null && acting === null && today === null) return null;
 
   // Who watches this library: the one question askable before anyone has
   // said who they are. It says whether a profile has a PIN, never what, and
   // whether the household has been heard — until then no first profile is made.
   if (method === "GET" || method === "HEAD") {
+    if (today !== null) {
+      const seen = state.today(today[1]!);
+      return seen === null ? bodiless(404) : json(JSON.stringify(seen), method === "HEAD");
+    }
     if (!list) return bodiless(405);
     const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles() };
     return json(JSON.stringify(said), method === "HEAD");
   }
 
+  if (today !== null) return bodiless(405);
   const said = jsonBody(request.body) ?? {};
   const actorId = typeof said.actorId === "string" ? said.actorId : "";
   const manage = state.manage();
@@ -58,7 +65,7 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
     if (said.actorId === undefined) return answer(manage.createFirst(said.name, said.newPin));
     // Only a literal true: a restricting flag is not switched on by accident.
     return answer(said.kids === true
-      ? manage.createKid(actorId, said.pin, said.name, said.kidsAge)
+      ? manage.createKid(actorId, said.pin, said.name, said.kidsAge, said.dailyLimit ?? null)
       : manage.createGrownUp(actorId, said.pin, said.name, said.newPin));
   }
   if (named !== null) {
@@ -75,9 +82,17 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       return answer(manage.setPin(actorId, said.pin, id, said.newPin));
     case "PUT kids-age":
       return answer(manage.setKidsAge(actorId, said.pin, id, said.age));
+    case "PUT daily-limit":
+      return answer(manage.setDailyLimit(actorId, said.pin, id, said.minutes));
     default:
       return bodiless(405);
   }
+}
+
+/** The answer to a position write: a limited kid hears how much is left, anyone else the 204 they always did. */
+export function leftToday(state: WatchState, profileId: string): PlayerResponse {
+  const today = state.today(profileId, true);
+  return today?.limitMinutes == null ? bodiless(204) : json(JSON.stringify(today), false);
 }
 
 /** 204 for done, 201 and the profile for one made, a reason for a refusal. */

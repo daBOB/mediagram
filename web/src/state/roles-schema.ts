@@ -34,5 +34,15 @@ export const PIN_PROOF_GROUP: readonly string[] = [
   `ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0`,
 ];
 
-/** Both, in order, as `schema.ts` lists them. */
-export const ROLES_GROUPS: readonly (readonly string[])[] = [ROLES_GROUP, PIN_PROOF_GROUP];
+/**
+ * v13 -> v14: a kid's daily watching limit in minutes, `NULL` for none, dated
+ * like the age limit so the newest choice wins across devices — a `NULL`
+ * included, or "no limit" could never beat an older limit.
+ */
+export const DAILY_LIMIT_GROUP: readonly string[] = [
+  `ALTER TABLE profiles ADD COLUMN daily_limit INTEGER`,
+  `ALTER TABLE profiles ADD COLUMN daily_limit_updated_at INTEGER NOT NULL DEFAULT 0`,
+];
+
+/** All, in order, as `schema.ts` lists them. */
+export const ROLES_GROUPS: readonly (readonly string[])[] = [ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP];

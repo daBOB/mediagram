@@ -62,5 +62,6 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
         viewModelScope.launch { choicesController.resolve(setId) }
         upNextController.startTitle(setId, run)
         preloadController.startTitle(setId, run, handPicked)
+        limitOpened()
     }
 }

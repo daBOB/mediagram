@@ -51,11 +51,12 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
-import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener } from "./lib/together-now.js";
+import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener, takeJoin } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
 import { collectionOf, playsNext, requestPreload } from "./lib/playback/plays-next.js";
 import { loadPlayer } from "./lib/playback/player-loader.js";
+import * as dailyLimit from "./lib/daily-limit-gate.js";
 
 const main = document.getElementById("main");
 const player = document.getElementById("player");
@@ -290,7 +291,7 @@ function play(set, queue = null, options = {}) {
   const freshResume = state.refreshState().then(() =>
     request === pendingOpen ? resumeAt(state.progressOf(set.setId)) : null,
   );
-  void openTitle(set, queue, { ...options, freshResume }, request);
+  return openTitle(set, queue, { ...options, freshResume }, request);
 }
 
 async function openTitle(set, queue, options, request) {
@@ -302,9 +303,13 @@ async function openTitle(set, queue, options, request) {
     ({ openPlayer } = await loadPlayer());
   } catch (error) {
     if (request === pendingOpen) main.append(el("p", "error", `Could not start the player: ${error.message}`));
-    return;
+    return true;
   }
-  if (request !== pendingOpen) return;
+  // Every way to open a title ends here, so the daily limit is asked once, here.
+  if (request !== pendingOpen) return true;
+  const mayOpen = await dailyLimit.mayOpen();
+  if (!mayOpen) takeJoin(); // a refused Join must not stay armed for the next title opened
+  if (request !== pendingOpen || !mayOpen) return mayOpen;
 
   // `autoplay` is set only by the player handing over to what follows, and
   // says which kind of start that is. Opening a title from a shelf never
@@ -320,6 +325,8 @@ async function openTitle(set, queue, options, request) {
     autoplay,
     freshResume,
   });
+  dailyLimit.opened(freshResume);
+  return true;
 }
 
 /**

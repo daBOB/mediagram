@@ -49,7 +49,7 @@ screen that forgets to hide a button still cannot do the thing.
 | Reset another grown-up's PIN | yes | – | – |
 | Change own PIN | yes | yes | – |
 | Create a kid under themselves (name + FSK 6 or 12) | yes | yes | – |
-| Change the limit of, or remove, their own kids | yes | yes | – |
+| Change the age limit or the daily watch limit of, or remove, their own kids | yes | yes | – |
 | Mark an unrated title "from 6" / "from 12" | yes | yes | – |
 
 - **A kid belongs to exactly one grown-up**, the one who created it, and only
@@ -143,6 +143,7 @@ that predates them drops a key it does not know and keeps merging the rest.
 admin?: { claimedAt: number };
 kids?: true;                                   // still written — see below
 kidsAge?: { age: 6 | 12; updatedAt: number };
+dailyLimit?: { minutes: number | null; updatedAt: number }; // added 2026-10-17, see system-architecture.md "Daily watch limit"
 parent?: string;                               // the parent's normalised name
 pin?: { hash: string; salt: string; updatedAt: number };
 ```
@@ -151,7 +152,7 @@ and `ListRow`, for a Kids mark only, gains `age?: 6`.
 
 How each merges in `merge.ts` / `merge.rs`:
 
-- **`kidsAge`, `pin`: the newest `updatedAt` wins**, ties broken by device id
+- **`kidsAge`, `dailyLimit`, `pin`: the newest `updatedAt` wins**, ties broken by device id
   like every other row. Not sticky the way `kids` is: a parent lowers a
   limit as often as they raise it, and an admin resets a PIN.
 - **`kids: true` is still written on every kid.** A device on an older build
@@ -239,6 +240,8 @@ must be on Android.
 | `POST /api/profiles/:id/claim-admin` | `{ pin }` (sets it if the profile has none) | 204 |
 | `PUT /api/profiles/:id/pin` | `{ actorId, pin, newPin }` | 204 |
 | `PUT /api/profiles/:id/kids-age` | `{ actorId, pin, age }` | 204 |
+| `PUT /api/profiles/:id/daily-limit` | `{ actorId, pin, minutes }` (whole 1–1440, or `null`) | 204 (added 2026-10-17) |
+| `GET /api/profiles/:id/today` | – | `{ limitMinutes, watchedSeconds }` (added 2026-10-17) |
 | `PUT /api/kids/:setId` | `{ age: 6 \| 12 }` | 204, as today |
 
 A wrong PIN is 403, a waiting player 429 with `Retry-After`, a refused role

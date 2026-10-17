@@ -89,12 +89,41 @@ test("a new kid starts at FSK 6 unless its parent picks 12", async () => {
   expect(descendants(limit()).map((node) => node.value)).toEqual(["6", "12"]);
   add("Ben").fire("submit");
   await settle();
-  expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ben", kids: true, kidsAge: 6 }]);
+  expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ben", kids: true, kidsAge: 6, dailyLimit: null }]);
 
   limit().value = "12";
   add("Ida").fire("submit");
   await settle();
-  expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ida", kids: true, kidsAge: 12 }]);
+  expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ida", kids: true, kidsAge: 12, dailyLimit: null }]);
+});
+
+const dailyOf = (root: Node, name: string) => descendants(root).find((node) => node.tagName === "SELECT" && node.getAttribute("aria-label") === `Daily limit for ${name}`)!;
+
+test("a kid's daily limit is set and cleared with the PIN given once, beside the age limit", async () => {
+  household = [ANDRE, MAJA, { ...TIM, dailyLimit: 45 }, LEA];
+  await state.loadProfiles();
+  const { root } = await manageAs("Maja", "4321");
+  expect(dailyOf(root, "Tim").value).toBe("45");
+  dailyOf(root, "Tim").value = "90";
+  dailyOf(root, "Tim").fire("change");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/daily-limit", { actorId: "maja", pin: "4321", minutes: 90 }]);
+  dailyOf(root, "Tim").value = "";
+  dailyOf(root, "Tim").fire("change");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/daily-limit", { actorId: "maja", pin: "4321", minutes: null }]);
+});
+
+test("a new kid can start with a daily limit", async () => {
+  const { root } = await manageAs("Maja", "4321");
+  const form = formOf(root, "Add a kid");
+  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Ben";
+  const daily = descendants(form).filter((node) => node.tagName === "SELECT")[1]!;
+  expect(daily.value).toBe("");
+  daily.value = "30";
+  form.fire("submit");
+  await settle();
+  expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ben", kids: true, kidsAge: 6, dailyLimit: 30 }]);
 });
 
 test("a new grown-up is given a first PIN, asked twice", async () => {

@@ -249,7 +249,7 @@ describe("profiles", () => {
   test("are listed with their role, and never a PIN", async () => {
     expect((await listed()).find((profile) => profile.id === me)).toEqual({
       id: me, name: "André", createdAt: expect.any(Number),
-      kids: false, kidsAge: null, parentId: null, admin: false, hasPin: false,
+      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
     });
   });
 

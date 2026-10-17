@@ -45,6 +45,7 @@ import catalog.profile.YOUR_PIN
 import catalog.profile.managingAs
 import designsystem.LocalCatalogueTones
 import designsystem.Spacing
+import model.DailyLimitWords
 import model.Profile
 import ui.common.profile.ManageActions
 import ui.settings.QuietPill
@@ -87,6 +88,8 @@ private fun Managing(
 ) {
     var removing by remember { mutableStateOf<Profile?>(null) }
     var newLimit by rememberSaveable { mutableIntStateOf(NEW_KID_LIMIT) }
+    // Saved as 0 for "No limit": no menu entry is zero minutes, and the saver takes no null.
+    var newDaily by rememberSaveable { mutableIntStateOf(0) }
     if (state.canAddGrownUp) {
         Section(GROWN_UPS)
         state.grownUps.forEach { grownUp ->
@@ -99,7 +102,12 @@ private fun Managing(
     }
     Section(KIDS_SECTION)
     state.kids.forEach { kid ->
-        ProfileRow(kid.name) {
+        ProfileRow(
+            kid.name,
+            below = {
+                DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) })
+            },
+        ) {
             LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) }
             RemovePill(kid) { removing = it }
         }
@@ -107,10 +115,19 @@ private fun Managing(
     NameForm(
         ADD_A_KID,
         onSubmit = { name ->
-            actions.onAddKid(name, newLimit)
+            actions.onAddKid(name, newLimit, newDaily.takeIf { it > 0 })
             newLimit = NEW_KID_LIMIT
+            newDaily = 0
         },
         modifier = Modifier.padding(top = Spacing.small),
+        more = {
+            DailyLimitChips(
+                newDaily.takeIf { it > 0 },
+                "${DailyLimitWords.LABEL} for the new kid",
+                { newDaily = it ?: 0 },
+                Modifier.padding(top = Spacing.small),
+            )
+        },
     ) { LimitChoice(newLimit, "Age limit for the new kid") { newLimit = it } }
     Section(YOUR_PIN)
     QuietPill(CHANGE_YOUR_PIN, onClick = { actions.onChangePin(state.actor.id) })
@@ -154,6 +171,7 @@ private fun Section(title: String) {
 @Composable
 private fun ProfileRow(
     name: String,
+    below: @Composable () -> Unit = {},
     controls: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -164,6 +182,7 @@ private fun ProfileRow(
         Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         controls()
     }
+    below()
     HorizontalDivider(thickness = 0.5.dp, color = LocalCatalogueTones.current.ruleSoft)
 }
 

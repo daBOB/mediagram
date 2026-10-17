@@ -1,9 +1,15 @@
 package ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
@@ -11,6 +17,8 @@ import catalog.MenuScreen
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
 import catalog.updateDisabledReason
+import designsystem.Spacing
+import player.LibraryPlayGate
 import player.TitlePreloadViewModel
 import stats.AchievementDotViewModel
 import system.FetchViewModel
@@ -21,6 +29,7 @@ import ui.common.MenuActions
 import ui.common.catalog.LocalTogetherOffers
 import ui.common.catalog.rememberTogetherOffers
 import ui.common.rememberLibraryPositions
+import ui.player.TogetherNoticePill
 import ui.common.settings.SettingsOutcomes
 import ui.profile.ProfileGate
 
@@ -53,7 +62,10 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // Never the raw engine count: a kids profile must not see a grown-up's
     // own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
-    val at = rememberLibraryPositions()
+    // The daily limit's door: a kid whose day is used up is not taken into the player.
+    val playGate: LibraryPlayGate = hiltViewModel()
+    val limitNotice by playGate.notice.collectAsStateWithLifecycle()
+    val at = rememberLibraryPositions(playGate)
 
     SettingsOutcomes(onLibraryChanged = catalogViewModel::reload, onSignedOut = onSignedOut)
 
@@ -83,8 +95,12 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // Watch together's Join, for Home and the title pages to read: each opens
     // the session's title as its own Play does.
     val togetherOffers = rememberTogetherOffers(catalogViewModel, at::openPlayer)
-    CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
-        LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+    Box(Modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
+            LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+        }
+        // The pill watch together's notices use, over the page: the viewer stays where they were.
+        TogetherNoticePill(limitNotice, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Spacing.extraLarge * 2))
     }
 
     // Every branch but the player, which is the one that fills the window

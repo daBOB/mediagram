@@ -7,7 +7,7 @@ import { jsonBody } from "../http/browser-write";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless } from "../response";
 import type { WatchState } from "./store";
-import { profileRoute } from "./profiles-routes";
+import { leftToday, profileRoute } from "./profiles-routes";
 import { json, P } from "./route-shared";
 
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
@@ -118,7 +118,7 @@ export function createStateRouter(options: StateRouterOptions) {
       if (!Number.isFinite(at)) return bodiless(400);
       const runtime = Number(body?.duration);
       state.setProgress(profileId, setId, at, Number.isFinite(runtime) && runtime > 0 ? runtime : null);
-      return bodiless(204);
+      return leftToday(state, profileId);
     }
 
     // No write here carries its own copy of the guard: the dispatcher runs

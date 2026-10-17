@@ -14,5 +14,6 @@ dependencies {
 tasks.named<Test>("test") {
     inputs.file(rootProject.file("../web/test/fixtures/markdown/cases.json"))
     inputs.file(rootProject.file("../web/test/fixtures/watch-state/profile-rules.json"))
+    inputs.file(rootProject.file("../web/test/fixtures/watch-state/daily-limit.json"))
     inputs.dir(rootProject.file("../web/test/fixtures/together"))
 }

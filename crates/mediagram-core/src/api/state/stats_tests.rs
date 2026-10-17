@@ -32,6 +32,27 @@ async fn every_devices_watch_time_adds_up_in_one_summary() {
     assert_eq!((today.day.as_str(), today.seconds), (TODAY, 5400.0));
 }
 
+#[tokio::test]
+async fn watched_today_sums_one_day_over_every_device() {
+    let dir = tempfile::tempdir().unwrap();
+    let core = Core::at(dir.path());
+    let viewer = core.add_profile("André", false).id;
+    watched_on(&core, &viewer, "tv", 600.0);
+    watched_on(&core, &viewer, "phone", 90.5);
+    core.state_db
+        .with(|conn| {
+            conn.execute(
+                "INSERT INTO stats_days(profile_id, day, device, seconds, updated_at)
+                   VALUES (?1, '2026-10-02', 'tv', 999.0, 1)",
+                [&viewer],
+            )
+        })
+        .unwrap();
+
+    assert_eq!(core.clone().watched_today(viewer.clone(), TODAY.into()).await, 690.5);
+    assert_eq!(core.clone().watched_today(viewer, "2026-10-04".into()).await, 0.0);
+}
+
 /// Nothing watched reads as thirty empty days; a store that cannot be read
 /// answers no days at all rather than an error.
 #[tokio::test]

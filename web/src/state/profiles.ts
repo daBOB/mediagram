@@ -13,7 +13,6 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { newPin } from "./profiles-pin";
 import { normalName } from "./sync-record";
 
 /** A profile as the page sees it. Says whether there is a PIN, never what. */
@@ -25,6 +24,8 @@ export interface Profile {
   kids: boolean;
   /** 6 or 12 on a kid; `null` on a grown-up. */
   kidsAge: 6 | 12 | null;
+  /** A kid's daily watching limit in minutes; `null` is none, and on a grown-up. */
+  dailyLimit: number | null;
   /** The grown-up who made this kid. `null`, or one not here, is the admin's. */
   parentId: string | null;
   admin: boolean;
@@ -39,6 +40,8 @@ export interface ProfileRow {
   kids: number;
   kidsAge: number | null;
   kidsAgeUpdatedAt: number;
+  dailyLimit: number | null;
+  dailyLimitUpdatedAt: number;
   parentId: string | null;
   adminClaimedAt: number | null;
   pinHash: string | null;
@@ -52,6 +55,8 @@ export interface NewProfile {
   kids?: boolean;
   /** A kid's limit, chosen now. Absent is FSK 12, dated 0. */
   kidsAge?: 6 | 12;
+  /** A kid's daily limit in minutes, chosen now. Absent is none, dated 0. */
+  dailyLimit?: number;
   /** The grown-up adding this kid. */
   parentId?: string;
   /** A grown-up's first PIN, already salted and hashed. */
@@ -76,7 +81,8 @@ export function profileRows(db: Database | null): ProfileRow[] {
   return db
     .query(
       `SELECT id, name, created_at AS createdAt, kids, kids_age AS kidsAge,
-              kids_age_updated_at AS kidsAgeUpdatedAt, parent_id AS parentId,
+              kids_age_updated_at AS kidsAgeUpdatedAt,
+              daily_limit AS dailyLimit, daily_limit_updated_at AS dailyLimitUpdatedAt, parent_id AS parentId,
               admin_claimed_at AS adminClaimedAt, pin_hash AS pinHash, pin_salt AS pinSalt,
               pin_updated_at AS pinUpdatedAt, pin_proven AS pinProven
          FROM profiles ORDER BY created_at`,
@@ -93,6 +99,7 @@ export function toProfile(row: ProfileRow): Profile {
     kids,
     // A kid always has a limit, whatever the column holds: 12, as before choices.
     kidsAge: kids ? (row.kidsAge === 6 ? 6 : 12) : null,
+    dailyLimit: kids ? row.dailyLimit : null,
     parentId: row.parentId,
     // A kid manages nothing and opens freely. A grown-up another device
     // later calls a kid keeps its old claim and PIN in their columns; they
@@ -126,6 +133,8 @@ export function insertProfile(db: Database | null, name: unknown, role: NewProfi
     kids: kids ? 1 : 0,
     kidsAge: kids ? role.kidsAge ?? 12 : null,
     kidsAgeUpdatedAt: kids && role.kidsAge !== undefined ? createdAt : 0,
+    dailyLimit: kids ? role.dailyLimit ?? null : null,
+    dailyLimitUpdatedAt: kids && role.dailyLimit !== undefined ? createdAt : 0,
     parentId: kids ? role.parentId ?? null : null,
     adminClaimedAt: !kids && role.admin === true ? createdAt : null,
     pinHash: kids ? null : role.pin?.hash ?? null,
@@ -135,10 +144,11 @@ export function insertProfile(db: Database | null, name: unknown, role: NewProfi
   };
   db.query(
     `INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
-                          admin_claimed_at, pin_hash, pin_salt, pin_updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`,
+                          admin_claimed_at, pin_hash, pin_salt, pin_updated_at,
+                          daily_limit, daily_limit_updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
   ).run(row.id, row.name, row.createdAt, row.kids, row.kidsAge, row.kidsAgeUpdatedAt, row.parentId,
-    row.adminClaimedAt, row.pinHash, row.pinSalt, row.pinUpdatedAt);
+    row.adminClaimedAt, row.pinHash, row.pinSalt, row.pinUpdatedAt, row.dailyLimit, row.dailyLimitUpdatedAt);
   return toProfile(row);
 }
 
@@ -175,26 +185,4 @@ export function findOrCreateProfile(
   if (found) return { id: found.id, created: false, kids: found.kids };
   const created = insertProfile(db, displayName ?? name, { kids });
   return created ? { id: created.id, created: true, kids } : null;
-}
-
-/**
- * Own writes of a PIN or a limit are dated at least a millisecond past the
- * last change: an imported one can carry another device's clock, and this
- * one running behind must not write a change that loses to the value it
- * replaced. Clamped below the largest time a peer keeps, as `setWatched` is.
- */
-const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
-
-/** A fresh salt and hash for `pin`; `proven` unless it is a first PIN, set where there was none. */
-export function writePin(db: Database, id: string, pin: string, proven: boolean): void {
-  const { hash, salt } = newPin(pin);
-  db.query(`UPDATE profiles SET pin_hash = ?2, pin_salt = ?3, pin_proven = ?6,
-              pin_updated_at = MAX(?4, MIN(pin_updated_at, ?5) + 1) WHERE id = ?1`)
-    .run(id, hash, salt, Date.now(), LAST_STAMP, proven ? 1 : 0);
-}
-
-export function writeKidsAge(db: Database, id: string, age: 6 | 12): void {
-  db.query(`UPDATE profiles SET kids_age = ?2,
-              kids_age_updated_at = MAX(?3, MIN(kids_age_updated_at, ?4) + 1) WHERE id = ?1`)
-    .run(id, age, Date.now(), LAST_STAMP);
 }

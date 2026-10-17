@@ -43,6 +43,10 @@ pub struct Profile {
     /// FSK 6 or 12 on a kid; `None` on a grown-up.
     #[uniffi(default = None)]
     pub kids_age: Option<u8>,
+    /// Minutes a kid may watch a day, the same every day; `None` is no limit,
+    /// and always on a grown-up.
+    #[uniffi(default = None)]
+    pub daily_limit: Option<u32>,
     /// The grown-up who made this kid. `None`, or one not here, is the admin's.
     #[uniffi(default = None)]
     pub parent_id: Option<String>,
@@ -63,6 +67,7 @@ impl From<role_rows::Stored> for Profile {
     fn from(row: role_rows::Stored) -> Self {
         Profile {
             kids_age: row.kids.then_some(if row.kids_age == Some(6) { 6 } else { 12 }),
+            daily_limit: row.daily_limit.filter(|_| row.kids).and_then(|m| u32::try_from(m).ok()),
             admin: row.is_admin(),
             has_pin: !row.kids && row.pin_hash.is_some(),
             id: row.id,

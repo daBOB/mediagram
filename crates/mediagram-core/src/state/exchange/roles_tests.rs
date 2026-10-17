@@ -3,7 +3,7 @@ use rusqlite::types::FromSql;
 use crate::state::exchange::{export_record, import_merged};
 use crate::state::merge::{MergedProfile, MergedState, merge_states};
 use crate::state::record::{
-    AdminClaim, KidsAge, PinRecord, ProfileRoles, SyncRecord, parse_record,
+    AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles, SyncRecord, parse_record,
 };
 use crate::state::{StateDb, profiles};
 
@@ -72,6 +72,28 @@ fn roles_of(record: &SyncRecord, name: &str) -> ProfileRoles {
         .unwrap()
         .roles
         .clone()
+}
+
+#[test]
+fn a_daily_limit_exports_once_chosen_and_imports_the_newer_even_when_none() {
+    let (_dir, db) = db();
+    let mia = make(&db, "Mia", true);
+    let export = |db: &StateDb| {
+        let record = db.with(|c| export_record(c, "dev")).unwrap();
+        roles_of(&record, "Mia").daily_limit
+    };
+    assert_eq!(export(&db), None);
+    sql(&db, "UPDATE profiles SET daily_limit = 45, daily_limit_updated_at = 10");
+    let held = |minutes, updated_at| Some(DailyLimit { minutes, updated_at });
+    assert_eq!(export(&db), held(Some(45), 10.0));
+
+    let roles = |daily_limit| ProfileRoles { daily_limit, ..Default::default() };
+    import(&db, vec![viewer("Mia", true, roles(held(None, 20.0)))]);
+    assert_eq!(export(&db), held(None, 20.0));
+    // An older limit does not come back over a newer "none".
+    import(&db, vec![viewer("Mia", true, roles(held(Some(90), 15.0)))]);
+    assert_eq!(export(&db), held(None, 20.0));
+    let _ = mia;
 }
 
 #[test]

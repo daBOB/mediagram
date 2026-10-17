@@ -35,7 +35,7 @@ function migrationsUpTo(version: number): string[] {
 
 /** The one profile these files hold, as `profiles()` reads it back: a grown-up with no role. */
 const ANDRE = {
-  id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, parentId: null, admin: false, hasPin: false,
+  id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
 };
 
 /** A database at version 1, as a player that ran before profiles left one. */
@@ -388,7 +388,7 @@ describe("v11 to v12", () => {
         { id: "k1", kidsAge: 12, kidsAgeUpdatedAt: 0, parentId: null, adminClaimedAt: null, pinHash: null, pinSalt: null, pinUpdatedAt: 0 },
       ]);
       expect(db.query("SELECT set_id AS setId, age FROM kids").all()).toEqual([{ setId: "01K", age: null }]);
-      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "13" });
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: String(GROUPS.length) });
     } finally {
       db.close();
     }
@@ -407,7 +407,7 @@ describe("v12 to v13", () => {
     const db = new Database(path);
     try {
       expect(db.query("SELECT pin_proven AS pinProven FROM profiles").all()).toEqual([{ pinProven: 0 }]);
-      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "13" });
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: String(GROUPS.length) });
     } finally {
       db.close();
     }
@@ -432,6 +432,25 @@ describe("v12 to v13", () => {
       expect(again.query("SELECT kids_age AS kidsAge FROM profiles").get()).toEqual({ kidsAge: 6 });
     } finally {
       again.close();
+    }
+  });
+});
+
+describe("v13 to v14", () => {
+  test("a kid already stored has no daily limit, and the choice of none is undated", () => {
+    const path = tempPath();
+    atVersion(path, 13, () => ["INSERT INTO profiles(id, name, created_at, kids, kids_age) VALUES ('k1', 'Mia', 1, 1, 6)"]);
+
+    const state = new WatchState(path);
+    expect(state.profiles()).toEqual([expect.objectContaining({ id: "k1", kids: true, dailyLimit: null })]);
+    state.close();
+
+    const db = new Database(path);
+    try {
+      expect(db.query("SELECT daily_limit AS dailyLimit, daily_limit_updated_at AS at FROM profiles").all())
+        .toEqual([{ dailyLimit: null, at: 0 }]);
+    } finally {
+      db.close();
     }
   });
 });

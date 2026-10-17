@@ -71,21 +71,15 @@ const GROUPS: &[&[&str]] = &[
      )",
         "CREATE TABLE IF NOT EXISTS state_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)",
     ],
-    // v1 -> v2: a removal a merge can see.
-    //
-    // A watchlist row, a kids mark and a collection were each deleted
-    // outright, so nothing about a removal survived to tell another device
-    // it had happened — a sync would resurrect it from whichever machine had
-    // not yet caught up. `removed_at` is that row kept instead of dropped: a
-    // tombstone with its own timestamp, the same last-writer-wins rule
-    // `merge.rs` already applies to a position. Nullable, so a row untouched
-    // by this migration reads exactly as it did before it.
+    // v1 -> v2: a removal a merge can see. A watchlist row, a kids mark and a collection were each deleted
+    // outright, so a sync would resurrect them from a machine that had not
+    // caught up. `removed_at` keeps the row as a tombstone with its own
+    // timestamp, under the last-writer-wins rule `merge.rs` applies to a
+    // position. Nullable, so an untouched row reads as before.
     //
     // `collections` alone also gains `updated_at`: a list is one row on the
-    // wire, merged whole rather than item by item, so renaming it or
-    // changing its membership has to move a timestamp `created_at` was never
-    // meant to carry. Backfilled from `created_at` — the oldest fact this
-    // file has about a list already made.
+    // wire, merged whole, so renaming it or changing its membership has to
+    // move a timestamp `created_at` never carried. Backfilled from `created_at`.
     &[
         "ALTER TABLE watchlist ADD COLUMN removed_at INTEGER",
         "ALTER TABLE kids ADD COLUMN removed_at INTEGER",
@@ -181,6 +175,11 @@ const GROUPS: &[&[&str]] = &[
     // statement. A first PIN never replaces one set earlier elsewhere
     // (`merge::roles`); every PIN already stored is a first one.
     &["ALTER TABLE profiles ADD COLUMN pin_proven INTEGER NOT NULL DEFAULT 0"],
+    // v9 -> v10: a kid's daily limit in minutes (NULL: none), and when chosen.
+    &[
+        "ALTER TABLE profiles ADD COLUMN daily_limit INTEGER",
+        "ALTER TABLE profiles ADD COLUMN daily_limit_updated_at INTEGER NOT NULL DEFAULT 0",
+    ],
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

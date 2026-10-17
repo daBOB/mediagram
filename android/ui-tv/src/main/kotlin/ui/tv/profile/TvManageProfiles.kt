@@ -33,6 +33,7 @@ import catalog.profile.managingAs
 import designsystem.Overscan
 import designsystem.Spacing
 import model.Profile
+import model.dailyLimitChoiceFor
 import ui.common.profile.ManageActions
 import ui.tv.TvTextRow
 import ui.tv.player.TvSettingsHeading
@@ -45,13 +46,15 @@ private sealed interface TvManageStep {
 
     data class KidActions(val kid: Profile) : TvManageStep
 
+    data class DailyLimit(val kid: Profile) : TvManageStep
+
     data class GrownUpActions(val grownUp: Profile) : TvManageStep
 }
 
 /**
  * Manage profiles on television — the web's panel (`profile-manage.js`) as
  * one column the remote walks: who you are; then, for the admin, the other
- * grown-ups; every grown-up's own kids ("Name · FSK N"); its own PIN; Done.
+ * grown-ups; every grown-up's own kids ("Name · FSK N · daily limit"); its own PIN; Done.
  * A row opens its few choices in a dialog rather than laying the web's
  * buttons along it, so Down always means the next person. Adding asks the
  * name on a screen of its own, in place, as every TV text question does.
@@ -95,9 +98,9 @@ private fun TvManaging(
         TvAddProfileFlow(
             heading = if (adding.kid) ADD_A_KID else ADD_A_GROWN_UP,
             askLimit = adding.kid,
-            onAdd = { name, age ->
+            onAdd = { name, age, dailyLimit ->
                 step = TvManageStep.List
-                if (age != null) actions.onAddKid(name, age) else actions.onAddGrownUp(name)
+                if (age != null) actions.onAddKid(name, age, dailyLimit) else actions.onAddGrownUp(name)
             },
             onCancel = { step = TvManageStep.List },
         )
@@ -120,7 +123,7 @@ private fun TvManaging(
         TvSettingsHeading(KIDS_SECTION)
         state.kids.forEachIndexed { index, kid ->
             key(kid.id) {
-                TvTextRow("${kid.name} · FSK ${kid.kidsLimit}", onClick = { step = TvManageStep.KidActions(kid) }, focusRequester = first.takeIf { !admin && index == 0 })
+                TvTextRow("${kid.name} · FSK ${kid.kidsLimit} · ${dailyLimitChoiceFor(kid.dailyLimit).label}", onClick = { step = TvManageStep.KidActions(kid) }, focusRequester = first.takeIf { !admin && index == 0 })
             }
         }
         TvTextRow(ADD_A_KID, onClick = { step = TvManageStep.Adding(kid = true) }, focusRequester = first.takeIf { !admin && state.kids.isEmpty() })
@@ -130,7 +133,15 @@ private fun TvManaging(
     }
     val back = { step = TvManageStep.List }
     when (val current = step) {
-        is TvManageStep.KidActions -> TvKidActions(current.kid, onAge = { actions.onSetKidsAge(current.kid.id, it) }, onRemove = { actions.onRemove(current.kid.id) }, onDismiss = back)
+        is TvManageStep.KidActions ->
+            TvKidActions(
+                current.kid,
+                onAge = { actions.onSetKidsAge(current.kid.id, it) },
+                onDailyLimit = { step = TvManageStep.DailyLimit(current.kid) },
+                onRemove = { actions.onRemove(current.kid.id) },
+                onDismiss = back,
+            )
+        is TvManageStep.DailyLimit -> TvDailyLimitChoices(current.kid, onChoose = { actions.onSetDailyLimit(current.kid.id, it) }, onDismiss = back)
         is TvManageStep.GrownUpActions ->
             TvGrownUpActions(
                 current.grownUp,

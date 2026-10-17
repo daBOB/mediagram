@@ -41,7 +41,7 @@ class WatchStateFixture(
 
     init {
         // `hasPin` is not seeded: the fake answers it from `core.roles.pins`.
-        core.profiles += profiles.map { CoreProfile(it.id, it.name, it.kids, it.kidsAge?.toUByte(), it.parentId, it.admin) }
+        core.profiles += profiles.map { CoreProfile(it.id, it.name, it.kids, it.kidsAge?.toUByte(), dailyLimit = it.dailyLimit?.toUInt(), parentId = it.parentId, admin = it.admin) }
         core.chosen = chosen
         runBlocking {
             repository.reload()
