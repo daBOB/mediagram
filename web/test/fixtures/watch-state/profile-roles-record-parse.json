@@ -415,5 +415,146 @@
         }
       ]
     }
+  },
+  {
+    "name": "a daily limit reads back as written, and so does one taken off",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Mia\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":60,\"updatedAt\":1789000000000}},{\"name\":\"Leo\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":null,\"updatedAt\":1789000000000}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "Mia",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": 60,
+            "updatedAt": 1789000000000
+          }
+        },
+        {
+          "name": "Leo",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": null,
+            "updatedAt": 1789000000000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "a daily limit is whole minutes from 1 to 1440 or null; anything else drops the key alone",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":1,\"updatedAt\":1}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":1440,\"updatedAt\":1}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":0,\"updatedAt\":1}},{\"name\":\"D\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":1441,\"updatedAt\":1}},{\"name\":\"E\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":30.5,\"updatedAt\":1}},{\"name\":\"F\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":\"60\",\"updatedAt\":1}},{\"name\":\"G\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"updatedAt\":1}},{\"name\":\"H\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":60,\"updatedAt\":-1}},{\"name\":\"I\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":60}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": 1,
+            "updatedAt": 1
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": 1440,
+            "updatedAt": 1
+          }
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "D",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "E",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "F",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "G",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "H",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "I",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "dailyLimit.updatedAt: 0 and 2^53 - 1 are kept, 2^53 drops the key",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":60,\"updatedAt\":0}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":60,\"updatedAt\":9007199254740991}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"kids\":true,\"dailyLimit\":{\"minutes\":60,\"updatedAt\":9007199254740992}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": 60,
+            "updatedAt": 0
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "dailyLimit": {
+            "minutes": 60,
+            "updatedAt": 9007199254740991
+          }
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        }
+      ]
+    }
   }
 ]
