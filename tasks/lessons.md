@@ -78,3 +78,13 @@ building mockups. The user stopped it: they want the gaps between the current de
 surface is a parity defect in that surface (CLAUDE.md § Surface Parity). Audit it screen by
 screen against the reference surface and fix within the existing tokens, fonts and layouts,
 adapting only for 10-foot/D-pad needs. Offer new directions only when asked for a redesign.
+
+## 2026-10-18 — Kotlin regex passes JVM tests and crashes on Android
+
+0.126.0's `ReportText.kt` used `Regex("(?U)\\s+")` to match JavaScript's Unicode `\s`. The
+shared-fixture tests passed on the desktop JVM; on the tablet the first Send crashed the app,
+because Android's regex is ICU, which rejects the `(?U)` flag, and a top-level `val` failing
+takes the whole file down at first use. Rule: in Android code, write character classes out
+(`[\s\x0B\p{Z}﻿]` is exactly JavaScript's `\s`) and avoid embedded flags other than
+`(?i)`/`(?m)`/`(?s)`; JVM unit tests do not exercise Android's regex engine, so a device walk
+is the check for any new pattern.
