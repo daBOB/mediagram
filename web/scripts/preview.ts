@@ -88,6 +88,11 @@ const server = await startServer({
   state,
   hostname: "127.0.0.1",
   port,
+  // A report is said here rather than sent: the sheet's whole round trip, with nothing reaching Telegram.
+  report: {
+    available: () => true,
+    send: async (text) => console.log(`preview report:\n${text}`),
+  },
   status: createStatusRouter({
     facts,
     live: () =>
