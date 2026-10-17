@@ -2,7 +2,6 @@ package ui.tv.player
 
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -47,14 +46,14 @@ class TvPlayerRowEndsTest : TvPlayerScreenHarness() {
     }
 
     @Test
-    fun theTopBarStopsAtMyListAndAtAddToList() {
+    fun theTopBarStopsAtMyListAndAtReport() {
         toTopBar(hasText("My List"))
         press(Key.DirectionLeft)
         compose.onNodeWithText("My List").assertIsFocused()
 
-        along(hasText("Add to list"))
+        along(hasText("Report"))
         press(Key.DirectionRight)
-        compose.onNodeWithText("Add to list").assertIsFocused()
+        compose.onNodeWithText("Report").assertIsFocused()
     }
 }
 
@@ -75,16 +74,16 @@ class TvPlayerRunRowEndsTest : TvPlayerScreenHarness() {
     }
 }
 
-/** With notes, Notes ends the top bar. */
+/** With notes, Report still ends the top bar, after Notes. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvPlayerNotesRowEndsTest : TvPlayerScreenHarness() {
     override fun makeFixture() = notesFixture(Kind.EPISODE)
 
     @Test
-    fun theTopBarStopsAtNotes() {
-        toTopBar(hasText("Notes") and hasClickAction())
+    fun theTopBarStopsAtReport() {
+        toTopBar(hasText("Report"))
         press(Key.DirectionRight)
-        compose.onNode(hasText("Notes") and hasClickAction()).assertIsFocused()
+        compose.onNodeWithText("Report").assertIsFocused()
     }
 }

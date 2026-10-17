@@ -16,6 +16,7 @@ internal class TvPlayerFocus {
     val marks = FocusRequester()
     val upNext = FocusRequester()
     val notes = FocusRequester()
+    val report = FocusRequester()
     val retry = FocusRequester()
     val notesRegion = FocusRequester()
 

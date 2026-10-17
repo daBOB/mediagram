@@ -68,7 +68,7 @@ class TvPlayerLessonNotesTest : TvPlayerScreenHarness() {
         val notesLeft = compose.onNodeWithTag(TvNotesTag).getBoundsInRoot().left
         val controls =
             listOf("Restart", "Back 15 seconds", "Pause", "Forward 15 seconds", "Stats", "Subtitles", "Subtitle options", "Speed", "Framing", "Watch together")
-                .map { hasContentDescription(it) } + (hasText("Notes") and hasClickAction())
+                .map { hasContentDescription(it) } + (hasText("Notes") and hasClickAction()) + (hasText("Report") and hasClickAction())
         for (control in controls) {
             val bounds = compose.onNode(control).getBoundsInRoot()
             assertTrue(bounds.width > 0.dp && bounds.right <= notesLeft, "$control spans ${bounds.left}..${bounds.right}, the notes start at $notesLeft")
@@ -81,6 +81,7 @@ class TvPlayerLessonNotesTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvSeekBarTag).assertIsFocused()
         press(Key.DirectionUp)
         along(hasText("Notes") and hasClickAction())
+        along(hasText("Report") and hasClickAction())
     }
 
     @Test
@@ -88,6 +89,8 @@ class TvPlayerLessonNotesTest : TvPlayerScreenHarness() {
         compose.runOnUiThread { fixture.fail() }
         compose.waitForIdle()
         compose.onNodeWithText("Retry").assertIsFocused()
+        press(Key.DirectionRight)
+        compose.onNodeWithText("Report").assertIsFocused()
         press(Key.DirectionRight)
         compose.onNodeWithTag(TvNotesTag).assertIsFocused()
         pressBackKey()

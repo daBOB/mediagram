@@ -40,7 +40,7 @@ internal fun TvMarksRail(
 ) {
     if (marks == null) return
     val toCard = Modifier.focusProperties { this.down = down }
-    // My List starts the bar, so nothing lies to its left; Add to list ends it unless Notes follows.
+    // My List starts the bar, so nothing lies to its left; Add to list ends it unless Notes or Report follows.
     val atStart = Modifier.focusProperties { left = FocusRequester.Cancel }
     val atEnd = if (lastInBar) Modifier.focusProperties { right = FocusRequester.Cancel } else Modifier
 

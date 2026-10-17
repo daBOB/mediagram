@@ -41,6 +41,7 @@ import type { StartupFacts } from "./status/facts";
 import { Telegram } from "./telegram/client";
 import { TelegramConnection } from "./telegram/connection";
 import { TelegramSource } from "./telegram/source";
+import { TelegramReportSender } from "./telegram/report-sender";
 import { TelegramTogetherChannel } from "./telegram/together-channel";
 import { TOGETHER_RECHECK_MS, TogetherHub } from "./together/hub";
 import { SeriesPreload } from "./cache/series-preload";
@@ -389,6 +390,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       status: statusRouter,
       settings: (request) => settingsBox.route?.(request) ?? Promise.resolve(null),
       together,
+      report: new TelegramReportSender(connection),
     });
 
     boundUrl = server.baseUrl;

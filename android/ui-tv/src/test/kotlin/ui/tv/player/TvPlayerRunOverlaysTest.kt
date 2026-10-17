@@ -3,14 +3,9 @@ package ui.tv.player
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.pressKey
 import android.os.Looper
 import io.mockk.verify
 import org.junit.Test
@@ -150,12 +145,6 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
         toTopBar(hasText("Add to list"))
         press(Key.DirectionCenter)
         compose.onNodeWithText("☐ Favourites").assertIsFocused()
-    }
-
-    /** A key to the dialog's own window, whose focus is separate from the player's underneath it. */
-    private fun pressInDialog(key: Key) {
-        compose.onNode(isFocused() and hasAnyAncestor(isDialog())).performKeyInput { pressKey(key) }
-        compose.waitForIdle()
     }
 
     private fun idleFor(time: Duration) {

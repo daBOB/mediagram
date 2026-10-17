@@ -6,7 +6,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
@@ -70,6 +72,12 @@ abstract class TvPlayerScreenHarness {
 
     internal fun press(key: Key) {
         compose.onNode(isFocused()).performKeyInput { pressKey(key) }
+        compose.waitForIdle()
+    }
+
+    /** A key to the dialog's own window, whose focus is separate from the player's underneath it. */
+    internal fun pressInDialog(key: Key) {
+        compose.onNode(isFocused() and hasAnyAncestor(isDialog())).performKeyInput { pressKey(key) }
         compose.waitForIdle()
     }
 

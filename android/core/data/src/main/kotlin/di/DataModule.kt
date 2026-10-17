@@ -10,6 +10,7 @@ import data.BackdropWidth
 import data.CatalogRepository
 import data.CoreLibraryEvents
 import data.CoreProvider
+import data.CoreReportChannel
 import data.CoreStorage
 import data.CoreTogetherChannel
 import data.DefaultCatalogRepository
@@ -21,6 +22,7 @@ import data.DefaultWatchSync
 import data.FileCoreStorage
 import data.LibraryEvents
 import data.PlayerPreferences
+import data.ReportChannel
 import data.RefreshLog
 import data.SharedLibraryEvents
 import data.TogetherChannel
@@ -159,6 +161,10 @@ object DataModule {
         settings: LibrarySettings,
         libraryEvents: LibraryEvents,
     ): TogetherChannel = CoreTogetherChannel(coreProvider, settings, libraryEvents)
+
+    @Provides
+    @Singleton
+    fun provideReportChannel(coreProvider: CoreProvider): ReportChannel = CoreReportChannel(coreProvider)
 
     // One per process, on the app's scope rather than a screen's: a leave or
     // an end is still sent after the player that asked for it has gone, and

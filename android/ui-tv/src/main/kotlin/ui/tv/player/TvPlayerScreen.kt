@@ -48,7 +48,7 @@ import ui.common.player.PlayerNavigationEffects
  * opens the episodes down the right ([TvEpisodeSidebar]); notes open in a
  * column beside the picture ([TvNotesBeside]). Back closes a menu or the
  * list, the up-next card, the notes, the statistics, then the controls
- * ([TvPlayerBack]). A failed title offers Retry ([TvPlayerStatus]).
+ * ([TvPlayerBack]). A failed title offers Retry and Report ([TvPlayerStatus]).
  *
  * [set] is the catalogue's entry for [setId], for the top bar and the end
  * time; null while the catalogue has none. [run] is what the title plays
@@ -76,6 +76,7 @@ fun TvPlayerScreen(
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
+    val report by viewModel.report.collectAsStateWithLifecycle()
     val upNextShown = upNext.phase != UpNextPhase.HIDDEN
     val notesOpen = notes?.open == true
     val failed = state is PlayerUiState.Failed
@@ -106,7 +107,7 @@ fun TvPlayerScreen(
         landing = TvControlsLanding.PlayPause
         focus.opener = focus.playPause
     })
-    TvControlsAutoHide(controlsShown, state, presses, held = overlays.choosingList || overlays.choosingKids || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
+    TvControlsAutoHide(controlsShown, state, presses, held = overlays.choosingList || overlays.choosingKids || report.open || upNextShown, menuOrSidebarOpen = panelOpen, onHide = { controlsShown = false })
     // Up with the card and left up after it, as the phone brings its bar
     // back for it; the card counts as shown within the same frame, so the
     // remote lands on it rather than on a picture it is being taken from.
@@ -129,7 +130,7 @@ fun TvPlayerScreen(
                 onToggleSubtitles = viewModel::toggleSubtitles,
             )
         }
-    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { overlays.choosingList || overlays.choosingKids || onSeekBar }, onLanded = {
+    TvRemoteFollowsControls(barShown, panelOpen, upNextShown, landing, root, focus, failed, notesOpen = { notesOpen }, busy = { overlays.choosingList || overlays.choosingKids || report.open || onSeekBar }, onLanded = {
         landing = TvControlsLanding.PlayPause
         focus.opener = focus.playPause
     })
@@ -169,7 +170,7 @@ fun TvPlayerScreen(
                     set = set,
                     focus = focus,
                     viewModel = viewModel,
-                    view = TvControlsView(marks, held, upNext, overlays.statsShown, choices, hasEpisodes = episodes != null, sidebarOpen = sidebarShown),
+                    view = TvControlsView(marks, held, upNext, overlays.statsShown, choices, hasEpisodes = episodes != null, sidebarOpen = sidebarShown, report = report),
                     actions =
                         tvControlsActions(
                             overlays = overlays,
@@ -187,13 +188,13 @@ fun TvPlayerScreen(
             // A dialog window's own keys: the remote's media keys still reach
             // the film through it, as through a menu.
             val dialogKeys = { event: KeyEvent -> remote.onKey(event, player, controlsShowing = true, onSeekBar = false, canControl = controlsMayShow(state), panelOpen = true) }
-            TvMarkDialogs(overlays, marks, actionNotice, viewModel, dialogKeys)
+            TvMarkDialogs(overlays, marks, actionNotice, report, viewModel, dialogKeys)
             TvActionNotice(
                 notice = actionNotice,
                 onGone = viewModel::dismissActionNotice,
                 modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )
-            TvPlayerStatus(state, focus.retry, onRetry = viewModel::retry)
+            TvPlayerStatus(state, focus.retry, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
         }
     }
 }

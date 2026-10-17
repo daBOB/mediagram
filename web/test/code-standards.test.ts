@@ -83,6 +83,10 @@ const ROOT = join(import.meta.dir, "..");
  * `catalog/course-view.js`, by 3, for Join on a course's page. Raised again for
  * `player.js`, by 1, to say why a title started at the session's place isn't
  * announced as carrying on from this profile's own.
+ * Raised 2026-10-17 for `src/index.ts`, by 2, to hand the server the report sender and import it.
+ * Raised the same day for `player.js`, by 10, to wire the Report sheet (its facts, the title it opens
+ * and closes with, the errors it attaches, and why a refused Play keeps a media error over its own),
+ * and for `playback.css`, by 12, for the sheet's card.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -92,20 +96,20 @@ const CEILINGS: Record<string, number> = {
   "public/lib/catalog/shelf-view.js": 285,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
-  "public/lib/playback/player.js": 1008,
+  "public/lib/playback/player.js": 1018,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
   "public/lib/watch-state.js": 485,
   "public/styles/home.css": 363,
-  "public/styles/playback.css": 625,
+  "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,
   "public/styles/theme.css": 209,
   "src/cache/held.ts": 207,
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 451,
+  "src/index.ts": 453,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

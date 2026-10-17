@@ -157,3 +157,32 @@ test("successful retry restores the current conversion explanation", async () =>
   expect(env.node("note").textContent).toBe(explanation);
   expect(env.node("note").hidden).toBe(false);
 });
+
+/** The error a report would carry: Send pressed on a fresh sheet, with the first reason. */
+async function reportedError() {
+  env.respondWith(async () => new Response(null, { status: 204 }));
+  env.node("report").fire("click");
+  env.node("report-reasons").children[0]!.children[0]!.fire("change");
+  env.node("report-send").fire("click");
+  await settle();
+  const sent = env.requests.filter((r) => r.url === "/api/report");
+  return JSON.parse(String(sent.at(-1)!.options!.body)).error;
+}
+
+test("a refused Play keeps the media error a report sends, and names its own refusal when there is none", async () => {
+  openPlayer(title("broken"));
+  Object.assign(env.video, { error: { code: 4, message: "Format error" } });
+  env.video.fire("error");
+  env.video.play = () => Promise.reject(new DOMException("The element has no supported sources.", "NotSupportedError"));
+  pressPlay();
+  await settle();
+  expect(env.node("note").textContent).toContain("Could not start playback");
+  expect(await reportedError()).toBe("MEDIA_ERR_SRC_NOT_SUPPORTED: Format error");
+
+  openPlayer(title("refused"));
+  Object.assign(env.video, { error: null });
+  env.video.play = () => Promise.reject(new DOMException("play() needs a gesture", "NotAllowedError"));
+  pressPlay();
+  await settle();
+  expect(await reportedError()).toBe("NotAllowedError: play() needs a gesture");
+});

@@ -734,6 +734,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_preference(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_report_send(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_search(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_revoke_session(
@@ -901,6 +903,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_preferences(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_preference(`ptr`: Long,`profileId`: RustBuffer.ByValue,`scope`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_report_send(`ptr`: Long,`text`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_search(`ptr`: Long,`query`: RustBuffer.ByValue,
     ): Long
@@ -1188,6 +1192,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_preference() and 0xFFFF) != 43309) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_report_send() and 0xFFFF) != 34453) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_search() and 0xFFFF) != 53359) {
@@ -2075,6 +2082,11 @@ public interface CoreInterface {
      * nothing could be written.
      */
     suspend fun `setPreference`(`profileId`: kotlin.String, `scope`: kotlin.String, `name`: kotlin.String, `value`: kotlin.String?): kotlin.Boolean
+
+    /**
+     * Schedules `text`, as written, into Saved Messages a minute ahead.
+     */
+    suspend fun `reportSend`(`text`: kotlin.String)
 
     /**
      * The catalog's sets matching every word of `query`, best first.
@@ -3161,6 +3173,32 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Schedules `text`, as written, into Saved Messages a minute ahead.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `reportSend`(`text`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_report_send(
+                uniffiHandle,
+
+        FfiConverterString.lower(`text`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 

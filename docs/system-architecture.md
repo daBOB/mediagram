@@ -330,7 +330,8 @@ The Bun player in `web/`: its module map, the home page, the Featured reel,
 how it follows the channel, link adaptation, the System page and the codec
 policy are in [`docs/web-player.md`](web-player.md). UI work runs against
 `bun run preview` (copies of the library and watch state, no Telegram),
-never against the real player.
+never against the real player. `POST /api/report` sends a viewer's
+broken-video report (§8, Reporting a broken video).
 
 ## 8. Playback: the Android app
 
@@ -854,6 +855,47 @@ decision, not drift):
   `android/feature/player/.../TogetherWords.kt` (`Watch together ended`,
   `Next episode by <screen>`, `That title isn't on this profile`, ...); they
   are copied word for word, and "episode" is also used for a course lesson.
+
+### Reporting a broken video
+
+Every player has a Report button (the top bar everywhere, and beside Retry on
+the phone and TV failure screen): one of four reasons, an optional one-line
+note of at most 200 characters, and it reads Reported until another title
+opens. Kids may report. Nothing is queued: a failed send says "Couldn't send.
+Try again later."
+
+**Where it goes.** A plain-text reminder scheduled 60 s ahead into the
+account's own Saved Messages, not silent. Every screen is the same Telegram
+account, and Telegram notifies an account of its own message only when it is a
+scheduled message in Saved Messages (verified 2026-10-17). It is never sent to
+the library channel, and no reader parses `#mlib-report` (`docs/mlib-spec.md`
+§7c).
+
+**The text** is written once in `web/public/lib/report/report-text.js` and
+ported to `ReportText.kt`; both are held to
+`web/test/fixtures/report/report-text.json`. The title line is the player's
+`titleLine` (a film without its year) and the set id on the last line
+identifies the title.
+
+**Web.** `POST /api/report` validates (400), answers 404 when the server has
+no sender, 503 when Telegram is unreachable, the send fails or it has not
+answered within 15 s, else 204. The browser waits 20 s, so it hears that 503
+rather than giving up first. The bound cannot recall the send: teleproto
+cannot cancel it, so one that answers after the 503 still lands, and a retry
+then sends a second. The title and
+the error are folded onto one line each, so no caller can write a line of its
+own into the report.
+`TelegramReportSender` calls `sendMessage("me", {schedule, parseMode: false})`.
+The video `error` event and conversion errors are recorded per title, so the
+report carries the last one. The preview harness logs reports instead of
+sending.
+
+**Android.** The Rust core exposes `report_send(text)` (grammers
+`schedule_date`); `ReportChannel` calls it and the player keeps
+`PlaybackException.errorCodeName` for the error line. A send that has not
+answered in 20 s fails, as the web's does; the cancel drops the request only
+if it has not reached Telegram yet. On the TV the note opens
+in its own window on OK, so the D-pad never raises the keyboard.
 
 ### Parity with the web player
 

@@ -12,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
+import model.ReportWords
+import player.ReportStage
+import player.ReportUi
 
 /**
  * A failed set's message, and Retry — the phone's touch equivalent of the
@@ -19,15 +22,21 @@ import designsystem.Spacing
  * bar). A phone's failures are almost always the network rather than a
  * broken file, so re-opening the same set at wherever it was last saved to
  * is usually enough; recorded as a deliberate, phone-only addition rather
- * than web debt.
+ * than web debt. The top bar is gone while a title has failed, so Report
+ * here says Reported once sent, as the bar's would.
  */
 @Composable
-internal fun PlayerFailure(message: String, onRetry: () -> Unit) {
+internal fun PlayerFailure(message: String, onRetry: () -> Unit, onReport: () -> Unit, report: ReportUi) {
+    val sent = report.stage == ReportStage.SENT
+    val enabled = !sent && report.stage != ReportStage.SENDING
     Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = message, color = Color.White, style = MaterialTheme.typography.bodyLarge)
             CatalogueTextButton(onClick = onRetry) {
                 Text(text = "Retry", color = Color.White)
+            }
+            CatalogueTextButton(onClick = onReport, enabled = enabled) {
+                Text(text = if (sent) ReportWords.SENT else ReportWords.BUTTON, color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f))
             }
         }
     }

@@ -90,6 +90,7 @@ internal fun TvPlayerControls(
             extras.upNext.phase != UpNextPhase.HIDDEN -> focus.upNext
             extras.marks != null -> focus.marks
             extras.onToggleNotes != null -> focus.notes
+            extras.onReport != null -> focus.report
             else -> null
         }
 
@@ -110,6 +111,8 @@ internal fun TvPlayerControls(
                 markActions = extras.markActions,
                 onToggleNotes = extras.onToggleNotes,
                 focus = focus,
+                onReport = extras.onReport,
+                report = extras.report,
                 titleShown = !extras.sidebarOpen,
                 label = extras.together.label,
                 modifier =

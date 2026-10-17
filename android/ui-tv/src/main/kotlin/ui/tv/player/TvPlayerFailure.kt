@@ -3,6 +3,7 @@ package ui.tv.player
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -21,7 +22,10 @@ import designsystem.CountdownLeader
 import designsystem.LocalCountdownStart
 import designsystem.Overscan
 import designsystem.Spacing
+import model.ReportWords
 import player.PlayerUiState
+import player.ReportStage
+import player.ReportUi
 import ui.tv.TvLeaderSize
 
 /** What the stage says while there is no film to show: the film leader while it prepares, the failure once it has failed. */
@@ -30,10 +34,12 @@ internal fun TvPlayerStatus(
     state: PlayerUiState,
     retry: FocusRequester,
     onRetry: () -> Unit,
+    onReport: () -> Unit,
+    report: ReportUi,
 ) {
     when (state) {
         PlayerUiState.Preparing -> TvPreparingLeader()
-        is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry)
+        is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry, onReport, report)
         PlayerUiState.Playing, PlayerUiState.Paused -> Unit
     }
 }
@@ -57,32 +63,46 @@ private fun TvPreparingLeader() {
 }
 
 /**
- * A failed title's message, and Retry — the phone's `PlayerFailure`, which
- * re-opens the same title at wherever it was last saved to. Most failures
- * are the network rather than a broken file, so that is usually enough.
+ * A failed title's message, Retry and Report — the phone's `PlayerFailure`.
+ * Retry re-opens the same title at wherever it was last saved to; most
+ * failures are the network rather than a broken file, so that is usually
+ * enough. Report beside it opens the report on "Won't play" ([onReport]).
+ * The top bar is gone while a title has failed, so this one says Reported
+ * once sent, as the bar's would, and stays a stop the remote can leave.
  *
  * The remote lands on Retry the moment the failure shows ([retry]): it is
- * the only thing on screen that can be pressed, and a viewer whose film
- * just stopped should not have to find it first.
+ * the first thing to try, and a viewer whose film just stopped should not
+ * have to find it first. Right reaches Report.
  */
 @Composable
 internal fun TvPlayerFailure(
     message: String,
     retry: FocusRequester,
     onRetry: () -> Unit,
+    onReport: () -> Unit,
+    report: ReportUi,
 ) {
+    val sent = report.stage == ReportStage.SENT
     Column(
         modifier = Modifier.padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.large),
     ) {
         Text(text = message, style = TvPlayerType.body, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
-        TvOverlayButton(
-            text = "Retry",
-            style = TvPlayerType.body,
-            enabled = true,
-            onClick = onRetry,
-            modifier = Modifier.focusRequester(retry),
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
+            TvOverlayButton(
+                text = "Retry",
+                style = TvPlayerType.body,
+                enabled = true,
+                onClick = onRetry,
+                modifier = Modifier.focusRequester(retry),
+            )
+            TvOverlayButton(
+                text = if (sent) ReportWords.SENT else ReportWords.BUTTON,
+                style = TvPlayerType.body,
+                enabled = !sent && report.stage != ReportStage.SENDING,
+                onClick = onReport,
+            )
+        }
     }
 }

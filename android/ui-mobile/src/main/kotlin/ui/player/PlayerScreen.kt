@@ -77,6 +77,7 @@ fun PlayerScreen(
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
+    val report by viewModel.report.collectAsStateWithLifecycle()
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -172,7 +173,7 @@ fun PlayerScreen(
 
             when (state) {
                 PlayerUiState.Preparing -> PreparingNote()
-                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry)
+                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
                 PlayerUiState.Playing, PlayerUiState.Paused -> Unit
             }
 
@@ -190,8 +191,11 @@ fun PlayerScreen(
                 together = together,
                 sidebarBeside = card.sidebarOpen,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },
+                onReport = { viewModel.openReport(fromFailure = false) },
+                report = report,
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
+            if (report.open) ReportDialog(report, onSend = viewModel::sendReport, onDismiss = viewModel::closeReport)
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }
     }

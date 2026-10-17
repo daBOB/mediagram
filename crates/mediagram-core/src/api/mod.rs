@@ -14,6 +14,7 @@ mod events;
 mod preferences;
 mod read;
 mod refresh;
+mod report;
 mod search;
 mod sessions;
 mod set_text;

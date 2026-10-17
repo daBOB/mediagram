@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,9 @@ import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import designsystem.Spacing
 import kotlin.math.roundToInt
+import model.ReportWords
 import ui.chrome.CatalogueIconButton
 import ui.chrome.CatalogueTextButton
 import ui.common.player.SCRIM_ALPHA
@@ -70,6 +71,9 @@ internal fun PlayerTopBar(
     showTitle: Boolean,
     onBack: () -> Unit,
     onNotes: (() -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
+    reportSent: Boolean = false,
+    reportSending: Boolean = false,
     modifier: Modifier = Modifier,
     marks: @Composable () -> Unit = {},
     /** Where the bar ends in the root, so a menu knows how far up it may reach. */
@@ -105,6 +109,7 @@ internal fun PlayerTopBar(
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                         marks()
                         if (onNotes != null) NotesButton(onNotes)
+                        if (onReport != null) ReportButton(onReport, enabled = !reportSent && !reportSending, sent = reportSent)
                     }
                 }
                 if (!showTitle) TapsReachThePicture()
@@ -124,6 +129,15 @@ private fun NotesButton(onClick: () -> Unit) {
     val source = remember { MutableInteractionSource() }
     CatalogueTextButton(onClick = onClick, interactionSource = source) {
         Text(text = "Notes", color = toolInk(source, enabled = true, rest = Color.White))
+    }
+}
+
+@Composable
+private fun ReportButton(onClick: () -> Unit, enabled: Boolean, sent: Boolean) {
+    val source = remember { MutableInteractionSource() }
+    val words = if (sent) ReportWords.SENT else ReportWords.BUTTON
+    CatalogueTextButton(onClick = onClick, enabled = enabled, interactionSource = source, modifier = Modifier.semantics { contentDescription = words }) {
+        Text(text = words, color = toolInk(source, enabled = enabled, rest = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)))
     }
 }
 

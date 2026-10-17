@@ -66,7 +66,7 @@ private fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
 }
 
 /** What this screen is called in a session's members, beside the web player's `Browser`. */
-private fun labelOf(context: Context): String =
+internal fun labelOf(context: Context): String =
     when {
         isTelevision(context) -> "TV"
         isTablet(context) -> "Tablet"

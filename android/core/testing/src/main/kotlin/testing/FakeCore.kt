@@ -550,6 +550,13 @@ class FakeCore(
 
     override fun togetherHeard(): TogetherMessage? = togetherHeardMessage
 
+    /** Every text [reportSend] was asked to send, in order. */
+    val reportsSent = mutableListOf<String>()
+
+    override suspend fun reportSend(text: String) {
+        reportsSent += text
+    }
+
     /** How many times [profiles] actually ran. */
     var profilesCalls: Int = 0
         private set
