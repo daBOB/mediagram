@@ -58,8 +58,11 @@ natively, and never transcodes.
   through the channel, so a title started on one device continues on the
   other. The phone's start page carries Continue and Next up, with Watchlist
   and Collections beside them.
-- A kids profile sees only titles rated FSK 12 or under, plus unrated titles
-  marked for Kids by hand. The rule is ported from the web player.
+- A kids profile sees only titles rated at or under its age limit (FSK 6 or
+  12), plus unrated titles marked for kids of that age. It can also have a
+  daily watch limit, shared by every screen: a warning near the end, and at
+  zero what is playing finishes but nothing new opens until tomorrow. Both
+  rules are ported from the web player.
 - The phone reaches the web player's features — search, audio and subtitle
   choice, notes, up next, profile removal — with the differences it keeps on
   purpose written down in the Android system-menu spec, §9. Sync is on by

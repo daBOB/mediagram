@@ -484,9 +484,11 @@ channel again.
 
 ### Kids profiles
 
-A profile made with "Kids profile" ticked sees only titles rated FSK 12 or
-under, plus unrated titles someone marked for Kids by hand; everything else —
-FSK 16 and 18, unrated titles, and so every course unless marked — is hidden.
+A profile made with "Kids profile" ticked sees only titles rated at or under
+its age limit — FSK 6 or FSK 12, set by its parent (the profile roles spec,
+`docs/superpowers/specs/2026-09-28-profile-roles-design.md`) — plus unrated
+titles someone marked for kids of that age; everything else — FSK 16 and 18,
+unrated titles, and so every course unless marked — is hidden.
 The rule is `forKidsProfile` in `web/public/lib/age-rating.js`, ported to
 `android/core/model/src/main/kotlin/AgeRating.kt`, and each surface applies
 it once, where it takes in its catalog (`applyCatalog` in `app.js`,
@@ -516,6 +518,47 @@ it (and even then, only from the web; the phone cannot remove profiles).
 The dependable correction is a new profile under a different name.
 A device that has not been updated reads the key as absent and shows that
 profile everything until it is.
+
+#### Daily watch limit
+
+A kid can also have a daily limit: 30, 45, 60, 90, 120 or 180 minutes, or
+none, the same every day, set beside the age limit in Manage profiles by
+whoever may set that (the kid's parent, or the admin for a kid with none).
+The time counted is the time the viewing stats already record —
+`SUM(stats_days.seconds)` for the profile and today's local date over every
+device's rows — so every screen spends the one budget, and nothing new is
+counted. The web server's day is its own local date, a phone's or a
+television's its own.
+
+- **Five minutes left:** one notice per opened title, over the picture,
+  "Only a few minutes of watching left today. This one can finish."
+- **None left:** nothing opens — a shelf, a resume, Next up, the next
+  episode (its button and its autoplay), joining watch together — and the
+  viewer stays where they were with "That's all the watching for today. See
+  you tomorrow." What is already playing is never stopped: it plays to its
+  end. A grown-up who wants more time today raises the limit.
+
+The rule, its words and its choices are written once in
+`web/public/lib/daily-limit.js`, ported to
+`android/core/model/src/main/kotlin/DailyLimit.kt`, and both are held to
+`web/test/fixtures/watch-state/daily-limit.json`. The browser asks the
+server (`GET /api/profiles/:id/today` before a title opens; the progress
+`PUT` answers a limited kid with the same `{ limitMinutes, watchedSeconds }`)
+and never counts by itself; Android reads the core's `watched_today`.
+
+It is the age filter's kind of rule, a household's and not a lock: switching
+to a sibling's profile is as free as before, a server or core that cannot be
+asked lets the title open, and another device's minutes arrive with its next
+sync round — up to about five minutes late while it plays (web state sync
+must be on, `MEDIAGRAM_SYNC_STATE`), so a kid moving between screens can run
+a few minutes over.
+
+The limit is `profiles.daily_limit` and `daily_limit_updated_at` (web state
+v14, core state v10) and travels as `dailyLimit: { minutes: number | null,
+updatedAt }` on the kid in the sync record, `format` still 1. The newest
+`updatedAt` wins, ties by device id; `null` — taken off — is kept as a value
+so it goes on winning over the limit it replaced; a grown-up never carries
+one; a document without the key never unsays one.
 
 ### Watch state
 
@@ -1160,9 +1203,10 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   limit select and Remove along each row; on a remote, buttons along a row would make Down
   mean "next button" in one row and "next person" in another. Each row is one stop that
   opens its choices (a kid's FSK 6 / FSK 12, the current one holding the remote, then
-  Remove; a grown-up's Reset PIN, then Remove), and Remove still asks in the web's words.
-  Adding asks the name on a screen of its own and then, for a kid, the limit (FSK 6 first),
-  for the reason text entry has its own screen everywhere on the television.
+  Daily limit, which opens its own choices, then Remove; a grown-up's Reset PIN, then
+  Remove), and Remove still asks in the web's words. Adding asks the name on a screen of
+  its own and then, for a kid, the age limit (FSK 6 first) and the daily limit, for the
+  reason text entry has its own screen everywhere on the television.
 - **The player's Kids choice is a dialog.** The web's select ("For kids": Not for kids,
   From 6, From 12) opens from the Kids mark as a dialog over the film, as Add to list does,
   so it outlasts the controls fading behind it.
