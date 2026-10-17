@@ -5,6 +5,8 @@
 
 package ui.player
 
+import player.ReportStage
+import player.ReportUi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -73,6 +75,8 @@ internal fun PlayerTopChrome(
     modifier: Modifier = Modifier,
     held: Boolean = false,
     onNotes: (() -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
+    report: ReportUi = ReportUi(),
     marks: @Composable () -> Unit = {},
     onBarBottom: (Int) -> Unit = {},
     together: TogetherUi = TogetherUi(),
@@ -87,6 +91,9 @@ internal fun PlayerTopChrome(
             showTitle = barShown,
             onBack = onBack,
             onNotes = onNotes,
+            onReport = onReport,
+            reportSent = report.stage == ReportStage.SENT,
+            reportSending = report.stage == ReportStage.SENDING,
             marks = marks,
             onBottom = onBarBottom,
             label = together.label,

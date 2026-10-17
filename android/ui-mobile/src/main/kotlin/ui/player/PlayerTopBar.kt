@@ -21,6 +21,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import model.ReportWords
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,8 +35,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -70,6 +71,9 @@ internal fun PlayerTopBar(
     showTitle: Boolean,
     onBack: () -> Unit,
     onNotes: (() -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
+    reportSent: Boolean = false,
+    reportSending: Boolean = false,
     modifier: Modifier = Modifier,
     marks: @Composable () -> Unit = {},
     /** Where the bar ends in the root, so a menu knows how far up it may reach. */
@@ -105,6 +109,7 @@ internal fun PlayerTopBar(
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.small), itemVerticalAlignment = Alignment.CenterVertically) {
                         marks()
                         if (onNotes != null) NotesButton(onNotes)
+                        if (onReport != null) ReportButton(onReport, enabled = !reportSent && !reportSending, sent = reportSent)
                     }
                 }
                 if (!showTitle) TapsReachThePicture()
@@ -124,6 +129,15 @@ private fun NotesButton(onClick: () -> Unit) {
     val source = remember { MutableInteractionSource() }
     CatalogueTextButton(onClick = onClick, interactionSource = source) {
         Text(text = "Notes", color = toolInk(source, enabled = true, rest = Color.White))
+    }
+}
+
+@Composable
+private fun ReportButton(onClick: () -> Unit, enabled: Boolean, sent: Boolean) {
+    val source = remember { MutableInteractionSource() }
+    val words = if (sent) ReportWords.SENT else ReportWords.BUTTON
+    CatalogueTextButton(onClick = onClick, enabled = enabled, interactionSource = source, modifier = Modifier.semantics { contentDescription = words }) {
+        Text(text = words, color = toolInk(source, enabled = enabled, rest = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)))
     }
 }
 

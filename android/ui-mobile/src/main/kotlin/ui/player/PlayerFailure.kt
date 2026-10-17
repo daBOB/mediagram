@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
+import model.ReportWords
 
 /**
  * A failed set's message, and Retry — the phone's touch equivalent of the
@@ -22,12 +23,15 @@ import designsystem.Spacing
  * than web debt.
  */
 @Composable
-internal fun PlayerFailure(message: String, onRetry: () -> Unit) {
+internal fun PlayerFailure(message: String, onRetry: () -> Unit, onReport: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize().padding(Spacing.large), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = message, color = Color.White, style = MaterialTheme.typography.bodyLarge)
             CatalogueTextButton(onClick = onRetry) {
                 Text(text = "Retry", color = Color.White)
+            }
+            CatalogueTextButton(onClick = onReport) {
+                Text(text = ReportWords.BUTTON, color = Color.White)
             }
         }
     }
