@@ -1,0 +1,49 @@
+{
+  "reasons": [
+    { "id": "wont-play", "words": "Won't play" },
+    { "id": "picture-sound", "words": "Picture or sound wrong" },
+    { "id": "subtitles", "words": "Subtitles wrong" },
+    { "id": "wrong-title", "words": "Wrong title or poster" }
+  ],
+  "words": {
+    "button": "Report",
+    "sent": "Reported",
+    "heading": "What's wrong?",
+    "note": "Anything else? (optional)",
+    "send": "Send",
+    "cancel": "Cancel",
+    "failed": "Couldn't send. Try again later."
+  },
+  "noteMax": 200,
+  "delaySeconds": 60,
+  "cases": [
+    {
+      "name": "a converted title on the web, with a note and an error",
+      "facts": { "reason": "wont-play", "title": "Hot Shots! (1991)", "note": "stops right after the intro", "profile": "andre", "screen": "Browser", "device": null, "app": "Web 0.126.0", "position": 754, "played": "converted", "held": false, "error": "The conversion stopped: ffmpeg exited 1", "setId": "3f2a9c" },
+      "text": "#mlib-report\nWon't play: Hot Shots! (1991)\n\"stops right after the intro\"\nandre · Browser · Web 0.126.0 · at 0:12:34\nPlayed: converted · Error: The conversion stopped: ffmpeg exited 1\nCheck: mediagram verify --full 3f2a9c"
+    },
+    {
+      "name": "a kid on the TV, played from the cache, no note",
+      "facts": { "reason": "picture-sound", "title": "Bluey · S1E3 · Hotel", "note": null, "profile": "TV kids", "screen": "TV", "device": "Hisense HTV", "app": "Android 0.126.0", "position": 65.9, "played": "direct", "held": true, "error": "ERROR_CODE_DECODER_INIT_FAILED", "setId": "b1" },
+      "text": "#mlib-report\nPicture or sound wrong: Bluey · S1E3 · Hotel\nTV kids · TV (Hisense HTV) · Android 0.126.0 · at 0:01:05\nPlayed: direct, from cache · Error: ERROR_CODE_DECODER_INIT_FAILED\nCheck: mediagram verify --full b1"
+    },
+    {
+      "name": "nothing known but the title: no profile, no position, a blank note, no playback line",
+      "facts": { "reason": "wrong-title", "title": "Alien (1979)", "note": "   ", "profile": null, "screen": "Phone", "device": "Pixel 8", "app": "Android 0.126.0", "position": null, "played": null, "held": false, "error": null, "setId": "a1" },
+      "text": "#mlib-report\nWrong title or poster: Alien (1979)\nPhone (Pixel 8) · Android 0.126.0\nCheck: mediagram verify --full a1"
+    },
+    {
+      "name": "a note across lines is one line; past an hour",
+      "facts": { "reason": "subtitles", "title": "Dune (2021)", "note": "  out of sync\n\tby two seconds  ", "profile": "test", "screen": "Tablet", "device": "Lenovo TB", "app": "Android 0.126.0", "position": 3725, "played": "direct", "held": false, "error": null, "setId": "d1" },
+      "text": "#mlib-report\nSubtitles wrong: Dune (2021)\n\"out of sync by two seconds\"\ntest · Tablet (Lenovo TB) · Android 0.126.0 · at 1:02:05\nPlayed: direct\nCheck: mediagram verify --full d1"
+    },
+    {
+      "name": "an error with nothing played; held alone says nothing",
+      "facts": { "reason": "wont-play", "title": "Film", "note": "", "profile": "andre", "screen": "Browser", "device": null, "app": "Web 0.126.0", "position": 0, "played": null, "held": true, "error": "MEDIA_ERR_DECODE", "setId": "f1" },
+      "text": "#mlib-report\nWon't play: Film\nandre · Browser · Web 0.126.0 · at 0:00:00\nError: MEDIA_ERR_DECODE\nCheck: mediagram verify --full f1"
+    }
+  ],
+  "notes": [
+    { "name": "cut to 200 and trimmed", "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bcd", "clean": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+  ]
+}
