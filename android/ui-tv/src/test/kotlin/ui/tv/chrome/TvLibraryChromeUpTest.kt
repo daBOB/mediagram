@@ -115,6 +115,28 @@ class TvLibraryChromeUpTest : TvScreenStateTest() {
         compose.onNodeWithText("Series").assertIsFocused()
     }
 
+    /**
+     * Continue and My List select no pill, so Up from either once led to the
+     * rail's own row, and the rail's Right led back to the wall: on the box
+     * the bar could not be reached from Continue at all. Up lands on the
+     * first pill instead, still one fixed stop rather than whatever sits above.
+     */
+    @Test
+    fun upFromAKeptWallReachesTheFirstPill() {
+        val card = FocusRequester()
+        show {
+            chrome(listOf("Home", "Movies", "Series"), selectedPill = -1) {
+                Box(Modifier.size(120.dp).testTag("card").focusRequester(card).focusable())
+                LaunchedEffect(Unit) { card.requestFocus() }
+            }
+        }
+        compose.onNodeWithTag("card").assertIsFocused()
+
+        compose.onNodeWithTag("card").performKeyInput { pressKey(Key.DirectionUp) }
+
+        compose.onNodeWithText("Home").assertIsFocused()
+    }
+
     @Composable
     private fun chrome(
         pills: List<String>,

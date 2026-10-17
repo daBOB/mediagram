@@ -103,9 +103,13 @@ internal fun TvLibraryChrome(
 
     fun railArrivalTarget(): FocusRequester = focus.railTarget(railActive ?: RailItem.MY_LIST)
 
-    // Where Back and Up leave the page for: the selected pill, or — a kept
-    // wall, with no pill selected — its rail row.
+    // Where Back leaves the page for: the selected pill, or — a kept wall,
+    // with no pill selected — its rail row. Up always goes to
+    // [TvChromeFocus.selectedPillFocus], which a kept wall puts on the first
+    // pill: sent to the rail row as well, the bar was out of reach there.
     fun pageExitTarget(): FocusRequester = if (selectedPill >= 0) focus.selectedPillFocus else railArrivalTarget()
+
+    fun upTarget(): FocusRequester = focus.selectedPillFocus
 
     // Enabled only while the remote is actually inside content.
     BackHandler(enabled = contentHasFocus) { pageExitTarget().requestFocus() }
@@ -151,7 +155,7 @@ internal fun TvLibraryChrome(
                         onExit = {
                             when (requestedFocusDirection) {
                                 FocusDirection.Left -> if (hasRail) railArrivalTarget().requestFocus() else if (contentHasFocus) cancelFocusChange()
-                                FocusDirection.Up -> if (contentHasFocus) pageExitTarget().requestFocus()
+                                FocusDirection.Up -> if (contentHasFocus) upTarget().requestFocus()
                                 else -> Unit
                             }
                         }
@@ -164,7 +168,7 @@ internal fun TvLibraryChrome(
                         .frostSource(frost)
                         .focusRequester(focus.contentFocus)
                         // `onExit` above only hears an Up that found a stop; this one hears the rest.
-                        .upWithNothingAboveLeavesFor(::pageExitTarget)
+                        .upWithNothingAboveLeavesFor(::upTarget)
                         .onFocusChanged { state ->
                             contentHasFocus = state.hasFocus
                             if (state.hasFocus) lastInBar = false
@@ -199,7 +203,7 @@ internal fun TvLibraryChrome(
                 rowRequesters = focus.railRowFocus,
                 onSelect = onRailSelect,
                 // The page's own restorer puts the remote back on the plate it left.
-                onRight = { (if (lastInBar && selectedPill >= 0) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
+                onRight = { (if (lastInBar) focus.selectedPillFocus else focus.contentFocus).requestFocus() },
                 onHasFocusChanged = { railHasFocus = it },
                 modifier = Modifier.align(Alignment.CenterStart),
             )

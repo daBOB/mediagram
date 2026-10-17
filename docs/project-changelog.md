@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.124.1 — Up from Continue reaches the bar
+
+**Fixed** (Android TV)
+
+- **Up from Continue and My List reaches the departments bar again.** Neither selects a pill, so Up from the wall's top row went to the rail's own row instead, and Right from the rail went back to the wall: the bar could not be reached from either. Up now lands on the bar's first pill, still one fixed stop as on every other tab. Back still leaves for the rail.
+
 ## 0.124.0 — a frosted bar on the TV, and a sharpening switch to measure
 
 The open branches, merged: `feat/tv-frost`, `spike/video-sharpen` and the superseded `measure/tv-frost`.

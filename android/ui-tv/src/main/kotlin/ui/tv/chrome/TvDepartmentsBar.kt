@@ -48,6 +48,7 @@ private val TvFrostStyle = frostBlurStyle(18.tvDp)
  *
  * [selected] is `-1` on a kept wall (My List/Continue): the rail
  * chose it directly, and no pill in this row is the current one.
+ * [selectedPillFocus] then stands on the first pill, where Up from the wall lands.
  *
  * [downTarget] is where Down from any control on this row leads —
  * [TvLibraryChrome]'s own content box, so a pill press that (deliberately)

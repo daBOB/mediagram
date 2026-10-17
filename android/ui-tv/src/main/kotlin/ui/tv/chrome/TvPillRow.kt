@@ -39,7 +39,11 @@ internal fun barBackground(blend: Float, frosted: Boolean = false): Color = ui.c
 @ReadOnlyComposable
 internal fun barInk(blend: Float): Color = lerp(TvOverCoverInk, MaterialTheme.colorScheme.onBackground, blend)
 
-/** Each pill's own requester, held by the bar so its end controls can name the last pill; the selected one's is [selectedPillFocus]. */
+/**
+ * Each pill's own requester, held by the bar so its end controls can name the
+ * last pill; the selected one's is [selectedPillFocus] — the first pill's on a
+ * kept wall, which selects none, so Up from that wall still has a pill to reach.
+ */
 @Composable
 internal fun rememberPillRequesters(
     pills: List<String>,
@@ -47,7 +51,8 @@ internal fun rememberPillRequesters(
     selectedPillFocus: FocusRequester,
 ): (Int) -> FocusRequester {
     val held = remember { HashMap<String, FocusRequester>() }
-    return { index -> if (index == selected) selectedPillFocus else held.getOrPut(pills[index]) { FocusRequester() } }
+    val upStop = selected.coerceAtLeast(0)
+    return { index -> if (index == upStop) selectedPillFocus else held.getOrPut(pills[index]) { FocusRequester() } }
 }
 
 /**
