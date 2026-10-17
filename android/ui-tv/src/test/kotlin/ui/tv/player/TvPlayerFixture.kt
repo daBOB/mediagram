@@ -16,6 +16,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import data.CatalogRepository
 import data.PlayerPreferences
+import data.ReportChannel
 import data.WatchSync
 import io.mockk.every
 import io.mockk.mockk
@@ -24,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import org.robolectric.RuntimeEnvironment
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
 import playback.SKIP_MS
@@ -115,6 +117,10 @@ internal class TvPlayerFixture(
 
     val isPlaying: Boolean get() = media.isPlaying
 
+    /** The reports the player sent, as their text; while [reportFails], a send fails as an unreachable Telegram does. */
+    val reports = mutableListOf<String>()
+    var reportFails = false
+
     /** While set, `prepare()` leaves the title preparing until [becomeReady] — as a real file takes a while to open. */
     var holdPrepare = false
 
@@ -178,7 +184,15 @@ internal class TvPlayerFixture(
                     summary,
                     togetherLive = FakeTogetherLive(),
                     relay = ViewerRelay(),
-                    context = mockk(relaxed = true),
+                    // A real one: a report names the screen it was sent from, which the context answers.
+                    context = RuntimeEnvironment.getApplication(),
+                    reportChannel =
+                        object : ReportChannel {
+                            override suspend fun send(text: String) {
+                                check(!reportFails) { "Telegram unreachable" }
+                                reports += text
+                            }
+                        },
                 ) as T
             }
         }

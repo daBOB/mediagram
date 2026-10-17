@@ -3,6 +3,7 @@ package ui.tv.player
 import playback.PlaybackTotals
 import player.PlayerChoices
 import player.PlayerMarksState
+import player.ReportUi
 import player.UpNextUiState
 import player.together.TogetherUi
 
@@ -28,6 +29,10 @@ internal class TvPlayerExtras(
     val onOpenEpisodes: (() -> Unit)? = null,
     /** Opens and closes the notes column; null while the title has none, which leaves the Notes button out. */
     val onToggleNotes: (() -> Unit)? = null,
+    /** Opens the report; null leaves the Report button out. */
+    val onReport: (() -> Unit)? = null,
+    /** How the open title's report stands, which the Report button reads. */
+    val report: ReportUi = ReportUi(),
     /** Whether the episode list is open down the right, which the card then stands clear of. */
     val sidebarOpen: Boolean = false,
     /** Watch together's tool and label, as the player decides them, and what its OK does. */

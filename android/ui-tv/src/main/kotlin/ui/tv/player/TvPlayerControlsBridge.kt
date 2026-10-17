@@ -8,6 +8,7 @@ import model.MediaSet
 import player.PlayerChoices
 import player.PlayerMarksState
 import player.PlayerViewModel
+import player.ReportUi
 import player.UpNextUiState
 import player.createListAndAdd
 import player.onTogetherButton
@@ -32,6 +33,8 @@ internal class TvControlsView(
     val hasEpisodes: Boolean = false,
     /** Whether the episode list is open. */
     val sidebarOpen: Boolean = false,
+    /** How the open title's report stands, for the Report button. */
+    val report: ReportUi = ReportUi(),
 )
 
 /** What pressing the controls does to the screen's own state rather than to the player. */
@@ -133,6 +136,8 @@ internal fun TvPlayerControlsForViewModel(
                 onPlayNext = viewModel::playNext,
                 onOpenEpisodes = actions.onOpenEpisodes.takeIf { view.hasEpisodes },
                 onToggleNotes = actions.onToggleNotes,
+                onReport = { viewModel.openReport(fromFailure = false) },
+                report = view.report,
                 sidebarOpen = view.sidebarOpen,
                 together = together,
                 onTogether = viewModel::onTogetherButton,
@@ -170,12 +175,13 @@ internal fun TvAddToListOverPlayer(
     }
 }
 
-/** The list and Kids dialogs over the film, while they are open; [keys] is offered each of their keys first. */
+/** The list, Kids and report dialogs over the film, while they are open; [keys] is offered each of their keys first. */
 @Composable
 internal fun TvMarkDialogs(
     overlays: TvPlayerOverlayState,
     marks: PlayerMarksState?,
     notice: String?,
+    report: ReportUi,
     viewModel: PlayerViewModel,
     keys: (KeyEvent) -> Boolean,
 ) {
@@ -183,4 +189,5 @@ internal fun TvMarkDialogs(
         TvAddToListOverPlayer(marks = marks, notice = notice, viewModel = viewModel, onDismiss = { overlays.choosingList = false }, keys = keys)
     }
     if (overlays.choosingKids) TvKidsChoiceOverPlayer(marks = marks, viewModel = viewModel, onDismiss = { overlays.choosingKids = false }, keys = keys)
+    TvReportOverPlayer(report = report, viewModel = viewModel, keys = keys)
 }

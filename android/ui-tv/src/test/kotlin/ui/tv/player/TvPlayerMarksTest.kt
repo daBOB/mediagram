@@ -6,12 +6,9 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
-import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.pressKey
 import model.Profile
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -139,11 +136,6 @@ class TvPlayerMarksTest : TvPlayerScreenHarness() {
         compose.onNodeWithTag(TvActionNoticeTag).assertDoesNotExist()
     }
 
-    /** A key to the dialog's own window, whose focus is separate from the player's underneath it. */
-    private fun pressInDialog(key: Key) {
-        compose.onNode(isFocused() and hasAnyAncestor(isDialog())).performKeyInput { pressKey(key) }
-        compose.waitForIdle()
-    }
 }
 
 /** The same player for a kids profile: a child does not approve titles for itself, so there is no Kids mark to press. */

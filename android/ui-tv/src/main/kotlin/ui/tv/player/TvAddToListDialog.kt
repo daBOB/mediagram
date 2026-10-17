@@ -58,13 +58,15 @@ internal fun TvAddToListDialog(
 ) {
     var naming by rememberSaveable { mutableStateOf(false) }
     if (naming) {
-        NewListQuestion(
-            onConfirm = { name ->
-                naming = false
-                onCreate(name.trim())
-            },
-            onDismiss = { naming = false },
-        )
+        TvQuestionWindow(onDismiss = { naming = false }) {
+            TvListNameQuestion(
+                onConfirm = { name ->
+                    naming = false
+                    onCreate(name.trim())
+                },
+                onDismiss = { naming = false },
+            )
+        }
         return
     }
 
@@ -105,14 +107,15 @@ internal fun TvAddToListDialog(
 }
 
 /**
- * The catalogue's own name question, over the film in a window of its own:
- * the whole screen, as it is in the Lists tab, because the keyboard it
- * brings up takes half the screen anyway.
+ * A one-line question over the film in a window of its own — the list's
+ * name, the report's note: the whole screen, as the Lists tab asks it,
+ * because the keyboard it brings up takes half the screen anyway. Back is
+ * [onDismiss].
  */
 @Composable
-private fun NewListQuestion(
-    onConfirm: (String) -> Unit,
+internal fun TvQuestionWindow(
     onDismiss: () -> Unit,
+    question: @Composable () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
@@ -124,7 +127,7 @@ private fun NewListQuestion(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {
-            TvListNameQuestion(onConfirm = onConfirm, onDismiss = onDismiss)
+            question()
         }
     }
 }

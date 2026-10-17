@@ -13,9 +13,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 /**
- * [TvPlayerScreen] once its title has failed: the phone's message and
- * Retry, with the remote already on Retry, Centre pressing it, and every
- * key that would move a film doing nothing to one that is not there.
+ * [TvPlayerScreen] once its title has failed: the phone's message,
+ * Retry and Report, with the remote already on Retry, Centre pressing it,
+ * and every key that would move a film doing nothing to one that is not there.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
@@ -46,7 +46,8 @@ class TvPlayerRetryTest : TvPlayerScreenHarness() {
     fun theTransportKeysDoNothingToAFailedTitle() {
         failNow()
         val before = fixture.positionMs
-        for (key in listOf(Key.DirectionLeft, Key.DirectionRight, Key.MediaRewind, Key.MediaFastForward, Key.MediaPlayPause, Key.DirectionUp, Key.DirectionDown)) {
+        // Right goes over to Report and Left comes back: they move the remote, not the film.
+        for (key in listOf(Key.DirectionRight, Key.DirectionLeft, Key.MediaRewind, Key.MediaFastForward, Key.MediaPlayPause, Key.DirectionUp, Key.DirectionDown)) {
             press(key)
         }
         assertEquals(before, fixture.positionMs)

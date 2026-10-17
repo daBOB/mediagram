@@ -127,7 +127,7 @@ class TvLoadingLeaderTest : TvScreenStateTest() {
     @Test
     fun theStageWhileATitleOpensIsTheLeaderAloneAndSaysLoading() {
         val retry = FocusRequester()
-        show { TvPlayerStatus(state = PlayerUiState.Preparing, retry = retry, onRetry = {}) }
+        show { TvPlayerStatus(state = PlayerUiState.Preparing, retry = retry, onRetry = {}, onReport = {}) }
 
         val drawing = leader().bounds()
         assertDp(96.tvDp, drawing.right - drawing.left)

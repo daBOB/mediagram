@@ -18,7 +18,10 @@ import androidx.tv.material3.Text
 import designsystem.Spacing
 import designsystem.tvDp
 import model.MediaSet
+import model.ReportWords
 import player.PlayerMarksState
+import player.ReportStage
+import player.ReportUi
 import player.technicalLine
 import player.titleLine
 
@@ -28,16 +31,20 @@ internal const val TvPlayerTitleTag = "tv-player-title"
 /**
  * The slim bar along the top: what is playing and what the file is — the
  * shared [titleLine] over [technicalLine], set quieter because it answers a
- * question a viewer only sometimes has — and beside it the marks and
- * Notes, the web's top bar. In watch together [label] names who is in the
- * session beside the title ("Together · TV, Tablet"). The title is only read; the marks and Notes
- * are pressed, one press up from the seek bar, and Down from them goes
- * straight back to it. Beside the episode list there is room for the marks
- * or the title, not both: the marks stay, being pressed, and the list's
- * "Now playing" row names the title meanwhile ([titleShown]).
+ * question a viewer only sometimes has — and beside it the marks, Notes
+ * and Report, the web's top bar. In watch together [label] names who is in the
+ * session beside the title ("Together · TV, Tablet"). The title is only read;
+ * the marks, Notes and Report are pressed, one press up from the seek bar, and
+ * Down from them goes straight back to it. Beside the episode list there is
+ * room for the marks or the title, not both: the marks stay, being pressed, and
+ * the list's "Now playing" row names the title meanwhile ([titleShown]).
+ *
+ * Report ([onReport]) ends the bar. Sent, it reads Reported and can no longer
+ * be pressed, but still takes the remote, as a rated title's Kids mark does:
+ * the bar's last stop stays where it was.
  *
  * Set as the web's `.hud-top`: the title in Fraunces at `.hud .what`'s size,
- * the marks and Notes as `.ghost` labels in the interface face, [TvBarGap]
+ * the marks, Notes and Report as `.ghost` labels in the interface face, [TvBarGap]
  * between them — transparent until focused, as the tablet's are, where the
  * web rims each in a hairline. The file line under the title is the
  * television's own: the web's and the tablet's bars carry the title alone.
@@ -52,6 +59,8 @@ internal fun TvPlayerTopBar(
     modifier: Modifier = Modifier,
     titleShown: Boolean = true,
     label: String? = null,
+    onReport: (() -> Unit)? = null,
+    report: ReportUi = ReportUi(),
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(TvBarGap), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall)) {
@@ -90,7 +99,7 @@ internal fun TvPlayerTopBar(
                 }
             }
         }
-        TvMarksRail(marks = marks, actions = markActions, first = focus.marks, down = focus.seekBar, lastInBar = onToggleNotes == null)
+        TvMarksRail(marks = marks, actions = markActions, first = focus.marks, down = focus.seekBar, lastInBar = onToggleNotes == null && onReport == null)
         onToggleNotes?.let { toggle ->
             TvCardButton(
                 text = "Notes",
@@ -101,9 +110,26 @@ internal fun TvPlayerTopBar(
                     Modifier
                         .focusProperties {
                             down = focus.seekBar
-                            right = FocusRequester.Cancel
+                            right = if (onReport != null) focus.report else FocusRequester.Cancel
                             if (marks == null) left = FocusRequester.Cancel
                         }.focusRequester(focus.notes),
+                padding = TvGhostPadding,
+            )
+        }
+        onReport?.let { open ->
+            val sent = report.stage == ReportStage.SENT
+            TvCardButton(
+                text = if (sent) ReportWords.SENT else ReportWords.BUTTON,
+                style = TvPlayerType.ghost,
+                enabled = !sent && report.stage != ReportStage.SENDING,
+                onClick = open,
+                modifier =
+                    Modifier
+                        .focusProperties {
+                            down = focus.seekBar
+                            right = FocusRequester.Cancel
+                            if (marks == null && onToggleNotes == null) left = FocusRequester.Cancel
+                        }.focusRequester(focus.report),
                 padding = TvGhostPadding,
             )
         }
