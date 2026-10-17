@@ -35,7 +35,7 @@ internal suspend fun TogetherController.joinLive(found: LiveSession) {
     if (asked != generation) return
     if (!here) return view.show(NOT_HERE)
     live.joinOnOpen(found.id)
-    openTitle(found.session.set)
+    openTitle(found.session.set) {}
 }
 
 /** Joins session [id] on the title open now. */

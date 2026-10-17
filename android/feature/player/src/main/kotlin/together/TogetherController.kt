@@ -35,8 +35,8 @@ internal const val SEEK_SETTLE_MS = 300L
 internal class TogetherController(
     val live: TogetherLive,
     handle: PlayerHandle,
-    /** Opens a title the session moved to, as Next does. */
-    val openTitle: (String) -> Unit,
+    /** Opens a title the session moved to, as Next does; the second is called when the daily limit refuses it. */
+    val openTitle: (String, onRefused: () -> Unit) -> Unit,
     /** A title in this profile's catalog, or `null`: a kids profile does not see some. */
     val titleOf: suspend (String) -> MediaSet?,
     /** What this screen is called in a session: TV, Tablet or Phone. */

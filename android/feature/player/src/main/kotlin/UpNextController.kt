@@ -132,7 +132,7 @@ class UpNextController(
     }
 
     /** The title a watch-together session moved to, asked for as Next asks: at once, so a countdown here stops. */
-    fun requestTitle(id: String) = switchTo(id, gate = false, run.takeIf { id in it }.orEmpty())
+    fun requestTitle(id: String, onRefused: () -> Unit = {}) = switchTo(id, gate = false, run.takeIf { id in it }.orEmpty(), onRefused)
 
     /** Remembered for this title only, so watching the last moments again does not start the countdown a second time. */
     fun cancel() {
@@ -183,20 +183,21 @@ class UpNextController(
     }
 
     /** Every in-player switch — Next, the countdown, the episode list, a joined session's move — ends here, so the daily limit is asked here. */
-    private fun switchTo(id: String, gate: Boolean, run: List<String> = this.run) {
+    private fun switchTo(id: String, gate: Boolean, run: List<String> = this.run, refused: () -> Unit = {}) {
         stopCountdown()
         if (!limit.applies()) return switchNow(id, gate, run)
         switchJob?.cancel()
         switchJob = scope.launch {
-            if (limit.mayOpen()) switchNow(id, gate, run) else refuse()
+            if (limit.mayOpen()) switchNow(id, gate, run) else refuse(refused)
         }
     }
 
     /** Nothing about the title playing changes: it plays to its end, and its countdown does not start over. */
-    private fun refuse() {
+    private fun refuse(refused: () -> Unit) {
         session.openSetId?.let { cancelledIds += it }
         evaluate()
         onRefused()
+        refused()
     }
 
     private fun switchNow(id: String, gate: Boolean, run: List<String>) {

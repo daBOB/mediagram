@@ -170,7 +170,7 @@ internal class LibraryFlowFixture(
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 // The library's daily-limit door, resolved beside the catalog on every draw.
-                LibraryPlayGate::class.java to LibraryPlayGate(stored),
+                LibraryPlayGate::class.java to LibraryPlayGate(stored, together),
                 SettingsViewModel::class.java to settings,
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cache,

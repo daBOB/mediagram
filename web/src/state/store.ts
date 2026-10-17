@@ -209,8 +209,8 @@ export class WatchState {
   }
 
   /** The profile's daily limit and what it has watched today, or `null` for no such profile. */
-  today(profileId: string): Today | null {
-    return readToday(this.db, profileId, Date.now());
+  today(profileId: string, limitedOnly = false): Today | null {
+    return readToday(this.db, profileId, Date.now(), limitedOnly);
   }
 
   /** Forgets a position: started again, or watched to the end. */

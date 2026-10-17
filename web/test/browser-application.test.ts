@@ -768,6 +768,30 @@ describe("kids profiles", () => {
     expect(page()).not.toContain("Grown");
   });
 
+  test("a Join the daily limit refused is not left armed for the next title opened", async () => {
+    const live = { session: "s-1", set: "Family", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+    let out = true;
+    const base = intercept;
+    intercept = (url, init) => {
+      if (url.endsWith("/today")) return Response.json({ limitMinutes: 30, watchedSeconds: out ? 1800 : 60 });
+      if (url === "/api/together" && init?.method === "POST") return Response.json({ id: 7, session: live, serverNow: 0 });
+      return base(url, init);
+    };
+    await start();
+    stream().fire("together", { id: 7, session: live, serverNow: 0 });
+    await env.navigate("#/film/Family");
+    byClass(env.node("main"), "film-play").fire("click");
+    await settle();
+    expect(env.node("player").open).toBe(false);
+    out = false;
+    await env.navigate("#/film/Marked");
+    byClass(env.node("main"), "film-play").fire("click");
+    await settle();
+    expect(env.node("player").open).toBe(true);
+    const posted = env.requests.filter((request) => request.url === "/api/together" && request.options?.method === "POST");
+    expect(posted).toEqual([]);
+  });
+
   test("a catalog refresh on a kids profile is filtered too", async () => {
     await start();
     catalog = JSON.stringify([rated("Family", "6"), rated("Grown", "16"), rated("Later", "18"), rated("Also", "0")]);

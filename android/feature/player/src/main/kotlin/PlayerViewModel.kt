@@ -102,7 +102,11 @@ class PlayerViewModel @Inject constructor(
         UpNextController(
             viewModelScope, handle, session, catalogRepository, choicesController.openSet,
             limit = dailyLimit,
-            onRefused = { tellLimit(DailyLimitWords.OUT) },
+            onRefused = {
+                tellLimit(DailyLimitWords.OUT)
+                // A refused Join must not stay armed for the next title opened.
+                togetherLive.takeJoin()
+            },
         )
     val upNext: StateFlow<UpNextUiState> = upNextController.state
     /** Watch together in this player; see `PlayerViewModelTogether.kt`. */

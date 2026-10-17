@@ -12,6 +12,7 @@ import {
   forgetTogether, heardTogether, onTogether, openForTogether, refreshTogether, screen, serverNow, setForTogether, setInTogether,
   takeJoin, together, togetherNow,
 } from "../together-now.js";
+import { DAILY_LIMIT_WORDS } from "../daily-limit.js";
 import { COULD_NOT_START, ENDED, LEFT_NOT_HERE, NOT_HERE, say } from "./together-words.js";
 import { togetherView } from "./together-view.js";
 import { playerSteps } from "./together-steps.js";
@@ -57,11 +58,11 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     void refreshTogether();
   }
 
-  /** The session's next title; one this profile may not see (a kids profile's limit) is where this screen leaves. */
+  /** The session's next title; one this profile may not see, or may not open for today's limit, is where this screen leaves. */
   function openTitle(set) {
     if (!setForTogether(set)) return void leave(LEFT_NOT_HERE);
     expecting = set;
-    openForTogether(set);
+    void openForTogether(set).then((opened) => opened === false && expecting === set && leave(DAILY_LIMIT_WORDS.out));
   }
 
   function end(message) {

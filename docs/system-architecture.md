@@ -537,6 +537,10 @@ television's its own.
   viewer stays where they were with "That's all the watching for today. See
   you tomorrow." What is already playing is never stopped: it plays to its
   end. A grown-up who wants more time today raises the limit.
+- **In watch together**, a kid who cannot follow the session to its next
+  title leaves the session with those words, as one does whose age limit
+  the new title is above; a refused open also drops a Join still waiting
+  to happen, so the next title anyone opens on that screen does not join.
 
 The rule, its words and its choices are written once in
 `web/public/lib/daily-limit.js`, ported to

@@ -38,10 +38,10 @@ in Manage profiles instead), weekday/weekend limits, bedtime windows.
 
 | # | Phase | Status |
 |---|---|---|
-| 1 | [Limit data, sync and rule](phase-01-limit-data-sync-and-rule.md): web server + Rust core + fixtures | pending |
-| 2 | [Web player](phase-02-web-player.md): Manage, open gate, warning, next-episode stop | pending |
-| 3 | [Android](phase-03-android.md): FFI, Manage (phone + TV), player gate, warning | pending |
-| 4 | [Docs, version, devices](phase-04-docs-version-devices.md) | pending |
+| 1 | [Limit data, sync and rule](phase-01-limit-data-sync-and-rule.md): web server + Rust core + fixtures | done |
+| 2 | [Web player](phase-02-web-player.md): Manage, open gate, warning, next-episode stop | done |
+| 3 | [Android](phase-03-android.md): FFI, Manage (phone + TV), player gate, warning | done |
+| 4 | [Docs, version, devices](phase-04-docs-version-devices.md) | done except the device walk (needs a kid profile; asked 2026-10-17) |
 
 Phase 1 blocks 2 and 3; 2 and 3 are independent of each other.
 

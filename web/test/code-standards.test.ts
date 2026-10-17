@@ -69,7 +69,8 @@ const ROOT = join(import.meta.dir, "..");
  * read the SQLite code through `errorCode`.
  * Raised 2026-10-17 for `src/state/store.ts`, by 6, and `src/state/profiles-manage.ts`, to 212,
  * for a kid's daily limit (`today`, `setDailyLimit`); and `public/app.js`, by 3, and
- * `public/lib/watch-state.js`, by 7, for the open gate and hearing the count back.
+ * `public/lib/watch-state.js`, by 7, for the open gate and hearing the count back;
+ * `public/app.js` again, by 4, so a refused open drops its pending Join and answers whether it opened.
  * Raised 2026-10-09 for `src/index.ts`, by 5, for watch together's hub, its
  * push sink, its recheck timer and its route. Raised the same day for `app.js`,
  * by 2, to hand the library session watch together's share of the event stream.
@@ -84,7 +85,7 @@ const ROOT = join(import.meta.dir, "..");
  * announced as carrying on from this profile's own.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 701,
+  "public/app.js": 705,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,

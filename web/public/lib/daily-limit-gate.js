@@ -24,6 +24,8 @@ let pageNotice = null;
 
 /** How long the player's status line holds the words: longer than watch together's two seconds, for a child to read. */
 const HOLD_MS = 8000;
+/** As long as `refreshState` waits: an open never hangs on a slow server, which lets the title open. */
+const TODAY_TIMEOUT_MS = 1500;
 
 /**
  * Tells the viewer where they are: over the picture while the player is open
@@ -59,7 +61,7 @@ export async function mayOpen() {
   latest = null;
   if (id === null || state.profile()?.kids !== true) return true;
   try {
-    const response = await fetch(`/api/profiles/${encodeURIComponent(id)}/today`);
+    const response = await fetch(`/api/profiles/${encodeURIComponent(id)}/today`, { signal: AbortSignal.timeout(TODAY_TIMEOUT_MS) });
     if (response.ok) latest = await response.json();
   } catch {
     // Unreachable: the rule is a household's, not a lock.

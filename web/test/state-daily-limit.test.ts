@@ -104,6 +104,9 @@ describe("watched today", () => {
 
     expect(state.today(kid.id)).toEqual({ limitMinutes: null, watchedSeconds: 900.5 });
     expect(leftToday(state, kid.id).status).toBe(204);
+    // No limit: the progress write does not sum, the plain read still does.
+    expect(state.today(kid.id, true)).toEqual({ limitMinutes: null, watchedSeconds: 0 });
+    expect(leftToday(state, admin.id).status).toBe(204);
     state.manage().setDailyLimit(admin.id, "1111", kid.id, 30);
     const answer = leftToday(state, kid.id);
     expect(answer.status).toBe(200);

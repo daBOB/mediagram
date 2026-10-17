@@ -91,7 +91,7 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
 
 /** The answer to a position write: a limited kid hears how much is left, anyone else the 204 they always did. */
 export function leftToday(state: WatchState, profileId: string): PlayerResponse {
-  const today = state.today(profileId);
+  const today = state.today(profileId, true);
   return today?.limitMinutes == null ? bodiless(204) : json(JSON.stringify(today), false);
 }
 

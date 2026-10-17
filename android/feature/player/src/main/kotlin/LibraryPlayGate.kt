@@ -3,6 +3,7 @@ package player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import data.TogetherLive
 import data.WatchStateRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ internal const val LIBRARY_NOTICE_MS = 10_000L
 @HiltViewModel
 class LibraryPlayGate @Inject constructor(
     repository: WatchStateRepository,
+    private val togetherLive: TogetherLive,
 ) : ViewModel(), PlayGate {
     private val limit = DailyLimitGate(repository)
 
@@ -35,6 +37,8 @@ class LibraryPlayGate @Inject constructor(
 
     override suspend fun mayOpen(): Boolean {
         if (limit.mayOpen()) return true
+        // A Join that was refused must not be left armed for whatever opens next.
+        togetherLive.takeJoin()
         _notice.value = DailyLimitWords.OUT
         hide?.cancel()
         hide = viewModelScope.launch {

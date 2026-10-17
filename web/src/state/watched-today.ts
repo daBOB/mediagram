@@ -15,12 +15,18 @@ export interface Today {
   watchedSeconds: number;
 }
 
-/** `null` when there is no such profile. A grown-up has no limit, so none shows. */
-export function readToday(db: Database | null, profileId: string, nowMs: number): Today | null {
+/**
+ * `null` when there is no such profile. A grown-up has no limit, so none shows.
+ * `limitedOnly` skips the sum for anyone without a limit (watched reads 0): the
+ * progress write asks for it, and only a limited kid's answer carries the total.
+ */
+export function readToday(db: Database | null, profileId: string, nowMs: number, limitedOnly = false): Today | null {
   const row = db?.query("SELECT kids, daily_limit AS limitMinutes FROM profiles WHERE id = ?1")
     .get(profileId) as { kids: number; limitMinutes: number | null } | null | undefined;
   if (!db || !row) return null;
+  const limitMinutes = row.kids !== 0 ? row.limitMinutes : null;
+  if (limitedOnly && limitMinutes === null) return { limitMinutes, watchedSeconds: 0 };
   const sum = db.query("SELECT COALESCE(SUM(seconds), 0) AS seconds FROM stats_days WHERE profile_id = ?1 AND day = ?2")
     .get(profileId, localDay(nowMs)) as { seconds: number };
-  return { limitMinutes: row.kids !== 0 ? row.limitMinutes : null, watchedSeconds: sum.seconds };
+  return { limitMinutes, watchedSeconds: sum.seconds };
 }

@@ -32,8 +32,8 @@ export function heardTogether(payload: { id: number; session: Session | null; se
 /** Takes session `id` out of this tab's view, telling listeners as a `null` event would. */
 export function forgetTogether(id: number): void;
 export function together(body: Record<string, unknown>): Promise<{ ok: boolean; status: number; body: any }>;
-export function setTogetherOpener(open: (set: CatalogSet) => void, find: (setId: string) => CatalogSet | null): void;
+export function setTogetherOpener(open: (set: CatalogSet) => Promise<boolean> | void, find: (setId: string) => CatalogSet | null): void;
 /** The set `setId` names in this profile's catalog, or `null` when it is not in it. */
 export function setForTogether(setId: string): CatalogSet | null;
-export function openForTogether(setId: string, join?: number | null): void;
+export function openForTogether(setId: string, join?: number | null): Promise<boolean>;
 export function takeJoin(): number | null;

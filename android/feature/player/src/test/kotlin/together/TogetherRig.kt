@@ -62,6 +62,9 @@ internal class TogetherRig(
 
     /** Every title the controller asked the player to open, in order. */
     val opened = mutableListOf<String>()
+
+    /** Whether the daily limit refuses every title the controller asks to open. */
+    var refusing = false
     private val sets = listOf(EP1, EP2).associateWith { fakeMediaSet(it, durationSecs = 1500) }
 
     init {
@@ -86,7 +89,7 @@ internal class TogetherRig(
         TogetherController(
             wrap(live),
             handle,
-            openTitle = { opened += it },
+            openTitle = { id, refused -> opened += id; if (refusing) refused() },
             titleOf = { sets[it] },
             label = { "Tablet" },
             scope = CoroutineScope(test.backgroundScope.coroutineContext + UnconfinedTestDispatcher(test.testScheduler)),
