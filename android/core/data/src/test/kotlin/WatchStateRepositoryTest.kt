@@ -286,4 +286,33 @@ class WatchStateRepositoryTest {
             assertTrue(repository.snapshot.value.watched.single().finishedAt > first)
             assertEquals(emptyList(), repository.snapshot.value.progress)
         }
+
+    @Test
+    fun aKidsDailyLimitIsMappedAndSetThroughTheCore() =
+        runTest {
+            val core =
+                FakeCore().apply {
+                    profiles = listOf(CoreProfile("a", "Ada", admin = true), CoreProfile("k", "Kim", kids = true, kidsAge = 6u, parentId = "a"))
+                    roles.pins["a"] = "1234"
+                }
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined)
+            repository.reload()
+            assertNull(repository.profiles.value.single { it.id == "k" }.dailyLimit)
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.SetDailyLimit("a", "1234", "k", 90)))
+            assertEquals(90, repository.profiles.value.single { it.id == "k" }.dailyLimit)
+            assertEquals(ProfileOutcome.Invalid, repository.manage(ProfileRequest.SetDailyLimit("a", "1234", "k", 100_000)))
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.SetDailyLimit("a", "1234", "k", null)))
+            assertNull(repository.profiles.value.single { it.id == "k" }.dailyLimit)
+            assertEquals(ProfileOutcome.Done, repository.manage(ProfileRequest.CreateKid("a", "1234", "Lou", 12, 45)))
+            assertEquals(45, repository.profiles.value.single { it.name == "Lou" }.dailyLimit)
+        }
+
+    @Test
+    fun watchedTodayAsksTheCoreForThisDevicesDate() =
+        runTest {
+            val core = FakeCore().apply { watchedTodayByProfile["k"] = 1234.5 }
+            val repository = DefaultWatchStateRepository(FakeCoreProvider(core), dispatcher = Dispatchers.Unconfined, today = { "2026-10-17" })
+            assertEquals(1234.5, repository.watchedToday("k"))
+            assertEquals(listOf("k" to "2026-10-17"), core.watchedTodayAsked)
+        }
 }

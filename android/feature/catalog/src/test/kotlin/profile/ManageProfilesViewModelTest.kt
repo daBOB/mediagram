@@ -106,6 +106,34 @@ class ManageProfilesViewModelTest {
         }
 
     @Test
+    fun aKidsDailyLimitIsSetClearedAndCanStartWithTheKid() =
+        runTest {
+            panelAs("b", "5678")
+            vm.setDailyLimit("t", 60)
+            assertEquals(60, repository.profiles.value.single { it.id == "t" }.dailyLimit)
+            vm.setDailyLimit("t", null)
+            assertNull(repository.profiles.value.single { it.id == "t" }.dailyLimit)
+            vm.addKid("Lina", 6, 45)
+            assertEquals(45, repository.profiles.value.single { it.name == "Lina" }.dailyLimit)
+            vm.addKid("Ole")
+            assertNull(repository.profiles.value.single { it.name == "Ole" }.dailyLimit)
+            assertNull(managing().notice)
+        }
+
+    /** Whoever may not set a kid's age limit may not set its daily limit either. */
+    @Test
+    fun aDailyLimitIsRefusedWhereTheAgeLimitIsAndAnOutOfRangeOneIsInvalid() =
+        runTest {
+            panelAs("a", "1234")
+            vm.setDailyLimit("t", 60)
+            assertEquals("That is not allowed.", managing().notice)
+            assertNull(repository.profiles.value.single { it.id == "t" }.dailyLimit)
+            vm.setDailyLimit("t", 0)
+            vm.addKid("Lina", 6, 100_000)
+            assertNull(repository.profiles.value.singleOrNull { it.name == "Lina" })
+        }
+
+    @Test
     fun removingAGrownUpTakesItsKidsWithIt() =
         runTest {
             panelAs("a", "1234")

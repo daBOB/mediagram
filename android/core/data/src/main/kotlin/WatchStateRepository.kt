@@ -91,6 +91,13 @@ interface WatchStateRepository {
     suspend fun manage(request: ProfileRequest): ProfileOutcome = ProfileOutcome.NotAllowed
 
     /**
+     * Seconds [profileId] has watched on this device's date now, summed over
+     * every device that synced — the count a kid's daily limit is held
+     * against. 0 when the core cannot say, and by default.
+     */
+    suspend fun watchedToday(profileId: String): Double = 0.0
+
+    /**
      * Saves progress for the chosen profile, the watch time since this
      * device's last write counted on this device's own date; does nothing
      * without one.
@@ -321,6 +328,11 @@ class DefaultWatchStateRepository(
         listed: Boolean,
     ) = writing { core, id ->
         core.setWatchlisted(id, setId, listed)
+    }
+
+    override suspend fun watchedToday(profileId: String): Double {
+        val core = coreProvider.awaitCore()
+        return withContext(dispatcher) { core.watchedToday(profileId, today()) }
     }
 
     override suspend fun manage(request: ProfileRequest): ProfileOutcome {

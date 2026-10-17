@@ -786,6 +786,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_daily_limit(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids_age(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_pin(
@@ -793,6 +795,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_unlock_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_stats(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_watched_today(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_has_synced_once(
     ): Int
@@ -946,9 +950,11 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_grown_up(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
     ): Long
-    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,
+    external fun uniffi_mediagram_core_fn_method_core_create_kid(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`kidsAge`: Byte,`dailyLimit`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_daily_limit(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`minutes`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids_age(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`kidsAge`: Byte,
     ): Long
@@ -957,6 +963,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_unlock_profile(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_stats(`ptr`: Long,`profileId`: RustBuffer.ByValue,`today`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_watched_today(`ptr`: Long,`profileId`: RustBuffer.ByValue,`day`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_has_synced_once(`ptr`: Long,
     ): Long
@@ -1254,10 +1262,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_grown_up() and 0xFFFF) != 18879) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 36307) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_kid() and 0xFFFF) != 25490) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_delete_profile() and 0xFFFF) != 32539) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_daily_limit() and 0xFFFF) != 6510) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids_age() and 0xFFFF) != 63867) {
@@ -1270,6 +1281,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_stats() and 0xFFFF) != 57714) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_watched_today() and 0xFFFF) != 11378) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_has_synced_once() and 0xFFFF) != 19015) {
@@ -1532,6 +1546,33 @@ public object FfiConverterUByte: FfiConverter<UByte, Byte> {
 
     override fun write(value: UByte, buf: ByteBuffer) {
         buf.put(value.toByte())
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterUShort: FfiConverter<UShort, Short> {
+    override fun lift(value: Short): UShort {
+        return value.toUShort()
+    }
+
+    fun lift(value: Int): UShort {
+        return value.toUShort()
+    }
+
+    override fun read(buf: ByteBuffer): UShort {
+        return lift(buf.getShort())
+    }
+
+    override fun lower(value: UShort): Short {
+        return value.toShort()
+    }
+
+    override fun allocationSize(value: UShort) = 2UL
+
+    override fun write(value: UShort, buf: ByteBuffer) {
+        buf.putShort(value.toShort())
     }
 }
 
@@ -2171,9 +2212,10 @@ public interface CoreInterface {
     suspend fun `createGrownUp`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `newPin`: kotlin.String): ProfileOutcome
 
     /**
-     * A grown-up adds a kid of its own, from 6 or from 12.
+     * A grown-up adds a kid of its own, from 6 or from 12, with a daily
+     * limit in minutes (1..=1440) or none.
      */
-    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte): ProfileOutcome
+    suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?): ProfileOutcome
 
     /**
      * Removes a profile and everything that was theirs — a grown-up with
@@ -2182,6 +2224,12 @@ public interface CoreInterface {
      * `profiles::chosen`.
      */
     suspend fun `deleteProfile`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String): ProfileOutcome
+
+    /**
+     * A parent sets its kid's daily limit in minutes (1..=1440); `None`
+     * takes it off. Allowed exactly where `set_kids_age` is.
+     */
+    suspend fun `setDailyLimit`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `minutes`: kotlin.UShort?): ProfileOutcome
 
     /**
      * A parent sets its kid's limit: 6 or 12.
@@ -2208,6 +2256,12 @@ public interface CoreInterface {
      * summary — never an error.
      */
     suspend fun `stats`(`profileId`: kotlin.String, `today`: kotlin.String): StatsSummary
+
+    /**
+     * Seconds `profile_id` has watched on `day` (`YYYY-MM-DD` where the
+     * viewer is), summed over every device. A storage failure reads as 0.
+     */
+    suspend fun `watchedToday`(`profileId`: kotlin.String, `day`: kotlin.String): kotlin.Double
 
     /**
      * Whether this device has taken in a sync round yet. Until it has, it
@@ -3726,10 +3780,11 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * A grown-up adds a kid of its own, from 6 or from 12.
+     * A grown-up adds a kid of its own, from 6 or from 12, with a daily
+     * limit in minutes (1..=1440) or none.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte) : ProfileOutcome {
+    override suspend fun `createKid`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `kidsAge`: kotlin.UByte, `dailyLimit`: kotlin.UShort?) : ProfileOutcome {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_mediagram_core_fn_method_core_create_kid(
@@ -3739,6 +3794,7 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`pin`),
         FfiConverterString.lower(`name`),
         FfiConverterUByte.lower(`kidsAge`),
+        FfiConverterOptionalUShort.lower(`dailyLimit`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3768,6 +3824,34 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`actorId`),
         FfiConverterString.lower(`pin`),
         FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * A parent sets its kid's daily limit in minutes (1..=1440); `None`
+     * takes it off. Allowed exactly where `set_kids_age` is.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setDailyLimit`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `minutes`: kotlin.UShort?) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_daily_limit(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterOptionalUShort.lower(`minutes`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3885,6 +3969,32 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterTypeStatsSummary.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Seconds `profile_id` has watched on `day` (`YYYY-MM-DD` where the
+     * viewer is), summed over every device. A storage failure reads as 0.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `watchedToday`(`profileId`: kotlin.String, `day`: kotlin.String) : kotlin.Double {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_watched_today(
+                uniffiHandle,
+
+        FfiConverterString.lower(`profileId`),
+        FfiConverterString.lower(`day`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_f64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_f64(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_f64(future) },
+        // lift function
+        { FfiConverterDouble.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -5148,6 +5258,12 @@ data class Profile (
     var `kidsAge`: kotlin.UByte? = null
     ,
     /**
+     * Minutes a kid may watch a day, the same every day; `None` is no limit,
+     * and always on a grown-up.
+     */
+    var `dailyLimit`: kotlin.UInt? = null
+    ,
+    /**
      * The grown-up who made this kid. `None`, or one not here, is the admin's.
      */
     var `parentId`: kotlin.String? = null
@@ -5181,6 +5297,7 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterOptionalUByte.read(buf),
+            FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
@@ -5192,6 +5309,7 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterString.allocationSize(value.`name`) +
             FfiConverterBoolean.allocationSize(value.`kids`) +
             FfiConverterOptionalUByte.allocationSize(value.`kidsAge`) +
+            FfiConverterOptionalUInt.allocationSize(value.`dailyLimit`) +
             FfiConverterOptionalString.allocationSize(value.`parentId`) +
             FfiConverterBoolean.allocationSize(value.`admin`) +
             FfiConverterBoolean.allocationSize(value.`hasPin`)
@@ -5202,6 +5320,7 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterString.write(value.`name`, buf)
             FfiConverterBoolean.write(value.`kids`, buf)
             FfiConverterOptionalUByte.write(value.`kidsAge`, buf)
+            FfiConverterOptionalUInt.write(value.`dailyLimit`, buf)
             FfiConverterOptionalString.write(value.`parentId`, buf)
             FfiConverterBoolean.write(value.`admin`, buf)
             FfiConverterBoolean.write(value.`hasPin`, buf)
@@ -6799,6 +6918,38 @@ public object FfiConverterOptionalUByte: FfiConverterRustBuffer<kotlin.UByte?> {
         } else {
             buf.put(1)
             FfiConverterUByte.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?> {
+    override fun read(buf: ByteBuffer): kotlin.UShort? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUShort.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UShort?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUShort.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.UShort?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUShort.write(value, buf)
         }
     }
 }

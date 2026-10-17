@@ -565,8 +565,8 @@ class FakeCore(
     override suspend fun createGrownUp(actorId: String, pin: String, name: String, newPin: String): ProfileOutcome =
         roles.createGrownUp(actorId, pin, name, newPin)
 
-    override suspend fun createKid(actorId: String, pin: String, name: String, kidsAge: UByte): ProfileOutcome =
-        roles.createKid(actorId, pin, name, kidsAge)
+    override suspend fun createKid(actorId: String, pin: String, name: String, kidsAge: UByte, dailyLimit: UShort?): ProfileOutcome =
+        roles.createKid(actorId, pin, name, kidsAge, dailyLimit)
 
     override suspend fun deleteProfile(actorId: String, pin: String, id: String): ProfileOutcome = roles.remove(actorId, pin, id)
 
@@ -579,6 +579,20 @@ class FakeCore(
 
     override suspend fun setKidsAge(actorId: String, pin: String, id: String, kidsAge: UByte): ProfileOutcome =
         roles.setKidsAge(actorId, pin, id, kidsAge)
+
+    override suspend fun setDailyLimit(actorId: String, pin: String, id: String, minutes: UShort?): ProfileOutcome =
+        roles.setDailyLimit(actorId, pin, id, minutes)
+
+    /** Seconds watched today, per profile id; a test sets it, as the fake records no watch time itself. */
+    val watchedTodayByProfile: MutableMap<String, Double> = mutableMapOf()
+
+    /** Every [watchedToday] read, as (profile, day). */
+    val watchedTodayAsked = mutableListOf<Pair<String, String>>()
+
+    override suspend fun watchedToday(profileId: String, day: String): Double {
+        watchedTodayAsked += profileId to day
+        return watchedTodayByProfile[profileId] ?: 0.0
+    }
 
     // Checked against `profiles` on every read, not trusted from whatever
     // was last written — the same reason `profiles::chosen` re-checks on

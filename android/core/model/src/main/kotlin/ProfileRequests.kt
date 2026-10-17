@@ -32,12 +32,13 @@ sealed interface ProfileRequest {
         val newPin: String,
     ) : ProfileRequest
 
-    /** [age] is the new kid's limit, 6 or 12. */
+    /** [age] is the new kid's limit, 6 or 12; [dailyLimit] its minutes per day, null for none. */
     class CreateKid(
         val actorId: String,
         val pin: String,
         val name: String,
         val age: Int,
+        val dailyLimit: Int? = null,
     ) : ProfileRequest
 
     /** A grown-up's kids go with it. */
@@ -60,6 +61,14 @@ sealed interface ProfileRequest {
         val pin: String,
         val id: String,
         val age: Int,
+    ) : ProfileRequest
+
+    /** [minutes] null clears the kid's daily limit. */
+    class SetDailyLimit(
+        val actorId: String,
+        val pin: String,
+        val id: String,
+        val minutes: Int?,
     ) : ProfileRequest
 }
 

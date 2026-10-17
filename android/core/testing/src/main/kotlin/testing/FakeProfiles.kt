@@ -20,6 +20,9 @@ private const val PIN_LENGTH = 4
 /** The two limits a kid may have. */
 private val KIDS_AGES = setOf<UByte>(6u, 12u)
 
+/** The minutes a daily limit may be, as `manage/daily_limit.rs` checks them. */
+private val DAILY_MINUTES = 1..1440
+
 /**
  * [FakeCore]'s household: who may add, remove, enter and re-PIN whom,
  * refusing for the reasons and in the order
@@ -65,7 +68,7 @@ class FakeProfiles(
         if (profile.kids) {
             profile.copy(kidsAge = if (profile.kidsAge == SIX) SIX else TWELVE, admin = false, hasPin = false)
         } else {
-            profile.copy(kidsAge = null, hasPin = profile.id in pins)
+            profile.copy(kidsAge = null, hasPin = profile.id in pins, dailyLimit = null)
         }
 
     fun createFirst(
@@ -97,12 +100,14 @@ class FakeProfiles(
         pin: String,
         name: String,
         kidsAge: UByte,
+        dailyLimit: UShort? = null,
     ): ProfileOutcome =
         first(
             { ProfileOutcome.Invalid.takeUnless { kidsAge in KIDS_AGES } },
+            { ProfileOutcome.Invalid.takeUnless { validMinutes(dailyLimit) } },
             { unusable(name) },
             { check(actorId, pin, RoleAction.CREATE_KID, null) },
-        ) ?: add(name, kidsAge = kidsAge, parentId = actorId)
+        ) ?: add(name, kidsAge = kidsAge, parentId = actorId, dailyLimit = dailyLimit?.toUInt())
 
     /** A grown-up takes the kids it is the parent of with it; a kid takes only itself. */
     fun remove(
@@ -132,6 +137,18 @@ class FakeProfiles(
             { ProfileOutcome.Invalid.takeUnless { kidsAge in KIDS_AGES } },
             { check(actorId, pin, RoleAction.SET_KIDS_AGE, id) },
         ) ?: update(id) { it.copy(kidsAge = kidsAge) }
+
+    /** Same checks and refusals as [setKidsAge]; null clears the limit. */
+    fun setDailyLimit(
+        actorId: String,
+        pin: String,
+        id: String,
+        minutes: UShort?,
+    ): ProfileOutcome =
+        first(
+            { ProfileOutcome.Invalid.takeUnless { validMinutes(minutes) } },
+            { check(actorId, pin, RoleAction.SET_KIDS_AGE, id) },
+        ) ?: update(id) { it.copy(dailyLimit = minutes?.toUInt()) }
 
     /** A kid's opens freely; a grown-up's with its PIN. */
     fun unlock(
@@ -188,12 +205,13 @@ class FakeProfiles(
         admin: Boolean = false,
         kidsAge: UByte? = null,
         parentId: String? = null,
+        dailyLimit: UInt? = null,
     ): ProfileOutcome {
         val clean = cleanName(name) ?: return ProfileOutcome.Invalid
         while (read().any { it.id == "p$nextId" }) nextId++
         val id = "p${nextId++}"
         val kids = kidsAge != null
-        write(read() + Profile(id, clean, kids = kids, kidsAge = kidsAge, parentId = parentId, admin = admin && !kids))
+        write(read() + Profile(id, clean, kids = kids, kidsAge = kidsAge, parentId = parentId, admin = admin && !kids, dailyLimit = dailyLimit))
         newPin?.let { pins[id] = it }
         return ProfileOutcome.Done
     }
@@ -267,6 +285,8 @@ class FakeProfiles(
         val TWELVE: UByte = 12u
     }
 }
+
+private fun validMinutes(minutes: UShort?): Boolean = minutes == null || minutes.toInt() in DAILY_MINUTES
 
 /** Four ASCII digits, nothing else. */
 private fun validPin(pin: String): Boolean = pin.length == PIN_LENGTH && pin.all { it in '0'..'9' }

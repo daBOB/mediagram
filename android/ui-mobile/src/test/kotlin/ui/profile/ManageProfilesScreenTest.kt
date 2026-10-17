@@ -40,8 +40,9 @@ class ManageProfilesScreenTest {
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
-            onAddKid = { name, age -> calls += "addKid $name $age" },
+            onAddKid = { name, age, daily -> calls += "addKid $name $age $daily" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
+            onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
             onRemove = { calls += "remove $it" },
             onAddGrownUp = { calls += "addGrownUp $it" },
             onChangePin = { calls += "pin $it" },
@@ -108,7 +109,31 @@ class ManageProfilesScreenTest {
         compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).performTextInput("Ole")
         compose.onNode(hasText("FSK 12") and hasAnyAncestor(hasContentDescription("Age limit for the new kid"))).performClick()
         compose.onNodeWithText("Add a kid").performClick()
-        assertEquals(listOf("addKid Lina 6", "addKid Ole 12"), calls)
+        assertEquals(listOf("addKid Lina 6 null", "addKid Ole 12 null"), calls)
+    }
+
+    @Test fun aKidsDailyLimitIsChosenFromTheFixturesMenuAndTheCurrentOneSendsNothing() {
+        show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom.copy(dailyLimit = 60))))
+        val menu = hasAnyAncestor(hasContentDescription("Daily limit for Tom"))
+        compose.onNode(hasText("1 h") and menu).assertIsSelected()
+        compose.onNode(hasText("1 h") and menu).performClick()
+        compose.onNode(hasText("1 h 30 min") and menu).performClick()
+        compose.onNode(hasText("No limit") and menu).performClick()
+        assertEquals(listOf("daily t 90", "daily t null"), calls)
+    }
+
+    @Test fun aLimitOffTheMenuShowsAsItself() {
+        show(ManageUiState.Managing(bea, grownUps = emptyList(), kids = listOf(tom.copy(dailyLimit = 50))))
+        compose.onNode(hasText("50 min") and hasAnyAncestor(hasContentDescription("Daily limit for Tom"))).assertIsSelected()
+    }
+
+    @Test fun aNewKidCanStartWithADailyLimit() {
+        show(ManageUiState.Managing(bea, emptyList(), emptyList()))
+        compose.onNode(hasSetTextAction() and hasContentDescription("Add a kid: name")).performTextInput("Ole")
+        compose.onNode(hasText("No limit") and hasAnyAncestor(hasContentDescription("Daily limit for the new kid"))).assertIsSelected()
+        compose.onNode(hasText("45 min") and hasAnyAncestor(hasContentDescription("Daily limit for the new kid"))).performClick()
+        compose.onNodeWithText("Add a kid").performClick()
+        assertEquals(listOf("addKid Ole 6 45"), calls)
     }
 
     @Test fun theAdminAddsAGrownUpByName() {

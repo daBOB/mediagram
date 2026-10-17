@@ -41,6 +41,7 @@ import ui.tv.catalog.films
 import ui.tv.profile.TvManageProfilesTag
 import ui.tv.profile.TvProfilePickerFirstTileTag
 import ui.tv.profile.tvClaimTag
+import ui.tv.profile.tvDailyLimitTag
 import ui.tv.profile.tvKidsLimitTag
 import ui.tv.profile.tvPinKeyTag
 import ui.tv.setup.TvTextQuestionFieldTag
@@ -261,20 +262,22 @@ class TvProfilesFlowTest {
         launch(listOf(andre, bo, cy), chosen = null)
         openManageAs(rowOf("Bo"), "5678")
         compose.onNodeWithText("Grown-ups").assertDoesNotExist()
-        compose.onNode(rowOf("Cy · FSK 6")).assertIsFocused()
+        compose.onNode(rowOf("Cy · FSK 6 · No limit")).assertIsFocused()
 
         walkTo(rowOf("Add a kid"), Key.DirectionDown)
         press(Key.DirectionCenter)
         name("Lina")
         compose.onNodeWithTag(tvKidsLimitTag(6)).assertIsFocused()
         press(Key.DirectionCenter)
-        compose.onNode(rowOf("Lina · FSK 6")).assertExists()
+        compose.onNodeWithTag(tvDailyLimitTag(null)).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNode(rowOf("Lina · FSK 6 · No limit")).assertExists()
 
-        walkTo(rowOf("Lina · FSK 6"), Key.DirectionDown)
+        walkTo(rowOf("Lina · FSK 6 · No limit"), Key.DirectionDown)
         press(Key.DirectionCenter)
         press(Key.DirectionDown)
         press(Key.DirectionCenter)
-        compose.onNode(rowOf("Lina · FSK 12")).assertExists()
+        compose.onNode(rowOf("Lina · FSK 12 · No limit")).assertExists()
         val lina = fixture.core.profiles.single { it.name == "Lina" }
         assertEquals(12, lina.kidsAge?.toInt())
         assertEquals("b", lina.parentId)
@@ -287,6 +290,7 @@ class TvProfilesFlowTest {
         walkTo(rowOf("Add a kid"), Key.DirectionDown)
         press(Key.DirectionCenter)
         name("cy")
+        press(Key.DirectionCenter)
         press(Key.DirectionCenter)
         compose.onNodeWithText("A profile with that name already exists.").assertExists()
         assertEquals(3, fixture.core.profiles.size)

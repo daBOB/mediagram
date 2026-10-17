@@ -85,10 +85,17 @@ class ManageProfilesViewModel
         fun addKid(
             name: String,
             age: Int = NEW_KID_LIMIT,
+            dailyLimit: Int? = null,
         ) {
             val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
-            change { actor, pin -> ProfileRequest.CreateKid(actor, pin, clean, age) }
+            change { actor, pin -> ProfileRequest.CreateKid(actor, pin, clean, age, dailyLimit) }
         }
+
+        /** [minutes] null clears the kid's daily limit; refused for whoever may not set its age limit. */
+        fun setDailyLimit(
+            kidId: String,
+            minutes: Int?,
+        ) = change { actor, pin -> ProfileRequest.SetDailyLimit(actor, pin, kidId, minutes) }
 
         fun setKidsAge(
             kidId: String,
