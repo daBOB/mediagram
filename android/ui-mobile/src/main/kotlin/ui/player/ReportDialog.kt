@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
@@ -14,7 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,8 +38,8 @@ import ui.chrome.NoDialogAnimation
  */
 @Composable
 internal fun ReportDialog(ui: ReportUi, onSend: (ReportReason, String) -> Unit, onDismiss: () -> Unit) {
-    var reason by remember { mutableStateOf(ui.preset) }
-    var note by remember { mutableStateOf("") }
+    var reason by rememberSaveable { mutableStateOf(ui.preset) }
+    var note by rememberSaveable { mutableStateOf("") }
 
     // Opened from over the video: the dialog is the page's own surface, so its buttons tint in the page's ink.
     IndicationInk(MaterialTheme.colorScheme.onSurface) {
@@ -48,7 +50,7 @@ internal fun ReportDialog(ui: ReportUi, onSend: (ReportReason, String) -> Unit, 
                 Text(ReportWords.HEADING)
             },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     Column(Modifier.selectableGroup()) {
                         ReportReason.entries.forEach { entry ->
                             Row(

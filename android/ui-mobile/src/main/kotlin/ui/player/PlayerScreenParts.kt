@@ -5,8 +5,6 @@
 
 package ui.player
 
-import player.ReportStage
-import player.ReportUi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +22,8 @@ import designsystem.LocalCountdownStart
 import designsystem.Spacing
 import model.MediaSet
 import playback.PlaybackTotals
+import player.ReportStage
+import player.ReportUi
 import player.titleLine
 import player.together.TogetherUi
 
