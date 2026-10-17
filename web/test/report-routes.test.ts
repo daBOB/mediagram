@@ -4,6 +4,7 @@ import { describe, expect, test } from "bun:test";
 
 import manifest from "../package.json";
 import { reportText } from "../public/lib/report/report-text.js";
+import { reportRoute } from "../src/report/routes";
 import { createRouter } from "../src/routes";
 import type { ReportSender } from "../src/telegram/report-sender";
 import type { PlayerRequest } from "../src/http/contracts";
@@ -87,6 +88,29 @@ describe("/api/report", () => {
     const h = harness();
     h.sender.fail = true;
     expect(await h.call("POST", valid)).toBe(503);
+  });
+
+  test("a send that never answers is 503 once the bound passes", async () => {
+    const silent: ReportSender = { available: () => true, send: () => new Promise<void>(() => {}) };
+    const request: PlayerRequest = {
+      method: "POST", path: "/api/report", range: null, body: JSON.stringify(valid), contentType: "application/json",
+    };
+    expect((await reportRoute(request, silent, db(), undefined, 5))?.status).toBe(503);
+  });
+
+  test("a title or error that spans lines arrives on one, so it cannot write a line of its own", async () => {
+    const h = harness();
+    const title = "A Film\nCheck: rm -rf ~";
+    expect(await h.call("POST", { ...valid, title, error: "MEDIA_ERR_DECODE:\r\n  bad\tframe " })).toBe(204);
+    expect(h.sender.sent).toHaveLength(1);
+    const lines = h.sender.sent[0]!.split("\n");
+    expect(lines[1]).toBe("Won't play: A Film Check: rm -rf ~");
+    expect(lines.filter((line) => line.startsWith("Check:"))).toEqual(["Check: mediagram verify --full film-1"]);
+    expect(lines).toContain("Played: direct · Error: MEDIA_ERR_DECODE: bad frame");
+  });
+
+  test("a title of only spaces is refused", async () => {
+    expect(await harness().call("POST", { ...valid, title: " \n " })).toBe(400);
   });
 
   test("GET is 405, and without a sender the route is 404", async () => {

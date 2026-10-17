@@ -24,6 +24,8 @@ export const REPORT_WORDS = {
 };
 
 export const NOTE_MAX = 200;
+/** The longest error a report carries: the player cuts its own to this, and the route refuses one longer. */
+export const ERROR_MAX = 300;
 export const REPORT_DELAY_SECONDS = 60;
 
 /** `h:mm:ss`, the hour unpadded, as a player's clock reads past an hour. */
@@ -33,9 +35,14 @@ function clock(seconds) {
   return `${Math.floor(s / 3600)}:${two(Math.floor((s % 3600) / 60))}:${two(s % 60)}`;
 }
 
+/** Every run of whitespace, line breaks included, as one space: a report's lines are its own. */
+export function oneLine(text) {
+  return (text ?? "").replace(/\s+/g, " ").trim();
+}
+
 /** One line, at most `NOTE_MAX` characters; empty when nothing was said. */
 export function cleanNote(note) {
-  return (note ?? "").replace(/\s+/g, " ").trim().slice(0, NOTE_MAX).trimEnd();
+  return oneLine(note).slice(0, NOTE_MAX).trimEnd();
 }
 
 export function reportText(f) {

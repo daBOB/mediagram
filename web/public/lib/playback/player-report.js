@@ -9,12 +9,11 @@
  */
 
 import { el } from "../dom.js";
-import { REPORT_REASONS, REPORT_WORDS } from "../report/report-text.js";
+import { ERROR_MAX, REPORT_REASONS, REPORT_WORDS } from "../report/report-text.js";
 import * as state from "../watch-state.js";
 
-const SEND_TIMEOUT_MS = 8000;
-// The route refuses a whole report whose error is longer than this.
-const ERROR_MAX = 300;
+// Longer than the server's own bound on a send, so a slow Telegram is answered with its 503 rather than cut off here.
+const SEND_TIMEOUT_MS = 20_000;
 /** `playbackMeta`'s modes, in the words a report uses. */
 const PLAYED = { direct: "direct", transcode: "converted", copy: "copied", "hevc-copy": "copied" };
 const MEDIA_ERRORS = ["", "MEDIA_ERR_ABORTED", "MEDIA_ERR_NETWORK", "MEDIA_ERR_DECODE", "MEDIA_ERR_SRC_NOT_SUPPORTED"];

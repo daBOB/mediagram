@@ -433,7 +433,8 @@ function mountPlayer() {
       }
       note.textContent = message;
       note.hidden = false;
-      report.failed(message);
+      // A file the browser cannot decode refuses Play too; the media error is the cause, the refusal only its echo.
+      report.failed(video.error ? mediaError(video.error) : `${error.name}: ${error.message}`);
     }
   }
 
