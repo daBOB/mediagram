@@ -19,6 +19,7 @@ import { seekModel, skipTo } from "./seek-model.js";
 import { mountTransport } from "./transport.js";
 import { keyAction, wantsKeys } from "./player-keys.js";
 import { mountPlayerNotes } from "./notes/player-notes.js";
+import { mediaError, mountPlayerReport } from "./player-report.js";
 import { mountPlayerLibraryMarks } from "./player-library-marks.js";
 import { mountPlayerHud } from "./player-hud.js";
 import { mountPlayerMenus } from "./player-menus.js";
@@ -92,6 +93,7 @@ function mountPlayer() {
   const ends = document.getElementById("ends");
   const audio = document.getElementById("audio");
   const stats = mountPlayerStats({ video });
+  const report = mountPlayerReport({ dialog, facts: () => ({ title: titleLine(playing), position: filmTime(), mode: playbackMeta(playing, { converting, copiedOutput, capBits }).mode, held }) });
   const upNext = mountPlayerNextTitle({
     showControls: () => hud.show(),
     openTitle: (set, options) => openPlayer(set, options),
@@ -252,6 +254,7 @@ function mountPlayer() {
         upNext.releaseWarm(set.setId);
         stopWaitingToStart();
         note.textContent = `The conversion stopped: ${error.message}. Pick a position to start it again.`;
+        report.failed(note.textContent);
       },
     })
       .then((release) => {
@@ -269,6 +272,7 @@ function mountPlayer() {
         upNext.releaseWarm(set.setId);
         stopWaitingToStart();
         note.textContent = `Could not start the conversion: ${error.message}`;
+        report.failed(note.textContent);
       });
     if (autoplay) startWhenReady(autoplay);
     refreshUpNext({ ended: false });
@@ -429,6 +433,7 @@ function mountPlayer() {
       }
       note.textContent = message;
       note.hidden = false;
+      report.failed(message);
     }
   }
 
@@ -663,6 +668,7 @@ function mountPlayer() {
     refreshPreload();
     void askHeld(set, signal);
     marks.open(set);
+    report.open(set);
     startSaving();
     hud.open();
     dialog.showModal();
@@ -845,6 +851,8 @@ function mountPlayer() {
     hud.show();
   });
   video.addEventListener("ratechange", refreshEnds);
+  // Direct play's only word that a file is broken. `stop()` empties the src on purpose, and what fires then is not the title's.
+  video.addEventListener("error", () => { if (source !== null && video.error) report.failed(mediaError(video.error)); });
   // The final flush, not the periodic one: a pause is a natural break point
   // worth telling another device about soon, the same as leaving a title —
   // and `flushProgress`'s `sendBeacon` is how the server tells the two apart
@@ -980,6 +988,7 @@ function mountPlayer() {
     saveTimer = null;
     notes.clear();
     marks.clear();
+    report.clear();
     hud.clear();
   }
 

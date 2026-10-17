@@ -165,6 +165,8 @@
         </select>
         <button id="add-to" class="ghost">Add to…</button>
         <button id="notes" class="ghost" hidden aria-expanded="false">Notes</button>
+        <!-- Its words, and the sheet's below, come from lib/report/report-text.js. -->
+        <button id="report" class="ghost" aria-expanded="false" aria-controls="report-panel"></button>
         <button id="close" class="ghost" aria-label="Close">✕</button>
       </div>
 
@@ -270,6 +272,22 @@
           <button id="notes-close" class="ghost" aria-label="Close notes">✕</button>
         </header>
         <div class="notes-body" id="summary"></div>
+      </aside>
+
+      <!-- What is wrong with this title, for whoever keeps the library. A
+           card over the middle of the picture, opaque, and outside the HUD:
+           words over a moving picture through a tint cannot be read, and a
+           sheet that rested with the controls would vanish mid-sentence. -->
+      <aside class="report" id="report-panel" hidden aria-labelledby="report-heading">
+        <h2 id="report-heading"></h2>
+        <div class="report-reasons" id="report-reasons" role="radiogroup" aria-labelledby="report-heading"></div>
+        <label for="report-note" id="report-note-label"></label>
+        <input id="report-note" maxlength="200" autocomplete="off" />
+        <p class="report-said" id="report-said" role="status"></p>
+        <div class="report-buttons">
+          <button id="report-cancel" class="ghost"></button>
+          <button id="report-send" class="ghost" disabled></button>
+        </div>
       </aside>
     </dialog>
 

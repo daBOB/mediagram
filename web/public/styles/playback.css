@@ -345,6 +345,18 @@ dialog.with-notes .up-next { right: calc(var(--notes-width) + 1.5rem); }
 }
 .up-next-buttons { display: flex; gap: 0.6rem; margin-top: 0.5rem; }
 
+/* The Report sheet: above every other layer, and opaque — a tint over a moving picture cannot be read. */
+.report { position: absolute; left: 50%; top: 50%; z-index: 4; transform: translate(-50%, -50%); width: min(24rem, calc(100% - 32px)); display: grid; gap: 0.75rem; padding: 1.15rem 1.25rem; background: var(--stage-raised); border: 1px solid var(--stage-rule); border-radius: var(--radius); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6); }
+.report h2 { margin: 0; font: 500 1.05rem var(--display); color: var(--stage-ink); }
+.report-reason { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; cursor: pointer; }
+.report-reason input { width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--stage-accent); }
+#report-note-label { color: var(--stage-ink-2); font-size: 0.8125rem; }
+#report-note { min-height: 44px; padding: 0 0.7rem; background: var(--stage); color: var(--stage-ink); border: 1px solid var(--stage-rule); border-radius: var(--radius); font: inherit; }
+.report-said { margin: 0; color: var(--stage-accent); font-size: 0.85rem; }
+.report-said:empty { display: none; }
+.report-buttons { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.ghost:disabled:hover { color: var(--stage-ink-2); border-color: var(--stage-rule); }
+
 :root { --notes-width: min(34rem, 38vw); }
 
 dialog.with-notes video,
