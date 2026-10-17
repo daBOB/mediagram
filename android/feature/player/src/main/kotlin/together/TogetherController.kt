@@ -48,6 +48,9 @@ internal class TogetherController(
     val steps = TogetherSteps(handle, now)
     val view = TogetherView(scope)
     val ui: StateFlow<TogetherUi> = view.ui
+
+    /** Words over the picture for [holdMs], through the pill watch together's own notices use. */
+    fun tell(text: String, holdMs: Long) = view.show(text, holdMs)
     val me get() = Member(screen, label())
     var setId: String? = null
 

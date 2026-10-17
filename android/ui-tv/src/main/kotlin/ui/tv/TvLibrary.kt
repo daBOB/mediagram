@@ -1,5 +1,8 @@
 package ui.tv
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -8,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogUiState
@@ -18,6 +23,9 @@ import catalog.Entry
 import catalog.everyFilm
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
+import designsystem.Overscan
+import designsystem.Spacing
+import player.LibraryPlayGate
 import player.TitlePreloadViewModel
 import system.FetchViewModel
 import ui.common.FrameKind
@@ -32,6 +40,7 @@ import ui.common.RailItem
 import ui.tv.catalog.TvFetchResultDialog
 import ui.tv.catalog.TvMenuEntryKey
 import ui.tv.catalog.TvProfileEntryKey
+import ui.tv.player.TvTogetherNotice
 import ui.tv.profile.TvChosenProfile
 import ui.tv.system.TvMenuPage
 
@@ -72,7 +81,10 @@ internal fun TvLibrary(
     val kidsProfile by catalogViewModel.kidsProfile.collectAsStateWithLifecycle()
     val titlePreloadViewModel: TitlePreloadViewModel = hiltViewModel()
     val rawQueueRows by titlePreloadViewModel.queueRows.collectAsStateWithLifecycle(initialValue = emptyList())
-    val at = rememberLibraryPositions()
+    // The daily limit's door: a kid whose day is used up is not taken into the player.
+    val playGate: LibraryPlayGate = hiltViewModel()
+    val limitNotice by playGate.notice.collectAsStateWithLifecycle()
+    val at = rememberLibraryPositions(playGate)
     val restore = rememberTvRestoreKeys()
     val saved = rememberSaveableStateHolder()
     // The menu page stands over the shelves rather than on the positions'
@@ -124,77 +136,81 @@ internal fun TvLibrary(
             if (top == null) restore.opened(here, setId) else restore.forget(here)
             at.openPlayer(setId)
         }
-    CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
-        when (top) {
-            FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
+    Box(Modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
+            when (top) {
+                FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
 
-            FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
+                FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
-            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
+                FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
 
-            FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
+                FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
 
-            FrameKind.TITLE ->
-                TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
+                FrameKind.TITLE ->
+                    TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-            FrameKind.COLLECTION ->
-                TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
+                FrameKind.COLLECTION ->
+                    TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
 
-            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
+                FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
 
-            FrameKind.PERSON ->
-                TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
+                FrameKind.PERSON ->
+                    TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
 
-            FrameKind.FRANCHISE ->
-                TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
+                FrameKind.FRANCHISE ->
+                    TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
 
-            FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
+                FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
 
-            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+                FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
 
-            FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
+                FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
 
-            FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
+                FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
-            FrameKind.STATS -> TvStatsFrame(catalogState, leave)
+                FrameKind.STATS -> TvStatsFrame(catalogState, leave)
 
-            // Nothing open, the trimmed menu page opened from the bar's avatar:
-            // Back from it puts the remote back on that button.
-            null if menuOpen ->
-                TvMenuPage(
-                    menu = menu,
-                    restoreKey = restore.of(here),
-                    watchingAs = profile.name,
-                    // The picker replaces the library; noting the avatar first is
-                    // what lets "Stay as I am" hand the remote back to it.
-                    onSwitchProfile = {
-                        menuOpen = false
-                        restore.opened(here, TvProfileEntryKey)
-                        profile.onChoose()
-                    },
-                    railItems = if (hasRail) emptyList() else RailItem.entries,
-                    onRailItem = { item ->
-                        when (item) {
-                            // Opened over this page, so Back comes back to it, as from the rail.
-                            RailItem.SETTINGS -> menu.onSettings()
-                            RailItem.SYSTEM -> menu.onSystem()
-                            else -> {
-                                menuOpen = false
-                                // Drops the key Settings or System left, which would read as Back from them.
-                                restore.forget(here)
-                                pendingRail = item
+                // Nothing open, the trimmed menu page opened from the bar's avatar:
+                // Back from it puts the remote back on that button.
+                null if menuOpen ->
+                    TvMenuPage(
+                        menu = menu,
+                        restoreKey = restore.of(here),
+                        watchingAs = profile.name,
+                        // The picker replaces the library; noting the avatar first is
+                        // what lets "Stay as I am" hand the remote back to it.
+                        onSwitchProfile = {
+                            menuOpen = false
+                            restore.opened(here, TvProfileEntryKey)
+                            profile.onChoose()
+                        },
+                        railItems = if (hasRail) emptyList() else RailItem.entries,
+                        onRailItem = { item ->
+                            when (item) {
+                                // Opened over this page, so Back comes back to it, as from the rail.
+                                RailItem.SETTINGS -> menu.onSettings()
+                                RailItem.SYSTEM -> menu.onSystem()
+                                else -> {
+                                    menuOpen = false
+                                    // Drops the key Settings or System left, which would read as Back from them.
+                                    restore.forget(here)
+                                    pendingRail = item
+                                }
                             }
-                        }
-                    },
-                ) {
-                    menuOpen = false
-                    restore.opened(here, TvMenuEntryKey)
-                }
+                        },
+                    ) {
+                        menuOpen = false
+                        restore.opened(here, TvMenuEntryKey)
+                    }
 
-            // Nothing open: the shelves.
-            null ->
-                TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
+                // Nothing open: the shelves.
+                null ->
+                    TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
+            }
         }
+        // The pill watch together's notices use, over the page: words to read, no focus, so the remote stays where it was.
+        TvTogetherNotice(limitNotice, Modifier.align(Alignment.BottomCenter).padding(bottom = Overscan.vertical + Spacing.large))
     }
 
     // Every branch but the player, for the phone's reason: a result held

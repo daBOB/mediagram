@@ -29,6 +29,7 @@ import model.TitleCredits
 import playback.CacheOccupancy
 import playback.InMemoryLanCacheSettings
 import playback.LanServer
+import player.LibraryPlayGate
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
 import stats.AchievementDotViewModel
@@ -168,6 +169,8 @@ internal class LibraryFlowFixture(
                 ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, mockk<WatchSync>(relaxed = true)),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
+                // The library's daily-limit door, resolved beside the catalog on every draw.
+                LibraryPlayGate::class.java to LibraryPlayGate(stored),
                 SettingsViewModel::class.java to settings,
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cache,

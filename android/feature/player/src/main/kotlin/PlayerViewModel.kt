@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import model.DailyLimitWords
 import model.MediaSet
 import playback.HeldSetsQuery
 import playback.PlaybackCounters
@@ -67,8 +68,12 @@ class PlayerViewModel @Inject constructor(
      */
     val player: StateFlow<Player?> = viewerPlayer(relay)
 
+    /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
+    private val dailyLimit = DailyLimitGate(repository)
+    private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
+
     /** The ten-second save ticker and which set it saves against. */
-    internal val session = PlayerSession(viewModelScope, handle, recorder)
+    internal val session = PlayerSession(viewModelScope, handle, recorder, onTick = limitWarning::tick)
 
     internal val _openSetId = MutableStateFlow<String?>(null)
 
@@ -93,7 +98,12 @@ class PlayerViewModel @Inject constructor(
     fun dismissActionNotice() = marksController.dismissNotice()
 
     /** What follows the open title, and the countdown that may start it unattended — ported from `refreshUpNext`/`startWhenReady` in `player.js`. */
-    internal val upNextController = UpNextController(viewModelScope, handle, session, catalogRepository, choicesController.openSet)
+    internal val upNextController =
+        UpNextController(
+            viewModelScope, handle, session, catalogRepository, choicesController.openSet,
+            limit = dailyLimit,
+            onRefused = { tellLimit(DailyLimitWords.OUT) },
+        )
     val upNext: StateFlow<UpNextUiState> = upNextController.state
     /** Watch together in this player; see `PlayerViewModelTogether.kt`. */
     internal val togetherController = togetherController(togetherLive, relay, catalogRepository, context)
@@ -116,6 +126,12 @@ class PlayerViewModel @Inject constructor(
     /** A title to navigate to, once — the UI layer owns `LibraryPositions`, so it (not this VM) moves there and calls [switchAcknowledged]. */
     val pendingSwitch: StateFlow<PendingPlayerSwitch?> = upNextController.pendingSwitch
     fun switchAcknowledged() = upNextController.switchAcknowledged()
+
+    /** Words over the picture, through the pill watch together's notices use; shown even with the controls hidden. */
+    private fun tellLimit(words: String) = togetherController.tell(words, DAILY_LIMIT_NOTICE_MS)
+
+    /** A title opened: its one warning is due, if little is left. */
+    internal fun limitOpened() = limitWarning.opened()
 
     /** The run changed for the still-open title (the catalog was not Ready yet when it opened). */
     fun updateRun(setId: String, run: List<String>) = upNextController.updateRun(setId, run)

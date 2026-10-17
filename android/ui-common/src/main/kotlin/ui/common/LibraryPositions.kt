@@ -4,9 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import catalog.MenuScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import player.PlayGate
 
 /**
  * Which kind of screen a [Frame] stands for.
@@ -82,7 +87,11 @@ private fun decode(raw: String): List<Frame> {
  * from an open set would drop back to the catalog while the film kept
  * playing underneath it.
  */
-class LibraryPositions(frames: MutableState<String>) {
+class LibraryPositions(
+    frames: MutableState<String>,
+    private val gate: PlayGate? = null,
+    private val scope: CoroutineScope? = null,
+) {
     private var raw: String by frames
     private val stack: List<Frame> get() = decode(raw)
     private fun setStack(next: List<Frame>) {
@@ -178,8 +187,23 @@ class LibraryPositions(frames: MutableState<String>) {
 
     /** @param run The explicit run [id] belongs to (a list or the Kids marked-by-hand wall); `null` everywhere else. */
     fun openPlayer(id: String, run: List<String>? = null) {
-        push(FrameKind.PLAYER, playerPayload(id, run))
+        // Every way into the player from the library comes through here, so the
+        // daily limit is asked here, before anything navigates. Only a kid with a
+        // limit waits for the answer; everyone else pushes at once.
+        if (gate == null || scope == null || !gate.applies()) return push(FrameKind.PLAYER, playerPayload(id, run))
+        if (asking) return
+        asking = true
+        scope.launch {
+            try {
+                if (gate.mayOpen()) push(FrameKind.PLAYER, playerPayload(id, run))
+            } finally {
+                asking = false
+            }
+        }
     }
+
+    /** A check is out: a second tap on the same card waits for it rather than asking twice. */
+    private var asking = false
 
     /**
      * An in-player switch to a different title (up-next's autoplay or "Play
@@ -276,5 +300,8 @@ class LibraryPositions(frames: MutableState<String>) {
 }
 
 @Composable
-fun rememberLibraryPositions(): LibraryPositions =
-    LibraryPositions(rememberSaveable { mutableStateOf("") })
+fun rememberLibraryPositions(gate: PlayGate? = null): LibraryPositions {
+    val scope = rememberCoroutineScope()
+    val frames = rememberSaveable { mutableStateOf("") }
+    return remember(frames, gate, scope) { LibraryPositions(frames, gate, scope) }
+}
