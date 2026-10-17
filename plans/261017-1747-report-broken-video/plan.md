@@ -34,10 +34,10 @@
 
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | [Shared report text rule + fixtures (web + Kotlin)](phase-01-shared-report-text-rule.md) | pending |
-| 2 | [Web: route, sender, player sheet, error capture](phase-02-web-report.md) | pending |
-| 3 | [Rust core `report_send` + Kotlin `ReportChannel`](phase-03-core-report-send.md) | pending |
-| 4 | [Android player: phone and TV sheet, last error](phase-04-android-report-ui.md) | pending |
-| 5 | [Docs, version, checks, review, device walk](phase-05-docs-version-review.md) | pending |
+| 1 | [Shared report text rule + fixtures (web + Kotlin)](phase-01-shared-report-text-rule.md) | done |
+| 2 | [Web: route, sender, player sheet, error capture](phase-02-web-report.md) | done |
+| 3 | [Rust core `report_send` + Kotlin `ReportChannel`](phase-03-core-report-send.md) | done |
+| 4 | [Android player: phone and TV sheet, last error](phase-04-android-report-ui.md) | done |
+| 5 | [Docs, version, checks, review, device walk](phase-05-docs-version-review.md) | done except merge + device walk |
 
 Phases 1 → (2 ∥ 3) → 4 → 5. Work on branch `feat/report-broken-video` in worktree `../mediagram-report`.
