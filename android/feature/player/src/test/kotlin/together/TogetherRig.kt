@@ -48,6 +48,8 @@ val TV_SESSION = Session("s-tv", EP1, playing = true, pos = 10.0, rate = 1.0, at
  */
 internal class TogetherRig(
     private val test: TestScope,
+    /** What this screen is called in a session. */
+    label: String = "Tablet",
     /** What the controller is handed in place of [live]: a test's stand-in for one answer. */
     wrap: (TogetherLive) -> TogetherLive = { it },
 ) {
@@ -91,7 +93,7 @@ internal class TogetherRig(
             handle,
             openTitle = { id, refused -> opened += id; if (refusing) refused() },
             titleOf = { sets[it] },
-            label = { "Tablet" },
+            label = { label },
             scope = CoroutineScope(test.backgroundScope.coroutineContext + UnconfinedTestDispatcher(test.testScheduler)),
             now = ::now,
         )

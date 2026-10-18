@@ -89,3 +89,30 @@ internal suspend fun TogetherController.draw() {
     val here = elsewhere == null || titleOf(elsewhere.session.set) != null
     view.draw(current, elsewhere.takeIf { id == null }, here, live.available.value)
 }
+
+/**
+ * Follows [data.TogetherLive] while it is needed, collecting it being what
+ * holds the core's push stream open: in a session, or with the player
+ * open on a screen that is started. Taken up out of a session, it reads
+ * the channel first, since nothing was heard while it was let go.
+ */
+internal fun TogetherController.listen() {
+    if (setId == null || !(shown || id != null)) {
+        watching?.cancel()
+        watching = null
+        return
+    }
+    if (watching != null) return
+    watching =
+        scope.launch {
+            launch {
+                live.available.collect { up ->
+                    // A read or an edit just failed: a screen in a session plays on alone, and says why.
+                    if (!up && id != null) view.show(TOGETHER_UNREACHABLE)
+                    draw()
+                }
+            }
+            live.live.collect { onLive(it) }
+        }
+    if (id == null) scope.launch { live.refresh() }
+}

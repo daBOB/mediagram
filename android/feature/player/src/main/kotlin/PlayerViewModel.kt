@@ -33,6 +33,7 @@ import playback.SummarySource
 import playback.TimedCue
 import player.together.TogetherUi
 import player.together.ViewerRelay
+import player.together.outOfTime
 import javax.inject.Inject
 
 /** Tracks what the player is doing for whichever set is currently open. */
@@ -124,6 +125,7 @@ class PlayerViewModel @Inject constructor(
                 tellLimit(DailyLimitWords.OUT)
                 // A refused Join must not stay armed for the next title opened.
                 togetherLive.takeJoin()
+                togetherController.outOfTime()
             },
         )
     val upNext: StateFlow<UpNextUiState> = upNextController.state

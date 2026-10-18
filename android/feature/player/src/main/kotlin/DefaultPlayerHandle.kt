@@ -174,7 +174,7 @@ class DefaultPlayerHandle(
      */
     private fun failConstruction(message: String) {
         constructionError = message
-        pendingOpen = null
+        pendingOpen = null; currentSet.value = null // nothing will ever play: a queued open holds no set
         listener?.onError(message)
     }
 

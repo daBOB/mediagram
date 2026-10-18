@@ -32,4 +32,16 @@ class DefaultPlayerHandleOpenSetTest {
         handle.stop()
         assertNull(handle.openSet.value)
     }
+
+    @Test
+    fun aPlayerThatFailedToBuildHoldsNoSet() = runTest {
+        val deferred = CompletableDeferred<ExoPlayer>()
+        val handle = DefaultPlayerHandle(deferred, this)
+        handle.open("s1", 0) // queued: the player isn't built yet
+
+        deferred.completeExceptionally(IllegalStateException("no space for the cache index"))
+        advanceUntilIdle()
+
+        assertNull(handle.openSet.value)
+    }
 }

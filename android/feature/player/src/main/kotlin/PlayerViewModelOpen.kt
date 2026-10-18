@@ -57,9 +57,11 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     if (!sameTitle) choicesController.reset()
     val progress = repository.snapshot.value.progress.find { it.setId == setId }
     val resumeSeconds = ResumePoint.resumeAt(progress?.let { ProgressPoint(it.at, it.duration) })
-    // A title opened in a watch-together session, or to join one, starts at
-    // the session's place and play state, not where this profile left off.
-    val together = if (sameTitle) null else togetherController.open(setId)
+    // A title opened in a watch-together session, to join one or to play a
+    // cast, starts at the session's place and play state, not where this
+    // profile left off. A cast is handed over only from this open's own take,
+    // so an up-next switch never takes it a second time.
+    val together = if (sameTitle && cast == null) null else togetherController.open(setId, cast)
     val startAtMs = ((together?.pos ?: resumeSeconds ?: 0.0) * 1000).toLong()
     // False only for the one title a gated up-next switch is headed to
     // — asked before `startTitle`, which consumes the same pending gate.

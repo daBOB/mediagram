@@ -1,11 +1,13 @@
 package player.together
 
-import data.TOGETHER_UNREACHABLE
+import data.ArmedCast
 import data.TogetherLive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.together.Member
@@ -29,8 +31,8 @@ internal const val SEEK_SETTLE_MS = 300L
  * out. [TogetherLive] does the sending, which goes on after the player has
  * gone. Called on the main thread only, as the player is.
  *
- * Starting and joining are in `TogetherJoining.kt`, following in
- * `TogetherFollowing.kt`; the state they share is this class's.
+ * Starting, joining and taking a cast are in `TogetherJoining.kt`,
+ * following in `TogetherFollowing.kt`; the state they share is this class's.
  */
 internal class TogetherController(
     val live: TogetherLive,
@@ -46,7 +48,7 @@ internal class TogetherController(
 ) {
     val screen = UUID.randomUUID().toString()
     val steps = TogetherSteps(handle, now)
-    val view = TogetherView(scope)
+    val view = TogetherView(scope, screen)
     val ui: StateFlow<TogetherUi> = view.ui
 
     /** Words over the picture for [holdMs], through the pill watch together's own notices use. */
@@ -54,9 +56,23 @@ internal class TogetherController(
     val me get() = Member(screen, label())
     var setId: String? = null
 
-    /** The session this screen is in, and that session as this screen follows it. */
+    /** The session this screen is in, and that session as this screen follows it, also as [following] for what watches it. */
     var id: Int? = null
     var current: Session? = null
+        set(value) {
+            field = value
+            currentFlow.value = value
+        }
+    private val currentFlow = MutableStateFlow<Session?>(null)
+    val following: StateFlow<Session?> = currentFlow.asStateFlow()
+
+    /** Set once a cast this screen plays as the TV is over, or was never taken: the player closes then. */
+    val castEnded = MutableStateFlow(false)
+    val castOver: StateFlow<Boolean> = castEnded.asStateFlow()
+
+    /** A cast offered playing plays once it is taken and its first frame is on screen ([firstFrame]), whichever comes last. */
+    var playAtFrame = false
+    var framed = false
 
     /** A title opened because the session moved to it: opening it is not the viewer's move. */
     var expecting: String? = null
@@ -65,21 +81,22 @@ internal class TogetherController(
     var generation = 0
     var drift: Job? = null
     private var settle: Job? = null
-    private var watching: Job? = null
+    var watching: Job? = null
 
     /** Whether the player screen is started: out of a session, it listens only then. */
-    private var shown = true
+    var shown = true
 
     /**
      * The player opens [set]. Answers where to start it, and whether to
      * play, when that is the session's place: for a title opened in a
      * session, or to join one, it is that rather than where this profile
-     * left off.
+     * left off. With [cast], the TV takes that cast here; see [takeCast].
      */
-    fun open(set: String): Playback? {
+    fun open(set: String, cast: ArmedCast? = null): Playback? {
         setId = set
         val followed = expecting == set
         expecting = null
+        if (cast != null) return takeCast(cast)
         if (id != null && !followed) viewer(PlaybackChange(set = set, pos = 0.0, playing = true))
         val joining = live.takeJoin()
         if (joining != null && id == null) scope.launch { joinHere(joining) }
@@ -140,6 +157,7 @@ internal class TogetherController(
     fun close() {
         setId = null
         leave()
+        castEnded.value = false
     }
 
     /**
@@ -148,6 +166,7 @@ internal class TogetherController(
      * moved there, which opened later is the viewer's own.
      */
     fun end(message: String?) {
+        if (current?.cast?.tv == screen) castEnded.value = true
         message?.let(view::show)
         generation++
         id = null
@@ -159,31 +178,5 @@ internal class TogetherController(
         settle = null
         scope.launch { draw() }
         listen()
-    }
-
-    /**
-     * Follows [TogetherLive] while it is needed, collecting it being what
-     * holds the core's push stream open: in a session, or with the player
-     * open on a screen that is started. Taken up out of a session, it reads
-     * the channel first, since nothing was heard while it was let go.
-     */
-    fun listen() {
-        if (setId == null || !(shown || id != null)) {
-            watching?.cancel()
-            watching = null
-            return
-        }
-        if (watching != null) return
-        watching = scope.launch {
-            launch {
-                live.available.collect { up ->
-                    // A read or an edit just failed: a screen in a session plays on alone, and says why.
-                    if (!up && id != null) view.show(TOGETHER_UNREACHABLE)
-                    draw()
-                }
-            }
-            live.live.collect { onLive(it) }
-        }
-        if (id == null) scope.launch { live.refresh() }
     }
 }
