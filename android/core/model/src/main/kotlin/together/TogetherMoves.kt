@@ -19,7 +19,7 @@ data class PlaybackChange(
 )
 
 // roundToLong rounds half up for positives, as JS Math.round does; kotlin.math.round rounds half to even.
-private fun toMillis(secs: Double): Double = (secs * 1000).roundToLong() / 1000.0
+internal fun toMillis(secs: Double): Double = (secs * 1000).roundToLong() / 1000.0
 
 fun started(
     id: String,

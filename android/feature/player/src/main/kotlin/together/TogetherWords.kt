@@ -48,3 +48,19 @@ internal fun say(
         Change.PLAYED -> "Resumed by $by"
     }
 }
+
+private const val TV_LABEL = "TV"
+
+/**
+ * The notice for a cast's edit, as `sayOnRemote` in the web's `cast-words.js` says it:
+ * the TV did it "on TV", and its own joining and leaving is no news.
+ */
+internal fun sayOnRemote(
+    noticed: Noticed,
+    session: Session,
+): String? {
+    val line = say(noticed, session)
+    if (noticed.label != TV_LABEL) return line
+    if (noticed.change == Change.JOINED || noticed.change == Change.LEFT) return null
+    return if (line.endsWith(" by $TV_LABEL")) line.removeSuffix("by $TV_LABEL") + "on $TV_LABEL" else line
+}

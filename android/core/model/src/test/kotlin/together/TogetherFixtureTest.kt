@@ -149,7 +149,7 @@ class TogetherFixtureTest {
 
 private const val TOLERANCE = 1e-6
 
-private fun cases(
+internal fun cases(
     file: String,
     key: String? = null,
 ): List<JsonObject> {
@@ -160,7 +160,7 @@ private fun cases(
     return all
 }
 
-private fun locateFixture(name: String): File? {
+internal fun locateFixture(name: String): File? {
     var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
     while (dir != null) {
         File(dir, "web/test/fixtures/together/$name").takeIf { it.isFile }?.let { return it }
@@ -169,23 +169,23 @@ private fun locateFixture(name: String): File? {
     return null
 }
 
-private fun JsonObject.label() = "case: ${str("name")}"
+internal fun JsonObject.label() = "case: ${str("name")}"
 
-private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content
+internal fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content
 
-private fun JsonObject.num(key: String): Double? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.double
+internal fun JsonObject.num(key: String): Double? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.double
 
-private fun JsonObject.long(key: String): Long = getValue(key).jsonPrimitive.long
+internal fun JsonObject.long(key: String): Long = getValue(key).jsonPrimitive.long
 
-private fun JsonObject.session() = getValue("session").jsonObject.toSession()
+internal fun JsonObject.session() = getValue("session").jsonObject.toSession()
 
-private fun JsonObject.member(key: String) = getValue(key).jsonObject.toMember()
+internal fun JsonObject.member(key: String) = getValue(key).jsonObject.toMember()
 
-private fun JsonObject.toMember() = Member(str("screen")!!, str("label")!!, this["remote"]?.jsonPrimitive?.boolean ?: false)
+internal fun JsonObject.toMember() = Member(str("screen")!!, str("label")!!, this["remote"]?.jsonPrimitive?.boolean ?: false)
 
-private fun JsonObject.toTracks(key: String) = getValue(key).jsonArray.map { Track(it.jsonObject.str("id")!!, it.jsonObject.str("label")!!) }
+internal fun JsonObject.toTracks(key: String) = getValue(key).jsonArray.map { Track(it.jsonObject.str("id")!!, it.jsonObject.str("label")!!) }
 
-private fun JsonObject.toCast() =
+internal fun JsonObject.toCast() =
     Cast(
         to = str("to")!!,
         from = str("from")!!,
@@ -198,7 +198,7 @@ private fun JsonObject.toCast() =
         text = str("text")!!,
     )
 
-private fun JsonObject.toSession() =
+internal fun JsonObject.toSession() =
     Session(
         session = str("session")!!,
         set = str("set")!!,
@@ -212,9 +212,9 @@ private fun JsonObject.toSession() =
         cast = this["cast"]?.takeIf { it !is JsonNull }?.jsonObject?.toCast(),
     )
 
-private fun JsonObject.toPlayback() = Playback(str("set")!!, getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
+internal fun JsonObject.toPlayback() = Playback(str("set")!!, getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
 
-private fun JsonObject.toChange() =
+internal fun JsonObject.toChange() =
     PlaybackChange(
         set = str("set"),
         playing = (this["playing"] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.boolean,
@@ -222,9 +222,9 @@ private fun JsonObject.toChange() =
         rate = num("rate"),
     )
 
-private fun JsonObject.toScreenState() = ScreenState(str("set"), getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
+internal fun JsonObject.toScreenState() = ScreenState(str("set"), getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
 
-private fun JsonObject.toStep(): Step =
+internal fun JsonObject.toStep(): Step =
     when (val kind = str("kind")) {
         "open" -> Step.Open(str("set")!!, num("pos")!!, getValue("playing").jsonPrimitive.boolean, num("rate")!!)
         "rate" -> Step.Rate(num("rate")!!)
