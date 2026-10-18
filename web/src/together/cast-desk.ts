@@ -6,7 +6,7 @@
  */
 
 import { CAST_ANSWER_MS, chose, offered, replaced } from "../../public/lib/together/cast.js";
-import { isRequest, type Member, type Session } from "../../public/lib/together/session.js";
+import { isRequest, writeSession, type Member, type Session } from "../../public/lib/together/session.js";
 import type { Playback } from "../../public/lib/together/moves.js";
 import { isLive } from "../../public/lib/together/follow.js";
 import type { Live, TogetherHub } from "./hub";
@@ -31,8 +31,9 @@ export class CastDesk {
   ) {}
 
   async offer(me: Member, own: Playback, profile: string): Promise<OfferAnswer> {
-    const { id } = await this.hub.create(me.screen, offered(crypto.randomUUID(), me, own, profile, this.now()));
-    return this.wait(id);
+    const live = await this.hub.create(me.screen, offered(crypto.randomUUID(), me, own, profile, this.now()));
+    // The TV may answer before the send has returned.
+    return answered(live.id, live.session) ?? this.wait(live.id);
   }
 
   /** The caster's answer to "busy": the same request, now asking the TV to switch. */
@@ -54,8 +55,9 @@ export class CastDesk {
 
   /**
    * The first answer heard for `id`, or, when none is heard in time, the one
-   * the channel holds by then: a push can be missed. Still unanswered, the
-   * offer is withdrawn, so no TV takes it after the caster gave up.
+   * the channel holds by then: a push can be missed. Still unanswered, or
+   * unreadable, the offer is withdrawn, so no TV takes it after the caster
+   * was told it failed.
    */
   private async wait(id: number): Promise<OfferAnswer> {
     let stop = () => {};
@@ -67,8 +69,13 @@ export class CastDesk {
     });
     const answer = await Promise.race([heard, this.sleep(CAST_ANSWER_MS).then(() => null)]).finally(stop);
     if (answer) return answer;
-    const read = answered(id, await this.hub.latest(id));
-    if (read) return read;
+    const s = await this.hub.latest(id).catch(() => null);
+    const read = answered(id, s);
+    if (s && read) {
+      // Kept as if heard, so the remote's next move builds on the TV's answer and not on the offer.
+      this.hub.heard(id, writeSession(s));
+      return read;
+    }
     await this.hub.withdraw(id).catch(() => {});
     return NONE;
   }

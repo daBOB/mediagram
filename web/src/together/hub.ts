@@ -106,12 +106,12 @@ export class TogetherHub {
     return run;
   }
 
-  /** A new session message, written by `screen`. */
+  /** A new session message, written by `screen`. An edit heard before the send returned is newer, and stays. */
   async create(screen: string, session: Session): Promise<Live> {
     const id = await this.channel.send(writeSession(session));
     this.local.add(screen);
-    this.keep(id, session);
-    return { id, session };
+    if (!this.known.has(id)) this.keep(id, session);
+    return { id, session: this.known.get(id) ?? session };
   }
 
   /** What the channel holds now; `null` once the message is gone. */

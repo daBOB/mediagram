@@ -80,6 +80,31 @@ describe("CastDesk", () => {
     expect(answer).toBe("on");
     expect(live?.session.cast?.tv).toBe("tv-1");
     expect(h.channel.messages.has(id)).toBe(true);
+    // Kept as if heard: the remote's next move builds on the cast, not on the offer.
+    expect(h.announced.at(-1)?.[1]?.cast?.state).toBe("on");
+    expect(h.hub.act(id, ME.screen, { playing: true })?.cast).toMatchObject({ state: "on", tv: "tv-1" });
+  });
+
+  test("an answer heard before the offer's send returns is not overwritten by the offer", async () => {
+    const h = harness();
+    const sent = deferred<void>();
+    const send = h.channel.send.bind(h.channel);
+    h.channel.send = async (text) => { const id = await send(text); await sent.promise; return id; };
+    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    await h.tv(accept);
+    sent.resolve();
+    await settle();
+    expect(h.announced.map(([, s]) => s?.cast?.state)).toEqual(["on"]);
+    expect((await offer).answer).toBe("on");
+  });
+
+  test("a failed read at the deadline still withdraws the offer", async () => {
+    const h = harness();
+    h.channel.failReads = true;
+    h.timeOut();
+    expect(await h.hub.cast.offer(ME, FILM, "kid")).toEqual({ answer: "none", live: null, note: "" });
+    expect(h.channel.removed).toHaveLength(1);
+    expect(h.channel.messages.size).toBe(0);
   });
 
   test("replace after the offer went stale offers anew", async () => {
