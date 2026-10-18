@@ -2,8 +2,9 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { browserEnvironment, type Node } from "./support/player-environment";
 import { descendants } from "./support/browser-application";
 import { askTv } from "../public/lib/cast/cast-ask.js";
+import { CAST_ANSWER_MS } from "../public/lib/together/cast.js";
 import { CAST_WORDS, busyQuestion, refusedLine } from "../public/lib/together/cast-words.js";
-import { screen, type Live } from "../public/lib/together-now.js";
+import { UNREACHABLE, screen, type Live } from "../public/lib/together-now.js";
 
 let env: ReturnType<typeof browserEnvironment>;
 let sent: Array<Record<string, unknown>>;
@@ -60,10 +61,45 @@ test("busy then Cancel sends cancel and resolves null", async () => {
 });
 
 test("refused shows the reason and resolves null", async () => {
-  answers({ body: { answer: "refused", live: null, note: "it's rated above Mia's age limit", serverNow: 0 } });
+  answers({ body: { answer: "refused", live, note: "it's rated above Mia's age limit", serverNow: 0 } });
   const asked = askTv(own, "mia");
   await tick();
   expect(status()).toBe(refusedLine("it's rated above Mia's age limit"));
+  press("OK");
+  expect(await asked).toBeNull();
+  expect(dialog().open).toBe(false);
+});
+
+test("a second ask while one is open sends nothing and shares the first's answer", async () => {
+  answers({ body: { answer: "on", live, note: "", serverNow: 0 } });
+  const first = askTv(own, "mia");
+  const second = askTv(own, "mia");
+  expect(second).toBe(first);
+  expect(await first).toEqual(live);
+  expect(sent).toHaveLength(1);
+  answers({ body: { answer: "on", live, note: "", serverNow: 0 } });
+  expect(await askTv(own, "mia")).toEqual(live);
+});
+
+test("a request that never answers ends in no answer after the server's wait and a margin", async () => {
+  env.respondWith(() => new Promise<Response>(() => {}));
+  const asked = askTv(own, "mia");
+  env.advance(CAST_ANSWER_MS + 2_999);
+  await tick();
+  expect(status()).toBe(CAST_WORDS.asking);
+  env.advance(1);
+  await tick();
+  expect(status()).toBe(CAST_WORDS.noAnswer);
+  press("OK");
+  expect(await asked).toBeNull();
+  expect(dialog().open).toBe(false);
+});
+
+test("an answer without its session says Telegram isn't reachable, and closes", async () => {
+  answers({ body: { answer: "busy", live: null, note: "Dune (2021)", serverNow: 0 } });
+  const asked = askTv(own, "mia");
+  await tick();
+  expect(status()).toBe(UNREACHABLE);
   press("OK");
   expect(await asked).toBeNull();
   expect(dialog().open).toBe(false);
