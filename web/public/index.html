@@ -293,6 +293,14 @@
     </dialog>
 
     <!-- Asking the TV to play (lib/cast/cast-ask.js): one line, and the buttons its answer needs. -->
+    <!-- "Playing on TV" while a cast plays, on every page (lib/cast/cast-bar.js). -->
+    <div id="cast-bar" class="cast-bar" hidden>
+      <div class="control-card cast-bar-card">
+        <button id="cast-bar-open" type="button" class="cast-bar-open"></button>
+        <button id="cast-bar-play" type="button" class="tsp big"></button>
+      </div>
+    </div>
+
     <dialog id="cast-ask">
       <p id="cast-ask-status" role="status"></p>
       <div id="cast-ask-actions" class="cast-ask-actions"></div>

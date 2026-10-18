@@ -27,7 +27,8 @@ function follow(kind, draw) {
  * then, so there is none to offer. The player's own button says why.
  */
 function joinable(live) {
-  const set = live ? setForTogether(live.session.set) : null;
+  // A cast has its own bar on every page (lib/cast/cast-bar.js).
+  const set = live && !live.session.cast ? setForTogether(live.session.set) : null;
   return set && { live, set };
 }
 

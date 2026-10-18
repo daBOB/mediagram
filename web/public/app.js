@@ -51,6 +51,7 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
+import { mountCastBar } from "./lib/cast/cast-bar.js";
 import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener, takeJoin } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
@@ -698,6 +699,7 @@ try {
   // here is reported when Play actually asks for it, not against a page the
   // viewer has not touched yet.
   void loadPlayer().catch(() => {});
+  mountCastBar();
   route();
 } catch (error) {
   main.textContent = "";

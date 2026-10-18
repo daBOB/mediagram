@@ -27,6 +27,14 @@ let unlisten = null;
 
 export const remoteOpen = () => id !== null;
 
+const watchers = new Set();
+/** `listener` runs whenever the remote opens or closes; returns the unsubscribe. */
+export function onRemote(listener) {
+  watchers.add(listener);
+  return () => watchers.delete(listener);
+}
+const changed = () => watchers.forEach((listener) => listener());
+
 const draw = () => current && drawCard(current, serverNow());
 
 /** Says `line` for two seconds in the status note, then `after`. */
@@ -44,6 +52,7 @@ function release() {
   wired?.abort();
   unlisten?.();
   clock = wired = unlisten = menus = null;
+  changed();
 }
 
 function shut() {
@@ -160,6 +169,7 @@ export function openRemote(live) {
   take(live.session);
   clock = setInterval(draw, CLOCK_MS);
   part("root").showModal();
+  changed();
   const joining = id;
   void together({ op: "join", screen, id: joining, remote: true }).then((answer) => {
     if (joining !== id) return;

@@ -87,9 +87,10 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `player.js`, by 10, to wire the Report sheet (its facts, the title it opens
  * and closes with, the errors it attaches, and why a refused Play keeps a media error over its own),
  * and for `playback.css`, by 12, for the sheet's card.
+ * Raised 2026-10-18 for `app.js`, by 2, to mount the Playing on TV bar.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 705,
+  "public/app.js": 707,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
