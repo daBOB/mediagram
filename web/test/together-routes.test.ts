@@ -59,7 +59,7 @@ describe("/api/together", () => {
     const h = harness();
     const first = await h.call("POST", start);
     expect(first.status).toBe(200);
-    expect(first.json.session.members).toEqual([{ screen: "tab-a", label: "Browser" }]);
+    expect(first.json.session.members).toEqual([{ screen: "tab-a", label: "Browser", remote: false }]);
     expect(first.json.session).toMatchObject({ set: "film-1", playing: true, pos: 12.5, rate: 1 });
     const second = await h.call("POST", { ...start, screen: "tab-b" });
     expect(second.status).toBe(409);

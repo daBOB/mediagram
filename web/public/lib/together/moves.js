@@ -10,7 +10,7 @@ import { expectedPosition } from "./follow.js";
 const toMillis = (secs) => Math.round(secs * 1000) / 1000;
 
 export function started(id, me, own, now) {
-  return { session: id, ...own, pos: toMillis(own.pos), at: now, by: me.screen, members: [me], ended: false };
+  return { session: id, ...own, pos: toMillis(own.pos), at: now, by: me.screen, members: [me], ended: false, cast: null };
 }
 
 export function joined(s, me) {

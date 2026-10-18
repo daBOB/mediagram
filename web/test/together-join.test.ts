@@ -13,7 +13,7 @@ const sets = new Map<string, object>([
 ]);
 const session = (over: Partial<Session> = {}): Session => ({
   session: "s-1", set: "film-1", playing: true, pos: 0, rate: 1, at: 0, by: "tv",
-  members: [{ screen: "tv", label: "TV" }, { screen: "tab", label: "Tablet" }], ended: false, ...over,
+  members: [{ screen: "tv", label: "TV", remote: false }, { screen: "tab", label: "Tablet", remote: false }], ended: false, cast: null, ...over,
 });
 const live = (over: Partial<Session> = {}) => heardTogether({ id: 7, session: session(over), serverNow: 0 });
 const button = (root: Node) => descendants(root).find((node) => node.tagName === "BUTTON");

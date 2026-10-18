@@ -12,13 +12,13 @@ import { joined } from "../public/lib/together/moves.js";
 import { FakeChannel, deferred, settle } from "./together-fixture";
 
 const NOW = 1_791_500_000_000;
-const A: Member = { screen: "tab-a", label: "Browser" };
-const B: Member = { screen: "tab-b", label: "Browser" };
-const TV: Member = { screen: "tv-1", label: "TV" };
+const A: Member = { screen: "tab-a", label: "Browser", remote: false };
+const B: Member = { screen: "tab-b", label: "Browser", remote: false };
+const TV: Member = { screen: "tv-1", label: "TV", remote: false };
 const FILM = { set: "film-1", playing: true, pos: 10, rate: 1 };
 
 const foreign = (over: Partial<Session> = {}): Session => ({
-  session: "s-tv", ...FILM, at: NOW, by: TV.screen, members: [TV], ended: false, ...over,
+  session: "s-tv", ...FILM, at: NOW, by: TV.screen, members: [TV], ended: false, cast: null, ...over,
 });
 
 function harness() {

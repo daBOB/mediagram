@@ -12,7 +12,7 @@ const opened: string[] = [];
 
 const session = (over: Partial<Session> = {}): Session => ({
   session: "s-1", set: "film-1", playing: true, pos: 10, rate: 1, at: 0, by: "tv",
-  members: [{ screen: "tv", label: "TV" }], ended: false, ...over,
+  members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast: null, ...over,
 });
 
 function answerGet(body: unknown, status = 200) {

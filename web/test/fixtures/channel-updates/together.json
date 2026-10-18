@@ -12,6 +12,12 @@
     "expect": "together"
   },
   {
+    "name": "a v=2 session is together too",
+    "context": { "channel": 3816522481, "ownDevice": "laptop" },
+    "update": { "kind": "edit", "channel": 3816522481, "id": 904, "caption": "#mlib-together v=2\n{}" },
+    "expect": "together"
+  },
+  {
     "name": "together on another channel is nothing",
     "context": { "channel": 3816522481, "ownDevice": "laptop" },
     "update": { "kind": "edit", "channel": 42, "id": 901, "caption": "#mlib-together v=1\n{}" },

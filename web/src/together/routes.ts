@@ -54,7 +54,7 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
   const body = jsonBody(request.body);
   const screen = typeof body?.screen === "string" && SCREEN.test(body.screen) ? body.screen : null;
   if (!body || !screen) return bodiless(400);
-  const me = { screen, label: "Browser" };
+  const me = { screen, label: "Browser", remote: false };
   const id = Number(body.id);
   try {
     if ((body.op === "start" || body.op === "join") && !reachable) return reply({ reason: UNREACHABLE }, 503);
