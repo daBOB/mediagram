@@ -1,0 +1,75 @@
+/**
+ * The web server's half of the cast handshake (`cast.js`). A caster's offer
+ * goes out as a new together message and the TV answers by editing it; the
+ * caster's request is held until that answer comes, for `CAST_ANSWER_MS` at
+ * most, and answered once.
+ */
+
+import { CAST_ANSWER_MS, chose, offered, replaced } from "../../public/lib/together/cast.js";
+import { isRequest, type Member, type Session } from "../../public/lib/together/session.js";
+import type { Playback } from "../../public/lib/together/moves.js";
+import { isLive } from "../../public/lib/together/follow.js";
+import type { Live, TogetherHub } from "./hub";
+
+/** `none`: no TV answered in time, and the offer was withdrawn. */
+export type OfferAnswer = { answer: "on" | "busy" | "refused" | "none"; live: Live | null; note: string };
+
+const NONE: OfferAnswer = { answer: "none", live: null, note: "" };
+
+/** The TV's answer a session holds; `null` while no TV has answered it. */
+function answered(id: number, s: Session | null): OfferAnswer | null {
+  const cast = s?.cast;
+  if (!s || !cast || cast.state === "offer" || cast.state === "replace") return null;
+  return cast.state === "on" ? { answer: "on", live: { id, session: s }, note: "" } : { answer: cast.state, live: null, note: cast.note };
+}
+
+export class CastDesk {
+  constructor(
+    private readonly hub: TogetherHub,
+    private readonly now: () => number = Date.now,
+    private readonly sleep: (ms: number) => Promise<void> = Bun.sleep,
+  ) {}
+
+  async offer(me: Member, own: Playback, profile: string): Promise<OfferAnswer> {
+    const { id } = await this.hub.create(me.screen, offered(crypto.randomUUID(), me, own, profile, this.now()));
+    return this.wait(id);
+  }
+
+  /** The caster's answer to "busy": the same request, now asking the TV to switch. */
+  async replace(id: number, me: Member, own: Playback, profile: string): Promise<OfferAnswer> {
+    const s = await this.hub.latest(id);
+    const stale = !s || !isRequest(s) || !isLive(s, null, this.now());
+    // Nothing is moved for a message this server no longer knows, as after a restart: it is offered anew too.
+    if (stale || !this.hub.move(id, me.screen, (current) => replaced(current, me.screen, own, this.now()))) return this.offer(me, own, profile);
+    return this.wait(id);
+  }
+
+  cancel(id: number): void {
+    void this.hub.withdraw(id).catch(() => {});
+  }
+
+  tracks(id: number, screen: string, choice: { audio?: string; text?: string }): Session | null {
+    return this.hub.move(id, screen, (s) => chose(s, screen, choice));
+  }
+
+  /**
+   * The first answer heard for `id`, or, when none is heard in time, the one
+   * the channel holds by then: a push can be missed. Still unanswered, the
+   * offer is withdrawn, so no TV takes it after the caster gave up.
+   */
+  private async wait(id: number): Promise<OfferAnswer> {
+    let stop = () => {};
+    const heard = new Promise<OfferAnswer>((resolve) => {
+      stop = this.hub.onKept((kept, session) => {
+        const answer = kept === id ? answered(id, session) : null;
+        if (answer) resolve(answer);
+      });
+    });
+    const answer = await Promise.race([heard, this.sleep(CAST_ANSWER_MS).then(() => null)]).finally(stop);
+    if (answer) return answer;
+    const read = answered(id, await this.hub.latest(id));
+    if (read) return read;
+    await this.hub.withdraw(id).catch(() => {});
+    return NONE;
+  }
+}
