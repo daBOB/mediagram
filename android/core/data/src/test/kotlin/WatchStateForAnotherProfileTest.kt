@@ -60,4 +60,16 @@ class WatchStateForAnotherProfileTest {
 
             assertNull(f.repository.snapshotOf("k"))
         }
+
+    @Test
+    fun writesNamingTheChosenProfileRefreshItsSnapshot() =
+        runTest {
+            val f = fixture()
+
+            f.repository.setProgress("s1", 300.0, 2400.0, profileId = "a")
+            assertEquals(listOf(300.0), f.repository.snapshot.value.progress.map { it.at })
+
+            f.repository.markFinished("s1", profileId = "a")
+            assertEquals(listOf("s1"), f.repository.snapshot.value.watched.map { it.setId })
+        }
 }

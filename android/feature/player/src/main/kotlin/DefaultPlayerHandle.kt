@@ -46,7 +46,7 @@ class DefaultPlayerHandle(
 
     private data class PendingOpen(val setId: String, val startAtMs: Long, val playWhenReady: Boolean)
 
-    /** Whichever set was last handed to the player; [stop] clears it. */
+    /** Whichever set was last handed to the player, or queued for it; [stop] clears it. */
     private val currentSet = MutableStateFlow<String?>(null)
     override val openSet: StateFlow<String?> = currentSet.asStateFlow()
 
@@ -120,6 +120,7 @@ class DefaultPlayerHandle(
         val current = _player.value
         if (current == null) {
             pendingOpen = PendingOpen(setId, startAtMs, playWhenReady)
+            currentSet.value = setId
             return
         }
         if (setId == currentSet.value && current.playbackState != Player.STATE_IDLE) {

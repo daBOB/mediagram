@@ -20,7 +20,7 @@ interface PlayerHandle {
      */
     val player: StateFlow<Player?>
 
-    /** The set [open] last handed to the player, until [stop]; null while the player holds none. */
+    /** The set [open] last asked for, queued or loaded, until [stop]; null while the player holds none. */
     val openSet: StateFlow<String?>
 
     /**

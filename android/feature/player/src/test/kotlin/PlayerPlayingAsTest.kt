@@ -128,6 +128,20 @@ class PlayerPlayingAsTest {
     }
 
     @Test
+    fun aCastByTheTvsOwnProfileShowsOnItsContinue() = runTest {
+        installMainDispatcher()
+        val f = fixture { setProgress("s1", 600.0, 2400.0) }
+        val vm = buildViewModel(handle, f.repository, together = casting(cast.copy(profile = "A")))
+
+        vm.open("s1")
+        playTenSeconds()
+        vm.stop()
+        advanceUntilIdle()
+
+        assertEquals(listOf(10.0), f.repository.snapshot.value.progress.map { it.at })
+    }
+
+    @Test
     fun anOpenWithoutACastPlaysAsTheChosen() = runTest {
         installMainDispatcher()
         val f = fixture()

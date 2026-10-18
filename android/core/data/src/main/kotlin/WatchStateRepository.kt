@@ -101,7 +101,8 @@ interface WatchStateRepository {
      * Saves progress for the chosen profile, the watch time since this
      * device's last write counted on this device's own date; does nothing
      * without one. With [profileId] the write is that profile's instead — a
-     * cast the TV plays for someone else — and leaves [snapshot] alone.
+     * cast the TV plays for someone else — and leaves [snapshot] alone,
+     * unless [profileId] is the chosen profile, whose write it then is.
      */
     suspend fun setProgress(
         setId: String,
@@ -428,16 +429,22 @@ class DefaultWatchStateRepository(
         refreshSnapshot(selected)
     }
 
-    /** [writing] for the chosen profile when [profileId] is null; otherwise [writingFor] it. */
+    /**
+     * [writing] for the chosen profile when [profileId] is null; otherwise
+     * [writingFor] it, then refreshing [snapshot] when it names the chosen
+     * profile. Written by name rather than through [writing], so a choice
+     * moving meanwhile cannot send the write to someone else.
+     */
     private suspend fun writingAs(
         profileId: String?,
         write: suspend (CoreInterface, String) -> Unit,
-    ) = if (profileId == null) writing(write) else writingFor(profileId, write)
+    ) {
+        if (profileId == null) return writing(write)
+        writingFor(profileId, write)
+        selection()?.takeIf { it.id == profileId }?.let { refreshSnapshot(it) }
+    }
 
-    /**
-     * A write for a profile other than the chosen one. The chosen profile's
-     * snapshot is not re-read: nothing it shows changed.
-     */
+    /** A write for [profileId] by name; it re-reads no snapshot, which [writingAs] does when that is the chosen profile. */
     private suspend fun writingFor(
         profileId: String,
         write: suspend (CoreInterface, String) -> Unit,
