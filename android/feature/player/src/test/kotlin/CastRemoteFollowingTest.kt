@@ -21,6 +21,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * The remote following the TV's session: its edits and their notices, a read
@@ -104,7 +105,23 @@ class CastRemoteFollowingTest {
         }
 
     @Test
-    fun aMoveThatCantReachTelegramSaysSo() =
+    fun aMoveGivenUpSaysTelegramIsntReachable() =
+        runTest {
+            val rig = castRemote()
+            rig.core.togetherFailure = IllegalStateException("offline")
+
+            rig.vm.player.pause()
+            runCurrent()
+            assertNull(rig.vm.ui.value!!.notice, "reachable when pressed")
+            // Three tries, thirty seconds apart: the third fails at 60 s and the move is given up.
+            advanceTimeBy(60_001)
+
+            assertEquals(TOGETHER_UNREACHABLE, rig.vm.ui.value!!.notice)
+            assertTrue(rig.vm.player.playWhenReady, "back to what the channel holds")
+        }
+
+    @Test
+    fun aMoveWhileTelegramIsOutOfReachSaysSoAtOnce() =
         runTest {
             val rig = castRemote()
             rig.core.togetherFailure = IllegalStateException("offline")

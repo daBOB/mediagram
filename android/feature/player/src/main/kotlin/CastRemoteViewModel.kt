@@ -131,7 +131,7 @@ class CastRemoteViewModel internal constructor(
         take(acted(current ?: return, change, me.screen, now()))
         viewModelScope.launch {
             live.act(id, me.screen, change)
-            // Telegram out of reach: the move may be given up on, and the remote says why, as the player does.
+            // Already out of reach: said at once, before the move's edits are tried and given up on.
             if (this@CastRemoteViewModel.id == id && !live.available.value) view.show(TOGETHER_UNREACHABLE)
         }
     }
@@ -149,6 +149,8 @@ class CastRemoteViewModel internal constructor(
         val next = if (heard.lost) session else follow(before, session, me.screen)
         if (next === before) return
         take(next)
+        // Given up on, the move is not the TV's doing: the remote says why, as the player does.
+        if (heard.lost) return view.show(TOGETHER_UNREACHABLE)
         if (before == null || next.by == me.screen) return
         changeOf(before, next)?.let { sayOnRemote(it, next) }?.let(view::show)
     }
