@@ -11,7 +11,7 @@ import type { Playback } from "../../public/lib/together/moves.js";
 import { isLive } from "../../public/lib/together/follow.js";
 import type { Live, TogetherHub } from "./hub";
 
-/** `none`: no TV answered in time, and the offer was withdrawn. */
+/** `none`: no TV answered in time, and the offer was withdrawn. Any other answer carries the offer's own message, whose id `replace` and `cancel` act on. */
 export type OfferAnswer = { answer: "on" | "busy" | "refused" | "none"; live: Live | null; note: string };
 
 const NONE: OfferAnswer = { answer: "none", live: null, note: "" };
@@ -20,7 +20,7 @@ const NONE: OfferAnswer = { answer: "none", live: null, note: "" };
 function answered(id: number, s: Session | null): OfferAnswer | null {
   const cast = s?.cast;
   if (!s || !cast || cast.state === "offer" || cast.state === "replace") return null;
-  return cast.state === "on" ? { answer: "on", live: { id, session: s }, note: "" } : { answer: cast.state, live: null, note: cast.note };
+  return { answer: cast.state, live: { id, session: s }, note: cast.state === "on" ? "" : cast.note };
 }
 
 export class CastDesk {

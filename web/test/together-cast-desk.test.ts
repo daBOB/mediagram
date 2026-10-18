@@ -8,7 +8,7 @@ import { describe, expect, test } from "bun:test";
 
 import { TogetherHub } from "../src/together/hub";
 import { parseSession, writeSession, type Member, type Session } from "../public/lib/together/session.js";
-import { accepted, busied, tracked } from "../public/lib/together/cast.js";
+import { accepted, busied, refusedBy, tracked } from "../public/lib/together/cast.js";
 import { FakeChannel, deferred, settle } from "./together-fixture";
 
 const NOW = 1_791_500_000_000;
@@ -56,8 +56,16 @@ describe("CastDesk", () => {
   test("a busy TV answers with its title", async () => {
     const h = harness();
     const offer = h.hub.cast.offer(ME, FILM, "kid");
-    await h.tv((s) => busied(s, "tv-1", "Dune"));
-    expect(await offer).toEqual({ answer: "busy", live: null, note: "Dune" });
+    const id = await h.tv((s) => busied(s, "tv-1", "Dune"));
+    const busy = await offer;
+    expect(busy).toMatchObject({ answer: "busy", note: "Dune", live: { id } });
+  });
+
+  test("a refusing TV answers with its reason and the offer's message", async () => {
+    const h = harness();
+    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const id = await h.tv((s) => refusedBy(s, "tv-1", "too young"));
+    expect(await offer).toMatchObject({ answer: "refused", note: "too young", live: { id } });
   });
 
   test("no answer in five seconds withdraws the offer", async () => {
