@@ -96,6 +96,8 @@
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
 }
 #cast-ask[open] { display: grid; }
+/* Focus sits on the first button when there is one; the box itself never wears the ring. */
+#cast-ask:focus { outline: none; }
 #cast-ask::backdrop { background: rgba(0, 0, 0, 0.5); }
 #cast-ask p { margin: 0; font: 500 1.05rem var(--display); color: var(--stage-ink); }
 .cast-ask-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
@@ -117,10 +119,16 @@
 #cast-remote:not([open]) { display: none; }
 #cast-remote-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
 
-/* The "Playing on TV" bar: the control card's surface, the width of `main`, fixed to the bottom. */
+/* The "Playing on TV" bar: the control card's layout on the catalog's own raised surface (the card's glass is made for sitting over video), the width of `main`, fixed to the bottom. */
 .cast-bar { position: fixed; bottom: 0; left: var(--rail-width); width: calc(100% - var(--rail-width)); padding: 0 var(--gutter) 12px; z-index: 15; box-sizing: border-box; pointer-events: none; }
 .cast-bar[hidden] { display: none; }
-.cast-bar-card { grid-template-columns: minmax(0, 1fr) auto; align-items: center; color: var(--stage-ink); pointer-events: auto; }
+.cast-bar-card {
+  grid-template-columns: minmax(0, 1fr) auto; align-items: center; pointer-events: auto;
+  --stage-ink: var(--ink); --stage-accent: var(--accent);
+  color: var(--ink); background: var(--surface); border-color: var(--rule);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.cast-bar-card .tsp:hover { background: var(--tint-active); }
 .cast-bar-open { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: 500 1rem var(--display); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 /* The limit notice sits above the bar rather than under it. */
 body:has(.cast-bar:not([hidden])) .daily-limit-notice { bottom: 96px; }

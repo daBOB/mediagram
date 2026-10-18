@@ -122,3 +122,13 @@ test("unreachable says Telegram isn't reachable", async () => {
   press("OK");
   expect(await asked).toBeNull();
 });
+
+test("the first button takes focus once there are buttons, and none is focused while only the TV is being asked", async () => {
+  answers({ body: { answer: "busy", live, note: "Dune (2021)", serverNow: 0 } }, {});
+  const asked = askTv(own, "mia");
+  expect(env.document.activeElement).toBeNull();
+  await tick();
+  expect(env.document.activeElement).toBe(buttons()[0] as never);
+  press(CAST_WORDS.cancel);
+  await asked;
+});

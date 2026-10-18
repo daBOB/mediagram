@@ -28,7 +28,7 @@ function show(line, buttons) {
   row.replaceChildren();
   dismiss = null;
   if (!dialog().open) dialog().showModal();
-  return new Promise((resolve) => {
+  const answer = new Promise((resolve) => {
     const choose = (label) => { dismiss = null; resolve(label); };
     for (const label of buttons) {
       const button = el("button", "ghost", label);
@@ -39,6 +39,8 @@ function show(line, buttons) {
     }
     if (buttons.length) dismiss = () => choose(buttons.at(-1));
   });
+  row.children[0]?.focus();
+  return answer;
 }
 
 /** Escape is a Cancel or an OK once there is a button to press, and nothing while the TV is being asked. */

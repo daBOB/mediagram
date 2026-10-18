@@ -148,7 +148,7 @@ dialog.resting .control-card { pointer-events: none; }
      beneath; the way out stays in the corner, clear of both. */
   .hud-top { flex-wrap: wrap; row-gap: 8px; padding-right: 72px; }
   .hud .what { flex: 1 1 100%; }
-  #close { position: absolute; top: 16px; right: 16px; }
+  #close, #cast-remote-close { position: absolute; top: 16px; right: 16px; }
   .stats-overlay { margin-top: -1.25rem; left: 16px; }
   .card-dock { bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; }
   .control-card { padding: 0.6rem 0.75rem; }
