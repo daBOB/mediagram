@@ -33,13 +33,15 @@ import ui.tv.profile.TvChosenProfile
  *
  * The player answers Back itself: the first press puts its controls away,
  * and only a press with them already gone leaves. It draws in mediagram's
- * look whatever the style ([TvMediagramPlayerTheme]).
+ * look whatever the style ([TvMediagramPlayerTheme]). [onCastOver] is where
+ * the TV goes once a cast it plays is over.
  */
 @Composable
 internal fun TvPlayerBranch(
     at: LibraryPositions,
     catalogState: CatalogUiState,
     leave: () -> Unit,
+    onCastOver: () -> Unit,
 ) {
     val setId = at.setId ?: return
     val set = catalogState.mediaSet(setId)
@@ -47,7 +49,7 @@ internal fun TvPlayerBranch(
     TvMediagramPlayerTheme {
         TvPlayerScreen(
             setId = setId, set = set, run = run, handPicked = at.run != null,
-            onBack = leave, onSwitch = at::replacePlayer,
+            onBack = leave, onSwitch = at::replacePlayer, onCastOver = onCastOver,
         )
     }
 }
@@ -150,4 +152,4 @@ internal fun TvLibraryHomeFrame(
 }
 
 /** Where [TvCatalogScreen]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
-private const val CatalogStateKey = "catalog"
+internal const val CatalogStateKey = "catalog"

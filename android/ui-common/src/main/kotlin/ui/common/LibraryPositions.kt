@@ -225,6 +225,18 @@ class LibraryPositions(
         setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, playerPayload(id, kept)))
     }
 
+    /**
+     * A cast the TV accepted: in place of a title playing — one player on
+     * the stack, never two — or over whatever shows. Never through
+     * the play gate: the caster's limits were asked before the TV accepted,
+     * and the TV's own profile's are not the ones a cast plays by.
+     */
+    fun castPlayer(id: String) {
+        val current = stack
+        val base = if (current.lastOrNull()?.kind == FrameKind.PLAYER) current.dropLast(1) else current
+        setStack(base + Frame(FrameKind.PLAYER, id))
+    }
+
     private fun playerPayload(id: String, run: List<String>?) =
         if (run.isNullOrEmpty()) id else "$id$RUN_SEP${run.joinToString(RUN_SEP)}"
     fun openSearch() = push(FrameKind.SEARCH, "")

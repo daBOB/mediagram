@@ -36,6 +36,7 @@ import playback.CacheVolume
 import playback.HeldSetsQuery
 import playback.INTERNAL_VOLUME_ID
 import playback.InMemoryLanCacheSettings
+import player.CastReceiverViewModel
 import player.LibraryPlayGate
 import player.PlayerViewModel
 import player.TitlePreloadViewModel
@@ -127,6 +128,9 @@ internal class TvAppFixture(
 
     /** Watch together as the catalog hears it: a test puts a session up, or takes Telegram away. */
     val together = FakeTogetherLive()
+
+    /** Watch together as the player and the cast receiver hear it: a test puts a cast request up, or loses the cast. */
+    val casts = TvCastLive()
     val catalog: CatalogViewModel
     private val search: SearchViewModel
     private val fetch: FetchViewModel
@@ -226,6 +230,8 @@ internal class TvAppFixture(
         coEvery { repository.person(any()) } returns null
         coEvery { repository.franchises() } returns emptyList()
         coEvery { repository.fetchPortrait(any()) } returns null
+        // The cast receiver looks the asked-for title up before it accepts.
+        coEvery { repository.mediaSet(any()) } answers { sets.find { it.setId == firstArg() } }
         val enrichment = CatalogEnrichmentFetcher(provider, InMemoryTmdbSettings())
         catalog =
             CatalogViewModel(
@@ -239,7 +245,7 @@ internal class TvAppFixture(
         search = SearchViewModel(repository)
         // The player a title's Play opens, over an ExoPlayer that decodes
         // nothing — the library's walk only needs it to open and to stop.
-        playback = TvPlayerFixture(viewer)
+        playback = TvPlayerFixture(viewer, together = casts)
         player = playback.factory.create(PlayerViewModel::class.java)
         // The menu's three screens, as the phone's own library fixture holds
         // them: stand-ins with the facts a screen draws, since what those
@@ -332,6 +338,8 @@ internal class TvAppFixture(
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(), the
                 // same reason every entry here exists — and every library test reaches it.
                 AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),
+                // The library and the profile picker each listen for casts through it.
+                CastReceiverViewModel::class.java to CastReceiverViewModel(casts, repository, viewer.repository, playback.handle),
             )
         val held =
             ViewModelProvider(

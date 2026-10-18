@@ -17,6 +17,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import data.CatalogRepository
 import data.PlayerPreferences
 import data.ReportChannel
+import data.TogetherLive
 import data.WatchSync
 import io.mockk.every
 import io.mockk.mockk
@@ -56,7 +57,8 @@ import testing.WatchStateFixture
  * through; left out, the title has no subtitles at all, and [summary]
  * the same for its notes. [playerReady]
  * false holds the player back unbuilt, as a restore that comes back before
- * it is ready sees it.
+ * it is ready sees it. [together] is the watch-together channel it hears:
+ * its own, unless a test shares one with a cast receiver.
  */
 internal class TvPlayerFixture(
     val watchState: WatchStateFixture = WatchStateFixture(),
@@ -64,6 +66,7 @@ internal class TvPlayerFixture(
     private val subtitles: SubtitleTrackSource = mockk(relaxed = true),
     playerReady: Boolean = true,
     private val summary: SummarySource = SummarySource.None,
+    private val together: TogetherLive = FakeTogetherLive(),
 ) : AutoCloseable {
     val media = mockk<ExoPlayer>(relaxed = true)
     val repository = watchState.repository
@@ -164,7 +167,7 @@ internal class TvPlayerFixture(
         }
     }
 
-    private val handle = DefaultPlayerHandle(CompletableDeferred<ExoPlayer>().also { if (playerReady) it.complete(media) }, scope)
+    val handle = DefaultPlayerHandle(CompletableDeferred<ExoPlayer>().also { if (playerReady) it.complete(media) }, scope)
     val factory =
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -182,7 +185,7 @@ internal class TvPlayerFixture(
                     SeriesPreloading.Noop,
                     HeldSetsQuery.Noop,
                     summary,
-                    togetherLive = FakeTogetherLive(),
+                    togetherLive = together,
                     relay = ViewerRelay(),
                     // A real one: a report names the screen it was sent from, which the context answers.
                     context = RuntimeEnvironment.getApplication(),

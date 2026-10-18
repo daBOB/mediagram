@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -128,6 +129,15 @@ internal fun TvLibrary(
     // grown-up's own preloads counted into its own menu badge.
     val queueCount = remember(rawQueueRows, catalogState) { catalogState.resolvableQueueRows(rawQueueRows).size }
     val menu = tvMenuActions(at, restore, here, catalogState, catalogViewModel, fetchState, { menuOpen = false }, onStartOver, queueCount)
+    val casts = rememberCastOpens(at)
+    // A cast over comes back to Home as a fresh arrival: the catalogue's kept
+    // tab and scroll, and the plate Back would have landed on, are dropped.
+    val home = {
+        saved.removeState(CatalogStateKey)
+        restore.forget(0)
+        menuOpen = false
+        at.toCatalog()
+    }
 
     // Join opens the session's title in the player, as each frame's own Play does: Home notes what it
     // opened, so Back comes to the plate; a title page forgets, so Back lands on Join.
@@ -139,7 +149,7 @@ internal fun TvLibrary(
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
             when (top) {
-                FrameKind.PLAYER -> TvPlayerBranch(at, catalogState, leave)
+                FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogState, leave, onCastOver = home) }
 
                 FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 

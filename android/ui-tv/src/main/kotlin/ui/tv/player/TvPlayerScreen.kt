@@ -54,7 +54,9 @@ import ui.common.player.PlayerNavigationEffects
  * time; null while the catalogue has none. [run] is what the title plays
  * into — up next, ⏮ and ⏭ and the remote's Next and Previous walk it, and
  * [onSwitch] moves the library to another title of it. [handPicked] says
- * [run] is a list or the Kids wall, which takes nothing ahead.
+ * [run] is a list or the Kids wall, which takes nothing ahead. Playing a
+ * cast it has no marks, which would file it under the TV's own profile, and
+ * [onCastOver] leaves once the cast is over ([TvCastOver]) or left by Back.
  */
 @Composable
 fun TvPlayerScreen(
@@ -64,11 +66,13 @@ fun TvPlayerScreen(
     handPicked: Boolean,
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
+    onCastOver: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
-    val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val playingAs by viewModel.playingAs.collectAsStateWithLifecycle()
+    val marks = viewModel.marks.collectAsStateWithLifecycle().value.takeIf { playingAs == null }
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()
@@ -83,6 +87,7 @@ fun TvPlayerScreen(
     PlayerLifecycle(viewModel)
     TvDisplayModeMatch(player)
     PlayerNavigationEffects(viewModel, setId, run, set?.fsk, handPicked, onSwitch)
+    TvCastOver(viewModel, onCastOver)
     // The phone's rule: the countdown drops playing (the title has ended)
     // and the wait for the next title's buffer pauses on purpose; neither
     // is a viewer looking away.
@@ -147,7 +152,8 @@ fun TvPlayerScreen(
         onCloseNotes = { notesFocus.closeFromBack(viewModel::toggleNotes) },
         onHideStats = { overlays.statsShown = false },
         onHideControls = { controlsShown = false },
-        onLeave = onBack,
+        // Back out of a cast ends it, and goes where any end of one goes.
+        onLeave = if (playingAs != null) onCastOver else onBack,
     )
 
     Box(
