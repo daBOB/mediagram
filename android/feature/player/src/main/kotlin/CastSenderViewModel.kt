@@ -12,7 +12,6 @@ import data.TogetherLive
 import data.WatchStateRepository
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -64,12 +63,18 @@ class CastSenderViewModel @Inject constructor(
     private var offered: Playback? = null
     private var profile = ""
 
+    private val inSession = MutableStateFlow(false)
+
+    /** The player says whether this device is in a session now; it greys Play on TV with [CastWords.LEAVE_FIRST]. */
+    fun inSession(value: Boolean) {
+        inSession.value = value
+    }
+
     /**
-     * Why Play on TV can't be pressed, or `null` when it may be: unavailable
-     * Telegram, or this device's player being in a session ([inSession], which
-     * the player knows and this model does not).
+     * Why Play on TV can't be pressed, or `null` when it may be: Telegram
+     * unavailable, or this device's player in a session (see [inSession]).
      */
-    fun castable(inSession: Flow<Boolean>): StateFlow<String?> =
+    val castable: StateFlow<String?> =
         combine(live.available, inSession) { available, session ->
             when {
                 !available -> TOGETHER_UNREACHABLE
@@ -109,10 +114,13 @@ class CastSenderViewModel @Inject constructor(
         }
     }
 
+    /** The screen is gone for good: an offer waiting on the Replace question is withdrawn, not left for the server's deadline. */
+    override fun onCleared() = cancel()
+
     /**
-     * Runs [call] to its answer even if the screen is left meanwhile, so an
-     * offer is never left live for the server's minute with nobody waiting
-     * (`TogetherLive.offer`); this model only stops listening.
+     * Runs [call] to its answer even if the screen is left meanwhile, so a
+     * waiting offer is not left live for the server's minute with nobody
+     * listening (`TogetherLive.offer`); this model only stops listening.
      */
     private fun send(call: suspend () -> CastAnswer) {
         _ask.value = CastAsk.Asking

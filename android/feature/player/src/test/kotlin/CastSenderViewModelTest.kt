@@ -1,12 +1,12 @@
 package player
 
+import androidx.lifecycle.ViewModelStore
 import data.CastAnswer
 import data.CastAnswer.Answer
 import data.LiveSession
 import data.TOGETHER_UNREACHABLE
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -125,21 +125,33 @@ class CastSenderViewModelTest {
     @Test
     fun unreachableIsGreyedWithTheReason() = runTest {
         val vm = viewModel(this)
-        val session = MutableStateFlow(false)
-        val castable = vm.castable(session)
-        assertNull(castable.value)
+        assertNull(vm.castable.value)
 
         live.available.value = false
 
-        assertEquals(TOGETHER_UNREACHABLE, castable.value)
+        assertEquals(TOGETHER_UNREACHABLE, vm.castable.value)
     }
 
     @Test
-    fun inASessionIsGreyedLeaveFirst() = runTest {
+    fun inASessionIsGreyedLeaveFirstUntilItEnds() = runTest {
         val vm = viewModel(this)
-        val session = MutableStateFlow(true)
 
-        assertEquals(CastWords.LEAVE_FIRST, vm.castable(session).value)
+        vm.inSession(true)
+        assertEquals(CastWords.LEAVE_FIRST, vm.castable.value)
+        vm.inSession(false)
+
+        assertNull(vm.castable.value)
+    }
+
+    @Test
+    fun leavingWhileBusyWithdrawsTheOffer() = runTest {
+        val vm = viewModel(this)
+        live.onOffer = { answer(Answer.BUSY, note = "Dune") }
+        vm.playOnTv(own)
+
+        ViewModelStore().apply { put("sender", vm) }.clear()
+
+        assertEquals(listOf("offer Phone film-1 A", "cancel 11"), live.casts)
     }
 
     @Test
