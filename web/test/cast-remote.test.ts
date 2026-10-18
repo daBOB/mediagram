@@ -3,7 +3,7 @@ import { browserEnvironment, type Node } from "./support/player-environment";
 import { descendants } from "./support/browser-application";
 import { closeRemote, openRemote, remoteOpen } from "../public/lib/cast/cast-remote.js";
 import { CAST_WORDS } from "../public/lib/together/cast-words.js";
-import { heardTogether, screen, setTogetherOpener, type Live } from "../public/lib/together-now.js";
+import { heardTogether, refreshTogether, screen, setTogetherOpener, togetherNow, type Live } from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -24,7 +24,7 @@ const items = () => descendants(node("cast-remote-menu")).filter((n) => n.tagNam
 const heard = (s: Session | null) => heardTogether({ id: 7, session: s, serverNow: Date.now() });
 
 async function opened(over: Partial<Session> = {}, next: string | null = null) {
-  setTogetherOpener(() => {}, (id) => ({ setId: id, title: "Dune", duration: 7200, backdrop: "/b.jpg" }) as never, () => next);
+  setTogetherOpener(() => {}, (id) => ({ setId: id, title: "Dune", duration: 7200, backdrop: "dune-b" }) as never, () => next);
   env.respondWith(async () => Response.json({ id: 7, session: session(over), serverNow: 0 }));
   openRemote(live(over));
   await tick();
@@ -57,8 +57,9 @@ test("+10 sends pos expected+10", async () => {
 
 test("choosing German subtitles sends tracks text:de", async () => {
   await opened();
-  node("cast-remote-tracks").fire("click");
-  expect(items().map((b) => b.textContent)).toEqual(["Off", "German", "Audio · English"]);
+  expect(node("cast-remote-audio").hidden).toBe(true);
+  node("cast-remote-cc").fire("click");
+  expect(items().map((b) => b.textContent)).toEqual(["Off", "German"]);
   items()[1]!.fire("click");
   expect(posts().at(-1)).toEqual({ op: "tracks", screen, id: 7, text: "de" });
 });
@@ -103,4 +104,61 @@ test("Next episode is hidden without a next title", async () => {
   expect(node("cast-remote-next").hidden).toBe(false);
   node("cast-remote-next").fire("click");
   expect(posts().at(-1)).toEqual({ op: "act", screen, id: 7, change: { set: "film-2", pos: 0, playing: true } });
+});
+
+test("Esc closes the remote and leaves the session; reopening works", async () => {
+  await opened();
+  node("cast-remote").fire("cancel");
+  expect(posts().at(-1)).toEqual({ op: "leave", screen, id: 7 });
+  expect(node("cast-remote").open).toBe(false);
+  expect(remoteOpen()).toBe(false);
+  await opened();
+  expect(remoteOpen()).toBe(true);
+  expect(node("cast-remote").open).toBe(true);
+});
+
+test("the backdrop is drawn from its artwork key", async () => {
+  await opened();
+  expect((node("cast-remote-art") as unknown as { src: string }).src).toBe("/api/posters/dune-b.jpg");
+  expect(node("cast-remote-title").textContent).toBe("Dune");
+});
+
+test("a move to another title redraws the title and Next", async () => {
+  await opened();
+  setTogetherOpener(() => {}, (id) => ({ setId: id, title: id === "film-2" ? "Dune Part Two" : "Dune", duration: 100 }) as never, () => null);
+  heard(session({ set: "film-2", pos: 0, at: Date.now() }));
+  expect(node("cast-remote-title").textContent).toBe("Dune Part Two");
+  expect(node("cast-remote-next").hidden).toBe(true);
+});
+
+test("a read that no longer holds the session closes with Stopped", async () => {
+  await opened();
+  env.respondWith(async () => Response.json({ available: true, reason: null, live: null, serverNow: Date.now() }));
+  await refreshTogether();
+  expect(node("cast-remote-note").textContent).toBe(CAST_WORDS.stopped);
+});
+
+test("a read with a changed session applies it", async () => {
+  await opened();
+  env.respondWith(async () => Response.json({ available: true, reason: null, live: { id: 7, session: session({ playing: false, pos: 50, at: Date.now() }) }, serverNow: Date.now() }));
+  await refreshTogether();
+  expect(node("cast-remote-play").getAttribute("aria-label")).toBe("Play");
+});
+
+test("a move the server no longer has closes the remote and forgets the session", async () => {
+  await opened();
+  heard(session({ at: Date.now() }));
+  env.respondWith(async () => new Response(null, { status: 404 }));
+  node("cast-remote-play").fire("click");
+  await tick();
+  expect(togetherNow().live).toBeNull();
+  expect(node("cast-remote-note").textContent).toBe(CAST_WORDS.stopped);
+});
+
+test("the seek bar is left alone while it is held", async () => {
+  await opened();
+  node("cast-remote-seek").value = "30";
+  env.document.activeElement = node("cast-remote-seek");
+  env.advance(1000);
+  expect(node("cast-remote-seek").value).toBe("30");
 });

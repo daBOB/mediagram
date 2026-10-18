@@ -299,14 +299,15 @@
 
     <!-- The remote for a title playing on the TV (lib/cast/cast-remote.js): the title's backdrop
          where the picture would be, and a card built from the player's own classes. -->
-    <dialog id="cast-remote" class="cast-remote" aria-label="Playing on TV">
+    <dialog id="cast-remote" class="cast-remote" aria-labelledby="cast-remote-label">
       <img id="cast-remote-art" alt="" hidden />
-      <div class="cast-remote-head">
-        <span class="together-label" id="cast-remote-label"></span>
+      <div class="hud hud-top" id="cast-remote-top">
         <span class="what" id="cast-remote-title"></span>
+        <span class="together-label" id="cast-remote-label"></span>
+        <button id="cast-remote-close" class="ghost" aria-label="Close">✕</button>
       </div>
       <p class="together-note" id="cast-remote-note" role="status"></p>
-      <div class="card-dock" id="cast-remote-dock">
+      <div class="hud card-dock" id="cast-remote-dock">
         <div class="card-menu" id="cast-remote-menu" hidden></div>
         <div class="control-card">
           <div class="card-row card-seek">
@@ -318,17 +319,18 @@
             <span class="at" id="cast-remote-end"></span>
           </div>
           <div class="card-row card-tools">
+            <button id="cast-remote-cc" class="tool" aria-label="Subtitles">CC</button>
             <button id="cast-remote-speed" class="tool" aria-label="Speed">1×</button>
-            <button id="cast-remote-tracks" class="tool">Subtitles &amp; audio</button>
+            <button id="cast-remote-audio" class="tool" aria-label="Audio" hidden>Audio</button>
             <span class="spacer"></span>
             <button id="cast-remote-stop" class="tool"></button>
           </div>
           <div class="card-row card-transport">
             <span class="transport">
-              <button id="cast-remote-back" class="tsp" aria-label="Back 10 seconds">−10</button>
-              <button id="cast-remote-play" class="tsp big" aria-label="Pause">Pause</button>
-              <button id="cast-remote-forward" class="tsp" aria-label="Forward 10 seconds">+10</button>
-              <button id="cast-remote-next" class="tsp" aria-label="Next episode" hidden>Next episode</button>
+              <button id="cast-remote-back" class="tsp"></button>
+              <button id="cast-remote-play" class="tsp big"></button>
+              <button id="cast-remote-forward" class="tsp"></button>
+              <button id="cast-remote-next" class="tsp" aria-label="Next episode" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg></button>
             </span>
           </div>
         </div>

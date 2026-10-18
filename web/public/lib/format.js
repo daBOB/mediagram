@@ -62,6 +62,11 @@ export function episodeLabel(set) {
   return set.kind === "ep" && set.season != null ? `S${set.season}E${number}` : number;
 }
 
+/** How a title is named wherever it is the one playing: show, episode, title. */
+export function titleLine(set) {
+  return [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
+}
+
 /** The technical line under a title: what it is, not where it came from. */
 export function codecLine(set) {
   return [set.container, set.vcodec, set.acodec].filter(Boolean).join(" · ");

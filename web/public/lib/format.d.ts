@@ -8,6 +8,13 @@ export function episodeLabel(set: {
   season?: number | null;
   episode?: string | null;
 }): string;
+export function titleLine(set: {
+  show?: string | null;
+  title?: string | null;
+  kind?: string;
+  season?: number | null;
+  episode?: string | null;
+}): string;
 export function codecLine(set: {
   container?: string | null;
   vcodec?: string | null;
