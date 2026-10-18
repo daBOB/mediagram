@@ -137,13 +137,16 @@ abstract class TvCastHarness {
         /** Only Home draws the cover, and its Watch now with it. */
         val WatchNow = hasContentDescription("Watch now: ", substring = true)
 
-        /** Three films with art enough for the cover, and a show of two episodes any child may watch. */
+        /** Three films with art enough for the cover, a show of two episodes any child may watch, and one of two no child is shown. */
         fun library() =
             (0 until 3).map {
                 set("film-$it", Kind.MOVIE, "Film $it", addedAt = it.toLong()).copy(backdropPath = "/b-$it.jpg", posterPath = "/p-$it.jpg")
             } +
                 (1..2).map {
                     set("e$it", Kind.EPISODE, if (it == 1) "Pilot" else "Second", show = "A Show", addedAt = 10L + it, episode = it).copy(season = 1, fsk = "0")
+                } +
+                (1..2).map {
+                    set("l$it", Kind.EPISODE, "Late $it", show = "A Late Show", addedAt = 20L + it, episode = it).copy(season = 1, fsk = "16")
                 }
     }
 }

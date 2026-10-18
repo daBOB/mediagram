@@ -149,7 +149,7 @@ internal fun TvLibrary(
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
             when (top) {
-                FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogState, leave, onCastOver = home) }
+                FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogViewModel, leave, onCastOver = home) }
 
                 FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 

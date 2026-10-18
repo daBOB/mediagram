@@ -4,8 +4,10 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.DailyLimitWords
+import player.DAILY_LIMIT_NOTICE_MS
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The session moving on to another title: followed by asking for it as Next would, and never sent back as this screen's move. */
@@ -84,5 +86,10 @@ class TogetherControllerTitleTest {
 
             assertEquals(listOf(EP2), rig.opened)
             assertEquals(listOf(TV), rig.message(950).members)
+            // Up for as long as the player's own time's-up notice, not a together notice's two seconds: a child reads it.
+            assertEquals(DailyLimitWords.OUT, rig.controller.ui.value.notice)
+            advanceTimeBy(DAILY_LIMIT_NOTICE_MS)
+            runCurrent()
+            assertNull(rig.controller.ui.value.notice)
         }
 }

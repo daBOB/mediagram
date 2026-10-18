@@ -9,6 +9,7 @@ import model.together.PlaybackChange
 import model.together.changeOf
 import model.together.follow
 import model.together.isLive
+import player.DAILY_LIMIT_NOTICE_MS
 
 /*
  * Following the session a screen is in, the twin of `together.js`'s
@@ -77,8 +78,14 @@ private fun TogetherController.apply(drifting: Boolean = false) {
         val here = titleOf(set) != null
         if (asked != generation || expecting != set) return@launch
         if (!here) return@launch leave(LEFT_NOT_HERE)
-        // A move the daily limit refuses is where this screen leaves, as one above the age limit is.
-        openTitle(set) { if (asked == generation && expecting == set) leave(DailyLimitWords.OUT) }
+        // A move the daily limit refuses is where this screen leaves, as one above the age limit is,
+        // its words up as long as the player's own time's-up notice: a child reads them.
+        openTitle(set) {
+            if (asked == generation && expecting == set) {
+                leave()
+                tell(DailyLimitWords.OUT, DAILY_LIMIT_NOTICE_MS)
+            }
+        }
     }
 }
 

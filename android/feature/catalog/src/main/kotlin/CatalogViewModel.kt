@@ -116,9 +116,10 @@ class CatalogViewModel
          * exactly as it read before kids profiles existed, so a gap in
          * collection still means refresh-on-resubscribe. Not filtered: that
          * is [state]'s job, applied over this pipe's always-current [value][StateFlow.value]
-         * rather than baked into what this one caches.
+         * rather than baked into what this one caches. Read directly by a TV
+         * playing a cast, which plays as the caster, not as whoever is chosen.
          */
-        private val unfiltered: StateFlow<CatalogUiState> =
+        val unfiltered: StateFlow<CatalogUiState> =
             channelFlow {
                 launch { refresh(LibraryUpdateKind.Read) }
                 launch {

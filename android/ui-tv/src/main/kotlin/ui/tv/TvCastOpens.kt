@@ -46,6 +46,5 @@ internal fun TvCastOverPicker(
     opened: Int,
 ) {
     val catalog: CatalogViewModel = hiltViewModel()
-    val catalogState by catalog.state.collectAsStateWithLifecycle()
-    key(opened) { TvPlayerBranch(at, catalogState, leave = at::pop, onCastOver = at::toCatalog) }
+    key(opened) { TvPlayerBranch(at, catalog, leave = at::pop, onCastOver = at::toCatalog) }
 }

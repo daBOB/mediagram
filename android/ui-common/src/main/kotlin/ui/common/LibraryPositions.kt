@@ -12,6 +12,7 @@ import catalog.MenuScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import player.PlayGate
+import java.util.UUID
 
 /**
  * Which kind of screen a [Frame] stands for.
@@ -40,6 +41,11 @@ private const val FRAME_SEP = "\u001E"
 private const val RUN_SEP = "\u001D"
 /** Joins a collection frame's own key to the season its own page is showing, when one was chosen — see [LibraryPositions.collectionSeason]. */
 private const val SEASON_SEP = "\u001C"
+/** Opens and closes a cast's mark at the head of its player frame: the process that opened it — see [LibraryPositions.castPlayer]. */
+private const val CAST_SEP = "\u001B"
+
+/** This process, as a cast's frame is marked with it: a cast frame saved by another process is a cast that died with it. */
+private val castMark = "$CAST_SEP${UUID.randomUUID()}$CAST_SEP"
 
 private fun encode(frames: List<Frame>): String = frames.joinToString(FRAME_SEP) { "${it.kind.name}$FIELD_SEP${it.payload}" }
 
@@ -58,6 +64,8 @@ private fun decode(raw: String): List<Frame> {
         val parts = token.split(FIELD_SEP, limit = 2)
         if (parts.size != 2) return@mapNotNull null
         val kind = runCatching { FrameKind.valueOf(parts[0]) }.getOrNull() ?: return@mapNotNull null
+        // A cast this process never took: restoring it would play the title as the device's own profile.
+        if (kind == FrameKind.PLAYER && parts[1].startsWith(CAST_SEP) && !parts[1].startsWith(castMark)) return@mapNotNull null
         Frame(kind, parts[1])
     }
 }
@@ -112,7 +120,13 @@ class LibraryPositions(
 
     private fun payloadOf(kind: FrameKind): String? = stack.lastOrNull { it.kind == kind }?.payload
 
-    val setId: String? get() = payloadOf(FrameKind.PLAYER)?.substringBefore(RUN_SEP)
+    /** The player frame's own payload, its cast mark taken off. */
+    private val openPayload: String? get() = payloadOf(FrameKind.PLAYER)?.removePrefix(castMark)
+
+    val setId: String? get() = openPayload?.substringBefore(RUN_SEP)
+
+    /** Whether the open player plays a cast ([castPlayer]): as the caster, from every set rather than this profile's shelves. */
+    val casting: Boolean get() = payloadOf(FrameKind.PLAYER)?.startsWith(castMark) == true
 
     /**
      * The explicit run the open title was started on — a hand-built list,
@@ -120,7 +134,7 @@ class LibraryPositions(
      * own run from the catalog instead (`catalog.runFor`).
      */
     val run: List<String>?
-        get() = payloadOf(FrameKind.PLAYER)?.let { payload ->
+        get() = openPayload?.let { payload ->
             val at = payload.indexOf(RUN_SEP)
             if (at == -1) null else payload.substring(at + 1).split(RUN_SEP)
         }
@@ -222,19 +236,22 @@ class LibraryPositions(
         val current = stack
         if (current.lastOrNull()?.kind != FrameKind.PLAYER) return
         val kept = if (this.run != null) run else null
-        setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, playerPayload(id, kept)))
+        val mark = if (casting) castMark else ""
+        setStack(current.dropLast(1) + Frame(FrameKind.PLAYER, mark + playerPayload(id, kept)))
     }
 
     /**
      * A cast the TV accepted: in place of a title playing — one player on
      * the stack, never two — or over whatever shows. Never through
      * the play gate: the caster's limits were asked before the TV accepted,
-     * and the TV's own profile's are not the ones a cast plays by.
+     * and the TV's own profile's are not the ones a cast plays by. Marked
+     * as this process's ([casting]), so a screen recreated mid-cast finds it
+     * and one restored after the process died does not.
      */
     fun castPlayer(id: String) {
         val current = stack
         val base = if (current.lastOrNull()?.kind == FrameKind.PLAYER) current.dropLast(1) else current
-        setStack(base + Frame(FrameKind.PLAYER, id))
+        setStack(base + Frame(FrameKind.PLAYER, castMark + id))
     }
 
     private fun playerPayload(id: String, run: List<String>?) =

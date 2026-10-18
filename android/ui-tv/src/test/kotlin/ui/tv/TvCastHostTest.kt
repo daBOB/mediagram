@@ -114,6 +114,18 @@ class TvCastHostTest : TvCastHarness() {
         compose.onNode(WatchNow).assertExists()
     }
 
+    /** A grown-up casts a show the TV's kid profile is not shown: it plays as the caster's, next episode and all. */
+    @Test
+    fun aCastToAKidsTvPlaysTheCastersShowOnToItsNextEpisode() {
+        launch(chosen = "kim")
+
+        cast("l1")
+        playing("Late 1")
+        key(KeyEvent.KEYCODE_MEDIA_NEXT)
+
+        playing("Late 2")
+    }
+
     @Test
     fun aCastWithNoProfileOpensOverThePicker() {
         launch(chosen = null)

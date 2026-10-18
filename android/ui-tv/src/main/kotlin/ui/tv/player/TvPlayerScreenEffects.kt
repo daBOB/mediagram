@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import player.CONTROLS_LINGER_MS
+import player.PlayerMarksState
 import player.PlayerUiState
 import player.PlayerViewModel
 import player.castOver
@@ -34,6 +35,14 @@ internal fun TvCastOver(
         viewModel.together.first { it.notice == null }
         leave()
     }
+}
+
+/** The marks to draw: none while a cast plays, which they would file under the TV's own profile rather than the caster's. */
+@Composable
+internal fun marksOutsideACast(viewModel: PlayerViewModel): PlayerMarksState? {
+    val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val playingAs by viewModel.playingAs.collectAsStateWithLifecycle()
+    return marks.takeIf { playingAs == null }
 }
 
 /**
