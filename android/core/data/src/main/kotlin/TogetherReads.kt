@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import model.together.isLive
+import model.together.isRequest
 import model.together.parseSession
 import uniffi.mediagram_core.TogetherMessage
 
@@ -45,7 +46,7 @@ internal class TogetherReads(
         val known = sessions.known
         val before = known.toMap()
         val found = channel.recent().associateTo(LinkedHashMap()) { it.messageId to parseSession(it.text) }
-        val remembered = known.keys.maxOrNull()
+        val remembered = known.filterValues { !isRequest(it) }.keys.maxOrNull()
         if (remembered != null && remembered !in found) {
             val session = channel.read(remembered)?.let(::parseSession)
             if (session != null) found[remembered] = session else sessions.forget(remembered)
@@ -53,6 +54,7 @@ internal class TogetherReads(
         val sets = found.values.mapNotNull { it?.set } + known.keys.mapNotNull { sessions.view(it)?.set }
         val lengths = sets.toSet().associateWith { lengthOf(it) }
         var newest: LiveSession? = null
+        var newestRequest: LiveSession? = null
         for (id in found.keys + known.keys.filter { known[it] !== before[it] }) {
             val pending = sessions.pending(id)
             val session =
@@ -71,8 +73,13 @@ internal class TogetherReads(
                 continue
             }
             if (!pending) known[id] = session
-            if (newest == null || id > newest.id) newest = LiveSession(id, session)
+            if (isRequest(session)) {
+                if (newestRequest == null || id > newestRequest.id) newestRequest = LiveSession(id, session)
+            } else if (newest == null || id > newest.id) {
+                newest = LiveSession(id, session)
+            }
         }
+        newestRequest?.let { sessions.requests.value = it }
         return newest
     }
 
@@ -117,6 +124,7 @@ internal class TogetherReads(
      */
     private suspend fun recheck() {
         if (sessions.sender.busy) return
+        dropStaleRequest()
         for ((id, session) in sessions.known.toList()) {
             if (sessions.pending(id) || session.members.none { it.screen in sessions.local }) continue
             val text =
@@ -134,6 +142,14 @@ internal class TogetherReads(
             sessions.reachable.value = true
             if (read == null) sessions.forget(id) else if (!same(read, session)) sessions.take(id, read, live)
         }
+    }
+
+    /** A request nobody answered goes a minute after it was made; whoever reads it deletes it. */
+    private fun dropStaleRequest() {
+        val request = sessions.requests.value ?: return
+        if (isLive(request.session, null, now())) return
+        sessions.forget(request.id)
+        scope.launch { orDefault(Unit, "deleting a stale request") { channel.delete(request.id) } }
     }
 
     suspend fun lengthOf(set: String): Double? = orDefault(null, "the length of $set") { durationOf(set) }

@@ -42,11 +42,20 @@ data class Started(
 interface TogetherLive {
     /**
      * The newest live session, as this device holds it: its own moves still
-     * to go included, and `null` once it is over. Collecting it is what
+     * to go included, and `null` once it is over. A cast request is never
+     * this: it is [requests]. Collecting it is what
      * listens for edits and re-reads a session a screen here is in every
      * 30 s, so collect it only while a screen that shows it is on screen.
      */
     val live: StateFlow<LiveSession?>
+
+    /**
+     * The newest live cast request (a session whose cast is not `ON`), or
+     * `null`. It sits beside [live] and never replaces or clears it, so an
+     * offer cannot push anyone out of a running session. Collecting it
+     * listens, as collecting [live] does.
+     */
+    val requests: StateFlow<LiveSession?>
 
     /** False while Telegram can't be reached, nobody is signed in, or the last read or edit failed. */
     val available: StateFlow<Boolean>

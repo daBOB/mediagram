@@ -9,8 +9,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
@@ -73,14 +73,14 @@ class DefaultTogetherLive(
     private val joinNext = AtomicReference<Int?>(null)
 
     override val live: StateFlow<LiveSession?> = sessions.shown.asStateFlow()
+    override val requests: StateFlow<LiveSession?> = sessions.requests.asStateFlow()
     override val available: StateFlow<Boolean> = sessions.reachable.asStateFlow()
 
     init {
-        // Listening lasts exactly as long as someone collects [live] (`LibraryEvents`):
+        // Listening lasts exactly as long as someone collects [live] or [requests] (`LibraryEvents`):
         // no stream held open for a phone in a pocket.
         work.launch {
-            sessions.shown.subscriptionCount
-                .map { it > 0 }
+            combine(sessions.shown.subscriptionCount, sessions.requests.subscriptionCount) { a, b -> a > 0 || b > 0 }
                 .distinctUntilChanged()
                 .collectLatest { if (it) reads.listen() }
         }

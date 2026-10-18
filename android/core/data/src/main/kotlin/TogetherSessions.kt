@@ -1,9 +1,14 @@
 package data
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import model.together.Session
+import model.together.isRequest
 import model.together.writeSession
+
+private const val KEPT_BUFFER = 16
 
 /** Compared as written: what reaches the channel is the text. */
 internal fun same(
@@ -33,6 +38,14 @@ internal class TogetherSessions(
 
     /** [TogetherLive.live]. */
     val shown = MutableStateFlow<LiveSession?>(null)
+
+    /** [TogetherLive.requests]. */
+    val requests = MutableStateFlow<LiveSession?>(null)
+
+    private val keeping = MutableSharedFlow<LiveSession>(extraBufferCapacity = KEPT_BUFFER)
+
+    /** Every session [keep] stores, requests included: what an offer waits on for its answer. */
+    val kept: SharedFlow<LiveSession> = keeping
 
     /** [TogetherLive.available]. */
     val reachable = MutableStateFlow(false)
@@ -79,6 +92,7 @@ internal class TogetherSessions(
         session: Session,
     ) {
         known[id] = session
+        keeping.tryEmit(LiveSession(id, session))
         tell(id)
     }
 
@@ -98,13 +112,20 @@ internal class TogetherSessions(
      * Shows what this device holds session [id] to be; nothing once it is
      * over. Another session heard while a screen here is in the one shown
      * does not take its place, as it does not in a web tab: that screen
-     * follows its own until a read answers the newest.
+     * follows its own until a read answers the newest. A cast request is
+     * told to [requests] alone: the newest one wins, and it is cleared when
+     * its own id is over.
      */
     private fun tell(
         id: Int,
         lost: Boolean = false,
     ): Session? {
         val session = sender.view(id)?.takeUnless { it.ended }
+        if (session != null && isRequest(session)) {
+            if (id >= (requests.value?.id ?: id)) requests.value = LiveSession(id, session, lost)
+            return session
+        }
+        if (requests.value?.id == id) requests.value = null
         val current = shown.value
         shown.value =
             when {
