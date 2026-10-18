@@ -18,9 +18,10 @@ export function joined(s, me) {
   return { ...s, by: me.screen, members: s.members.length === others.length ? [...others, me] : s.members };
 }
 
+/** A remote plays nothing, so it cannot keep a session going once the screens that play have left. */
 export function left(s, screen) {
   const members = s.members.filter((m) => m.screen !== screen);
-  return { ...s, by: screen, members, ended: members.length === 0 };
+  return { ...s, by: screen, members, ended: !members.some((m) => !m.remote) };
 }
 
 export function acted(s, change, me, now) {
