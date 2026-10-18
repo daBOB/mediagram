@@ -30,6 +30,11 @@ internal suspend fun TogetherController.onLive(heard: LiveSession?) {
     if (heard != null && heard.id != inside) return leave(ENDED)
     // Ended or gone, checked before what changed: this screen plays on alone.
     if (heard == null || heard.session.ended) return end(ENDED)
+    // Another TV holds the cast this one took: that TV keeps it, and this player closes.
+    // Checked before following, while `current` still names this TV, so `end` closes the cast.
+    if (current?.cast?.tv == screen && heard.session.cast?.tv != screen) {
+        return if (heard.session.members.any { it.screen == screen }) leave() else end(null)
+    }
     val before = current
     // A move given up on comes back as what the channel holds, which the screen that made it follows too.
     val followed = if (heard.lost) heard.session else follow(before, heard.session, screen)

@@ -94,6 +94,7 @@ internal fun TogetherController.takeCast(cast: ArmedCast): Playback {
 private suspend fun TogetherController.accept(cast: ArmedCast) {
     val taken = ask({ s: LiveSession? -> s?.id }) { live.accept(cast.id, me) }?.getOrNull()
     if (taken == null) {
+        playAtFrame = false
         if (setId != null) castEnded.value = true
         return
     }

@@ -23,9 +23,10 @@ private fun AudioOption.id() = "$groupIndex.$trackIndex"
 
 /**
  * The TV's own subtitle and audio menu, shared with the remote while this
- * screen plays a cast as its TV (spec §3). Once the title's tracks are known,
- * and after every change to them, the list and the tracks playing are written
- * into the session, unless that is what was last written. A remote's choice,
+ * screen plays a cast as its TV, so the remote's Subtitles & audio menu is
+ * the one the TV shows. Once the title's tracks are known, and after every
+ * change to them, the list and the tracks playing are written into the
+ * session, unless that is what was last written. A remote's choice,
  * an edit by another screen that changes `audio` or `text`, is applied here
  * as the viewer's own pick would be. Plain watch-together members never
  * touch these fields: there every screen picks its own.

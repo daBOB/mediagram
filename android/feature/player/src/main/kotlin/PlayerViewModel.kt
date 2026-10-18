@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import data.ArmedCast
 import data.CatalogRepository
 import data.ReportChannel
 import data.PlayerPreferences
@@ -77,8 +76,6 @@ class PlayerViewModel @Inject constructor(
      */
     val player: StateFlow<Player?> = viewerPlayer(relay)
 
-    /** The cast this player plays, from the [open] that took it until [stop]; null for the TV's own viewing. */
-    internal var armedCast: ArmedCast? = null
     internal val _playingAs = MutableStateFlow<Profile?>(null)
 
     /** The caster, while this player plays a cast: progress, the daily limit and preferences are theirs, not the chosen profile's. */
@@ -217,7 +214,6 @@ class PlayerViewModel @Inject constructor(
         playbackServiceController.stop()
         session.clear()
         // After the session's last save, which may still land inside handle.stop().
-        armedCast = null
         _playingAs.value = null
         openFsk.value = null
         _openSetId.value = null

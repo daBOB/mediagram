@@ -4,7 +4,6 @@ import data.ArmedCast
 import data.LiveSession
 import data.TogetherLive
 import io.mockk.every
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.together.CastState
@@ -19,31 +18,8 @@ import model.together.offered
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
-
-/** The remote that casts to the TV in these tests. */
-internal val TABLET = Member("tab-1", "Tablet")
-
-/** The tablet's offer of [EP1], playing two minutes in, for a kid's profile. */
-internal val CAST_OFFER = offered("s-cast", TABLET, Playback(EP1, playing = true, pos = 120.0, rate = 1.0), "kid", NOW)
-
-/** [CAST_OFFER] as message 960, armed for the TV's player. */
-internal val CAST = ArmedCast(960, EP1, "kid", "Tablet", playing = true)
-
-/** The TV, holding [CAST_OFFER] as message 960, heard before its player opened. */
-internal suspend fun TestScope.tv(wrap: (TogetherLive) -> TogetherLive = { it }): TogetherRig {
-    val rig = TogetherRig(this, label = "TV", wrap = wrap)
-    rig.put(960, CAST_OFFER)
-    rig.live.refresh()
-    return rig
-}
-
-/** The TV opened with [CAST], its accept written. */
-internal suspend fun TestScope.casting(): TogetherRig =
-    tv().also {
-        it.controller.open(EP1, CAST)
-        runCurrent()
-    }
 
 /** The TV in a cast: it takes the offer as its player opens, plays it as the session's TV, and says when the cast is over. Its track list is `TogetherCastTvTracksTest`'s. */
 class TogetherCastTvTest {
@@ -180,5 +156,44 @@ class TogetherCastTvTest {
             assertEquals(1, accepts)
             assertEquals(EP2, rig.message(960).set)
             assertFalse(rig.controller.castOver.value)
+        }
+
+    @Test
+    fun aTvThatLostTheCastToAnotherClosesItsPlayer() =
+        runTest {
+            val rig = casting()
+            rig.push(960, accepted(CAST_OFFER, Member("tv-2", "TV"), NOW + 500)!!)
+
+            assertTrue(rig.controller.castOver.value)
+            assertNull(rig.controller.id)
+            assertEquals(1, rig.edits.size, "it was never this TV's: nothing to leave")
+        }
+
+    @Test
+    fun aCastStoppedBeforeItsFirstFrameLeavesNothingToPlayInALaterSession() =
+        runTest {
+            val rig = casting()
+            rig.push(960, finished(rig.message(960), TABLET.screen))
+            rig.put(950, TV_SESSION.copy(playing = false))
+            rig.live.refresh()
+            rig.controller.onButton()
+            runCurrent()
+            val joined = rig.edits.size
+
+            rig.controller.firstFrame()
+            runCurrent()
+
+            assertEquals(joined, rig.edits.size)
+            assertFalse(rig.message(950).playing)
+        }
+
+    @Test
+    fun aCastOpenTakesAJoinArmedForIt() =
+        runTest {
+            val rig = tv()
+            rig.live.joinOnOpen(950)
+            rig.controller.open(EP1, CAST)
+
+            assertNull(rig.live.takeJoin(), "never left for a later open")
         }
 }

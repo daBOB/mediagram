@@ -33,10 +33,7 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     // left for whatever opens next. Playing as the caster then lasts until
     // `stop`, through a rotation's reopen and an up-next switch alike.
     val cast = togetherLive.takeCast()?.takeIf { it.set == setId }
-    if (cast != null) {
-        armedCast = cast
-        _playingAs.value = repository.profiles.value.find { it.id == cast.profile }
-    }
+    if (cast != null) _playingAs.value = repository.profiles.value.find { it.id == cast.profile }
     session.open(setId)
     if (!sameTitle) {
         marksController.reset()

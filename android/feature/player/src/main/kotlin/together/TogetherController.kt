@@ -96,9 +96,10 @@ internal class TogetherController(
         setId = set
         val followed = expecting == set
         expecting = null
+        // Taken on every open, a cast's included: a join armed for this one never waits for a later one.
+        val joining = live.takeJoin()
         if (cast != null) return takeCast(cast)
         if (id != null && !followed) viewer(PlaybackChange(set = set, pos = 0.0, playing = true))
-        val joining = live.takeJoin()
         if (joining != null && id == null) scope.launch { joinHere(joining) }
         listen()
         val session = if (id != null) current else live.live.value?.takeIf { it.id == joining }?.session
@@ -167,6 +168,8 @@ internal class TogetherController(
      */
     fun end(message: String?) {
         if (current?.cast?.tv == screen) castEnded.value = true
+        // A cast's start at its first frame goes with it: a later session's frame is no reason to play.
+        playAtFrame = false
         message?.let(view::show)
         generation++
         id = null
