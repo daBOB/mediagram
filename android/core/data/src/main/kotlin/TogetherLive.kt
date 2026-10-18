@@ -37,9 +37,9 @@ data class Started(
  *
  * A screen is one player instance, named by the random id it passes as
  * `me`/`screen`; its own edits come back from Telegram and are recognised
- * by that id.
+ * by that id. Casting to a TV is in [TogetherCasts].
  */
-interface TogetherLive {
+interface TogetherLive : TogetherCasts {
     /**
      * The newest live session, as this device holds it: its own moves still
      * to go included, and `null` once it is over. A cast request is never

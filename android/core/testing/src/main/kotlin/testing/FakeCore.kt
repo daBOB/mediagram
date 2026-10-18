@@ -505,6 +505,9 @@ class FakeCore(
     /** What every together call but [togetherHeard] throws, or `null` — a Telegram that cannot be reached. */
     var togetherFailure: Throwable? = null
 
+    /** What [togetherRead] alone throws, or `null`: a read that fails while the other calls go through. */
+    var togetherReadFailure: Throwable? = null
+
     override suspend fun togetherRecent(handle: String): List<TogetherMessage> {
         togetherFailure?.let { throw it }
         return togetherMessages.entries
@@ -514,7 +517,7 @@ class FakeCore(
     }
 
     override suspend fun togetherRead(handle: String, messageId: Int): String? {
-        togetherFailure?.let { throw it }
+        (togetherFailure ?: togetherReadFailure)?.let { throw it }
         togetherReads += messageId
         val text = togetherMessages[messageId]
         togetherReadGate?.await()
