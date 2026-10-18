@@ -69,6 +69,14 @@ private class RecordingRepository : WatchStateRepository {
         setId: String,
         at: Double,
         duration: Double?,
+        profileId: String?,
+    ) = Unit
+
+    override suspend fun snapshotOf(profileId: String): WatchSnapshot? = null
+
+    override suspend fun markFinished(
+        setId: String,
+        profileId: String?,
     ) = Unit
 
     override suspend fun setWatched(
