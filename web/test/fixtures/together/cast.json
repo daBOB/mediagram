@@ -358,8 +358,7 @@
       "text": []
      },
      "audio": "",
-     "text": "",
-     "by": "tv-1"
+     "text": ""
     }
    },
    "tv": {
@@ -1187,6 +1186,111 @@
      },
      "audio": "a1",
      "text": "t0"
+    }
+   }
+  },
+  {
+   "name": "quotes and non-ASCII letters in a label are kept as they are",
+   "move": "tracked",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "tv": "tv-1",
+    "tracks": {
+     "audio": [
+      {
+       "id": "a1",
+       "label": "English"
+      }
+     ],
+     "text": [
+      {
+       "id": "t1",
+       "label": "Français \"forcé\""
+      }
+     ]
+    },
+    "audio": "a1",
+    "text": "t1"
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [
+       {
+        "id": "a1",
+        "label": "English"
+       }
+      ],
+      "text": [
+       {
+        "id": "t1",
+        "label": "Français \"forcé\""
+       }
+      ]
+     },
+     "audio": "a1",
+     "text": "t1"
     }
    }
   },
