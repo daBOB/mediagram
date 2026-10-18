@@ -1,9 +1,11 @@
 package data
 
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import model.together.CastState
 import model.together.REQUEST_LIFETIME_MS
 import model.together.Session
 import model.together.offered
@@ -33,6 +35,7 @@ class TogetherCastRequestsTest {
             val h = TogetherHarness(this)
             backgroundScope.launch { h.live.requests.collect {} }
             runCurrent()
+            h.put(11, offer)
             h.push(11, offer)
             assertEquals(11, h.live.requests.value?.id)
 
@@ -68,5 +71,73 @@ class TogetherCastRequestsTest {
             assertEquals(10, found?.id)
             assertEquals(10, h.live.live.value?.id)
             assertEquals(11, h.live.requests.value?.id)
+        }
+
+    private val accepted: Session = offer.copy(cast = offer.cast?.copy(state = CastState.ON))
+
+    private fun TestScope.pastTheMinute(h: TogetherHarness) {
+        h.clock = NOW + REQUEST_LIFETIME_MS
+        advanceTimeBy(30_001)
+        runCurrent()
+    }
+
+    @Test
+    fun anAcceptLearnedOnlyByRefreshIsNotDeleted() =
+        runTest {
+            val h = TogetherHarness(this)
+            backgroundScope.launch { h.live.requests.collect {} }
+            runCurrent()
+            h.push(11, offer)
+            h.put(11, accepted)
+
+            h.live.refresh()
+            pastTheMinute(h)
+
+            assertEquals(11, h.live.live.value?.id)
+            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.core.togetherDeletes)
+        }
+
+    @Test
+    fun anAcceptMissedAltogetherIsNotDeleted() =
+        runTest {
+            val h = TogetherHarness(this)
+            backgroundScope.launch { h.live.requests.collect {} }
+            runCurrent()
+            h.push(11, offer)
+            h.put(11, accepted)
+
+            pastTheMinute(h)
+
+            assertEquals(emptyList(), h.core.togetherDeletes)
+            assertNull(h.live.requests.value)
+            assertEquals(11, h.live.live.value?.id)
+        }
+
+    @Test
+    fun anOfferBesideASessionThisDeviceIsInLeavesItAlone() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.live.start(A, FILM)
+            val mine = h.core.togetherMessages.keys.single()
+            val before = h.edits.size
+            h.push(mine + 1, offer)
+
+            assertEquals(mine, h.live.live.value?.id)
+            assertEquals(mine + 1, h.live.requests.value?.id)
+            assertEquals(before, h.edits.size)
+        }
+
+    @Test
+    fun anAcceptByPushMovesTheRequestToLive() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.push(11, offer)
+            h.push(11, accepted)
+
+            assertNull(h.live.requests.value)
+            assertEquals(11, h.live.live.value?.id)
         }
 }

@@ -46,6 +46,7 @@ internal class TogetherReads(
         val known = sessions.known
         val before = known.toMap()
         val found = channel.recent().associateTo(LinkedHashMap()) { it.messageId to parseSession(it.text) }
+        // Unlike the web, a request is not remembered: it is read for its own sake, and must not hide the shown session.
         val remembered = known.filterValues { !isRequest(it) }.keys.maxOrNull()
         if (remembered != null && remembered !in found) {
             val session = channel.read(remembered)?.let(::parseSession)
@@ -79,7 +80,8 @@ internal class TogetherReads(
                 newest = LiveSession(id, session)
             }
         }
-        newestRequest?.let { sessions.requests.value = it }
+        // A held request that now reads as anything else (accepted) is no longer one.
+        sessions.requests.value = newestRequest ?: sessions.requests.value?.takeIf { sessions.view(it.id)?.let(::isRequest) == true }
         return newest
     }
 
@@ -145,11 +147,28 @@ internal class TogetherReads(
     }
 
     /** A request nobody answered goes a minute after it was made; whoever reads it deletes it. */
-    private fun dropStaleRequest() {
+    private suspend fun dropStaleRequest() {
         val request = sessions.requests.value ?: return
         if (isLive(request.session, null, now())) return
-        sessions.forget(request.id)
-        scope.launch { orDefault(Unit, "deleting a stale request") { channel.delete(request.id) } }
+        // The copy held may predate an accept this device missed: only what the channel holds now is deleted.
+        val read =
+            try {
+                channel.read(request.id)?.let(::parseSession)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                return
+            }
+        val live = read != null && isLive(read, lengthOf(read.set), now())
+        if (sessions.requests.value !== request || sessions.pending(request.id)) return
+        if (read == null) {
+            sessions.forget(request.id)
+        } else if (isRequest(read) && !live) {
+            sessions.forget(request.id)
+            scope.launch { orDefault(Unit, "deleting a stale request") { channel.delete(request.id) } }
+        } else {
+            sessions.take(request.id, read, live)
+        }
     }
 
     suspend fun lengthOf(set: String): Double? = orDefault(null, "the length of $set") { durationOf(set) }
