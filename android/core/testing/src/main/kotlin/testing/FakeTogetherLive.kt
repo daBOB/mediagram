@@ -20,7 +20,9 @@ import model.together.Session
  * The moves that wait for an answer are not faked: a test of them drives
  * `data.DefaultTogetherLive` over [FakeCore], which is the sender they would
  * otherwise be standing in for. The cast moves that answer nothing are
- * recorded in [casts], for the screens that only make them.
+ * recorded in [casts], for the screens that only make them. An offer and a
+ * replace are recorded there too, and answered by [onOffer] and [onReplace],
+ * which a test sets for the screens that only ask the TV.
  */
 class FakeTogetherLive(
     live: LiveSession? = null,
@@ -37,6 +39,12 @@ class FakeTogetherLive(
 
     /** The cast moves that answer nothing, in order, as written: `"busy 11 tv-1 Dune"`. */
     val casts = mutableListOf<String>()
+
+    /** What the next offer answers, or throws; it may suspend to stand for a TV that has not answered. */
+    var onOffer: suspend () -> CastAnswer = { error(MOVES) }
+
+    /** What the next replace answers, as [onOffer]. */
+    var onReplace: suspend () -> CastAnswer = { error(MOVES) }
 
     private var castNext: ArmedCast? = null
 
@@ -81,14 +89,20 @@ class FakeTogetherLive(
         me: Member,
         own: Playback,
         profile: String,
-    ): CastAnswer = error(MOVES)
+    ): CastAnswer {
+        casts += "offer ${me.label} ${own.set} $profile"
+        return onOffer()
+    }
 
     override suspend fun replace(
         id: Int,
         me: Member,
         own: Playback,
         profile: String,
-    ): CastAnswer = error(MOVES)
+    ): CastAnswer {
+        casts += "replace $id ${own.set} $profile"
+        return onReplace()
+    }
 
     override suspend fun accept(
         id: Int,
