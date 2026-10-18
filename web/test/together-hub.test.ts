@@ -52,6 +52,22 @@ describe("TogetherHub", () => {
     expect(h.channel.sent).toHaveLength(1);
   });
 
+  test("a session read while its send is in flight is still announced once the send returns", async () => {
+    const h = harness();
+    const gate = deferred<void>();
+    h.channel.send = async (text: string) => {
+      h.channel.messages.set(901, text);
+      await gate.promise;
+      return 901;
+    };
+    const creating = h.hub.create(A.screen, foreign({ by: A.screen, members: [A] }));
+    await settle();
+    await h.hub.live(h.durationOf);
+    gate.resolve();
+    const { id } = await creating;
+    expect(h.announced.filter(([announcedId]) => announcedId === id)).not.toHaveLength(0);
+  });
+
   test("live skips and removes a stale session, and answers the newest live one", async () => {
     const h = harness();
     h.channel.messages.set(949, writeSession(foreign()));

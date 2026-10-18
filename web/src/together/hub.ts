@@ -110,7 +110,7 @@ export class TogetherHub {
   async create(screen: string, session: Session): Promise<Live> {
     const id = await this.channel.send(writeSession(session));
     this.local.add(screen);
-    if (!this.known.has(id)) this.keep(id, session);
+    this.keep(id, this.known.get(id) ?? session);
     return { id, session: this.known.get(id) ?? session };
   }
 
