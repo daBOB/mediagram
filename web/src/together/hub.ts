@@ -5,7 +5,7 @@
  * which follow it.
  */
 
-import { parseSession, writeSession } from "../../public/lib/together/session.js";
+import { isRequest, parseSession, writeSession } from "../../public/lib/together/session.js";
 import type { Member, Session } from "../../public/lib/together/session.js";
 import { acted, finished, joined, left, started } from "../../public/lib/together/moves.js";
 import type { Playback } from "../../public/lib/together/moves.js";
@@ -87,7 +87,7 @@ export class TogetherHub {
         continue;
       }
       if (!pending) this.known.set(id, session);
-      if (!newest || id > newest.id) newest = { id, session };
+      if (!isRequest(session) && (!newest || id > newest.id)) newest = { id, session };
     }
     return newest;
   }

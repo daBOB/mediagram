@@ -8,6 +8,7 @@ import { describe, expect, test } from "bun:test";
 import { TogetherHub } from "../src/together/hub";
 import type { EditOutcome } from "../src/together/channel";
 import { parseSession, writeSession, type Member, type Session } from "../public/lib/together/session.js";
+import { offered } from "../public/lib/together/cast.js";
 import { joined } from "../public/lib/together/moves.js";
 import { FakeChannel, deferred, settle } from "./together-fixture";
 
@@ -58,6 +59,19 @@ describe("TogetherHub", () => {
     h.channel.messages.set(951, writeSession(foreign({ session: "s-3", pos: 300 })));
     expect(await h.hub.live(h.durationOf)).toEqual({ id: 950, session: foreign({ session: "s-2", set: "film-2" }) });
     expect(h.channel.removed).toEqual([951]);
+  });
+
+  test("an offer is not the live session", async () => {
+    const h = harness();
+    h.channel.messages.set(11, writeSession(offered("s-offer", TV, FILM, "kid", NOW)));
+    expect(await h.hub.live(h.durationOf)).toBeNull();
+  });
+
+  test("an offer beside a running session leaves that one live", async () => {
+    const h = harness();
+    h.channel.messages.set(10, writeSession(foreign()));
+    h.channel.messages.set(11, writeSession(offered("s-offer", A, FILM, "kid", NOW)));
+    expect((await h.hub.live(h.durationOf))?.id).toBe(10);
   });
 
   test("a session heard by push and pushed out of the newest 100 is read by id, so no second one starts", async () => {
