@@ -137,8 +137,11 @@ function wire(signal) {
   // Esc closes an open list first, which the menus' own key handler has already taken.
   on("root", "cancel", (event) => {
     event.preventDefault();
-    if (!menus.isOpen()) closeRemote();
+    if (menus.isOpen()) menus.close();
+    else closeRemote();
   });
+  // Any other way the dialog closes (a second back press cannot be cancelled) leaves the remote just as closed.
+  on("root", "close", closeRemote);
 }
 
 /**

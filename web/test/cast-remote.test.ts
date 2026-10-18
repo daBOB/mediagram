@@ -162,3 +162,12 @@ test("the seek bar is left alone while it is held", async () => {
   env.advance(1000);
   expect(node("cast-remote-seek").value).toBe("30");
 });
+
+test("a dialog closed natively still leaves the session, and reopening works", async () => {
+  await opened();
+  node("cast-remote").fire("close");
+  expect(posts().at(-1)).toEqual({ op: "leave", screen, id: 7 });
+  expect(remoteOpen()).toBe(false);
+  await opened();
+  expect(remoteOpen()).toBe(true);
+});
