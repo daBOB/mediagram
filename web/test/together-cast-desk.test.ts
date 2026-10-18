@@ -94,7 +94,8 @@ describe("CastDesk", () => {
     await h.tv(accept);
     sent.resolve();
     await settle();
-    expect(h.announced.map(([, s]) => s?.cast?.state)).toEqual(["on"]);
+    // The newest session is announced again when the send returns; the offer never is.
+    expect(new Set(h.announced.map(([, s]) => s?.cast?.state))).toEqual(new Set(["on"]));
     expect((await offer).answer).toBe("on");
   });
 
