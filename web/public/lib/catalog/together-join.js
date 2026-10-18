@@ -27,15 +27,15 @@ function follow(kind, draw) {
  * then, so there is none to offer. The player's own button says why.
  */
 function joinable(live) {
-  // A cast has its own bar on every page (lib/cast/cast-bar.js).
-  const set = live && !live.session.cast ? setForTogether(live.session.set) : null;
+  const set = live ? setForTogether(live.session.set) : null;
   return set && { live, set };
 }
 
 export function togetherNotice() {
   const line = el("p", "together-join");
   follow("notice", ({ live }) => {
-    const found = joinable(live);
+    // A cast has its own bar on every page (lib/cast/cast-bar.js); the title page still offers Join.
+    const found = live?.session.cast ? null : joinable(live);
     line.hidden = !found;
     line.replaceChildren();
     if (!found) return;

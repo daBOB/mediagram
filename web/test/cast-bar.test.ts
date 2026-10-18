@@ -3,7 +3,7 @@ import { browserEnvironment, type Node } from "./support/player-environment";
 import { textOf } from "./support/browser-application";
 import { mountCastBar } from "../public/lib/cast/cast-bar.js";
 import { closeRemote, openRemote } from "../public/lib/cast/cast-remote.js";
-import { togetherNotice } from "../public/lib/catalog/together-join.js";
+import { joinOr, togetherNotice } from "../public/lib/catalog/together-join.js";
 import { barLine } from "../public/lib/together/cast-words.js";
 import { heardTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
@@ -70,4 +70,13 @@ test("the bar steps aside while the remote is open and returns when it closes", 
   expect(node("cast-bar").hidden).toBe(true);
   closeRemote();
   expect(node("cast-bar").hidden).toBe(false);
+});
+
+test("a title page still offers Join for a cast on that title", () => {
+  const pill = env.document.createElement("button") as unknown as Node;
+  pill.textContent = "Play";
+  const slot = joinOr(["film-1"], pill as never) as unknown as Node;
+  expect(slot.children).toEqual([pill]);
+  heard();
+  expect(textOf(slot)).toBe("Join");
 });
