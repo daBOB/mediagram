@@ -7,21 +7,18 @@
 
 import { artworkUrl } from "../catalog/plate.js";
 import { titleLine } from "../format.js";
-import { ICONS, playLabel, setIcon, skipButton, speedLabel } from "../playback/transport.js";
+import { ICONS, playLabel, setIcon, SKIP_SECONDS, skipButton, speedLabel } from "../playback/transport.js";
 import { seekModel } from "../playback/seek-model.js";
 import { expectedPosition } from "../together/follow.js";
 import { CAST_WORDS } from "../together/cast-words.js";
 import { nextForTogether, setForTogether } from "../together-now.js";
 
-/** How far the remote's skip buttons step. */
-export const JUMP_SECONDS = 10;
-
 export const part = (name) => document.getElementById(name === "root" ? "cast-remote" : `cast-remote-${name}`);
 
 /** What never changes while the remote is open: the skip buttons and the Stop word. */
 export function drawFixed() {
-  skipButton(part("back"), ICONS.back, JUMP_SECONDS, "Back");
-  skipButton(part("forward"), ICONS.forward, JUMP_SECONDS, "Forward");
+  skipButton(part("back"), ICONS.back, SKIP_SECONDS, "Back");
+  skipButton(part("forward"), ICONS.forward, SKIP_SECONDS, "Forward");
   part("stop").textContent = CAST_WORDS.stop;
   part("label").textContent = CAST_WORDS.playingOnTv;
 }

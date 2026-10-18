@@ -5,13 +5,13 @@
  */
 
 import { mountPlayerMenus } from "../playback/player-menus.js";
-import { SPEEDS, speedLabel } from "../playback/transport.js";
+import { SKIP_SECONDS, SPEEDS, speedLabel } from "../playback/transport.js";
 import { acted } from "../together/moves.js";
 import { changeOf, expectedPosition, follow } from "../together/follow.js";
 import { endingOf } from "../together/cast.js";
 import { CAST_WORDS, sayOnRemote } from "../together/cast-words.js";
 import { forgetTogether, nextForTogether, onTogether, screen, serverNow, together } from "../together-now.js";
-import { drawCard, drawFixed, drawTitle, JUMP_SECONDS, part } from "./cast-remote-card.js";
+import { drawCard, drawFixed, drawTitle, part } from "./cast-remote-card.js";
 
 const NOTICE_MS = 2000;
 const CLOCK_MS = 500;
@@ -130,8 +130,8 @@ function wire(signal) {
     pick: (rate) => send({ rate: Number(rate) }),
   });
   on("play", "click", () => send({ playing: !current.playing }));
-  on("back", "click", jump(-JUMP_SECONDS));
-  on("forward", "click", jump(JUMP_SECONDS));
+  on("back", "click", jump(-SKIP_SECONDS));
+  on("forward", "click", jump(SKIP_SECONDS));
   on("seek", "change", () => send({ pos: Number(part("seek").value) }));
   on("next", "click", () => {
     const set = nextForTogether(current.set);

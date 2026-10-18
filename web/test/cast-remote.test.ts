@@ -48,11 +48,11 @@ test("play/pause sends playing:false at the expected position", async () => {
   expect(posts().at(-1)).toEqual({ op: "act", screen, id: 7, change: { playing: false, pos: 110 } });
 });
 
-test("+10 sends pos expected+10", async () => {
+test("forward skips by the player's 15 s step", async () => {
   await opened();
   env.advance(10_000);
   node("cast-remote-forward").fire("click");
-  expect(posts().at(-1)).toEqual({ op: "act", screen, id: 7, change: { pos: 120 } });
+  expect(posts().at(-1)).toEqual({ op: "act", screen, id: 7, change: { pos: 125 } });
 });
 
 test("choosing German subtitles sends tracks text:de", async () => {
