@@ -7,7 +7,6 @@ import data.SPEED_PREFERENCE
 import data.SUBTITLE_PREFERENCE
 import data.CatalogRepository
 import data.PlayerPreferences
-import data.WatchStateRepository
 import data.orDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +32,8 @@ import playback.TimedCue
 class PlayerChoicesController(
     private val launchScope: CoroutineScope,
     private val session: PlayerSession,
-    private val repository: WatchStateRepository,
+    /** Whose preferences these are: a cast's caster, else the chosen profile; null with neither. */
+    private val profileId: () -> String?,
     private val catalogRepository: CatalogRepository,
     private val preferences: PlayerPreferences,
     private val handle: PlayerHandle,
@@ -140,7 +140,7 @@ class PlayerChoicesController(
             launchScope.launch { orDefault(Unit) { catalogRepository.holdCourseSubtitles(setId) } }
         }
 
-        val profileId = repository.chosenProfileId.value
+        val profileId = profileId()
         val loaded = if (profileId == null) emptyMap() else orDefault(emptyMap()) { preferences.load(profileId, scope) }
         // The profile's own default subtitle language, apart from this
         // show's own scope: `chooseSubtitles`'s "profile preference" tier.
@@ -191,7 +191,7 @@ class PlayerChoicesController(
 
     /** Fire-and-forget: a core round trip failing to remember a speed is not a reason to crash the player. */
     private fun rememberSpeed(scope: String, rate: Float) {
-        val profileId = repository.chosenProfileId.value ?: return
+        val profileId = profileId() ?: return
         launchScope.launch {
             orDefault(Unit) { preferences.remember(profileId, scope, SPEED_PREFERENCE, speedPreferenceValue(rate)) }
         }

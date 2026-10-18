@@ -331,10 +331,11 @@ class DefaultWatchStateRepository(
         core.setWatched(id, setId, true)
     }
 
-    override suspend fun snapshotOf(profileId: String): WatchSnapshot? {
-        val core = coreProvider.awaitCore()
-        return withContext(dispatcher) { core.snapshot(profileId) }.toModel()
-    }
+    override suspend fun snapshotOf(profileId: String): WatchSnapshot? =
+        orDefault(null, "a profile's watch state") {
+            val core = coreProvider.awaitCore()
+            withContext(dispatcher) { core.snapshot(profileId) }.toModel()
+        }
 
     override suspend fun setWatched(
         setId: String,

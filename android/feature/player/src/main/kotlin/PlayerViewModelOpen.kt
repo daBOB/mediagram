@@ -29,6 +29,14 @@ import kotlinx.coroutines.launch
  */
 fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: String? = null, handPicked: Boolean = false) {
     val sameTitle = session.openSetId == setId
+    // Taken on every open: a cast armed for another title is dropped, never
+    // left for whatever opens next. Playing as the caster then lasts until
+    // `stop`, through a rotation's reopen and an up-next switch alike.
+    val cast = togetherLive.takeCast()?.takeIf { it.set == setId }
+    if (cast != null) {
+        armedCast = cast
+        _playingAs.value = repository.profiles.value.find { it.id == cast.profile }
+    }
     session.open(setId)
     if (!sameTitle) {
         marksController.reset()

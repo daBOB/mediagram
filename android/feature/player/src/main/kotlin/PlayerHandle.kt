@@ -20,6 +20,9 @@ interface PlayerHandle {
      */
     val player: StateFlow<Player?>
 
+    /** The set [open] last handed to the player, until [stop]; null while the player holds none. */
+    val openSet: StateFlow<String?>
+
     /**
      * @param startAtMs where to seek once the set is loaded; 0 for the top.
      * @param playWhenReady whether to start on its own once ready — false

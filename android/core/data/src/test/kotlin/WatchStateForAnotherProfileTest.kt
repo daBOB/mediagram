@@ -51,4 +51,13 @@ class WatchStateForAnotherProfileTest {
             assertTrue(f.repository.snapshotOf("a")?.progress?.isEmpty() == true)
             assertNull(f.repository.snapshot.value.progress.firstOrNull())
         }
+
+    @Test
+    fun snapshotOfIsNullWhenTheCoreCannotSay() =
+        runTest {
+            val f = fixture()
+            f.provider.beforeCore = { error("keystore unavailable") }
+
+            assertNull(f.repository.snapshotOf("k"))
+        }
 }

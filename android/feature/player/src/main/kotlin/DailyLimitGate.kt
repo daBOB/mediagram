@@ -3,15 +3,16 @@ package player
 import data.WatchStateRepository
 import data.orDefault
 import model.DailyLimitState
+import model.Profile
 import model.dailyLimitState
 
 /**
- * Whether a title may open for the chosen profile — the daily limit's one
+ * Whether a title may open for the profile watching — the daily limit's one
  * question, asked wherever a title is about to open (the library, and the
  * player's own switch to the next).
  */
 interface PlayGate {
-    /** Whether the chosen profile has a daily limit at all; everyone else opens without being asked. */
+    /** Whether the profile watching has a daily limit at all; everyone else opens without being asked. */
     fun applies(): Boolean
 
     /** False only when the day's allowance is used up. */
@@ -27,16 +28,20 @@ interface PlayGate {
 /**
  * The web's `daily-limit-gate.js` over the core: watched-today is the core's
  * own count for this device's date, never added up here. A household rule,
- * not a lock — a core that cannot answer lets the title open.
+ * not a lock — a core that cannot answer lets the title open. [profile] is
+ * who is watching: the chosen profile, or a cast's caster.
  */
-class DailyLimitGate(private val repository: WatchStateRepository) : PlayGate {
-    override fun applies(): Boolean = repository.chosenProfile.value?.let { it.kids && it.dailyLimit != null } == true
+class DailyLimitGate(
+    private val repository: WatchStateRepository,
+    private val profile: () -> Profile? = { repository.chosenProfile.value },
+) : PlayGate {
+    override fun applies(): Boolean = profile()?.let { it.kids && it.dailyLimit != null } == true
 
     /** Where today stands, or null for a profile without a limit and when the core cannot say. */
     suspend fun standing(): DailyLimitState? {
-        val profile = repository.chosenProfile.value?.takeIf { it.kids } ?: return null
-        val limit = profile.dailyLimit ?: return null
-        val watched = orDefault(null, "today's watching") { repository.watchedToday(profile.id) } ?: return null
+        val kid = profile()?.takeIf { it.kids } ?: return null
+        val limit = kid.dailyLimit ?: return null
+        val watched = orDefault(null, "today's watching") { repository.watchedToday(kid.id) } ?: return null
         return dailyLimitState(limit, watched).state
     }
 

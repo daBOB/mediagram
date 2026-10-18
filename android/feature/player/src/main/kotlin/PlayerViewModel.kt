@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import data.ArmedCast
 import data.CatalogRepository
 import data.ReportChannel
 import data.PlayerPreferences
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.DailyLimitWords
 import model.MediaSet
+import model.Profile
 import model.ReportFacts
 import model.ReportReason
 import playback.HeldSetsQuery
@@ -48,7 +50,7 @@ class PlayerViewModel @Inject constructor(
     seriesPreloader: SeriesPreloading,
     heldSets: HeldSetsQuery,
     summarySource: SummarySource = SummarySource.None,
-    togetherLive: TogetherLive,
+    internal val togetherLive: TogetherLive,
     private val relay: ViewerRelay,
     @ApplicationContext private val context: Context,
     reportChannel: ReportChannel = NoReportChannel,
@@ -74,12 +76,19 @@ class PlayerViewModel @Inject constructor(
      */
     val player: StateFlow<Player?> = viewerPlayer(relay)
 
+    /** The cast this player plays, from the [open] that took it until [stop]; null for the TV's own viewing. */
+    internal var armedCast: ArmedCast? = null
+    internal val _playingAs = MutableStateFlow<Profile?>(null)
+
+    /** The caster, while this player plays a cast: progress, the daily limit and preferences are theirs, not the chosen profile's. */
+    val playingAs: StateFlow<Profile?> = _playingAs.asStateFlow()
+
     /** The kid's daily limit: asked before an in-player switch, and the source of the one warning per title. */
-    private val dailyLimit = DailyLimitGate(repository)
+    private val dailyLimit = DailyLimitGate(repository) { playingAs.value ?: repository.chosenProfile.value }
     private val limitWarning = DailyLimitWarning(viewModelScope, dailyLimit, ::tellLimit)
 
     /** The ten-second save ticker and which set it saves against. */
-    internal val session = PlayerSession(viewModelScope, handle, recorder, onTick = limitWarning::tick)
+    internal val session = PlayerSession(viewModelScope, handle, recorder, onTick = limitWarning::tick) { playingAs.value?.id }
 
     internal val _openSetId = MutableStateFlow<String?>(null)
 
@@ -87,7 +96,10 @@ class PlayerViewModel @Inject constructor(
     internal val openFsk = MutableStateFlow<String?>(null)
 
     internal val choicesController =
-        PlayerChoicesController(viewModelScope, session, repository, catalogRepository, preferences, handle, subtitleTrackSource)
+        PlayerChoicesController(
+            viewModelScope, session, { playingAs.value?.id ?: repository.chosenProfileId.value },
+            catalogRepository, preferences, handle, subtitleTrackSource,
+        )
 
     /** The resolved set behind the open id, for the title line — null before it resolves, or with nothing open. */
     val openSet: StateFlow<MediaSet?> = choicesController.openSet
@@ -197,10 +209,14 @@ class PlayerViewModel @Inject constructor(
         val setId = session.openSetId
         val atMs = handle.positionMs()
         val durationMs = handle.durationMs()
+        val profileId = playingAs.value?.id
         togetherController.close()
         handle.stop()
         playbackServiceController.stop()
         session.clear()
+        // After the session's last save, which may still land inside handle.stop().
+        armedCast = null
+        _playingAs.value = null
         openFsk.value = null
         _openSetId.value = null
         reporting.titleOpened()
@@ -209,7 +225,7 @@ class PlayerViewModel @Inject constructor(
         upNextController.stop()
         viewModelScope.launch {
             if (setId != null && atMs != null) {
-                recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 })
+                recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 }, profileId)
             }
             // Only once the save above has landed, so the round this starts
             // has this position to sync rather than the one before it —

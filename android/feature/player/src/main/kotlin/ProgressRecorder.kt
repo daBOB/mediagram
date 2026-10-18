@@ -26,14 +26,15 @@ class ProgressRecorder @Inject constructor(private val repository: WatchStateRep
      *   directly — never a transcode whose reported length is still
      *   growing, the case [ResumePoint.trustedRuntime]'s `direct` flag
      *   guards against on the web.
+     * @param profileId whose progress this is — a cast's caster; null for the chosen profile
      */
-    suspend fun save(setId: String, atSeconds: Double, observedDurationSeconds: Double?) {
+    suspend fun save(setId: String, atSeconds: Double, observedDurationSeconds: Double?, profileId: String? = null) {
         runCatching {
             val runtime = ResumePoint.trustedRuntime(catalogued = null, observed = observedDurationSeconds, direct = true)
             if (ResumePoint.isFinished(atSeconds, runtime)) {
-                repository.markFinished(setId)
+                repository.markFinished(setId, profileId)
             } else {
-                repository.setProgress(setId, atSeconds, runtime.takeIf { it > 0 })
+                repository.setProgress(setId, atSeconds, runtime.takeIf { it > 0 }, profileId)
             }
         }.onFailure { error ->
             if (error is CancellationException) throw error
