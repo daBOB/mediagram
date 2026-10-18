@@ -35,6 +35,7 @@ import { mountSubtitlePicker } from "./subtitle-picker.js";
 import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 import { mountTogether } from "./together.js";
+import { mountPlayerCast } from "./player-cast.js";
 // One id per tab, for its playback reports as for watch together.
 import { screen as viewer } from "../together-now.js";
 
@@ -408,6 +409,7 @@ function mountPlayer() {
     note: document.getElementById("together-note"), filmTime, seekTo: seekFilmTo, converting: () => converting,
     setRate: (rate) => { video.playbackRate = rate; },
   });
+  mountPlayerCast({ button: document.getElementById("cast"), video, filmTime, setId: () => playing?.setId ?? null, close: () => dialog.close() });
   // Media keys and the picture-in-picture window, through the button's own path rather than straight to the element.
   for (const action of ["play", "pause"]) navigator.mediaSession?.setActionHandler(action, () => { if (video.paused === (action === "play")) transport.act({ do: "playPause" }); });
 
