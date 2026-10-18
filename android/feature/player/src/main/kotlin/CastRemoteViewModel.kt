@@ -62,7 +62,10 @@ class CastRemoteViewModel internal constructor(
     private var current: Session? = null
     private var following: Job? = null
 
-    /** Joins cast [id] as a remote and follows it; Next episode goes on through [runOf] a title's run, as the player's own. */
+    /**
+     * Joins cast [id] as a remote and follows it. Next episode goes on
+     * through [runOf] a title's run, as the player's own does.
+     */
     fun open(
         id: Int,
         runOf: (MediaSet) -> List<String>,
@@ -126,20 +129,28 @@ class CastRemoteViewModel internal constructor(
     private fun move(change: PlaybackChange) {
         val id = id ?: return
         take(acted(current ?: return, change, me.screen, now()))
-        viewModelScope.launch { live.act(id, me.screen, change) }
+        viewModelScope.launch {
+            live.act(id, me.screen, change)
+            // Telegram out of reach: the move may be given up on, and the remote says why, as the player does.
+            if (this@CastRemoteViewModel.id == id && !live.available.value) view.show(TOGETHER_UNREACHABLE)
+        }
     }
 
     /** What [live] holds now, read or heard alike: another session, or none, is this one over. */
     private fun heard(heard: LiveSession?) {
         if (id == null) return
         val session = heard?.takeIf { it.id == id }?.session
-        if (session == null || session.ended) return finish(session?.let { endingOf(it, me.screen) })
+        if (session == null) {
+            // Heard ending, the session as it ended tells a title that finished from a cast that was stopped.
+            return finish(live.ended.value?.takeIf { it.id == id }?.let { endingOf(it.session, me.screen) })
+        }
         val before = current
         // A move given up on comes back as what the channel holds, which this screen follows too.
         val next = if (heard.lost) session else follow(before, session, me.screen)
         if (next === before) return
         take(next)
-        if (before != null && next.by != me.screen) changeOf(before, next)?.let { sayOnRemote(it, next) }?.let(view::show)
+        if (before == null || next.by == me.screen) return
+        changeOf(before, next)?.let { sayOnRemote(it, next) }?.let(view::show)
     }
 
     private fun take(session: Session) {

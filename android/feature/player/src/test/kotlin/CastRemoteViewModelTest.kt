@@ -22,7 +22,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The remote on a phone: it joins as a remote, and each press on the player card is a move of the TV's session. Following the TV is `CastRemoteFollowingTest`'s. */
+/**
+ * The remote on a phone: it joins as a remote, and each press on the player
+ * card is a move of the TV's session. Following the TV is `CastRemoteFollowingTest`'s.
+ */
 @RunWith(RobolectricTestRunner::class)
 class CastRemoteViewModelTest {
     @After
@@ -106,6 +109,8 @@ class CastRemoteViewModelTest {
 
             assertEquals(105_000L, rig.vm.player.currentPosition)
             assertEquals(1_500_000L, rig.vm.player.duration)
+            advanceTimeBy(1_450_000)
+            assertEquals(1_500_000L, rig.vm.player.currentPosition, "never past the title's end")
         }
 
     @Test

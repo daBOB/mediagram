@@ -51,6 +51,8 @@ internal class CastRemotePlayer(
     ) {
         val item = MediaItemData.Builder(session.set).setIsSeekable(true)
         if (durationMs != C.TIME_UNSET) item.setDurationUs(durationMs * 1000)
+        // A playing session nobody moved on from runs on in the clock, but never past the title's end.
+        val end = if (durationMs == C.TIME_UNSET) Long.MAX_VALUE else durationMs
         shown =
             State.Builder()
                 .setAvailableCommands(COMMANDS)
@@ -58,7 +60,7 @@ internal class CastRemotePlayer(
                 .setPlaybackState(Player.STATE_READY)
                 .setPlayWhenReady(session.playing, Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE)
                 .setPlaybackParameters(PlaybackParameters(session.rate.toFloat()))
-                .setContentPositionMs { (expectedPosition(session, now()) * MS).toLong() }
+                .setContentPositionMs { (expectedPosition(session, now()) * MS).toLong().coerceAtMost(end) }
                 // The player's own skip, so the card's buttons read and step the same 15 s.
                 .setSeekBackIncrementMs(SKIP_MS)
                 .setSeekForwardIncrementMs(SKIP_MS)

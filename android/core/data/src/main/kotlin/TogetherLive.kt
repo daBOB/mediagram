@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import model.together.Member
 import model.together.Playback
@@ -8,6 +9,8 @@ import model.together.Session
 
 /** Why Watch together and Join are greyed out, on every surface: the web player's own words. */
 const val TOGETHER_UNREACHABLE = "Telegram isn't reachable"
+
+private val NOTHING_ENDED: StateFlow<LiveSession?> = MutableStateFlow(null)
 
 /**
  * A session and the channel message that carries it. [lost]: a move of this
@@ -59,6 +62,13 @@ interface TogetherLive : TogetherCasts {
 
     /** False while Telegram can't be reached, nobody is signed in, or the last read or edit failed. */
     val available: StateFlow<Boolean>
+
+    /**
+     * The last session heard ending, as it ended, which [live] shows only as
+     * `null`: a remote tells a title that finished from a cast that was
+     * stopped by it. A stand-in that hears nothing has none.
+     */
+    val ended: StateFlow<LiveSession?> get() = NOTHING_ENDED
 
     /**
      * Reads the newest messages again, deleting any stale session found, and

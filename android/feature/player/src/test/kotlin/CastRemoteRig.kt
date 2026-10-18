@@ -27,10 +27,11 @@ import uniffi.mediagram_core.TogetherMessage
 /** The channel message the cast is. */
 internal const val CAST_ID = 970
 
-/** The TV playing [EP1] for a tablet's cast, 100 s in at [NOW], with an English soundtrack and German subtitles to offer. */
+/** The TV playing [EP1] for a tablet's cast, 100 s in at [NOW], offering an English soundtrack and German subtitles. */
 internal val CAST_ON_TV =
     Session(
-        "s-cast", EP1, playing = true, pos = 100.0, rate = 1.0, at = NOW, by = TV.screen, members = listOf(TV), ended = false,
+        "s-cast", EP1, playing = true, pos = 100.0, rate = 1.0, at = NOW, by = TV.screen, members = listOf(TV),
+        ended = false,
         cast =
             Cast(
                 from = "Tablet", profile = "A", state = CastState.ON, tv = TV.screen,
@@ -52,7 +53,11 @@ internal class CastRemoteRig(
     private val now = { NOW + test.testScheduler.currentTime }
     val live =
         DefaultTogetherLive(
-            CoreTogetherChannel(FakeCoreProvider(core), InMemoryLibrarySettings().apply { runBlocking { write("library") } }, LibraryEvents { events }),
+            CoreTogetherChannel(
+                FakeCoreProvider(core),
+                InMemoryLibrarySettings().apply { runBlocking { write("library") } },
+                LibraryEvents { events },
+            ),
             test.backgroundScope,
             durationOf = { 1500.0 },
             now = now,

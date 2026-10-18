@@ -5,7 +5,9 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import data.TOGETHER_UNREACHABLE
 import model.together.CastWords
+import model.together.finished
 import model.together.left
 import model.together.writeSession
 import org.junit.After
@@ -20,7 +22,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
-/** The remote following the TV's session: its edits and their notices, a read that catches up, a title change, and the session going. */
+/**
+ * The remote following the TV's session: its edits and their notices, a read
+ * that catches up, a title change, and the session going.
+ */
 @RunWith(RobolectricTestRunner::class)
 class CastRemoteFollowingTest {
     @After
@@ -37,6 +42,16 @@ class CastRemoteFollowingTest {
             assertFalse(rig.vm.player.playWhenReady)
             advanceTimeBy(2_001)
             assertNull(rig.vm.ui.value!!.notice)
+        }
+
+    @Test
+    fun theFilmEndingSaysFinished() =
+        runTest {
+            val rig = castRemote()
+
+            rig.fromTv(finished(rig.message(), TV.screen))
+
+            assertEquals(CastWords.FINISHED, rig.vm.ui.value!!.over)
         }
 
     @Test
@@ -66,7 +81,8 @@ class CastRemoteFollowingTest {
         runTest {
             val rig = castRemote()
 
-            rig.core.togetherMessages[CAST_ID] = writeSession(rig.message().copy(playing = false, pos = 50.0, at = NOW, by = TV.screen))
+            val paused = rig.message().copy(playing = false, pos = 50.0, at = NOW, by = TV.screen)
+            rig.core.togetherMessages[CAST_ID] = writeSession(paused)
             rig.live.refresh()
             runCurrent()
 
@@ -84,6 +100,31 @@ class CastRemoteFollowingTest {
             runCurrent()
 
             assertNull(rig.live.live.value)
+            assertEquals(CastWords.STOPPED, rig.vm.ui.value!!.over)
+        }
+
+    @Test
+    fun aMoveThatCantReachTelegramSaysSo() =
+        runTest {
+            val rig = castRemote()
+            rig.core.togetherFailure = IllegalStateException("offline")
+            rig.live.refresh()
+
+            rig.vm.player.pause()
+            runCurrent()
+
+            assertEquals(TOGETHER_UNREACHABLE, rig.vm.ui.value!!.notice)
+        }
+
+    @Test
+    fun overBeforeAnythingIsDrawnStillReachesTheScreen() =
+        runTest {
+            val rig = CastRemoteRig(this)
+            rig.core.togetherMessages.remove(CAST_ID)
+
+            rig.vm.open(CAST_ID) { emptyList() }
+            runCurrent()
+
             assertEquals(CastWords.STOPPED, rig.vm.ui.value!!.over)
         }
 

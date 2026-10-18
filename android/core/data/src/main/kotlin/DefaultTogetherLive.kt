@@ -75,10 +75,10 @@ class DefaultTogetherLive(
     private val starting = Mutex()
     private val joinNext = AtomicReference<Int?>(null)
     private val casting = TogetherCasting(channel, sessions, reads, work, now)
-
     override val live: StateFlow<LiveSession?> = sessions.shown.asStateFlow()
     override val requests: StateFlow<LiveSession?> = sessions.requests.asStateFlow()
     override val available: StateFlow<Boolean> = sessions.reachable.asStateFlow()
+    override val ended: StateFlow<LiveSession?> = sessions.ended.asStateFlow()
 
     init {
         // Listening lasts exactly as long as someone collects [live] or [requests] (`LibraryEvents`):

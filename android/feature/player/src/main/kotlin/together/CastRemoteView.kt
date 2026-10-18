@@ -9,7 +9,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.together.CastTracks
@@ -100,7 +99,13 @@ internal class CastRemoteView(
     /** The cast is over: [words] say how. */
     fun over(words: String) {
         clear()
-        _ui.update { it?.copy(notice = null, over = words) }
+        // Over before anything was drawn still reaches the screen, so it can go.
+        val drawn =
+            _ui.value ?: RemoteUi(
+                id, title = "", backdrop = null, label = CastWords.PLAYING_ON_TV, notice = null,
+                tracks = CastTracks(), audio = "", text = "", hasNext = false, over = null,
+            )
+        _ui.value = drawn.copy(notice = null, over = words)
     }
 
     /** Nothing is drawn: the remote is gone. */
@@ -130,7 +135,8 @@ internal class CastRemoteView(
         _ui.value =
             RemoteUi(
                 id, titleLine(set), set?.let { it.backdropPath ?: it.posterPath }, CastWords.PLAYING_ON_TV, notice,
-                s.cast?.tracks ?: CastTracks(), s.cast?.audio.orEmpty(), s.cast?.text.orEmpty(), next != null, over = null,
+                s.cast?.tracks ?: CastTracks(), s.cast?.audio.orEmpty(), s.cast?.text.orEmpty(),
+                hasNext = next != null, over = null,
             )
     }
 }

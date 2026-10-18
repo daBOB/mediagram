@@ -42,6 +42,9 @@ internal class TogetherSessions(
     /** [TogetherLive.requests]. */
     val requests = MutableStateFlow<LiveSession?>(null)
 
+    /** [TogetherLive.ended]. */
+    val ended = MutableStateFlow<LiveSession?>(null)
+
     private val keeping = MutableSharedFlow<LiveSession>(extraBufferCapacity = KEPT_BUFFER)
 
     /** Every session [keep] stores, requests included: what an offer waits on for its answer. */
@@ -72,7 +75,7 @@ internal class TogetherSessions(
      * device's own echo is old news while a newer move waits, or when it is
      * not the edit on its way. One that is over, ended or stale, is over here
      * too, unless an own move is still to go: ending and deleting it is then
-     * the sender's.
+     * the sender's. One that ended is kept, as it ended, in [ended].
      */
     fun take(
         id: Int,
@@ -84,6 +87,7 @@ internal class TogetherSessions(
             val flying = sender.inFlight(id)
             if (flying != null && !same(flying, session)) return
         }
+        if (session.ended) ended.value = LiveSession(id, session)
         if (live || sender.pending(id)) keep(id, session) else forget(id)
     }
 
