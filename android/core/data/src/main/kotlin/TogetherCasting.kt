@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import model.together.CAST_ANSWER_MS
+import model.together.CastState
 import model.together.CastTracks
 import model.together.Member
 import model.together.Playback
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.ContinuationInterceptor
 
 private val NONE = CastAnswer(CastAnswer.Answer.NONE, null, "")
+private val ASKING = setOf(CastState.OFFER, CastState.REPLACE)
 
 /**
  * [TogetherCasts] for [DefaultTogetherLive], the twin of the web's
@@ -116,11 +118,13 @@ internal class TogetherCasting(
         withContext(serial) {
             val before = sessions.known[id]
             val read = channel.read(id)?.let(::parseSession) ?: return@withContext sessions.forget(id)
-            // Taken by another TV first (its cast is on), or given up on by the caster.
-            if (!isRequest(read) || !isLive(read, null, now())) return@withContext null
             // A move made meanwhile, or an edit heard, knows newer than this read.
             if (!sessions.pending(id) && sessions.known[id] === before) sessions.known[id] = read
-            sessions.queue(id, me.screen) { accepted(it, me, now()) ?: it }?.let { LiveSession(id, it) }
+            // Only a live offer or replace is a TV's to take: one another TV answered or took keeps its answer.
+            sessions.view(id)?.takeIf { it.cast?.state in ASKING && isLive(it, null, now()) } ?: return@withContext null
+            // The TV named in `tv` keeps the cast, whoever else's accept reaches the sender first.
+            val held = sessions.queue(id, me.screen) { accepted(it, me, now()) ?: it }
+            held?.takeIf { it.cast?.tv == me.screen }?.let { LiveSession(id, it) }
         }
 
     override fun tracks(

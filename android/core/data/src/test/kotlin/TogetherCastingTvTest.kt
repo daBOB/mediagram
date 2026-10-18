@@ -1,5 +1,7 @@
 package data
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import model.together.CastState
@@ -8,6 +10,7 @@ import model.together.Member
 import model.together.Session
 import model.together.Track
 import model.together.accepted
+import model.together.busied
 import model.together.offered
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,6 +23,7 @@ private const val MESSAGE_MAX = 4096
 /** The TV answers an offer and keeps its track list; a remote chooses a track. */
 class TogetherCastingTvTest {
     private val offer: Session = offered("s-offer", B, FILM, "kid", NOW)
+    private val tv2 = Member("tv-2", "Kitchen")
 
     /** The TV has heard [offer] as message 11. */
     private suspend fun TogetherHarness.offered() {
@@ -47,7 +51,35 @@ class TogetherCastingTvTest {
     fun acceptLosesToAnotherTv() =
         runTest {
             val h = TogetherHarness(this)
-            h.put(11, accepted(offer, Member("tv-2", "Kitchen"), NOW)!!)
+            h.put(11, accepted(offer, tv2, NOW)!!)
+
+            assertNull(h.live.accept(11, TV))
+            runCurrent()
+            assertEquals(emptyList(), h.edits)
+        }
+
+    @Test
+    fun anAcceptHeardWhileReadingKeepsTheOtherTvsCast() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.offered()
+            val read = CompletableDeferred<Unit>()
+            h.core.togetherReadGate = read
+            val taking = async { h.live.accept(11, TV) }
+            runCurrent()
+            h.push(11, accepted(offer, tv2, NOW + 500)!!)
+            read.complete(Unit)
+            runCurrent()
+
+            assertNull(taking.await())
+            assertEquals(emptyList(), h.edits)
+        }
+
+    @Test
+    fun aRequestAnotherTvAnsweredIsNotTaken() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.put(11, busied(offer, tv2.screen, "Dune (2021)"))
 
             assertNull(h.live.accept(11, TV))
             runCurrent()

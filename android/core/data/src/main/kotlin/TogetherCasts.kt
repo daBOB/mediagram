@@ -100,7 +100,8 @@ interface TogetherCasts {
     /**
      * The TV [me] takes request [id] and joins it as a player; the session as
      * now held, or `null` when the message is gone, is no longer a live
-     * request, or another TV took it first. Called as [TogetherLive.join] is.
+     * request, or another TV answered or took it first. Called as
+     * [TogetherLive.join] is.
      */
     suspend fun accept(
         id: Int,
