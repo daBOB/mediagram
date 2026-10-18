@@ -1,6 +1,8 @@
 package player
 
 import data.LiveSession
+import io.mockk.coEvery
+import io.mockk.spyk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.plus
@@ -120,6 +122,31 @@ class CastReceiverViewModelTest {
         hear(offer.copy())
         live.requests.value = LiveSession(11, offer.copy())
         assertEquals(1, live.casts.size)
+    }
+
+    @Test
+    fun aFailedReadDoesNotCrashAndTheNextEmissionIsAnswered() = runTest {
+        val watch = WatchStateFixture(listOf(anna, mia), chosen = "A")
+        val repo = spyk(watch.repository)
+        var reads = 0
+        coEvery { repo.watchedToday("M") } coAnswers { if (reads++ == 0) throw IllegalStateException("core down") else 0.0 }
+        installMainDispatcher()
+        CastReceiverViewModel(live, FakeCatalogRepository(sets), repo, handle).opening.launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+        val offer = request(set = "film-3", profile = "M")
+        hear(offer)
+        assertEquals(emptyList(), live.casts)
+        assertNull(live.takeCast())
+        hear(offer.copy(at = offer.at + 1))
+        assertEquals(11, live.takeCast()?.id)
+    }
+
+    @Test
+    fun anOpenSetTheCatalogLostIsStillBusy() = runTest {
+        val vm = receiver()
+        handle.openSet.value = "vanished"
+        hear(request())
+        assertEquals(true, live.casts.single().endsWith(" vanished"), live.casts.toString())
+        assertNull(vm.opening.value)
     }
 
     private fun assertRefused(note: String) {

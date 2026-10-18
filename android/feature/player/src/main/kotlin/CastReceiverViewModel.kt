@@ -8,6 +8,7 @@ import data.CatalogRepository
 import data.LiveSession
 import data.TogetherLive
 import data.WatchStateRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -65,17 +66,28 @@ class CastReceiverViewModel @Inject constructor(
     private suspend fun answer(request: LiveSession) {
         val s = request.session
         val cast = s.cast ?: return
-        val busy = handle.openSet.value?.let { titleLine(catalog.mediaSet(it)) }
-        val answer = answerOf(s, TvState(screen, busy, refusalOf(s.set, cast.profile)), System.currentTimeMillis())
-        if (answer is TvAnswer.Ignore || !answered.add(request.id to cast.state)) return
-        when (answer) {
-            is TvAnswer.Refuse -> live.refuse(request.id, screen, answer.note)
-            is TvAnswer.Busy -> live.busy(request.id, screen, answer.note)
-            TvAnswer.Accept -> {
-                live.castOnOpen(ArmedCast(request.id, s.set, cast.profile, cast.from, s.playing))
-                accepted.value = CastOpen(s.set, replace = busy != null)
+        val key = request.id to cast.state
+        if (key in answered) return
+        try {
+            // A set that no longer resolves is still open: busy never reads as idle.
+            val busy = handle.openSet.value?.let { titleLine(catalog.mediaSet(it)).ifEmpty { it } }
+            val answer = answerOf(s, TvState(screen, busy, refusalOf(s.set, cast.profile)), System.currentTimeMillis())
+            if (answer is TvAnswer.Ignore) return
+            answered += key
+            when (answer) {
+                is TvAnswer.Refuse -> live.refuse(request.id, screen, answer.note)
+                is TvAnswer.Busy -> live.busy(request.id, screen, answer.note)
+                TvAnswer.Accept -> {
+                    live.castOnOpen(ArmedCast(request.id, s.set, cast.profile, cast.from, s.playing))
+                    accepted.value = CastOpen(s.set, replace = busy != null)
+                }
+                TvAnswer.Ignore -> Unit
             }
-            TvAnswer.Ignore -> Unit
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // A failed read or send must not take the app down; the next emission tries again.
+            answered -= key
         }
     }
 
