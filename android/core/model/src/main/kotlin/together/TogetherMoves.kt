@@ -26,7 +26,7 @@ fun started(
     me: Member,
     own: Playback,
     now: Long,
-): Session = Session(id, own.set, own.playing, toMillis(own.pos), own.rate, now, me.screen, listOf(me), ended = false)
+): Session = Session(id, own.set, own.playing, toMillis(own.pos), own.rate, now, me.screen, listOf(me), ended = false, cast = null)
 
 fun joined(
     s: Session,
@@ -36,12 +36,13 @@ fun joined(
     return s.copy(by = me.screen, members = if (present) s.members else s.members + me)
 }
 
+/** A remote plays nothing, so it cannot keep a session going once the screens that play have left. */
 fun left(
     s: Session,
     screen: String,
 ): Session {
     val members = s.members.filter { it.screen != screen }
-    return s.copy(by = screen, members = members, ended = members.isEmpty())
+    return s.copy(by = screen, members = members, ended = members.none { !it.remote })
 }
 
 fun acted(
