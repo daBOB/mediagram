@@ -224,7 +224,12 @@ test("a session move the daily limit refuses is where this screen leaves, and it
   heardFromTv({ set: "film-2" });
   await settle();
   expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
-  env.advance(6000);
+  env.advance(1_999);
+  expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
+  env.advance(6_000);
+  expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
+  env.advance(1);
+  expect(note().textContent).toBe("");
   await settle();
   expect(opened).toEqual(["film-2"]);
   expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);

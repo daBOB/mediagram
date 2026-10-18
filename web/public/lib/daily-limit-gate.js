@@ -14,7 +14,7 @@
 
 import { el } from "./dom.js";
 import * as state from "./watch-state.js";
-import { DAILY_LIMIT_WORDS, dailyLimitState } from "./daily-limit.js";
+import { DAILY_LIMIT_NOTICE_MS, DAILY_LIMIT_WORDS, dailyLimitState } from "./daily-limit.js";
 
 /** The latest `{ limitMinutes, watchedSeconds }` the server told, for the profile in use. */
 let latest = null;
@@ -22,8 +22,6 @@ let latest = null;
 let warned = false;
 let pageNotice = null;
 
-/** How long the player's status line holds the words: longer than watch together's two seconds, for a child to read. */
-const HOLD_MS = 8000;
 /** As long as `refreshState` waits: an open never hangs on a slow server, which lets the title open. */
 const TODAY_TIMEOUT_MS = 1500;
 
@@ -37,7 +35,7 @@ function tell(words) {
   const status = document.getElementById("together-note");
   if (document.getElementById("player")?.open && status) {
     status.textContent = words;
-    setTimeout(() => { if (status.textContent === words) status.textContent = ""; }, HOLD_MS);
+    setTimeout(() => { if (status.textContent === words) status.textContent = ""; }, DAILY_LIMIT_NOTICE_MS);
     return;
   }
   pageNotice?.remove();

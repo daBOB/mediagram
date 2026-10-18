@@ -12,10 +12,10 @@ export function togetherView({ button, label, note }) {
   let hide = null;
   return {
     /** Text, not `hidden`: a status region has to be on the page already for its change to be read out. */
-    show(text) {
+    show(text, ms = NOTICE_MS) {
       note.textContent = text;
       clearTimeout(hide);
-      hide = setTimeout(() => { note.textContent = ""; }, NOTICE_MS);
+      hide = setTimeout(() => { note.textContent = ""; }, ms);
     },
 
     /** `id` is the session this screen is in and `current` that session as it follows it; both `null` out of one. */
