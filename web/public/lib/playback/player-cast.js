@@ -7,7 +7,8 @@
 import { profileId } from "../watch-state.js";
 import { askTv } from "../cast/cast-ask.js";
 import { openRemote } from "../cast/cast-remote.js";
-import { greyWhileUnavailable } from "../cast/play-on-tv.js";
+import { onLeaveTogether } from "../together-now.js";
+import { grey, greyWhileUnavailable } from "../cast/play-on-tv.js";
 
 /**
  * @param {{ button: HTMLButtonElement, video: HTMLVideoElement, filmTime: () => number,
@@ -15,6 +16,8 @@ import { greyWhileUnavailable } from "../cast/play-on-tv.js";
  */
 export function mountPlayerCast({ button, video, filmTime, setId, close }) {
   greyWhileUnavailable(button);
+  // Leaving a session tells only these callbacks, not the listeners above.
+  onLeaveTogether(() => grey(button));
   button.addEventListener("click", async () => {
     const set = setId();
     if (set === null) return;

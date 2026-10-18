@@ -62,6 +62,15 @@ test("the player's button is greyed while in watch together", () => {
   expect(button.title).toBe(CAST_WORDS.leaveFirst);
 });
 
+test("the player's button is enabled again once the viewer leaves watch together", () => {
+  setInTogether(true);
+  const { button } = player();
+  expect(button.disabled).toBe(true);
+  setInTogether(false);
+  expect(button.disabled).toBe(false);
+  expect(button.title).toBe("");
+});
+
 test("an accepted cast closes the player and opens the remote", async () => {
   const { button, closed } = player();
   button.fire("click");

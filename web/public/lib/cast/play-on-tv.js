@@ -18,15 +18,18 @@ export function castReason() {
   return available ? null : reason ?? UNREACHABLE;
 }
 
-/** Greys `button` with its reason, now and on every change, until `stop` is called. */
+/** Greys `button` with its reason, or enables it. */
+export function grey(button) {
+  const reason = castReason();
+  button.disabled = reason !== null;
+  button.title = reason ?? "";
+  if (reason) button.setAttribute("aria-label", `${CAST_WORDS.playOnTv}: ${reason}`);
+  else button.removeAttribute("aria-label");
+}
+
+/** Greys `button` now and on every change, until the returned function is called. */
 export function greyWhileUnavailable(button) {
-  const draw = () => {
-    const reason = castReason();
-    button.disabled = reason !== null;
-    button.title = reason ?? "";
-    if (reason) button.setAttribute("aria-label", `${CAST_WORDS.playOnTv}: ${reason}`);
-    else button.removeAttribute("aria-label");
-  };
+  const draw = () => grey(button);
   draw();
   return onTogether(draw);
 }
