@@ -35,6 +35,12 @@ export function previewCast(mode: CastMode, events: CatalogEvents): TogetherHub 
     hear(id, text);
   };
 
+  /** What the channel holds for `id` right now; `null` once it is gone. */
+  const current = (id: number) => {
+    const text = messages.get(id);
+    return text === undefined ? null : parseSession(text);
+  };
+
   /** The TV's reply to a request it has not answered yet. */
   const answer = (id: number, s: Session) => {
     const reply = answerOf(s, { screen: TV.screen, refusal: mode === "refuse" ? ageReason("Mia") : null, busy: mode === "busy" ? "Dune (2021)" : null }, Date.now());
@@ -44,7 +50,10 @@ export function previewCast(mode: CastMode, events: CatalogEvents): TogetherHub 
       const on = accepted(s, TV, Date.now());
       if (!on) return;
       say(id, on);
-      setTimeout(() => say(id, tracked(on, TV.screen, TRACKS, "0.0", "")), THINK_MS);
+      setTimeout(() => {
+        const now = current(id);
+        if (now?.cast?.state === "on") say(id, tracked(now, TV.screen, TRACKS, "0.0", ""));
+      }, THINK_MS);
     }
   };
 
@@ -53,7 +62,11 @@ export function previewCast(mode: CastMode, events: CatalogEvents): TogetherHub 
     const key = s && `${id}:${s.cast?.state}`;
     if (mode === "none" || !s || !isRequest(s) || answered.has(key!)) return;
     answered.add(key!);
-    setTimeout(() => answer(id, s), THINK_MS);
+    setTimeout(() => {
+      // Withdrawn or already answered meanwhile: nothing to answer, and nothing to bring back.
+      const now = current(id);
+      if (now?.cast?.state === s.cast?.state) answer(id, now!);
+    }, THINK_MS);
   };
 
   const channel: TogetherChannel = {
