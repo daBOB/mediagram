@@ -100,3 +100,21 @@
 #cast-ask p { margin: 0; font: 500 1.05rem var(--display); color: var(--stage-ink); }
 .cast-ask-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
 .cast-ask-actions:empty { display: none; }
+
+/* The remote for a title on the TV: the stage's colours, the title's backdrop dimmed where the picture would be. */
+#cast-remote {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--stage);
+  color: var(--stage-ink);
+}
+#cast-remote:not([open]) { display: none; }
+#cast-remote-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
+.cast-remote-head { position: absolute; top: 1rem; left: 1rem; right: 1rem; z-index: 1; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: baseline; }
+#cast-remote .card-dock { position: absolute; z-index: 2; }

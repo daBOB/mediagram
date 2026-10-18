@@ -11,9 +11,10 @@ export interface TogetherView { available: boolean; reason: string | null; live:
 /**
  * What a `together` event said, ended and stale sessions read as `null`. `lost`: a move of
  * the server's was given up on, and this is what the channel holds, to be followed by the
- * tab that made it too.
+ * tab that made it too. `ended`: the session as it ended, when it ended, which a cast tells
+ * "finished" from "stopped" by.
  */
-export interface Heard { id: number; session: Session | null; lost?: boolean }
+export interface Heard { id: number; session: Session | null; lost?: boolean; ended?: Session | null }
 
 /** This tab's screen id in a session's `members`. */
 export const UNREACHABLE: string;
@@ -33,7 +34,9 @@ export function heardTogether(payload: { id: number; session: Session | null; se
 /** Takes session `id` out of this tab's view, telling listeners as a `null` event would. */
 export function forgetTogether(id: number): void;
 export function together(body: Record<string, unknown>): Promise<{ ok: boolean; status: number; body: any }>;
-export function setTogetherOpener(open: (set: CatalogSet) => Promise<boolean> | void, find: (setId: string) => CatalogSet | null): void;
+export function setTogetherOpener(open: (set: CatalogSet) => Promise<boolean> | void, find: (setId: string) => CatalogSet | null, next?: (setId: string) => string | null): void;
+/** The id of the title that follows `setId`, or `null` when none does. */
+export function nextForTogether(setId: string): string | null;
 /** The set `setId` names in this profile's catalog, or `null` when it is not in it. */
 export function setForTogether(setId: string): CatalogSet | null;
 export function openForTogether(setId: string, join?: number | null): Promise<boolean>;

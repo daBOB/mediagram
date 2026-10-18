@@ -297,6 +297,44 @@
       <div id="cast-ask-actions" class="cast-ask-actions"></div>
     </dialog>
 
+    <!-- The remote for a title playing on the TV (lib/cast/cast-remote.js): the title's backdrop
+         where the picture would be, and a card built from the player's own classes. -->
+    <dialog id="cast-remote" class="cast-remote" aria-label="Playing on TV">
+      <img id="cast-remote-art" alt="" hidden />
+      <div class="cast-remote-head">
+        <span class="together-label" id="cast-remote-label"></span>
+        <span class="what" id="cast-remote-title"></span>
+      </div>
+      <p class="together-note" id="cast-remote-note" role="status"></p>
+      <div class="card-dock" id="cast-remote-dock">
+        <div class="card-menu" id="cast-remote-menu" hidden></div>
+        <div class="control-card">
+          <div class="card-row card-seek">
+            <span class="at" id="cast-remote-at">0:00</span>
+            <div class="seek">
+              <label for="cast-remote-seek">Position</label>
+              <input type="range" id="cast-remote-seek" min="0" step="1" value="0" />
+            </div>
+            <span class="at" id="cast-remote-end"></span>
+          </div>
+          <div class="card-row card-tools">
+            <button id="cast-remote-speed" class="tool" aria-label="Speed">1×</button>
+            <button id="cast-remote-tracks" class="tool">Subtitles &amp; audio</button>
+            <span class="spacer"></span>
+            <button id="cast-remote-stop" class="tool"></button>
+          </div>
+          <div class="card-row card-transport">
+            <span class="transport">
+              <button id="cast-remote-back" class="tsp" aria-label="Back 10 seconds">−10</button>
+              <button id="cast-remote-play" class="tsp big" aria-label="Pause">Pause</button>
+              <button id="cast-remote-forward" class="tsp" aria-label="Forward 10 seconds">+10</button>
+              <button id="cast-remote-next" class="tsp" aria-label="Next episode" hidden>Next episode</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <script src="/lib/film-leader.js"></script>
     <script type="module" src="/app.js"></script>
   </body>

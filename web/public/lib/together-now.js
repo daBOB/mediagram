@@ -29,6 +29,7 @@ const leaving = new Set();
 let opener = null;
 let setOf = () => null;
 let joinNext = null;
+let nextOf = () => null;
 
 export const togetherNow = () => known;
 export const serverNow = () => Date.now() + known.offset;
@@ -84,7 +85,7 @@ export function heardTogether(payload) {
   const session = request ? (isLive(payload.session, null, payload.serverNow) ? payload.session : null) : stillLive(payload.session, payload.serverNow);
   const live = request ? known.live : session ? { id: payload.id, session } : known.live?.id === payload.id ? null : known.live;
   known = { available: true, reason: null, live, offset: payload.serverNow - Date.now() };
-  tell({ id: payload.id, session, lost: payload.lost === true });
+  tell({ id: payload.id, session, lost: payload.lost === true, ...(payload.session?.ended && { ended: payload.session }) });
 }
 
 /** A session this tab found over by itself, stale or unknown to the server: out of its view, as an event would take it. */
@@ -112,10 +113,14 @@ export async function together(body) {
  * holds the library: what it finds is this profile's catalog, so a title a
  * kids profile may not see is not found.
  */
-export function setTogetherOpener(open, find) {
+export function setTogetherOpener(open, find, next = () => null) {
   opener = open;
   setOf = find;
+  nextOf = next;
 }
+
+/** The id of the title that follows `setId`, or `null` when none does. */
+export const nextForTogether = (setId) => nextOf(setId);
 
 /** The set `setId` names in this profile's catalog, or `null`. */
 export const setForTogether = (setId) => setOf(setId);

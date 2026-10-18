@@ -228,7 +228,7 @@ const deptContext = () => ({
 });
 
 // Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
-setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null);
+setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null, (setId) => playsNext(library, byId.get(setId), null).next?.setId ?? null);
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {

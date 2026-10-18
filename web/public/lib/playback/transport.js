@@ -40,7 +40,7 @@ const ICONS = {
 };
 
 /** The speeds the Speed menu offers. Anything finer is a setting, not a choice. */
-const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+export const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** Fifteen: the same every surface skips, and the same the buttons say. */
 export const SKIP_SECONDS = 15;
