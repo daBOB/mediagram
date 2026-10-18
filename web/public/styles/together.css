@@ -80,3 +80,23 @@
   text-underline-offset: 0.2em;
   cursor: pointer;
 }
+
+/* Asking the TV to play: the Report sheet's card, centred over whatever page asked, on the stage's colours. */
+#cast-ask {
+  inset: 0;
+  margin: auto;
+  width: min(24rem, calc(100% - 32px));
+  height: fit-content;
+  display: none;
+  gap: 0.75rem;
+  padding: 1.15rem 1.25rem;
+  background: var(--stage-raised);
+  border: 1px solid var(--stage-rule);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
+}
+#cast-ask[open] { display: grid; }
+#cast-ask::backdrop { background: rgba(0, 0, 0, 0.5); }
+#cast-ask p { margin: 0; font: 500 1.05rem var(--display); color: var(--stage-ink); }
+.cast-ask-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+.cast-ask-actions:empty { display: none; }

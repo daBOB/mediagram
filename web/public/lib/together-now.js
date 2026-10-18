@@ -10,7 +10,7 @@
 import { isLive } from "./together/follow.js";
 import { isRequest } from "./together/session.js";
 
-const UNREACHABLE = "Telegram isn't reachable";
+export const UNREACHABLE = "Telegram isn't reachable";
 
 /**
  * This tab's screen id: random, and one per tab, as the session's `members`

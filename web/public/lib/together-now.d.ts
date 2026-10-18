@@ -16,6 +16,7 @@ export interface TogetherView { available: boolean; reason: string | null; live:
 export interface Heard { id: number; session: Session | null; lost?: boolean }
 
 /** This tab's screen id in a session's `members`. */
+export const UNREACHABLE: string;
 export const screen: string;
 export function togetherNow(): TogetherView;
 /** This tab's clock, corrected to the server's. */
