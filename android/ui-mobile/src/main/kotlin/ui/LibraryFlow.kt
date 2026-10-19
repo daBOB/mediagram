@@ -3,7 +3,9 @@ package ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -115,13 +117,14 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         // The bar takes its own row, so the page's last row never hides behind it.
         Column(Modifier.fillMaxSize()) {
             // The bar pads the navigation bar itself, so the page above leaves that inset to it.
-            val inset = if (bar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier
+            val inset = if (bar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier
             Box(Modifier.weight(1f).then(inset)) {
                 CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
                     LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
                 }
             }
-            CastBar(bar, modifier = Modifier.padding(start = railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
+            CastBar(bar, // Settings, System and the key screen draw their own index, not the library rail.
+                modifier = Modifier.padding(start = if (at.top == FrameKind.MENU) 0.dp else railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
         }
         // The pill watch together's notices use, over the page: the viewer stays where they were.
         // Above the bar while it shows, which it would otherwise cover.

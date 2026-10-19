@@ -35,39 +35,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Motion
 import designsystem.Radius
 import designsystem.StatusDot
 import designsystem.catalogueIndication
 import ui.common.RailItem
-
-/** The window width the rail itself narrows at — the web's `--rail-width` breakpoint, `shell.css:169`. */
-private val RailNarrowBreakpoint = 1180.dp
-private val RailWidthNarrow = 184.dp
-private val RailWidthWide = 224.dp
-
-/** How much of the window's start edge the rail takes: nothing unless the layout is EXPANDED. */
-@Composable
-internal fun railWidthShown(): Dp {
-    val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
-    val narrow = LocalConfiguration.current.screenWidthDp.dp <= RailNarrowBreakpoint
-    return if (!expanded) 0.dp else if (narrow) RailWidthNarrow else RailWidthWide
-}
 
 /**
  * The left rail: wordmark, the viewer's own shelves and utilities, then the
@@ -85,8 +68,7 @@ internal fun LibraryRail(
 ) {
     val rail = LocalRailData.current
     val tones = LocalCatalogueTones.current
-    val narrow = LocalConfiguration.current.screenWidthDp.dp <= RailNarrowBreakpoint
-    val width = if (narrow) RailWidthNarrow else RailWidthWide
+    val width = railWidth()
 
     Column(
         modifier =
@@ -108,7 +90,7 @@ internal fun LibraryRail(
             // `shell.css`'s own 1.7rem never does in a browser. The compact
             // header's own narrower tier (23sp) is reused here rather than
             // a third number invented just for this width.
-            fontSize = if (narrow) 23.sp else WordmarkSize,
+            fontSize = if (width == RailWidthNarrow) 23.sp else WordmarkSize,
             modifier =
                 Modifier
                     .padding(start = 10.dp, bottom = 36.dp)
