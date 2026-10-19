@@ -1,7 +1,8 @@
 /** Manage profiles: who you are first, then what your role offers, with the PIN held only while it is open. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { openManage } from "../public/lib/profile-manage.js";
+import { openManage } from "../public/lib/profile-manage-overlay.js";
+import { mountManage } from "../public/lib/profile-manage.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
@@ -258,4 +259,20 @@ test("closing drops the PIN: the next opening asks who you are", async () => {
   openManage(root, () => {});
   expect(textOf(root)).toContain("Who are you?");
   expect(rowOf(root, "Tim")).toBeUndefined();
+});
+
+test("theBodyMountsOutsideTheOverlay", async () => {
+  const page = new Node();
+  const host = new Node();
+  const unmount = mountManage(page, { promptHost: host });
+  expect(textOf(page)).toContain("Who are you?");
+  expect(descendants(byClass(page, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
+  buttonNamed(page, "Maja").fire("click");
+  await settle();
+  expect(host.childElementCount).toBe(1);
+  expect(page.childElementCount).toBe(1);
+  await answerPin(host, "4321");
+  expect(textOf(page)).toContain("As Maja");
+  unmount();
+  expect(page.childElementCount).toBe(0);
 });

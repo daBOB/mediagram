@@ -1,10 +1,12 @@
 /**
  * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
  *
- * Opened from the picker only — entering a profile never opens it, so a
- * device left on a grown-up's profile does not hand a child these controls.
- * A grown-up says who they are and gives their PIN once; it is held in this
- * panel while it is open, sent with every change, and dropped when it closes.
+ * Opened from the picker — entering a profile never opens it, so a device
+ * left on a grown-up's profile does not hand a child these controls. The body
+ * is also mounted by Settings' Profiles tab, which keeps that promise by
+ * hiding from kids and asking who you are and the PIN on every visit.
+ * A grown-up says who they are and gives their PIN once; it is held while the
+ * body is mounted, sent with every change, and dropped when it is torn down.
  *
  * What the panel offers follows the household's rule: the admin adds,
  * removes and resets grown-ups; every grown-up manages their own kids and
@@ -23,7 +25,7 @@ import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 /** The two limits a kid can have. A new kid starts at the stricter; its parent raises it. */
 const LIMITS = [6, 12];
 
-function pill(label, onClick) {
+export function pill(label, onClick) {
   const button = el("button", "pill pill-line", label);
   button.type = "button";
   button.addEventListener("click", onClick);
@@ -73,33 +75,19 @@ export function addForm(label, extra, submit) {
 }
 
 /**
- * Covers `parent` — the picker — with the panel.
- * @param {HTMLElement} parent
- * @param {() => void} onClose called once the panel is gone
+ * Draws Manage profiles into `container`.
+ * @param {HTMLElement} container
+ * @param {{ promptHost: HTMLElement }} options PIN prompts open over this element
+ * @returns {() => void} removes the body and drops the PIN held for the visit
  */
-export function openManage(parent, onClose) {
-  const screen = el("div", "who who-manage");
-  const card = el("div", "who-card");
+export function mountManage(container, { promptHost }) {
+  const screen = promptHost;
+  const root = el("div");
   const body = el("div");
   const message = el("p", "pin-message");
   message.setAttribute("role", "alert");
   /** `{ actorId, pin }` once a grown-up has said who they are. */
   let session = null;
-
-  const done = pill("Done", close);
-
-  function close() {
-    session = null;
-    document.removeEventListener("keydown", onKey);
-    screen.remove();
-    onClose();
-  }
-
-  // Escape closes the panel as Done does, as Back does on Android — unless a
-  // PIN prompt lies over it (a second child of the screen), which goes first.
-  function onKey(event) {
-    if (event.key === "Escape" && screen.childElementCount === 1) close();
-  }
 
   /**
    * Shows how a change went. Every change sends the PIN held here, so a wrong
@@ -186,10 +174,11 @@ export function openManage(parent, onClose) {
     if (!window.confirm(question)) return;
     report(await api.remove(session.actorId, session.pin, entry.id));
   }
-
-  card.append(body, message, done);
-  screen.append(card);
-  parent.append(screen);
-  document.addEventListener("keydown", onKey);
+  root.append(body, message);
+  container.append(root);
   draw();
+  return () => {
+    session = null;
+    root.remove();
+  };
 }
