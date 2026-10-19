@@ -32,7 +32,6 @@ import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
 import player.pauseForPipDismissal
-import player.retry
 import player.together.TogetherButton
 import ui.catalog.CastAskHost
 import ui.common.player.PlayerNavigationEffects
@@ -185,11 +184,7 @@ fun PlayerScreen(
             }
             episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list -> PlayerEpisodeSidebar(list, card, viewModel) }
 
-            when (state) {
-                PlayerUiState.Preparing -> PreparingNote()
-                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
-                PlayerUiState.Playing, PlayerUiState.Paused -> Unit
-            }
+            PlayerStageNote(state, report, viewModel)
 
             PlayerTopChrome(
                 openSet = openSet,
@@ -209,7 +204,6 @@ fun PlayerScreen(
                 report = report,
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
-            if (report.open) ReportDialog(report, onSend = viewModel::sendReport, onDismiss = viewModel::closeReport)
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }
     }

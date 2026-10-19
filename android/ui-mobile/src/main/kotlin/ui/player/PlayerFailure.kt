@@ -13,7 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import designsystem.Spacing
 import model.ReportWords
+import player.PlayerUiState
+import player.PlayerViewModel
 import player.ReportStage
+import player.retry
 import player.ReportUi
 
 /**
@@ -40,4 +43,20 @@ internal fun PlayerFailure(message: String, onRetry: () -> Unit, onReport: () ->
             }
         }
     }
+}
+
+/**
+ * What the stage says while the title opens (the film leader) or after it
+ * failed (the message, Retry and Report), and the report sheet Report opens.
+ * The player's own look and the remote look of a presenting player both draw
+ * it, so a title opening or failing on a TV is said on the phone.
+ */
+@Composable
+internal fun PlayerStageNote(state: PlayerUiState, report: ReportUi, viewModel: PlayerViewModel) {
+    when (state) {
+        PlayerUiState.Preparing -> PreparingNote()
+        is PlayerUiState.Failed -> PlayerFailure(state.message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
+        PlayerUiState.Playing, PlayerUiState.Paused -> Unit
+    }
+    if (report.open) ReportDialog(report, onSend = viewModel::sendReport, onDismiss = viewModel::closeReport)
 }

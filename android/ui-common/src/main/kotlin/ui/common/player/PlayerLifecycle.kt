@@ -27,8 +27,9 @@ import player.screenShown
  * is still there, primed to resume, which the dispose effect alone would
  * not catch. `ON_START` and `ON_STOP` also tell it whether its screen is
  * started: out of a watch-together session, it listens for one only then.
- * `ON_STOP` pauses a title whose picture is on a wireless display: the
- * screen that remote-controls it has gone.
+ * `ON_STOP` pauses a title whose picture is on a wireless display, unless
+ * the activity is only being recreated: the screen that remote-controls it
+ * has gone.
  */
 @Composable
 fun PlayerLifecycle(viewModel: PlayerViewModel) {
@@ -49,7 +50,8 @@ fun PlayerLifecycle(viewModel: PlayerViewModel) {
                 when (event) {
                     Lifecycle.Event.ON_START -> viewModel.screenShown(true)
                     Lifecycle.Event.ON_STOP -> {
-                        viewModel.pauseIfPresenting()
+                        // A recreation for a configuration change (dark mode, font size) is not the viewer leaving.
+                        if (activity?.isChangingConfigurations != true) viewModel.pauseIfPresenting()
                         viewModel.save()
                         viewModel.screenShown(false)
                     }
