@@ -27,6 +27,10 @@ export const DAILY_LIMIT_CHOICES = [
   { minutes: 180, label: "3 h" },
 ];
 
+/** A limit in words: the menu's own for a listed one, plain minutes for one set elsewhere. */
+export const dailyLimitWords = (minutes) =>
+  DAILY_LIMIT_CHOICES.find((choice) => choice.minutes === minutes)?.label ?? `${minutes} min`;
+
 /**
  * `free` (no limit), `ok`, `warn` (under five minutes left, up to the last
  * second) or `out`; `leftSeconds` never goes below 0, and is `null` when free.

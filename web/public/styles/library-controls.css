@@ -78,6 +78,7 @@
 .manage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .manage-row > span { flex: 1; min-width: 0; color: var(--ink); }
 .manage-row select, .who-new select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 0.875rem; }
+.everyone-row > .setting-value { margin: 0; text-align: right; }
 
 @media (max-width: 767px) {
   .who-tiles { gap: 20px; }

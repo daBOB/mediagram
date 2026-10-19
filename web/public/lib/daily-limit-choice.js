@@ -1,7 +1,7 @@
 /** The daily-limit select Manage profiles draws beside the age limit. */
 
 import { el } from "./dom.js";
-import { DAILY_LIMIT_CHOICES } from "./daily-limit.js";
+import { DAILY_LIMIT_CHOICES, dailyLimitWords } from "./daily-limit.js";
 
 /** A native choice of daily watching limit; `value` is minutes, or `null` for none. */
 export function dailyChoice(value, label) {
@@ -14,7 +14,7 @@ export function dailyChoice(value, label) {
   }
   // A limit set elsewhere that is not on the menu still shows as itself.
   if (value !== null && !DAILY_LIMIT_CHOICES.some(({ minutes }) => minutes === value)) {
-    const odd = el("option", null, `${value} min`);
+    const odd = el("option", null, dailyLimitWords(value));
     odd.value = String(value);
     choice.append(odd);
   }

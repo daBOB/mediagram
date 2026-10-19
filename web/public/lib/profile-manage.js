@@ -64,10 +64,11 @@ function row(name, ...controls) {
 /**
  * Draws Manage profiles into `container`.
  * @param {HTMLElement} container
- * @param {{ promptHost: HTMLElement }} options PIN prompts open over this element
+ * @param {{ promptHost: HTMLElement, onChange?: () => void }} options PIN prompts open over
+ *   this element; `onChange` runs after each change that went through, once the list is read again
  * @returns {() => void} removes the body and drops the PIN held for the visit
  */
-export function mountManage(container, { promptHost }) {
+export function mountManage(container, { promptHost, onChange }) {
   const root = el("div");
   const body = el("div");
   const message = el("p", "pin-message");
@@ -101,6 +102,7 @@ export function mountManage(container, { promptHost }) {
       : outcome.reason === "wrong-pin" ? "Your PIN is no longer valid. Choose who you are again." : refusalText(outcome);
     if (outcome.reason === "wrong-pin") session = null;
     draw();
+    if (outcome.ok) onChange?.();
   }
 
   function draw() {
