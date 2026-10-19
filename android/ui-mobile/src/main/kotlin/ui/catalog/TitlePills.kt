@@ -25,6 +25,7 @@ import designsystem.Spacing
  * Shared by the film and the series page, which differ only in what the
  * first pill says and does — a resume label and its own destination are the
  * caller's to work out ([catalog.seriesResumeFor], [data.ResumePoint]).
+ * [castPill], Play on TV, follows it, as `castPill` does on the web.
  *
  * [onToggleEditorsChoice] absent hides its own ⋯ item, the same as the
  * web's own `moreMenu` answering `null` for an empty item list — a kids
@@ -45,6 +46,7 @@ internal fun TitlePills(
     modifier: Modifier = Modifier,
     preloadPill: (@Composable () -> Unit)? = null,
     preloadRemoveItem: (@Composable (dismiss: () -> Unit) -> Unit)? = null,
+    castPill: (@Composable () -> Unit)? = null,
 ) {
     FlowRow(
         modifier = modifier,
@@ -52,6 +54,7 @@ internal fun TitlePills(
         verticalArrangement = Arrangement.spacedBy(Spacing.small),
     ) {
         if (playLabel != null) PlayPill(playLabel, onPlay)
+        castPill?.invoke()
         preloadPill?.invoke()
         CatalogueOutlinedButton(
             onClick = onToggleWatchlist,

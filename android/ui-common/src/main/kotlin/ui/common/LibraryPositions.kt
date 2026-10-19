@@ -17,7 +17,7 @@ import java.util.UUID
 /**
  * Which kind of screen a [Frame] stands for.
  *
- * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS] and [STATS]
+ * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS], [STATS] and [REMOTE]
  * are additive: every existing branch keeps its own value, so a stack
  * encoded by an older build still decodes the same frames it always did —
  * see [encode]/[decode]. A frame is saved by name, never by position, so a
@@ -25,7 +25,7 @@ import java.util.UUID
  * season itself, decodes to nothing, and a stack saved with one over its show
  * comes back on the show's page.
  */
-enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS }
+enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS, REMOTE }
 
 /**
  * One screen on [LibraryPositions]'s stack: which kind it is, and the one
@@ -170,6 +170,8 @@ class LibraryPositions(
     val personId: Long? get() = payloadOf(FrameKind.PERSON)?.toLongOrNull()
     /** The franchise a collection card opened, by its id. */
     val franchiseId: Long? get() = payloadOf(FrameKind.FRANCHISE)?.toLongOrNull()
+    /** The cast the remote drives, by its session's message id. */
+    val remoteId: Int? get() = payloadOf(FrameKind.REMOTE)?.toIntOrNull()
 
     /**
      * A key unique to the screen on top: where it sits, what kind it is,
@@ -252,6 +254,20 @@ class LibraryPositions(
         val current = stack
         val base = if (current.lastOrNull()?.kind == FrameKind.PLAYER) current.dropLast(1) else current
         setStack(base + Frame(FrameKind.PLAYER, castMark + id))
+    }
+
+    /** The remote of cast [id], over whatever shows. */
+    fun openRemote(id: Int) = push(FrameKind.REMOTE, id.toString())
+
+    /**
+     * A cast the TV took from the player: the remote in the player's place,
+     * so Back leaves to whatever opened the player. A no-op with the player
+     * not on top.
+     */
+    fun replaceWithRemote(id: Int) {
+        val current = stack
+        if (current.lastOrNull()?.kind != FrameKind.PLAYER) return
+        setStack(current.dropLast(1) + Frame(FrameKind.REMOTE, id.toString()))
     }
 
     private fun playerPayload(id: String, run: List<String>?) =

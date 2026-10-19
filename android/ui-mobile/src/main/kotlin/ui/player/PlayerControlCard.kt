@@ -66,7 +66,18 @@ internal class PlayerCardActions(
     val focusOf: (CardMenu?) -> FocusRequester = { FocusRequester() },
     /** Watch together's button: start, join or leave, whichever it says. */
     val onTogether: () -> Unit = {},
+    /** Play on TV's button, after Watch together; null leaves it out. */
+    val onPlayOnTv: (() -> Unit)? = null,
+    /** Stop, where picture-in-picture sits: set only on the remote, whose card drives the TV ([drivesTv]). */
+    val onStop: (() -> Unit)? = null,
 )
+
+/**
+ * The remote's card: it drives the TV's player, so what only this screen's
+ * own picture has — Restart, Previous, Stats, Framing, Watch together — is
+ * left out, as the web's remote leaves it out.
+ */
+internal val PlayerCardActions.drivesTv: Boolean get() = onStop != null
 
 /** What the card reads, beside the player itself. */
 internal class PlayerCardView(
@@ -82,6 +93,8 @@ internal class PlayerCardView(
     val sidebarOpen: Boolean = false,
     /** Watch together's button, as the player decides it. */
     val together: TogetherUi = TogetherUi(),
+    /** Why Play on TV is greyed, or null while it can be pressed. */
+    val castReason: String? = null,
 )
 
 /**
@@ -158,6 +171,7 @@ internal fun PlayerControlCard(
             actions = actions,
             openMenu = view.openMenu,
             together = view.together,
+            castReason = view.castReason,
         )
         CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }

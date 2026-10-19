@@ -26,6 +26,8 @@ import ui.common.player.TransportIcons
  * ↺ goes back to 0:00 of this title; ⏮ is never that — it opens the title
  * before this one in the run, and is disabled on the first. Both ⏮ and ⏭
  * are left out for a title with no run (a film) rather than shown disabled.
+ * The remote ([drivesTv]) has no run of its own: ⏭ stands while the TV's
+ * title has a next one, and ↺, ⏮ and ⓘ are left out, as on the web's.
  *
  * The skips are media3's own: their labels and their amount are read back
  * off the player, and `Player.seekBack`/`seekForward` keep a skip inside the
@@ -52,7 +54,7 @@ internal fun CardTransportRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.small, Alignment.CenterHorizontally),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        GlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = actions.onRestart)
+        if (!actions.drivesTv) GlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = actions.onRestart)
         if (upNext.inRun) {
             TransportButton(icon = TransportIcons.Previous, description = "Previous", enabled = upNext.hasPrevious, onClick = actions.onPrevious)
         }
@@ -64,18 +66,20 @@ internal fun CardTransportRow(
             onClick = playPause::onClick,
         )
         GlyphButton(glyph = "+$forward", description = "Forward $forward seconds", enabled = seekForward.isEnabled, onClick = seekForward::onClick)
-        if (upNext.inRun) {
+        if (upNext.inRun || upNext.hasNext) {
             TransportButton(icon = TransportIcons.Next, description = "Next", enabled = upNext.hasNext, onClick = actions.onNext)
         }
         // Apart from what moves the film: ⓘ only reports, ☰ only lists.
-        GlyphButton(
-            glyph = "ⓘ",
-            description = "Stats",
-            enabled = true,
-            onClick = actions.onToggleStats,
-            dimmed = !statsShown,
-            state = if (statsShown) "On" else "Off",
-        )
+        if (!actions.drivesTv) {
+            GlyphButton(
+                glyph = "ⓘ",
+                description = "Stats",
+                enabled = true,
+                onClick = actions.onToggleStats,
+                dimmed = !statsShown,
+                state = if (statsShown) "On" else "Off",
+            )
+        }
         if (hasEpisodes) {
             GlyphButton(
                 glyph = "☰",

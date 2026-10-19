@@ -44,12 +44,13 @@ fun CollectionScreen(
     season: String? = null,
     onSelectSeason: (String) -> Unit = {},
     state: LazyListState = rememberLazyListState(),
+    playOnTv: PlayOnTv? = null,
 ) {
     if (collection.kind == CollectionKind.SHOW) {
         SeriesPage(
             collection, info, watch, heldIds, onOpenTitle, onOpenGenre, shelves, onOpenCollection,
             onOpenPerson, onPlay, editorsChoice, onToggleEditorsChoice, onToggleWatchlist,
-            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state,
+            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state, playOnTv,
         )
         return
     }

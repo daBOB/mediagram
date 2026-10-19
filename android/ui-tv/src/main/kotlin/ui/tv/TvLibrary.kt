@@ -181,6 +181,9 @@ internal fun TvLibrary(
 
                 FrameKind.STATS -> TvStatsFrame(catalogState, leave)
 
+                // The TV is what a remote drives; it never opens one.
+                FrameKind.REMOTE -> Unit
+
                 // Nothing open, the trimmed menu page opened from the bar's avatar:
                 // Back from it puts the remote back on that button.
                 null if menuOpen ->

@@ -63,4 +63,29 @@ class LibraryPositionsCastTest {
         assertNull(at.run)
         assertTrue(at.casting)
     }
+
+    @Test
+    fun aCastTakenFromThePlayerPutsTheRemoteInItsPlace() {
+        val at = LibraryPositions(Slot(""))
+        at.openTitle("t1")
+        at.openPlayer("s1")
+
+        at.replaceWithRemote(7)
+
+        assertEquals(FrameKind.REMOTE, at.top)
+        assertEquals(7, at.remoteId)
+        assertNull(at.setId)
+        at.pop()
+        assertEquals(FrameKind.TITLE, at.top)
+    }
+
+    @Test
+    fun theRemoteReplacesOnlyAPlayer() {
+        val at = LibraryPositions(Slot(""))
+        at.openTitle("t1")
+
+        at.replaceWithRemote(7)
+
+        assertEquals(FrameKind.TITLE, at.top)
+    }
 }

@@ -24,6 +24,8 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.round
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import model.together.Playback
+import player.CastSenderViewModel
 import player.PlayerUiState
 import player.PlayerViewModel
 import player.UpNextPhase
@@ -31,6 +33,7 @@ import player.chooseFraming
 import player.controlsMayShow
 import player.pauseForPipDismissal
 import player.retry
+import player.together.TogetherButton
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -64,6 +67,7 @@ fun PlayerScreen(
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
+    cast: CastSenderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
@@ -78,6 +82,8 @@ fun PlayerScreen(
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
     val report by viewModel.report.collectAsStateWithLifecycle()
+    val castReason by cast.castable.collectAsStateWithLifecycle()
+    CastWhileInSession(cast, inSession = together.button == TogetherButton.LEAVE)
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
@@ -154,6 +160,9 @@ fun PlayerScreen(
                     onEnterPip = pip.enterPip.takeIf { pip.supported },
                     onScrubbingChanged = { scrubbing = it },
                     together = together,
+                    castReason = castReason,
+                    // What plays here, as it plays: the TV takes it up from there.
+                    onPlayOnTv = { cast.playOnTv(Playback(setId, current.playWhenReady, current.currentPosition / 1000.0, current.playbackParameters.speed.toDouble())) },
                 )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.

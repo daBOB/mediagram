@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import playback.PlaybackCounters
+import player.CastSenderViewModel
 import player.DefaultPlayerHandle
 import player.PlayerViewModel
 import player.ProgressRecorder
@@ -80,6 +81,8 @@ internal class PlayerLifecycleFixture(
     val factory =
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                // The player's Play on TV, beside it in the same owner.
+                if (modelClass == CastSenderViewModel::class.java) return modelClass.cast(castSender())!!
                 @Suppress("UNCHECKED_CAST")
                 return PlayerViewModel(
                     handle,
@@ -100,6 +103,9 @@ internal class PlayerLifecycleFixture(
                 ) as T
             }
         }
+
+    /** Play on TV over the same watch together and profile as the player. */
+    fun castSender() = CastSenderViewModel(togetherLive, repository, RuntimeEnvironment.getApplication())
 
     override fun close() = scope.cancel()
 }

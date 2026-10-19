@@ -13,6 +13,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModelProvider
+import player.CastSenderViewModel
 import player.PlayerViewModel
 
 /** Uses the Activity's real ViewModelStore and saved state across Robolectric recreation. */
@@ -23,6 +24,7 @@ class PlayerTestActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         playerViewModel = ViewModelProvider(this, fixture.factory)[PlayerViewModel::class.java]
+        val castSender = ViewModelProvider(this, fixture.factory)[CastSenderViewModel::class.java]
         setContent {
             // Exercise the production ContextWrapper traversal as well as the lifecycle observer.
             CompositionLocalProvider(LocalContext provides ContextThemeWrapper(this, android.R.style.Theme_Material)) {
@@ -37,6 +39,7 @@ class PlayerTestActivity : ComponentActivity() {
                             onBack = { showingPlayer = false },
                             onSwitch = { id, _ -> switches += id },
                             viewModel = playerViewModel,
+                            cast = castSender,
                         )
                     } else {
                         Text("Library")
