@@ -43,7 +43,8 @@ export function profilesPanel(promptHost) {
   const box = el("div", "settings-panel");
   const list = el("div", "setting");
   drawEveryone(list);
-  const manage = el("div", "setting");
+  // Scoped faces (appearance.css) make the shared body read as settings sections.
+  const manage = el("div", "setting manage-inline");
   box.append(list, manage);
   const stop = mountManage(manage, {
     promptHost,

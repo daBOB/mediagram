@@ -69,6 +69,17 @@ test("managingAsksWhoYouAreAndThePin, then a kid added appears in Everyone", asy
   expect(descendants(main).some((node) => node.classes.has("everyone-row") && textOf(node).startsWith("BenKid · Maja"))).toBe(true);
 });
 
+/** Every PIN a write carried, in order. */
+const pinsSent = () => writesOf(env.requests).map((write) => (write[2] as { pin?: string }).pin).filter(Boolean);
+
+/** Adds a kid named `name` through whatever controls are on the page. */
+async function addKid(main: Node, name: string) {
+  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
+  descendants(form).find((node) => node.tagName === "INPUT")!.value = name;
+  form.fire("submit");
+  await settle();
+}
+
 test("leavingTheTabDropsThePin", async () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
@@ -79,7 +90,12 @@ test("leavingTheTabDropsThePin", async () => {
   openProfiles(main);
   expect(textOf(main)).not.toContain("As Maja");
   expect(textOf(main)).toContain("Who are you?");
-  expect(byClass(main, "who-ask")).toBeDefined();
+  buttonNamed(main, "Maja").fire("click");
+  await answerPin(main, "9999");
+  const after = writesOf(env.requests).length;
+  await addKid(main, "Ben");
+  expect(pinsSent().slice(after)).not.toContain("4321");
+  expect(writesOf(env.requests).slice(after).at(-1)?.[2]).toMatchObject({ pin: "9999", name: "Ben" });
 });
 
 test("leavingThePageDropsThePin", async () => {
@@ -87,8 +103,13 @@ test("leavingThePageDropsThePin", async () => {
   openProfiles(main);
   buttonNamed(main, "Maja").fire("click");
   await answerPin(main, "4321");
+  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a kid"))!;
   stop();
   const before = writesOf(env.requests).length;
-  expect(textOf(main)).not.toContain("As Maja");
+  // The old controls are still in hand: a change driven from them sends nothing.
+  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Ben";
+  form.fire("submit");
+  await settle();
   expect(writesOf(env.requests).length).toBe(before);
+  expect(textOf(main)).not.toContain("As Maja");
 });
