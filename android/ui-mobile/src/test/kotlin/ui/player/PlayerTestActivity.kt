@@ -38,6 +38,11 @@ class PlayerTestActivity : ComponentActivity() {
                             handPicked = false,
                             onBack = { showingPlayer = false },
                             onSwitch = { id, _ -> switches += id },
+                            // The remote takes the player's frame, as the library's replaceWithRemote does.
+                            onCast = { id ->
+                                casts += id
+                                showingPlayer = false
+                            },
                             viewModel = playerViewModel,
                             cast = castSender,
                         )
@@ -57,5 +62,8 @@ class PlayerTestActivity : ComponentActivity() {
 
         /** Every title a switch asked to move to, in order. */
         internal val switches = mutableListOf<String>()
+
+        /** Every cast the TV took from this player, by its id. */
+        internal val casts = mutableListOf<Int>()
     }
 }

@@ -34,6 +34,7 @@ import player.controlsMayShow
 import player.pauseForPipDismissal
 import player.retry
 import player.together.TogetherButton
+import ui.catalog.CastAskHost
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -66,6 +67,7 @@ fun PlayerScreen(
     handPicked: Boolean,
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
+    onCast: (id: Int) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
     cast: CastSenderViewModel = hiltViewModel(),
 ) {
@@ -84,6 +86,9 @@ fun PlayerScreen(
     val report by viewModel.report.collectAsStateWithLifecycle()
     val castReason by cast.castable.collectAsStateWithLifecycle()
     CastWhileInSession(cast, inSession = together.button == TogetherButton.LEAVE)
+    // Taken by the TV, the title is stopped and saved here, as closing does, before the remote takes the frame:
+    // the frame's own leaving keeps a player in picture-in-picture playing.
+    CastAskHost(onOn = { id -> viewModel.stop(); onCast(id) }, sender = cast)
     val isInPip = LocalIsInPictureInPicture.current
     val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 

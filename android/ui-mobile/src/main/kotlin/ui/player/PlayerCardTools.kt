@@ -55,22 +55,27 @@ internal fun CardToolsRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
+            // On the remote CC opens the TV's list, as the web remote's does: which track "on" means is the viewer's to say.
+            val ccOpens = actions.drivesTv
             GlyphButton(
                 glyph = "CC",
                 description = "Subtitles",
                 enabled = choices.ccVisible,
-                onClick = actions.onToggleSubtitles,
+                onClick = if (ccOpens) ({ actions.onOpenMenu(CardMenu.Subtitles) }) else actions.onToggleSubtitles,
                 dimmed = !choices.subtitlesOn,
-                state = if (choices.subtitlesOn) "On" else "Off",
+                modifier = if (ccOpens) actions.openerFor(CardMenu.Subtitles) else Modifier,
+                state = if (ccOpens) expanded(CardMenu.Subtitles) else if (choices.subtitlesOn) "On" else "Off",
             )
-            GlyphButton(
-                glyph = "▾",
-                description = "Subtitle options",
-                enabled = choices.ccVisible || choices.subtitleStyleVisible,
-                onClick = { actions.onOpenMenu(CardMenu.Subtitles) },
-                modifier = actions.openerFor(CardMenu.Subtitles),
-                state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
-            )
+            if (!ccOpens) {
+                GlyphButton(
+                    glyph = "▾",
+                    description = "Subtitle options",
+                    enabled = choices.ccVisible || choices.subtitleStyleVisible,
+                    onClick = { actions.onOpenMenu(CardMenu.Subtitles) },
+                    modifier = actions.openerFor(CardMenu.Subtitles),
+                    state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
+                )
+            }
             LabelButton(
                 label = speedLabel(speed),
                 description = "Speed",

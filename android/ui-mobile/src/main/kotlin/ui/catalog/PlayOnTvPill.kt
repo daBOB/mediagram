@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -24,7 +25,7 @@ class PlayOnTv(
 @Composable
 internal fun rememberPlayOnTv(sender: CastSenderViewModel = hiltViewModel()): PlayOnTv {
     val reason by sender.castable.collectAsStateWithLifecycle()
-    return PlayOnTv(reason) { setId, pos -> sender.playOnTv(Playback(setId, playing = true, pos = pos, rate = 1.0)) }
+    return remember(sender, reason) { PlayOnTv(reason) { setId, pos -> sender.playOnTv(Playback(setId, playing = true, pos = pos, rate = 1.0)) } }
 }
 
 /**

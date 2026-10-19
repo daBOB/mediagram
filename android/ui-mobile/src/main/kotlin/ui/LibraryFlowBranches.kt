@@ -152,7 +152,7 @@ internal fun LibraryBranches(
             BackHandler(onBack = at::pop)
             PlayerScreen(
                 setId = setId, run = run, fsk = set?.fsk, handPicked = at.run != null,
-                onBack = at::pop, onSwitch = at::replacePlayer,
+                onBack = at::pop, onSwitch = at::replacePlayer, onCast = at::replaceWithRemote,
             )
         }
 
@@ -266,8 +266,8 @@ internal fun LibraryBranches(
     }
     }
     }
-    // Play on TV's answer, from a title page or the player: a cast taken from the player takes its place.
-    CastAskHost(onOn = { id -> if (at.top == FrameKind.PLAYER) at.replaceWithRemote(id) else at.openRemote(id) })
+    // Play on TV's answer from a title page; the player hears its own, to stop before the remote takes its place.
+    if (at.top != FrameKind.PLAYER) CastAskHost(onOn = at::openRemote)
 }
 
 private const val SHELVES_KEY = "shelves"

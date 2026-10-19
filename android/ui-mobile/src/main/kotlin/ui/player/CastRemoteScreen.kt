@@ -118,9 +118,7 @@ internal fun CastRemote(
                 view = PlayerCardView(choices, UpNextUiState(hasNext = ui.hasNext), statsShown = false, hasEpisodes = false, catalogedDurationSecs = null, openMenu = card.menu),
                 actions =
                     PlayerCardActions(
-                        onRestart = {}, onPrevious = {}, onNext = onNext,
-                        // CC opens the TV's list, as the web remote's does: which track "on" means is the viewer's to say.
-                        onToggleSubtitles = { card.toggle(CardMenu.Subtitles) },
+                        onRestart = {}, onPrevious = {}, onNext = onNext, onToggleSubtitles = {},
                         onOpenMenu = card::toggle, onToggleStats = {}, onEpisodes = {}, onEnterPip = null,
                         onAnchor = card::anchor, focusOf = card::focusOf, onStop = onStop,
                     ),

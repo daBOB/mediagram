@@ -6,6 +6,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -121,7 +124,7 @@ class CastRemoteScreenTest {
 
         compose.onNodeWithText("−15").assertExists()
         compose.onNodeWithText("+15").assertExists()
-        compose.onNodeWithContentDescription("Next").performClick()
+        compose.onNodeWithContentDescription("Next episode").performClick()
         assertEquals(listOf("next"), pressed)
     }
 
@@ -136,11 +139,16 @@ class CastRemoteScreenTest {
         assertEquals(listOf("audio:a2"), pressed)
     }
 
+    /** One opener, as on the web: CC is announced as opening a list, not as on or off. */
     @Test
     fun theSubtitlesMenuListsOffAndTheTvsTracks() {
         show(remote())
 
-        compose.onNodeWithContentDescription("Subtitle options").performClick()
+        compose.onNodeWithContentDescription("Subtitle options").assertDoesNotExist()
+        compose
+            .onNodeWithContentDescription("Subtitles")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Collapsed"))
+            .performClick()
         compose.onNodeWithText("Off").assertExists()
         compose.onNodeWithText("German").performClick()
         assertEquals(listOf("text:t1"), pressed)

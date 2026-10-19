@@ -67,7 +67,8 @@ internal fun CardTransportRow(
         )
         GlyphButton(glyph = "+$forward", description = "Forward $forward seconds", enabled = seekForward.isEnabled, onClick = seekForward::onClick)
         if (upNext.inRun || upNext.hasNext) {
-            TransportButton(icon = TransportIcons.Next, description = "Next", enabled = upNext.hasNext, onClick = actions.onNext)
+            // The web's remote names it in full; the player's own says Next, as the web player's does.
+            TransportButton(icon = TransportIcons.Next, description = if (actions.drivesTv) "Next episode" else "Next", enabled = upNext.hasNext, onClick = actions.onNext)
         }
         // Apart from what moves the film: ⓘ only reports, ☰ only lists.
         if (!actions.drivesTv) {
