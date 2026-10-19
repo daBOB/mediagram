@@ -276,3 +276,20 @@ test("theBodyMountsOutsideTheOverlay", async () => {
   unmount();
   expect(page.childElementCount).toBe(0);
 });
+
+test("closingTheBodyMidPrompt leavesNothingBehind", async () => {
+  const page = new Node();
+  const host = new Node();
+  const unmount = mountManage(page, { promptHost: host });
+  buttonNamed(page, "Maja").fire("click");
+  await settle();
+  const prompt = byClass(host, "pin-prompt");
+  unmount();
+  expect(host.childElementCount).toBe(0);
+  // A late answer to the prompt that was up must send nothing.
+  descendants(prompt).filter((node) => node.tagName === "INPUT").forEach((field) => { field.value = "4321"; });
+  descendants(prompt).find((node) => node.tagName === "FORM")!.fire("submit");
+  await settle();
+  expect(sent()).toEqual([]);
+  expect(page.childElementCount).toBe(0);
+});
