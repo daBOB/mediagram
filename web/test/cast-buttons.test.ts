@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { browserEnvironment, type Node } from "./support/player-environment";
+import { descendants } from "./support/browser-application";
 import { castPill } from "../public/lib/cast/play-on-tv.js";
 import { mountPlayerCast } from "../public/lib/playback/player-cast.js";
 import { CAST_WORDS } from "../public/lib/together/cast-words.js";
@@ -87,4 +88,8 @@ test("a refused cast leaves the player playing", async () => {
   await tick();
   expect(closed()).toBe(0);
   expect(node("cast-remote").open).toBe(false);
+  // The refusal waits on its OK; answer it so the ask does not stay open for the next test or file.
+  descendants(node("cast-ask-actions")).find((n) => n.tagName === "BUTTON")!.fire("click");
+  await tick();
+  expect(node("cast-ask").open).toBe(false);
 });
