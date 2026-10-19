@@ -73,7 +73,10 @@ class FakeTogetherLive(
         id: Int,
         screen: String,
         change: PlaybackChange,
-    ): Session? = error(MOVES)
+    ): Session? {
+        casts += "act $id $screen ${change.playing}"
+        return null
+    }
 
     override fun leave(
         id: Int,

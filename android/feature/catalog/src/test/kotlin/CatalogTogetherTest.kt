@@ -15,6 +15,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import model.Kind
 import model.Profile
+import model.together.Cast
+import model.together.CastState
 import model.together.Member
 import model.together.Session
 import org.junit.After
@@ -147,6 +149,50 @@ class CatalogTogetherTest {
                 together.available.value = true
                 assertEquals(family, awaitItem()?.set)
             }
+        }
+
+    private fun castLive(set: String) =
+        live(set, "TV").let { held ->
+            held.copy(session = held.session.copy(cast = Cast(from = "tab", profile = "a", state = CastState.ON)))
+        }
+
+    @Test
+    fun aCastOnATitleInTheCatalogIsOfferedAsACastAndOneNotYetTakenIsNot() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val together = FakeTogetherLive(castLive("grown"))
+            catalog(together).together.test {
+                assertNull(awaitItem())
+                assertTrue(awaitItem()?.cast == true)
+                together.live.value = castLive("grown").let { it.copy(session = it.session.copy(cast = it.session.cast?.copy(state = CastState.OFFER))) }
+                assertFalse(awaitItem()?.cast == true)
+            }
+        }
+
+    @Test
+    fun aKidsProfileIsOfferedNoCastOnATitleItsCatalogHides() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val kid = WatchStateFixture(listOf(Profile("k", "Mia", kids = true))).repository
+            catalog(FakeTogetherLive(castLive("grown")), kid).together.test {
+                assertNull(awaitItem())
+                runCurrent()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun theBarsPlayPauseMovesTheSessionWithoutJoiningIt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val together = FakeTogetherLive(castLive("grown"))
+            val vm = catalog(together)
+
+            vm.playPause(TogetherOffer(41, grown, "TV", cast = true, playing = true))
+            runCurrent()
+
+            assertEquals(1, together.casts.count { it.startsWith("act 41 ") && it.endsWith(" false") })
+            assertNull(together.takeJoin())
         }
 
     @Test

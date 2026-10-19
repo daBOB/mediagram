@@ -28,11 +28,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.TitleCredits
+import model.together.PlaybackChange
 import playback.FilmPreloading
 import playback.HeldSetsQuery
 import playback.SeriesPreloading
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.TitleInfo
+import java.util.UUID
 import javax.inject.Inject
 
 /** Keeps shelf presentation separate from the awaited refresh and artwork operation. */
@@ -189,6 +191,13 @@ class CatalogViewModel
 
         /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */
         fun join(offer: TogetherOffer) = togetherLive.joinOnOpen(offer.id)
+
+        /** The cast bar's play/pause: a move on [offer]'s session at its expected position, from no member of it. */
+        fun playPause(offer: TogetherOffer) {
+            viewModelScope.launch { togetherLive.act(offer.id, barScreen, PlaybackChange(playing = !offer.playing)) }
+        }
+
+        private val barScreen = UUID.randomUUID().toString()
 
         /** Settings changed the library; its first read is separate from enrichment requests. */
         fun reload() {

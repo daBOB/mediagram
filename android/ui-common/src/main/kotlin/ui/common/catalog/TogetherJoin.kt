@@ -21,6 +21,8 @@ class TogetherJoin(
 /** Where Join comes from: the live [offers], and what joining one does. */
 class TogetherOffers(
     val offers: StateFlow<TogetherOffer?>,
+    /** The cast bar's play/pause, which moves the session without joining it. */
+    val playPause: (TogetherOffer) -> Unit = {},
     val join: (TogetherOffer) -> Unit,
 )
 
@@ -40,10 +42,14 @@ fun rememberTogetherOffers(
 ): TogetherOffers {
     val opens by rememberUpdatedState(open)
     return remember(catalog) {
-        TogetherOffers(catalog.together) { offer ->
-            catalog.join(offer)
-            opens(offer.set.setId)
-        }
+        TogetherOffers(
+            catalog.together,
+            join = { offer ->
+                catalog.join(offer)
+                opens(offer.set.setId)
+            },
+            playPause = catalog::playPause,
+        )
     }
 }
 
