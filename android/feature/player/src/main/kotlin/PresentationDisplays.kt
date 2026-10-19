@@ -20,9 +20,8 @@ import javax.inject.Singleton
  * presentations, or null when none is connected. The platform reports one
  * as soon as the user pairs a TV, so the player does not scan for it.
  *
- * The listener is registered only while [display] is collected, and the
- * current answer is re-read on every subscription, so a display that came or
- * went while nobody was looking is never remembered stale.
+ * The listener is registered only while [display] is collected, so the
+ * answer is current only while someone collects it.
  */
 @Singleton
 class PresentationDisplays @Inject constructor(
@@ -33,6 +32,12 @@ class PresentationDisplays @Inject constructor(
     private fun first(): Display? =
         manager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).firstOrNull()
 
+    /**
+     * Current only while collected: the current display is re-read on each
+     * new subscription, but between subscribers `.value` keeps whatever was
+     * last seen and may name a display that has since gone. Collect it; never
+     * read `.value` cold.
+     */
     val display: StateFlow<Display?> = callbackFlow {
         val listener = object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) { trySend(first()) }

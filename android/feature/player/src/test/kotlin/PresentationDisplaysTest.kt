@@ -26,9 +26,6 @@ import kotlin.test.assertNull
 @RunWith(RobolectricTestRunner::class)
 class PresentationDisplaysTest {
 
-    // Display.TYPE_WIFI is hidden API; this is its value.
-    private val TYPE_WIFI = 3
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     // Robolectric's default display is not a presentation display, so the
@@ -65,5 +62,10 @@ class PresentationDisplaysTest {
         ShadowDisplayManager.removeDisplay(id)
         shadowOf(Looper.getMainLooper()).idle()
         assertNull(displays.display.value)
+    }
+
+    private companion object {
+        // Display.TYPE_WIFI is hidden API; this is its value.
+        const val TYPE_WIFI = 3
     }
 }
