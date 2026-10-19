@@ -361,7 +361,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
 | `#/settings` | Settings (Appearance/Profile/admin Library & Telegram) |
-| `#/stats` | Stats: minutes watched, the last 30 days, achievements, history |
+| `#/stats` | Stats: minutes watched, the last 30 days, achievements |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue |
 | `#/watchlist` | My List |

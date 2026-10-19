@@ -28,9 +28,6 @@ import javax.inject.Inject
  * profile that was left, so it is never published; resetting the shared
  * state once the page is left means whoever opens it next never sees the
  * previous profile's page, not even for a frame.
- *
- * Sets are named later, from the profile's own catalogue (`statsUiStateOf`),
- * which lives in another feature module.
  */
 @HiltViewModel
 class StatsViewModel

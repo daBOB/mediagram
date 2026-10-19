@@ -53,7 +53,7 @@ class AchievementsUiTest {
                 Now,
                 Achievements(earned = listOf(EarnedAchievement(id = "films-1", earnedAt = ms(2026, 9, 26, 21, 0))), next = emptyList()),
             )
-        val ready = assertIs<StatsUiState.Ready>(statsUiStateOf(read, Catalogue))
+        val ready = assertIs<StatsUiState.Ready>(statsUiStateOf(read))
         assertEquals(listOf(EarnedLine(id = "films-1", label = "First film", on = "today")), ready.achievements.earned)
     }
 }

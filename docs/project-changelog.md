@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.127.0 — Stats no longer lists every title watched
+
+**Removed** (web player, Android phone, tablet and TV)
+
+- **The History list under Stats.** The page now ends with the achievements: totals, the counting-since line, the last 30 days and achievements are unchanged. The server and core still record and send every start, finish and rewatch, since that history still decides "Nothing watched yet." and dates "Counting since". On Android the Stats page no longer waits for the catalogue, which it needed only to name the history's titles.
+
 ## 0.126.2 — the web player no longer hangs on "Loading your library…"
 
 **Fixed** (web player)

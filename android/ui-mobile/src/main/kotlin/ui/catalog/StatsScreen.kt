@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -15,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Spacing
-import stats.HISTORY_HEADING
 import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
 import stats.STATS_HEADING
@@ -24,10 +22,10 @@ import ui.common.StatsBars
 
 /**
  * The chosen profile's own watch time, the web's Stats page: this week,
- * this month and all time, a bar per day for the last thirty, then every
- * start, finish and rewatch, newest first. Every string arrives finished
- * from `feature:stats`, so the television's page cannot word a line
- * differently. The weekday letters under the bars need an EXPANDED width.
+ * this month and all time, a bar per day for the last thirty, then the
+ * achievements. Every string arrives finished from `feature:stats`, so the
+ * television's page cannot word a line differently. The weekday letters
+ * under the bars need an EXPANDED width.
  */
 @Composable
 internal fun StatsScreen(state: StatsUiState) {
@@ -66,10 +64,6 @@ internal fun StatsScreen(state: StatsUiState) {
                     }
                 }
                 achievementItems(state.achievements)
-                item(key = "history") { Text(text = HISTORY_HEADING, style = MaterialTheme.typography.titleMedium) }
-                items(items = state.history, key = { it.key }) { line ->
-                    Text(text = line.text, style = MaterialTheme.typography.bodyMedium)
-                }
             }
         }
     }

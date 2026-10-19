@@ -13,7 +13,6 @@ import stats.AchievementsUi
 import stats.EarnedLine
 import stats.NextLine
 import stats.StatsBar
-import stats.StatsLine
 import stats.StatsUiState
 
 /** The Achievements section on [TvStatsPage], in the harness every catalogue page's own test uses. */
@@ -24,7 +23,6 @@ class TvAchievementItemsTest : TvScreenStateTest() {
         StatsUiState.Ready(
             totals = listOf("This week" to "42 min", "This month" to "42 min", "All time" to "42 min"),
             bars = List(30) { StatsBar(fraction = 0f, initial = "M", description = "day $it") },
-            history = listOf(StatsLine("STARTED:f1", "Started · Der Pate · today 21:14 · 42 min")),
         )
 
     @Test
@@ -40,7 +38,7 @@ class TvAchievementItemsTest : TvScreenStateTest() {
                 ),
             )
         }
-        for (text in listOf("Achievements", "First film", "today", "Next", "1 of 10 films", "History")) {
+        for (text in listOf("Achievements", "First film", "today", "Next", "1 of 10 films")) {
             compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(text))
             compose.onNodeWithText(text).assertIsDisplayed()
         }

@@ -36,11 +36,10 @@ function answer(body: unknown, status = 200) {
     url.endsWith("/stats") ? Response.json(body, { status }) : Response.json({}));
 }
 
-test("asks for this profile's own stats and draws totals, thirty bars and the history", async () => {
+test("asks for this profile's own stats and draws totals and thirty bars, but no list of what was watched", async () => {
   answer(SUMMARY);
   const main = env.node("main");
-  const byId = new Map([["01A", { setId: "01A", kind: "movie", title: "Der Pate", show: null }]]);
-  await renderStats(main, { byId }, () => true);
+  await renderStats(main, () => true);
 
   expect(env.requests.at(-1)!.url).toBe("/api/profiles/viewer/stats");
   const text = textOf(main);
@@ -52,11 +51,8 @@ test("asks for this profile's own stats and draws totals, thirty bars and the hi
   expect(bars.at(-1)!.style.height).toBe("100%");
   expect(bars[0]!.style.height).toBe("50%");
   expect(bars[1]!.style.height).toBe("0%");
-  // The page's clock is the test environment's, which stands at 0.
-  const lines = descendants(main).filter((node) => node.tagName === "LI").map(textOf);
-  expect(lines).toHaveLength(2);
-  expect(lines[0]).toMatch(/^Finished · Der Pate · today \d\d:\d\d · 2 h$/);
-  expect(lines[1]).toMatch(/^Started · No longer in the library · today \d\d:\d\d · 2 min$/);
+  expect(text).not.toContain("History");
+  expect(descendants(main).some((node) => node.tagName === "LI")).toBe(false);
 });
 
 test("while nothing is counted yet, a line under the totals says since when it has been", async () => {
@@ -65,7 +61,7 @@ test("while nothing is counted yet, a line under the totals says since when it h
     history: [{ kind: "started", setId: "01A", at: 0, seconds: 30 }],
   });
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(textOf(main)).toContain("All time0 min");
   const classes = main.children.map((node) => node.className);
   expect(classes.indexOf("stats-since")).toBe(classes.indexOf("stats-totals") + 1);
@@ -77,7 +73,7 @@ test("while nothing is counted yet, a line under the totals says since when it h
 test("a minute counted draws no counting-since line", async () => {
   answer({ ...SUMMARY, allSeconds: 60 });
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(textOf(main)).not.toContain("Counting since");
   expect(main.children.some((node) => node.className === "stats-since")).toBe(false);
 });
@@ -85,27 +81,27 @@ test("a minute counted draws no counting-since line", async () => {
 test("nothing watched yet says so under the heading, and nothing else", async () => {
   answer({ ...SUMMARY, weekSeconds: 0, monthSeconds: 0, allSeconds: 0, history: [] });
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(textOf(main)).toBe("StatsNothing watched yet.");
 });
 
 test("an answer that lands after the viewer left draws nothing", async () => {
   answer(SUMMARY);
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => false);
+  await renderStats(main, () => false);
   expect(textOf(main)).toBe("Stats");
 });
 
 test("a failed read says so", async () => {
   answer({}, 500);
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(textOf(main)).toContain("Could not read your stats: the server answered 500");
 });
 
 test("an answer without a history or achievements says it could not be read, and draws nothing else", async () => {
   answer({});
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(textOf(main)).toMatch(/^StatsCould not read your stats: \S/);
 });

@@ -18,7 +18,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import stats.StatsBar
-import stats.StatsLine
 import stats.StatsUiState
 import kotlin.test.assertTrue
 
@@ -46,11 +45,6 @@ class StatsScreenTest {
         StatsUiState.Ready(
             totals = listOf("This week" to "42 min", "This month" to "3 h 12 min", "All time" to "12 h"),
             bars = List(30) { StatsBar(fraction = if (it == 29) 1f else 0f, initial = listOf("M", "T", "W", "T", "F", "S", "S")[it % 7], description = "day $it") },
-            history =
-                listOf(
-                    StatsLine("STARTED:f1", "Started · Der Pate · today 21:14 · 42 min"),
-                    StatsLine("FINISHED:gone", "Finished · No longer in the library · 19 Sep"),
-                ),
         )
 
     @Test
@@ -64,13 +58,13 @@ class StatsScreenTest {
     }
 
     @Test
-    fun aReadyPageShowsTheTotalsTheChartAndEveryLine() {
+    fun aReadyPageShowsTheTotalsAndTheChartButNoHistory() {
         show(ready)
         compose.onNodeWithText("This month").assertIsDisplayed()
         compose.onNodeWithText("3 h 12 min").assertIsDisplayed()
         compose.onNodeWithText("Last 30 days").assertIsDisplayed()
         compose.onNodeWithContentDescription("day 29").assertExists()
-        compose.onNodeWithText("Finished · No longer in the library · 19 Sep").assertExists()
+        compose.onNodeWithText("History").assertDoesNotExist()
         compose.onNodeWithText("Counting since", substring = true).assertDoesNotExist()
     }
 

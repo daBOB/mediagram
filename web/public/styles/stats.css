@@ -1,4 +1,4 @@
-/* The Stats page: totals, the last thirty days as bars, and the history. */
+/* The Stats page: totals and the last thirty days as bars. */
 .stats-totals { display: flex; flex-wrap: wrap; gap: 24px 56px; margin: 0 0 8px; }
 .stats-total dt { color: var(--ink-3); font-size: 0.6875rem; letter-spacing: 0.24em; text-transform: uppercase; }
 .stats-total dd { margin: 6px 0 0; font: 600 clamp(1.6rem, 3vw, 2.4rem)/1.1 var(--display); font-variant-numeric: tabular-nums; }
@@ -11,18 +11,6 @@
 /* The initials only where there is room for thirty of them. */
 @media (max-width: 767px) {
   .stats-weekday { display: none; }
-}
-
-.stats-history-list { margin: 0; padding: 0; list-style: none; }
-.stats-history-list li {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--rule-soft);
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-  /* Kept forever, so it can be long: off-screen lines are not laid out. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 2.75rem;
 }
 
 /* Achievements: what was earned and on which day, then the closest to come. */

@@ -36,12 +36,12 @@ const SUMMARY = {
   achievements: { earned: [{ id: "films-1", earnedAt: 0 }], next: [{ id: "films-10", have: 1, need: 10 }] },
 };
 
-test("Achievements sit between the last thirty days and the history", async () => {
+test("Achievements come last, after the last thirty days", async () => {
   env.respondWith(async () => Response.json(SUMMARY));
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(main.children.map((node) => node.className)).toEqual([
-    "shelf-head", "stats-totals", "stats-days", "stats-achievements", "stats-history",
+    "shelf-head", "stats-totals", "stats-days", "stats-achievements",
   ]);
   expect(textOf(main.children[3]!)).toContain("First film");
   expect(textOf(main.children[3]!)).toContain("1 of 10 films");
@@ -50,18 +50,18 @@ test("Achievements sit between the last thirty days and the history", async () =
 test("nothing earned and nothing to come draws no section", async () => {
   env.respondWith(async () => Response.json({ ...SUMMARY, achievements: { earned: [], next: [] } }));
   const main = env.node("main");
-  await renderStats(main, { byId: new Map() }, () => true);
+  await renderStats(main, () => true);
   expect(main.children.map((node) => node.className)).not.toContain("stats-achievements");
 });
 
 test("drawing the page records what it showed as seen on this browser", async () => {
   env.respondWith(async () => Response.json(SUMMARY));
-  await renderStats(env.node("main"), { byId: new Map() }, () => true);
+  await renderStats(env.node("main"), () => true);
   expect(JSON.parse(stored.get("mediagram.stats-seen.viewer")!)).toEqual(["films-1"]);
 });
 
 test("an answer that lands after the viewer left records nothing", async () => {
   env.respondWith(async () => Response.json(SUMMARY));
-  await renderStats(env.node("main"), { byId: new Map() }, () => false);
+  await renderStats(env.node("main"), () => false);
   expect(stored.has("mediagram.stats-seen.viewer")).toBe(false);
 });

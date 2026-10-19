@@ -2,7 +2,6 @@ package ui.tv
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import catalog.CatalogUiState
 import ui.common.rememberStatsPage
 import ui.tv.catalog.TvStatsPage
 
@@ -13,10 +12,7 @@ import ui.tv.catalog.TvStatsPage
  * anything, so unlike `TvPreloadsFrame` it keeps no restore key of its own.
  */
 @Composable
-internal fun TvStatsFrame(
-    catalogState: CatalogUiState,
-    leave: () -> Unit,
-) {
+internal fun TvStatsFrame(leave: () -> Unit) {
     BackHandler(onBack = leave)
-    TvStatsPage(rememberStatsPage(catalogState))
+    TvStatsPage(rememberStatsPage())
 }

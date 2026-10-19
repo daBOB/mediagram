@@ -49,7 +49,7 @@ export function progressLine({ id, have, need }) {
 }
 
 /**
- * The day an achievement was earned, in the history's own words without
+ * The day an achievement was earned, in the page's time wording without
  * their clock time: a day-based achievement is dated at that day's noon,
  * and "Sat 12:00" would read as a moment rather than a day.
  */
@@ -57,7 +57,7 @@ const earnedOn = (when, at) => when(at).replace(/ \d{1,2}:\d{2}$/, "");
 
 /**
  * @param {{earned: {id: string, earnedAt: number}[], next: {id: string, have: number, need: number}[]}} achievements
- * @param {(at: number) => string} when the history's own time wording: "today 21:14", "Sat 21:14", "21 Sep"
+ * @param {(at: number) => string} when the page's time wording: "today 21:14", "Sat 21:14", "21 Sep"
  */
 export function achievementsSection(achievements, when) {
   const section = el("section", "stats-achievements");

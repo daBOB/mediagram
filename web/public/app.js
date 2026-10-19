@@ -578,7 +578,7 @@ function drawRoute() {
     });
     return;
   }
-  if (address.page === "stats") return renderStats(main, { byId }, () => generation === routeGeneration);
+  if (address.page === "stats") return renderStats(main, () => generation === routeGeneration);
   if (address.page === "system") return viewSystem();
   if (address.page === "continue") return viewContinue();
   if (address.page === "watchlist") return viewWatchlist();
