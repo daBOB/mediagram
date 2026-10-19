@@ -60,6 +60,17 @@ test("busy then Cancel sends cancel and resolves null", async () => {
   expect(dialog().open).toBe(false);
 });
 
+test("Escape on the Replace question cancels, and never replaces", async () => {
+  answers({ body: { answer: "busy", live, note: "Dune (2021)", serverNow: 0 } }, {});
+  const asked = askTv(own, "mia");
+  await tick();
+  dialog().fire("cancel");
+  expect(await asked).toBeNull();
+  expect(sent.map((m) => m.op)).toEqual(["offer", "cancel"]);
+  expect(sent[1]).toEqual({ op: "cancel", id: 7 });
+  expect(dialog().open).toBe(false);
+});
+
 test("refused shows the reason and resolves null", async () => {
   answers({ body: { answer: "refused", live, note: "it's rated above Mia's age limit", serverNow: 0 } });
   const asked = askTv(own, "mia");

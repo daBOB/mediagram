@@ -16,7 +16,7 @@ const MARGIN_MS = 3000;
 const OK = "OK";
 
 let pending = null;
-/** Resolves the buttons now showing as if the last were pressed; `null` while none are. */
+/** Resolves the buttons now showing as if the first were pressed; `null` while none are. */
 let dismiss = null;
 
 const dialog = () => document.getElementById("cast-ask");
@@ -37,13 +37,14 @@ function show(line, buttons) {
       button.addEventListener("click", () => choose(label));
       row.append(button);
     }
-    if (buttons.length) dismiss = () => choose(buttons.at(-1));
+    // Escape takes the first button: Cancel on the Replace question, so a stray Escape never replaces the TV's film.
+    if (buttons.length) dismiss = () => choose(buttons[0]);
   });
   row.children[0]?.focus();
   return answer;
 }
 
-/** Escape is a Cancel or an OK once there is a button to press, and nothing while the TV is being asked. */
+/** Escape presses the first button (Cancel, or OK), the safe choice; nothing happens while the TV is being asked. */
 function onCancel(event) {
   event.preventDefault();
   dismiss?.();
