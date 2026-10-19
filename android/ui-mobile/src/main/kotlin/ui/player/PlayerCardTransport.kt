@@ -26,8 +26,8 @@ import ui.common.player.TransportIcons
  * ↺ goes back to 0:00 of this title; ⏮ is never that — it opens the title
  * before this one in the run, and is disabled on the first. Both ⏮ and ⏭
  * are left out for a title with no run (a film) rather than shown disabled.
- * The remote ([drivesTv]) has no run of its own: ⏭ stands while the TV's
- * title has a next one, and ↺, ⏮ and ⓘ are left out, as on the web's.
+ * The remote ([PlayerCardActions.drivesTv]) steps forward only: ⏭ stands
+ * while the title has a next one, and ↺, ⏮ and ⓘ are left out, as on the web's.
  *
  * The skips are media3's own: their labels and their amount are read back
  * off the player, and `Player.seekBack`/`seekForward` keep a skip inside the
@@ -55,7 +55,7 @@ internal fun CardTransportRow(
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         if (!actions.drivesTv) GlyphButton(glyph = "↺", description = "Restart", enabled = true, onClick = actions.onRestart)
-        if (upNext.inRun) {
+        if (upNext.inRun && !actions.drivesTv) {
             TransportButton(icon = TransportIcons.Previous, description = "Previous", enabled = upNext.hasPrevious, onClick = actions.onPrevious)
         }
         GlyphButton(glyph = "−$back", description = "Back $back seconds", enabled = seekBack.isEnabled, onClick = seekBack::onClick)

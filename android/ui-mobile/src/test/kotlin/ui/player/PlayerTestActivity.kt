@@ -1,5 +1,6 @@
 package ui.player
 
+import android.app.PictureInPictureParams
 import android.os.Bundle
 import android.view.ContextThemeWrapper
 import androidx.activity.ComponentActivity
@@ -20,6 +21,15 @@ import player.PlayerViewModel
 class PlayerTestActivity : ComponentActivity() {
     lateinit var playerViewModel: PlayerViewModel
         private set
+
+    /** The picture-in-picture params the screen last set, for a test to read back. */
+    var pipParams: PictureInPictureParams? = null
+        private set
+
+    override fun setPictureInPictureParams(params: PictureInPictureParams) {
+        pipParams = params
+        super.setPictureInPictureParams(params)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

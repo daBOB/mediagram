@@ -68,16 +68,17 @@ internal class PlayerCardActions(
     val onTogether: () -> Unit = {},
     /** Play on TV's button, after Watch together; null leaves it out. */
     val onPlayOnTv: (() -> Unit)? = null,
-    /** Stop, where picture-in-picture sits: set only on the remote, whose card drives the TV ([drivesTv]). */
+    /**
+     * The remote's card: the picture is on a TV, not under the card — the TV
+     * box's remote, and this player while a wireless display shows its
+     * picture — so what only a picture on this screen has (Restart,
+     * Previous, Stats, Framing, Watch together) is left out, as the web's
+     * remote leaves it out.
+     */
+    val drivesTv: Boolean = false,
+    /** Stop, where picture-in-picture sits: set only on the TV box's remote, which stops the box's player. */
     val onStop: (() -> Unit)? = null,
 )
-
-/**
- * The remote's card: it drives the TV's player, so what only this screen's
- * own picture has — Restart, Previous, Stats, Framing, Watch together — is
- * left out, as the web's remote leaves it out.
- */
-internal val PlayerCardActions.drivesTv: Boolean get() = onStop != null
 
 /** What the card reads, beside the player itself. */
 internal class PlayerCardView(

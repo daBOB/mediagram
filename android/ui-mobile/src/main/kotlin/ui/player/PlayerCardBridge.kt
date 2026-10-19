@@ -29,6 +29,7 @@ internal fun playerCardActions(
     onToggleStats: () -> Unit,
     onEnterPip: (() -> Unit)?,
     onPlayOnTv: (() -> Unit)?,
+    drivesTv: Boolean = false,
 ): PlayerCardActions =
     PlayerCardActions(
         onRestart = viewModel::restart,
@@ -43,6 +44,7 @@ internal fun playerCardActions(
         focusOf = card::focusOf,
         onTogether = viewModel::onTogetherButton,
         onPlayOnTv = onPlayOnTv,
+        drivesTv = drivesTv,
     )
 
 /** Every write a card menu makes — kept as the one place that names them. */

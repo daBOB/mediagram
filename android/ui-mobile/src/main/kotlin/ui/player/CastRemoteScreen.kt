@@ -5,12 +5,6 @@
 
 package ui.player
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,17 +15,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.round
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
-import designsystem.Spacing
 import kotlinx.coroutines.delay
 import model.MediaSet
 import playback.AudioOption
@@ -41,11 +29,7 @@ import player.SUBTITLES_OFF
 import player.SubtitleOption
 import player.UpNextUiState
 import player.together.RemoteUi
-import ui.common.catalog.HeroArtwork
 import ui.common.player.findActivity
-
-/** The title's backdrop where the picture would be, as dim as the web's `#cast-remote-art`. */
-private const val ART_ALPHA = 0.35f
 
 /** How long the words a cast ended with stay before the remote goes: the web's notice. */
 private const val OVER_MS = 2_000L
@@ -83,12 +67,12 @@ fun CastRemoteScreen(
 }
 
 /**
- * The web's remote on the player's own parts: the top bar with the title and
- * "Playing on TV", the notice pill, and the control card over the title's
- * dimmed backdrop. The card's [player] is the TV's session; its subtitles
- * and audio menus list the TV's tracks. Nothing is drawn but the bar until
- * [ui] first arrives; once it goes, or says how the cast ended, the remote
- * goes too ([LeaveWithTheCast]).
+ * The web's remote on the player's own parts: [RemoteFrame] with the title
+ * and "Playing on TV", and the control card over the title's dimmed
+ * backdrop. The card's [player] is the TV's session; its subtitles and audio
+ * menus list the TV's tracks. Nothing is drawn but the bar until [ui] first
+ * arrives; once it goes, or says how the cast ended, the remote goes too
+ * ([LeaveWithTheCast]).
  */
 @Composable
 internal fun CastRemote(
@@ -101,16 +85,8 @@ internal fun CastRemote(
     onBack: () -> Unit,
 ) {
     LeaveWithTheCast(ui, onBack)
-    val card = remember { PlayerCardState() }
-    // Composed after the library's own Back, so an open menu closes first.
-    BackHandler(enabled = card.somethingOpen, onBack = card::closeTopmost)
     val speed = rememberPlaybackSpeedState(player).playbackSpeed
-    Box(Modifier.fillMaxSize().background(Color.Black).onGloballyPositioned { card.origin = it.positionInRoot().round() }) {
-        ui?.backdrop?.let { HeroArtwork(path = it, modifier = Modifier.matchParentSize().alpha(ART_ALPHA)) }
-        Column(Modifier.align(Alignment.TopStart)) {
-            PlayerTopBar(title = ui?.title.orEmpty(), showTitle = true, onBack = onBack, onBottom = { card.topLimit = it }, label = ui?.label)
-            TogetherNoticePill(ui?.over ?: ui?.notice, Modifier.align(Alignment.CenterHorizontally).padding(top = Spacing.small))
-        }
+    RemoteFrame(title = ui?.title.orEmpty(), backdrop = ui?.backdrop, label = ui?.label, notice = ui?.over ?: ui?.notice, onBack = onBack) { card ->
         if (ui != null) {
             val choices = remoteChoices(ui, speed)
             PlayerControlCard(
@@ -120,7 +96,7 @@ internal fun CastRemote(
                     PlayerCardActions(
                         onRestart = {}, onPrevious = {}, onNext = onNext, onToggleSubtitles = {},
                         onOpenMenu = card::toggle, onToggleStats = {}, onEpisodes = {}, onEnterPip = null,
-                        onAnchor = card::anchor, focusOf = card::focusOf, onStop = onStop,
+                        onAnchor = card::anchor, focusOf = card::focusOf, drivesTv = true, onStop = onStop,
                     ),
                 onScrubbingChanged = {},
                 modifier = Modifier.align(Alignment.BottomCenter),

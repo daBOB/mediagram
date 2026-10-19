@@ -31,6 +31,7 @@ import playback.SubtitleTrackSource
 import playback.SeriesPreloading
 import playback.HeldSetsQuery
 import player.PlaybackServiceController
+import player.PresentationDisplays
 import player.together.ViewerRelay
 import org.robolectric.RuntimeEnvironment
 import testing.FakeTogetherLive
@@ -100,6 +101,8 @@ internal class PlayerLifecycleFixture(
                     relay = ViewerRelay(),
                     // Real, so the screen can name itself (Phone or Tablet) when it joins a session.
                     context = RuntimeEnvironment.getApplication(),
+                    // Real, so a test can connect a wireless display through Robolectric's display manager.
+                    displays = PresentationDisplays(RuntimeEnvironment.getApplication()),
                 ) as T
             }
         }

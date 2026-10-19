@@ -54,6 +54,8 @@ class PlayerViewModel @Inject constructor(
     private val relay: ViewerRelay,
     @ApplicationContext private val context: Context,
     reportChannel: ReportChannel = NoReportChannel,
+    /** Null in a view model built by hand, as a test's: no picture ever goes to another screen. */
+    displays: PresentationDisplays? = null,
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -75,6 +77,9 @@ class PlayerViewModel @Inject constructor(
      * while this is still null.
      */
     val player: StateFlow<Player?> = viewerPlayer(relay)
+
+    /** The wireless display the picture goes to, by the name Android gives it; see [presentingOn]. */
+    val presenting: StateFlow<String?> = presentingOn(displays)
 
     internal val _playingAs = MutableStateFlow<Profile?>(null)
 

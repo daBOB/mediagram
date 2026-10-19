@@ -57,7 +57,7 @@ import ui.common.player.shouldStopOnDispose
  * before the library's own Back is reached. Double-tap seeking, play/pause
  * and pinch framing live in [PlayerGestureLayer], which wraps everything
  * below. All of it is hidden while [LocalIsInPictureInPicture] is true; see
- * [PipController].
+ * [PipController]. With a wireless display it is a remote: [PresentingPlayer].
  */
 @Composable
 fun PlayerScreen(
@@ -89,9 +89,6 @@ fun PlayerScreen(
     // Taken by the TV, the title is stopped and saved here, as closing does, before the remote takes the frame:
     // the frame's own leaving keeps a player in picture-in-picture playing.
     CastAskHost(onOn = { id -> viewModel.stop(); onCast(id) }, sender = cast)
-    val isInPip = LocalIsInPictureInPicture.current
-    val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
-
     PlayerNavigationEffects(viewModel, setId, run, fsk, handPicked, onSwitch)
     PlayerLifecycleEffects(
         viewModel,
@@ -99,6 +96,9 @@ fun PlayerScreen(
         // wait pauses on purpose; neither is a viewer looking away.
         isPlaying = state is PlayerUiState.Playing || upNext.phase != UpNextPhase.HIDDEN || upNext.awaitingStart,
     )
+    viewModel.presenting.collectAsStateWithLifecycle().value?.let { name -> return PresentingPlayer(name, viewModel, onBack) }
+    val isInPip = LocalIsInPictureInPicture.current
+    val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
     // Shown when the screen opens, so a viewer finds out the card is there
     // at all, then left to take itself away.
