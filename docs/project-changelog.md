@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.126.2 — the web player no longer hangs on "Loading your library…"
+
+**Fixed** (web player)
+
+- **Every page load waited about 9 s on the leader, and the whole server stood still meanwhile.** Brotli at its default quality 11 took 9.4 s to compress the 16 MB catalog, synchronously, and the compression cache held only 64 bodies while a page load asks for about 145 static files, so each load evicted the catalog and compressed it again. Brotli now runs at quality 5 (85 ms, body 14% larger), and the cache is bounded at 32 MB, newest-used last, so the catalog stays compressed across page loads. `/api/sets` went from about 9 s to about 0.25 s.
+
 ## 0.126.1 — Report no longer closes the Android app
 
 **Fixed** (Android phone, tablet and TV)
