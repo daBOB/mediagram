@@ -29,8 +29,8 @@ class TogetherOffers(
 /**
  * The library's [TogetherOffers], provided once at its root. Providing them
  * listens to nothing: only a screen that draws Join collects them
- * ([togetherJoin]), so the sessions are listened for while Home or a
- * title page is on screen, and not on a department tab or in the player.
+ * ([togetherJoin]) or the cast bar, so the sessions are listened for
+ * wherever one can show, and not in the player or the remote.
  */
 val LocalTogetherOffers = compositionLocalOf<TogetherOffers?> { null }
 

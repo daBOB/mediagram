@@ -1,6 +1,9 @@
 package ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -29,6 +32,7 @@ import stats.AchievementDotViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
 import ui.chrome.ProfileBarState
+import ui.chrome.railWidthShown
 import ui.common.FrameKind
 import ui.common.LibraryPositions
 import ui.common.MenuActions
@@ -49,12 +53,12 @@ import ui.profile.ProfileGate
  * [LibraryBranches]. Gated on a chosen profile by [ProfileGate], which is
  * what decides whose shelves these are.
  */
-private val NO_OFFER: StateFlow<TogetherOffer?> = MutableStateFlow(null)
-
 @Composable
 internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) {
     ProfileGate { profileBar -> Library(profileBar, onStartOver, onSignedOut) }
 }
+
+private val NO_OFFER: StateFlow<TogetherOffer?> = MutableStateFlow(null)
 
 @Composable
 private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSignedOut: () -> Unit) {
@@ -110,12 +114,14 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     Box(Modifier.fillMaxSize()) {
         // The bar takes its own row, so the page's last row never hides behind it.
         Column(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f)) {
+            // The bar pads the navigation bar itself, so the page above leaves that inset to it.
+            val inset = if (bar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars) else Modifier
+            Box(Modifier.weight(1f).then(inset)) {
                 CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
                     LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
                 }
             }
-            CastBar(bar, onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
+            CastBar(bar, modifier = Modifier.padding(start = railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
         }
         // The pill watch together's notices use, over the page: the viewer stays where they were.
         // Above the bar while it shows, which it would otherwise cover.

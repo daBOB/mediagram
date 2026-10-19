@@ -25,13 +25,9 @@ data class TogetherOffer(
     val playing: Boolean = true,
 )
 
-/** The title as the web names it (`titleLine`): an episode by its show and number. */
-val TogetherOffer.title: String
-    get() = set.show?.let { "$it ${episodeShort(set)}" } ?: set.title
-
 /** Home's notice, in the web's words (`together-join.js`): "Watching together: Title · TV, Tablet". */
 val TogetherOffer.line: String
-    get() = "Watching together: $title · $members"
+    get() = "Watching together: ${set.show?.let { "$it ${episodeShort(set)}" } ?: set.title} · $members"
 
 /** Whether the session plays one of [collection]'s titles: a show's or a course's page offers Join then. */
 fun TogetherOffer.playsIn(collection: Entry.Collection): Boolean =

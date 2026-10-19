@@ -182,8 +182,8 @@ class CatalogViewModel
         ): CatalogUiState = projected(shown, kids, lastSets)
 
         /**
-         * Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one
-         * shows it. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
+         * Watch together's Join for Home and the title pages, and the cast bar ([togetherOffers]); collected only while
+         * one shows. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
          */
         val together: StateFlow<TogetherOffer?> =
             togetherOffers(togetherLive, state)

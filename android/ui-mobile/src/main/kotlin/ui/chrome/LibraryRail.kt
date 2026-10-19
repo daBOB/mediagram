@@ -42,11 +42,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import catalog.ChromeCounts
 import designsystem.LocalCatalogueTones
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Motion
 import designsystem.Radius
 import designsystem.StatusDot
@@ -57,6 +60,14 @@ import ui.common.RailItem
 private val RailNarrowBreakpoint = 1180.dp
 private val RailWidthNarrow = 184.dp
 private val RailWidthWide = 224.dp
+
+/** How much of the window's start edge the rail takes: nothing unless the layout is EXPANDED. */
+@Composable
+internal fun railWidthShown(): Dp {
+    val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+    val narrow = LocalConfiguration.current.screenWidthDp.dp <= RailNarrowBreakpoint
+    return if (!expanded) 0.dp else if (narrow) RailWidthNarrow else RailWidthWide
+}
 
 /**
  * The left rail: wordmark, the viewer's own shelves and utilities, then the

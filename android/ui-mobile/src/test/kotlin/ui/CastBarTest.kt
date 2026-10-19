@@ -7,7 +7,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import catalog.TogetherOffer
 import kotlinx.coroutines.flow.MutableStateFlow
+import model.Kind
 import org.junit.Test
+import player.titleLine
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -34,7 +36,7 @@ class CastBarTest : BrowsePageTest() {
         override fun component2(): (T) -> Unit = { value = it }
     }
 
-    private val set = film("a")
+    private val set = film("a").copy(rawTitle = "Film a")
     private val cast = TogetherOffer(41, set, "TV", cast = true)
     private var opened = 0
     private var pressed = 0
@@ -46,6 +48,14 @@ class CastBarTest : BrowsePageTest() {
         val shown = castBarOffer(cast, top = null)
         bar(shown)
         compose.onNodeWithText("Playing on TV · Film a").assertExists()
+    }
+
+    @Test
+    fun anEpisodeIsNamedAsTheRemoteNamesIt() {
+        val episode = set.copy(kind = Kind.EPISODE, show = "A Show", season = 1, episodeFirst = 2, episodeLast = 2, rawTitle = "Pilot")
+        bar(cast.copy(set = episode))
+        compose.onNodeWithText("Playing on TV · ${titleLine(episode)}").assertExists()
+        compose.onNodeWithText("A Show", substring = true).assertExists()
     }
 
     @Test
