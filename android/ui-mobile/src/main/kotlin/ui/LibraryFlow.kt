@@ -60,6 +60,8 @@ internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) 
     ProfileGate { profileBar -> Library(profileBar, onStartOver, onSignedOut) }
 }
 
+private fun MenuScreen?.hasOwnIndex() = this != null && this != MenuScreen.TmdbKey
+
 private val NO_OFFER: StateFlow<TogetherOffer?> = MutableStateFlow(null)
 
 @Composable
@@ -123,8 +125,8 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
                     LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
                 }
             }
-            CastBar(bar, // Settings, System and the key screen draw their own index, not the library rail.
-                modifier = Modifier.padding(start = if (at.top == FrameKind.MENU) 0.dp else railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
+            CastBar(bar, // Settings, System and Storage draw their own index, not the library rail; the key screen draws it.
+                modifier = Modifier.padding(start = if (at.top == FrameKind.MENU && at.menuScreen.hasOwnIndex()) 0.dp else railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
         }
         // The pill watch together's notices use, over the page: the viewer stays where they were.
         // Above the bar while it shows, which it would otherwise cover.
