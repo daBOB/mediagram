@@ -83,7 +83,6 @@ fun PlayerScreen(
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
     val report by viewModel.report.collectAsStateWithLifecycle()
-    val castReason by cast.castable.collectAsStateWithLifecycle()
     CastWhileInSession(cast, inSession = together.button == TogetherButton.LEAVE)
     // Taken by the TV, the title is stopped and saved here, as closing does, before the remote takes the frame:
     // the frame's own leaving keeps a player in picture-in-picture playing.
@@ -149,6 +148,8 @@ fun PlayerScreen(
                     },
         ) {
             player?.let { current ->
+                // What plays here, as it plays: the TV takes it up from there.
+                val playOnTv = playOnTvTool(cast) { Playback(setId, current.playWhenReady, current.currentPosition / 1000.0, current.playbackParameters.speed.toDouble()) }
                 VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
                 PlayerCardLayer(
                     shown = cardShown,
@@ -164,9 +165,8 @@ fun PlayerScreen(
                     onEnterPip = pip.enterPip.takeIf { pip.supported },
                     onScrubbingChanged = { scrubbing = it },
                     together = together,
-                    castReason = castReason,
-                    // What plays here, as it plays: the TV takes it up from there.
-                    onPlayOnTv = { cast.playOnTv(Playback(setId, current.playWhenReady, current.currentPosition / 1000.0, current.playbackParameters.speed.toDouble())) },
+                    castReason = playOnTv.reason,
+                    onPlayOnTv = playOnTv.press,
                 )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.

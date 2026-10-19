@@ -31,10 +31,11 @@ import player.together.words
  * Framing names the current choice. Audio is left out for a single
  * track, which is a label, not a choice. Watch together and Play on TV end
  * the tools, as on the web: each says what it does, and greyed out tells a
- * screen reader why ([together], [castReason]). The tools stand at the left
- * and picture-in-picture at the right end, as volume and fullscreen do on the
- * web; on the TV box's remote ([PlayerCardActions.onStop]) Stop stands there
- * instead.
+ * screen reader why ([together], [castReason]). While a wireless display
+ * shows the picture, Play on TV names that display instead ([presentingOn]).
+ * The tools stand at the left and picture-in-picture at the right end, as
+ * volume and fullscreen do on the web; on the TV box's remote
+ * ([PlayerCardActions.onStop]) Stop stands there instead.
  *
  * The tools wrap rather than squeeze: on a 360dp phone a row of 48dp targets
  * does not fit one line. [openMenu] is what a screen reader hears as each
@@ -48,6 +49,7 @@ internal fun CardToolsRow(
     openMenu: CardMenu? = null,
     together: TogetherUi = TogetherUi(),
     castReason: String? = null,
+    presentingOn: String? = null,
 ) {
     fun expanded(vararg menus: CardMenu) = if (openMenu in menus) "Expanded" else "Collapsed"
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -109,9 +111,10 @@ internal fun CardToolsRow(
                 )
             }
             actions.onPlayOnTv?.let { press ->
+                val words = presentingOn?.let(::playingOn) ?: CastWords.PLAY_ON_TV
                 LabelButton(
-                    label = CastWords.PLAY_ON_TV,
-                    description = listOfNotNull(CastWords.PLAY_ON_TV, castReason).joinToString(", "),
+                    label = words,
+                    description = listOfNotNull(words, castReason).joinToString(", "),
                     onClick = press,
                     enabled = castReason == null,
                 )

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- canOpenCastSettings asks whether anything opens the system's Cast
+         screen, and Play on TV asks which way only where something does.
+         Since API 30 another app's activity is seen only once its intent is
+         declared here, and the Cast screen may live outside Settings, as
+         Xiaomi's does. -->
+    <queries>
+        <intent>
+            <action android:name="android.settings.CAST_SETTINGS" />
+        </intent>
+    </queries>
+
+</manifest>

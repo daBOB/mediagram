@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import player.PlayerViewModel
 import player.controlsMayShow
 import player.titleLine
+import ui.catalog.rememberOpenCastSettings
 
 /** The remote's label while this device plays to a wireless display; not in `cast.json`, since the web has no second screen. */
 internal fun playingOn(name: String) = "Playing on $name"
@@ -19,9 +20,11 @@ internal fun playingOn(name: String) = "Playing on $name"
  * and this screen takes the TV box remote's look ([RemoteFrame]), driving
  * its own player. As on that remote the card does not take itself away,
  * with nothing on this screen for it to uncover, and it holds what that card
- * holds, without Stop: Back leaves the player as always. A title opening or
- * failed is said here ([PlayerStageNote]), the remote in the hand. No
- * picture-in-picture either; [PlayerScreen] draws none while this stands.
+ * holds, without Stop: Back leaves the player as always. Its Play on TV
+ * names the display and opens the system's Cast screen, where the display
+ * is let go. A title opening or failed is said here ([PlayerStageNote]), the
+ * remote in the hand. No picture-in-picture either; [PlayerScreen] draws
+ * none while this stands.
  */
 @Composable
 internal fun PresentingPlayer(
@@ -37,6 +40,7 @@ internal fun PresentingPlayer(
     val cues by viewModel.subtitleCues.collectAsStateWithLifecycle()
     val upNext by viewModel.upNext.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
+    val openCastScreen = rememberOpenCastSettings()
     player?.let { current ->
         PresentOnDisplay(name) { VideoWithSubtitles(current, cues, choices, barTop = null, isInPip = false, onPictureBottomChanged = {}) }
     }
@@ -48,8 +52,8 @@ internal fun PresentingPlayer(
         player?.takeIf { cardShown }?.let { current ->
             PlayerControlCard(
                 player = current,
-                view = PlayerCardView(choices, upNext, statsShown = false, hasEpisodes = false, catalogedDurationSecs = openSet?.durationSecs, openMenu = card.menu),
-                actions = playerCardActions(viewModel, card, onToggleStats = {}, onEnterPip = null, onPlayOnTv = null, drivesTv = true),
+                view = PlayerCardView(choices, upNext, statsShown = false, hasEpisodes = false, catalogedDurationSecs = openSet?.durationSecs, openMenu = card.menu, presentingOn = name),
+                actions = playerCardActions(viewModel, card, onToggleStats = {}, onEnterPip = null, onPlayOnTv = openCastScreen, drivesTv = true),
                 onScrubbingChanged = {},
                 modifier = Modifier.align(Alignment.BottomCenter),
                 onBounds = { card.bounds = it },

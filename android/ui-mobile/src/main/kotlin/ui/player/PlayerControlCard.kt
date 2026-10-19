@@ -94,8 +94,10 @@ internal class PlayerCardView(
     val sidebarOpen: Boolean = false,
     /** Watch together's button, as the player decides it. */
     val together: TogetherUi = TogetherUi(),
-    /** Why Play on TV is greyed, or null while it can be pressed. */
+    /** Why Play on TV is greyed, or null while it can be pressed: always null where it asks which way, as one way touches no channel. */
     val castReason: String? = null,
+    /** The wireless display this player's picture is on, which Play on TV then names ([playingOn]). */
+    val presentingOn: String? = null,
 )
 
 /**
@@ -173,6 +175,7 @@ internal fun PlayerControlCard(
             openMenu = view.openMenu,
             together = view.together,
             castReason = view.castReason,
+            presentingOn = view.presentingOn,
         )
         CardTransportRow(player = player, upNext = view.upNext, statsShown = view.statsShown, hasEpisodes = view.hasEpisodes, actions = actions, sidebarOpen = view.sidebarOpen)
     }
