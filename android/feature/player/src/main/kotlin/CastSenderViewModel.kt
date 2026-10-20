@@ -25,6 +25,7 @@ import model.together.CAST_ANSWER_MS
 import model.together.CastWords
 import model.together.Member
 import model.together.Playback
+import model.together.noAnswerIn
 import model.together.refusedLine
 import java.util.UUID
 import javax.inject.Inject
@@ -75,13 +76,14 @@ class CastSenderViewModel @Inject constructor(
 
     /**
      * Why Play on TV can't be pressed, or `null` when it may be: no household
-     * joined yet, whose TVs alone are asked, Telegram unavailable, or this
-     * device's player in a session (see [inSession]).
+     * joined, whose TVs alone are asked (said only once the households are
+     * read, as the picker asks), Telegram unavailable, or this device's
+     * player in a session (see [inSession]).
      */
     val castable: StateFlow<String?> =
         combine(live.available, inSession, households.view) { available, session, view ->
             when {
-                view.joined == null -> CastWords.JOIN_FIRST
+                view.needsJoin(view.synced) -> CastWords.JOIN_FIRST
                 !available -> TOGETHER_UNREACHABLE
                 session -> CastWords.LEAVE_FIRST
                 else -> null
@@ -135,16 +137,22 @@ class CastSenderViewModel @Inject constructor(
             val got = withTimeoutOrNull(CAST_WAIT_MS) { reply.await() }
             _ask.value =
                 when {
-                    got == null -> CastAsk.Told(CastWords.NO_ANSWER)
+                    got == null -> CastAsk.Told(noAnswer())
                     else -> got.fold(::stateOf) { CastAsk.Told(TOGETHER_UNREACHABLE) }
                 }
         }
     }
 
+    /** Nobody answered. With more than one household only this one's TVs were asked, so the line names it. */
+    private fun noAnswer(): String {
+        val view = households.view.value
+        return view.here?.takeIf { view.list.size > 1 }?.let { noAnswerIn(it.name) } ?: CastWords.NO_ANSWER
+    }
+
     private fun stateOf(reply: CastAnswer): CastAsk {
         val id = reply.live?.id
         return when (reply.answer) {
-            Answer.NONE -> CastAsk.Told(CastWords.NO_ANSWER)
+            Answer.NONE -> CastAsk.Told(noAnswer())
             Answer.REFUSED -> CastAsk.Told(refusedLine(reply.note))
             // A reply without its message can't be acted on: the web player's unreachable.
             Answer.ON -> id?.let(CastAsk::On) ?: CastAsk.Told(TOGETHER_UNREACHABLE)

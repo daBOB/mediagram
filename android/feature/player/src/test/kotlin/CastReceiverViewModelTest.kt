@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import model.HOME_HOUSEHOLD
+import model.Households
 import model.Profile
 import model.together.CastWords
 import model.together.Member
@@ -164,6 +165,18 @@ class CastReceiverViewModelTest {
         assertEquals(emptyList(), live.casts)
         assertNull(vm.opening.value)
         assertNull(live.takeCast())
+    }
+
+    @Test
+    fun anOfferHeardBeforeTheHouseholdsAreReadIsAnsweredOnceTheyAre() = runTest {
+        val households = FakeHouseholdsRepository()
+        val read = households.view.value
+        households.view.value = Households()
+        val vm = receiver(households = households)
+        hear(request())
+        assertNull(vm.opening.value)
+        households.view.value = read
+        assertEquals(CastOpen("film-1", replace = false), vm.opening.value)
     }
 
     @Test

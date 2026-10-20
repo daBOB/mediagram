@@ -14,6 +14,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -71,10 +72,12 @@ class CastReceiverViewModel @Inject constructor(
         val key = request.id to cast.state
         if (key in answered) return
         try {
+            // Only a request from this TV's household is answered: another household's TV says nothing.
+            // A TV just launched waits for its first read of them; the request waits with it, still held.
+            val joined = households.view.first { it.list.isNotEmpty() }.joined
             // A set that no longer resolves is still open: busy never reads as idle.
             val busy = handle.openSet.value?.let { titleLine(catalog.mediaSet(it)).ifEmpty { it } }
-            // Only a request from this TV's household is answered: another household's TV says nothing.
-            val tv = TvState(screen, busy, refusalOf(s.set, cast.profile), households.view.value.joined)
+            val tv = TvState(screen, busy, refusalOf(s.set, cast.profile), joined)
             val answer = answerOf(s, tv, System.currentTimeMillis())
             if (answer is TvAnswer.Ignore) return
             answered += key
