@@ -5,9 +5,9 @@ import { needsJoin, thisHousehold } from "../public/lib/household.js";
 import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import { chooseProfile } from "../public/lib/profile-picker.js";
 import * as state from "../public/lib/watch-state.js";
-import { descendants, textOf } from "./support/browser-application";
+import { answerPin, buttonNamed, descendants, textOf } from "./support/browser-application";
 import { AT_HOME, FLAT, SPLIT, storage } from "./support/household-fixture";
-import { browserEnvironment, Node } from "./support/player-environment";
+import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 let everyone: object[];
@@ -86,4 +86,28 @@ test("a profile remembered from another household is nobody here", async () => {
   expect(state.rememberedProfile()).toBeNull();
   expect(names()).toEqual(["andre", "Lea"]);
   expect(kept.getItem("mediagram.household")).toBe("home");
+});
+
+test("a remembered profile, with nothing heard yet and two households, is still entered", async () => {
+  heard = false;
+  await device({ "mediagram.profile": "maja" });
+  expect(state.rememberedProfile()).toBe("maja");
+  expect(names()).toEqual(["Maja", "Tim"]);
+  expect(needsJoin()).toBe(false);
+});
+
+test("a localStorage that throws on every call breaks neither here nor the picker", async () => {
+  const refuse = () => { throw new Error("storage refused"); };
+  Object.assign(env.window, { localStorage: { getItem: refuse, setItem: refuse, removeItem: refuse } });
+  expect(await state.loadProfiles()).toBe(true);
+  expect(needsJoin()).toBe(true);
+  const root = new Node();
+  void chooseProfile(root);
+  buttonNamed(root, "Flat").fire("click");
+  await answerPin(root, "5678");
+  await settle();
+  expect(tiles(root)).toEqual(["MMaja", "TTimKids · FSK 6"]);
+  // Read again, and still the flat: the page keeps what storage would not.
+  await state.loadProfiles();
+  expect(names()).toEqual(["Maja", "Tim"]);
 });

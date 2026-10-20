@@ -17,20 +17,39 @@ const KEY = "mediagram.household";
  */
 let device = { id: null, households: [], heard: true };
 
-/** Wrapped as the chosen profile is: with storage disabled, the answer lasts this page load. */
-function stored() {
+/**
+ * An answer the page's storage would not take — full, or refused — and that
+ * storage: the page keeps the answer for as long as it reads the same one.
+ */
+let kept = { id: null, storage: undefined };
+
+/** The page's storage, or `null` where even reaching it is refused. */
+function storage() {
   try {
-    return window.localStorage.getItem(KEY);
+    return window.localStorage;
   } catch {
-    return device.id;
+    return null;
+  }
+}
+
+/** Wrapped as the chosen profile is; the page's own copy first, as a full storage still holds the older one. */
+function stored() {
+  const local = storage();
+  const mine = kept.storage === local ? kept.id : null;
+  try {
+    return mine ?? local.getItem(KEY);
+  } catch {
+    return mine;
   }
 }
 
 function store(id) {
+  const local = storage();
   try {
-    window.localStorage.setItem(KEY, id);
+    local.setItem(KEY, id);
+    kept = { id: null, storage: undefined };
   } catch {
-    // Kept in `device` instead, which still works until the page goes.
+    kept = { id, storage: local };
   }
 }
 
@@ -59,8 +78,8 @@ export const thisHousehold = () => device.households.find((one) => one.id === de
 /** Whether the picker asks "Join a household": no answer, and the household has been heard. */
 export const needsJoin = () => device.id === null && device.heard;
 
-/** This device now shows household `id`; the next `here` finds it stored. */
-export function joined(id) {
-  store(id);
-  device = { ...device, id };
-}
+/**
+ * This device now shows household `id`, from the next `here` on: until the
+ * list has been read again there is nobody of that household to show.
+ */
+export const joined = store;

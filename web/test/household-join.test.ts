@@ -7,18 +7,24 @@ import { HOUSEHOLD_WORDS, joinPinTitle } from "../public/lib/household-words.js"
 import { chooseProfile } from "../public/lib/profile-picker.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
-import { AT_HOME, FLAT, SPLIT, storage, writesOf } from "./support/household-fixture";
+import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 let kept: ReturnType<typeof storage>;
 let refusal: { status: number; body: object } | null;
+let everyone: object[];
+/** Whether the profile list can be read; a join can go through and the read after it fail. */
+let readable: boolean;
 beforeEach(() => {
   env = browserEnvironment();
   refusal = null;
+  everyone = SPLIT;
+  readable = true;
   env.respondWith(async (url, options) => {
     if (url === "/api/profiles" && !options?.method) {
-      return Response.json({ remembers: true, heard: true, profiles: SPLIT, households: [FLAT, AT_HOME] });
+      if (!readable) return new Response(null, { status: 500 });
+      return Response.json({ remembers: true, heard: true, profiles: everyone, households: [FLAT, AT_HOME] });
     }
     if (url.endsWith("/state")) return Response.json({});
     if (refusal) return Response.json(refusal.body, { status: refusal.status });
@@ -105,6 +111,56 @@ test("switching away from the chosen profile's household lets go of it", async (
   expect(state.profiles().map((one) => one.name)).toEqual(["Maja", "Tim"]);
   expect(kept.getItem("mediagram.household")).toBe("flat");
   expect(kept.getItem("mediagram.profile")).toBeNull();
+});
+
+test("a household nobody could let this device in is not offered", async () => {
+  // The owner has no PIN, and runs home: nobody has one to open it with. Maja has hers for the flat.
+  everyone = SPLIT.map((one) => (one.id === "andre" ? { ...one, hasPin: false } : one));
+  await device();
+  const root = new Node();
+  void chooseProfile(root);
+  expect(pills(root)).toEqual(["Flat"]);
+});
+
+test("a device whose household has no grown-up left is offered the others, not a first profile", async () => {
+  // Maja moved home with her Tim; only Lea, nobody's kid, is left in the flat.
+  everyone = [{ ...ANDRE, owner: true, household: "home" }, { ...MAJA, household: "home" }, { ...TIM, household: "home" }, { ...LEA, household: "flat" }];
+  await device({ "mediagram.household": "flat" });
+  const root = new Node();
+  void chooseProfile(root);
+  expect(pills(root)).toEqual(["Home"]);
+  expect(textOf(root)).not.toContain("Create the first profile");
+  expect(tiles(root)).toEqual(["LLeaKids · FSK 12"]);
+});
+
+test("a join whose list cannot be read again asks again, not for a first profile", async () => {
+  await device();
+  const root = new Node();
+  void chooseProfile(root);
+  buttonNamed(root, "Flat").fire("click");
+  readable = false;
+  await answerPin(root, "5678");
+  await settle();
+  expect(textOf(root)).toContain(HOUSEHOLD_WORDS.joinAHousehold);
+  expect(textOf(root)).not.toContain("Create the first profile");
+  readable = true;
+  await state.loadProfiles();
+  expect(state.profiles().map((one) => one.name)).toEqual(["Maja", "Tim"]);
+});
+
+test("a join a full storage will not take still holds for this page", async () => {
+  // Full: what was stored before can be read, and nothing new can be written.
+  kept = { ...storage({ "mediagram.household": "home" }), setItem: () => { throw new Error("quota exceeded"); } };
+  Object.assign(env.window, { localStorage: kept });
+  await state.loadProfiles();
+  const root = new Node();
+  root.append(joinChoices(root, { onJoined: () => {} }));
+  buttonNamed(root, "Flat").fire("click");
+  await answerPin(root, "5678");
+  await settle();
+  expect(state.profiles().map((one) => one.name)).toEqual(["Maja", "Tim"]);
+  await state.loadProfiles();
+  expect(state.profiles().map((one) => one.name)).toEqual(["Maja", "Tim"]);
 });
 
 test("each household call goes to its route, the PIN in the body", async () => {

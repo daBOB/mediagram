@@ -71,3 +71,6 @@
 .manage-inline :is(h1, .manage-section h2), .setting .who-ask h2 { margin: 0 0 4px; font: 600 1rem/1.3 var(--text); letter-spacing: 0; color: var(--ink); text-align: left; }
 .manage-inline .who-note, .setting .who-ask .who-note { margin: 0 0 16px; max-width: none; text-align: left; font-size: 1rem; color: var(--ink-2); }
 .manage-inline .manage-section h2 { margin-bottom: 12px; }
+/* It ends at its last control, so the panel's own gap is all that parts it from the section after. */
+.manage-inline :is(.who-ask, .manage-section):last-child { margin-bottom: 0; }
+.manage-inline .pin-message:empty { min-height: 0; }
