@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.128.1 — Profiles in TV Settings
+
+**Added** (Android TV)
+
+- **Settings → Profiles on the TV**, for a grown-up only: the same "Everyone here" list, and a "Manage profiles" row that opens the TV's own Manage profiles screen (who you are, the PIN, then what your role allows). Leaving it, Settings or the app drops the PIN.
+
 ## 0.128.0 — a Profiles page in Settings
 
 **Added** (web player, Android phone and tablet)
