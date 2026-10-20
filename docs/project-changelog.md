@@ -5,6 +5,15 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.132.0 — hide sections from a profile
+
+**Added** (web player; Android already hides them, its switches follow)
+
+- **Sections per profile.** In Settings → Profiles → Manage profiles, every profile you manage has a **Sections** row: Movies, Series, Anime, Documentaries, Tutorials. A household's admin sets them for its grown-ups, a kid's parent for that kid; whoever runs a household always sees everything. A section the profile sees is a quiet outlined chip; a hidden one is filled and struck through.
+- **A hidden section is gone for that profile**: its menu link and masthead count, its shelves and pages, and its titles in Home, Continue, My List, search, Latest, Genres, collections, next-up and the "Add titles" picker. A link to it says only "No anime yet." It works with the kids' age limit, not instead of it.
+- **Everyone here** says what each profile hides ("· hides Anime").
+- It is a household rule, not a lock, like the kids' age limit: the server still serves any title asked for by id, and stats count the whole library.
+
 ## 0.131.0 — households
 
 **Added** (web player; the Android core carries them, its screens follow)

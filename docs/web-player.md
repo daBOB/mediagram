@@ -360,7 +360,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/latest` | Latest added |
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
-| `#/settings` | Settings (Appearance / Profiles: who is watching, everyone here, Manage profiles, This device (Switch household, with more than one), Households (the owner's: create, rename, change admin, move, delete) / admin Library & Telegram); the picker's Manage profiles opens the same Profiles page, and asks "Join a household" first on a browser that has none |
+| `#/settings` | Settings (Appearance / Profiles: who is watching, everyone here, Manage profiles with each managed profile's Sections, This device (Switch household, with more than one), Households (the owner's: create, rename, change admin, move, delete) / admin Library & Telegram); the picker's Manage profiles opens the same Profiles page, and asks "Join a household" first on a browser that has none |
 | `#/stats` | Stats: minutes watched, the last 30 days, achievements |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue |
