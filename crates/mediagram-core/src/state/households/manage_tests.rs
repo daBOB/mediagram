@@ -493,3 +493,11 @@ fn wrong_join_pins_wait_per_household_not_per_profile() {
     assert_eq!(store.run(|m| m.unlock("owner", PIN)), Done);
     assert_eq!(store.run(|m| m.unlock("maja", PIN)), Done);
 }
+
+/// A write that lands on no household says which, in the log a failed write leaves.
+#[test]
+fn an_admin_given_to_no_household_names_it() {
+    let store = store_with(&[]);
+    let refused = store.db.with(|conn| Ok(super::writes::admin(conn, "nowhere", "maja", T).unwrap_err())).unwrap();
+    assert!(refused.to_string().contains("nowhere"), "{refused}");
+}
