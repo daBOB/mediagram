@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.130.0 — preload an episode, and see how much of it is held
+
+**Added** (Android phone, tablet and TV)
+
+- **Every episode on a show page has a Preload control**, the same one a film page has: the same queue, budget and words. On the TV the row still plays on OK; Right moves onto its control.
+- **Every episode row shows how much of it is on this device**, whatever put it there (a preload, the next-episode preloader, or watching): "42%" beside the control, live while it preloads, the held badge at 100%, nothing at 0%. A queued row shows its own share, never another episode's.
+- **A finished episode is listed under Preloads → On this device** as "Show · S1E4", removable there like a film; the queue names episodes the same way. TalkBack says "episode", not "film".
+
 ## 0.129.0 — one Profiles page
 
 **Changed** (web player, Android phone, tablet and TV)
