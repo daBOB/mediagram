@@ -1,10 +1,10 @@
 /**
  * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
  *
- * Opened from the picker — entering a profile never opens it, so a device
- * left on a grown-up's profile does not hand a child these controls. The body
- * is also mounted by Settings' Profiles tab, which keeps that promise by
- * hiding from kids and asking who you are and the PIN on every visit.
+ * Part of the Profiles page (`catalog/settings-profiles.js`), in Settings and
+ * over the picker. A device left on a grown-up's profile does not hand a child
+ * these controls: the page hides them from kids and asks who you are and the
+ * PIN on every visit.
  * A grown-up says who they are and gives their PIN once; it is held while the
  * body is mounted, sent with every change, and dropped when it is torn down.
  *

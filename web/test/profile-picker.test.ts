@@ -215,6 +215,22 @@ test("profiles are made and removed in Manage profiles, not on the picker", () =
   expect(textOf(byClass(root, "who-manage"))).toContain("Who are you?");
 });
 
+test("Manage profiles opens the Profiles page with nobody chosen, and leaving it returns to the picker", async () => {
+  await state.useProfile("lea");
+  const root = new Node();
+  void chooseProfile(root, { canCancel: true });
+  buttonNamed(root, "Manage profiles").fire("click");
+  const page = byClass(root, "who-manage");
+  expect(textOf(page)).toContain("Everyone here");
+  expect(textOf(page)).toContain("Who are you?");
+  expect(textOf(page)).not.toContain("Who is watching");
+  expect(textOf(page)).not.toContain("Switch profile");
+  buttonNamed(root, "Done").fire("click");
+  expect(descendants(root).some((node) => node.className.includes("who-manage"))).toBe(false);
+  expect(picking(root)).toBe(true);
+  expect(tile(root, "Tim")).toBeDefined();
+});
+
 test("the note says what a PIN does, and that it is not a login", () => {
   const root = new Node();
   void chooseProfile(root);
