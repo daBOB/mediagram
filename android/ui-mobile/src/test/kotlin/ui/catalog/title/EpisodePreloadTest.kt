@@ -108,6 +108,16 @@ class EpisodePreloadTest {
         compose.onNodeWithText("Preloading").assertExists()
     }
 
+    /** Idle, a share already held: said once, beside the control, and the pill names the size as for nothing held. */
+    @Test
+    fun anIdlePartlyHeldEpisodeShowsItsShareOnce() {
+        render(ui(FilmPreloadState.Idle(HELD_42, TOTAL), held = HELD_42))
+
+        compose.onNodeWithText("42%").assertExists()
+        compose.onNodeWithText("Preload · 100 MB").assertExists()
+        assertEquals(1, compose.onAllNodesWithText("42%", substring = true).fetchSemanticsNodes().size)
+    }
+
     /** Queued carries no bytes of its own, and the label names another episode — the figure beside it is still this one's. */
     @Test
     fun aQueuedPartlyHeldEpisodeShowsItsOwnPercentage() {

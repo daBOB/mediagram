@@ -63,7 +63,11 @@ internal fun EpisodePreload(ui: TitlePreloadUi, totalBytes: Long, modifier: Modi
                 }
             }
         } else {
-            PreloadPill(ui.state, ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true)
+            // The share is said once, beside the pill: a partly held idle
+            // row's pill reads as for nothing held ("Preload · 5.8 GB").
+            val s = ui.state
+            val state = if (s is FilmPreloadState.Idle && s.heldBytes < s.totalBytes) FilmPreloadState.Idle(0L, s.totalBytes) else s
+            PreloadPill(state, ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true)
         }
     }
 }
