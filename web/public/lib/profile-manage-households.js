@@ -30,8 +30,8 @@ export function byHousehold({ actor, grownUps, kids }, draw) {
   const live = households();
   const named = actor.owner === true && live.length > 1;
   const mine = placed(actor);
-  // A household a row is in that the list does not name stays visible, after the named ones.
-  const ids = named ? [...new Set([mine, ...live.map((one) => one.id), ...[...grownUps, ...kids].map(placed)])] : [mine];
+  // The server places everyone in a live household, a gone one reading as home, so every row's is listed.
+  const ids = named ? [...new Set([mine, ...live.map((one) => one.id)])] : [mine];
   return ids.flatMap((id) => {
     const own = id === mine;
     const of = (list) => (named ? list.filter((one) => placed(one) === id) : list);
@@ -41,8 +41,10 @@ export function byHousehold({ actor, grownUps, kids }, draw) {
       parts.push(section("Grown-ups", [...of(grownUps).map(draw.grownUp), ...(own && actor.admin ? [draw.addGrownUp()] : [])], level));
     }
     if (of(kids).length > 0 || own) parts.push(section("Kids", [...of(kids).map(draw.kid), ...(own ? [draw.addKid()] : [])], level));
-    if (!named || parts.length === 0) return parts;
-    const household = section(live.find((one) => one.id === id)?.name ?? id, parts);
+    // A household the list doesn't name yet (a sync mid-way) keeps its rows, unheaded, rather than breaking the page.
+    const name = live.find((one) => one.id === id)?.name;
+    if (!named || parts.length === 0 || name === undefined) return parts;
+    const household = section(name, parts);
     household.classList.add("manage-household");
     return [household];
   });

@@ -105,6 +105,8 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     var landing by remember { mutableStateOf<TvPickerSpot?>(null) }
     var profilesPage by remember { mutableStateOf(false) }
     var joiningElsewhere by remember { mutableStateOf(false) }
+    // Closed by nobody left to join elsewhere, it stays closed: only a press opens it again.
+    LaunchedEffect(joining.joinsElsewhere) { if (!joining.joinsElsewhere) joiningElsewhere = false }
     val tiles = rememberLazyListState()
     val inManage = managing != ManageUiState.Closed
     val pickPrompt = pickPin

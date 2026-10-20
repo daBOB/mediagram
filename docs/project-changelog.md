@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.136.2 — profiles and households polish
+
+**Fixed** (web player, Android phone, tablet and TV)
+
+- **Join a household says "No household can be joined from here."** when no other household has anyone with a PIN to let the device in, instead of a heading over an empty row of buttons.
+- **Web: Manage profiles asks who you are again** once you have been moved to another household on another device, instead of keeping your PIN and showing that household's people here — as the Android app already did.
+- **Android: a household join with nobody chosen says when reading the households after it failed**, and asks again, instead of closing its PIN prompt without a word.
+- **TV: the remote stays on the bar** when a household leaves Join a household's list meanwhile, instead of being pulled back into the list.
+- **TV: Join a household opens only when pressed.** Closed because a grown-up came back to this household, it no longer reopens by itself when they leave again.
+
+**Changed** (nothing a viewer sees)
+
+- The core's log names the household when giving an admin to one that is gone.
+
 ## 0.136.1 — households on Android, fixes
 
 **Fixed** (Android phone, tablet and TV)

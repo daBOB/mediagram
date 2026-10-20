@@ -96,12 +96,8 @@ class JoinHouseholdViewModel
             var kept = false
             ask.ask(
                 PinPrompt(joinPinTitle(admin), newPin = false),
-                send = { pin ->
-                    repository.manage(JoinHousehold(id, pin)).also {
-                        // Left behind, the switch took: the picker shows, with no prompt over it saying otherwise.
-                        if (it == ProfileOutcome.Done) kept = households.rereadAfterJoin(repository) { ask.cancel(); stillHere.tryEmit(false) }
-                    }
-                },
+                // Left behind, the switch took: the picker shows, with no prompt over it saying otherwise.
+                send = { pin -> households.joinThenReread(repository, JoinHousehold(id, pin), { ask.cancel(); stillHere.tryEmit(false) }) { kept = it } },
                 done = { stillHere.tryEmit(kept) },
             )
         }
@@ -130,24 +126,32 @@ private fun joinState(
 }
 
 /**
- * After a join that took: who is here, then the households, read again, and
- * whether the profile chosen here still is. A read that fails throws; once
- * who is here was read, a chosen profile left behind is first told to
- * [leftBehind], so the picker shows whether or not the households read.
+ * [join] sent and, once it took, who is here then the households read again,
+ * [kept] told whether the profile chosen here still is. A read that fails
+ * throws; once who is here was read, a profile chosen before the join and
+ * left behind by it is first told to [leftBehind], so the picker shows whether
+ * or not the households read. With nobody chosen, nobody was left behind: the
+ * failure is said where the join was asked, which asks again.
  */
-internal suspend fun HouseholdsRepository.rereadAfterJoin(
+internal suspend fun HouseholdsRepository.joinThenReread(
     watchState: WatchStateRepository,
+    join: JoinHousehold,
     leftBehind: () -> Unit,
-): Boolean {
+    kept: suspend (Boolean) -> Unit,
+): ProfileOutcome {
+    val chosenBefore = watchState.chosenProfileId.value != null
+    val outcome = watchState.manage(join)
+    if (outcome != ProfileOutcome.Done) return outcome
     watchState.reload()
-    val kept = watchState.chosenProfileId.value != null
+    val stays = watchState.chosenProfileId.value != null
     try {
         reload()
     } catch (e: Exception) {
-        if (!kept && e !is CancellationException) leftBehind()
+        if (chosenBefore && !stays && e !is CancellationException) leftBehind()
         throw e
     }
-    return kept
+    kept(stays)
+    return outcome
 }
 
 /** The households read again; a read that fails keeps what is shown, as a change that took has nothing to undo. */

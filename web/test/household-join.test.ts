@@ -122,6 +122,15 @@ test("a household nobody could let this device in is not offered", async () => {
   expect(pills(root)).toEqual(["Flat"]);
 });
 
+test("with no household anybody could let this device in, it says so in place of the buttons", async () => {
+  everyone = SPLIT.map((one) => (one.kids ? one : { ...one, hasPin: false }));
+  await device();
+  const root = new Node();
+  void chooseProfile(root);
+  expect(pills(root)).toEqual([]);
+  expect(textOf(byClass(root, "who-ask"))).toContain(HOUSEHOLD_WORDS.noneToJoin);
+});
+
 test("a device whose household has no grown-up left is offered the others, not a first profile", async () => {
   // Maja moved home with her Tim; only Lea, nobody's kid, is left in the flat.
   everyone = [{ ...ANDRE, owner: true, household: "home" }, { ...MAJA, household: "home" }, { ...TIM, household: "home" }, { ...LEA, household: "flat" }];

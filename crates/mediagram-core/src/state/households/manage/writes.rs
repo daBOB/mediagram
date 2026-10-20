@@ -32,7 +32,8 @@ pub(super) fn admin(conn: &Connection, household_id: &str, profile_id: &str, now
         params![household_id, profile_id, now, LAST_STAMP],
     )?;
     if written == 0 {
-        return Err(rusqlite::Error::QueryReturnedNoRows);
+        let none = rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_NOTFOUND);
+        return Err(rusqlite::Error::SqliteFailure(none, Some(format!("no household {household_id} to give an admin"))));
     }
     Ok(())
 }

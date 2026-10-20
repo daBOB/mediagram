@@ -137,3 +137,35 @@ test("a household renamed in the Households part shows in Manage at once, and Ma
   expect(headings(main)).toEqual(["Manage profiles", "Home", "Grown-ups", "Kids", "Attic", "Grown-ups", "Flat", "Grown-ups", "Kids", "Your PIN"]);
   expect(textOf(main)).toContain("As andre");
 });
+
+test("a grown-up moved out of this device's household elsewhere is asked who they are again, not kept", async () => {
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
+  await state.loadProfiles();
+  const root = await manageAs("Maja", "4321");
+  expect(textOf(root)).toContain("As Maja");
+  // Another device moves Maja home; a change made elsewhere on the page reads the list again.
+  everyone = everyone.map((one: any) => (one.id === "maja" ? { ...one, household: "home" } : one));
+  await state.loadProfiles();
+  env.window.dispatchEvent(new Event("mediagram:profiles"));
+  expect(textOf(root)).not.toContain("As Maja");
+  expect(textOf(root)).toContain("Who are you?");
+});
+
+test("a household is headed by its name, never its id", async () => {
+  // Ida's household is not in the list read; the server never sends one so, as it reads a gone household as Home.
+  households = [FLAT, AT_HOME];
+  await state.loadProfiles();
+  const root = await manageAs("andre", "1357");
+  expect(headings(root)).toEqual(["Manage profiles", "Home", "Grown-ups", "Kids", "Flat", "Grown-ups", "Kids", "Your PIN"]);
+});
+
+test("a household the list does not name keeps its rows, unheaded, instead of breaking Manage", async () => {
+  // Mid-sync the list can lack this device's household; its rows still show, without a heading.
+  households = [LOFT, FLAT];
+  await state.loadProfiles();
+  const root = await manageAs("andre", "1357");
+  const seen = headings(root);
+  expect(seen.slice(0, 2)).toEqual(["Manage profiles", "Grown-ups"]);
+  expect(seen).toContain("Loft");
+  expect(seen).not.toContain("home");
+});
