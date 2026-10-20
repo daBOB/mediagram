@@ -26,5 +26,8 @@ fun MediaSet.sectionKey(): String =
         else -> "movies"
     }
 
-/** The keys this profile does not see. The household admin hides nothing, whatever its stored list says. */
-val Profile.hiddenFrom: Set<String> get() = if (admin && !kids) emptySet() else hiddenSections.toSet()
+/**
+ * The keys this profile does not see. The owner hides nothing, whatever their
+ * stored list says; a household's admin sees what the owner left them.
+ */
+val Profile.hiddenFrom: Set<String> get() = if (owner) emptySet() else hiddenSections.toSet()

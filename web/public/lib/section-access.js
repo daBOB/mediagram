@@ -28,11 +28,11 @@ export function departmentOf(set) {
 
 /**
  * The sections `profile` is not shown that this build knows, in the nav's
- * order. None for nobody, nor for the grown-up who runs the household,
- * whatever its list says: the rule lets nobody set theirs.
+ * order. None for nobody, nor for the owner, whatever their list says: the
+ * rule lets nobody set theirs. A household's admin sees what the owner left.
  */
 export function hiddenSectionsOf(profile) {
-  if (!profile || (profile.admin && !profile.kids)) return [];
+  if (!profile || profile.owner === true) return [];
   const listed = profile.hiddenSections ?? [];
   return Object.keys(SECTIONS).filter((key) => listed.includes(key));
 }

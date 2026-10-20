@@ -65,4 +65,5 @@ fun CoreProfile.toModel(): Profile = Profile(
         hasPin = hasPin,
         dailyLimit = dailyLimit?.toInt(),
         hiddenSections = hiddenSections,
+        owner = owner,
     )
