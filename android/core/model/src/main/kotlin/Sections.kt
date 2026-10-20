@@ -28,3 +28,19 @@ fun MediaSet.sectionKey(): String =
 
 /** The keys this profile does not see. The household admin hides nothing, whatever its stored list says. */
 val Profile.hiddenFrom: Set<String> get() = if (admin && !kids) emptySet() else hiddenSections.toSet()
+
+/** The words of the Sections switches and the Everyone line — the web's `SECTION_ACCESS_WORDS`. */
+object SectionAccessWords {
+    const val TITLE = "Sections"
+    const val HIDES = "hides"
+
+    /** The switches' group, named for whose they are — the web's `aria-label`. */
+    fun forName(name: String): String = "$TITLE for $name"
+}
+
+/** What the Everyone line adds for this profile ("hides Anime, Tutorials", in nav order), or null when it is shown every section. */
+val Profile.hidesWords: String?
+    get() = SECTIONS.filter { it.key in hiddenFrom }.takeIf { it.isNotEmpty() }?.joinToString(", ", "${SectionAccessWords.HIDES} ") { it.label }
+
+/** This hidden list with [key] turned: hidden if it was shown, shown again if it was hidden; keys this app does not know kept as they came. */
+fun List<String>.turning(key: String): List<String> = if (key in this) filter { it != key } else this + key

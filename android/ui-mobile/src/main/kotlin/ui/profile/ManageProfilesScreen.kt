@@ -43,7 +43,8 @@ import ui.settings.QuietPill
  * Manage profiles on the phone — the web's `profile-manage.js`, section for
  * section: who you are; then, for the admin, the other grown-ups and a way to
  * add one; for every grown-up, its own kids at FSK 6 or 12 and a way to add
- * one; and its own PIN. The PIN itself is asked by [PinDialog] over this; a
+ * one; under each of those rows, the sections it is shown ([SectionSwitches]);
+ * and its own PIN. The PIN itself is asked by [PinDialog] over this; a
  * removal asks first ([RemoveProfileDialog]). Why the last change did not
  * take is said at the end, where the web says it.
  *
@@ -83,10 +84,12 @@ private fun Managing(
     var newLimit by rememberSaveable { mutableIntStateOf(NEW_KID_LIMIT) }
     // Saved as 0 for "No limit": no menu entry is zero minutes, and the saver takes no null.
     var newDaily by rememberSaveable { mutableIntStateOf(0) }
+    // On its own line under a row, as the web's are, and only on the rows the household's rule offers it.
+    val sections: @Composable (Profile) -> Unit = { p -> if (p in state.sectionRows) SectionSwitches(p, state.answers) { actions.onSetHiddenSections(p.id, it) } }
     if (state.canAddGrownUp) {
         Section(GROWN_UPS)
         state.grownUps.forEach { grownUp ->
-            ProfileRow(grownUp.name) {
+            ProfileRow(grownUp.name, below = { sections(grownUp) }) {
                 QuietPill(RESET_PIN, onClick = { actions.onChangePin(grownUp.id) }, small = true)
                 RemovePill(grownUp) { removing = it }
             }
@@ -99,6 +102,7 @@ private fun Managing(
             kid.name,
             below = {
                 DailyLimitChips(kid.dailyLimit, "${DailyLimitWords.LABEL} for ${kid.name}", { actions.onSetDailyLimit(kid.id, it) })
+                sections(kid)
             },
         ) {
             LimitChoice(kid.kidsLimit, "Age limit for ${kid.name}") { age -> actions.onSetKidsAge(kid.id, age) }

@@ -45,6 +45,19 @@ class ProfileWordsTest {
         assertNull(Profile("a", "andre").kidsTag)
     }
 
+    /** The web's `roleLine`: the sections someone is not shown, in the nav's order, a key this build does not know left out — never for whoever runs the household. */
+    @Test
+    fun theEveryoneLineSaysWhichSectionsSomeoneIsNotShown() {
+        val andre = Profile("a", "andre", admin = true, hasPin = true, hiddenSections = listOf("anime"))
+        val bea = Profile("b", "Bea", hiddenSections = listOf("later", "movies", "tutorials"))
+        val maja = Profile("m", "Maja", kids = true, kidsAge = 6, parentId = "b", dailyLimit = 45, hiddenSections = listOf("tutorials", "anime"))
+        val tom = Profile("t", "Tom", kids = true, parentId = "b")
+        assertEquals(
+            listOf("Admin · PIN set", "Grown-up · No PIN · hides Movies, Tutorials", "Kid · Bea · FSK 6 · 45 min · hides Anime, Tutorials", "Kid · Bea · FSK 12"),
+            everyoneHere(listOf(andre, bea, maja, tom)).map { it.second },
+        )
+    }
+
     @Test
     fun removingAGrownUpSaysItsKidsGoToo() {
         assertEquals("Remove Mia and everything they have watched?", removeQuestion(Profile("m", "Mia", kids = true)))
