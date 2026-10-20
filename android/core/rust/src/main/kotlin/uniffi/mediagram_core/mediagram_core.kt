@@ -790,6 +790,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_daily_limit(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_hidden_sections(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids_age(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_pin(
@@ -959,6 +961,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_daily_limit(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`minutes`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_hidden_sections(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`sections`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids_age(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`kidsAge`: Byte,
     ): Long
@@ -1276,6 +1280,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_daily_limit() and 0xFFFF) != 6510) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_hidden_sections() and 0xFFFF) != 50388) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids_age() and 0xFFFF) != 63867) {
@@ -2242,6 +2249,14 @@ public interface CoreInterface {
      * takes it off. Allowed exactly where `set_kids_age` is.
      */
     suspend fun `setDailyLimit`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `minutes`: kotlin.UShort?): ProfileOutcome
+
+    /**
+     * The sections of the library `id` does not see, as a whole list of
+     * section keys; an empty one hides nothing. A kid's by its own grown-up,
+     * a grown-up's by the admin, the admin's by nobody. `Invalid` for more
+     * than 16 keys or one that is not 1 to 24 lowercase letters.
+     */
+    suspend fun `setHiddenSections`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `sections`: List<kotlin.String>): ProfileOutcome
 
     /**
      * A parent sets its kid's limit: 6 or 12.
@@ -3904,6 +3919,36 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
+     * The sections of the library `id` does not see, as a whole list of
+     * section keys; an empty one hides nothing. A kid's by its own grown-up,
+     * a grown-up's by the admin, the admin's by nobody. `Invalid` for more
+     * than 16 keys or one that is not 1 to 24 lowercase letters.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setHiddenSections`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `sections`: List<kotlin.String>) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_hidden_sections(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterSequenceString.lower(`sections`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
      * A parent sets its kid's limit: 6 or 12.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -5277,8 +5322,7 @@ public object FfiConverterTypePreferenceRow: FfiConverterRustBuffer<PreferenceRo
 /**
  * A profile as the app sees it. Says whether there is a PIN, never what.
  * Every field after `name` is defaulted in the generated Kotlin (uniffi
- * 0.32 supports field defaults), so `Profile(id, name)` call sites keep
- * compiling.
+ * field defaults), so `Profile(id, name)` call sites keep compiling.
  */
 data class Profile (
     var `id`: kotlin.String
@@ -5315,6 +5359,11 @@ data class Profile (
      * Whether a PIN is set — never the PIN, its hash or its salt.
      */
     var `hasPin`: kotlin.Boolean = false
+    ,
+    /**
+     * Section keys this profile does not see, sorted; any profile's.
+     */
+    var `hiddenSections`: List<kotlin.String> = listOf()
 
 ){
 
@@ -5339,6 +5388,7 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterSequenceString.read(buf),
         )
     }
 
@@ -5350,7 +5400,8 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalUInt.allocationSize(value.`dailyLimit`) +
             FfiConverterOptionalString.allocationSize(value.`parentId`) +
             FfiConverterBoolean.allocationSize(value.`admin`) +
-            FfiConverterBoolean.allocationSize(value.`hasPin`)
+            FfiConverterBoolean.allocationSize(value.`hasPin`) +
+            FfiConverterSequenceString.allocationSize(value.`hiddenSections`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
@@ -5362,6 +5413,7 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalString.write(value.`parentId`, buf)
             FfiConverterBoolean.write(value.`admin`, buf)
             FfiConverterBoolean.write(value.`hasPin`, buf)
+            FfiConverterSequenceString.write(value.`hiddenSections`, buf)
     }
 }
 

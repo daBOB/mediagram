@@ -36,6 +36,7 @@ function migrationsUpTo(version: number): string[] {
 /** The one profile these files hold, as `profiles()` reads it back: a grown-up with no role. */
 const ANDRE = {
   id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
+  hiddenSections: [],
 };
 
 /** A database at version 1, as a player that ran before profiles left one. */
@@ -449,6 +450,28 @@ describe("v13 to v14", () => {
     try {
       expect(db.query("SELECT daily_limit AS dailyLimit, daily_limit_updated_at AS at FROM profiles").all())
         .toEqual([{ dailyLimit: null, at: 0 }]);
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("v14 to v15", () => {
+  test("a grown-up and a kid already stored hide nothing, and that choice is undated", () => {
+    const path = tempPath();
+    atVersion(path, 14, () => [
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'André', 1)",
+      "INSERT INTO profiles(id, name, created_at, kids, kids_age) VALUES ('k1', 'Mia', 2, 1, 6)",
+    ]);
+
+    const state = new WatchState(path);
+    expect(state.profiles().map((profile) => profile.hiddenSections)).toEqual([[], []]);
+    state.close();
+
+    const db = new Database(path);
+    try {
+      expect(db.query("SELECT hidden_sections AS hidden, hidden_sections_updated_at AS at FROM profiles").all())
+        .toEqual([{ hidden: "[]", at: 0 }, { hidden: "[]", at: 0 }]);
     } finally {
       db.close();
     }

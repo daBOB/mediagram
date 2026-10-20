@@ -30,6 +30,8 @@ export interface Profile {
   parentId: string | null;
   admin: boolean;
   hasPin: boolean;
+  /** Section keys this profile does not see, sorted; any profile's, a grown-up's too. */
+  hiddenSections: string[];
 }
 
 /** Everything stored about a profile, the PIN included. Never sent as is. */
@@ -48,6 +50,8 @@ export interface ProfileRow {
   pinSalt: string | null;
   pinUpdatedAt: number;
   pinProven: number; // 1: set by someone who knew the PIN before it, or the admin's reset
+  hiddenSections: string; // a JSON list of section keys, sorted, each once
+  hiddenSectionsUpdatedAt: number;
 }
 
 /** What a new profile is, beside its name. */
@@ -84,7 +88,8 @@ export function profileRows(db: Database | null): ProfileRow[] {
               kids_age_updated_at AS kidsAgeUpdatedAt,
               daily_limit AS dailyLimit, daily_limit_updated_at AS dailyLimitUpdatedAt, parent_id AS parentId,
               admin_claimed_at AS adminClaimedAt, pin_hash AS pinHash, pin_salt AS pinSalt,
-              pin_updated_at AS pinUpdatedAt, pin_proven AS pinProven
+              pin_updated_at AS pinUpdatedAt, pin_proven AS pinProven,
+              hidden_sections AS hiddenSections, hidden_sections_updated_at AS hiddenSectionsUpdatedAt
          FROM profiles ORDER BY created_at`,
     )
     .all() as ProfileRow[];
@@ -106,6 +111,7 @@ export function toProfile(row: ProfileRow): Profile {
     // must not make it an admin, or a profile with a PIN, here.
     admin: !kids && row.adminClaimedAt !== null,
     hasPin: !kids && row.pinHash !== null,
+    hiddenSections: JSON.parse(row.hiddenSections) as string[],
   };
 }
 
@@ -141,6 +147,8 @@ export function insertProfile(db: Database | null, name: unknown, role: NewProfi
     pinSalt: kids ? null : role.pin?.salt ?? null,
     pinUpdatedAt: !kids && role.pin !== undefined ? createdAt : 0,
     pinProven: 0,
+    hiddenSections: "[]", // the column's own default: hides nothing, undated
+    hiddenSectionsUpdatedAt: 0,
   };
   db.query(
     `INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,

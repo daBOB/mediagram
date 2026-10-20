@@ -50,6 +50,8 @@ data class Profile(
     val hasPin: Boolean = false,
     /** A kid's watching limit per day, in minutes; null is none, and always null on a grown-up. */
     val dailyLimit: Int? = null,
+    /** Section keys ([SECTIONS]) hidden from this profile, sorted; empty shows everything. Keys from a newer build are kept as they are. */
+    val hiddenSections: List<String> = emptyList(),
 ) {
     /**
      * The FSK this kid sees up to. Anything but 6 reads as 12, the limit

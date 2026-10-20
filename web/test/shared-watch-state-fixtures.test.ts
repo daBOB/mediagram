@@ -166,6 +166,7 @@ describe("profile-roles-merge fixtures", () => {
           ...(profile.dailyLimit ? { dailyLimit: profile.dailyLimit } : {}),
           ...(profile.parent !== undefined ? { parent: profile.parent } : {}),
           ...(profile.pin ? { pin: profile.pin } : {}),
+          ...(profile.hiddenSections ? { hiddenSections: profile.hiddenSections } : {}),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
       kids: [...(state.kids ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),

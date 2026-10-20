@@ -1,6 +1,7 @@
 /**
  * A profile's role between the `profiles` row and the wire: the admin
- * claim, a kid's limit and parent, a grown-up's PIN.
+ * claim, a kid's limit and parent, a grown-up's PIN, any profile's hidden
+ * sections.
  *
  * Kept out of `store.ts` for the reason `lists-exchange.ts` is. Corrective,
  * like everything `importMerged` calls: local news the merge ranks higher is
@@ -38,6 +39,10 @@ export function exportRoles(db: Database | null): Map<string, RoleKeys> {
     if (row.pinHash !== null && row.pinSalt !== null) {
       keys.pin = { hash: row.pinHash, salt: row.pinSalt, updatedAt: row.pinUpdatedAt, ...(row.pinProven ? { proven: true as const } : {}) };
     }
+    // Any profile's, once dated: a list nobody set (0) says nothing.
+    if (row.hiddenSectionsUpdatedAt > 0) {
+      keys.hiddenSections = { sections: JSON.parse(row.hiddenSections) as string[], updatedAt: row.hiddenSectionsUpdatedAt };
+    }
     return [row.id, keys];
   }));
 }
@@ -69,6 +74,16 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
       db.query("UPDATE profiles SET daily_limit = ?2, daily_limit_updated_at = ?3 WHERE id = ?1")
         .run(row.id, daily.minutes, daily.updatedAt);
       changed += 1;
+    }
+    const hidden = profile.hiddenSections;
+    if (hidden) {
+      // Compared as stored: both sides are sorted, each key once (`hiddenSectionsOf`).
+      const sections = JSON.stringify(hidden.sections);
+      if (newer(hidden.updatedAt, row.hiddenSectionsUpdatedAt, sections !== row.hiddenSections)) {
+        db.query("UPDATE profiles SET hidden_sections = ?2, hidden_sections_updated_at = ?3 WHERE id = ?1")
+          .run(row.id, sections, hidden.updatedAt);
+        changed += 1;
+      }
     }
     const pin = profile.pin;
     if (pin && pinTaken(pin, row)) {

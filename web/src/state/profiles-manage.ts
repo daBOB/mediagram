@@ -45,7 +45,7 @@ const isKid = (row: ProfileRow): boolean => row.kids !== 0;
 
 export class ProfileManager {
   constructor(
-    private readonly db: Database | null,
+    protected readonly db: Database | null,
     private readonly wait: PinWait,
     private readonly household: Pick<Household, "heard"> = { heard: () => true },
   ) {}
@@ -177,7 +177,7 @@ export class ProfileManager {
    * Somebody there, a grown-up acting, its PIN unless `unproven`, then the
    * rule. A player that cannot remember has no rows, so nothing gets past.
    */
-  private check(actorId: string, pin: unknown, action: Action, targetId: string | null, unproven = false): Outcome {
+  protected check(actorId: string, pin: unknown, action: Action, targetId: string | null, unproven = false): Outcome {
     const rows = profileRows(this.db);
     const actor = rows.find((row) => row.id === actorId);
     if (actor === undefined || (targetId !== null && !rows.some((row) => row.id === targetId))) {

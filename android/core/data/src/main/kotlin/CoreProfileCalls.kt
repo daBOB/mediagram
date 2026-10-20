@@ -20,6 +20,7 @@ internal suspend fun ProfileRequest.sendTo(core: CoreInterface): ProfileOutcome 
         is ProfileRequest.SetPin -> core.setPin(actorId, pin, id, newPin)
         is ProfileRequest.SetKidsAge -> ageOrNull(age)?.let { core.setKidsAge(actorId, pin, id, it) } ?: CoreOutcome.Invalid
         is ProfileRequest.SetDailyLimit -> limitOrNull(minutes)?.let { core.setDailyLimit(actorId, pin, id, it.value) } ?: CoreOutcome.Invalid
+        is ProfileRequest.SetHiddenSections -> core.setHiddenSections(actorId, pin, id, sections)
     }.toModel()
 
 /**
@@ -54,4 +55,14 @@ private fun CoreOutcome.toModel(): ProfileOutcome =
     }
 
 /** The core's profile as this app's own — the one place the two meet, shared with `testing.FakeProfiles`. */
-fun CoreProfile.toModel(): Profile = Profile(id, name, kids, kidsAge?.toInt(), parentId, admin, hasPin, dailyLimit?.toInt())
+fun CoreProfile.toModel(): Profile = Profile(
+        id = id,
+        name = name,
+        kids = kids,
+        kidsAge = kidsAge?.toInt(),
+        parentId = parentId,
+        admin = admin,
+        hasPin = hasPin,
+        dailyLimit = dailyLimit?.toInt(),
+        hiddenSections = hiddenSections,
+    )

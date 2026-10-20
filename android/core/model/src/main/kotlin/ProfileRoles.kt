@@ -9,6 +9,7 @@ enum class RoleAction(
     REMOVE("remove"),
     SET_PIN("set-pin"),
     SET_KIDS_AGE("set-kids-age"),
+    SET_ACCESS("set-access"),
 }
 
 /**
@@ -52,5 +53,9 @@ fun List<Profile>.allowed(
                 if (target.kids) ownerOf(target) == actor.id else actor.admin && target.id != actor.id
         RoleAction.SET_PIN -> target != null && !target.kids && (target.id == actor.id || actor.admin)
         RoleAction.SET_KIDS_AGE -> target != null && target.kids && ownerOf(target) == actor.id
+        // The admin never narrows its own view, as it is never removed.
+        RoleAction.SET_ACCESS ->
+            target != null &&
+                if (target.kids) ownerOf(target) == actor.id else actor.admin && !target.admin
     }
 }

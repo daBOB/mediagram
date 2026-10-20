@@ -37,7 +37,8 @@ pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use parse::parse_record;
-pub use roles_record::{AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles};
+pub use roles_record::{AdminClaim, DailyLimit, HiddenSections, KidsAge, PinRecord, ProfileRoles};
+pub(crate) use roles_record::hidden_sections_of;
 pub use stats_record::{DayStatRow, TitleStatRow};
 
 /// Bumped when a reader could no longer make sense of an older document.

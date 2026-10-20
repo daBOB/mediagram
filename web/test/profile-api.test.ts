@@ -130,6 +130,7 @@ function offered(profiles: object[], actorId: string, action: string, targetId: 
   if (action === "remove") return has(grownUps) || has(kids);
   if (action === "set-pin") return targetId === actorId || has(grownUps);
   if (action === "set-kids-age") return has(kids);
+  if (action === "set-access") return has(grownUps) || has(kids);
   throw new Error(`Unknown action ${action}`);
 }
 
