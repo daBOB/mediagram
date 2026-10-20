@@ -48,6 +48,7 @@ import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
+import testing.FakeHeldSets
 import testing.FakeLanChunkProtocol
 import testing.FakeLanServerSource
 import testing.FakeTogetherLive
@@ -66,6 +67,7 @@ internal class LibraryFlowFixture(
     loading: Boolean = false,
     settingsModel: SettingsViewModel? = null,
     achievements: Achievements = NO_ACHIEVEMENTS,
+    heldIds: Set<String> = emptySet(),
 ) : ViewModelStoreOwner,
     AutoCloseable {
     override val viewModelStore = ViewModelStore()
@@ -114,15 +116,12 @@ internal class LibraryFlowFixture(
             sets
         }
         coEvery { repository.titleInfo(any()) } returns null
-        // The title/series page's own Cast tab and franchise link: this
-        // fixture's own sets carry neither, so both stay off exactly as they
-        // did before either existed — but the pages ask every time they
-        // render, and a strict `mockk<CatalogRepository>()` throws for an
-        // unstubbed call whether or not a test ever opens that tab.
+        // The Cast tab and franchise link: these sets carry neither, but the
+        // pages ask on every render, and a strict mockk throws for an unstubbed call.
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.fetchPortrait(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together)
+        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, heldSets = FakeHeldSets(heldIds))
         player = playback.factory.create(PlayerViewModel::class.java)
         if (settingsModel == null) {
             every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))

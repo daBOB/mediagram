@@ -114,7 +114,7 @@ private fun AndroidOnlyItems(
     close: () -> Unit,
 ) {
     menu.onPreloads?.let { onPreloads ->
-        CatalogueMenuItem(text = { Text("Preloads · ${menu.preloadCount}") }, onClick = { close(); onPreloads() })
+        CatalogueMenuItem(text = { Text(menu.preloadsLabel) }, onClick = { close(); onPreloads() })
     }
     MenuItem(
         label = "Update library",

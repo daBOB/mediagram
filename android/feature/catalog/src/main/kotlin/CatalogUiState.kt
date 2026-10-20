@@ -126,6 +126,14 @@ fun CatalogUiState.heldFilms(): List<MediaSet> {
 }
 
 /**
+ * Whether the menu offers Preloads: while something is queued, or while this
+ * profile's catalogue resolves a title held on the device — so finished
+ * films and episodes can always be found and removed. A kids profile whose
+ * only held title is one its catalogue hides gets no entry.
+ */
+fun CatalogUiState.showsPreloads(queueCount: Int): Boolean = queueCount > 0 || heldFilms().isNotEmpty()
+
+/**
  * Only the rows this profile's own catalogue can resolve — a kids
  * profile's shelves never carry a title above its own age limit, so a
  * grown-up's preload for one must not surface here either: not its title
