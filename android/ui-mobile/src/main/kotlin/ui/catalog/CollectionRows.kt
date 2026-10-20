@@ -27,6 +27,7 @@ import model.Kind
 import model.MediaSet
 import model.Progress
 import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.heldInFull
 
 /**
  * The flat, indented row rendering a course's page and a show's Episodes
@@ -134,10 +135,8 @@ private fun ItemRow(
                 modifier = Modifier.padding(bottom = Spacing.small),
             )
         }
-        // The row's held figure at 100%: the catalogue's held set, or the
-        // row's own count, which may hear of a finished preload first.
-        val heldInFull = held || preload?.heldBytes?.let { it >= row.set.totalBytes } == true
-        if (heldInFull) OfflineBadge(modifier = Modifier.padding(bottom = Spacing.small))
+        // The row's held figure at 100%.
+        if (heldInFull(held, preload, row.set.totalBytes)) OfflineBadge(modifier = Modifier.padding(bottom = Spacing.small))
         watchedFractionOf(progress)?.let { fraction ->
             LinearProgressIndicator(
                 progress = { fraction },

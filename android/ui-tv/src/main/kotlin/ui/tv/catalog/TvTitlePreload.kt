@@ -66,11 +66,14 @@ internal fun TvPreloadPlate(
 /** The second pill Done offers beside the main one — see [TvPreloadPlate]. */
 @Composable
 internal fun TvPreloadRemovePlate(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TvSpreadPill(text = "Remove preload", onClick = onClick, modifier = modifier)
+    TvSpreadPill(text = RemovePreload, onClick = onClick, modifier = modifier)
 }
 
+/** What Done offers beside the control, on a film's page and an episode's row alike. */
+internal const val RemovePreload = "Remove preload"
+
 /** How faint a pill that cannot be pressed is drawn — [TvTextRow]'s own. */
-private const val DisabledAlpha = 0.5f
+internal const val DisabledAlpha = 0.5f
 
 /** NeedsSpace's own further row — opens Settings › Storage. */
 @Composable

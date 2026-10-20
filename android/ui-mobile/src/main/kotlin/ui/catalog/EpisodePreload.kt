@@ -18,11 +18,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import playback.FilmPreloadState
-import player.heldPercentLabel
 import player.preloadBarLabel
 import player.preloadLabel
 import ui.chrome.CatalogueMenu
 import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.rowControlState
+import ui.common.catalog.rowShareLabel
 import ui.settings.QuietPill
 
 /**
@@ -45,13 +46,12 @@ internal fun EpisodePreload(ui: TitlePreloadUi, totalBytes: Long, modifier: Modi
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val held = ui.heldBytes ?: 0L
-        if (held in 1 until totalBytes) {
+        ui.rowShareLabel(totalBytes)?.let { share ->
             Text(
-                text = heldPercentLabel(held, totalBytes),
+                text = share,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.semantics { contentDescription = preloadBarLabel(held, totalBytes) },
+                modifier = Modifier.semantics { contentDescription = preloadBarLabel(ui.heldBytes ?: 0L, totalBytes) },
             )
         }
         if (ui.state == FilmPreloadState.Done) {
@@ -63,11 +63,7 @@ internal fun EpisodePreload(ui: TitlePreloadUi, totalBytes: Long, modifier: Modi
                 }
             }
         } else {
-            // The share is said once, beside the pill: a partly held idle
-            // row's pill reads as for nothing held ("Preload · 5.8 GB").
-            val s = ui.state
-            val state = if (s is FilmPreloadState.Idle && s.heldBytes < s.totalBytes) FilmPreloadState.Idle(0L, s.totalBytes) else s
-            PreloadPill(state, ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true)
+            PreloadPill(ui.rowControlState(), ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true)
         }
     }
 }
