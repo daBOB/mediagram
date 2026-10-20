@@ -1,5 +1,6 @@
 package ui.profile
 
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -101,6 +102,27 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         assertEquals(emptyList(), profile("t").hiddenSections)
         anime.assertIsOn()
     }
+
+    /** The same refusal twice leaves the switches free each time, and the retry that goes through is sent. */
+    @Test fun theSameRefusalTwiceLeavesTheSwitchesFreeForTheRetry() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("Bea", "2222")
+        // The core hands Tom to andre behind the panel's back: Bea's turns are refused until he is handed back.
+        handTomTo("a")
+        val anime = compose.onNode(hasText("Anime") and hasAnyAncestor(hasContentDescription("Sections for Tom")))
+        repeat(2) {
+            anime.performScrollTo().performClick()
+            compose.onNodeWithText("That is not allowed.").assertExists()
+            anime.assertIsEnabled()
+        }
+        handTomTo("b")
+        anime.performClick()
+        assertEquals(listOf("anime"), profile("t").hiddenSections)
+        compose.onNodeWithText("That is not allowed.").assertDoesNotExist()
+    }
+
+    private fun handTomTo(parent: String) =
+        compose.runOnUiThread { household.core.profiles = household.core.profiles.map { if (it.id == "t") it.copy(parentId = parent) else it } }
 
     @Test fun theAdminHidesASectionFromAnotherGrownUp() {
         open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"))

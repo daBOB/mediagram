@@ -85,7 +85,7 @@ private fun Managing(
     // Saved as 0 for "No limit": no menu entry is zero minutes, and the saver takes no null.
     var newDaily by rememberSaveable { mutableIntStateOf(0) }
     // On its own line under a row, as the web's are, and only on the rows the household's rule offers it.
-    val sections: @Composable (Profile) -> Unit = { p -> if (p in state.sectionRows) SectionSwitches(p, state.notice) { actions.onSetHiddenSections(p.id, it) } }
+    val sections: @Composable (Profile) -> Unit = { p -> if (p in state.sectionRows) SectionSwitches(p, state.answers) { actions.onSetHiddenSections(p.id, it) } }
     if (state.canAddGrownUp) {
         Section(GROWN_UPS)
         state.grownUps.forEach { grownUp ->

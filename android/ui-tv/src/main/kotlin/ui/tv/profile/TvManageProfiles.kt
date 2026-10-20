@@ -160,7 +160,7 @@ private fun TvManaging(
             )
         is TvManageStep.Sections ->
             state.sectionRows.find { it.id == current.id }?.let { profile ->
-                TvSectionSwitches(profile, state.notice, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
+                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
             }
         else -> Unit
     }

@@ -44,6 +44,7 @@ class ManageProfilesViewModel
             data class Managing(
                 val actorId: String,
                 val notice: String? = null,
+                val answers: Int = 0,
             ) : Step
         }
 
@@ -143,10 +144,11 @@ class ManageProfilesViewModel
         }
 
         private fun change(request: (actorId: String, pin: String) -> ProfileRequest) {
-            val actorId = (step.value as? Step.Managing)?.actorId ?: return
+            val managing = step.value as? Step.Managing ?: return
             val pin = heldPin ?: return
+            step.value = managing.copy(notice = null)
             viewModelScope.launch {
-                report(actorId, orDefault(null, "profile change") { repository.manageAndShare(request(actorId, pin), sync) })
+                report(managing.actorId, orDefault(null, "profile change") { repository.manageAndShare(request(managing.actorId, pin), sync) })
             }
         }
 
@@ -172,21 +174,20 @@ class ManageProfilesViewModel
         /**
          * How a change went — the web's `report`. Every change sends the PIN
          * held here, so a wrong one means it is no longer theirs: ask who they
-         * are again rather than spend that profile's tries.
+         * are again rather than spend that profile's tries. Each answer is
+         * counted, so even a refusal already on show — a new try clears it
+         * first ([change]) — is news to a control waiting on its answer.
          */
-        private fun report(
-            actorId: String,
-            outcome: ProfileOutcome?,
-        ) {
-            if ((step.value as? Step.Managing)?.actorId != actorId) return
+        private fun report(actorId: String, outcome: ProfileOutcome?) {
+            val answers = (step.value as? Step.Managing)?.takeIf { it.actorId == actorId }?.answers ?: return
             step.value =
                 when (outcome) {
-                    ProfileOutcome.Done -> Step.Managing(actorId)
+                    ProfileOutcome.Done -> Step.Managing(actorId, answers = answers + 1)
                     ProfileOutcome.WrongPin -> {
                         heldPin = null
                         Step.ChoosingActor(PIN_NO_LONGER_VALID)
                     }
-                    else -> Step.Managing(actorId, outcome.reason())
+                    else -> Step.Managing(actorId, outcome.reason(), answers + 1)
                 }
         }
 
@@ -194,6 +195,6 @@ class ManageProfilesViewModel
             when (this) {
                 Step.Closed -> ManageUiState.Closed
                 is Step.ChoosingActor -> ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
-                is Step.Managing -> manageable(profiles, actorId, notice)
+                is Step.Managing -> manageable(profiles, actorId, notice, answers)
             }
     }

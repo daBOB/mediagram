@@ -59,6 +59,7 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         )
     private val inDialog = hasAnyAncestor(isDialog())
     private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
+    private var answered = 0
 
     @Before
     fun leaveTouchMode() {
@@ -70,9 +71,9 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         show { TvManageProfiles(shown.value, actions) }
     }
 
-    /** What the panel would draw next: [tom] as the core now holds him, and why the last change did not take. */
+    /** What the panel draws on its next answer: [tom] as the core now holds him, why the change did not take, one more answered. */
     private fun answer(hidden: List<String>, notice: String? = null) =
-        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = hidden)), notice) }
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = hidden)), notice, ++answered) }
 
     /** Tom's row → Sections, which says what is hidden as the Everyone line does: FSK 12 → Daily limit → Sections. */
     private fun openTomsSections() {
@@ -112,16 +113,20 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         assertEquals(listOf("sections t [later]", "sections t [later, series]"), calls)
     }
 
-    /** A refusal is said in the dialog, and frees the switches for another try. */
+    /** A refusal is said in the dialog and frees the switches — the same refusal twice, too — and the retry that goes through is sent. */
     @Test
-    fun aRefusalIsSaidInTheDialogAndFreesTheSwitches() {
+    fun theSameRefusalTwiceFreesTheSwitchesEachTimeAndTheRetryIsSent() {
         openTomsSections()
+        repeat(2) {
+            press(Key.DirectionCenter)
+            answer(listOf("anime", "later"), notice = "That is not allowed.")
+            compose.onNode(hasText("That is not allowed.") and inDialog).assertExists()
+            switch("Movies").assertIsFocused()
+        }
         press(Key.DirectionCenter)
-        answer(listOf("anime", "later"), notice = "That is not allowed.")
-        compose.onNode(hasText("That is not allowed.") and inDialog).assertExists()
-        switch("Movies").assertIsFocused()
-        press(Key.DirectionCenter)
-        assertEquals(listOf("sections t [anime, later, movies]", "sections t [anime, later, movies]"), calls)
+        answer(listOf("anime", "later", "movies"))
+        switch("Movies").assertIsFocused().assertIsOff()
+        assertEquals(List(3) { "sections t [anime, later, movies]" }, calls)
     }
 
     /** The look the user chose: a section the profile sees is a quiet line pill; only a hidden one is filled and struck through. */

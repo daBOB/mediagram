@@ -43,20 +43,22 @@ internal fun sectionsLine(profile: Profile): String = listOfNotNull(SectionAcces
  * the whole hidden list, keys this app does not know kept, and the dialog
  * stays: the switches are keyed and their chains never change, so the
  * answer redraws them in place and the remote stays on the one it pressed.
- * Until that answer — the list changed, or a refusal, said as the body
- * ([notice]) — a press does nothing, so a second never sends a list the
- * first has not settled; the switches stay enabled, as a disabled one would
- * drop the remote. Done or Back closes it.
+ * Until the panel's next answer — [answers] moves on every one, a refusal
+ * heard before included, and a refusal is said as the body ([notice]) — a
+ * press does nothing, so a second never sends a list the first has not
+ * settled; the switches stay enabled, as a disabled one would drop the
+ * remote. Done or Back closes it.
  */
 @Composable
 internal fun TvSectionSwitches(
     profile: Profile,
     notice: String?,
+    answers: Int,
     onSet: (List<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
-    var held by remember(profile.hiddenSections, notice) { mutableStateOf(false) }
+    var held by remember(answers) { mutableStateOf(false) }
     TvDialog(
         title = "${SectionAccessWords.TITLE} · ${profile.name}",
         body = notice.orEmpty(),

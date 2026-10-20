@@ -20,13 +20,16 @@ sealed interface ManageUiState {
     /**
      * [actor]'s PIN was right. For the admin, every other grown-up and a way
      * to add one; for everyone, its own [kids]. [notice] says why the last
-     * change did not take, until the next one does.
+     * change did not take, until the next one is sent. [answers] counts the
+     * changes answered while managing: a control held until its answer waits
+     * for it to move, which even a refusal it has heard before does.
      */
     data class Managing(
         val actor: Profile,
         val grownUps: List<Profile>,
         val kids: List<Profile>,
         val notice: String? = null,
+        val answers: Int = 0,
     ) : ManageUiState {
         val canAddGrownUp: Boolean get() = actor.admin
 
@@ -45,6 +48,7 @@ internal fun manageable(
     profiles: List<Profile>,
     actorId: String,
     notice: String?,
+    answers: Int = 0,
 ): ManageUiState {
     val actor = profiles.find { it.id == actorId && !it.kids } ?: return ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
     return ManageUiState.Managing(
@@ -52,5 +56,6 @@ internal fun manageable(
         grownUps = if (actor.admin) profiles.filter { !it.kids && it.id != actorId } else emptyList(),
         kids = profiles.filter { it.kids && profiles.ownerOf(it) == actorId },
         notice = notice,
+        answers = answers,
     )
 }

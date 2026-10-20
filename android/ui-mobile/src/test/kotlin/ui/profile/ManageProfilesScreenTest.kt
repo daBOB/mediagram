@@ -162,7 +162,7 @@ class ManageProfilesScreenTest {
         compose.onNode(hasText("Anime") and ofTom).assertIsOff().performClick()
         compose.onNode(hasText("Series") and ofTom).assertIsNotEnabled().performClick()
         assertEquals(listOf("sections t [later]"), calls)
-        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("later")))) }
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("later"))), answers = 1) }
         compose.onNode(hasText("Series") and ofTom).performClick()
         assertEquals(listOf("sections t [later]", "sections t [later, series]"), calls)
     }

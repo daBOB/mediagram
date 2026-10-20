@@ -41,18 +41,18 @@ import model.turning
  * profiles — the web's `sectionSwitches`: a quiet "Sections", then a switch
  * per section in nav order, on while it is shown, the group named for whose
  * it is. Turning one hands [onSet] the whole hidden list, keys this app does
- * not know kept as they came, and holds every switch until the answer — the
- * list changed, or a refusal's [notice] — so a second turn never sends a list
- * the first has not settled.
+ * not know kept as they came, and holds every switch until the panel's next
+ * answer — [answers] moves on every one, a refusal heard before included — so
+ * a second turn never sends a list the first has not settled.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SectionSwitches(
     profile: Profile,
-    notice: String?,
+    answers: Int,
     onSet: (List<String>) -> Unit,
 ) {
-    var held by remember(profile.hiddenSections, notice) { mutableStateOf(false) }
+    var held by remember(answers) { mutableStateOf(false) }
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.small),
         itemVerticalAlignment = Alignment.CenterVertically,
