@@ -81,8 +81,14 @@ export function mountManage(container, { promptHost, onChange }) {
   const prompts = promptsOver(promptHost);
   const ask = prompts.ask;
 
-  /** Runs a change with the PIN held; once the body is gone nothing is sent. */
-  function send(call) {
+  /** Controls by a name that outlives a redraw: the one a change was made with has focus again after it, not the page. */
+  const named = new Map();
+  let changedWith = null;
+  const keep = (name, node) => { named.set(name, node); return node; };
+
+  /** Runs a change with the PIN held, made with the control kept as `name`; once the body is gone nothing is sent. */
+  function send(call, name = null) {
+    changedWith = name;
     return gone ? Promise.resolve(GONE) : call(session.actorId, session.pin);
   }
 
@@ -97,15 +103,18 @@ export function mountManage(container, { promptHost, onChange }) {
       : outcome.reason === "wrong-pin" ? "Your PIN is no longer valid. Choose who you are again." : refusalText(outcome);
     if (outcome.reason === "wrong-pin") session = null;
     draw();
+    named.get(changedWith)?.focus();
     if (outcome.ok) onChange?.();
   }
 
   /** Which sections `entry` is shown: a switch sends the whole list with the PIN held, and the panel redraws. */
-  const access = (entry) => sectionSwitches(entry, async (hidden) =>
-    report(await send((id, pin) => api.setHiddenSections(id, pin, entry.id, hidden))));
+  const access = (entry) => sectionSwitches(entry,
+    async (hidden, key) => report(await send((id, pin) => api.setHiddenSections(id, pin, entry.id, hidden), `${key} ${entry.id}`)),
+    (key, node) => keep(`${key} ${entry.id}`, node));
 
   function draw() {
     body.textContent = "";
+    named.clear();
     const view = session === null ? null : api.manageable(state.profiles(), session.actorId);
     if (view?.actor) drawRole(view);
     else drawWho();
@@ -150,12 +159,12 @@ export function mountManage(container, { promptHost, onChange }) {
     const newDaily = dailyChoice(null, `${DAILY_LIMIT_WORDS.label} for the new kid`);
     body.append(section("Kids",
       ...kids.map((kid) => {
-        const limit = limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`);
+        const limit = keep(`age ${kid.id}`, limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`));
         limit.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)))));
-        const daily = dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`);
+          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)), `age ${kid.id}`)));
+        const daily = keep(`daily ${kid.id}`, dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`));
         daily.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)))));
+          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)), `daily ${kid.id}`)));
         return row(kid.name, limit, daily,
           pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)), access(kid));
       }),

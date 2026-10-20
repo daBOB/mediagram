@@ -137,7 +137,7 @@ describe("the page, for a profile with a section hidden", () => {
     env.restore();
   });
 
-  const start = () => import(`${join(directory, "application.js")}?case=${++serial}`);
+  const start = async () => { await import(`${join(directory, "application.js")}?case=${++serial}`); await settle(); };
   const page = () => textOf(env.node("main"));
   /** The departments bar's links, as the shipped document has them. */
   const links = () => (env.document as unknown as { querySelectorAll(selector: string): Node[] }).querySelectorAll(".departments a");
@@ -146,13 +146,15 @@ describe("the page, for a profile with a section hidden", () => {
 
   test("its nav, the department, Home, a title's page, search, Continue and My List leave the section out", async () => {
     await start();
-    await settle();
     // Anime keeps its own rule beside this one: there is anime, so its link is there.
     expect(hiddenLinks()).toEqual(["movies"]);
-    expect(env.node("n-continue").textContent).toBe("0");
-    expect(env.node("n-watchlist").textContent).toBe("0");
+    expect([env.node("n-continue").textContent, env.node("n-watchlist").textContent]).toEqual(["0", "0"]);
+    expect(env.node("rail-masthead").textContent).not.toContain("film");
+    // Its pages say only that there is nothing, with no upload hint: the department and its paged shelf.
     await env.navigate("#/movies");
-    expect(page()).toContain(SECTIONS.movies.empty);
+    expect(page()).toBe(SECTIONS.movies.empty);
+    await env.navigate("#/movies/page/2");
+    expect(page()).not.toContain("mediagram add");
     await env.navigate("#/film/Heat");
     expect(page()).toContain("not in the library");
     await env.navigate("#/home");
@@ -166,24 +168,22 @@ describe("the page, for a profile with a section hidden", () => {
   test("a hidden Anime loses its link as Movies does", async () => {
     profiles = [ANDRE, { ...MAJA, hiddenSections: ["anime"] }];
     await start();
-    await settle();
     expect(hiddenLinks()).toEqual(["anime"]);
     await env.navigate("#/anime");
-    expect(page()).toContain(SECTIONS.anime.empty);
+    expect(page()).toBe(SECTIONS.anime.empty);
   });
 
   test("whoever runs the household is shown every section, whatever its list says", async () => {
     profiles = [{ ...ANDRE, id: "viewer", hiddenSections: ["movies"] }];
     await start();
-    await settle();
     expect(link("movies").hidden).toBe(false);
     expect(env.node("n-movies").textContent).toBe("1");
+    expect(env.node("rail-masthead").textContent).toContain("film");
   });
 
   test("a section switched off in Settings for whoever is watching leaves the page at once, and Manage stays open", async () => {
     profiles = [ANDRE, { ...MAJA, hiddenSections: [] }];
     await start();
-    await settle();
     expect(link("movies").hidden).toBe(false);
     expect(env.node("n-movies").textContent).toBe("1");
     await env.navigate("#/settings");

@@ -197,7 +197,7 @@ function viewMovies(requested) {
     // and offering the choice would be offering it about nothing.
     library.movies.length > 0 ? movieControls() : null,
   );
-  if (library.movies.length === 0) return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()) }));
+  if (library.movies.length === 0) return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()), hidden: hiddenSectionsOf(state.profile()) }));
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager(page, pages);
   if (links) main.append(links);
@@ -229,7 +229,7 @@ function reelButton() {
 const deptContext = () => ({
   library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
   kidsLimit: kidsLimitOf(state.profile()), play: (set) => play(set), openFilm, reel: reelButton(),
-  openShow,
+  hidden: hiddenSectionsOf(state.profile()), openShow,
 });
 
 // Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
@@ -593,7 +593,7 @@ function drawRoute() {
   if (address.page === "list") {
     const list = state.collections().find((entry) => entry.id === address.id);
     return renderList(main, list, list ? setsFor(list.items) : [], {
-      play, onEditing: setShelfEditing, onGone: () => {
+      play, onEditing: setShelfEditing, visible: (setId) => byId.has(setId), onGone: () => {
         if (navigation === navigationGeneration && location.hash === visitedHash) go({ page: "collections" });
       },
     });

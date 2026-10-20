@@ -792,6 +792,20 @@ describe("kids profiles", () => {
     expect(posted).toEqual([]);
   });
 
+  test("Add titles on a kid's list offers only what the kid is shown", async () => {
+    await start();
+    await env.navigate("#/collections/list");
+    buttonNamed(env.node("main"), "Add titles").fire("click");
+    const field = byClass(env.node("main"), "add-search");
+    field.value = "x";
+    field.fire("input");
+    env.advance(1000);
+    await settle();
+    const offered = textOf(byClass(env.node("main"), "add-results"));
+    expect(offered).toContain("Family");
+    expect(offered).not.toContain("Grown");
+  });
+
   test("a catalog refresh on a kids profile is filtered too", async () => {
     await start();
     catalog = JSON.stringify([rated("Family", "6"), rated("Grown", "16"), rated("Later", "18"), rated("Also", "0")]);

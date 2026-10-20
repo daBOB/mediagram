@@ -95,10 +95,11 @@ const UPLOAD_HINT = {
 /**
  * What to say when a shelf is empty: the command that would fill it.
  * @param {"movies"|"series"|"tutorials"|"documentaries"|"anime"} section
- * @param {{kidsLimit?: number|null}} [options] a kids profile is waiting for
- *   ratings at its own limit, not uploads, so it is told that instead
+ * @param {{kidsLimit?: number|null, hidden?: string[]}} [options] a kids profile is waiting for ratings
+ *   at its own limit, not uploads, so it is told that; a section it is not shown, only that it is empty
  */
-export function emptyState(section, { kidsLimit = null } = {}) {
+export function emptyState(section, { kidsLimit = null, hidden = [] } = {}) {
+  if (hidden.includes(section)) return el("p", "empty", SECTIONS[section].empty);
   if (kidsLimit !== null) return el("p", "empty", `Nothing rated FSK ${kidsLimit} or under yet.`);
   const p = el("p", "empty");
   p.append(SECTIONS[section].empty + " ");

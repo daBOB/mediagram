@@ -78,6 +78,7 @@ test("a kid's limit changes with the PIN given once", async () => {
   limitOf(root, "Tim").fire("change");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/kids-age", { actorId: "maja", pin: "4321", age: 12 }]);
+  expect(env.document.activeElement).toBe(limitOf(root, "Tim"));
 });
 
 test("a new kid starts at FSK 6 unless its parent picks 12", async () => {
@@ -111,6 +112,7 @@ test("a kid's daily limit is set and cleared with the PIN given once, beside the
   dailyOf(root, "Tim").fire("change");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/daily-limit", { actorId: "maja", pin: "4321", minutes: 90 }]);
+  expect(env.document.activeElement).toBe(dailyOf(root, "Tim"));
   dailyOf(root, "Tim").value = "";
   dailyOf(root, "Tim").fire("change");
   await settle();
@@ -164,10 +166,15 @@ test("a kid's sections are switched with the PIN given once, and the panel redra
   const labels = Object.values(SECTIONS).map((section) => section.label);
   expect(switchesOf(root, "Tim").map((node) => node.textContent)).toEqual(labels);
   expect(shownTo(root, "Tim")).toEqual(labels);
-  switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!.fire("click");
+  const anime = () => switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!;
+  const turned = anime();
+  turned.fire("click");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts", "anime"] }]);
   expect(shownTo(root, "Tim")).toEqual(labels.filter((label) => label !== SECTIONS.anime.label));
+  // The panel is drawn anew, and focus is back on the switch just turned, not lost to the page.
+  expect(anime()).not.toBe(turned);
+  expect(env.document.activeElement).toBe(anime());
   switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!.fire("click");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts"] }]);

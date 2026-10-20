@@ -85,6 +85,11 @@
 /* A row's Sections take a line of their own, under its name and controls. */
 .section-switches { display: flex; flex-wrap: wrap; flex-basis: 100%; align-items: center; gap: 8px; }
 .section-switches-title { margin-right: 4px; color: var(--ink-3); font-size: 0.8125rem; }
+/* A section the profile sees is a quiet outlined chip, as the pills beside it are; only a hidden one stands out: filled, its name struck through. */
+.section-switch { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border: 1px solid var(--rule); border-radius: 999px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); font-size: 0.875rem; cursor: pointer; transition: color var(--hover), background-color var(--hover), border-color var(--hover); }
+.section-switch:hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.section-switch[aria-checked="false"] { border-color: var(--ink); background: var(--ink); color: var(--paper); text-decoration: line-through; }
+.section-switch[aria-checked="false"]:hover { background: color-mix(in srgb, var(--ink) 88%, var(--accent)); }
 /* A row's line keeps its own width; the name beside it takes the rest, and wraps first. */
 :is(.everyone-row, .household-row) > .setting-value { flex: 0 1 auto; margin: 0; text-align: right; }
 
