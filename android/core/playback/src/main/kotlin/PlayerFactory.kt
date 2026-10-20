@@ -6,13 +6,18 @@
 package playback
 
 import android.content.Context
+import android.os.Handler
 import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import data.isTelevision
 import uniffi.mediagram_core.CoreInterface
@@ -155,10 +160,30 @@ internal fun renderersFactory(context: Context): DefaultRenderersFactory =
     PlaybackRenderersFactory(context)
         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
 
-/** [DefaultRenderersFactory] whose audio sink refuses DTS and TrueHD passthrough — see [NoLosslessPassthroughSink]. */
+/**
+ * [DefaultRenderersFactory] whose audio sink refuses DTS and TrueHD passthrough — see [NoLosslessPassthroughSink] —
+ * and whose platform audio renderer downmixes surround for outputs that can't play it — see [StereoDownmixAudioRenderer].
+ */
 internal class PlaybackRenderersFactory(
     context: Context,
 ) : DefaultRenderersFactory(context) {
+    override fun buildAudioRenderers(
+        context: Context,
+        extensionRendererMode: Int,
+        mediaCodecSelector: MediaCodecSelector,
+        enableDecoderFallback: Boolean,
+        audioSink: AudioSink,
+        eventHandler: Handler,
+        eventListener: AudioRendererEventListener,
+        out: ArrayList<Renderer>,
+    ) {
+        super.buildAudioRenderers(context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback, audioSink, eventHandler, eventListener, out)
+        // media3 builds its MediaCodecAudioRenderer in-line, with no hook for the class, so it is swapped in place:
+        // same arguments, same slot ahead of FFmpeg.
+        out[out.indexOfFirst { it is MediaCodecAudioRenderer }] =
+            StereoDownmixAudioRenderer(context, codecAdapterFactory, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, audioSink)
+    }
+
     override fun buildAudioSink(
         context: Context,
         enableFloatOutput: Boolean,
