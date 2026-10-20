@@ -3,7 +3,7 @@ use crate::state::StateDb;
 use crate::state::editors_choice::{editors_choice, set_editors_choice};
 use crate::state::lists;
 use crate::state::merge::{MergedProfile, merge_states};
-use crate::state::record::{ProgressRow, UnwatchedRow, WatchedRow, parse_record};
+use crate::state::record::{NameKeys, ProgressRow, UnwatchedRow, WatchedRow, parse_record};
 
 fn db() -> (tempfile::TempDir, StateDb) {
     let dir = tempfile::tempdir().unwrap();
@@ -331,4 +331,147 @@ fn a_peer_editors_choice_past_the_safe_range_cannot_outrank_a_later_pick() {
             "{stamp}: the later pick leads"
         );
     }
+}
+
+/// A device's own store, opened directly so a test sees an import's error.
+struct Device {
+    _dir: tempfile::TempDir,
+    conn: Connection,
+    name: &'static str,
+}
+
+fn device(name: &'static str) -> Device {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = crate::state::open::open(dir.path()).unwrap();
+    Device { _dir: dir, conn, name }
+}
+
+/// A device's document as the channel carries it.
+fn wire(device: &Device) -> SyncRecord {
+    let text = serde_json::to_string(&export_record(&device.conn, device.name).unwrap()).unwrap();
+    parse_record(&text).unwrap()
+}
+
+/// One round on `on`: its own document and `from`'s, merged and taken back in.
+fn round(on: &Device, from: &Device) -> u64 {
+    import_merged(&on.conn, &merge_states(&[wire(on), wire(from)])).unwrap()
+}
+
+/// A document as a build from before renames reads it: without the two keys.
+fn older(mut record: SyncRecord) -> SyncRecord {
+    for profile in &mut record.profiles {
+        profile.names = NameKeys::default();
+    }
+    record
+}
+
+/// The laptop and the TV, both knowing Oma — her position and her list, made
+/// on the laptop and taken in by the TV — and then the laptop renames her
+/// Omi. Both devices, then the laptop's id for her and the TV's.
+fn renamed_on_the_laptop() -> (Device, Device, String, String) {
+    let (laptop, tv) = (device("laptop"), device("tv"));
+    let oma = profiles::create(&laptop.conn, "Oma", false).unwrap().unwrap().id;
+    rows::set_progress(&laptop.conn, &oma, "01A", 60.0, Some(1200.0)).unwrap();
+    let list = lists::create(&laptop.conn, &oma, "Favs").unwrap().unwrap();
+    assert!(lists::set_in_collection(&laptop.conn, &oma, &list.id, "01A", true).unwrap());
+    assert!(round(&tv, &laptop) > 0);
+    let tv_oma = profiles::list(&tv.conn).unwrap().remove(0).id;
+    laptop
+        .conn
+        .execute(
+            r#"UPDATE profiles SET name = 'Omi', renamed_at = 2000, former_names = '["oma"]' WHERE id = ?1"#,
+            [&oma],
+        )
+        .unwrap();
+    (laptop, tv, oma, tv_oma)
+}
+
+fn ids_and_names(conn: &Connection) -> Vec<(String, String)> {
+    profiles::list(conn).unwrap().into_iter().map(|one| (one.id, one.name)).collect()
+}
+
+fn renamed_omi() -> NameKeys {
+    NameKeys { renamed_at: 2000.0, former_names: vec!["oma".into()] }
+}
+
+/// Every row of every table, to show an import left them all as they were.
+fn everything(conn: &Connection) -> Vec<String> {
+    let mut tables = conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").unwrap();
+    let tables: Vec<String> = tables.query_map([], |row| row.get(0)).unwrap().map(Result::unwrap).collect();
+    let mut out = Vec::new();
+    for table in tables {
+        let mut select = conn.prepare(&format!("SELECT * FROM \"{table}\"")).unwrap();
+        let width = select.column_count();
+        let found = select
+            .query_map([], |row| {
+                (0..width).map(|at| row.get::<_, rusqlite::types::Value>(at)).collect::<rusqlite::Result<Vec<_>>>()
+            })
+            .unwrap();
+        out.extend(found.map(|one| format!("{table}: {:?}", one.unwrap())));
+    }
+    out
+}
+
+#[test]
+fn two_devices_agree_on_a_rename_and_a_second_round_changes_nothing() {
+    let (laptop, tv, _, tv_oma) = renamed_on_the_laptop();
+    assert!(round(&tv, &laptop) > 0);
+
+    assert_eq!(ids_and_names(&tv.conn), [(tv_oma.clone(), "Omi".to_string())]);
+    let progress: Vec<(String, f64)> =
+        rows::progress_for(&tv.conn, &tv_oma).unwrap().into_iter().map(|row| (row.set_id, row.at)).collect();
+    assert_eq!(progress, [("01A".to_string(), 60.0)]);
+    let kept: Vec<(String, Vec<String>)> =
+        lists::collections_for(&tv.conn, &tv_oma).unwrap().into_iter().map(|one| (one.name, one.items)).collect();
+    assert_eq!(kept, [("Favs".to_string(), vec!["01A".to_string()])]);
+    let exported = export_record(&tv.conn, "tv").unwrap().profiles.remove(0);
+    assert_eq!((exported.name.as_str(), exported.names), ("Omi", renamed_omi()));
+
+    assert_eq!(round(&tv, &laptop), 0);
+    assert_eq!(round(&laptop, &tv), 0);
+}
+
+/// And makes no profile under the old name.
+#[test]
+fn an_older_builds_document_under_the_old_name_is_filed_under_the_new_one() {
+    let (laptop, tv, oma, tv_oma) = renamed_on_the_laptop();
+    // The TV never took the rename in, and goes on watching as Oma.
+    rows::set_progress(&tv.conn, &tv_oma, "01B", 30.0, Some(1200.0)).unwrap();
+
+    let merged = merge_states(&[wire(&laptop), older(wire(&tv))]);
+    assert!(import_merged(&laptop.conn, &merged).unwrap() > 0);
+
+    assert_eq!(ids_and_names(&laptop.conn), [(oma.clone(), "Omi".to_string())]);
+    let mut progress: Vec<String> =
+        rows::progress_for(&laptop.conn, &oma).unwrap().into_iter().map(|row| row.set_id).collect();
+    progress.sort();
+    assert_eq!(progress, ["01A", "01B"]);
+    assert_eq!(export_record(&laptop.conn, "laptop").unwrap().profiles[0].names, renamed_omi());
+}
+
+#[test]
+fn an_older_builds_own_merge_shows_both_names() {
+    let (laptop, tv, _, _) = renamed_on_the_laptop();
+    let merged = merge_states(&[older(wire(&tv)), older(wire(&laptop))]);
+    let mut names: Vec<String> = merged.profiles.into_iter().map(|one| one.name).collect();
+    names.sort();
+    assert_eq!(names, ["oma", "omi"]);
+}
+
+/// Why the merge and import ship, and reach every device, before anything
+/// can rename: the new name's row would take in a list id the old one holds.
+/// The TV keeps every row, takes nothing in and publishes nothing until it
+/// updates.
+#[test]
+fn an_older_build_holding_the_persons_list_cannot_take_the_new_name_in() {
+    let (laptop, tv, _, _) = renamed_on_the_laptop();
+    let before = everything(&tv.conn);
+
+    let merged = merge_states(&[older(wire(&tv)), older(wire(&laptop))]);
+    let error = import_merged(&tv.conn, &merged).unwrap_err();
+
+    assert!(error.to_string().contains("UNIQUE constraint failed: collections.id"), "{error}");
+    assert_eq!(everything(&tv.conn), before);
+    let names: Vec<String> = profiles::list(&tv.conn).unwrap().into_iter().map(|one| one.name).collect();
+    assert_eq!(names, ["Oma"]);
 }
