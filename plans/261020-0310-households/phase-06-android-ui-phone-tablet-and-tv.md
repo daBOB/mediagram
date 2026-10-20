@@ -105,3 +105,18 @@
 
 - [ ] **Step 1:** Write the tests. **Run** → FAIL. **Step 2: Implement. Run** → PASS; `detekt`, `lint`.
 - [ ] **Step 3: Commit** `feat(android): the owner sets up households on the TV`.
+
+### Task 6.5: The owner's Manage lists every household (phone, tablet, TV)
+
+Added 2026-10-20 after the web shipped it (0.134.0, "the owner manages every profile"; CLAUDE.md § Surface Parity).
+
+**Files:** the Manage offer list (Kotlin counterpart of `web/public/lib/profile-api.js` `manageable`: for the owner,
+the whole install), the phone manage body (`ui-mobile/.../profile/ManageProfilesScreen.kt` — over 200 lines must not
+grow; group in a new file), TV `ui-tv/.../profile/TvManageProfiles.kt`; the Everyone line (`ProfileWords.kt`: the web's
+"Owner · " prefix); `feature/catalog/src/test/kotlin/profile/ManageOffersFixtureTest.kt` (remove the `ownerAcross` skips).
+**Behaviour:** as the owner, Manage lists every household's profiles under each household's name (this device's first,
+then live order), with the rows' existing actions; Add a grown-up / Add a kid stay with this device's household; a
+household with nothing to manage has no heading; anyone else's Manage is unchanged.
+**Tests:** offer list for the owner across households (all fixture cases, no skips); grouping order; TV: rows reachable
+with the D-pad, focus kept after an action; the Everyone line's owner prefix.
+**Commit** `feat(android): the owner manages every profile from Manage profiles`.
