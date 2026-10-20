@@ -75,7 +75,20 @@ export const HOUSEHOLDS_GROUP: readonly string[] = [
   `ALTER TABLE profiles ADD COLUMN household_updated_at INTEGER NOT NULL DEFAULT 0`,
 ];
 
+/**
+ * v16 -> v17: a profile's renames. Rows are keyed by id, so a rename is the
+ * name updated in place, dated so the newest rename names the person on every
+ * device; `former_names` is a sorted JSON list of the normalised names it had,
+ * as `hidden_sections` is, and none of them may be taken by a new profile.
+ * Every profile already stored was never renamed, so an untouched install
+ * writes the document it wrote before.
+ */
+export const RENAMES_GROUP: readonly string[] = [
+  `ALTER TABLE profiles ADD COLUMN renamed_at INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE profiles ADD COLUMN former_names TEXT NOT NULL DEFAULT '[]'`,
+];
+
 /** All, in order, as `schema.ts` lists them. */
 export const ROLES_GROUPS: readonly (readonly string[])[] = [
-  ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP, HIDDEN_SECTIONS_GROUP, HOUSEHOLDS_GROUP,
+  ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP, HIDDEN_SECTIONS_GROUP, HOUSEHOLDS_GROUP, RENAMES_GROUP,
 ];

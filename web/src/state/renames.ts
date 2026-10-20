@@ -57,7 +57,7 @@ export function resolveRenames(records: SyncRecord[]): { records: SyncRecord[]; 
       if (name === null) continue;
       const renamedAt = profile.renamedAt ?? 0;
       const standing = winners.get(find(name));
-      // Strictly greater on both: an exact tie keeps the entry met first.
+      // Newer stamp, then greater device; a full tie keeps the entry met first.
       if (standing === undefined || renamedAt > standing.renamedAt ||
           (renamedAt === standing.renamedAt && device > standing.device)) {
         winners.set(find(name), { name: profile.name.trim(), renamedAt, device });

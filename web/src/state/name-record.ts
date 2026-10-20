@@ -26,8 +26,9 @@ export interface NameKeys {
 
 /** A bound on what a document makes a device store; a longer list is dropped whole. */
 export const MAX_FORMER_NAMES = 32;
-/** As long as a stored name may be (`profiles.ts`), counted in code points as the core counts them. */
-const MAX_NAME = 120;
+/** Three times what a stored name may be (`profiles.ts`), in code points as the core counts them:
+ * NFC and lower-casing can lengthen a name a device was allowed to store ("İ" becomes "i̇"). */
+const MAX_NAME = 3 * 120;
 
 /** Each name once, by UTF-8 bytes: the core's `String` order, not a collator's. */
 export function sortedNames(names: Iterable<string>): string[] {

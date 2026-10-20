@@ -94,3 +94,16 @@ export function findOrCreateProfile(
   const created = insertProfile(db, displayName ?? name, { kids });
   return created ? { id: created.id, created: true, kids } : null;
 }
+
+/**
+ * Every name a new profile may not take: each profile's own and every name it
+ * had before, which never comes free on this install — an older build, or a
+ * retired device's last document, still writes it for the renamed person.
+ * `exceptId`'s own are left out.
+ */
+export function takenNames(db: Database | null, exceptId?: string): string[] {
+  if (!db) return [];
+  const rows = db.query("SELECT name, former_names AS formerNames FROM profiles WHERE id IS NOT ?1")
+    .all(exceptId ?? null) as { name: string; formerNames: string }[];
+  return rows.flatMap((row) => [row.name, ...JSON.parse(row.formerNames) as string[]]);
+}

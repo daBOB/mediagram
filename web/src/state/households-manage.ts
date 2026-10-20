@@ -19,7 +19,7 @@ import { insertHousehold, moveGrownUp, removeHousehold, writeHouseholdAdmin, wri
 import { ProfileAccess } from "./profiles-access";
 import type { Outcome, Refusal, Refused } from "./profiles-manage";
 import { cleanName, listProfiles, profileRows, toProfile, type ProfileRow } from "./profiles";
-import { insertProfile } from "./profiles-insert";
+import { insertProfile, takenNames } from "./profiles-insert";
 import { validPin } from "./profiles-pin";
 import { nameTaken } from "./profiles-rules";
 import { writePin } from "./profiles-write";
@@ -86,7 +86,7 @@ export class HouseholdManager extends ProfileAccess {
       return refuse("invalid");
     }
     if (this.householdNameTaken(name, null) ||
-      (adminId === null && nameTaken(profileRows(this.db).map((row) => row.name), adminName))) return refuse("name-taken");
+      (adminId === null && nameTaken(takenNames(this.db), adminName))) return refuse("name-taken");
     const allowed = this.owned(actorId, pin, "create-household", "", adminId);
     if ("reason" in allowed) return allowed;
     const target = allowed.rows.find((row) => row.id === adminId);

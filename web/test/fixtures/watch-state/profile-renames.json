@@ -67,8 +67,8 @@
       }
     },
     {
-      "name": "a former name that is not a name, or longer than 120 characters, is dropped on its own",
-      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[42,\"\",\"   \",null,{},\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\"𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸\",\"ok\"]}]}",
+      "name": "a former name that is not a name, or longer than 360 characters, is dropped on its own",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[42,\"\",\"   \",null,{},\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\"𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸\",\"ok\"]}]}",
       "expect": {
         "profiles": [
           {
@@ -76,8 +76,62 @@
             "renamedAt": 1789000000000,
             "formerNames": [
               "ok",
-              "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
-              "𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸"
+              "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+              "𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a former name lower-casing lengthens is kept, as typed and as a device stores it",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"İİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİ\"]},{\"name\":\"Ann\",\"renamedAt\":1789000000000,\"formerNames\":[\"i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307"
+            ]
+          },
+          {
+            "name": "Ann",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a decomposed former name is stored composed",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"E\u0301mile\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "émile"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "inside a former name U+0085 stays and U+FEFF is a space, as the web's whitespace reads them",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"Ann\u0085Marie\",\"Zoe\ufeff \ufeffLee\",\"\ufeffBen\u0085\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "ann\u0085marie",
+              "ben\u0085",
+              "zoe lee"
             ]
           }
         ]

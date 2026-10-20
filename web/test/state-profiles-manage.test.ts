@@ -4,6 +4,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
+import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -17,10 +18,25 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
+const paths = new WeakMap<WatchState, string>();
+
 function store(): WatchState {
   const dir = mkdtempSync(join(tmpdir(), "mediagram-manage-"));
   dirs.push(dir);
-  return new WatchState(join(dir, "state.db"));
+  const path = join(dir, "state.db");
+  const state = new WatchState(path);
+  paths.set(state, path);
+  return state;
+}
+
+/** Writes what no method here writes yet, through a second connection. */
+function sql(state: WatchState, statement: string): void {
+  const db = new Database(paths.get(state)!);
+  try {
+    db.exec(statement);
+  } finally {
+    db.close();
+  }
 }
 
 const profile = (state: WatchState, id: string) => state.profiles().find((one) => one.id === id);
@@ -301,6 +317,16 @@ describe("a name already here", () => {
     const { state, manage, andre, maja } = household();
     expect(manage.createKid(maja, "2222", "andré", 12)).toEqual({ reason: "name-taken" });
     expect(state.profiles().find((one) => one.id === andre)).toMatchObject({ kids: false, admin: true });
+  });
+
+  test("a new profile may not take a name another profile had before", () => {
+    // Sync would read a viewer under that name as the renamed one, history and all.
+    const { state, manage, andre, maja } = household();
+    sql(state, `UPDATE profiles SET former_names = '["celine","ma ja"]' WHERE id = '${maja}'`);
+    expect(manage.createGrownUp(andre, "1111", " CELINE", "3333")).toEqual({ reason: "name-taken" });
+    expect(manage.createKid(maja, "2222", "Ma  Ja", 6)).toEqual({ reason: "name-taken" });
+    expect(state.profiles()).toHaveLength(4);
+    expect(manage.createKid(maja, "2222", "Celia", 6)).toMatchObject({ name: "Celia" });
   });
 
   test("is said right after a name that cannot be used: before nobody there, and before the wait", () => {
