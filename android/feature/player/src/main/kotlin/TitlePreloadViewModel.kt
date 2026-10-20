@@ -14,6 +14,7 @@ import playback.CacheBudgetQuery
 import playback.FilmPreloadRow
 import playback.FilmPreloadState
 import playback.FilmPreloading
+import playback.HeldSetsQuery
 import playback.LanCacheSettings
 import playback.LanChunkProtocol
 import playback.LanServerSource
@@ -43,6 +44,7 @@ class TitlePreloadViewModel
         private val lanServerSource: LanServerSource,
         private val lanChunkProtocol: LanChunkProtocol,
         private val cacheBudget: CacheBudgetQuery = CacheBudgetQuery.Noop,
+        private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
     ) : ViewModel() {
         /**
          * The engine's own ordered queue, plus every film paused by
@@ -61,6 +63,26 @@ class TitlePreloadViewModel
         val queueCount: Flow<Int> = queueRows.map { it.size }
 
         fun stateOf(setId: String, totalBytes: Long): Flow<FilmPreloadState> = preloading.stateOf(setId, totalBytes)
+
+        /**
+         * How much of [setId] this device holds, in every state — what an
+         * episode row shows beside its control, even while [FilmPreloadState.Queued]
+         * (or Failed, or NeedsSpace) carries no figure of its own. Those read
+         * the cache once per state change, off the main thread inside
+         * [HeldSetsQuery]; a running write reads its own live figure, so its
+         * progress ticks never touch the cache.
+         */
+        fun heldBytes(setId: String, totalBytes: Long): Flow<Long> =
+            stateOf(setId, totalBytes)
+                .map { state ->
+                    when (state) {
+                        is FilmPreloadState.Idle -> state.heldBytes
+                        is FilmPreloadState.Running -> state.heldBytes
+                        is FilmPreloadState.Paused -> state.heldBytes
+                        FilmPreloadState.Done -> totalBytes
+                        else -> heldSets.heldBytes(setId, totalBytes)
+                    }
+                }.distinctUntilChanged()
 
         /** What the control's own tap or OK press does, read straight off [state] rather than kept as separate ViewModel bookkeeping. */
         fun toggle(setId: String, title: String, totalBytes: Long, state: FilmPreloadState) {
@@ -116,12 +138,19 @@ class TitlePreloadViewModel
          * defaults to [queueRows] itself; a kids profile's own wiring
          * passes one already filtered to titles its catalogue can resolve,
          * so "after <title>" never names a film a kid could not open.
+         * [withShare] `false` leaves out the running title's own percentage —
+         * see [queuedAheadLabel].
          */
-        fun queuedAhead(setId: String, totalBytes: Long, rows: Flow<List<FilmPreloadRow>> = queueRows): Flow<String?> =
+        fun queuedAhead(
+            setId: String,
+            totalBytes: Long,
+            rows: Flow<List<FilmPreloadRow>> = queueRows,
+            withShare: Boolean = true,
+        ): Flow<String?> =
             stateOf(setId, totalBytes)
                 .map { it is FilmPreloadState.Queued }
                 .distinctUntilChanged()
-                .flatMapLatest { queued -> if (!queued) flowOf(null) else rows.map { queuedAheadLabel(it, setId) } }
+                .flatMapLatest { queued -> if (!queued) flowOf(null) else rows.map { queuedAheadLabel(it, setId, withShare) } }
 
         /** The Preloads page's own "Resume" action for a film Android's time limit paused — re-enqueues it, the same as a tap on its own film page would. */
         fun resume(setId: String, title: String, totalBytes: Long) = preloading.enqueue(setId, title, totalBytes)

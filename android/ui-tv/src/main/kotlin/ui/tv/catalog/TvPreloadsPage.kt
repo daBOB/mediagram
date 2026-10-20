@@ -22,6 +22,7 @@ import designsystem.Spacing
 import designsystem.TvType
 import model.MediaSet
 import playback.FilmPreloadRow
+import ui.common.catalog.preloadName
 import player.preloadLabel
 import player.preloadRowState
 import ui.tv.TvTextRow
@@ -96,7 +97,7 @@ internal fun TvPreloadsPage(
         if (heldFilms.isNotEmpty()) {
             TvSectionHeading("On this device")
             for (set in heldFilms) {
-                TvTitleActionRow(set.title, onOpen = { onOpenTitle(set.setId) }, actionLabel = "Remove", onAction = { onRemove(set.setId) }, focus = focus, setId = set.setId)
+                TvTitleActionRow(preloadName(set), onOpen = { onOpenTitle(set.setId) }, actionLabel = "Remove", onAction = { onRemove(set.setId) }, focus = focus, setId = set.setId)
             }
         }
     }

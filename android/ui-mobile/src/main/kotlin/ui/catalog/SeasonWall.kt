@@ -26,7 +26,9 @@ import catalog.Entry
 import catalog.rowsOf
 import catalog.seasonOptionOf
 import designsystem.Spacing
+import model.MediaSet
 import model.WatchSnapshot
+import ui.common.catalog.TitlePreloadUi
 
 /**
  * The Episodes tab on a show's own page: a season picker over a readable
@@ -48,6 +50,7 @@ import model.WatchSnapshot
  * the chosen tab is ([rememberChosenTab]).
  *
  * [modifier] goes on every item this adds: the Episodes panel's rise.
+ * [preloadOf] gives each episode row its own Preload control.
  */
 internal fun LazyListScope.seriesEpisodes(
     collection: Entry.Collection,
@@ -57,6 +60,7 @@ internal fun LazyListScope.seriesEpisodes(
     heldIds: Set<String>,
     onPlay: (setId: String) -> Unit,
     modifier: Modifier = Modifier,
+    preloadOf: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
 ) {
     val shown = collection.divisions.find { it.title == season } ?: collection.divisions.firstOrNull() ?: return
     if (collection.divisions.size > 1) {
@@ -65,7 +69,7 @@ internal fun LazyListScope.seriesEpisodes(
     val rows = rowsOf(listOf(shown))
     val positions = watch.progress.associateBy { it.setId }
     val watchedIds = watch.watched.mapTo(HashSet()) { it.setId }
-    items(rows, positions, watchedIds, heldIds, onPlay, modifier)
+    items(rows, positions, watchedIds, heldIds, onPlay, modifier, preloadOf)
 }
 
 @Composable

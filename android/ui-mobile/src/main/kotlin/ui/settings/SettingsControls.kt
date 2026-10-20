@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,13 +45,14 @@ private val PillMinHeight = 48.dp
 @Composable
 private fun pillTextStyle(fontSize: TextUnit = 15.sp) = MaterialTheme.typography.bodyMedium.copy(fontSize = fontSize)
 
-/** An affirmative action a settings screen offers — "Change library", a field's "Save". Border and text in the accent. */
+/** An affirmative action a settings screen offers — "Change library", a field's "Save". Border and text in the accent; [small] as [QuietPill]'s. */
 @Composable
 internal fun LinePill(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    small: Boolean = false,
     contentDescription: String? = null,
 ) {
     CatalogueOutlinedButton(
@@ -59,12 +61,12 @@ internal fun LinePill(
         shape = RoundedCornerShape(Radius.control),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        contentPadding = PaddingValues(horizontal = if (small) 14.dp else 20.dp),
         modifier =
-            modifier.heightIn(min = PillMinHeight).let {
+            modifier.heightIn(min = if (small) 36.dp else PillMinHeight).let {
                 if (contentDescription != null) it.semantics { this.contentDescription = contentDescription } else it
             },
-    ) { Text(text, style = pillTextStyle()) }
+    ) { PillText(text, small) }
 }
 
 /** An action that undoes something — "Sign out", a session's own row. Neutral border, figures text. */
@@ -90,7 +92,17 @@ internal fun QuietPill(
             modifier.heightIn(min = if (small) 36.dp else PillMinHeight).let {
                 if (contentDescription != null) it.semantics { this.contentDescription = contentDescription } else it
             },
-    ) { Text(text, style = pillTextStyle(if (small) 13.sp else 15.sp)) }
+    ) { PillText(text, small) }
+}
+
+/** A small pill stays on one line, ellipsized, so it can sit beside a title in a row without taking it over. */
+@Composable
+private fun PillText(text: String, small: Boolean) {
+    if (small) {
+        Text(text, style = pillTextStyle(13.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    } else {
+        Text(text, style = pillTextStyle())
+    }
 }
 
 /**

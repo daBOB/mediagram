@@ -18,6 +18,7 @@ import ui.chrome.ProfileBarState
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.ResolvedPositions
+import ui.common.catalog.rememberEpisodePreloadUi
 import ui.common.catalog.rememberFilmPreloadUi
 import ui.common.catalog.rememberTitleInfo
 
@@ -61,8 +62,8 @@ internal fun TitleFrame(
             titleCredits = catalogViewModel::titleCredits,
             fetchPortrait = browseViewModel::fetchPortrait,
             portraits = browseViewModel.portraits,
-            // Films only — a show's episodes preload two at a time on
-            // their own already; kids profiles get it too, unlike the
+            // Films only here — an episode's own control sits on its row of
+            // the show page; kids profiles get it too, unlike the
             // editor's-choice pin above, since it is not a household mark.
             preload = if (title.kind == Kind.MOVIE) rememberFilmPreloadUi(title, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
         )
@@ -112,6 +113,7 @@ internal fun CollectionFrame(
             portraits = browseViewModel.portraits,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
+            episodePreload = { set -> rememberEpisodePreloadUi(set, catalogState) },
         )
     }
 }

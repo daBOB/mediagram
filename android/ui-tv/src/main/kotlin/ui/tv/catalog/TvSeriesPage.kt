@@ -30,8 +30,10 @@ import catalog.walk
 import data.PortraitRequestLog
 import designsystem.Overscan
 import designsystem.Spacing
+import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
 
@@ -75,6 +77,7 @@ internal fun TvSeriesPage(
     onToggleWatchlist: () -> Unit,
     editorsChoice: String?,
     onToggleEditorsChoice: (() -> Unit)?,
+    episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)?,
 ) {
     val first = remember(collection) { firstItemOf(collection.divisions) }
     val facts = remember(collection) { summarize(collection.divisions) }
@@ -156,7 +159,7 @@ internal fun TvSeriesPage(
                 else -> {
                     if (picker) item(key = "season-picker") { TvSeasonPicker(collection.divisions, shown, onSelectSeason, panel) }
                     itemsIndexed(rows, key = { index, row -> rowKeyOf(row, index) }) { index, row ->
-                        TvCollectionRow(row, marks, heldIds, onPlay, rowFocus.takeIf { index == restoredRow }, Modifier.padding(horizontal = Overscan.horizontal))
+                        TvCollectionRow(row, marks, heldIds, onPlay, rowFocus.takeIf { index == restoredRow }, Modifier.padding(horizontal = Overscan.horizontal), episodePreload)
                     }
                 }
             }

@@ -13,8 +13,10 @@ import catalog.courseExtentOf
 import catalog.rowsOf
 import data.PortraitRequestLog
 import designsystem.Spacing
+import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
 
@@ -24,6 +26,9 @@ import uniffi.mediagram_core.TitleInfo
  * when [collection] is one, else a course's own page ([TvCoursePage],
  * `course-view.js`). Everything past [heldIds] but [resume] and [onResume]
  * is a show's alone.
+ *
+ * [episodePreload] gives a show's episode rows their own Preload control;
+ * a course's lessons have none, as on the phone.
  *
  * [season]/[onSelectSeason] are the caller's own state, so a show opened
  * again from a title it led to still shows the season that was picked —
@@ -58,12 +63,13 @@ fun TvCollection(
     onToggleWatchlist: () -> Unit = {},
     editorsChoice: String? = null,
     onToggleEditorsChoice: (() -> Unit)? = null,
+    episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
 ) {
     if (collection.kind == CollectionKind.SHOW) {
         TvSeriesPage(
             collection, info, watch, onPlay, onOpenGenre, restoreKey, heldIds, credits, onOpenPerson, portraits,
             fetchPortrait, similar, onOpenCollection, resume, onResume, season, onSelectSeason, onToggleWatchlist,
-            editorsChoice, onToggleEditorsChoice,
+            editorsChoice, onToggleEditorsChoice, episodePreload,
         )
         return
     }

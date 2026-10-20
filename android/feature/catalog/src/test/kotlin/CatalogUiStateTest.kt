@@ -97,11 +97,19 @@ class CatalogUiStateTest {
         assertEquals(listOf("Alien"), state.heldFilms().map { it.title })
     }
 
-    /** An episode held in full is not a film — heldFilms only ever answers with [Entry.Film] cards. */
     @Test
-    fun anEpisodeHeldInFullIsNotAFilm() {
+    fun aFinishedEpisodeIsListedOnThisDevice() {
         val heldEpisode = episode("30 Rock", season = 7, episode = 1, title = "One")
-        val state = CatalogUiState.Ready(shelvesOf(listOf(heldEpisode)), heldIds = setOf(heldEpisode.setId))
+        val state = CatalogUiState.Ready(shelvesOf(listOf(heldEpisode, film("Alien"))), heldIds = setOf(heldEpisode.setId))
+
+        assertEquals(listOf("One"), state.heldFilms().map { it.title })
+    }
+
+    /** A kids profile's catalogue cannot resolve a grown-up's episode, so its held id lists nothing. */
+    @Test
+    fun aKidsListStillHidesAnEpisodeItsProfileHides() {
+        val hidden = episode("Grown-up Show", season = 1, episode = 1, title = "Hidden")
+        val state = CatalogUiState.Ready(shelvesOf(listOf(film("Kids Movie"))), heldIds = setOf(hidden.setId))
 
         assertEquals(emptyList(), state.heldFilms())
     }
