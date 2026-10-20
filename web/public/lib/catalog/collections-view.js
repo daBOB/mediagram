@@ -15,14 +15,14 @@ import { addTitles } from "./collection-add.js";
 import { crumbs, heading } from "./shelf-view.js";
 
 /** Complete list pages; the application supplies navigation and playback. */
-export function renderList(main, list, sets, { play, onEditing, onGone }) {
+export function renderList(main, list, sets, { play, onEditing, onGone, visible }) {
   main.append(crumbs("collections", "Collections", null, []));
   if (!list) {
     main.append(el("p", "error", "That list is not here any more."));
     return;
   }
   heading(main, list.name, countOf(list.items.length, "title"));
-  main.append(listControls(list, onEditing, onGone, sets.length > 0 ? () => play(sets[0], sets) : null));
+  main.append(listControls(list, onEditing, onGone, sets.length > 0 ? () => play(sets[0], sets) : null, visible));
   if (sets.length === 0) {
     main.append(el("p", "empty", "Nothing in this list yet. Use Add titles above, or Add to… in the player."));
     return;
@@ -47,7 +47,7 @@ export function newListButton() {
 }
 
 /** The controls at the head of one list: fill it, rename it, or delete it. */
-export function listControls(list, onEditing, onGone, onPlayAll) {
+export function listControls(list, onEditing, onGone, onPlayAll, visible) {
   const head = el("div", "list-head");
   const bar = el("div", "list-controls");
 
@@ -61,7 +61,7 @@ export function listControls(list, onEditing, onGone, onPlayAll) {
 
   // Before rename and delete, because it is what a viewer opening an empty
   // list is looking for. Those are things you do to a list you already have.
-  const { trigger, panel } = addTitles(list, onEditing);
+  const { trigger, panel } = addTitles(list, onEditing, visible);
   bar.append(trigger);
 
   const rename = el("button", "quiet", "Rename");

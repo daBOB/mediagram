@@ -4,6 +4,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -14,9 +15,7 @@ import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performTextInput
 import model.Profile
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,7 +26,6 @@ import ui.tv.profile.TvProfilePickerFirstTileTag
 import ui.tv.profile.tvClaimTag
 import ui.tv.profile.tvDailyLimitTag
 import ui.tv.profile.tvKidsLimitTag
-import ui.tv.setup.TvTextQuestionFieldTag
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -191,7 +189,7 @@ class TvProfilesFlowTest : TvProfilesHarness() {
 
         walkTo(rowOf("Bo"), Key.DirectionDown)
         press(Key.DirectionCenter)
-        press(Key.DirectionDown)
+        repeat(2) { press(Key.DirectionDown) }
         press(Key.DirectionCenter)
         compose.onNodeWithText("Remove Bo, their kids, and everything they have watched?").assertExists()
         press(Key.DirectionRight)
@@ -263,18 +261,20 @@ class TvProfilesFlowTest : TvProfilesHarness() {
         compose.onNodeWithText("Who's watching?").assertExists()
     }
 
-    /** The masthead's avatar, then its menu's "Switch profile", as selecting them does. */
-    private fun reopenPicker() {
-        compose.onNode(hasContentDescription("Menu, watching as andre")).performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitForIdle()
-        compose.onNode(hasText("Switch profile") and hasClickAction()).performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitForIdle()
-    }
-
-    /** A name through the system keyboard, as the remote's text field takes one. */
-    private fun name(text: String) {
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput(text)
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-        compose.waitForIdle()
+    @Test
+    fun aParentHidesASectionFromItsKidAndTheRemoteStaysOnTheSwitch() {
+        launch(listOf(andre, bo, cy), chosen = null)
+        openManageAs(rowOf("Bo"), "5678")
+        press(Key.DirectionCenter)
+        walkTo(rowOf("Sections"), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        walkTo(rowOf("Anime"), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        assertEquals(listOf("anime"), fixture.core.profiles.single { it.id == "c" }.hiddenSections)
+        compose.onNode(rowOf("Anime")).assertIsFocused().assertIsOff()
+        walkTo(rowOf("Done"), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        back()
+        compose.onNodeWithText("Kid · Bo · FSK 6 · hides Anime").assertExists()
     }
 }

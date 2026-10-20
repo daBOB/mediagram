@@ -54,7 +54,7 @@ function store(id) {
 }
 
 /** A profile's household; one that never said is home's, as `householdView` reads it. */
-const placed = (one) => one.household ?? HOME;
+export const placed = (one) => one.household ?? HOME;
 
 /**
  * Works out this device's household over `everyone` and the live

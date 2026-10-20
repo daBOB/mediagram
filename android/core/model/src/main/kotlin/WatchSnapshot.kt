@@ -57,6 +57,8 @@ data class Profile(
     val hiddenSections: List<String> = emptyList(),
     /** The household this profile is in; the first one until a device says otherwise. */
     val household: String = HOME_HOUSEHOLD,
+    /** Holds the install-wide claim: runs its household and manages the profiles in every other. Never a kid. */
+    val owner: Boolean = false,
 ) {
     /**
      * The FSK this kid sees up to. Anything but 6 reads as 12, the limit

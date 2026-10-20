@@ -46,8 +46,8 @@ fun List<Profile>.allowed(
 ): Boolean {
     val actor = find { it.id == actorId }?.takeUnless { it.kids } ?: return false
     val target = find { it.id == targetId }
-    // Households are separate: nobody manages a profile in another one.
-    if (target != null && target.household != actor.household) return false
+    // Households are separate: only the owner manages a profile in another one.
+    if (target != null && target.household != actor.household) return actor.owner && ownerReaches(action, target)
     return when (action) {
         RoleAction.CREATE_GROWN_UP -> actor.admin
         RoleAction.CREATE_KID -> true
@@ -57,9 +57,24 @@ fun List<Profile>.allowed(
                 if (target.kids) ownerOf(target) == actor.id else actor.admin && target.id != actor.id
         RoleAction.SET_PIN -> target != null && !target.kids && (target.id == actor.id || actor.admin)
         RoleAction.SET_KIDS_AGE -> target != null && target.kids && ownerOf(target) == actor.id
-        // The admin never narrows its own view, as it is never removed.
+        // A household's admin never narrows its own view.
         RoleAction.SET_ACCESS ->
             target != null &&
                 if (target.kids) ownerOf(target) == actor.id else actor.admin && !target.admin
     }
 }
+
+/**
+ * What the owner may do to anyone in another household, its admin too: remove
+ * them, set their sections, a grown-up's PIN, a kid's limits.
+ */
+private fun ownerReaches(
+    action: RoleAction,
+    target: Profile,
+): Boolean =
+    when (action) {
+        RoleAction.SET_PIN -> !target.kids
+        RoleAction.SET_KIDS_AGE -> target.kids
+        RoleAction.REMOVE, RoleAction.SET_ACCESS -> true
+        RoleAction.CREATE_GROWN_UP, RoleAction.CREATE_KID -> false
+    }

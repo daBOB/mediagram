@@ -50,8 +50,10 @@ function whereFrom(set) {
  *
  * @param {{id: string, items: string[]}} list
  * @param {(editing: boolean) => void} onEditing
+ * @param {(setId: string) => boolean} [visible] whether the profile watching is shown a title: the
+ *   server's search knows no profile, so a kid's limit and hidden sections are applied here
  */
-export function addTitles(list, onEditing) {
+export function addTitles(list, onEditing, visible = () => true) {
   /** The pending debounce, so closing can cancel it. */
   let timer = null;
   let sequence = 0;
@@ -145,7 +147,7 @@ export function addTitles(list, onEditing) {
         })
         .then((answer) => {
           if (mine !== sequence) return;
-          draw(pickerRows(answer.hits ?? [], [...here]));
+          draw(pickerRows((answer.hits ?? []).filter((hit) => visible(hit.setId)), [...here]));
         })
         .catch(() => {
           if (mine !== sequence) return;

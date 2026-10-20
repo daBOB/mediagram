@@ -1,7 +1,7 @@
 /**
  * Which sections of the library a profile sees, set by whoever the rule says
  * (`set-access` in `profiles-rules.ts`): a kid's by its own grown-up, a
- * grown-up's by the admin, the admin's by nobody.
+ * grown-up's by the admin, and anyone's in another household by the owner.
  *
  * A subclass only because `profiles-manage.ts` is at its line limit: it
  * answers in the same order and through the same `check` as every other

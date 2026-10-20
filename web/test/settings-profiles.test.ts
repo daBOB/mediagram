@@ -96,6 +96,25 @@ test("the owner's line reads Owner · Admin", async () => {
   expect(lines.slice(0, 2)).toEqual([`andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`, "MajaGrown-up · PIN set"]);
 });
 
+test("the Everyone line says which sections someone is not shown, in the nav's order — never for the owner", async () => {
+  household = [
+    { ...ANDRE, owner: true, hiddenSections: ["anime"] },
+    { ...MAJA, hiddenSections: ["tutorials", "movies"] },
+    { ...TIM, dailyLimit: 45, hiddenSections: ["tutorials", "anime"] },
+    { ...LEA, hiddenSections: ["podcasts"] },
+  ];
+  await state.loadProfiles();
+  const { main } = settings(find("andre"));
+  openProfiles(main);
+  const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
+  expect(lines).toEqual([
+    `andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`,
+    "MajaGrown-up · PIN set · hides Movies, Tutorials",
+    "TimKid · Maja · FSK 6 · 45 min · hides Anime, Tutorials",
+    "LeaKid · andre · FSK 12",
+  ]);
+});
+
 test("managingAsksWhoYouAreAndThePin, then a kid added appears in Everyone", async () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);

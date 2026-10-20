@@ -48,6 +48,9 @@ private sealed interface TvManageStep {
 
     data class DailyLimit(val kid: Profile) : TvManageStep
 
+    /** By id: the dialog stays open across the answers, so it reads the profile afresh from each one. */
+    data class Sections(val id: String) : TvManageStep
+
     data class GrownUpActions(val grownUp: Profile) : TvManageStep
 }
 
@@ -56,7 +59,8 @@ private sealed interface TvManageStep {
  * one column the remote walks: who you are; then, for the admin, the other
  * grown-ups; every grown-up's own kids ("Name · FSK N · daily limit"); its own PIN; Done.
  * A row opens its few choices in a dialog rather than laying the web's
- * buttons along it, so Down always means the next person. Adding asks the
+ * buttons along it, so Down always means the next person; the sections it is
+ * shown are one of them, in a dialog of switches of its own. Adding asks the
  * name on a screen of its own, in place, as every TV text question does.
  * Back is Done.
  */
@@ -138,6 +142,7 @@ private fun TvManaging(
                 current.kid,
                 onAge = { actions.onSetKidsAge(current.kid.id, it) },
                 onDailyLimit = { step = TvManageStep.DailyLimit(current.kid) },
+                onSections = { step = TvManageStep.Sections(current.kid.id) },
                 onRemove = { actions.onRemove(current.kid.id) },
                 onDismiss = back,
             )
@@ -149,9 +154,14 @@ private fun TvManaging(
                     back()
                     actions.onChangePin(current.grownUp.id)
                 },
+                onSections = { step = TvManageStep.Sections(current.grownUp.id) },
                 onRemove = { actions.onRemove(current.grownUp.id) },
                 onDismiss = back,
             )
+        is TvManageStep.Sections ->
+            state.sectionRows.find { it.id == current.id }?.let { profile ->
+                TvSectionSwitches(profile, state.notice, state.answers, onSet = { actions.onSetHiddenSections(profile.id, it) }, onDismiss = back)
+            }
         else -> Unit
     }
 }
