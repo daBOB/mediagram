@@ -8,14 +8,19 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.EVERYONE_HERE
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import catalog.profile.SWITCH_PROFILE
@@ -24,11 +29,13 @@ import catalog.profile.everyoneHere
 import designsystem.LocalCatalogueTones
 import designsystem.SectionHead
 import designsystem.Spacing
+import model.HouseholdWords
 import model.Profile
 import setup.ProfileSettingsViewModel
 import setup.ProfileSubtitleChoices
 import setup.profileStatus
 import ui.common.profile.manageActions
+import ui.profile.JoinHousehold
 import ui.profile.ManageProfilesScreen
 import ui.profile.PinDialog
 import ui.profile.ProfileRow
@@ -36,7 +43,8 @@ import ui.profile.ProfileRow
 /**
  * The one Profiles page — the web's (`settings-profiles.js`): You — who is
  * watching, the way to switch, their subtitle language — then everyone in the
- * household, then managing them. A kid sees only You; with nobody [chosen],
+ * household, then managing them, then, while there is more than one, the
+ * household this device shows. A kid sees only You; with nobody [chosen],
  * which is how the picker's Manage profiles opens it, there is no You. Seeing
  * the list needs no PIN; changing anything asks who you are and that
  * grown-up's PIN, held only for the visit ([ui.common.settings.ProfilesVisit]).
@@ -87,7 +95,7 @@ private fun You(profile: Profile) {
     }
 }
 
-/** Everyone here, then Manage profiles inline, and the PIN it asks for over them. */
+/** Everyone here, then Manage profiles inline, and the PIN it asks for over them, then This device. */
 @Composable
 private fun Household() {
     val manage: ManageProfilesViewModel = hiltViewModel()
@@ -111,4 +119,29 @@ private fun Household() {
     }
     ManageProfilesScreen(state, actions)
     pin?.let { PinDialog(it, onPin = manage::enterPin, onDismiss = manage::cancelPin) }
+    ThisDevice()
+}
+
+/**
+ * The household this device shows, and Switch household, which opens Join a
+ * household in its place — only while there is more than one. The gate asks
+ * who is watching again once a join leaves the chosen profile behind.
+ */
+@Composable
+private fun ThisDevice() {
+    val join: JoinHouseholdViewModel = hiltViewModel()
+    val state by join.state.collectAsStateWithLifecycle()
+    var switching by rememberSaveable { mutableStateOf(false) }
+    // A second household made on another device changes nobody here, so nothing else would read it.
+    LaunchedEffect(join) { join.reread() }
+    if (!state.canSwitch) return
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+        Text(HouseholdWords.THIS_DEVICE, style = SectionHead, color = MaterialTheme.colorScheme.onSurface)
+        Text(state.here?.name.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+        if (switching) {
+            JoinHousehold(join, Modifier.padding(top = Spacing.small), titleStyle = SectionHead)
+        } else {
+            QuietPill(HouseholdWords.SWITCH_HOUSEHOLD, onClick = { switching = true })
+        }
+    }
 }
