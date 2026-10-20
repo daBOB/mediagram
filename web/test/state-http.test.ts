@@ -249,7 +249,7 @@ describe("profiles", () => {
   test("are listed with their role, and never a PIN", async () => {
     expect((await listed()).find((profile) => profile.id === me)).toEqual({
       id: me, name: "André", createdAt: expect.any(Number),
-      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
+      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
     });
   });
 
@@ -317,7 +317,48 @@ describe("profiles", () => {
     expect((await listed()).find((profile) => profile.id === miaId)).toMatchObject({ kidsAge: 12 });
   });
 
+  test("hidden sections are set whole by whoever the rule says, read back sorted and once each", async () => {
+    const [majaId, miaId] = [await idOf("Maja"), await idOf("Mia")];
+    const hide = (id: string, body: Record<string, unknown>) => send(`/api/profiles/${id}/hidden-sections`, "PUT", body);
+    const hiddenOf = async (id: string) => (await listed()).find((profile) => profile.id === id)!.hiddenSections;
+    expect(await hiddenOf(miaId)).toEqual([]);
+    // A kid's are its own grown-up's to set; a key this build does not know is kept for one that does.
+    const sections = ["series", "anime", "series", "podcasts"];
+    expect((await hide(miaId, { actorId: majaId, pin: "2222", sections })).status).toBe(204);
+    expect(await hiddenOf(miaId)).toEqual(["anime", "podcasts", "series"]);
+    // A grown-up's are the admin's.
+    expect((await hide(majaId, { actorId: me, pin: "1111", sections: ["tutorials"] })).status).toBe(204);
+    expect(await hiddenOf(majaId)).toEqual(["tutorials"]);
+    expect((await hide(majaId, { actorId: me, pin: "1111", sections: [] })).status).toBe(204);
+    expect(await hiddenOf(majaId)).toEqual([]);
+  });
+
+  test("hidden sections: a refusal says why, a list that is not one is a 400, and neither changes anything", async () => {
+    const [majaId, miaId] = [await idOf("Maja"), await idOf("Mia")];
+    const cases: [string, Record<string, unknown>, number, string][] = [
+      [miaId, { actorId: majaId, pin: "2222", sections: "anime" }, 400, "invalid"],
+      [miaId, { actorId: majaId, pin: "2222" }, 400, "invalid"],
+      [miaId, { actorId: majaId, pin: "2222", sections: ["Anime"] }, 400, "invalid"],
+      [miaId, { actorId: majaId, pin: "2222", sections: [..."abcdefghijklmnopq"] }, 400, "invalid"],
+      ["nobody", { actorId: majaId, pin: "2222", sections: [] }, 404, "not-found"],
+      [miaId, { actorId: majaId, pin: "9999", sections: [] }, 403, "wrong-pin"],
+      // The admin, for another grown-up's kid and for itself; a grown-up for the admin; a kid for itself.
+      [miaId, { actorId: me, pin: "1111", sections: [] }, 403, "not-allowed"],
+      [me, { actorId: me, pin: "1111", sections: ["anime"] }, 403, "not-allowed"],
+      [me, { actorId: majaId, pin: "2222", sections: ["anime"] }, 403, "not-allowed"],
+      [miaId, { actorId: miaId, sections: [] }, 403, "not-allowed"],
+    ];
+    for (const [id, body, code, reason] of cases) {
+      const answer = await send(`/api/profiles/${id}/hidden-sections`, "PUT", body);
+      expect(answer.status).toBe(code);
+      expect(read(answer)).toEqual({ reason });
+    }
+    const byId = new Map((await listed()).map((profile) => [profile.id, profile.hiddenSections]));
+    expect([byId.get(miaId), byId.get(me)]).toEqual([["anime", "podcasts", "series"], []]);
+  });
+
   test("an action a profile does not have, or the wrong method for one, is a 405", async () => {
+    expect((await send(`/api/profiles/${me}/hidden-sections`, "POST", { sections: [] })).status).toBe(405);
     expect((await send(`/api/profiles/${me}/unlock`, "PUT", { pin: "1111" })).status).toBe(405);
     expect((await send("/api/profiles", "PUT", {})).status).toBe(405);
     expect((await rawRequest(server.port, `/api/profiles/${me}/pin`)).status).toBe(405);

@@ -18,7 +18,7 @@ import type { WatchState } from "./store";
 const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const TODAY = new RegExp(`^/api/profiles/${P}/today$`);
-const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age|daily-limit)$`);
+const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age|daily-limit|hidden-sections)$`);
 
 /** A wrong PIN and a refused role are both 403; a taken name, a missing PIN and an unheard household all 409; the body says which. */
 const CODES: Record<Refusal, number> = {
@@ -84,6 +84,8 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       return answer(manage.setKidsAge(actorId, said.pin, id, said.age));
     case "PUT daily-limit":
       return answer(manage.setDailyLimit(actorId, said.pin, id, said.minutes));
+    case "PUT hidden-sections":
+      return answer(manage.setHiddenSections(actorId, said.pin, id, said.sections));
     default:
       return bodiless(405);
   }

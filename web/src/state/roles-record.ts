@@ -1,6 +1,7 @@
 /**
  * A profile's role on the sync record: the admin claim, a kid's limit and
- * parent, a grown-up's PIN — and `kids`, which came first.
+ * parent, a grown-up's PIN, the sections any profile does not see — and
+ * `kids`, which came first.
  *
  * New optional keys rather than a `SYNC_FORMAT` bump, for the reason
  * `sync-record.ts` gives for `unwatched`: a reader that predates them drops
@@ -40,10 +41,30 @@ export interface RoleKeys {
    * where its grown-up had none, which never replaces one set earlier
    * elsewhere (`roles-merge.ts`). Written only when true. */
   pin?: { hash: string; salt: string; updatedAt: number; proven?: true };
+  /** The sections of the library this profile does not see, and when the
+   * list last changed — whole, so the newest list wins. Any profile's, a
+   * grown-up's too; an empty list is said, not absent, so it beats an older
+   * one. Keys this build does not know are kept for a build that does. */
+  hiddenSections?: { sections: string[]; updatedAt: number };
 }
 
 const HASH = /^[0-9a-f]{64}$/;
 const SALT = /^[0-9a-f]{32}$/;
+/** A section's key: today's five, and room for any a newer build adds. */
+const SECTION = /^[a-z]{1,24}$/;
+/** More than any build has sections, and a bound on what a document makes a device store. */
+const MAX_SECTIONS = 16;
+
+/**
+ * A list of hidden sections, sorted and each key once — or `null` for
+ * anything else: not an array, more than 16 entries as written, or any entry
+ * that is not a section's key. The record and the page's request read it alike.
+ */
+export function hiddenSectionsOf(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > MAX_SECTIONS) return null;
+  if (!value.every((key) => typeof key === "string" && SECTION.test(key))) return null;
+  return [...new Set(value as string[])].sort();
+}
 
 export function parseRoleKeys(row: Record<string, unknown>): RoleKeys {
   const keys: RoleKeys = {};
@@ -78,5 +99,10 @@ export function parseRoleKeys(row: Record<string, unknown>): RoleKeys {
     // Only the literal true: a PIN that wins over others is not guessed at.
     keys.pin = { hash, salt, updatedAt: pinAt, ...(pin?.proven === true ? { proven: true as const } : {}) };
   }
+
+  const hidden = objectRow(row.hiddenSections);
+  const sections = hiddenSectionsOf(hidden?.sections);
+  const hiddenAt = numberFromScalar(hidden?.updatedAt);
+  if (sections !== null && (hiddenAt === 0 || isStamp(hiddenAt))) keys.hiddenSections = { sections, updatedAt: hiddenAt };
   return keys;
 }

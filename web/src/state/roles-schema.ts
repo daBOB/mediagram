@@ -44,5 +44,17 @@ export const DAILY_LIMIT_GROUP: readonly string[] = [
   `ALTER TABLE profiles ADD COLUMN daily_limit_updated_at INTEGER NOT NULL DEFAULT 0`,
 ];
 
+/**
+ * v14 -> v15: the sections of the library a profile does not see, a JSON list
+ * of section keys, dated so the newest whole list wins across devices. `'[]'`
+ * hides nothing, so every profile already stored sees what it saw before.
+ */
+export const HIDDEN_SECTIONS_GROUP: readonly string[] = [
+  `ALTER TABLE profiles ADD COLUMN hidden_sections TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE profiles ADD COLUMN hidden_sections_updated_at INTEGER NOT NULL DEFAULT 0`,
+];
+
 /** All, in order, as `schema.ts` lists them. */
-export const ROLES_GROUPS: readonly (readonly string[])[] = [ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP];
+export const ROLES_GROUPS: readonly (readonly string[])[] = [
+  ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP, HIDDEN_SECTIONS_GROUP,
+];

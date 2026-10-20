@@ -40,11 +40,12 @@ function sql(path: string, write: (db: Database) => void): void {
   }
 }
 
-/** André as admin with a PIN, and Mia as his kid at FSK 6 — the household most tests start from. */
+/** André as admin with a PIN, and Mia as his kid at FSK 6 with Anime and Movies hidden — the household most tests start from. */
 function household(path: string, me: string, mia: string): void {
   sql(path, (db) => {
     db.query("UPDATE profiles SET admin_claimed_at = 500, pin_hash = ?2, pin_salt = ?3, pin_updated_at = 600 WHERE id = ?1")
       .run(me, HASH, SALT);
+    db.query(`UPDATE profiles SET hidden_sections = '["anime","movies"]', hidden_sections_updated_at = 800 WHERE id = ?1`).run(mia);
     db.query("UPDATE profiles SET kids_age = 6, kids_age_updated_at = 700, parent_id = ?2 WHERE id = ?1").run(mia, me);
   });
 }
@@ -56,11 +57,11 @@ describe("a profile as the page sees it", () => {
     const mia = state.createProfile("Mia", true)!;
     expect(me).toEqual({
       id: me.id, name: "André", createdAt: me.createdAt,
-      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
+      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
     });
     expect(mia).toEqual({
       id: mia.id, name: "Mia", createdAt: mia.createdAt,
-      kids: true, kidsAge: 12, dailyLimit: null, parentId: null, admin: false, hasPin: false,
+      kids: true, kidsAge: 12, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
     });
     expect(state.profiles()).toEqual([me, mia]);
     state.close();
@@ -101,6 +102,21 @@ describe("the record a device writes", () => {
     expect(byName.get("Mia")).toMatchObject({ kids: true, kidsAge: { age: 6, updatedAt: 700 }, parent: "André" });
     for (const key of ["kids", "kidsAge", "parent"]) expect(key in byName.get("André")!).toBe(false);
     for (const key of ["admin", "pin"]) expect(key in byName.get("Mia")!).toBe(false);
+    state.close();
+  });
+
+  test("hidden sections are said once dated, a grown-up's as well as a kid's; never set, they say nothing", () => {
+    const { state, path } = store();
+    const me = state.createProfile("André")!;
+    const mia = state.createProfile("Mia", true)!;
+    state.createProfile("Maja");
+    household(path, me.id, mia.id);
+    sql(path, (db) => db.query(`UPDATE profiles SET hidden_sections = '[]', hidden_sections_updated_at = 900 WHERE id = ?1`).run(me.id));
+    const byName = new Map(state.exportRecord("laptop").profiles.map((profile) => [profile.name, profile]));
+    expect(byName.get("Mia")!.hiddenSections).toEqual({ sections: ["anime", "movies"], updatedAt: 800 });
+    expect(byName.get("André")!.hiddenSections).toEqual({ sections: [], updatedAt: 900 });
+    expect("hiddenSections" in byName.get("Maja")!).toBe(false);
+    expect(state.profiles().map((profile) => profile.hiddenSections)).toEqual([[], ["anime", "movies"], []]);
     state.close();
   });
 
@@ -201,6 +217,23 @@ describe("taking in what the devices agreed on", () => {
     state.close();
   });
 
+  test("a newer list of hidden sections is taken whole, a grown-up's too; an older one, or the same, is not", () => {
+    const { state } = store();
+    state.createProfile("André");
+    const hide = (sections: string[], updatedAt: number) =>
+      state.importMerged({ profiles: [viewer("André", { hiddenSections: { sections, updatedAt } })] });
+    const hidden = () => state.profiles()[0]!.hiddenSections;
+    expect(hide(["anime", "series"], 1000)).toBe(1);
+    expect(hidden()).toEqual(["anime", "series"]);
+    expect(hide(["movies"], 900)).toBe(0);
+    expect(hide(["anime", "series"], 1000)).toBe(0);
+    // As new and different is the merge's winner by device id; an empty list is a list.
+    expect(hide([], 1000)).toBe(1);
+    expect(hidden()).toEqual([]);
+    expect(hide([], 1000)).toBe(0);
+    state.close();
+  });
+
   test("an older build's document, saying only kids, does not undo a limit a parent set", () => {
     const { state, path } = store();
     const mia = state.createProfile("Mia", true)!;
@@ -225,7 +258,9 @@ describe("taking in what the devices agreed on", () => {
     expect(round()).toBeGreaterThan(0);
     const byName = new Map(tv.state.profiles().map((profile) => [profile.name, profile]));
     expect(byName.get("André")).toMatchObject({ admin: true, hasPin: true, kids: false });
-    expect(byName.get("Mia")).toMatchObject({ kids: true, kidsAge: 6, parentId: byName.get("André")!.id });
+    expect(byName.get("Mia")).toMatchObject({
+      kids: true, kidsAge: 6, parentId: byName.get("André")!.id, hiddenSections: ["anime", "movies"],
+    });
     expect(round()).toBe(0);
     laptop.state.close();
     tv.state.close();

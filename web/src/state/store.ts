@@ -25,7 +25,7 @@ import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merged";
 import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
 import { exportRoles, importRoles } from "./roles-exchange";
-import { ProfileManager } from "./profiles-manage";
+import { ProfileAccess } from "./profiles-access";
 import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
@@ -621,8 +621,8 @@ export class WatchState {
   }
 
   /** Adding, removing and entering profiles, PIN and rule checked. */
-  manage(): ProfileManager {
-    return new ProfileManager(this.db, this.pins, this.household);
+  manage(): ProfileAccess {
+    return new ProfileAccess(this.db, this.pins, this.household);
   }
 }
 

@@ -1539,5 +1539,289 @@
       ],
       "kids": []
     }
+  },
+  {
+    "name": "hidden sections changed on two devices: the newer list wins whole, not joined with the older",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "hiddenSections": {
+              "sections": [
+                "anime",
+                "movies"
+              ],
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "hiddenSections": {
+              "sections": [
+                "series"
+              ],
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "hiddenSections": {
+            "sections": [
+              "series"
+            ],
+            "updatedAt": 2000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "hidden sections changed at the same moment on two devices: the larger device id wins",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "hiddenSections": {
+              "sections": [
+                "anime"
+              ],
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "hiddenSections": {
+              "sections": [
+                "movies"
+              ],
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "hiddenSections": {
+            "sections": [
+              "movies"
+            ],
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "an empty list of hidden sections stamped later beats an older list, and is kept so it goes on winning",
+    "records": [
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "hiddenSections": {
+              "sections": [
+                "anime",
+                "series"
+              ],
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "hiddenSections": {
+              "sections": [],
+              "updatedAt": 2000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "hiddenSections": {
+            "sections": [],
+            "updatedAt": 2000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a document that says no hidden sections does not unsay a list another sets",
+    "records": [
+      {
+        "format": 1,
+        "device": "tv",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      },
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "Mia",
+            "kids": true,
+            "kidsAge": {
+              "age": 12,
+              "updatedAt": 1000
+            },
+            "hiddenSections": {
+              "sections": [
+                "tutorials"
+              ],
+              "updatedAt": 1000
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "mia",
+          "displayName": "Mia",
+          "kids": true,
+          "kidsAge": {
+            "age": 12,
+            "updatedAt": 1000
+          },
+          "hiddenSections": {
+            "sections": [
+              "tutorials"
+            ],
+            "updatedAt": 1000
+          }
+        }
+      ],
+      "kids": []
+    }
+  },
+  {
+    "name": "a grown-up keeps its hidden sections: unlike a daily limit, they are not a kid's alone",
+    "records": [
+      {
+        "format": 1,
+        "device": "laptop",
+        "writtenAt": 0,
+        "profiles": [
+          {
+            "name": "André",
+            "hiddenSections": {
+              "sections": [
+                "documentaries"
+              ],
+              "updatedAt": 5
+            },
+            "progress": [],
+            "watched": []
+          }
+        ]
+      }
+    ],
+    "expect": {
+      "profiles": [
+        {
+          "name": "andré",
+          "displayName": "André",
+          "hiddenSections": {
+            "sections": [
+              "documentaries"
+            ],
+            "updatedAt": 5
+          }
+        }
+      ],
+      "kids": []
+    }
   }
 ]
