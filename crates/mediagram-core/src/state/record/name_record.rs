@@ -13,12 +13,11 @@
 
 use std::collections::BTreeSet;
 
-use icu_normalizer::ComposingNormalizerBorrowed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::hostile_json::js_number;
-use super::{is_stamp, normal_name};
+use super::{is_stamp, js_collapse, normal_name};
 
 /// The keys of a profile's entry that say what it was called.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -52,21 +51,6 @@ pub(crate) fn sorted_names(names: impl IntoIterator<Item = String>) -> Vec<Strin
     names.into_iter().collect::<BTreeSet<_>>().into_iter().collect()
 }
 
-/// JS's `\s`, which the web's `trim` and collapse use: Rust's
-/// `char::is_whitespace` without U+0085, and with U+FEFF.
-fn is_js_space(c: char) -> bool {
-    c == '\u{feff}' || (c != '\u{85}' && c.is_whitespace())
-}
-
-/// The web's `normalName` for a former name: NFC, its `trim`, lower case.
-/// Not `normal_name`, whose `trim` would also take a U+0085 the web keeps, so
-/// a former name reads the same on both and survives a round trip unchanged.
-pub(crate) fn normal_former_name(name: &str) -> Option<String> {
-    let composed = ComposingNormalizerBorrowed::new_nfc().normalize(name);
-    let clean = composed.trim_matches(is_js_space).to_lowercase();
-    (!clean.is_empty()).then_some(clean)
-}
-
 pub(crate) fn name_keys(row: &Map<String, Value>, own: &str) -> NameKeys {
     let renamed_at = js_number(row.get("renamedAt"));
     let renamed_at = if is_stamp(renamed_at) { renamed_at } else { 0.0 };
@@ -81,14 +65,14 @@ pub(crate) fn name_keys(row: &Map<String, Value>, own: &str) -> NameKeys {
     NameKeys { renamed_at, former_names }
 }
 
-/// `cleanName` without its cut, in the web's whitespace: an over-long name
-/// is dropped, not shortened into another.
+/// `cleanName` without its cut: an over-long name is dropped, not shortened
+/// into another.
 fn former_name(entry: &Value) -> Option<String> {
-    let clean = entry.as_str()?.split(is_js_space).filter(|part| !part.is_empty()).collect::<Vec<_>>().join(" ");
+    let clean = js_collapse(entry.as_str()?);
     if clean.is_empty() || clean.chars().count() > MAX_NAME {
         return None;
     }
-    normal_former_name(&clean)
+    normal_name(&clean)
 }
 
 #[cfg(test)]

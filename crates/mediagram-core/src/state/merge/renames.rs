@@ -14,13 +14,13 @@
 //! ties by the greater device id as `keep`'s are, so with nobody renamed the
 //! spelling is chosen exactly as `merge_states` always chose it.
 //!
-//! Entry names, parents and admins are keyed by `normal_name`, as the rest of
-//! the merge keys them; former names by `normal_former_name`, as they are read.
+//! Every name — entry, former, parent, admin — is keyed by `normal_name`, as
+//! the rest of the merge keys them.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::state::record::{MAX_FORMER_NAMES, NameKeys, SyncRecord, normal_former_name, normal_name, sorted_names};
+use crate::state::record::{MAX_FORMER_NAMES, NameKeys, SyncRecord, js_trim, normal_name, sorted_names};
 
 /// Each normalised name to its parent in the union-find; a person's root
 /// points at itself.
@@ -63,7 +63,7 @@ pub(super) fn resolve(records: &[SyncRecord]) -> (Cow<'_, [SyncRecord]>, HashMap
             continue;
         };
         meet(&mut root, &name);
-        for other in profile.names.former_names.iter().filter_map(|former| normal_former_name(former)) {
+        for other in profile.names.former_names.iter().filter_map(|former| normal_name(former)) {
             let joined = meet(&mut root, &other);
             let top = find(&mut root, &name);
             root.insert(joined, top);
@@ -93,7 +93,7 @@ pub(super) fn resolve(records: &[SyncRecord]) -> (Cow<'_, [SyncRecord]>, HashMap
                 renamed_at > standing.renamed_at || (renamed_at == standing.renamed_at && device > standing.device)
             });
             if wins {
-                winners.insert(top, Winner { name: profile.name.trim(), renamed_at, device });
+                winners.insert(top, Winner { name: js_trim(&profile.name), renamed_at, device });
             }
         }
     }

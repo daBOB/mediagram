@@ -2,7 +2,7 @@
 
 use rusqlite::{Connection, params};
 
-use super::Stored;
+use super::{Stored, json_list};
 use crate::state::households::HOME;
 use crate::state::profiles::{Profile, clean_name, pin};
 
@@ -88,4 +88,20 @@ pub(crate) fn insert(
         ],
     )?;
     Ok(Some(Profile::from(row)))
+}
+
+/// Every name a new profile may not take: each profile's own and every name
+/// it had before, which never comes free on this install — an older build,
+/// or a retired device's last document, still writes it for the renamed
+/// person. `except`'s own are left out.
+pub(crate) fn taken_names(conn: &Connection, except: Option<&str>) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT name, former_names FROM profiles WHERE id IS NOT ?1")?;
+    let rows = stmt.query_map([except], |row| Ok((row.get::<_, String>(0)?, json_list(row, 1)?)))?;
+    let mut names = Vec::new();
+    for row in rows {
+        let (name, former) = row?;
+        names.push(name);
+        names.extend(former);
+    }
+    Ok(names)
 }

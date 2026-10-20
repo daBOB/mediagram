@@ -1324,6 +1324,133 @@
           }
         ]
       }
+    },
+    {
+      "name": "at a name's edge U+0085 is part of it and U+FEFF is space, as the web's whitespace reads them",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "\u0085",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ann\u0085",
+              "renamedAt": 1789000000000,
+              "formerNames": [
+                "\ufeffAnna"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "\ufeffBen",
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Ann",
+              "progress": [
+                {
+                  "setId": "01D",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Anna\ufeff",
+              "progress": [
+                {
+                  "setId": "01E",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ben\ufeff",
+              "progress": [
+                {
+                  "setId": "01F",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "ann",
+            "displayName": "Ann",
+            "progress": [
+              "01D"
+            ]
+          },
+          {
+            "name": "ann\u0085",
+            "displayName": "Ann\u0085",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "anna"
+            ],
+            "progress": [
+              "01B",
+              "01E"
+            ]
+          },
+          {
+            "name": "ben",
+            "displayName": "Ben",
+            "progress": [
+              "01C",
+              "01F"
+            ]
+          },
+          {
+            "name": "\u0085",
+            "displayName": "\u0085",
+            "progress": [
+              "01A"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

@@ -143,7 +143,7 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         .unwrap();
     assert_eq!(age, None);
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 12);
+    assert_eq!(version, 13);
 }
 
 /// A store from before households puts every profile in Home, undated, makes
@@ -186,4 +186,33 @@ fn a_store_from_before_households_puts_everyone_in_home_run_by_the_owner() {
         )
         .unwrap();
     assert_eq!(places, 4);
+}
+
+/// A store from before renames reads as nobody renamed: every profile dated
+/// 0 with no former names, so an untouched install writes the document it
+/// wrote before.
+#[test]
+fn a_store_from_before_renames_reads_as_never_renamed() {
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
+        for statement in schema::migrations_up_to(12) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 12i64).unwrap();
+        conn.execute("INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'Celine', 1)", []).unwrap();
+    }
+
+    let conn = open(dir.path()).unwrap();
+
+    let row: (i64, String) = conn
+        .query_row("SELECT renamed_at, former_names FROM profiles WHERE id = 'p1'", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .unwrap();
+    assert_eq!(row, (0, "[]".to_string()));
+    let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
+    assert_eq!(version, 13);
+    let text = serde_json::to_string(&exchange::export_record(&conn, "laptop").unwrap()).unwrap();
+    assert!(!text.contains("renamedAt") && !text.contains("formerNames"), "{text}");
 }
