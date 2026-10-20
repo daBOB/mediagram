@@ -1,6 +1,6 @@
 /**
- * Profile-scoped state reads and writes: the snapshot, kids marks, the editor's choice, and
- * profiles through `profileRoute`. The browser write guard runs once, in the `src/routes.ts` dispatcher.
+ * Profile-scoped state reads and writes: the snapshot, kids marks, the editor's choice, and profiles
+ * and households (`profileRoute`, `householdRoute`). The write guard runs once, in the `src/routes.ts` dispatcher.
  */
 
 import { jsonBody } from "../http/browser-write";
@@ -8,6 +8,7 @@ import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless } from "../response";
 import type { WatchState } from "./store";
 import { leftToday, profileRoute } from "./profiles-routes";
+import { householdRoute } from "./households-routes";
 import { json, P } from "./route-shared";
 
 const STATE = new RegExp(`^/api/profiles/${P}/state$`);
@@ -57,8 +58,7 @@ export function createStateRouter(options: StateRouterOptions) {
 
   return function stateRoute(request: PlayerRequest): PlayerResponse | null {
     const { method, path } = request;
-    if (!path.startsWith("/api/profiles") && !path.startsWith("/api/kids") &&
-      !path.startsWith("/api/editors-choice")) return null;
+    if (!/^\/api\/(profiles|households|kids|editors-choice)/.test(path)) return null;
     const reading = method === "GET" || method === "HEAD";
 
     // Answered before the profile routes, and outside them: a mark on a title
@@ -76,8 +76,8 @@ export function createStateRouter(options: StateRouterOptions) {
       return json(JSON.stringify({ setId: pick }), method === "HEAD");
     }
 
-    // Who watches this library, and managing them, PIN and rule checked.
-    const profile = profileRoute(request, state);
+    // Who watches this library, and managing them and their households, PIN and rule checked.
+    const profile = profileRoute(request, state) ?? householdRoute(request, state);
     if (profile) return profile;
 
     const snapshot = STATE.exec(path);

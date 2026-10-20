@@ -88,8 +88,9 @@ function writeWorthSyncing(request: PlayerRequest): boolean {
   if (request.path.includes("/progress/")) {
     return request.method === "DELETE" || request.final === "1";
   }
-  // Entering a profile checks a PIN and changes nothing a document says.
-  if (request.path.endsWith("/unlock")) return false;
+  // Entering a profile, or joining a household, checks a PIN and changes
+  // nothing a document says: the browser keeps the household it joined.
+  if (request.path.endsWith("/unlock") || request.path.endsWith("/join")) return false;
   return true;
 }
 

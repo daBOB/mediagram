@@ -48,7 +48,7 @@ const isKid = (row: ProfileRow): boolean => row.kids !== 0;
 export class ProfileManager {
   constructor(
     protected readonly db: Database | null,
-    private readonly wait: PinWait,
+    protected readonly wait: PinWait,
     private readonly household: Pick<Household, "heard"> = { heard: () => true },
   ) {}
 

@@ -12,7 +12,7 @@ import { newPin } from "./profiles-pin";
  * one running behind must not write a change that loses to the value it
  * replaced. Clamped below the largest time a peer keeps, as `setWatched` is.
  */
-const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
+export const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
 
 /** A fresh salt and hash for `pin`; `proven` unless it is a first PIN, set where there was none. */
 export function writePin(db: Database, id: string, pin: string, proven: boolean): void {
