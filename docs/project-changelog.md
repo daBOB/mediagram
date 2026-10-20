@@ -5,6 +5,26 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.137.0 — cast to the TV
+
+**Added** (web player, Android phone, tablet and TV)
+
+- **Play on TV.** On a title page, beside Play/Resume, and in the player, beside Watch together. The TV plays the title in Mediagram (4K, HDR and Dolby Vision, decoded by the box) and this device becomes a remote: play/pause, seek, -10/+10 s, speed, Next episode, Subtitles & audio and Stop. Moving what is already playing continues at the same second. The TV plays as the caster's profile, so their progress, Continue and a kid's age and daily limits apply, and it returns to its own Home afterwards.
+- **A busy TV asks first.** "The TV is playing *X*. Replace it?" before anything is replaced; "Mediagram isn't open on the TV" after 5 s when nothing answers.
+- **The bar.** Backing out of the remote leaves the cast playing and a bar, **Playing on TV · Title**, on every phone, tablet and web player of the household. Tapping it opens the remote.
+- **Only TVs in your household.** A device offers a cast only after it has joined a household, and only a TV of that household answers; a TV in another household ignores the offer and shows no bar or Join for it.
+- **Pause and subtitles from the remote.** Pausing on either side shows on the other ("Paused on TV", "Paused by Tablet"), and a subtitle or audio choice on the remote is applied on the TV, and the other way round.
+- **Back on the TV ends it.** The remote says "Stopped on the TV"; Stop on the remote closes the TV's player.
+- **This device plays it (Android phone and tablet).** Play on TV also asks whether the TV plays it or this device does. For a TV without the box, connect it from Android's Cast screen; the player then puts the video on it (at most 1080p, no HDR) and the device shows the remote. If the connection drops, the video comes back to the device, paused.
+
+**Changed** (format)
+
+- Watch together's message is `#mlib-together v=2`: members gain `remote` and the session a `cast` object (including `cast.household`). Readers accept `v=1` and `v=2`; writers write `v=2`, so a screen on an older release does not see sessions, and all three surfaces ship together (`docs/mlib-spec.md` §7b).
+
+**Not in this release**
+
+- AirPlay from the web player in Safari. It needs an Apple device to probe and is deferred.
+
 ## 0.136.2 — profiles and households polish
 
 **Fixed** (web player, Android phone, tablet and TV)

@@ -593,10 +593,16 @@ unknown JSON key, which is why it needed no new marker.
 ## 7b. Watch together session
 
 Screens of one household that play a title in step share one message in the
-library channel per session, unpinned and edited in place:
+library channel per session, unpinned and edited in place. The same message
+carries a cast to the TV, a session with a remote in it:
 
-    #mlib-together v=1
-    {"session":"<uuid>","set":"<set id>","playing":true,"pos":1234.5,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"TV"}],"ended":false}
+    #mlib-together v=2
+    {"session":"<uuid>","set":"<set id>","playing":true,"pos":1234.5,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"TV","remote":false}],"ended":false,"cast":null}
+
+A cast to the TV:
+
+    #mlib-together v=2
+    {"session":"<uuid>","set":"<set id>","playing":false,"pos":312,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"Tablet","remote":true}],"ended":false,"cast":{"to":"TV","from":"Tablet","profile":"<profile id>","household":"<household id>","state":"offer","tv":"","note":"","tracks":{"audio":[],"text":[]},"audio":"","text":""}}
 
 | Field | Meaning |
 |---|---|
@@ -607,24 +613,44 @@ library channel per session, unpinned and edited in place:
 | `rate` | Playback speed, shared by every screen. A finite number above 0. |
 | `at` | The writer's wall clock, epoch milliseconds, when `pos` was true. An integer, not negative. |
 | `by` | The screen that made this change. |
-| `members` | The screens in the session: `{"screen","label"}`, where `label` is the surface kind (`TV`, `Phone`, `Tablet` or `Browser`). |
+| `members` | The screens in the session: `{"screen","label","remote"}`, where `label` is the surface kind (`TV`, `Phone`, `Tablet` or `Browser`). |
+| `members[].remote` | `true` for a screen that controls the session but plays nothing. A boolean on every member. |
 | `ended` | `true` once the session is over; written just before the message is deleted. |
+| `cast` | `null` for plain watch together; otherwise the object below. |
+| `cast.to` | The kind of screen asked to play: always `"TV"` in `v=2`. |
+| `cast.from` | The caster's surface label (`Phone`, `Tablet`, `Browser`), for "Cast from Tablet". |
+| `cast.profile` | The caster's profile id. The TV plays as this profile. Non-empty. |
+| `cast.household` | The household the casting device joined. Only a TV that joined the same one answers; a TV of another household says nothing, because its refusal would overwrite the answer of the TV the cast is for. A TV that joined none ignores the offer. Non-empty; a cast written without it is Home's (`home`). |
+| `cast.state` | `offer`, `busy`, `refused`, `replace` or `on`. |
+| `cast.tv` | The screen id of the TV that took the cast; `""` until one has. |
+| `cast.note` | With `busy`, the title the TV is playing; with `refused`, the reason, written for the viewer. `""` otherwise. |
+| `cast.tracks` | `{"audio":[...],"text":[...]}`, each entry `{"id","label"}`: the list the TV's own subtitle and audio menu shows, written once the title is open. Empty arrays before that. |
+| `cast.audio` | The id of the audio track playing on the TV; `""` until the TV has written its list. |
+| `cast.text` | The id of the subtitle track shown on the TV; `""` for none. |
 
 A screen id is random and lasts for one player instance (one player on an
 Android device, one browser tab); it is not the device id.
 
 **What a reader accepts.** The message is a session only if its first line is
-exactly `#mlib-together v=1` followed by a single `\n` (no `\r\n`), and the
-rest of the message is one JSON object and nothing after it. Every field is
-present with its type: `session`, `set`, `by` and every member's `screen` and
-`label` are non-empty strings (an empty id is rejected), `playing` and `ended`
-are booleans, `pos` and `rate` are finite numbers in range, `at` is an
-integer. A message that fails any of this is not a session, and the reader
-leaves it alone. Unknown extra keys are ignored. A writer emits the fields in
-the order shown, and a whole-number `pos` or `rate` without a fraction
-(`1`, not `1.0`), so both ports write the same bytes. The web reference is
-`web/public/lib/together/session.js`; the Android port is held to it by
-`web/test/fixtures/together/`.
+exactly `#mlib-together v=1` or `#mlib-together v=2` followed by a single `\n`
+(no `\r\n`), and the rest of the message is one JSON object and nothing after
+it. Every field is present with its type: `session`, `set`, `by` and every
+member's `screen` and `label` are non-empty strings (an empty id is rejected),
+`playing` and `ended` are booleans, `pos` and `rate` are finite numbers in
+range, `at` is an integer. A `v=2` message also has `remote` as a boolean on
+every member, and `cast` as `null` or an object with every field above at its
+type: `to`, `from`, `profile` and `household` are non-empty strings, `state` is
+one of the five words, and `tv`, `note`, `audio` and `text` may be empty. A
+`cast` object with no `household` reads as Home's; an empty or `null` one is
+not a session. A `v=1` message is read as a `v=2` one with no remote members
+and `cast: null`. Ids inside `tracks` are the TV's own and mean nothing to
+anyone else. A message that fails any of this is not a session, and the reader
+leaves it alone. Unknown extra keys are ignored. **Readers accept `v=1` and
+`v=2`; writers write `v=2`**, which is why a screen on an older release does not
+see sessions at all. A writer emits the fields in the order shown, and a
+whole-number `pos` or `rate` without a fraction (`1`, not `1.0`), so both ports
+write the same bytes. The web reference is `web/public/lib/together/session.js`;
+the Android port is held to it by `web/test/fixtures/together/`.
 
 **Writing.** The session is never pinned, so Telegram's pin flood limit stays
 out of the way and index readers skip it (it does not start with
@@ -653,11 +679,34 @@ and never sends a change it made because it was following.
   title's duration (6 hours after `at` when the duration is unknown), or
 - it is paused, and `at` is under 3 hours old.
 
+Two rules are added for casts:
+
+- A session whose `cast.state` is anything but `on` is a **request**, and is
+  stale 60 s after `at`, so a TV opened later never starts a request nobody is
+  waiting for. **A request is never the shown session:** no screen offers Join
+  for it or shows it in the bar.
+- **Remote members never keep a session alive.** When the last member that is
+  not a remote leaves, the session ends.
+
 A session that is not live is stale. Whoever reads a stale session next
 deletes the message. The last screen to leave writes `ended: true`, then
 deletes the message; so does the first screen to reach the end of a film or of
 the last episode. A member that crashes stays listed until the session ends or
 goes stale.
+
+**A cast's states.** The casting screen writes a new session as the only
+member, `remote: true`, with `cast.state: "offer"`. Every TV of
+`cast.household` with Mediagram open hears it and answers by editing the
+message; a TV of another household, or of none, writes nothing. A TV that may
+not play the title for that profile (age limit, daily limit) writes `refused`
+with the reason in `note`. A TV whose player is open writes `busy`, naming what
+it plays in `note`; the casting screen then asks, and `replace` (with a fresh
+`pos` and `at`) makes the TV leave what it plays. An idle TV adds itself as a
+member, sets `tv` to its screen id and `state` to `on`, and opens the title
+under `cast.profile`. From `on`, the TV is an ordinary member, so its remote
+control moves are edits like any other; `tracks`, `audio` and `text` are
+written by the TV and chosen from the remote. A TV that reads a `tv` that is
+not its own closes its player.
 
 Section 8's versioning rule applies: a change to the fields or their meaning
 bumps the marker, and a reader never guesses at a marker it does not know.

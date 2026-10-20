@@ -1,6 +1,6 @@
 # Cast to the TV — design
 
-2026-10-18. Status: approved in conversation in five parts, awaiting spec review.
+2026-10-18. Status: approved; implemented in 0.137.0 (AirPlay deferred).
 
 ## What it is for
 
@@ -326,7 +326,8 @@ docs, version and device walks.
 
 ## Release
 
-A new feature: the next minor, **0.127.0**, in all three manifests. That is
-also above the box's sideloaded 0.126.1, so the box takes it from the channel.
+A new feature: the next minor, **0.137.0** (main was at 0.136.2 when it merged),
+in all three manifests. AirPlay (§7) is not in this release: it is deferred
+until it can be probed on an Apple device.
 Docs to update: `docs/mlib-spec.md` §7b, `docs/system-architecture.md`,
 `docs/web-player.md` and the changelog.

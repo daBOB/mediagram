@@ -889,6 +889,56 @@ decision, not drift):
   `Next episode by <screen>`, `That title isn't on this profile`, ...); they
   are copied word for word, and "episode" is also used for a course lesson.
 
+### Cast to the TV
+
+A viewer on the phone, the tablet or the web player picks a title and the TV
+plays it; the small screen becomes the remote. It is a watch-together session
+with a remote member in it (`docs/mlib-spec.md` §7b, `v=2`), so it needs no
+transport of its own: sender, channel message, TV receiver, player.
+
+**Sender to TV.** *Play on TV* writes an offer session (`cast.state: "offer"`,
+the sender as a `remote` member, `cast.profile` and `cast.household`). Every
+TV with Mediagram open hears it through the push path. A TV of another
+household, or of none, ignores it; the right TV answers by editing the message:
+`refused`, `busy` (the sender then asks "Replace it?") or `on`. Nothing
+registers a TV, and a sleeping or closed TV does not answer: after 5 s the
+sender says Mediagram isn't open on the TV.
+
+**TV as the caster.** The TV plays under `cast.profile`, not its own chosen
+profile: progress, Continue, stats, a kid's age limit and daily limit all
+belong to the caster. On Android that is a "playing as" profile carried through
+the player. Afterwards the TV returns to its own Home. The rules (`offered`,
+`answerOf`, stale requests, the end rule for remote members) are
+`web/public/lib/together/cast.js`, with the Kotlin port in
+`android/core/model/.../together/` held to `web/test/fixtures/together/`. The
+web server's side is `web/src/together/cast-desk.ts` and `cast-routes.ts`
+(`offer`, `replace`, `cancel`, `tracks` on `POST /api/together`).
+
+**Household.** A device offers a cast only when it has joined a household, and
+only a TV of that household answers. A TV answers by ignoring, not refusing,
+what is not its own: with a TV open in each household, a refusal from the wrong
+one would overwrite the answer of the right one.
+
+**The remote and the bar.** The remote is the player screen with the title's
+backdrop where the video would be. While a session with `cast.state: "on"` is
+live, a bar on every phone, tablet and web player of the household brings the
+viewer back to it. A cast of another household's TV shows no bar and no Join.
+The TV remote keeps working: pausing or seeking there is an edit like any
+other, and Back on the TV ends the cast.
+
+**Miracast (Android phone and tablet).** The other way to a TV, for one
+without the box. Play on TV asks which: the TV plays it (the cast above), or
+this device plays it. For the latter, while a wireless display is connected
+(Android reports a presentation display), the player puts the video on it
+through a `Presentation`; the device shows the remote, driving its own player,
+and nothing is written to the channel. At most 1080p, no HDR. Connecting is
+Android's job (its Cast screen); the app cannot start it. The connection
+dropping brings the video back to the device, paused.
+
+**AirPlay is not in this release.** A web player in Safari sending a stream to
+an AirPlay TV is deferred until it can be probed on an Apple device; there is no
+AirPlay code.
+
 ### Reporting a broken video
 
 Every player has a Report button (the top bar everywhere, and beside Retry on
