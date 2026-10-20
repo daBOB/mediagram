@@ -97,8 +97,7 @@ internal fun SettingsPage(
                     onChooseBackdrop = onChooseBackdrop,
                 )
 
-            // PROFILE is the television's own row; the phone never lists it.
-            SettingsSection.PROFILE, SettingsSection.PROFILES -> ProfilesPage(profile)
+            SettingsSection.PROFILES -> ProfilesPage(profile)
             SettingsSection.SYSTEM -> SystemScreen(expanded = expanded)
         }
     }

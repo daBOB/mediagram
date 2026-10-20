@@ -15,13 +15,9 @@ enum class SettingsSection(val title: String, val pageEyebrow: String) {
     STORAGE("Storage", "What this device keeps and where it comes from"),
     APPEARANCE("Appearance", "How the player looks on this device"),
 
-    /** The television's alone, beside its Profiles; the phone's Profiles page holds what it shows. */
-    PROFILE("Profile", "Who is watching and how"),
-
     /**
-     * The web's Profiles tab: who is watching, then everyone here and managing
-     * them — a kid sees only the first. The television still shows only the
-     * household here, to a grown-up, beside its own [PROFILE].
+     * The web's Profiles tab, on every surface: who is watching, then everyone
+     * here and managing them — a kid sees only the first.
      */
     PROFILES("Profiles", "Who is watching, and everyone here"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
