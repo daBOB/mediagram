@@ -75,6 +75,9 @@ export function here(everyone, households, chosenId, heard) {
 /** The household this device shows, as `GET /api/profiles` lists it, or `null`. */
 export const thisHousehold = () => device.households.find((one) => one.id === device.id) ?? null;
 
+/** How many households the install has, as `GET /api/profiles` last listed them. */
+export const householdCount = () => device.households.length;
+
 /** The id of the household this device joined, or `null` while it has none: it is waiting, or about to ask. */
 export const householdId = () => device.id;
 

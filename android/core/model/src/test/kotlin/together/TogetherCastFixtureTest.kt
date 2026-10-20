@@ -3,6 +3,7 @@ package model.together
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -52,6 +53,7 @@ class TogetherCastFixtureTest {
                 "barLine" to ::barLine,
                 "ageReason" to ::ageReason,
                 "timeReason" to ::timeReason,
+                "noAnswerIn" to ::noAnswerIn,
             )
         for (case in words.getValue("lines").jsonArray.map { it.jsonObject }) {
             assertEquals(case.str("expect"), formats.getValue(case.str("fn")!!)(case.str("arg")!!), case.label())
@@ -81,6 +83,13 @@ class TogetherCastFixtureTest {
                     else -> error("unknown answer $kind")
                 }
             assertEquals(expected, answerOf(case.session(), tv, case.long("now")), case.label())
+        }
+    }
+
+    @Test
+    fun castElsewhereAgreesWithTheWeb() {
+        for (case in cases("cast.json", "castElsewhere")) {
+            assertEquals(case.getValue("expect").jsonPrimitive.boolean, castElsewhere(case.session(), case.str("household")), case.label())
         }
     }
 

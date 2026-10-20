@@ -25,6 +25,9 @@ fun busyQuestion(title: String) = "The TV is playing $title. Replace it?"
 
 fun refusedLine(reason: String) = "The TV won't play this: $reason"
 
+/** No answer where an install has more than one household: only this device's household's TVs were asked. */
+fun noAnswerIn(household: String) = "Mediagram isn't open on a TV in $household. Open it there and try again."
+
 fun castFrom(from: String) = "Cast from $from"
 
 fun barLine(title: String) = "Playing on TV · $title"

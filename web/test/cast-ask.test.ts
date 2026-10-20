@@ -3,7 +3,7 @@ import { browserEnvironment, type Node } from "./support/player-environment";
 import { descendants } from "./support/browser-application";
 import { askTv } from "../public/lib/cast/cast-ask.js";
 import { CAST_ANSWER_MS } from "../public/lib/together/cast.js";
-import { CAST_WORDS, busyQuestion, refusedLine } from "../public/lib/together/cast-words.js";
+import { CAST_WORDS, busyQuestion, noAnswerIn, refusedLine } from "../public/lib/together/cast-words.js";
 import { UNREACHABLE, screen, type Live } from "../public/lib/together-now.js";
 import { here } from "../public/lib/household.js";
 
@@ -124,6 +124,29 @@ test("no answer says Mediagram isn't open", async () => {
   expect(status()).toBe(CAST_WORDS.noAnswer);
   press("OK");
   expect(await asked).toBeNull();
+});
+
+const HOME = { id: "home", name: "Home", adminId: null };
+
+test("with one household, no answer keeps the plain line", async () => {
+  here([], [HOME] as never, null, true);
+  answers({ body: { answer: "none", live: null, note: "", serverNow: 0 } });
+  const asked = askTv(own, "mia");
+  await tick();
+  expect(status()).toBe(CAST_WORDS.noAnswer);
+  press("OK");
+  await asked;
+});
+
+test("with two households, no answer names this device's: only its TVs were asked", async () => {
+  // This device chose a profile of Home, so it is in Home.
+  here([{ id: "mia", household: "home" }] as never, [HOME, { id: "h2", name: "Madani", adminId: null }] as never, "mia", true);
+  answers({ body: { answer: "none", live: null, note: "", serverNow: 0 } });
+  const asked = askTv(own, "mia");
+  await tick();
+  expect(status()).toBe(noAnswerIn("Home"));
+  press("OK");
+  await asked;
 });
 
 test("unreachable says Telegram isn't reachable", async () => {

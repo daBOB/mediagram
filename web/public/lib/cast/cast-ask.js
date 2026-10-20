@@ -9,8 +9,8 @@
 import { el } from "../dom.js";
 import { screen, together, UNREACHABLE } from "../together-now.js";
 import { CAST_ANSWER_MS } from "../together/cast.js";
-import { CAST_WORDS, busyQuestion, refusedLine } from "../together/cast-words.js";
-import { householdId } from "../household.js";
+import { CAST_WORDS, busyQuestion, noAnswerIn, refusedLine } from "../together/cast-words.js";
+import { householdCount, householdId, thisHousehold } from "../household.js";
 
 /** What the server's own deadline leaves for the round trip. */
 const MARGIN_MS = 3000;
@@ -64,6 +64,12 @@ async function tell(line) {
   return null;
 }
 
+/** Nobody answered. With more than one household only this one's TVs were asked, so the line names it. */
+function noAnswer() {
+  const here = thisHousehold();
+  return here && householdCount() > 1 ? noAnswerIn(here.name) : CAST_WORDS.noAnswer;
+}
+
 async function ask(own, profile) {
   // Only a TV that joined this device's household answers.
   const body = { screen, profile, household: householdId(), ...own };
@@ -71,11 +77,11 @@ async function ask(own, profile) {
   let move = { op: "offer", ...body };
   for (;;) {
     const result = await post(move);
-    if (!result) return tell(CAST_WORDS.noAnswer);
+    if (!result) return tell(noAnswer());
     const { status, body: reply } = result;
     // Offline (0), Telegram down (503) or a refused request: the server's reason, else the unreachable line.
     if (status !== 200) return tell(reply?.reason ?? UNREACHABLE);
-    if (reply?.answer === "none") return tell(CAST_WORDS.noAnswer);
+    if (reply?.answer === "none") return tell(noAnswer());
     if (reply?.answer === "refused") return tell(refusedLine(reply.note));
     // `live.id` is the offer's own message, which replace and cancel act on.
     if (reply?.answer === "on" && reply.live) return reply.live;

@@ -8,11 +8,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
-  accepted, answerOf, busied, chose, endingOf, offered, refusedBy, replaced, tracked,
+  accepted, answerOf, busied, castElsewhere, chose, endingOf, offered, refusedBy, replaced, tracked,
   type TvAnswer,
 } from "../public/lib/together/cast.js";
 import {
-  ageReason, barLine, busyQuestion, CAST_WORDS, castFrom, refusedLine, sayOnRemote, timeReason,
+  ageReason, barLine, busyQuestion, CAST_WORDS, castFrom, noAnswerIn, refusedLine, sayOnRemote, timeReason,
 } from "../public/lib/together/cast-words.js";
 import { parseSession, writeSession, type Session } from "../public/lib/together/session.js";
 
@@ -26,7 +26,7 @@ const roundTrips = (s: Session | null) => {
 describe("cast words", () => {
   test("the words are the fixture's", () => expect(CAST_WORDS).toEqual(cast.words.object));
   const formats: Record<string, (arg: string) => string> = {
-    busyQuestion, refusedLine, castFrom, barLine, ageReason, timeReason,
+    busyQuestion, refusedLine, castFrom, barLine, ageReason, timeReason, noAnswerIn,
   };
   for (const one of cast.words.lines) {
     test(one.name, () => expect(formats[one.fn]!(one.arg)).toBe(one.expect));
@@ -45,6 +45,12 @@ describe("offer fixtures", () => {
 describe("answer fixtures", () => {
   for (const one of cast.answer) {
     test(one.name, () => expect(answerOf(one.session, one.tv, one.now) as TvAnswer).toEqual(one.expect));
+  }
+});
+
+describe("castElsewhere fixtures", () => {
+  for (const one of cast.castElsewhere) {
+    test(one.name, () => expect(castElsewhere(one.session, one.household)).toBe(one.expect));
   }
 });
 

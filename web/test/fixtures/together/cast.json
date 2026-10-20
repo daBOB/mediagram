@@ -51,6 +51,12 @@
     "fn": "timeReason",
     "arg": "Mia",
     "expect": "Mia's time is up for today"
+   },
+   {
+    "name": "no answer from a TV in this household",
+    "fn": "noAnswerIn",
+    "arg": "Home",
+    "expect": "Mediagram isn't open on a TV in Home. Open it there and try again."
    }
   ]
  },
@@ -686,6 +692,142 @@
    "expect": {
     "kind": "accept"
    }
+  }
+ ],
+ "castElsewhere": [
+  {
+   "name": "a cast of this household is not elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": "home",
+   "expect": false
+  },
+  {
+   "name": "a cast of another household is elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": "h2",
+   "expect": true
+  },
+  {
+   "name": "for a device in no household every cast is elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": null,
+   "expect": true
+  },
+  {
+   "name": "plain watch together is nobody's elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": null
+   },
+   "household": "h2",
+   "expect": false
   }
  ],
  "moves": [

@@ -23,6 +23,8 @@ export const CAST_WORDS = {
 
 export const busyQuestion = (title) => `The TV is playing ${title}. Replace it?`;
 export const refusedLine = (reason) => `The TV won't play this: ${reason}`;
+/** No answer where an install has more than one household: only this device's household's TVs were asked. */
+export const noAnswerIn = (household) => `Mediagram isn't open on a TV in ${household}. Open it there and try again.`;
 export const castFrom = (from) => `Cast from ${from}`;
 export const barLine = (title) => `Playing on TV · ${title}`;
 export const ageReason = (name) => `it's rated above ${name}'s age limit`;

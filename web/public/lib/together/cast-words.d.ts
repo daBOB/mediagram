@@ -18,6 +18,7 @@ export const CAST_WORDS: {
 
 export function busyQuestion(title: string): string;
 export function refusedLine(reason: string): string;
+export function noAnswerIn(household: string): string;
 export function castFrom(from: string): string;
 export function barLine(title: string): string;
 export function ageReason(name: string): string;
