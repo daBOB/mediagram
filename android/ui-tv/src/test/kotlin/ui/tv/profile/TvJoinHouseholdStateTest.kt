@@ -115,4 +115,13 @@ class TvJoinHouseholdStateTest : TvScreenStateTest() {
         compose.onAllNodes(hasText("Flat") and hasClickAction()).assertCountEquals(0)
         compose.onNode(hasText("Home") and hasClickAction()).assertIsFocused()
     }
+
+    /** No household any PIN here opens: a line says so where the rows would be. */
+    @Test
+    fun noHouseholdThisBoxCanJoinSaysSo() {
+        core.roles.pins.clear()
+        joining()
+        compose.onNodeWithText(HouseholdWords.NONE_TO_JOIN).assertExists()
+        compose.onAllNodes(hasClickAction()).assertCountEquals(0)
+    }
 }

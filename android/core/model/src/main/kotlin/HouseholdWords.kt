@@ -10,6 +10,7 @@ object HouseholdWords {
     const val SWITCH_HOUSEHOLD = "Switch household"
     const val JOIN_A_HOUSEHOLD = "Join a household"
     const val JOIN_NOTE = "This device shows one household’s profiles. Choose yours, then its admin’s PIN."
+    const val NONE_TO_JOIN = "No household can be joined from here."
     const val CREATE_A_HOUSEHOLD = "Create a household"
     const val HOUSEHOLD_NAME = "Household name"
     const val ADMIN = "Admin"
@@ -36,6 +37,7 @@ val HOUSEHOLD_WORDS: Map<String, String> =
             "switchHousehold" to SWITCH_HOUSEHOLD,
             "joinAHousehold" to JOIN_A_HOUSEHOLD,
             "joinNote" to JOIN_NOTE,
+            "noneToJoin" to NONE_TO_JOIN,
             "createAHousehold" to CREATE_A_HOUSEHOLD,
             "householdName" to HOUSEHOLD_NAME,
             "admin" to ADMIN,

@@ -31,10 +31,11 @@ import ui.tv.TvTextRow
  * Join a household on television — the web's `household-join.js`: which
  * household's profiles this box shows, one row per household the remote
  * walks down, then that household's admin's PIN or the owner's on the pad, in
- * the list's place, one screen at a time as the picker's gate draws them. A
- * refusal stays on the pad with its reason; Back from it is back on the row
- * that asked. The households are read again as this shows, so one made on
- * another device since is offered too.
+ * the list's place, one screen at a time as the picker's gate draws them;
+ * with none a PIN here opens, a line says so. A refusal stays on the pad
+ * with its reason; Back from it is back on the row that asked. The
+ * households are read again as this shows, so one made on another device
+ * since is offered too.
  *
  * [onJoined] hears each join — whether the profile chosen here still is — so
  * a panel can close. Asking who is watching again is the gate's: it outlives
@@ -58,7 +59,8 @@ internal fun TvJoinHousehold(
         TvPinPrompt(asking, onPin = join::enterPin, onCancel = join::cancelPin)
         return
     }
-    TvChoicesScreen(HouseholdWords.JOIN_A_HOUSEHOLD, HouseholdWords.JOIN_NOTE, state.households.map { it.id to it.name }, landing = picked) { id ->
+    val none = HouseholdWords.NONE_TO_JOIN.takeIf { state.read }
+    TvChoicesScreen(HouseholdWords.JOIN_A_HOUSEHOLD, HouseholdWords.JOIN_NOTE, state.households.map { it.id to it.name }, landing = picked, none = none) { id ->
         picked = id
         join.pick(id)
     }
@@ -68,7 +70,8 @@ internal fun TvJoinHousehold(
  * A whole screen of choices the remote walks down, under [heading] and a
  * quiet [note], with [error] — why the last change did not take — beneath:
  * one keyed row per choice, given as its key and its words, the remote on
- * [landing] while it is offered, else on the first.
+ * [landing] while it is offered, else on the first; with no choice, the
+ * quiet line [none] in their place.
  */
 @Composable
 internal fun TvChoicesScreen(
@@ -77,6 +80,7 @@ internal fun TvChoicesScreen(
     choices: List<Pair<String, String>>,
     landing: String?,
     error: String? = null,
+    none: String? = null,
     onChoose: (String) -> Unit,
 ) {
     // One requester per choice for as long as it is shown, so no row's chain ever changes.
@@ -97,6 +101,7 @@ internal fun TvChoicesScreen(
         note?.let { Text(it, style = WhoNote, modifier = Modifier.padding(top = Spacing.small)) }
         error?.let { Text(it, style = WhoNote, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = Spacing.small)) }
         Spacer(Modifier.height(Spacing.small))
+        if (choices.isEmpty()) none?.let { Text(it, style = WhoNote, modifier = Modifier.padding(top = Spacing.small)) }
         choices.forEach { (id, words) ->
             key(id) {
                 val row = remember { FocusRequester() }.also { rows[id] = it }

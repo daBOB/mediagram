@@ -14,8 +14,8 @@ import { askPin } from "./pin-prompt.js";
 
 /**
  * The live households but `except` — this device's own, unless said — one
- * button each. A choice asks the PIN — a refusal is said in the prompt, which
- * stays — and once one joins, `onJoined`.
+ * button each, or a line saying there is none. A choice asks the PIN — a
+ * refusal is said in the prompt, which stays — and once one joins, `onJoined`.
  * @param {HTMLElement} host PIN prompts open over this element
  * @param {{ except?: string, onJoined: () => void }} options
  */
@@ -23,15 +23,16 @@ export function joinChoices(host, { except = thisHousehold()?.id, onJoined }) {
   const box = el("div", "who-ask");
   box.append(el("h2", null, HOUSEHOLD_WORDS.joinAHousehold), el("p", "who-note", HOUSEHOLD_WORDS.joinNote));
   const owner = state.everyone().find((one) => one.owner);
-  for (const household of state.households().filter((one) => one.id !== except)) {
-    const admin = state.everyone().find((one) => one.id === household.adminId);
-    // Neither its admin nor the owner has a PIN to let this device in with, so the server would refuse any.
-    if (!admin?.hasPin && !owner?.hasPin) continue;
+  const adminOf = (household) => state.everyone().find((one) => one.id === household.adminId);
+  // Neither its admin nor the owner has a PIN to let this device in with, so the server would refuse any.
+  const offered = state.households().filter((one) => one.id !== except && (adminOf(one)?.hasPin || owner?.hasPin));
+  for (const household of offered) {
     box.append(pill(household.name, async () => {
-      const pin = await askPin(host, { title: joinPinTitle(admin), send: (given) => join(household.id, given) });
+      const pin = await askPin(host, { title: joinPinTitle(adminOf(household)), send: (given) => join(household.id, given) });
       if (pin !== null) onJoined();
     }));
   }
+  if (offered.length === 0) box.append(el("p", "who-note", HOUSEHOLD_WORDS.noneToJoin));
   return box;
 }
 

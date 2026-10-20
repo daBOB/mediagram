@@ -13,6 +13,7 @@ export const HOUSEHOLD_WORDS = {
   switchHousehold: "Switch household",
   joinAHousehold: "Join a household",
   joinNote: "This device shows one household’s profiles. Choose yours, then its admin’s PIN.",
+  noneToJoin: "No household can be joined from here.",
   createAHousehold: "Create a household",
   householdName: "Household name",
   admin: "Admin",
