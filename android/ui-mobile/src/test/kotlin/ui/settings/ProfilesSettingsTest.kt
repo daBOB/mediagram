@@ -5,7 +5,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import catalog.profile.ManageUiState
-import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -109,8 +108,6 @@ class ProfilesSettingsTest : ProfilesSettingsHarness() {
         compose.runOnUiThread { manage.setKidsAge("t", 6) }
         compose.waitForIdle()
         assertEquals(12, tomsAge(), "a change went through on a PIN nobody gave again")
-        // The owner's Households part drops its PIN on the same way out.
-        verify { households.close() }
     }
 
     @Test

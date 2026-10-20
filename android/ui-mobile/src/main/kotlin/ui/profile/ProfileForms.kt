@@ -38,7 +38,7 @@ import ui.settings.LinePill
 import ui.settings.SettingsChip
 
 /** The longest name the core keeps (`profiles.rs`'s `MAX_NAME`); the web's field stops at the same. */
-private const val MAX_NAME = 120
+internal const val MAX_NAME = 120
 
 /**
  * A name, whatever [extra] asks beside it, and the pill that adds — the web's

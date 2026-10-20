@@ -20,12 +20,16 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
+import data.DefaultHouseholdsRepository
 import data.WatchSync
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import model.Profile
 import org.junit.After
@@ -45,6 +49,7 @@ import testing.WatchStateFixture
 import ui.common.settings.SettingsSection
 import ui.profile.PinFieldTag
 import ui.profile.ProfileGate
+import ui.profile.householdViewModels
 
 /**
  * Settings drawn inside the real [ProfileGate], as the app draws it, over the
@@ -58,9 +63,13 @@ abstract class ProfilesSettingsHarness {
     lateinit var controller: ActivityController<ComponentActivity>
     lateinit var manage: ManageProfilesViewModel
 
-    /** Stands in for the owner's part, which the visit closes beside Manage. */
+    /** The owner's part, real, which the visit closes beside Manage. */
     lateinit var households: HouseholdsOwnerViewModel
     lateinit var household: WatchStateFixture
+
+    /** The install's households, as Join a household reads them; read again whenever who is here changes. */
+    lateinit var homes: DefaultHouseholdsRepository
+    private val scope = CoroutineScope(Dispatchers.Unconfined)
 
     val andre = Profile("a", "andre", admin = true)
     val bea = Profile("b", "Bea")
@@ -77,22 +86,25 @@ abstract class ProfilesSettingsHarness {
                 if (::controller.isInitialized) controller.close()
                 store.clear()
             }
+            scope.cancel()
         } finally {
             unmockkStatic(::HiltViewModelFactory)
         }
     }
 
-    /** Settings at [initial] (the index when null), over [tom], [andre] and [bea] with [pins], [chosen] watching. */
+    /** Settings at [initial] (the index when null), over [people] with [pins] and whatever [seed] adds, [chosen] watching. */
     fun open(
         chosen: Profile,
         pins: Map<String, String> = emptyMap(),
         initial: SettingsSection? = null,
+        people: List<Profile> = listOf(tom, andre, bea),
+        seed: FakeCore.() -> Unit = {},
     ) {
         compose.runOnUiThread {
-            household = WatchStateFixture(listOf(tom, andre, bea), chosen.id, FakeCore().apply { roles.pins += pins })
+            household = WatchStateFixture(people, chosen.id, FakeCore().apply { roles.pins += pins }.apply(seed))
+            homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
             val sync = mockk<WatchSync>(relaxed = true)
             manage = ManageProfilesViewModel(household.repository, sync)
-            households = mockk(relaxed = true)
             // Only the chosen profile matters here; every other model's state is read and left unread.
             val none = MutableStateFlow(null)
             val models =
@@ -106,8 +118,8 @@ abstract class ProfilesSettingsHarness {
                     AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                     ProfileViewModel::class.java to ProfileViewModel(household.repository, sync),
                     ManageProfilesViewModel::class.java to manage,
-                    HouseholdsOwnerViewModel::class.java to households,
-                )
+                ) + householdViewModels(household.repository, homes)
+            households = models.getValue(HouseholdsOwnerViewModel::class.java) as HouseholdsOwnerViewModel
             val provider =
                 ViewModelProvider(
                     store,
