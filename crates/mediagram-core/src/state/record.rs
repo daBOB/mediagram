@@ -30,12 +30,15 @@ use serde::{Deserialize, Serialize};
 mod hostile_json;
 mod households_record;
 mod list_record;
+mod name_record;
 mod parse;
 mod preference_record;
 mod roles_record;
 mod stats_record;
 pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
+pub use name_record::NameKeys;
+pub(crate) use name_record::{MAX_FORMER_NAMES, normal_former_name, sorted_names};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use households_record::{HouseholdAdmin, HouseholdEntry, HouseholdName, ProfileHousehold};
 pub use parse::parse_record;
@@ -126,6 +129,9 @@ pub struct ProfileState {
     /// only when set, beside `kids` on the wire.
     #[serde(flatten)]
     pub roles: ProfileRoles,
+    /// When it took its name and the names it had (`name_record.rs`).
+    #[serde(flatten)]
+    pub names: NameKeys,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

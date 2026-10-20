@@ -6,7 +6,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::merge::MergedState;
 use super::profiles;
-use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
+use super::record::{NameKeys, ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
 use super::stats;
 
@@ -53,6 +53,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             title_stats,
             day_stats,
             roles,
+            names: NameKeys::default(),
         });
     }
     let kids = lists::export_kids(conn)?;

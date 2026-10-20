@@ -33,6 +33,7 @@ use super::record::{
 mod households;
 mod merged;
 mod preferences;
+mod renames;
 mod roles;
 mod stats;
 mod tie_break;
@@ -59,6 +60,8 @@ struct ViewerState {
 /// devices see each other's documents in whatever order Telegram hands them
 /// over.
 pub fn merge_states(records: &[SyncRecord]) -> MergedState {
+    let (records, mut people) = renames::resolve(records);
+    let records: &[SyncRecord] = &records;
     let mut by_viewer: HashMap<String, ViewerState> = HashMap::new();
     // Kids and the editor's choice are top-level; see `schema.rs`.
     let mut kids: HashMap<String, Held<ListRow>> = HashMap::new();
@@ -153,6 +156,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
 
         let (title_stats, day_stats) = stats::rows(held.stats);
         let roles = merged_roles.remove(&name).unwrap_or_default();
+        let names = people.remove(&name).unwrap_or_default();
         profiles.push(MergedProfile {
             name,
             display_name: held.display_name,
@@ -166,6 +170,7 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
             title_stats,
             day_stats,
             roles,
+            names,
         });
     }
     MergedState {
