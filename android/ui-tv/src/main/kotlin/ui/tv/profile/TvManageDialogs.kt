@@ -29,13 +29,15 @@ import ui.tv.setup.TvDialog
 
 /**
  * A kid's choices for its grown-up: its limit — the web's select, the
- * current one marked and holding the remote — or removal, which asks first.
+ * current one marked and holding the remote — its daily limit and its
+ * sections, each in a dialog of its own, or removal, which asks first.
  */
 @Composable
 internal fun TvKidActions(
     kid: Profile,
     onAge: (Int) -> Unit,
     onDailyLimit: () -> Unit,
+    onSections: () -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -54,6 +56,7 @@ internal fun TvKidActions(
         }
         // Its own dialog: the seven daily choices would not fit under the two ages and Remove.
         TvTextRow("${DailyLimitWords.LABEL} · ${dailyLimitChoiceFor(kid.dailyLimit).label}", onClick = onDailyLimit)
+        TvTextRow(sectionsLine(kid), onClick = onSections)
     }
 }
 
@@ -91,17 +94,19 @@ internal fun TvDailyLimitChoices(
     ) { Button(onClick = onDismiss) { Text("Cancel", style = TvType.labelLarge) } }
 }
 
-/** Another grown-up, for the admin: a new PIN for them, or removal with their kids. */
+/** Another grown-up, for the admin: a new PIN for them, their sections, or removal with their kids. */
 @Composable
 internal fun TvGrownUpActions(
     grownUp: Profile,
     onResetPin: () -> Unit,
+    onSections: () -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
     TvProfileActions(grownUp, onRemove, onDismiss, initialFocus = first) {
         TvTextRow(RESET_PIN, onClick = onResetPin, focusRequester = first)
+        TvTextRow(sectionsLine(grownUp), onClick = onSections)
     }
 }
 

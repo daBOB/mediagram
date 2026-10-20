@@ -1,5 +1,7 @@
 package ui.profile
 
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -84,6 +86,28 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         limitOf("Tom", 6).performScrollTo().performClick()
         assertEquals(6, profile("t").kidsAge?.toInt())
         limitOf("Tom", 6).assertIsSelected()
+    }
+
+    /** A parent hides a section from its kid and shows it again; the switch and the Everyone line follow the core's answer. */
+    @Test fun aParentHidesASectionFromItsKid() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("Bea", "2222")
+        val anime = compose.onNode(hasText("Anime") and hasAnyAncestor(hasContentDescription("Sections for Tom")))
+        anime.performScrollTo().performClick()
+        assertEquals(listOf("anime"), profile("t").hiddenSections)
+        anime.assertIsOff()
+        compose.onNodeWithText("Kid · Bea · FSK 12 · hides Anime").assertExists()
+        anime.performClick()
+        assertEquals(emptyList(), profile("t").hiddenSections)
+        anime.assertIsOn()
+    }
+
+    @Test fun theAdminHidesASectionFromAnotherGrownUp() {
+        open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("andre", "1111")
+        compose.onNode(hasText("Tutorials") and hasAnyAncestor(hasContentDescription("Sections for Bea"))).performScrollTo().performClick()
+        assertEquals(listOf("tutorials"), profile("b").hiddenSections)
+        compose.onNodeWithText("Grown-up · PIN set · hides Tutorials").assertExists()
     }
 
     @Test fun theAdminResetsAnotherGrownUpsPin() {

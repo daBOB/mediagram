@@ -3,6 +3,7 @@ package catalog.profile
 import model.Profile
 import model.ProfileOutcome
 import model.dailyLimitChoiceFor
+import model.hidesWords
 import model.ownerOf
 
 /**
@@ -80,18 +81,18 @@ fun profilesLine(
 /**
  * Settings' Profiles list (`settings-profiles.js`): grown-ups first, each
  * beside one quiet line — a grown-up's role and whether it has a PIN; a kid's
- * owner, its FSK and any daily limit.
+ * owner, its FSK and any daily limit; then, for either, the sections it is not shown.
  */
 fun everyoneHere(profiles: List<Profile>): List<Pair<Profile, String>> =
     profiles.sortedBy { it.kids }.map { entry ->
-        entry to
+        val role =
             if (entry.kids) {
                 val owner = profiles.find { it.id == profiles.ownerOf(entry) }?.name
-                val limit = entry.dailyLimit?.let { dailyLimitChoiceFor(it).label }
-                listOfNotNull("Kid", owner, "FSK ${entry.kidsLimit}", limit).joinToString(" · ")
+                listOfNotNull("Kid", owner, "FSK ${entry.kidsLimit}", entry.dailyLimit?.let { dailyLimitChoiceFor(it).label })
             } else {
-                "${if (entry.admin) "Admin" else "Grown-up"} · ${if (entry.hasPin) "PIN set" else "No PIN"}"
+                listOf(if (entry.admin) "Admin" else "Grown-up", if (entry.hasPin) "PIN set" else "No PIN")
             }
+        entry to (role + listOfNotNull(entry.hidesWords)).joinToString(" · ")
     }
 
 /** Under Manage's heading once a grown-up has said who they are. */
