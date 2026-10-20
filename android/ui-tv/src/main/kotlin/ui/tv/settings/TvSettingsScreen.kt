@@ -160,7 +160,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         onRetry = systemViewModel::retry,
                     )
                 SettingsSection.PROFILES ->
-                    TvProfilesPage(profile, entered, landOnManage = lastPanel == TvSettingsPanel.Profiles, entryRequester, onManage = { open(TvSettingsPanel.Profiles) })
+                    TvProfilesPage(profile, entered, returningFrom = lastPanel, entryRequester, onOpen = open)
             }
         }
     }

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -32,17 +33,16 @@ import org.junit.Before
 import org.junit.Rule
 import org.robolectric.Robolectric
 import org.robolectric.android.controller.ActivityController
+import testing.FakeCore
 import ui.tv.catalog.films
 import ui.tv.profile.TvManageProfilesTag
 import ui.tv.profile.tvPinKeyTag
 import ui.tv.setup.TvTextQuestionFieldTag
 
 /**
- * Who's watching, PINs and the Profiles page walked through the whole app
- * with the remote alone — over the real `ProfileViewModel` and
- * `ManageProfilesViewModel` and a `FakeCore` that keeps the household's
- * rules: the PIN, the roles, the wait after too many wrong PINs. Names go in
- * through the system keyboard; everything else is the D-pad.
+ * Who's watching, PINs, the Profiles page and households walked through the whole app with the remote alone — over the
+ * real profile and household view models and a `FakeCore` that keeps their rules: the PIN, the roles, the wait after too
+ * many wrong PINs. Names go in through the system keyboard; everything else is the D-pad.
  */
 abstract class TvProfilesHarness {
     @get:Rule val compose = createEmptyComposeRule()
@@ -78,9 +78,10 @@ abstract class TvProfilesHarness {
         chosen: String?,
         pins: Map<String, String> = this.pins,
         ready: String = if (chosen == null) "Who's watching?" else "Film 0",
+        seed: FakeCore.() -> Unit = {},
     ) {
         compose.runOnUiThread {
-            fixture = TvAppFixture(TvSetupStage.READY, profiles, chosen, films(1), pins = pins, settingsSeeTheViewer = true)
+            fixture = TvAppFixture(TvSetupStage.READY, profiles, chosen, films(1), pins = pins, settingsSeeTheViewer = true, seed = seed)
             TvAppTestActivity.fixture = fixture
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
@@ -111,6 +112,13 @@ abstract class TvProfilesHarness {
     }
 
     internal fun rowOf(text: String) = hasText(text) and hasClickAction()
+
+    /** Settings from the rail, then the remote down its index to [row] — the section beside it shown, not yet entered. */
+    internal fun openSettingsAt(row: SemanticsMatcher) {
+        compose.onNodeWithContentDescription("Settings").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        walkTo(row, Key.DirectionDown)
+    }
 
     /** The app left and opened again, the view models kept. */
     internal fun leaveAndReturn() {
@@ -150,10 +158,7 @@ abstract class TvProfilesHarness {
     }
 
     /** [key] until [target] holds the remote — failing if it never does, which is a row out of the remote's reach. */
-    internal fun walkTo(
-        target: SemanticsMatcher,
-        key: Key,
-    ) {
+    internal fun walkTo(target: SemanticsMatcher, key: Key) {
         repeat(MAX_STEPS) {
             if (compose.onAllNodes(target and isFocused()).fetchSemanticsNodes().isNotEmpty()) return
             press(key)

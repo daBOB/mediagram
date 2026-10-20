@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.EVERYONE_HERE
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
@@ -23,6 +24,7 @@ import catalog.profile.SWITCH_PROFILE
 import catalog.profile.WHO_IS_WATCHING
 import catalog.profile.everyoneHere
 import designsystem.Spacing
+import model.HouseholdWords
 import model.Profile
 import setup.ProfileSettingsViewModel
 import setup.ProfileSubtitleChoices
@@ -36,41 +38,44 @@ import ui.tv.profile.TvManageScreen
  * The one Profiles page, television-side — the web's (`settings-profiles.js`)
  * and the phone's `ProfilesPage`: You — who is watching, the way to switch,
  * their subtitle language — then everyone in the household, then Manage
- * profiles. A kid sees only You; with nobody [chosen], which is how the
+ * profiles, then — while there is more than one household — which one this
+ * device shows. A kid sees only You; with nobody [chosen], which is how the
  * picker's Manage profiles opens it, there is no You. Seeing the list needs no
  * PIN; changing anything asks who you are and that grown-up's PIN.
  *
  * Where the phone draws Manage inline under the list, the television opens it
- * as a panel of its own ([TvProfilesPanel]) from the "Manage profiles" row:
- * its PIN pad and its name questions take the whole screen here wherever they
- * open, and one screen at a time keeps nothing behind them competing for the
- * remote.
+ * as a panel of its own ([TvProfilesPanel]) from the "Manage profiles" row,
+ * and Switch household (`TvJoinHousehold`) from the This device row: their
+ * PIN pads and name questions take the whole screen here wherever they open,
+ * and one screen at a time keeps nothing behind them competing for the
+ * remote. [onOpen] opens the panel a row names.
  *
  * [entryFocusRequester] is the page's first stop — who is watching, or with
  * nobody chosen the list — drawn whatever has loaded, so the page always has
- * somewhere to be entered. [landOnManage] lands on the Manage profiles row
- * instead: back from the panel that row opened, or over the picker, whose own
- * Manage profiles button opened the page.
+ * somewhere to be entered. [returningFrom] lands on the row that opened that
+ * panel instead: back from it, or over the picker, whose own Manage profiles
+ * button opened the page.
  */
 @Composable
 internal fun TvProfilesPage(
     chosen: Profile?,
     focusInContent: Boolean,
-    landOnManage: Boolean,
+    returningFrom: TvSettingsPanel?,
     entryFocusRequester: FocusRequester,
-    onManage: () -> Unit,
+    onOpen: (TvSettingsPanel) -> Unit,
 ) {
-    val manageRow = remember { FocusRequester() }
+    val rows = remember { listOf(TvSettingsPanel.Profiles, TvSettingsPanel.Join).associateWith { FocusRequester() } }
     val list = remember { FocusRequester() }
     // Keyed on focusInContent alone, as Telegram's is: the hub forgets the
     // panel it came back from right after, which must not land a second time.
     LaunchedEffect(focusInContent) {
-        if (landOnManage) manageRow.requestFocus() else if (focusInContent) entryFocusRequester.requestFocus()
+        val row = rows[returningFrom]
+        if (row != null) row.requestFocus() else if (focusInContent) entryFocusRequester.requestFocus()
     }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         chosen?.let { You(it, entryFocusRequester) }
         // A kid manages nothing, so is shown nobody else either.
-        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, manageRow, onManage)
+        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, rows, onOpen)
     }
 }
 
@@ -117,14 +122,22 @@ private fun You(
     }
 }
 
-/** Everyone here at a glance, each name beside its role — one stop, for a household long enough to scroll — then the row that opens Manage. */
+/**
+ * Everyone here at a glance, each name beside its role — one stop, for a
+ * household long enough to scroll — then the row that opens Manage, then,
+ * while there is another household to switch to, the one this device shows.
+ */
 @Composable
 private fun Household(
     list: FocusRequester,
-    manageRow: FocusRequester,
-    onManage: () -> Unit,
+    rows: Map<TvSettingsPanel, FocusRequester>,
+    onOpen: (TvSettingsPanel) -> Unit,
 ) {
     val profiles by hiltViewModel<ManageProfilesViewModel>().profiles.collectAsStateWithLifecycle()
+    val households: JoinHouseholdViewModel = hiltViewModel()
+    val join by households.state.collectAsStateWithLifecycle()
+    // Read again as the page shows: a household made or renamed on another device since.
+    LaunchedEffect(households) { households.reread() }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         TvInfoBlock(
             heading = EVERYONE_HERE,
@@ -132,7 +145,11 @@ private fun Household(
             modifier = Modifier.focusRequester(list),
             focusable = true,
         )
-        TvTextRow(MANAGE_PROFILES, onClick = onManage, focusRequester = manageRow)
+        TvTextRow(MANAGE_PROFILES, onClick = { onOpen(TvSettingsPanel.Profiles) }, focusRequester = rows.getValue(TvSettingsPanel.Profiles))
+        if (join.canSwitch) {
+            val here = listOfNotNull(HouseholdWords.THIS_DEVICE, join.here?.name).joinToString(" · ")
+            TvTextRow(here, onClick = { onOpen(TvSettingsPanel.Join) }, focusRequester = rows.getValue(TvSettingsPanel.Join))
+        }
     }
 }
 

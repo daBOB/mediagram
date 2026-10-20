@@ -2,13 +2,15 @@ package ui.tv.settings
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import setup.SettingsUiState
 import setup.SettingsViewModel
+import ui.tv.profile.TvJoinHousehold
 import ui.tv.setup.TvApplicationScreen
 import ui.tv.setup.TvLibraryChoiceScreen
 
 /** A part of Settings that takes the whole screen while it is open. */
-internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken, Profiles }
+internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken, Profiles, Join }
 
 /**
  * One of [TvSettingsPanel]'s full-screen questions — [TvSettingsScreen]
@@ -48,5 +50,7 @@ internal fun TvSettingsPanelScreen(
             TvLanCachePanel(panel = panel, onDone = onClose)
 
         TvSettingsPanel.Profiles -> TvProfilesPanel(onDone = onClose)
+        // Closes once a household is joined; the picker's gate asks who is watching again where that left the profile.
+        TvSettingsPanel.Join -> TvJoinHousehold(hiltViewModel()) { onClose() }
     }
 }

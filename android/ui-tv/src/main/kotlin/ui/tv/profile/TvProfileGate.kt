@@ -1,35 +1,23 @@
 package ui.tv.profile
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Text
-import catalog.profile.DONE
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
-import designsystem.Overscan
-import designsystem.Spacing
 import ui.common.profile.ForgetManageWhenAway
 import ui.common.profile.manageActions
-import ui.common.settings.SettingsSection
-import ui.tv.TvTextRow
-import ui.tv.settings.TvProfilesPage
 
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
@@ -46,7 +34,11 @@ data class TvChosenProfile(
  * The television counterpart to `ui.profile.ProfileGate`: the same
  * [ProfileViewModel] and [ManageProfilesViewModel] decide the same things
  * they decide on a phone, and [TvProfilePicker] stands in for [content] until
- * a viewer has been chosen. One screen at a time — whichever PIN is asked
+ * a viewer has been chosen. Before either, a box that has joined no
+ * household — or whose household has no grown-up left while another has —
+ * shows only Join a household ([JoinHouseholdViewModel]), never the first
+ * profile the core would refuse, and waits for the households to be read
+ * before it offers one. One screen at a time — whichever PIN is asked
  * replaces what asked for it, the picker's Manage profiles opens Settings' own
  * Profiles page in the picker's place, with nobody chosen, and that page's
  * Manage profiles row replaces it with Manage — so nothing behind competes
@@ -63,7 +55,9 @@ data class TvChosenProfile(
 internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val manage: ManageProfilesViewModel = hiltViewModel()
+    val join: JoinHouseholdViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val joining by join.state.collectAsStateWithLifecycle()
     val managing by manage.state.collectAsStateWithLifecycle()
     val pickPin by viewModel.pin.collectAsStateWithLifecycle()
 
@@ -73,6 +67,23 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     // it every saved place: the tab, the scroll. Held here per profile, so
     // "Stay as I am" comes back to them and another profile starts fresh.
     val places = rememberSaveableStateHolder()
+    var lastChosen by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(chosen?.profile?.id) { chosen?.let { lastChosen = it.profile.id } }
+    // A join that left the profile chosen here behind asks who is watching
+    // again, and forgets the places it kept here. Heard here, not by Switch
+    // household: the library, Settings with it, leaves the moment the profile
+    // is gone, before the join has finished reading.
+    LaunchedEffect(join) {
+        join.joined.collect { kept ->
+            if (kept) return@collect
+            lastChosen?.let(places::removeState)
+            viewModel.reopen()
+        }
+    }
+    if (joining.needsJoin || (joining.joinsElsewhere && (state as? ProfileUiState.Picking)?.needsFirstProfile == true)) {
+        TvJoinHousehold(join)
+        return
+    }
     if (chosen != null) {
         places.SaveableStateProvider(chosen.profile.id) {
             content(TvChosenProfile(name = chosen.profile.name, onChoose = viewModel::reopen))
@@ -90,19 +101,22 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val tiles = rememberLazyListState()
     val inManage = managing != ManageUiState.Closed
     val pickPrompt = pickPin
+    // No grown-up here, the households not read yet: wait for them as for a
+    // sync round, Try again reading them, never offering a first profile they may rule out.
+    val unread = (state as? ProfileUiState.Picking)?.takeIf { it.needsFirstProfile && !joining.read }?.copy(synced = false)
     when {
         inManage -> TvManageScreen(manage)
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         profilesPage -> TvProfilesOverPicker(onManage = manage::open, onDone = { profilesPage = false })
         else ->
             TvProfilePicker(
-                state = state,
+                state = unread ?: state,
                 onChoose = { id ->
                     landing = TvPickerSpot.Tile(id)
                     viewModel.pick(id)
                 },
                 onStay = viewModel::stay,
-                onRetry = viewModel::retry,
+                onRetry = if (unread != null) join::reread else viewModel::retry,
                 onClaim = { id ->
                     landing = TvPickerSpot.Claim(id)
                     viewModel.claim(id)
@@ -115,30 +129,6 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
                 landing = landing,
                 tiles = tiles,
             )
-    }
-}
-
-/**
- * The Profiles page with nobody chosen — everyone here and the Manage profiles
- * row, no You — under the page's own name, as the web's picker shows it, the
- * remote on the row the picker's own button named. Done and Back leave it for
- * the picker.
- */
-@Composable
-private fun TvProfilesOverPicker(
-    onManage: () -> Unit,
-    onDone: () -> Unit,
-) {
-    BackHandler(onBack = onDone)
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-    ) {
-        Text(SettingsSection.PROFILES.title, style = WhoHeading, modifier = Modifier.padding(bottom = Spacing.large))
-        TvProfilesPage(chosen = null, focusInContent = true, landOnManage = true, remember { FocusRequester() }, onManage)
-        TvTextRow(DONE, onClick = onDone, modifier = Modifier.padding(top = Spacing.medium))
     }
 }
 
