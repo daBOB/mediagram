@@ -104,6 +104,10 @@ const ROOT = join(import.meta.dir, "..");
  * `public/lib/library-session.js`, to 201, to import the sections filter its `filtered` now calls.
  * Raised the same day for `public/lib/catalog/shelf-view.js`, by 1, so an empty shelf for a section
  * the profile is not shown says only that it is empty, with no upload hint and no age limit.
+ * Raised 2026-10-20 for `src/state/sync-record.ts`, by 2, to read a profile's renames — the import
+ * and the line that fills them.
+ * Raised the same day for `src/state/store.ts`, by 3, to write a profile's renames and take one in
+ * by renaming the row — the import, the names read once, and the line that spreads them.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 712,
@@ -133,8 +137,8 @@ const CEILINGS: Record<string, number> = {
   "src/state/routes.ts": 209,
   "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 740,
-  "src/state/sync-record.ts": 297,
+  "src/state/store.ts": 743,
+  "src/state/sync-record.ts": 299,
   "src/transcode/registry.ts": 338,
 };
 

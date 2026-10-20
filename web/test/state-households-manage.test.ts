@@ -193,6 +193,12 @@ describe("the owner's actions", () => {
     expect(state.households().map((one) => one.name)).toEqual(["flat", "Home"]);
   });
 
+  test("a new grown-up may not take a name another profile had before", () => {
+    const state = storeWith([grownUp("owner", "home", true), `UPDATE profiles SET former_names = '["celine"]' WHERE id = 'owner'`]);
+    expect(state.manage().createHousehold("owner", PIN, "Loft", { name: "Celine", newPin: "5678" }))
+      .toEqual({ reason: "name-taken" });
+  });
+
   test("an admin without a PIN is given one, and refused without", () => {
     const state = storeWith([grownUp("owner", "home", true), pinless("paul", "home"), household("flat", null), pinless("lena", "flat")]);
     const manage = state.manage();

@@ -62,3 +62,14 @@ pub(super) const HOUSEHOLDS: &[&str] = &[
     "ALTER TABLE profiles ADD COLUMN household_id TEXT NOT NULL DEFAULT 'home'",
     "ALTER TABLE profiles ADD COLUMN household_updated_at INTEGER NOT NULL DEFAULT 0",
 ];
+
+/// v12 -> v13: a profile's renames — the web's v17. Rows are keyed by id, so
+/// a rename is the name updated in place, dated so the newest rename names
+/// the person on every device; `former_names` is a sorted JSON list of the
+/// normalised names it had, as `hidden_sections` is, and none of them may be
+/// taken by a new profile. Every profile already stored was never renamed,
+/// so an untouched install writes the document it wrote before.
+pub(super) const RENAMES: &[&str] = &[
+    "ALTER TABLE profiles ADD COLUMN renamed_at INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE profiles ADD COLUMN former_names TEXT NOT NULL DEFAULT '[]'",
+];

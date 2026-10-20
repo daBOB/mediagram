@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, HouseholdEntry, ListRow, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
+    CollectionRow, DayStatRow, HouseholdEntry, ListRow, NameKeys, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
     UnwatchedRow, WatchedRow,
 };
 
@@ -43,6 +43,10 @@ pub struct MergedProfile {
     /// `roles::merge` — each only where it applies.
     #[serde(flatten)]
     pub roles: ProfileRoles,
+    /// The newest rename's stamp and every other name the person had, from
+    /// `renames::resolve`; neither written when nobody renamed them.
+    #[serde(flatten)]
+    pub names: NameKeys,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

@@ -30,12 +30,15 @@ use serde::{Deserialize, Serialize};
 mod hostile_json;
 mod households_record;
 mod list_record;
+mod name_record;
 mod parse;
 mod preference_record;
 mod roles_record;
 mod stats_record;
 pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
+pub use name_record::NameKeys;
+pub(crate) use name_record::{MAX_FORMER_NAMES, sorted_names};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
 pub use households_record::{HouseholdAdmin, HouseholdEntry, HouseholdName, ProfileHousehold};
 pub use parse::parse_record;
@@ -126,6 +129,9 @@ pub struct ProfileState {
     /// only when set, beside `kids` on the wire.
     #[serde(flatten)]
     pub roles: ProfileRoles,
+    /// When it took its name and the names it had (`name_record.rs`).
+    #[serde(flatten)]
+    pub names: NameKeys,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -162,8 +168,25 @@ pub struct SyncRecord {
 /// otherwise equal.
 pub fn normal_name(name: &str) -> Option<String> {
     let clean = ComposingNormalizerBorrowed::new_nfc().normalize(name);
-    let clean = clean.trim().to_lowercase();
+    let clean = js_trim(&clean).to_lowercase();
     (!clean.is_empty()).then_some(clean)
+}
+
+/// JS's whitespace, which the web's `trim` and `\s` use, so a name is one
+/// person on both: Rust's `char::is_whitespace` without U+0085, and with
+/// U+FEFF.
+fn is_js_space(c: char) -> bool {
+    c == '\u{feff}' || (c != '\u{85}' && c.is_whitespace())
+}
+
+/// The web's `trim()`.
+pub(crate) fn js_trim(text: &str) -> &str {
+    text.trim_matches(is_js_space)
+}
+
+/// The web's `trim().replace(/\s+/g, " ")`: edges trimmed, each run of space one.
+pub(crate) fn js_collapse(text: &str) -> String {
+    text.split(is_js_space).filter(|part| !part.is_empty()).collect::<Vec<_>>().join(" ")
 }
 
 /// For `skip_serializing_if`: an ordinary profile carries no `kids` key.

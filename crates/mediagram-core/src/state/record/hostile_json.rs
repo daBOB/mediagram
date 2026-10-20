@@ -12,9 +12,10 @@ pub(super) fn as_array(value: Option<&Value>) -> &[Value] {
     }
 }
 
-/// A non-empty string, trimmed — the only kind of text worth keeping here.
+/// A non-empty string, trimmed as the web trims — the only kind of text
+/// worth keeping here.
 pub(super) fn text_(value: Option<&Value>) -> Option<String> {
-    let clean = value?.as_str()?.trim();
+    let clean = super::js_trim(value?.as_str()?);
     (!clean.is_empty()).then(|| clean.to_string())
 }
 

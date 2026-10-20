@@ -36,14 +36,13 @@ impl ProfileManager<'_> {
     }
 
     /// A new profile's name: one that cannot be stored, or one another
-    /// profile here already answers to — which sync would read as the same
-    /// viewer.
+    /// profile here answers or once answered to — which sync would read as
+    /// the same viewer.
     pub(super) fn unusable(&self, name: &str) -> Check {
         if clean_name(name).is_none() {
             return Ok(Some(Invalid));
         }
-        let names: Vec<String> = self.rows()?.into_iter().map(|row| row.name).collect();
-        Ok(rules::name_taken(&names, name).then_some(NameTaken))
+        Ok(rules::name_taken(&role_rows::taken_names(self.conn, None)?, name).then_some(NameTaken))
     }
 
     /// Somebody there, a grown-up acting, its PIN unless `unproven`, then

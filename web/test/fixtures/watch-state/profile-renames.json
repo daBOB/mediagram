@@ -1,0 +1,1456 @@
+{
+  "parse": [
+    {
+      "name": "a renamed profile reads back when it took its name and the names it had",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000005000,\"formerNames\":[\"celine\"],\"progress\":[],\"watched\":[]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000005000,
+            "formerNames": [
+              "celine"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a profile nobody renamed says neither key",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celine\",\"progress\":[],\"watched\":[]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celine"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a renamedAt that is not a stamp is absent",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"P1\",\"renamedAt\":-5},{\"name\":\"P2\",\"renamedAt\":0},{\"name\":\"P3\",\"renamedAt\":9007199254740992},{\"name\":\"P4\",\"renamedAt\":\"soon\"},{\"name\":\"P5\",\"renamedAt\":{}}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "P1"
+          },
+          {
+            "name": "P2"
+          },
+          {
+            "name": "P3"
+          },
+          {
+            "name": "P4"
+          },
+          {
+            "name": "P5"
+          }
+        ]
+      }
+    },
+    {
+      "name": "former names are cleaned, normalised, sorted by their bytes, each once",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\" CELINE \",\"celine\",\"Ann  Marie\",\"Émile\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "ann marie",
+              "celine",
+              "émile"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a former name that is not a name, or longer than 360 characters, is dropped on its own",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[42,\"\",\"   \",null,{},\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\"𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸\",\"ok\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "ok",
+              "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+              "𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸𝔸"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a former name lower-casing lengthens is kept, as typed and as a device stores it",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"İİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİİ\"]},{\"name\":\"Ann\",\"renamedAt\":1789000000000,\"formerNames\":[\"i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307"
+            ]
+          },
+          {
+            "name": "Ann",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307i\u0307"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a decomposed former name is stored composed",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"E\u0301mile\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "émile"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "inside a former name U+0085 stays and U+FEFF is a space, as the web's whitespace reads them",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"Ann\u0085Marie\",\"Zoe\ufeff \ufeffLee\",\"\ufeffBen\u0085\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "ann\u0085marie",
+              "ben\u0085",
+              "zoe lee"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a former name that is the profile's own name is dropped",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":[\"CELI\",\"celine\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "celine"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "32 former names are kept, and a list of 33 is dropped whole",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Zed\",\"renamedAt\":1789000000000,\"formerNames\":[\"n32\",\"n31\",\"n30\",\"n29\",\"n28\",\"n27\",\"n26\",\"n25\",\"n24\",\"n23\",\"n22\",\"n21\",\"n20\",\"n19\",\"n18\",\"n17\",\"n16\",\"n15\",\"n14\",\"n13\",\"n12\",\"n11\",\"n10\",\"n09\",\"n08\",\"n07\",\"n06\",\"n05\",\"n04\",\"n03\",\"n02\",\"n01\"]},{\"name\":\"Yan\",\"renamedAt\":1789000000000,\"formerNames\":[\"m01\",\"m02\",\"m03\",\"m04\",\"m05\",\"m06\",\"m07\",\"m08\",\"m09\",\"m10\",\"m11\",\"m12\",\"m13\",\"m14\",\"m15\",\"m16\",\"m17\",\"m18\",\"m19\",\"m20\",\"m21\",\"m22\",\"m23\",\"m24\",\"m25\",\"m26\",\"m27\",\"m28\",\"m29\",\"m30\",\"m31\",\"m32\",\"m33\"]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Zed",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "n01",
+              "n02",
+              "n03",
+              "n04",
+              "n05",
+              "n06",
+              "n07",
+              "n08",
+              "n09",
+              "n10",
+              "n11",
+              "n12",
+              "n13",
+              "n14",
+              "n15",
+              "n16",
+              "n17",
+              "n18",
+              "n19",
+              "n20",
+              "n21",
+              "n22",
+              "n23",
+              "n24",
+              "n25",
+              "n26",
+              "n27",
+              "n28",
+              "n29",
+              "n30",
+              "n31",
+              "n32"
+            ]
+          },
+          {
+            "name": "Yan",
+            "renamedAt": 1789000000000
+          }
+        ]
+      }
+    },
+    {
+      "name": "a formerNames that is not a list says nothing",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":1789000000000,\"formerNames\":\"celine\"},{\"name\":\"Ann\",\"renamedAt\":1789000000000,\"formerNames\":{\"celine\":true}}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi",
+            "renamedAt": 1789000000000
+          },
+          {
+            "name": "Ann",
+            "renamedAt": 1789000000000
+          }
+        ]
+      }
+    },
+    {
+      "name": "neither key can drop the profile",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Celi\",\"renamedAt\":{},\"formerNames\":7,\"progress\":[{\"setId\":\"01A\",\"at\":60,\"duration\":1200,\"updatedAt\":1789000000000}],\"watched\":[]}]}",
+      "expect": {
+        "profiles": [
+          {
+            "name": "Celi"
+          }
+        ]
+      }
+    }
+  ],
+  "merge": [
+    {
+      "name": "nobody renamed: one viewer typed two ways keeps the greatest device's spelling, with neither key",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "andré",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "André",
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "andré",
+            "displayName": "André",
+            "progress": [
+              "01A",
+              "01B"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a rename and an older build's document under the old name are one person, named as renamed",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ],
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000003000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "android-tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine",
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000001000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ],
+            "progress": [
+              "01A",
+              "01B"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "an older build's document never wins the name, even from the greater device id",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ],
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000003000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "CELINE",
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000009000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ],
+            "progress": [
+              "01A",
+              "01B"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a chain A to B to C joins the partial documents into C",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "C",
+              "renamedAt": 1789000003000,
+              "formerNames": [
+                "a",
+                "b"
+              ],
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000003000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "phone",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "B",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000002000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "A",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000001000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "c",
+            "displayName": "C",
+            "renamedAt": 1789000003000,
+            "formerNames": [
+              "a",
+              "b"
+            ],
+            "progress": [
+              "01A",
+              "01B",
+              "01C"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "two renames at once: the newer wins and the other name becomes a former name",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "B",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "phone",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "C",
+              "renamedAt": 1789000001500,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "b",
+            "displayName": "B",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "a",
+              "c"
+            ],
+            "progress": [
+              "01B",
+              "01C"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "two renames at the same moment: the greater device id wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "B",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "phone",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "C",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "c",
+            "displayName": "C",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "a",
+              "b"
+            ],
+            "progress": [
+              "01B",
+              "01C"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "renaming back: the newer rename names the person, and stale documents still join",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "A",
+              "renamedAt": 1789000003000,
+              "formerNames": [
+                "b"
+              ],
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000003000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "phone",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "B",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000002000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "B",
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000002500
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "a",
+            "displayName": "A",
+            "renamedAt": 1789000003000,
+            "formerNames": [
+              "b"
+            ],
+            "progress": [
+              "01A",
+              "01B",
+              "01C"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a case-only rename wins its spelling everywhere",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "celi",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "progress": [
+              "01A"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a removal made under the old name counts for the renamed person",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ],
+              "watchlist": [
+                {
+                  "setId": "01A",
+                  "updatedAt": 1789000001000
+                },
+                {
+                  "setId": "01B",
+                  "updatedAt": 1789000001000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine",
+              "watchlist": [
+                {
+                  "setId": "01A",
+                  "updatedAt": 1789000003000,
+                  "removed": true
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ],
+            "watchlist": [
+              {
+                "setId": "01A",
+                "removed": true
+              },
+              {
+                "setId": "01B"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a kid's parent named by the old name is the renamed grown-up",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ]
+            },
+            {
+              "name": "Mia",
+              "kids": true,
+              "parent": "Celi"
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine"
+            },
+            {
+              "name": "Mia",
+              "kids": true,
+              "parent": "Celine"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ]
+          },
+          {
+            "name": "mia",
+            "displayName": "Mia",
+            "parent": "celi"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a household's admin named by the old name is the renamed grown-up",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "households": [
+            {
+              "id": "01J9ZB",
+              "admin": {
+                "name": "Celi",
+                "updatedAt": 1789000001000
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "households": [
+            {
+              "id": "01J9ZB",
+              "admin": {
+                "name": "Celine",
+                "updatedAt": 1789000001500
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "name": "Celine"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ]
+          }
+        ],
+        "households": [
+          {
+            "id": "01J9ZB",
+            "admin": "celi"
+          }
+        ]
+      }
+    },
+    {
+      "name": "viewing stats under both names are one viewer's",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ],
+              "titleStats": [
+                {
+                  "setId": "01A",
+                  "device": "laptop",
+                  "startedAt": 1788999403000,
+                  "lastWatchedAt": 1789000003000,
+                  "seconds": 600,
+                  "updatedAt": 1789000003000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine",
+              "titleStats": [
+                {
+                  "setId": "01A",
+                  "device": "tv",
+                  "startedAt": 1788999401000,
+                  "lastWatchedAt": 1789000001000,
+                  "seconds": 600,
+                  "updatedAt": 1789000001000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ],
+            "titleStats": [
+              {
+                "setId": "01A",
+                "device": "laptop"
+              },
+              {
+                "setId": "01A",
+                "device": "tv"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a parent no document names stays as it is",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ]
+            },
+            {
+              "name": "Mia",
+              "kids": true,
+              "parent": "Oma"
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ]
+          },
+          {
+            "name": "mia",
+            "displayName": "Mia",
+            "parent": "oma"
+          }
+        ]
+      }
+    },
+    {
+      "name": "two people stay two",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celi",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "celine"
+              ],
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ann",
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine",
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ann",
+              "progress": [
+                {
+                  "setId": "01D",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "ann",
+            "displayName": "Ann",
+            "progress": [
+              "01B",
+              "01D"
+            ]
+          },
+          {
+            "name": "celi",
+            "displayName": "Celi",
+            "renamedAt": 1789000002000,
+            "formerNames": [
+              "celine"
+            ],
+            "progress": [
+              "01A",
+              "01C"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a person with more than 32 names keeps the first 32 as former names",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Zed",
+              "renamedAt": 1789000003000,
+              "formerNames": [
+                "a01",
+                "a02",
+                "a03",
+                "a04",
+                "a05",
+                "a06",
+                "a07",
+                "a08",
+                "a09",
+                "a10",
+                "a11",
+                "a12",
+                "a13",
+                "a14",
+                "a15",
+                "a16",
+                "a17",
+                "a18",
+                "a19",
+                "a20",
+                "a21",
+                "a22",
+                "a23",
+                "a24",
+                "a25",
+                "a26",
+                "a27",
+                "a28",
+                "a29",
+                "a30",
+                "a31",
+                "a32"
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "phone",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Yan",
+              "renamedAt": 1789000002000,
+              "formerNames": [
+                "a01",
+                "b1"
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "zed",
+            "displayName": "Zed",
+            "renamedAt": 1789000003000,
+            "formerNames": [
+              "a01",
+              "a02",
+              "a03",
+              "a04",
+              "a05",
+              "a06",
+              "a07",
+              "a08",
+              "a09",
+              "a10",
+              "a11",
+              "a12",
+              "a13",
+              "a14",
+              "a15",
+              "a16",
+              "a17",
+              "a18",
+              "a19",
+              "a20",
+              "a21",
+              "a22",
+              "a23",
+              "a24",
+              "a25",
+              "a26",
+              "a27",
+              "a28",
+              "a29",
+              "a30",
+              "a31",
+              "a32"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "a profile only an older build's document names keeps its old name",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Ann",
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Celine",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ann"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "ann",
+            "displayName": "Ann",
+            "progress": [
+              "01B"
+            ]
+          },
+          {
+            "name": "celine",
+            "displayName": "Celine",
+            "progress": [
+              "01A"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "at a name's edge U+0085 is part of it and U+FEFF is space, as the web's whitespace reads them",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "\u0085",
+              "progress": [
+                {
+                  "setId": "01A",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ann\u0085",
+              "renamedAt": 1789000000000,
+              "formerNames": [
+                "\ufeffAnna"
+              ],
+              "progress": [
+                {
+                  "setId": "01B",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "\ufeffBen",
+              "progress": [
+                {
+                  "setId": "01C",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 1789000000000,
+          "profiles": [
+            {
+              "name": "Ann",
+              "progress": [
+                {
+                  "setId": "01D",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Anna\ufeff",
+              "progress": [
+                {
+                  "setId": "01E",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            },
+            {
+              "name": "Ben\ufeff",
+              "progress": [
+                {
+                  "setId": "01F",
+                  "at": 60,
+                  "duration": 1200,
+                  "updatedAt": 1789000000000
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "profiles": [
+          {
+            "name": "ann",
+            "displayName": "Ann",
+            "progress": [
+              "01D"
+            ]
+          },
+          {
+            "name": "ann\u0085",
+            "displayName": "Ann\u0085",
+            "renamedAt": 1789000000000,
+            "formerNames": [
+              "anna"
+            ],
+            "progress": [
+              "01B",
+              "01E"
+            ]
+          },
+          {
+            "name": "ben",
+            "displayName": "Ben",
+            "progress": [
+              "01C",
+              "01F"
+            ]
+          },
+          {
+            "name": "\u0085",
+            "displayName": "\u0085",
+            "progress": [
+              "01A"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

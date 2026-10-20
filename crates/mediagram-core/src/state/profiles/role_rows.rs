@@ -7,7 +7,7 @@
 use rusqlite::Connection;
 
 mod insert;
-pub(crate) use insert::{NewProfile, insert};
+pub(crate) use insert::{NewProfile, insert, taken_names};
 
 /// Everything stored about a profile, the PIN included.
 #[derive(Debug, Clone)]
@@ -61,7 +61,7 @@ pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
             pin_hash: row.get(6)?,
             pin_salt: row.get(7)?,
             daily_limit: row.get(8)?,
-            hidden_sections: hidden_sections(row, 9)?,
+            hidden_sections: json_list(row, 9)?,
             household_id: row.get(10)?,
             household_updated_at: row.get(11)?,
         })
@@ -69,9 +69,10 @@ pub(crate) fn load(conn: &Connection) -> rusqlite::Result<Vec<Stored>> {
     rows.collect()
 }
 
-/// The `hidden_sections` column: a JSON list only this store's own writes
-/// and imports put there, so one that does not read is an error, not a guess.
-pub(crate) fn hidden_sections(row: &rusqlite::Row, idx: usize) -> rusqlite::Result<Vec<String>> {
+/// A JSON list column (`hidden_sections`, `former_names`): only this store's
+/// own writes and imports put one there, so one that does not read is an
+/// error, not a guess.
+pub(crate) fn json_list(row: &rusqlite::Row, idx: usize) -> rusqlite::Result<Vec<String>> {
     let text: String = row.get(idx)?;
     serde_json::from_str(&text)
         .map_err(|err| rusqlite::Error::FromSqlConversionFailure(idx, rusqlite::types::Type::Text, Box::new(err)))

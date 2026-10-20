@@ -46,7 +46,7 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
             let proven: bool = row.get(8)?;
             let minutes: Option<u16> = row.get(9)?;
             let daily_at = row.get::<_, i64>(10)? as f64;
-            let sections = role_rows::hidden_sections(row, 11)?;
+            let sections = role_rows::json_list(row, 11)?;
             let hidden_at = row.get::<_, i64>(12)? as f64;
             let household_at = row.get::<_, i64>(14)? as f64;
             Ok(ProfileRoles {

@@ -54,6 +54,7 @@
  */
 
 import { parseHouseholds, type HouseholdEntry } from "./households-record";
+import { parseNameKeys, type NameKeys } from "./name-record";
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
 import { asArray, isStamp, numberFromScalar, objectRow, parseRows, text_ } from "./record-scalars";
 import { parseRoleKeys, type RoleKeys } from "./roles-record";
@@ -118,7 +119,7 @@ export interface CollectionRow {
 
 /** `titleStats`/`dayStats` come from `StatsRows` (`stats-record.ts`); `kids`,
  * `admin`, `kidsAge`, `parent` and `pin` from `RoleKeys` (`roles-record.ts`). */
-export interface ProfileState extends StatsRows, RoleKeys {
+export interface ProfileState extends StatsRows, RoleKeys, NameKeys {
   /** The viewer: the name, not the id, is what identifies one across devices. */
   name: string;
   /** The writing device's own id for this profile — provenance, not identity. */
@@ -199,6 +200,7 @@ export function parseRecord(text: string): SyncRecord | null {
       name,
       localId: text_(row.localId) ?? undefined,
       ...parseRoleKeys(row),
+      ...parseNameKeys(row, name),
       progress: parseRows(row.progress, progressRow),
       watched: parseRows(row.watched, watchedRow),
       unwatched: row.unwatched === undefined ? undefined : parseRows(row.unwatched, unwatchedRow),
