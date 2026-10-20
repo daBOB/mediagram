@@ -1,0 +1,680 @@
+{
+  "parse": [
+    {
+      "name": "households and a profile's household read back as written",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"home\",\"name\":{\"text\":\"Borck\",\"updatedAt\":1789000000000}},{\"id\":\"01J9ZB\",\"name\":{\"text\":\"Oma\",\"updatedAt\":1789000000000},\"admin\":{\"name\":\"Oma\",\"updatedAt\":1789000000000}}],\"profiles\":[{\"name\":\"Oma\",\"progress\":[],\"watched\":[],\"household\":{\"id\":\"01J9ZB\",\"updatedAt\":1789000000000}}]}",
+      "expect": {
+        "households": [
+          {
+            "id": "home",
+            "name": {
+              "text": "Borck",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "01J9ZB",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 1789000000000
+            },
+            "admin": {
+              "name": "Oma",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": [
+          {
+            "name": "Oma",
+            "household": {
+              "id": "01J9ZB",
+              "updatedAt": 1789000000000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a document from before households says nothing about them",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"Mia\",\"progress\":[],\"watched\":[]}]}",
+      "expect": {
+        "households": [],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a row without a usable id is dropped",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"name\":{\"text\":\"A\",\"updatedAt\":1789000000000}},{\"id\":\"\",\"name\":{\"text\":\"B\",\"updatedAt\":1789000000000}},{\"id\":\"has space\",\"name\":{\"text\":\"C\",\"updatedAt\":1789000000000}},{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"name\":{\"text\":\"D\",\"updatedAt\":1789000000000}},{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"name\":{\"text\":\"E\",\"updatedAt\":1789000000000}}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "name": {
+              "text": "E",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a name dated 0, past 2^53-1 or empty is dropped, and the row with it when it says nothing else",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"n0\",\"name\":{\"text\":\"A\",\"updatedAt\":0}},{\"id\":\"n1\",\"name\":{\"text\":\"B\",\"updatedAt\":9007199254740992}},{\"id\":\"n2\",\"name\":{\"text\":\"   \",\"updatedAt\":1789000000000}},{\"id\":\"n3\",\"name\":{\"text\":\"C\",\"updatedAt\":0},\"admin\":{\"name\":\"Oma\",\"updatedAt\":1789000000000}},{\"id\":\"n4\",\"name\":{\"text\":\"D\",\"updatedAt\":9007199254740991}}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "n3",
+            "admin": {
+              "name": "Oma",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "n4",
+            "name": {
+              "text": "D",
+              "updatedAt": 9007199254740991
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "an admin with an empty name or a bad date is dropped alone",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"a1\",\"name\":{\"text\":\"A\",\"updatedAt\":1789000000000},\"admin\":{\"name\":\"\",\"updatedAt\":1789000000000}},{\"id\":\"a2\",\"name\":{\"text\":\"B\",\"updatedAt\":1789000000000},\"admin\":{\"name\":\"Oma\",\"updatedAt\":0}},{\"id\":\"a3\",\"name\":{\"text\":\"C\",\"updatedAt\":1789000000000},\"admin\":{\"name\":\"Oma\",\"updatedAt\":9007199254740992}}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "a1",
+            "name": {
+              "text": "A",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "a2",
+            "name": {
+              "text": "B",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "a3",
+            "name": {
+              "text": "C",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "removed counts only as the literal true",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"r1\",\"name\":{\"text\":\"A\",\"updatedAt\":1789000000000},\"removed\":\"yes\"},{\"id\":\"r2\",\"name\":{\"text\":\"B\",\"updatedAt\":1789000000000},\"removed\":1},{\"id\":\"r3\",\"removed\":true},{\"id\":\"r4\",\"removed\":false}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "r1",
+            "name": {
+              "text": "A",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "r2",
+            "name": {
+              "text": "B",
+              "updatedAt": 1789000000000
+            }
+          },
+          {
+            "id": "r3",
+            "removed": true
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "home is never removed",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"home\",\"removed\":true},{\"id\":\"home\",\"name\":{\"text\":\"Borck\",\"updatedAt\":1789000000000},\"removed\":true}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "home",
+            "name": {
+              "text": "Borck",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a name longer than 120 characters is cut to 120",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"l1\",\"name\":{\"text\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"updatedAt\":1789000000000}}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "l1",
+            "name": {
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a profile's household with a bad id or a stamp of 0 drops the key alone",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"household\":{\"id\":\"has space\",\"updatedAt\":1789000000000}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"household\":{\"id\":\"b\",\"updatedAt\":0}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"household\":{\"id\":\"b\",\"updatedAt\":1789000000000}}]}",
+      "expect": {
+        "households": [],
+        "profiles": [
+          {
+            "name": "C",
+            "household": {
+              "id": "b",
+              "updatedAt": 1789000000000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown keys inside a household are dropped",
+      "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"households\":[{\"id\":\"u1\",\"name\":{\"text\":\"A\",\"updatedAt\":1789000000000,\"extra\":1},\"admin\":{\"name\":\"Oma\",\"updatedAt\":1789000000000,\"extra\":1},\"colour\":\"red\"}],\"profiles\":[]}",
+      "expect": {
+        "households": [
+          {
+            "id": "u1",
+            "name": {
+              "text": "A",
+              "updatedAt": 1789000000000
+            },
+            "admin": {
+              "name": "Oma",
+              "updatedAt": 1789000000000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    }
+  ],
+  "merge": [
+    {
+      "name": "a rename on two devices: the newer wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "home",
+              "name": {
+                "text": "Old",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "home",
+              "name": {
+                "text": "New",
+                "updatedAt": 2000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "home",
+            "name": {
+              "text": "New",
+              "updatedAt": 2000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a rename at the same moment: the larger device id wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "home",
+              "name": {
+                "text": "Laptop",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "home",
+              "name": {
+                "text": "Tv",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "home",
+            "name": {
+              "text": "Tv",
+              "updatedAt": 1000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a rename on one device and a new admin on another both stand",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "name": {
+                "text": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "admin": {
+                "name": "Oma",
+                "updatedAt": 2000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 1000
+            },
+            "admin": {
+              "name": "oma",
+              "updatedAt": 2000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a removal on any device stands, however old",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "removed": true
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "name": {
+                "text": "Oma",
+                "updatedAt": 9000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 9000
+            },
+            "removed": true
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a household one device has not heard of comes through whole",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "home",
+              "name": {
+                "text": "Borck",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "name": {
+                "text": "Oma",
+                "updatedAt": 1000
+              },
+              "admin": {
+                "name": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 1000
+            },
+            "admin": {
+              "name": "oma",
+              "updatedAt": 1000
+            }
+          },
+          {
+            "id": "home",
+            "name": {
+              "text": "Borck",
+              "updatedAt": 1000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "an admin is merged under the name sync knows a viewer by",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "admin": {
+                "name": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "admin": {
+                "name": "oma",
+                "updatedAt": 2000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "admin": {
+              "name": "oma",
+              "updatedAt": 2000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a profile moved on two devices: the newer move wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "home",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "b",
+                "updatedAt": 2000
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [],
+        "profiles": [
+          {
+            "name": "mia",
+            "household": {
+              "id": "b",
+              "updatedAt": 2000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a profile moved at the same moment: the larger device id wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "home",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "b",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [],
+        "profiles": [
+          {
+            "name": "mia",
+            "household": {
+              "id": "b",
+              "updatedAt": 1000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a device that says nothing about households changes nothing",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "name": {
+                "text": "Oma",
+                "updatedAt": 1000
+              },
+              "admin": {
+                "name": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "name": "Oma",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "b",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Oma",
+              "progress": [],
+              "watched": []
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 1000
+            },
+            "admin": {
+              "name": "oma",
+              "updatedAt": 1000
+            }
+          }
+        ],
+        "profiles": [
+          {
+            "name": "oma",
+            "household": {
+              "id": "b",
+              "updatedAt": 1000
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
