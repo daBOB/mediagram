@@ -53,6 +53,8 @@ export async function change(method, path, body, first = () => {}) {
     first();
     await loadProfiles();
     if (profileId() !== null && profile() === null) await useProfile(null);
+    // The page filters its catalogue again: what changed may be whoever is watching.
+    window.dispatchEvent(new Event("mediagram:profiles"));
   }
   return outcome;
 }
@@ -79,6 +81,8 @@ export const setKidsAge = (actorId, pin, id, age) => change("PUT", at(id, "/kids
 
 /** Sets the kid `id`'s daily watching limit to `minutes`, or none for `null`. */
 export const setDailyLimit = (actorId, pin, id, minutes) => change("PUT", at(id, "/daily-limit"), { actorId, pin, minutes });
+/** Sets which sections `id` is not shown, as a whole list; an empty one hides nothing. */
+export const setHiddenSections = (actorId, pin, id, sections) => change("PUT", at(id, "/hidden-sections"), { actorId, pin, sections });
 
 /**
  * A grown-up saying who they are: their PIN, or — for one from before PINs —

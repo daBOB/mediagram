@@ -1,6 +1,7 @@
 /** Manage profiles: who you are first, then what your role offers, with the PIN held only while it is open. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { SECTIONS } from "../public/lib/catalog/sections.js";
 import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
 import { mountManage } from "../public/lib/profile-manage.js";
@@ -126,6 +127,51 @@ test("a new kid can start with a daily limit", async () => {
   form.fire("submit");
   await settle();
   expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ben", kids: true, kidsAge: 6, dailyLimit: 30 }]);
+});
+
+const sectionsOf = (root: Node, name: string) => descendants(root).find((node) => node.getAttribute("aria-label") === `Sections for ${name}`);
+const switchesOf = (root: Node, name: string) => descendants(sectionsOf(root, name)!).filter((node) => node.getAttribute("role") === "switch");
+const shownTo = (root: Node, name: string) =>
+  switchesOf(root, name).filter((node) => node.getAttribute("aria-checked") === "true").map((node) => node.textContent);
+
+test("Sections are offered where the rule lets you set them: a parent's own kids, the admin's grown-ups and kids", async () => {
+  const parent = await manageAs("Maja", "4321");
+  expect(sectionsOf(parent.root, "Tim")).toBeDefined();
+  expect(sectionsOf(parent.root, "Maja")).toBeUndefined();
+  expect(sectionsOf(parent.root, "andre")).toBeUndefined();
+  expect(sectionsOf(parent.root, "Lea")).toBeUndefined();
+  buttonNamed(parent.root, "Done").fire("click");
+  const admin = await manageAs("andre", "1234");
+  expect(sectionsOf(admin.root, "Maja")).toBeDefined();
+  expect(sectionsOf(admin.root, "Lea")).toBeDefined();
+  expect(sectionsOf(admin.root, "andre")).toBeUndefined();
+  expect(sectionsOf(admin.root, "Tim")).toBeUndefined();
+});
+
+test("a kid's sections are switched with the PIN given once, and the panel redraws from the answer", async () => {
+  // A key this build does not know is sent back as it came.
+  household = [ANDRE, MAJA, { ...TIM, hiddenSections: ["podcasts"] }, LEA];
+  await state.loadProfiles();
+  env.respondWith(async (url, options) => {
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household });
+    if (url === "/api/profiles/tim/hidden-sections") {
+      const { sections } = JSON.parse(String(options!.body));
+      household = household.map((entry: any) => (entry.id === "tim" ? { ...entry, hiddenSections: sections } : entry));
+    }
+    return new Response(null, { status: 204 });
+  });
+  const { root } = await manageAs("Maja", "4321");
+  const labels = Object.values(SECTIONS).map((section) => section.label);
+  expect(switchesOf(root, "Tim").map((node) => node.textContent)).toEqual(labels);
+  expect(shownTo(root, "Tim")).toEqual(labels);
+  switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!.fire("click");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts", "anime"] }]);
+  expect(shownTo(root, "Tim")).toEqual(labels.filter((label) => label !== SECTIONS.anime.label));
+  switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!.fire("click");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts"] }]);
+  expect(shownTo(root, "Tim")).toEqual(labels);
 });
 
 test("a new grown-up is given a first PIN, asked twice", async () => {

@@ -45,7 +45,8 @@ export interface LibraryPort {
 
 /** The slice of `watch-state.js` the session reads to filter for a profile. */
 export interface LibrarySessionState {
-  profile(): { kids?: boolean; kidsAge?: number | null } | null;
+  /** `admin` runs the household, and is shown every section; `hiddenSections` the keys anyone else is not shown. */
+  profile(): { kids?: boolean; kidsAge?: number | null; admin?: boolean; hiddenSections?: string[] } | null;
   /** Every Kids mark, set id -> the age it is for kids from (6 or 12). */
   kidsMarks(): Map<string, number>;
 }

@@ -1,5 +1,5 @@
 /**
- * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
+ * Manage profiles: who there is, a kid's age and daily limits, the sections each is shown, and grown-ups' PINs.
  *
  * Part of the Profiles page (`catalog/settings-profiles.js`), in Settings and
  * over the picker. A device left on a grown-up's profile does not hand a child
@@ -21,6 +21,7 @@ import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
 import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
+import { sectionSwitches } from "./section-switches.js";
 import { askGrownUp, askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
 
 /** What a change reports once the body is gone: nothing was sent. */
@@ -99,6 +100,10 @@ export function mountManage(container, { promptHost, onChange }) {
     if (outcome.ok) onChange?.();
   }
 
+  /** Which sections `entry` is shown: a switch sends the whole list with the PIN held, and the panel redraws. */
+  const access = (entry) => sectionSwitches(entry, async (hidden) =>
+    report(await send((id, pin) => api.setHiddenSections(id, pin, entry.id, hidden))));
+
   function draw() {
     body.textContent = "";
     const view = session === null ? null : api.manageable(state.profiles(), session.actorId);
@@ -133,7 +138,8 @@ export function mountManage(container, { promptHost, onChange }) {
       body.append(section("Grown-ups",
         ...grownUps.map((entry) => row(entry.name,
           pill("Reset PIN", () => void newPin(entry)),
-          pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)))),
+          pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)),
+          access(entry))),
         addForm("Add a grown-up", [], async (name) => {
           const made = await ask(() => askPin(promptHost, { title: newPinTitle(name), confirm: true, refused: report,
             send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
@@ -151,7 +157,7 @@ export function mountManage(container, { promptHost, onChange }) {
         daily.addEventListener("change", async () =>
           report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)))));
         return row(kid.name, limit, daily,
-          pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)));
+          pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)), access(kid));
       }),
       addForm("Add a kid", [newLimit, newDaily], async (name) =>
         report(await send((id, pin) => api.create(id, pin,

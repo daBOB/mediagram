@@ -19,6 +19,7 @@ import { householdsPart } from "./settings-households.js";
 import { ownerOf } from "../profile-api.js";
 import { kidsLimitOf } from "../age-rating.js";
 import { dailyLimitWords } from "../daily-limit.js";
+import { hidesWords } from "../section-access.js";
 
 /** The page's name: its Settings tab, and its heading over the picker. */
 export const PROFILES = "Profiles";
@@ -64,15 +65,16 @@ function subtitlePreference() {
   return set;
 }
 
-/** One quiet line for a profile: its role, and for a grown-up whether it has a PIN. */
+/** One quiet line for a profile: its role, for a grown-up whether it has a PIN, and the sections it is not shown. */
 function roleLine(entry, profiles) {
   if (entry.kids) {
     const owner = profiles.find((other) => other.id === ownerOf(profiles, entry));
     const parts = ["Kid", owner?.name, `FSK ${kidsLimitOf(entry)}`];
     if (entry.dailyLimit != null) parts.push(dailyLimitWords(entry.dailyLimit));
-    return parts.filter(Boolean).join(" · ");
+    return [...parts, hidesWords(entry)].filter(Boolean).join(" · ");
   }
-  return `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
+  const role = `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
+  return [role, hidesWords(entry)].filter(Boolean).join(" · ");
 }
 
 /** Draws the household into `set`, read afresh from the watch state. */
