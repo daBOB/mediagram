@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.131.0 — households
+
+**Added** (web player; the Android core carries them, its screens follow)
+
+- **Households.** One install can be shared by more than one household; each sees only its own profiles: its picker, its "Everyone here", its Manage profiles. The four profiles that existed are the first household, **Home**, run by the owner (the install's first admin). It is a household rule, not real separation: everyone shares the same library and server.
+- **The owner sets households up** from Settings → Profiles → Households: create one (with a new grown-up who runs it, or an existing grown-up who moves in with their kids), rename it, change who runs it, move a grown-up and their kids to another, and delete an empty one (never Home). Every action asks the owner's PIN once per visit. Anyone else sees an Owner button that asks it.
+- **A browser joins one household**, once, with that household's admin's PIN or the owner's: "Join a household" on the picker when there is more than one, and "This device · Switch household" on the Profiles page. A browser that chose someone before stays in that profile's household; while only Home exists nothing changes and nothing is asked.
+- **Profile names stay unique across the whole install** ("That name is already used on this install"); household names are unique among the live ones.
+- Households and each profile's household travel in the state sync (stamped, newest wins). The Android core already stores, merges and imports them, so phones and TVs keep them; Android apps installed today keep showing every profile until the Android screens ship.
+
 ## 0.130.1 — Preloads stays reachable
 
 **Changed** (Android phone, tablet and TV)
