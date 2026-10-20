@@ -1,7 +1,7 @@
 /** Manage profiles: who you are first, then what your role offers, with the PIN held only while it is open. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { openProfilesPage as openManage } from "../public/lib/profiles-page-overlay.js";
+import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
 import { mountManage } from "../public/lib/profile-manage.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
@@ -36,7 +36,7 @@ const formOf = (root: Node, label: string) => descendants(root).find((node) => n
 async function manageAs(name: string, ...pins: string[]) {
   const root = new Node();
   let closes = 0;
-  openManage(root, () => { closes++; });
+  openProfilesPage(root, () => { closes++; });
   buttonNamed(root, name).fire("click");
   await answerPin(root, ...pins);
   return { root, closes: () => closes };
@@ -44,7 +44,7 @@ async function manageAs(name: string, ...pins: string[]) {
 
 test("only grown-ups are offered as who you are", () => {
   const root = new Node();
-  openManage(root, () => {});
+  openProfilesPage(root, () => {});
   expect(descendants(byClass(root, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
 });
 
@@ -256,7 +256,7 @@ test("closing drops the PIN: the next opening asks who you are", async () => {
   buttonNamed(root, "Done").fire("click");
   expect(closes()).toBe(1);
   expect(descendants(root).some((node) => node.className.includes("who-manage"))).toBe(false);
-  openManage(root, () => {});
+  openProfilesPage(root, () => {});
   expect(textOf(root)).toContain("Who are you?");
   expect(rowOf(root, "Tim")).toBeUndefined();
 });
