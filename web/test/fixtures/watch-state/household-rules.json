@@ -24,8 +24,9 @@
     {"name":"a household run by the owner, with four profiles","fn":"householdLine","args":["andre",4],"expect":"Admin andre · 4 profiles"},
     {"name":"one profile is said in the singular","fn":"householdLine","args":["Oma",1],"expect":"Admin Oma · 1 profile"},
     {"name":"a household nobody runs, with nobody in it","fn":"householdLine","args":[null,0],"expect":"No admin · 0 profiles"},
-    {"name":"joining asks for the household admin's PIN, or the owner's","fn":"joinPinTitle","args":["Oma"],"expect":"Oma’s PIN, or the owner’s"},
-    {"name":"joining a household nobody runs asks for the owner's PIN","fn":"joinPinTitle","args":[null],"expect":"The owner’s PIN"}
+    {"name":"joining asks for the household admin's PIN, or the owner's","fn":"joinPinTitle","args":[{"name":"Oma"}],"expect":"Oma’s PIN, or the owner’s"},
+    {"name":"joining a household nobody runs asks for the owner's PIN","fn":"joinPinTitle","args":[null],"expect":"The owner’s PIN"},
+    {"name":"joining the household the owner runs asks only for the owner's PIN","fn":"joinPinTitle","args":[{"name":"andre","owner":true}],"expect":"The owner’s PIN"}
   ],
   "view": [
     {
@@ -34,6 +35,19 @@
         {"id":"andre","kids":false,"owner":true,"parentId":null,"household":"home"},
         {"id":"test","kids":false,"parentId":null,"household":"home"},
         {"id":"tvtest","kids":false,"parentId":null,"household":"home"},
+        {"id":"tvkids","kids":true,"parentId":"tvtest","household":"home"}
+      ],
+      "households": [
+        {"id":"home","adminId":null}
+      ],
+      "expect": {"profiles":{"andre":{"household":"home","admin":true},"test":{"household":"home","admin":false},"tvtest":{"household":"home","admin":false},"tvkids":{"household":"home","admin":false}},"admins":{"home":"andre"}}
+    },
+    {
+      "name": "a profile with no household, or a null one, is in home",
+      "profiles": [
+        {"id":"andre","kids":false,"owner":true,"parentId":null,"household":"home"},
+        {"id":"test","kids":false,"parentId":null},
+        {"id":"tvtest","kids":false,"parentId":null,"household":null},
         {"id":"tvkids","kids":true,"parentId":"tvtest","household":"home"}
       ],
       "households": [
@@ -189,7 +203,7 @@
       "expect": true
     },
     {
-      "name": "the owner may not create a household with a household's admin",
+      "name": "the owner may not create a household with a household's admin while another grown-up is there",
       "profiles": [
         {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
         {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
@@ -221,6 +235,36 @@
       "householdId": "",
       "targetId": "mia",
       "expect": false
+    },
+    {
+      "name": "the owner may not create a household with the owner as its admin, even as the last grown-up of theirs",
+      "profiles": [
+        {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+        {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+        {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+        {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"}
+      ],
+      "live": ["home","b","c"],
+      "actorId": "andre",
+      "action": "create-household",
+      "householdId": "",
+      "targetId": "andre",
+      "expect": false
+    },
+    {
+      "name": "the owner may create a household with a household's admin who is its last grown-up",
+      "profiles": [
+        {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+        {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+        {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+        {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"}
+      ],
+      "live": ["home","b","c"],
+      "actorId": "andre",
+      "action": "create-household",
+      "householdId": "",
+      "targetId": "oma",
+      "expect": true
     },
     {
       "name": "a household's admin who is not the owner may not create one",
@@ -474,6 +518,21 @@
       "householdId": "home",
       "targetId": "oma",
       "expect": true
+    },
+    {
+      "name": "the owner never moves, even as the last grown-up of their household",
+      "profiles": [
+        {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+        {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+        {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+        {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"}
+      ],
+      "live": ["home","b","c"],
+      "actorId": "andre",
+      "action": "move-to-household",
+      "householdId": "b",
+      "targetId": "andre",
+      "expect": false
     },
     {
       "name": "the owner deletes an empty household",

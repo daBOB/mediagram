@@ -30,6 +30,10 @@ export const HOUSEHOLD_WORDS = {
 export const householdLine = (adminName, count) =>
   `${adminName == null ? "No admin" : `Admin ${adminName}`} · ${count} profile${count === 1 ? "" : "s"}`;
 
-/** What joining asks for: the household admin's PIN, or the owner's, which opens every household. */
-export const joinPinTitle = (adminName) =>
-  adminName == null ? HOUSEHOLD_WORDS.ownersPin : `${adminName}’s PIN, or the owner’s`;
+/**
+ * What joining asks for, given the household's admin (`{name, owner}`, or
+ * none): that admin's PIN, or the owner's, which opens every household. Where
+ * the owner runs it, the owner's PIN is the only one, said once.
+ */
+export const joinPinTitle = (admin) =>
+  admin == null || admin.owner === true ? HOUSEHOLD_WORDS.ownersPin : `${admin.name}’s PIN, or the owner’s`;

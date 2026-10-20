@@ -58,9 +58,17 @@ export function householdAllowed(profiles, live, actorId, action, householdId, t
   if (actor === undefined || actor.kids) return false;
   const owner = actor.owner === true;
   const target = profiles.find((one) => one.id === targetId && !one.kids);
+  // The owner never moves: they run whatever household they are in, so a move
+  // would quietly take it from its recorded admin and leave them stranded
+  // there. A household's admin moves only as its last grown-up, which empties
+  // it for deletion; while others remain, the owner changes the admin first.
+  const movable =
+    target !== undefined &&
+    target.owner !== true &&
+    (!target.admin || !profiles.some((one) => !one.kids && one.id !== target.id && one.household === target.household));
 
-  // The admin given with a new household is a new grown-up, or one who runs nothing yet.
-  if (action === "create-household") return owner && (targetId === "" || (target !== undefined && !target.admin));
+  // A new household's admin is a new grown-up, or one who could be moved there.
+  if (action === "create-household") return owner && (targetId === "" || movable);
   if (!live.includes(householdId)) return false;
 
   switch (action) {
@@ -70,21 +78,15 @@ export function householdAllowed(profiles, live, actorId, action, householdId, t
       // The owner runs their own household, so there is no admin there to change.
       return owner && actor.household !== householdId && target?.household === householdId;
     case "move-to-household":
-      // A household's admin leaves only as its last grown-up, which empties it
-      // for deletion; while others remain, the owner changes the admin first.
-      return (
-        owner &&
-        target !== undefined &&
-        target.household !== householdId &&
-        (!target.admin ||
-          !profiles.some((one) => !one.kids && one.id !== target.id && one.household === target.household))
-      );
+      return owner && movable && target.household !== householdId;
     case "delete-household":
       return owner && householdId !== HOME && !profiles.some((one) => one.household === householdId);
     case "join-household":
       return owner || (actor.admin && actor.household === householdId);
     case "claim-household":
-      // Only a race or an older build leaves a household with grown-ups and no admin.
+      // A household is left with no admin by a race, an older build, or its admin
+      // leaving as its last grown-up. A grown-up then moved in becomes its admin
+      // (the server and core do that, not this rule); claiming covers the rest.
       return (
         actor.household === householdId &&
         !profiles.some((one) => !one.kids && one.admin && one.household === householdId)

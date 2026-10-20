@@ -20,4 +20,4 @@ export const HOUSEHOLD_WORDS: {
   profileNameTaken: string;
 };
 export function householdLine(adminName: string | null, count: number): string;
-export function joinPinTitle(adminName: string | null): string;
+export function joinPinTitle(admin: { name: string; owner?: boolean } | null): string;

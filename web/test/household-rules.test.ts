@@ -23,7 +23,10 @@ import { HOUSEHOLD_WORDS, householdLine, joinPinTitle } from "../public/lib/hous
 
 interface Fixture {
   words: typeof HOUSEHOLD_WORDS;
-  lines: { name: string; fn: "householdLine" | "joinPinTitle"; args: [string | null, number?]; expect: string }[];
+  lines: (
+    | { name: string; fn: "householdLine"; args: Parameters<typeof householdLine>; expect: string }
+    | { name: string; fn: "joinPinTitle"; args: Parameters<typeof joinPinTitle>; expect: string }
+  )[];
   view: { name: string; profiles: HouseholdProfile[]; households: Household[]; expect: HouseholdView }[];
   allowed: {
     name: string;
@@ -47,9 +50,7 @@ describe("household words fixtures", () => {
 
   for (const one of fixture.lines) {
     test(one.name, () => {
-      const [name, count] = one.args;
-      const said = one.fn === "householdLine" ? householdLine(name, count!) : joinPinTitle(name);
-      expect(said).toBe(one.expect);
+      expect(one.fn === "householdLine" ? householdLine(...one.args) : joinPinTitle(...one.args)).toBe(one.expect);
     });
   }
 });
