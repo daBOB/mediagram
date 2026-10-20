@@ -27,21 +27,11 @@ function store() {
   return { state: new WatchState(path), path };
 }
 
-/** Writes what no method here writes yet, through a second connection. */
-function sql(path: string, ...statements: string[]): void {
+/** Runs what no method here does, through a second connection; the last statement's first row. */
+function sql<T>(path: string, ...statements: string[]): T {
   const db = new Database(path);
   try {
-    for (const statement of statements) db.exec(statement);
-  } finally {
-    db.close();
-  }
-}
-
-/** One row read through a second connection. */
-function read<T>(path: string, query: string): T {
-  const db = new Database(path);
-  try {
-    return db.query(query).get() as T;
+    return statements.map((statement) => db.query(statement).get()).at(-1) as T;
   } finally {
     db.close();
   }
@@ -61,13 +51,13 @@ const renamedThere: SyncRecord = {
   profiles: [{ name: "Celi", renamedAt: 5000, formerNames: ["celine"], progress: [], watched: [] }],
 };
 
-/** "Celine", the older row, and "Celi", a second row an older build made for the same person. */
-function twoRows() {
+/** "Celine", the older row, and "Celi", a second row an older build made for the same person; then `then`. */
+function twoRows(...then: string[]) {
   const { state, path } = store();
   const older = state.createProfile("Celine")!.id;
   const newer = state.createProfile("Celi")!.id;
   sql(path, `UPDATE profiles SET created_at = 1 WHERE id = '${older}'`,
-    `UPDATE profiles SET created_at = 2 WHERE id = '${newer}'`);
+    `UPDATE profiles SET created_at = 2 WHERE id = '${newer}'`, ...then);
   return { state, path, older, newer };
 }
 
@@ -150,6 +140,16 @@ describe("folding two rows of one person", () => {
     state.close();
   });
 
+  test("the older row is kept though it holds the merged name, and of two made at once the smaller id", () => {
+    const flipped = twoRows("UPDATE profiles SET created_at = 0 WHERE name = 'Celi'");
+    const tied = twoRows("UPDATE profiles SET id = 'b', created_at = 1 WHERE name = 'Celi'", "UPDATE profiles SET id = 'a' WHERE name = 'Celine'");
+    for (const [state, kept] of [[flipped.state, flipped.newer], [tied.state, "a"]] as const) {
+      state.importMerged(merged(viewer("Celi", { renamedAt: 5000, formerNames: ["celine"] })));
+      expect(state.profiles().map(({ id, name }) => ({ id, name }))).toEqual([{ id: kept, name: "Celi" }]);
+      state.close();
+    }
+  });
+
   test("a fold moves the folded row's lists, so their ids never clash", () => {
     const { state, older, newer } = twoRows();
     const list = state.createCollection(newer, "Favs")!;
@@ -172,7 +172,7 @@ describe("folding two rows of one person", () => {
       `INSERT INTO households(id, name, name_updated_at, admin_id, admin_updated_at) VALUES ('b', 'Flat', 1000, '${newer}', 1000)`);
     state.importMerged(merged(viewer("Celi", { renamedAt: 5000, formerNames: ["celine"] })));
     expect(state.profiles().find((one) => one.id === mia)?.parentId).toBe(older);
-    expect(read<{ adminId: string }>(path, "SELECT admin_id AS adminId FROM households WHERE id = 'b'").adminId).toBe(older);
+    expect(sql<{ adminId: string }>(path, "SELECT admin_id AS adminId FROM households WHERE id = 'b'").adminId).toBe(older);
     state.close();
   });
 
@@ -189,7 +189,7 @@ describe("folding two rows of one person", () => {
     again.state.importMerged(mergeStates([wire(again.state, "laptop"), renamedThere]));
     expect(again.state.profiles().map(({ id, hiddenSections }) => ({ id, hiddenSections })))
       .toEqual([{ id: again.older, hiddenSections: ["anime"] }]);
-    expect(read<{ at: number }>(again.path, "SELECT hidden_sections_updated_at AS at FROM profiles").at).toBe(1000);
+    expect(sql<{ at: number }>(again.path, "SELECT hidden_sections_updated_at AS at FROM profiles").at).toBe(1000);
     state.close();
     again.state.close();
   });

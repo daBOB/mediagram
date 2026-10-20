@@ -164,6 +164,28 @@ fn two_rows_of_one_person_fold_into_the_older() {
     assert_eq!(import(&conn, &round(&conn)), 0);
 }
 
+#[test]
+fn the_older_row_is_kept_though_it_holds_the_merged_name() {
+    let (_dir, conn, _, newer) = two_rows();
+    conn.execute("UPDATE profiles SET created_at = 0 WHERE id = ?1", [&newer]).unwrap();
+    import(&conn, &celi());
+    assert_eq!(names(&conn), [(newer, "Celi".to_string())]);
+}
+
+/// The smaller id even when it is the former name's row, which the merged
+/// name's would precede if nothing sorted them.
+#[test]
+fn of_two_rows_made_at_once_the_smaller_id_is_kept() {
+    let (_dir, conn, _, _) = two_rows();
+    conn.execute_batch(
+        "UPDATE profiles SET id = 'b', created_at = 1 WHERE name = 'Celi';
+         UPDATE profiles SET id = 'a' WHERE name = 'Celine';",
+    )
+    .unwrap();
+    import(&conn, &celi());
+    assert_eq!(names(&conn), [("a".to_string(), "Celi".to_string())]);
+}
+
 /// Collections move whole, ids and all, so the merge's copy of one finds
 /// it under the kept row rather than clashing with its id.
 #[test]

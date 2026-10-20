@@ -18,11 +18,13 @@ import { normalName } from "./sync-record";
  * its normalised name and only ever turns `kids` on, so a second profile of
  * the same name would merge with the first everywhere — a kid called after
  * the admin would make the admin a kid. Compared as stored names are kept:
- * edges trimmed, runs of space collapsed, then normalised.
+ * edges trimmed, runs of space collapsed, then normalised. `name` is cut as
+ * it would be stored; `existing` is not, because a former name that
+ * lower-casing lengthened past the cut must still be refused whole.
  */
 export function nameTaken(existing: string[], name: unknown): boolean {
   const wanted = normalName(cleanName(name));
-  return wanted !== null && existing.some((one) => normalName(cleanName(one)) === wanted);
+  return wanted !== null && existing.some((one) => normalName(one.replace(/\s+/g, " ")) === wanted);
 }
 
 /** What the rule needs to know about a profile, and nothing else. */
