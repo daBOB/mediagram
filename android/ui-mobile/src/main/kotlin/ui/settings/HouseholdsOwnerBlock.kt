@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -63,7 +67,9 @@ internal fun HouseholdsOwnerBlock() {
 /**
  * Every household, then a new one. Why the last change did not take is said
  * beside the row or form it was sent from, as the web says it; the create
- * form's place when that row has gone. Nothing is pressed while a change is out.
+ * form's place when that row has gone. A form closes, or empties, only once a
+ * change from it went through: a refusal, or a PIN prompt dismissed, keeps
+ * what was typed. Nothing is pressed while a change is out.
  */
 @Composable
 private fun OpenPart(
@@ -73,11 +79,19 @@ private fun OpenPart(
     // The household a change was last sent from; null is the create form.
     var sentFrom by rememberSaveable { mutableStateOf<String?>(null) }
     val noticeAt = sentFrom?.takeIf { id -> part.rows.any { it.household.id == id } }
+    // How many changes from each place went through, by household id; "" is the create form.
+    val took = remember { mutableStateMapOf<String, Int>() }
+    var seen by remember { mutableIntStateOf(part.answers) }
+    LaunchedEffect(part.answers) {
+        val place = sentFrom.orEmpty()
+        if (part.answers > seen && part.notice == null) took[place] = (took[place] ?: 0) + 1
+        seen = part.answers
+    }
     part.rows.forEach { row ->
         val id = row.household.id
-        key(id) { HouseholdEntry(row, owners, part.sending, part.notice.takeIf { noticeAt == id }) { sentFrom = id } }
+        key(id) { HouseholdEntry(row, owners, part.sending, part.notice.takeIf { noticeAt == id }, took[id] ?: 0) { sentFrom = id } }
     }
-    CreateHouseholdForm(part.createChoices, enabled = !part.sending) { name, adminId, adminName ->
+    CreateHouseholdForm(part.createChoices, enabled = !part.sending, took = took[""] ?: 0) { name, adminId, adminName ->
         sentFrom = null
         owners.create(name, adminId, adminName)
     }
@@ -92,15 +106,15 @@ private fun HouseholdEntry(
     owners: HouseholdsOwnerViewModel,
     sending: Boolean,
     notice: String?,
+    took: Int,
     onSend: () -> Unit,
 ) {
     val id = row.household.id
     val name = row.household.name
     var form by rememberSaveable { mutableStateOf<String?>(null) }
-    // Closed once sent, as Manage's add forms empty; a refusal is said under the row.
+    LaunchedEffect(took) { if (took > 0) form = null }
     val send = { action: () -> Unit ->
         onSend()
-        form = null
         action()
     }
     // Opens its form under the row, and closes it again.

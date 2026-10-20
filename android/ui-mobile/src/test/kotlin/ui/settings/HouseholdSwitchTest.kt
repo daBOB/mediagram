@@ -82,5 +82,6 @@ class HouseholdSwitchTest : ProfilesSettingsHarness() {
         compose.onNodeWithText("Who is watching").assertExists()
         compose.onNodeWithText(HouseholdWords.THIS_DEVICE).assertDoesNotExist()
         compose.onNodeWithText(HouseholdWords.SWITCH_HOUSEHOLD).assertDoesNotExist()
+        compose.onNodeWithText(HouseholdWords.HOUSEHOLDS).assertDoesNotExist()
     }
 }

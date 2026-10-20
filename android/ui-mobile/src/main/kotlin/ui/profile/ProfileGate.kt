@@ -15,6 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.DONE
 import catalog.profile.HouseholdsOwnerViewModel
@@ -73,6 +76,8 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
             }
         }
     }
+    // Leaving the app drops a join's PIN prompt, as the picker's own; one being checked is left to answer.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { if (join.pin.value?.busy != true) join.cancelPin() }
     // The picker stands in for the library, which leaves composition and with
     // it every saved place: the tab, the scroll. Held here per profile, so
     // "Stay as I am" comes back to them and another profile starts fresh.
@@ -84,7 +89,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
             places.SaveableStateProvider(chosen.profile.id) {
                 content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
             }
-        managing != ManageUiState.Closed -> ProfilesOverPicker(onDone = manage::close)
+        managing != ManageUiState.Closed -> ProfilesOverPicker(owners, onDone = manage::close)
         else -> PickerRoute(viewModel, state, onManage = manage::open, insteadOfFirstProfile = insteadOfFirstProfile(join, joining))
     }
     // Over whatever shows, for the same reason: Switch household's page is gone before its join is read again.
@@ -116,10 +121,16 @@ private fun PickerRoute(
 /**
  * The Profiles page with nobody chosen — everyone here and managing them, no
  * You — under the page's own name, as the web's picker shows it; Done and Back
- * leave it for the picker, dropping the PIN Manage held.
+ * leave it for the picker, dropping the PINs Manage and the owner's part held.
+ * Leaving the app drops the owner's too, as Settings' visit does: nothing given
+ * here waits at the picker for whoever comes next.
  */
 @Composable
-private fun ProfilesOverPicker(onDone: () -> Unit) {
+private fun ProfilesOverPicker(
+    owners: HouseholdsOwnerViewModel,
+    onDone: () -> Unit,
+) {
+    LifecycleStartEffect(owners) { onStopOrDispose { owners.close() } }
     BackHandler(onBack = onDone)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.large)) {
         Text(SettingsSection.PROFILES.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = Spacing.large))

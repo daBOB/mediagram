@@ -2,6 +2,7 @@ package ui.settings
 
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
@@ -63,7 +64,12 @@ class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
         openAs(owner)
         field(HouseholdWords.HOUSEHOLD_NAME).performScrollTo().performTextInput("Loft")
         field(HouseholdWords.NEW_GROWN_UP_NAME).performScrollTo().performTextInput("Eve")
-        compose.onNode(hasText(HouseholdWords.CREATE_A_HOUSEHOLD) and hasClickAction()).performScrollTo().performClick()
+        val create = compose.onNode(hasText(HouseholdWords.CREATE_A_HOUSEHOLD) and hasClickAction())
+        create.performScrollTo().performClick()
+        // The owner's PIN dismissed: nothing sent, nothing typed lost.
+        compose.onNode(hasText("Cancel") and hasAnyAncestor(isDialog())).performClick()
+        field(HouseholdWords.HOUSEHOLD_NAME).assert(hasText("Loft"))
+        create.performScrollTo().performClick()
         pin("1234")
         compose.onNode(hasText("A PIN for Eve") and hasAnyAncestor(isDialog())).assertExists()
         pin("4321")
@@ -75,6 +81,7 @@ class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
         assertTrue(eve.admin)
         assertEquals("4321", core().roles.pins[eve.id])
         compose.onNodeWithText("Admin Eve · 1 profile").assertExists()
+        field(HouseholdWords.HOUSEHOLD_NAME).assert(!hasText("Loft"))
     }
 
     @Test
@@ -85,6 +92,7 @@ class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
         inForm(HouseholdWords.RENAME).performScrollTo().performClick()
         pin("1234")
         assertEquals("Attic", core().homes.names["flat"])
+        formField().assertDoesNotExist()
 
         // The PIN is held now: nothing else asks for it.
         action(HouseholdWords.CHANGE_ADMIN, "Attic").performScrollTo().performClick()
@@ -169,6 +177,8 @@ class HouseholdsOwnerBlockTest : HouseholdsOwnerHarness() {
         pin("1234")
 
         assertEquals("Barn", core().homes.names["barn"])
+        // Refused: the form stays open with what was typed, as the web's does.
+        formField().assert(hasText("Flat"))
         // Unclipped: the default window scrolls, and a row below its fold has no bounds on screen.
         val said = compose.onNodeWithText(HouseholdWords.HOUSEHOLD_NAME_TAKEN).fetchSemanticsNode().positionInRoot.y
         val barn = compose.onNodeWithText("No admin · 0 profiles").fetchSemanticsNode().positionInRoot.y
