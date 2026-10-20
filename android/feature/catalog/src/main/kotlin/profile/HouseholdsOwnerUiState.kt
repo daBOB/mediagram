@@ -6,9 +6,13 @@ import model.Households
 import model.Profile
 import model.householdAllowed
 import model.householdLine
+import java.text.Normalizer
 
 /** The owner's Households part, as the web's `settings-households.js` draws it. */
 sealed interface HouseholdsOwnerUiState {
+    /** The households not read yet. */
+    data object Loading : HouseholdsOwnerUiState
+
     /** The owner's note; [canOpen] when there is an owner, whose button asks their PIN. */
     data class Closed(
         val canOpen: Boolean = false,
@@ -19,13 +23,15 @@ sealed interface HouseholdsOwnerUiState {
      * could run a new one, beside a new grown-up. [notice] says why the last
      * change did not take, until the next is sent. [answers] counts the
      * changes answered, so a form held open until its answer sees one even
-     * when the notice repeats. No rows: the households not read yet.
+     * when the notice repeats. [sending] while a change is out with the
+     * owner's PIN.
      */
     data class Open(
         val rows: List<HouseholdRow>,
         val createChoices: List<Profile>,
         val notice: String? = null,
         val answers: Int = 0,
+        val sending: Boolean = false,
     ) : HouseholdsOwnerUiState
 }
 
@@ -52,6 +58,7 @@ data class HouseholdRow(
 internal fun Households.ownersPart(
     notice: String?,
     answers: Int,
+    sending: Boolean,
 ): HouseholdsOwnerUiState {
     val boss = owner ?: return HouseholdsOwnerUiState.Closed()
     val live = list.map { it.id }
@@ -77,5 +84,11 @@ internal fun Households.ownersPart(
                 moveChoices = grownUps.filter { may(HouseholdAction.MOVE, id, it.id) },
             )
         }
-    return HouseholdsOwnerUiState.Open(rows, grownUps.filter { may(HouseholdAction.CREATE, "", it.id) }, notice, answers)
+    return HouseholdsOwnerUiState.Open(rows, grownUps.filter { may(HouseholdAction.CREATE, "", it.id) }, notice, answers, sending)
 }
+
+/** The owner is who is watching here: the part opens at once for them, on every visit, as on the web. */
+internal fun Households.watchedByOwner(chosenId: String?) = chosenId != null && chosenId == owner?.id
+
+/** A name as household names are compared: case, spacing and Unicode form aside. */
+internal fun householdKey(name: String) = Normalizer.normalize(name, Normalizer.Form.NFC).trim().replace(Regex("\\s+"), " ").lowercase()

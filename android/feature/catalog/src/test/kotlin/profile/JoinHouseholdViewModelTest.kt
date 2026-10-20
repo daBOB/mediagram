@@ -65,6 +65,7 @@ class JoinHouseholdViewModelTest {
         runTest(UnconfinedTestDispatcher()) {
             val vm = joining()
             assertEquals(listOf("Barn", "Flat", "Home"), vm.offered())
+            assertTrue(vm.state.value.read)
             // Nobody is here, and a round was heard: Join a household, never "Create the first profile".
             assertTrue(vm.state.value.needsJoin)
             assertEquals(emptyList(), repository.profiles.value)
@@ -82,7 +83,12 @@ class JoinHouseholdViewModelTest {
         runTest(UnconfinedTestDispatcher()) {
             val vm = joining(unread = true)
             assertTrue(repository.syncedOnce.value)
+            // Synced, nobody here, and unread (read = false): the picker waits rather than offer a first profile the core refuses.
             assertEquals(JoinUiState(), vm.state.value)
+            provider.beforeCore = {}
+            vm.reread()
+            assertTrue(vm.state.value.read)
+            assertTrue(vm.state.value.needsJoin)
         }
 
     @Test
