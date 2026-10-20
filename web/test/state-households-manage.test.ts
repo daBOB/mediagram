@@ -226,13 +226,51 @@ describe("the owner's actions", () => {
   });
 
   test("a grown-up moved into a household nobody runs runs it", () => {
-    const state = storeWith([grownUp("owner", "home", true), household("flat", null), grownUp("paul", "home", false, 3),
-      pinless("lena", "home")]);
-    expect(state.manage().moveToHousehold("owner", PIN, "flat", "lena")).toEqual({ reason: "no-pin" });
+    const state = storeWith([grownUp("owner", "home", true), household("flat", null), grownUp("paul", "home", false, 3)]);
     expect(state.manage().moveToHousehold("owner", PIN, "flat", "paul")).toBeNull();
     expect(placed(state, "paul")).toMatchObject({ household: "flat", admin: true });
     expect(householdOf(state, "flat")).toMatchObject({ adminId: "paul" });
     expect(householdOf(state, "flat")!.adminUpdatedAt).toBeGreaterThan(1);
+  });
+
+  test("a grown-up moved in to run a household is given a first PIN, and refused without", () => {
+    const state = storeWith([grownUp("owner", "home", true), household("flat", null), pinless("lena", "home")]);
+    const manage = state.manage();
+    expect(manage.moveToHousehold("owner", PIN, "flat", "lena")).toEqual({ reason: "no-pin" });
+    expect(manage.moveToHousehold("owner", PIN, "flat", "lena", "12")).toEqual({ reason: "invalid" });
+    expect(placed(state, "lena")?.household).toBe("home");
+    expect(manage.moveToHousehold("owner", PIN, "flat", "lena", "4321")).toBeNull();
+    expect(placed(state, "lena")).toMatchObject({ household: "flat", admin: true, hasPin: true });
+    expect(manage.unlock("lena", "4321")).toBeNull();
+  });
+
+  test("a move's PIN changes nothing where nobody is made admin, or the mover has one", () => {
+    const state = storeWith([grownUp("owner", "home", true), household("flat", "maja"), grownUp("maja", "flat", false, 2),
+      household("loft", null), grownUp("paul", "home", false, 3), pinless("lena", "home")]);
+    const manage = state.manage();
+    expect(manage.moveToHousehold("owner", PIN, "flat", "lena", "4321")).toBeNull();
+    expect(placed(state, "lena")).toMatchObject({ household: "flat", admin: false, hasPin: false });
+    expect(manage.moveToHousehold("owner", PIN, "loft", "paul", "4321")).toBeNull();
+    expect(placed(state, "paul")).toMatchObject({ household: "loft", admin: true });
+    expect(manage.unlock("paul", PIN)).toBeNull();
+  });
+
+  test("a new PIN for an admin-to-be who has one changes nothing", () => {
+    const state = storeWith([grownUp("owner", "home", true), grownUp("paul", "home", false, 2), household("flat", null),
+      grownUp("lena", "flat", false, 3)]);
+    const manage = state.manage();
+    expect(manage.createHousehold("owner", PIN, "Loft", { id: "paul", newPin: "4321" })).toMatchObject({ adminId: "paul" });
+    expect(manage.unlock("paul", PIN)).toBeNull();
+    expect(manage.setHouseholdAdmin("owner", PIN, "flat", "lena", "4321")).toBeNull();
+    expect(manage.unlock("lena", PIN)).toBeNull();
+  });
+
+  test("a household's admin is one of its own grown-ups", () => {
+    const state = storeWith([grownUp("owner", "home", true), household("flat", null), grownUp("lena", "flat", false, 2),
+      grownUp("paul", "home", false, 3)]);
+    expect(state.manage().setHouseholdAdmin("owner", PIN, "flat", "paul")).toEqual({ reason: "not-allowed" });
+    expect(placed(state, "paul")).toMatchObject({ household: "home", admin: false });
+    expect(householdOf(state, "flat")?.adminId).toBeNull();
   });
 
   test("a household's last grown-up moves out, and the emptied household can be deleted", () => {

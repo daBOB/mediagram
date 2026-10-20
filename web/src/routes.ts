@@ -15,6 +15,7 @@ import { refuseUnsafeBrowserWrite } from "./http/browser-write";
 import { streamSet, type ByteSource } from "./http/stream";
 import { bodiless, withBody } from "./response";
 import { createStateRouter } from "./state/routes";
+import { P } from "./state/route-shared";
 import { achievementLibrary } from "./state/achievement-library";
 import type { AchievementLibrary } from "./state/achievements";
 import { statsRoute } from "./state/stats-routes";
@@ -31,6 +32,7 @@ const TRANSCODE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/transcode$/;
 // Both captures reach a filesystem path, so constrain their complete shape.
 const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s|mp4))$/;
 const HLS_SESSION_PATH = /^\/hls\/([a-f0-9]{16})\/?$/;
+const HOUSEHOLD_JOIN = new RegExp(`^/api/households/${P}/join$`);
 
 /** Where the catalog came from; never exposes its URL or credentials. */
 export interface CatalogOrigin {
@@ -90,7 +92,7 @@ function writeWorthSyncing(request: PlayerRequest): boolean {
   }
   // Entering a profile, or joining a household, checks a PIN and changes
   // nothing a document says: the browser keeps the household it joined.
-  if (request.path.endsWith("/unlock") || request.path.endsWith("/join")) return false;
+  if (request.path.endsWith("/unlock") || HOUSEHOLD_JOIN.test(request.path)) return false;
   return true;
 }
 

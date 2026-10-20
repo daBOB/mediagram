@@ -50,7 +50,7 @@ export function householdRoute(request: PlayerRequest, state: WatchState): Playe
     case "PUT admin":
       return answer(manage.setHouseholdAdmin(actorId, said.pin, id, text(said.adminId), said.newPin));
     case "POST move":
-      return answer(manage.moveToHousehold(actorId, said.pin, id, text(said.profileId)));
+      return answer(manage.moveToHousehold(actorId, said.pin, id, text(said.profileId), said.newPin));
     case "POST join":
       return answer(manage.join(id, said.pin));
     default:

@@ -1,6 +1,7 @@
 /**
  * Households, managed: the owner's actions on them, a device joining one, and
- * claiming the admin's role per household. The writes are `households-write.ts`'s.
+ * claiming the admin's role per household. The writes are `households-write.ts`'s,
+ * and joining is `households-join.ts`'s.
  *
  * Every owner action answers in one order, as a profile's does: input that
  * cannot be used; a name already taken; somebody, or a household, not there;
@@ -13,12 +14,13 @@
 import type { Database } from "bun:sqlite";
 import { householdAllowed } from "../../public/lib/household-rules.js";
 import { listHouseholds, type Household } from "./households";
+import { joinHousehold } from "./households-join";
 import { insertHousehold, moveGrownUp, removeHousehold, writeHouseholdAdmin, writeHouseholdName } from "./households-write";
 import { ProfileAccess } from "./profiles-access";
 import type { Outcome, Refusal, Refused } from "./profiles-manage";
 import { cleanName, listProfiles, profileRows, toProfile, type ProfileRow } from "./profiles";
 import { insertProfile } from "./profiles-insert";
-import { pinMatches, validPin } from "./profiles-pin";
+import { validPin } from "./profiles-pin";
 import { nameTaken } from "./profiles-rules";
 import { writePin } from "./profiles-write";
 
@@ -125,16 +127,25 @@ export class HouseholdManager extends ProfileAccess {
     return null;
   }
 
-  /** A grown-up and their kids. Into a household nobody runs, the grown-up runs it, so needs a PIN already. */
-  moveToHousehold(actorId: string, pin: unknown, id: string, profileId: string): Outcome {
+  /**
+   * A grown-up and their kids. Into a household nobody runs, the grown-up
+   * runs it, so needs a PIN: theirs, or `next` as a first one. Otherwise
+   * `next` is not asked for, and changes nothing.
+   */
+  moveToHousehold(actorId: string, pin: unknown, id: string, profileId: string, next?: unknown): Outcome {
+    if (unusablePin(next)) return refuse("invalid");
     const allowed = this.owned(actorId, pin, "move-to-household", id, profileId);
     if ("reason" in allowed) return allowed;
     const runs = allowed.households.find((one) => one.id === id)?.adminId === null;
-    if (runs && pinless(allowed.rows.find((row) => row.id === profileId), undefined)) return refuse("no-pin");
+    const row = allowed.rows.find((one) => one.id === profileId);
+    if (runs && pinless(row, next)) return refuse("no-pin");
     const db = this.db!;
     db.transaction(() => {
       moveGrownUp(db, profileId, id);
-      if (runs) writeHouseholdAdmin(db, id, profileId);
+      if (runs) {
+        writeHouseholdAdmin(db, id, profileId);
+        givePin(db, profileId, row, next);
+      }
     })();
     return null;
   }
@@ -147,29 +158,9 @@ export class HouseholdManager extends ProfileAccess {
     return null;
   }
 
-  /**
-   * Whether `pin` opens household `id` on a device: its admin's PIN or the
-   * owner's. Wrong guesses wait per household, never charged to a profile, so
-   * a guesser at the door cannot lock anybody out of their own profile. Nothing
-   * is stored: the device keeps the household it joined.
-   */
+  /** Whether `pin` opens household `id` on a device: see `households-join.ts`. */
   join(id: string, pin: unknown): Outcome {
-    const profiles = listProfiles(this.db);
-    const household = listHouseholds(this.db, profiles).find((one) => one.id === id);
-    if (household === undefined) return refuse("not-found");
-    // The owner `householdView` reads: the first of any claim holders a merge has not settled yet.
-    const ids = [household.adminId, profiles.find((one) => one.owner)?.id];
-    const doors = profileRows(this.db).filter((row) => ids.includes(row.id) && row.pinHash !== null && row.pinSalt !== null);
-    if (doors.length === 0) return refuse("no-pin");
-    const key = `household:${id}`;
-    const left = this.wait.secondsLeft(key);
-    if (left > 0) return { reason: "wait", retryAfter: left };
-    if (!validPin(pin) || !doors.some((row) => pinMatches(row.pinHash!, row.pinSalt!, pin))) {
-      this.wait.failed(key);
-      return refuse("wrong-pin");
-    }
-    this.wait.succeeded(key);
-    return null;
+    return joinHousehold(this.db, this.wait, id, pin);
   }
 
   /** Whether a live household other than `except` already answers to `name`, compared as profile names are. */

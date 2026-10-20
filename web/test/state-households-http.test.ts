@@ -95,6 +95,12 @@ describe("the household routes", () => {
     for (const id of [state.profiles().find((one) => one.name === "Maja")!.id, paul.id]) {
       await route(request(`/api/households/home/move`, "POST", as({ profileId: id })));
     }
+    // A grown-up moved into the emptied household runs it, with the first PIN the move gave.
+    const lena = state.createProfile("Lena")!.id;
+    expect((await route(request(`/api/households/${flat}/move`, "POST", as({ profileId: lena, newPin: "4321" })))).status)
+      .toBe(204);
+    expect(state.manage().unlock(lena, "4321")).toBeNull();
+    await route(request(`/api/households/home/move`, "POST", as({ profileId: lena })));
     expect((await route(request(`/api/households/${flat}`, "DELETE", as({})))).status).toBe(204);
     expect(state.households().map((one) => one.id)).toEqual(["home"]);
 
