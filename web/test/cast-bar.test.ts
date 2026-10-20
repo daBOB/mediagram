@@ -7,9 +7,10 @@ import { joinOr, togetherNotice } from "../public/lib/catalog/together-join.js";
 import { barLine } from "../public/lib/together/cast-words.js";
 import { heardTogether, refreshTogether, screen, setTogetherOpener, takeJoin } from "../public/lib/together-now.js";
 import type { Session } from "../public/lib/together/session.js";
+import { here } from "../public/lib/household.js";
 
 let env: ReturnType<typeof browserEnvironment>;
-const cast = { to: "TV", from: "Browser", profile: "mia", state: "on", tv: "tv", note: "", tracks: { audio: [], text: [] }, audio: "", text: "" };
+const cast = { to: "TV", from: "Browser", profile: "mia", household: "home", state: "on", tv: "tv", note: "", tracks: { audio: [], text: [] }, audio: "", text: "" };
 const session = (over: Partial<Session> = {}): Session => ({
   session: "s-1", set: "film-1", playing: true, pos: 0, rate: 1, at: 0, by: "tv",
   members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast, ...over,
@@ -21,6 +22,7 @@ const tick = async () => { for (let i = 0; i < 20; i++) await Promise.resolve();
 
 beforeEach(async () => {
   env = browserEnvironment();
+  here([], [], null, true);
   setTogetherOpener(() => {}, (id) => (id === "film-1" ? ({ setId: id, title: "Dune", kind: "movie", duration: 7200 } as never) : null));
   env.respondWith(async () => Response.json({ available: true, reason: null, live: null, serverNow: 0 }));
   await refreshTogether();
@@ -40,6 +42,13 @@ test("a cast on the TV shows the bar with its title", () => {
 test("an offer shows no bar", () => {
   heard({ cast: { ...cast, state: "offered" } } as never);
   expect(node("cast-bar").hidden).toBe(true);
+});
+
+test("another household's cast shows no bar, and no Join on its title", () => {
+  const slot = joinOr(["film-1"], null) as unknown as Node;
+  heard({ cast: { ...cast, household: "h2" } } as never);
+  expect(node("cast-bar").hidden).toBe(true);
+  expect(slot.children).toEqual([]);
 });
 
 test("a title hidden on this profile shows no bar", () => {

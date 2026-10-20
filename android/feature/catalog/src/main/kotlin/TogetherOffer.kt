@@ -8,7 +8,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import model.MediaSet
+import model.Profile
 import model.together.CastState
+import model.together.castElsewhere
 
 /**
  * A live watch-together session this profile may join: its channel message
@@ -34,26 +36,29 @@ fun TogetherOffer.playsIn(collection: Entry.Collection): Boolean =
     playableInOrder(collection.divisions).any { it.setId == set.setId }
 
 /**
- * The offer [catalog] makes as [live] changes. Each time someone starts
- * showing it the sessions are read again: nothing was heard while nobody
- * listened, and the web reads them as its stream opens.
+ * The offer [catalog] makes as [live] changes, to the [chosen] profile. Each
+ * time someone starts showing it the sessions are read again: nothing was
+ * heard while nobody listened, and the web reads them as its stream opens.
  */
 internal fun togetherOffers(
     live: TogetherLive,
     catalog: Flow<CatalogUiState>,
+    chosen: Flow<Profile?>,
 ): Flow<TogetherOffer?> =
     channelFlow {
         launch { live.refresh() }
-        combine(live.live, live.available, catalog, ::offerOf).distinctUntilChanged().collect(::send)
+        combine(live.live, live.available, catalog, chosen, ::offerOf).distinctUntilChanged().collect(::send)
     }
 
 private fun offerOf(
     live: LiveSession?,
     available: Boolean,
     catalog: CatalogUiState,
+    chosen: Profile?,
 ): TogetherOffer? {
-    // Hidden, not greyed, out of Telegram's reach: no session can be known then.
-    val held = live?.takeIf { available } ?: return null
+    // Hidden, not greyed, out of Telegram's reach: no session can be known then. A cast on
+    // another household's TV is that household's: the chosen profile's is this device's own.
+    val held = live?.takeIf { available && !castElsewhere(it.session, chosen?.household) } ?: return null
     // The projected catalog, so a kids profile is never offered a title past its limit.
     val set = catalog.mediaSet(held.session.set) ?: return null
     val members = held.session.members.joinToString(", ") { it.label }

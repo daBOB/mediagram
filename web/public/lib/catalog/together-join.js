@@ -10,6 +10,8 @@ import { el } from "../dom.js";
 import { onTogether, openForTogether, setForTogether, togetherNow } from "../together-now.js";
 import { playPill } from "./title-spread.js";
 import { episodeShort } from "./series-resume.js";
+import { castElsewhere } from "../together/cast.js";
+import { householdId } from "../household.js";
 
 /** The listener each kind draws through. Each is in one place at a time, so the next one drawn replaces it. */
 const following = new Map();
@@ -24,10 +26,11 @@ function follow(kind, draw) {
 /**
  * The live session and its title, when this profile may see it. Hidden, not
  * greyed, while Telegram is out of reach: the server can't know of a session
- * then, so there is none to offer. The player's own button says why.
+ * then, so there is none to offer. The player's own button says why. A cast
+ * on another household's TV is that household's: nobody here joins it.
  */
 function joinable(live) {
-  const set = live ? setForTogether(live.session.set) : null;
+  const set = live && !castElsewhere(live.session, householdId()) ? setForTogether(live.session.set) : null;
   return set && { live, set };
 }
 

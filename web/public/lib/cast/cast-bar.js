@@ -7,16 +7,19 @@
 import { titleLine } from "../format.js";
 import { ICONS, playLabel, setIcon } from "../playback/transport.js";
 import { expectedPosition } from "../together/follow.js";
+import { castElsewhere } from "../together/cast.js";
+import { householdId } from "../household.js";
 import { barLine } from "../together/cast-words.js";
 import { onTogether, screen, serverNow, setForTogether, together, togetherNow } from "../together-now.js";
 import { onRemote, openRemote, remoteOpen } from "./cast-remote.js";
 
 const part = (name) => document.getElementById(`cast-bar${name ? `-${name}` : ""}`);
 
-/** The live cast session this profile may see, or null. */
+/** The live cast session this profile may see, on a TV of this device's household, or null. */
 function castOn() {
   const { live } = togetherNow();
-  const set = live?.session.cast?.state === "on" ? setForTogether(live.session.set) : null;
+  const ours = live?.session.cast?.state === "on" && !castElsewhere(live.session, householdId());
+  const set = ours ? setForTogether(live.session.set) : null;
   return set && { live, set };
 }
 

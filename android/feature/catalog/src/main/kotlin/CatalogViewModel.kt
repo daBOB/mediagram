@@ -183,7 +183,7 @@ class CatalogViewModel
          * one shows. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
          */
         val together: StateFlow<TogetherOffer?> =
-            togetherOffers(togetherLive, state)
+            togetherOffers(togetherLive, state, watchState.chosenProfile)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
 
         /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */
