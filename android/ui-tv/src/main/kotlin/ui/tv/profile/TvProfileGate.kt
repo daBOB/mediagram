@@ -34,10 +34,11 @@ data class TvChosenProfile(
  * they decide on a phone, and [TvProfilePicker] stands in for [content] until
  * a viewer has been chosen. One screen at a time — whichever PIN is asked
  * replaces what asked for it, and Manage replaces the picker — so nothing
- * behind competes for the remote. Manage cannot be reached once a profile is
- * chosen: entering a profile never hands a child the controls, and Manage
- * closes, forgetting its PIN, when the library shows again or the app is
- * left (`ui.common.profile.ForgetManageWhenAway`).
+ * behind competes for the remote. Once a profile is chosen, Manage is reached
+ * only from Settings' Profiles panel, offered to a grown-up alone and asking
+ * who you are and that PIN on every visit, so entering a profile never hands
+ * a child the controls. Manage closes, forgetting its PIN, when the library
+ * shows again or the app is left (`ui.common.profile.ForgetManageWhenAway`).
  *
  * Once a viewer is chosen, [content] is handed it the way the phone's gate
  * hands its bar a `ProfileBarState`: the name, and [ProfileViewModel.reopen]
@@ -50,7 +51,6 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val managing by manage.state.collectAsStateWithLifecycle()
     val pickPin by viewModel.pin.collectAsStateWithLifecycle()
-    val managePin by manage.pin.collectAsStateWithLifecycle()
 
     val chosen = state as? ProfileUiState.Chosen
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
@@ -74,10 +74,8 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val tiles = rememberLazyListState()
     val inManage = managing != ManageUiState.Closed
     val pickPrompt = pickPin
-    val managePrompt = managePin
     when {
-        inManage && managePrompt != null -> TvPinPrompt(managePrompt, onPin = manage::enterPin, onCancel = manage::cancelPin)
-        inManage -> TvManageProfiles(managing, remember(manage) { manage.manageActions() })
+        inManage -> TvManageScreen(manage)
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         else ->
             TvProfilePicker(
@@ -101,4 +99,20 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
                 tiles = tiles,
             )
     }
+}
+
+/**
+ * Manage, or the PIN it asks for in its place — one screen at a time, as
+ * above — wherever it is opened: the picker here, or Settings' Profiles
+ * panel. [onClose] is its Done and its Back.
+ */
+@Composable
+internal fun TvManageScreen(
+    manage: ManageProfilesViewModel,
+    onClose: () -> Unit = manage::close,
+) {
+    val state by manage.state.collectAsStateWithLifecycle()
+    val prompt by manage.pin.collectAsStateWithLifecycle()
+    val actions = remember(manage, onClose) { manage.manageActions(onClose) }
+    prompt?.let { TvPinPrompt(it, onPin = manage::enterPin, onCancel = manage::cancelPin) } ?: TvManageProfiles(state, actions)
 }

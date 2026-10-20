@@ -18,5 +18,6 @@ class ManageActions(
     val onClose: () -> Unit,
 )
 
-fun ManageProfilesViewModel.manageActions(): ManageActions =
-    ManageActions(::actAs, ::addKid, ::setKidsAge, ::setDailyLimit, ::remove, ::addGrownUp, ::changePin, ::close)
+/** [onClose] is Done and Back: Manage's own close, unless what opened it closes it — Settings' panel, which drops the PIN as it goes. */
+fun ManageProfilesViewModel.manageActions(onClose: () -> Unit = ::close): ManageActions =
+    ManageActions(::actAs, ::addKid, ::setKidsAge, ::setDailyLimit, ::remove, ::addGrownUp, ::changePin, onClose)
