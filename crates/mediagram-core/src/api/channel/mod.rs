@@ -21,7 +21,7 @@ use responses::Responses;
 
 use crate::api::account::revoked::checked_for;
 use crate::api::account::session;
-use crate::api::{Core, CoreError, LibraryChoice};
+use crate::api::{Core, CoreError, LibraryChoice, store};
 use crate::versions::now_unix;
 use install::install;
 use library::LibraryEntry;
@@ -83,14 +83,29 @@ async fn list_libraries_with(
 /// the last library's names.
 pub(super) async fn refresh_library(core: &std::sync::Arc<Core>, handle: String) -> Result<u64, CoreError> {
     let followed = handle.clone();
-    core.blocking(move |core| core.state_db.with(|conn| crate::state::sync::follow_library(conn, &followed)))
-        .await;
+    let same_library = core
+        .blocking(move |core| {
+            core.state_db.with(|conn| {
+                let before = crate::state::sync::followed_library(conn)?;
+                crate::state::sync::follow_library(conn, &followed)?;
+                Ok(before.as_deref() == Some(followed.as_str()))
+            })
+        })
+        .await
+        .unwrap_or(false);
     let (_, peer) = library::peer_of(core, &handle)?;
     let (client, owner) = session::connection(core).await;
 
     let (document, caption) = newest_index(core, &client, &owner, peer).await?;
-    let version = format!("v-{}", index::pushed_at(&caption, now_unix()));
-    install(core, &client, &owner, &document, &version).await
+    let pushed_at = index::pushed_at(&caption, now_unix());
+    // Every launch refreshes, and the snapshot is tens of megabytes: one
+    // already installed from this library is not fetched again.
+    if same_library
+        && let Some(sets) = core.blocking(move |core| store::installed_from_channel(core, pushed_at)).await
+    {
+        return Ok(sets);
+    }
+    install(core, &client, &owner, &document, &format!("v-{pushed_at}")).await
 }
 
 #[cfg(test)]

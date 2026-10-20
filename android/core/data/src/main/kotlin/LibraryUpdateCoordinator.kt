@@ -26,10 +26,15 @@ class LibraryUpdateCoordinator
             kind: LibraryUpdateKind,
             readCatalog: suspend (Result<Int>) -> Unit,
             showArtwork: suspend () -> Unit,
+            showInstalled: (suspend () -> Unit)? = null,
         ) = updating.withLock {
             val refreshed =
                 try {
                     reading.value = true
+                    // A refresh can mean downloading the whole index, so what is
+                    // installed may show first; under the lock, so it never lands
+                    // after the read of a newer snapshot.
+                    showInstalled?.invoke()
                     val result = repository.refresh()
                     readCatalog(result)
                     result
