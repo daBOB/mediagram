@@ -42,9 +42,10 @@ data class JoinUiState(
     /** More than one live household: only then is the This device row shown, with Switch household. */
     val canSwitch: Boolean = false,
     /**
-     * None joined, after a sync round: the picker shows only this, never
-     * "Create the first profile", which the core refuses on an install with
-     * grown-ups. Before a round, not having joined is only waiting.
+     * None joined, in a households read made after a sync round: the picker
+     * shows only this, never "Create the first profile", which the core
+     * refuses on an install with grown-ups. Before a round, or before the
+     * households are read again after one, not having joined is only waiting.
      */
     val needsJoin: Boolean = false,
     /**
@@ -114,7 +115,8 @@ private fun joinState(
     view: Households,
     synced: Boolean,
 ): JoinUiState {
-    if (view.list.isEmpty()) return JoinUiState()
+    // None joined in a read from before the round now heard says nothing of joining yet; the round's own re-read will.
+    if (view.list.isEmpty() || (synced && !view.synced && view.joined == null)) return JoinUiState()
     val ownerOpens = view.owner?.hasPin == true
     val grownUps = view.everyone.filterNot { it.kids }
     return JoinUiState(

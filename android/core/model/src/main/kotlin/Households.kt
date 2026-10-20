@@ -11,11 +11,14 @@ data class Household(
  * The install's households as the owner and Join a household see them: the
  * one this device [joined], every live one in [list], and [everyone] in all
  * of them, where the profile list holds only this device's household.
+ * [synced]: read once a sync round had been heard, so what it says of
+ * [joined] already holds that round's.
  */
 data class Households(
     val joined: String? = null,
     val list: List<Household> = emptyList(),
     val everyone: List<Profile> = emptyList(),
+    val synced: Boolean = false,
 ) {
     /** None joined yet, and a sync round heard: before one is, not having joined is only waiting. */
     fun needsJoin(synced: Boolean) = joined == null && synced
