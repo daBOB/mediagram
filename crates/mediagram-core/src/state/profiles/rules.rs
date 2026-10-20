@@ -36,6 +36,9 @@ pub struct RoleView {
     pub id: String,
     pub kids: bool,
     pub admin: bool,
+    /// Only the owner may manage households.
+    #[serde(default)]
+    pub owner: bool,
     pub parent_id: Option<String>,
     /// Absent is the first household, as on a device from before households.
     #[serde(default)]

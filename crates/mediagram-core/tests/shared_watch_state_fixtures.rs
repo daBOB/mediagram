@@ -16,8 +16,13 @@
 //! play-order or shelf logic to hold `next-up.json`/`resume-point.json`
 //! against.
 
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 
+use mediagram_core::state::households::rules::{
+    HouseholdAction, HouseholdRecord, MemberView, ResolvedView, allowed as household_allowed, device_household,
+    view as household_view,
+};
 use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::profiles::pin;
 use mediagram_core::state::profiles::pin_wait::PinWait;
@@ -41,6 +46,10 @@ fn fixture_path(file: &str) -> PathBuf {
 /// the same accommodation `shared_playable_sql.rs` makes: the web is a
 /// separate deliverable, and its absence is not a failure of this crate.
 fn load<T: DeserializeOwned>(file: &str) -> Option<Vec<T>> {
+    read(file)
+}
+
+fn read<T: DeserializeOwned>(file: &str) -> Option<T> {
     let path = fixture_path(file);
     let Ok(text) = std::fs::read_to_string(&path) else {
         eprintln!("skipping: {} is not present", path.display());
@@ -437,5 +446,92 @@ fn pin_wait_fixtures_match_the_web() {
                 assert_eq!(wait.seconds_left(id, now), expect, "case: {}, step {index}", case.name);
             }
         }
+    }
+}
+
+#[derive(Deserialize)]
+struct ViewCase {
+    name: String,
+    profiles: Vec<MemberView>,
+    households: Vec<HouseholdRecord>,
+    expect: ViewExpect,
+}
+
+#[derive(Deserialize)]
+struct ViewExpect {
+    profiles: HashMap<String, ResolvedView>,
+    admins: BTreeMap<String, Option<String>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HouseholdAllowedCase {
+    name: String,
+    profiles: Vec<RoleView>,
+    live: Vec<String>,
+    actor_id: String,
+    action: HouseholdAction,
+    household_id: String,
+    target_id: String,
+    expect: bool,
+}
+
+#[derive(Deserialize)]
+struct DeviceCase {
+    name: String,
+    stored: Option<String>,
+    chosen: Option<String>,
+    live: Vec<String>,
+    heard: bool,
+    expect: Option<String>,
+}
+
+/// `household-rules.json` is one object; only the sections the core ports.
+#[derive(Deserialize)]
+struct HouseholdFixture {
+    view: Vec<ViewCase>,
+    allowed: Vec<HouseholdAllowedCase>,
+    device: Vec<DeviceCase>,
+}
+
+fn household_fixture() -> Option<HouseholdFixture> {
+    read("household-rules.json")
+}
+
+#[test]
+fn household_view_fixtures() {
+    let Some(fixture) = household_fixture() else {
+        return;
+    };
+    assert!(!fixture.view.is_empty(), "household-rules.json holds no view cases");
+    for case in fixture.view {
+        let (profiles, admins) = household_view(&case.profiles, &case.households);
+        assert_eq!(profiles, case.expect.profiles, "case: {}", case.name);
+        assert_eq!(admins, case.expect.admins, "case: {}", case.name);
+    }
+}
+
+#[test]
+fn household_allowed_fixtures() {
+    let Some(fixture) = household_fixture() else {
+        return;
+    };
+    assert!(!fixture.allowed.is_empty(), "household-rules.json holds no allowed cases");
+    for case in fixture.allowed {
+        let (actor, household, target) = (&case.actor_id, &case.household_id, &case.target_id);
+        let got = household_allowed(&case.profiles, &case.live, actor, case.action, household, target);
+        assert_eq!(got, case.expect, "case: {}", case.name);
+    }
+}
+
+#[test]
+fn device_household_fixtures() {
+    let Some(fixture) = household_fixture() else {
+        return;
+    };
+    assert!(!fixture.device.is_empty(), "household-rules.json holds no device cases");
+    for case in fixture.device {
+        let got = device_household(case.stored.as_deref(), case.chosen.as_deref(), &case.live, case.heard);
+        assert_eq!(got, case.expect, "case: {}", case.name);
     }
 }
