@@ -24,11 +24,13 @@ fun List<Profile>.admin(): Profile? = firstOrNull { it.admin && !it.kids }
  * Who manages [kid]: its parent while that names a grown-up still here,
  * otherwise the admin. That covers kids made before parents existed and a
  * kid whose parent was removed on this device but came back from another's
- * document — no migration has to guess a parent. Null with no admin either.
+ * document — no migration has to guess a parent. Only its own household counts.
+ * Null with no admin either.
  */
-fun List<Profile>.ownerOf(kid: Profile): String? =
-    kid.parentId?.takeIf { id -> any { it.id == id && !it.kids } }
-        ?: admin()?.id
+fun List<Profile>.ownerOf(kid: Profile): String? {
+    val here = filter { it.household == kid.household }
+    return kid.parentId?.takeIf { id -> here.any { it.id == id && !it.kids } } ?: here.admin()?.id
+}
 
 /**
  * The household's one rule — the web's `profiles-rules.ts` and the core's
@@ -44,6 +46,8 @@ fun List<Profile>.allowed(
 ): Boolean {
     val actor = find { it.id == actorId }?.takeUnless { it.kids } ?: return false
     val target = find { it.id == targetId }
+    // Households are separate: nobody manages a profile in another one.
+    if (target != null && target.household != actor.household) return false
     return when (action) {
         RoleAction.CREATE_GROWN_UP -> actor.admin
         RoleAction.CREATE_KID -> true

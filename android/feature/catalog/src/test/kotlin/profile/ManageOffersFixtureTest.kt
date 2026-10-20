@@ -7,6 +7,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import model.HOME_HOUSEHOLD
 import model.Profile
 import testing.webFixture
 import kotlin.test.Test
@@ -49,7 +50,9 @@ private fun offered(
     action: String,
     targetId: String?,
 ): Boolean {
-    val panel = manageable(profiles, actorId, null) as? ManageUiState.Managing ?: return false
+    // The panel only ever sees the actor's own household.
+    val mine = profiles.find { it.id == actorId }?.household ?: HOME_HOUSEHOLD
+    val panel = manageable(profiles.filter { it.household == mine }, actorId, null) as? ManageUiState.Managing ?: return false
     fun List<Profile>.has() = any { it.id == targetId }
     return when (action) {
         "create-grown-up" -> panel.canAddGrownUp
@@ -62,7 +65,7 @@ private fun offered(
     }
 }
 
-/** A fixture `RoleView` — `{ id, kids, admin, parentId }` — as the profile the panel reads. */
+/** A fixture `RoleView` — `{ id, kids, admin, parentId, household? }` — as the profile the panel reads. */
 private fun JsonObject.toProfile(): Profile {
     val id = getValue("id").jsonPrimitive.content
     return Profile(
@@ -71,5 +74,6 @@ private fun JsonObject.toProfile(): Profile {
         kids = getValue("kids").jsonPrimitive.boolean,
         admin = getValue("admin").jsonPrimitive.boolean,
         parentId = get("parentId")?.jsonPrimitive?.contentOrNull,
+        household = get("household")?.jsonPrimitive?.contentOrNull ?: HOME_HOUSEHOLD,
     )
 }

@@ -30,6 +30,9 @@ data class ListOfSets(
     val items: List<String>,
 )
 
+/** The first household — the same id on every device. */
+const val HOME_HOUSEHOLD = "home"
+
 /**
  * Who is watching. A name is the cross-device identity a sync round
  * matches on; `id` is this device's local shorthand for it and means
@@ -52,6 +55,8 @@ data class Profile(
     val dailyLimit: Int? = null,
     /** Section keys ([SECTIONS]) hidden from this profile, sorted; empty shows everything. Keys from a newer build are kept as they are. */
     val hiddenSections: List<String> = emptyList(),
+    /** The household this profile is in; the first one until a device says otherwise. */
+    val household: String = HOME_HOUSEHOLD,
 ) {
     /**
      * The FSK this kid sees up to. Anything but 6 reads as 12, the limit

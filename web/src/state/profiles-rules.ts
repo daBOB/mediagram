@@ -6,7 +6,8 @@
  * grown-up's PIN, but is never removed — by anyone, itself included. A kid
  * belongs to exactly one grown-up, the one who made it, and only that one
  * removes it or sets its limit; a kid whose parent is not a grown-up here —
- * none recorded, removed, or never met — is the admin's.
+ * none recorded, removed, or never met — is the admin's. All of this stays
+ * inside one household; nobody manages a profile in another.
  */
 
 import { cleanName } from "./profiles";
@@ -30,6 +31,8 @@ export interface RoleView {
   kids: boolean;
   admin: boolean;
   parentId: string | null;
+  /** Absent is the first household, as on a device from before households. */
+  household?: string;
 }
 
 export type Action = "create-grown-up" | "create-kid" | "remove" | "set-pin" | "set-kids-age" | "set-access";
@@ -41,10 +44,13 @@ export type Action = "create-grown-up" | "create-kid" | "remove" | "set-pin" | "
  */
 const isAdmin = (one: RoleView): boolean => one.admin && !one.kids;
 
-/** Who manages `kid`: its parent while that is a grown-up here, else the admin, else nobody. */
+const householdOf = (one: RoleView): string => one.household ?? "home";
+
+/** Who manages `kid`: its parent while that is a grown-up in its household, else that household's admin, else nobody. */
 export function ownerOf(profiles: RoleView[], kid: RoleView): string | null {
-  const parent = profiles.find((one) => one.id === kid.parentId && !one.kids);
-  return parent?.id ?? profiles.find(isAdmin)?.id ?? null;
+  const here = profiles.filter((one) => householdOf(one) === householdOf(kid));
+  const parent = here.find((one) => one.id === kid.parentId && !one.kids);
+  return parent?.id ?? here.find(isAdmin)?.id ?? null;
 }
 
 /** Whether `actorId` may do `action` to `targetId`. Never throws. */
@@ -55,7 +61,8 @@ export function allowed(profiles: RoleView[], actorId: string, action: Action, t
   if (action === "create-kid") return true;
 
   const target = profiles.find((one) => one.id === targetId);
-  if (target === undefined) return false;
+  // Households are separate: nobody manages a profile in another one.
+  if (target === undefined || householdOf(target) !== householdOf(actor)) return false;
   switch (action) {
     case "remove":
       if (isAdmin(target)) return false;

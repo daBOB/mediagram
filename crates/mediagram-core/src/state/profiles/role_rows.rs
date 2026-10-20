@@ -41,6 +41,7 @@ impl Stored {
             kids: self.kids,
             admin: self.is_admin(),
             parent_id: self.parent_id.clone(),
+            household: None,
         }
     }
 }
