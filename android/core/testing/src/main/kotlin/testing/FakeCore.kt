@@ -94,11 +94,7 @@ class FakeCore(
     var peopleHits: List<PeopleHitRecord> = emptyList(),
     /** What [fetchPortrait] answers, keyed by the id asked. */
     var portraits: Map<Long, String> = emptyMap(),
-    /**
-     * Whether a login has completed. Most of this app's tests build a core
-     * that already is; feature/setup's own fixture defaults this `false`,
-     * since a device mid setup is what most of its tests are about.
-     */
+    /** Whether a login has completed: `true` for most tests, `false` in feature/setup's fixture, a device mid setup. */
     var authorized: Boolean = true,
     /** What [totalSize] answers for a known set; also what a [read] request is clamped against. */
     var totalSize: Long = 0L,

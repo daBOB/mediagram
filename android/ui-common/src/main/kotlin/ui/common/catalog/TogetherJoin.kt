@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.Entry
 import catalog.TogetherOffer
+import catalog.playPause
 import catalog.playsIn
 import kotlinx.coroutines.flow.StateFlow
 

@@ -228,9 +228,8 @@ internal class TvAppFixture(
             val query = firstArg<String>()
             sets.filter { it.title.contains(query, ignoreCase = true) }.map { SearchHit(setId = it.setId, matched = "title", excerpt = null) }
         }
-        // SearchViewModel now asks for people alongside hits in the same
-        // round for search's People group; the strict mock has to answer the
-        // call or every search in this fixture fails.
+        // SearchViewModel asks for people alongside hits in the same round for search's People group;
+        // the strict mock has to answer the call or every search in this fixture fails.
         coEvery { repository.searchPeople(any()) } returns emptyList()
         // The lookups the title tabs, person and franchise pages make through CatalogViewModel and BrowseViewModel —
         // this mock is strict, so every one this fixture's walk can reach needs its own answer, as `searchPeople` does.
@@ -251,13 +250,11 @@ internal class TvAppFixture(
             )
         fetch = FetchViewModel(enrichment)
         search = SearchViewModel(repository)
-        // The player a title's Play opens, over an ExoPlayer that decodes
-        // nothing — the library's walk only needs it to open and to stop.
+        // The player a title's Play opens, over an ExoPlayer that decodes nothing: the walk only needs it to open and stop.
         playback = TvPlayerFixture(viewer, together = casts)
         player = playback.factory.create(PlayerViewModel::class.java)
-        // The menu's three screens, as the phone's own library fixture holds
-        // them: stand-ins with the facts a screen draws, since what those
-        // screens do is each ViewModel's own tests' business.
+        // The menu's three screens, as the phone's own library fixture holds them: stand-ins with the facts a screen
+        // draws, since what those screens do is each ViewModel's own tests' business.
         every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Ada", library = "Family films"))
         every { settings.completions } returns MutableStateFlow<List<SettingsCompletion>>(emptyList())
         every { system.failure } returns MutableStateFlow(null)
