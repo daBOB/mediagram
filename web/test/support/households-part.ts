@@ -67,6 +67,6 @@ export async function create(root: Node, name: string, admin: { name: string } |
   const choice = fieldOf(form, HOUSEHOLD_WORDS.admin);
   choice.value = "id" in admin ? admin.id : "";
   choice.fire("change");
-  if ("name" in admin) fieldOf(form, `${HOUSEHOLD_WORDS.aNewGrownUp}: name`).value = admin.name;
+  if ("name" in admin) fieldOf(form, HOUSEHOLD_WORDS.newGrownUpName).value = admin.name;
   await submit(form);
 }

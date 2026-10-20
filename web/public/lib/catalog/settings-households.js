@@ -40,7 +40,8 @@ function message() {
  * @param {{ profile: {id: string}|null, switchProfile: () => void }} chosen who is
  *   watching, if anyone; `switchProfile` asks again once this device moves household
  * @param {() => void} [onChange] runs after each change that went through, once the list is read again
- * @returns {{ box: HTMLElement, stop: () => void }} `stop` removes the part and drops the PIN
+ * @returns {{ box: HTMLElement, redraw: () => void, stop: () => void }} `redraw` follows a change made
+ *   elsewhere on the page; `stop` removes the part and drops the PIN
  */
 export function householdsPart(promptHost, { profile, switchProfile }, onChange = () => {}) {
   const box = el("div", "setting households");
@@ -66,10 +67,10 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
 
   /**
    * Says how a change went in `said`: one that went through redraws. A taken
-   * name is the household's when `named`, otherwise a new grown-up's. A wrong
-   * PIN means the one held is no longer the owner's, so the next change asks again.
+   * name is the household's when `named()` says so, otherwise a new grown-up's.
+   * A wrong PIN means the one held is no longer the owner's, so the next change asks again.
    */
-  function report(said, outcome, named = false) {
+  function report(said, outcome, named = () => false) {
     if (gone) return;
     if (outcome.ok) {
       draw();
@@ -77,7 +78,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
       return;
     }
     if (outcome.reason === "wrong-pin") held = null;
-    said.textContent = named && outcome.reason === "name-taken" ? HOUSEHOLD_WORDS.householdNameTaken : refusalText(outcome);
+    said.textContent = outcome.reason === "name-taken" && named() ? HOUSEHOLD_WORDS.householdNameTaken : refusalText(outcome);
   }
 
   /**
@@ -85,7 +86,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
    * grown-up about to run a household with no PIN yet: theirs is asked
    * twice first, and sent with it.
    */
-  async function act(said, call, { newPinFor = null, named = false } = {}) {
+  async function act(said, call, { newPinFor = null, named } = {}) {
     if (gone) return;
     const pin = await ownersPin();
     if (pin === null) return;
@@ -125,7 +126,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
       return act(said, (actor, pin, newPin) => api.create(actor, pin, name, fresh ? { adminName: admin.name, newPin } : { adminId: admin.id, newPin }), {
         newPinFor: fresh || !admin.hasPin ? admin.name : null,
         // Both names can be taken: a household's is said first, as the server checks it first.
-        named: !fresh || households.some((one) => key(one.name) === key(name)),
+        named: () => !fresh || state.households().some((one) => key(one.name) === key(name)),
       });
     }), said);
     body.append(create);
@@ -150,7 +151,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
 
     if (may("rename-household", id)) {
       actions.append(opens(HOUSEHOLD_WORDS.rename, () => renameForm(household.name, (name) =>
-        act(said, (actor, pin) => api.rename(actor, pin, id, name), { named: true }))));
+        act(said, (actor, pin) => api.rename(actor, pin, id, name), { named: () => true }))));
     }
     const admins = grownUps.filter((one) => one.id !== household.adminId && may("set-household-admin", id, one.id));
     if (admins.length > 0) {
@@ -182,6 +183,7 @@ export function householdsPart(promptHost, { profile, switchProfile }, onChange 
   draw();
   return {
     box,
+    redraw: () => { if (!gone) draw(); },
     stop: () => {
       gone = true;
       held = null;

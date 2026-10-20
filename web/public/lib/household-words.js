@@ -17,6 +17,7 @@ export const HOUSEHOLD_WORDS = {
   householdName: "Household name",
   admin: "Admin",
   aNewGrownUp: "A new grown-up",
+  newGrownUpName: "The new grown-up’s name",
   rename: "Rename",
   changeAdmin: "Change admin",
   moveHere: "Move a grown-up here",

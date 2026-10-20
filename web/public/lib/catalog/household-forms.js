@@ -63,7 +63,7 @@ export function createForm(movers, submit) {
   const admin = personChoice(HOUSEHOLD_WORDS.admin, [{ id: "", name: HOUSEHOLD_WORDS.aNewGrownUp }, ...movers]);
   const labelled = el("label", "household-admin", HOUSEHOLD_WORDS.admin);
   labelled.append(admin);
-  const grownUp = nameField(`${HOUSEHOLD_WORDS.aNewGrownUp}: name`);
+  const grownUp = nameField(HOUSEHOLD_WORDS.newGrownUpName, HOUSEHOLD_WORDS.newGrownUpName);
   admin.addEventListener("change", () => { grownUp.hidden = admin.value !== ""; });
   return inline(HOUSEHOLD_WORDS.createAHousehold, [name, labelled, grownUp], () => {
     const household = name.value.trim();

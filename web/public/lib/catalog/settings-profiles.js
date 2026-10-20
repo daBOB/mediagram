@@ -123,19 +123,27 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   const manage = el("div", "setting manage-inline");
   const device = el("div", "setting");
   drawThisDevice(device, promptHost, switchProfile);
+  /** Who Manage was drawn over, and who runs them: a household change that alters it starts Manage again. */
+  const shown = () => state.profiles().map((one) => `${one.id}:${one.admin}`).join();
+  let drawnOver = null;
   let stopManage = () => {};
-  const mount = () => {
-    stopManage();
-    stopManage = mountManage(manage, { promptHost, onChange: () => drawEveryone(list) });
-  };
-  mount();
-  // A household change can move people out of this household, or add the second one: all three follow.
-  // Manage starts again at who you are, as what it showed may no longer be yours.
+  // A household change can move people out of this household, or add the second one: the page follows.
   const households = householdsPart(promptHost, { profile, switchProfile }, () => {
     drawEveryone(list);
     drawThisDevice(device, promptHost, switchProfile);
-    mount();
+    // Manage starts again at who you are only when what it showed may no longer be yours.
+    if (shown() !== drawnOver) mount();
   });
+  function mount() {
+    stopManage();
+    drawnOver = shown();
+    stopManage = mountManage(manage, { promptHost, onChange: () => {
+      drawnOver = shown();
+      drawEveryone(list);
+      households.redraw();
+    } });
+  }
+  mount();
   box.append(list, manage, device, households.box);
   return { box, stop: () => { stopManage(); households.stop(); } };
 }
