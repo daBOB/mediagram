@@ -57,12 +57,20 @@ internal fun ProfilesPage(chosen: Profile?) {
 private fun You(profile: Profile) {
     val settings: ProfileSettingsViewModel = hiltViewModel()
     val subtitle by settings.subtitle.collectAsStateWithLifecycle()
-    // The gate's own picker: the activity holds one, so this reopens what the bar's name does.
+    // The gate's own picker and Manage: the activity holds one of each, so this reopens what the bar's name does.
     val picker: ProfileViewModel = hiltViewModel()
+    val manage: ManageProfilesViewModel = hiltViewModel()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         Text(text = WHO_IS_WATCHING, style = SectionHead, color = MaterialTheme.colorScheme.onSurface)
         Text(text = profileStatus(profile), style = MaterialTheme.typography.bodyLarge)
-        QuietPill(SWITCH_PROFILE, onClick = picker::reopen)
+        // Manage closed first: the gate shows it in the picker's place while it is open.
+        QuietPill(
+            SWITCH_PROFILE,
+            onClick = {
+                manage.close()
+                picker.reopen()
+            },
+        )
     }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.medium)) {
         Text(text = "Subtitles", style = SectionHead, color = MaterialTheme.colorScheme.onSurface)

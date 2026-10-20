@@ -11,11 +11,11 @@ import catalog.profile.ManageUiState
 import catalog.profile.profilesLine
 import model.Profile
 
-/** Profiles' line in Settings' index: who is watching, if anyone, and how many profiles there are. */
+/** Profiles' line in Settings' index ([profilesLine]): who is watching, and how many profiles there are. */
 @Composable
 fun profilesStatus(chosen: Profile?): IndexStatus {
     val profiles by hiltViewModel<ManageProfilesViewModel>().profiles.collectAsStateWithLifecycle()
-    return IndexStatus(profilesLine(chosen?.name, profiles.size))
+    return IndexStatus(profilesLine(chosen, profiles.size))
 }
 
 /**

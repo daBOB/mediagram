@@ -63,11 +63,19 @@ const val EVERYONE_HERE = "Everyone here"
 const val WHO_IS_WATCHING = "Who is watching"
 const val SWITCH_PROFILE = "Switch profile"
 
-/** Under Profiles in Settings' index: who is watching, if anyone, then how many profiles there are. */
+/**
+ * Under Profiles in Settings' index: who is watching, if anyone, then how many
+ * profiles there are — for a kid, its name alone, as its page shows nobody else.
+ */
 fun profilesLine(
-    chosen: String?,
+    chosen: Profile?,
     count: Int,
-): String = listOfNotNull(chosen, if (count == 1) "1 profile" else "$count profiles").joinToString(" · ")
+): String =
+    if (chosen?.kids == true) {
+        chosen.name
+    } else {
+        listOfNotNull(chosen?.name, if (count == 1) "1 profile" else "$count profiles").joinToString(" · ")
+    }
 
 /**
  * Settings' Profiles list (`settings-profiles.js`): grown-ups first, each

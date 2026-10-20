@@ -1,5 +1,6 @@
 package ui.settings
 
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -10,6 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import ui.common.settings.SettingsSection
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -32,10 +34,11 @@ class ProfilesSettingsTest : ProfilesSettingsHarness() {
 
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h800dp")
-    fun aKidHasTheSameOneProfilesSection() {
+    fun aKidHasTheSameOneProfilesSectionNamingOnlyThem() {
         open(chosen = tom)
         compose.onNodeWithText("Profiles").assertExists()
-        compose.onNodeWithText("Tom · 3 profiles").assertExists()
+        compose.onNodeWithText("Tom").assertExists()
+        compose.onNodeWithText("3 profiles", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Profile").assertDoesNotExist()
     }
 
@@ -64,9 +67,17 @@ class ProfilesSettingsTest : ProfilesSettingsHarness() {
 
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
-    fun switchProfileOpensThePicker() {
+    fun switchProfileGoesStraightToThePicker() {
         open(chosen = bea, initial = SettingsSection.PROFILES)
+        compose.mainClock.autoAdvance = false
         compose.onNodeWithText("Switch profile").performScrollTo().performClick()
+        // Frame by frame: never the picker's own Profiles page (everyone here, no You) on the way.
+        repeat(10) {
+            compose.mainClock.advanceTimeByFrame()
+            val household = compose.onAllNodesWithText("Everyone here").fetchSemanticsNodes().isNotEmpty()
+            val you = compose.onAllNodesWithText("Who is watching").fetchSemanticsNodes().isNotEmpty()
+            assertFalse(household && !you, "the picker's Profiles page showed on the way to the picker")
+        }
         compose.onNodeWithText("Who's watching?").assertExists()
     }
 
