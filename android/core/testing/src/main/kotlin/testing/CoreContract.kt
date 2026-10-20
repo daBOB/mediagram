@@ -62,13 +62,13 @@ import kotlin.test.assertTrue
  * would infer that as the method's return type — which JUnit4 rejects,
  * since a `@Test` method must return `void`.
  */
-abstract class CoreContract {
+abstract class CoreContract : HouseholdContract() {
     /**
      * A fresh core. [synced]: its directory has taken in one sync round that
      * found nobody — a new household's first, which every profile case needs,
      * since a first profile waits for one. Called once per case.
      */
-    abstract fun core(synced: Boolean = true): CoreInterface
+    abstract override fun core(synced: Boolean): CoreInterface
 
     private companion object {
         /** Every grown-up's PIN in these cases. */
