@@ -2,13 +2,17 @@ package catalog.profile
 
 import data.DefaultHouseholdsRepository
 import data.DefaultWatchStateRepository
+import data.HouseholdsRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.MainDispatcherRule
+import model.Households
 import uniffi.mediagram_core.Profile
 import kotlin.test.assertIs
 
@@ -60,4 +64,11 @@ abstract class HouseholdsOwnerHarness {
     fun household(id: String) = households.view.value.list.find { it.id == id }
 
     fun profile(id: String) = households.view.value.everyone.single { it.id == id }
+}
+
+/** Households never read: Manage draws this device's household alone, as it did before there were others. */
+internal object HouseholdsUnread : HouseholdsRepository {
+    override val view: StateFlow<Households> = MutableStateFlow(Households())
+
+    override suspend fun reload() = Unit
 }

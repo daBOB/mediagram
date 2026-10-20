@@ -214,9 +214,9 @@ internal class TvAppFixture(
         login = LoginViewModel(provider, dispatcher)
         val viewer = WatchStateFixture(profiles, chosenProfileId, core, watch)
         profile = ProfileViewModel(viewer.repository, NoopWatchSync)
-        manage = ManageProfilesViewModel(viewer.repository, NoopWatchSync)
         // Over the same core, read for as long as the store holds the picker.
         val households = DefaultHouseholdsRepository(viewer.provider, viewer.repository, profile.viewModelScope, Dispatchers.Unconfined)
+        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync)
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null

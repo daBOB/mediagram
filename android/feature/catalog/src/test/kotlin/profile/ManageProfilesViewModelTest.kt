@@ -35,7 +35,7 @@ class ManageProfilesViewModelTest {
 
     // Lazy: the view model reaches Dispatchers.Main as it is built, and the
     // rule installs the test one only once the test itself starts.
-    private val vm by lazy { ManageProfilesViewModel(repository, sync) }
+    private val vm by lazy { ManageProfilesViewModel(repository, HouseholdsUnread, sync) }
 
     private suspend fun panelAs(
         id: String,

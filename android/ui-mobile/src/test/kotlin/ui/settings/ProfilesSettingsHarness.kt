@@ -104,7 +104,7 @@ abstract class ProfilesSettingsHarness {
             household = WatchStateFixture(people, chosen.id, FakeCore().apply { roles.pins += pins }.apply(seed))
             homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
             val sync = mockk<WatchSync>(relaxed = true)
-            manage = ManageProfilesViewModel(household.repository, sync)
+            manage = ManageProfilesViewModel(household.repository, homes, sync)
             // Only the chosen profile matters here; every other model's state is read and left unread.
             val none = MutableStateFlow(null)
             val models =

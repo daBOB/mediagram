@@ -22,10 +22,13 @@ import model.Households
  */
 internal fun householdViewModels(
     repository: WatchStateRepository,
-    households: HouseholdsRepository =
-        mockk(relaxed = true) { every { view } returns MutableStateFlow(Households(HOME_HOUSEHOLD, listOf(Household(HOME_HOUSEHOLD, "Home", null)))) },
+    households: HouseholdsRepository = homeAlone(),
 ): Map<Class<out ViewModel>, ViewModel> =
     mapOf(
         JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(repository, households),
         HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(repository, households, mockk(relaxed = true)),
     )
+
+/** Home alone, read and joined, with nobody in it as the households see them — [householdViewModels]' default. */
+internal fun homeAlone(): HouseholdsRepository =
+    mockk(relaxed = true) { every { view } returns MutableStateFlow(Households(HOME_HOUSEHOLD, listOf(Household(HOME_HOUSEHOLD, "Home", null)))) }

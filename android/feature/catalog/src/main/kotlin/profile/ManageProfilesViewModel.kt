@@ -3,6 +3,7 @@ package catalog.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import data.HouseholdsRepository
 import data.WatchStateRepository
 import data.WatchSync
 import data.orDefault
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import model.Households
 import model.Profile
 import model.ProfileOutcome
 import model.ProfileRequest
@@ -32,20 +34,15 @@ class ManageProfilesViewModel
     @Inject
     constructor(
         private val repository: WatchStateRepository,
+        private val households: HouseholdsRepository,
         private val sync: WatchSync,
     ) : ViewModel() {
         private sealed interface Step {
             data object Closed : Step
 
-            data class ChoosingActor(
-                val notice: String? = null,
-            ) : Step
+            data class ChoosingActor(val notice: String? = null) : Step
 
-            data class Managing(
-                val actorId: String,
-                val notice: String? = null,
-                val answers: Int = 0,
-            ) : Step
+            data class Managing(val actorId: String, val notice: String? = null, val answers: Int = 0) : Step
         }
 
         private val step = MutableStateFlow<Step>(Step.Closed)
@@ -59,7 +56,7 @@ class ManageProfilesViewModel
         val pin: StateFlow<PinPrompt?> = ask.prompt
 
         val state: StateFlow<ManageUiState> =
-            combine(step, repository.profiles) { current, profiles -> current.shown(profiles) }
+            combine(step, repository.profiles, households.view) { current, profiles, install -> current.shown(profiles, install) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, ManageUiState.Closed)
 
         fun open() {
@@ -72,7 +69,7 @@ class ManageProfilesViewModel
             val actor = repository.profiles.value.find { it.id == id && !it.kids } ?: return
             ask.ask(
                 PinPrompt(pinTitleFor(actor), newPin = !actor.hasPin),
-                send = { pin -> repository.manageAndShare(proving(actor, pin), sync) },
+                send = { pin -> shared(proving(actor, pin)) },
                 done = { pin ->
                     heldPin = pin
                     step.value = Step.Managing(id)
@@ -118,10 +115,10 @@ class ManageProfilesViewModel
             newPin(newPinTitleFor(clean), own = false) { actor, pin, newPin -> ProfileRequest.CreateGrownUp(actor, pin, clean, newPin) }
         }
 
-        /** The actor's own PIN, or — for the admin — another grown-up's. */
+        /** The actor's own PIN, or — for the admin — another grown-up's; for the owner, in any household. */
         fun changePin(id: String) {
             val actorId = (step.value as? Step.Managing)?.actorId ?: return
-            val target = repository.profiles.value.find { it.id == id } ?: return
+            val target = (repository.profiles.value + households.view.value.everyone).find { it.id == id } ?: return
             val own = id == actorId
             newPin(if (own) YOUR_NEW_PIN else resetPinTitleFor(target.name), own) { actor, pin, newPin ->
                 ProfileRequest.SetPin(actor, pin, id, newPin)
@@ -148,7 +145,7 @@ class ManageProfilesViewModel
             val pin = heldPin ?: return
             step.value = managing.copy(notice = null)
             viewModelScope.launch {
-                report(managing.actorId, orDefault(null, "profile change") { repository.manageAndShare(request(managing.actorId, pin), sync) })
+                report(managing.actorId, orDefault(null, "profile change") { shared(request(managing.actorId, pin)) })
             }
         }
 
@@ -161,7 +158,7 @@ class ManageProfilesViewModel
             val pin = heldPin ?: return
             ask.ask(
                 PinPrompt(title, newPin = true),
-                send = { newPin -> repository.manageAndShare(request(actorId, pin, newPin), sync) },
+                send = { newPin -> shared(request(actorId, pin, newPin)) },
                 done = { newPin ->
                     // A changed own PIN is the one this panel sends from now on, or the next change is refused.
                     if (own) heldPin = newPin
@@ -170,6 +167,9 @@ class ManageProfilesViewModel
                 refused = { outcome -> report(actorId, outcome) },
             )
         }
+
+        /** [request] sent and shared; one that took reads the households again, which the owner's panel draws from too. */
+        private suspend fun shared(request: ProfileRequest) = repository.manageAndShare(request, sync).also { if (it == ProfileOutcome.Done) households.reloadQuietly() }
 
         /**
          * How a change went — the web's `report`. Every change sends the PIN
@@ -191,10 +191,10 @@ class ManageProfilesViewModel
                 }
         }
 
-        private fun Step.shown(profiles: List<Profile>): ManageUiState =
+        private fun Step.shown(profiles: List<Profile>, install: Households): ManageUiState =
             when (this) {
                 Step.Closed -> ManageUiState.Closed
                 is Step.ChoosingActor -> ManageUiState.ChoosingActor(profiles.filterNot { it.kids }, notice)
-                is Step.Managing -> manageable(profiles, actorId, notice, answers)
+                is Step.Managing -> manageable(profiles, actorId, notice, answers, install)
             }
     }
