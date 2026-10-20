@@ -65,6 +65,8 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     val joining by join.state.collectAsStateWithLifecycle()
     val joinPin by join.pin.collectAsStateWithLifecycle()
     val chosen = state as? ProfileUiState.Chosen
+    // The owner's part opens at once only for the owner chosen here: over a picker shown again it is anybody's, as on the web.
+    LaunchedEffect(owners, chosen?.profile?.id) { owners.watching(chosen?.profile?.id) }
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
     // Here, not on the page that switched: that page leaves with the chosen profile
     // before the join has said so, and a chosen profile no longer here reads as loading.
