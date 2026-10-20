@@ -1225,7 +1225,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 65036) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
@@ -5034,6 +5034,52 @@ public object FfiConverterTypeHistoryEntry: FfiConverterRustBuffer<HistoryEntry>
 
 
 /**
+ * A live household and the profile that runs it.
+ */
+data class Household (
+    var `id`: kotlin.String
+    ,
+    var `name`: kotlin.String
+    ,
+    var `adminId`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHousehold: FfiConverterRustBuffer<Household> {
+    override fun read(buf: ByteBuffer): Household {
+        return Household(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Household) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`adminId`)
+    )
+
+    override fun write(value: Household, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`adminId`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -5351,7 +5397,7 @@ data class Profile (
     var `parentId`: kotlin.String? = null
     ,
     /**
-     * The household's admin: a grown-up, and at most one.
+     * Runs its household: a grown-up, and at most one to a household.
      */
     var `admin`: kotlin.Boolean = false
     ,
@@ -5364,6 +5410,17 @@ data class Profile (
      * Section keys this profile does not see, sorted; any profile's.
      */
     var `hiddenSections`: List<kotlin.String> = listOf()
+    ,
+    /**
+     * The owner: the one grown-up who holds the install-wide claim, and who
+     * manages households.
+     */
+    var `owner`: kotlin.Boolean = false
+    ,
+    /**
+     * The household it is in; a kid is wherever its parent is.
+     */
+    var `household`: kotlin.String = "home"
 
 ){
 
@@ -5389,6 +5446,8 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
         )
     }
 
@@ -5401,7 +5460,9 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalString.allocationSize(value.`parentId`) +
             FfiConverterBoolean.allocationSize(value.`admin`) +
             FfiConverterBoolean.allocationSize(value.`hasPin`) +
-            FfiConverterSequenceString.allocationSize(value.`hiddenSections`)
+            FfiConverterSequenceString.allocationSize(value.`hiddenSections`) +
+            FfiConverterBoolean.allocationSize(value.`owner`) +
+            FfiConverterString.allocationSize(value.`household`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
@@ -5414,6 +5475,8 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterBoolean.write(value.`admin`, buf)
             FfiConverterBoolean.write(value.`hasPin`, buf)
             FfiConverterSequenceString.write(value.`hiddenSections`, buf)
+            FfiConverterBoolean.write(value.`owner`, buf)
+            FfiConverterString.write(value.`household`, buf)
     }
 }
 
