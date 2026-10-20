@@ -63,7 +63,7 @@ internal fun EpisodePreload(ui: TitlePreloadUi, totalBytes: Long, modifier: Modi
                 }
             }
         } else {
-            PreloadPill(ui.rowControlState(), ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true)
+            PreloadPill(ui.rowControlState(), ui.onToggle, queuedAheadLabel = ui.queuedAheadLabel, needsSpaceBudgetBytes = ui.needsSpaceBudgetBytes, small = true, noun = "episode")
         }
     }
 }

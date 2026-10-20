@@ -47,9 +47,10 @@ internal fun PreloadPill(
     queuedAheadLabel: String? = null,
     needsSpaceBudgetBytes: Long? = null,
     small: Boolean = false,
+    noun: String = "film",
 ) {
     val label = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes)
-    val hint = preloadAccessibilityHint(state)
+    val hint = preloadAccessibilityHint(state, noun)
     val enabled = preloadIsEnabled(state)
     val description = if (hint != null) "$label. $hint" else null
     if (preloadIsAffirmative(state)) {

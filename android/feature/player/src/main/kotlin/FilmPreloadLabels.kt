@@ -137,11 +137,12 @@ fun preloadIsEnabled(state: FilmPreloadState): Boolean = preloadTapAction(state)
  * [state] directly rather than routed back through [preloadTapAction]: that
  * indirection once let [FilmPreloadState.Paused]'s [PauseReason.TimeLimit]
  * (an `ENQUEUE`) fall into the `CANCEL` branch's hint by construction,
- * saying "Tap to cancel." for a tap that actually resumed it.
+ * saying "Tap to cancel." for a tap that actually resumed it. [noun] is
+ * what the title is called ("film", or "episode" on an episode row).
  */
-fun preloadAccessibilityHint(state: FilmPreloadState): String? =
+fun preloadAccessibilityHint(state: FilmPreloadState, noun: String = "film"): String? =
     when (val s = normalized(state)) {
-        is FilmPreloadState.Idle -> "Tap to preload this film to your device."
+        is FilmPreloadState.Idle -> "Tap to preload this $noun to your device."
         is FilmPreloadState.Failed -> "${s.reason} Tap to retry."
         is FilmPreloadState.NeedsSpace -> "Tap to try again."
         FilmPreloadState.Queued, is FilmPreloadState.Running -> "Tap to cancel."

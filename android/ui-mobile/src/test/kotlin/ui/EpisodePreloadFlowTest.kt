@@ -79,6 +79,13 @@ class EpisodePreloadFlowTest {
     }
 
     @Test
+    fun anEpisodesPreloadIsAnnouncedAsAnEpisode() {
+        openShow()
+
+        compose.onNodeWithContentDescription("Preload · 10 B. Tap to preload this episode to your device.").assertExists()
+    }
+
+    @Test
     fun thePreloadsScreenNamesAnEpisodeLikeContinue() {
         preloadTheFirstEpisode()
         val (setId, title, total) = fixture.filmPreloading.enqueueCalls.single()
