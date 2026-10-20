@@ -72,10 +72,11 @@ fun rememberFilmPreloadUi(set: MediaSet, catalogState: CatalogUiState, onOpenSto
  * for it, and collecting it would ask the server once for every row on screen.
  */
 @Composable
-fun rememberEpisodePreloadUi(set: MediaSet, catalogState: CatalogUiState): TitlePreloadUi? {
-    val queuedAs = locationOf(set).takeIf { set.kind == Kind.EPISODE } ?: set.title
-    return rememberPreloadUi(set, queuedAs, catalogState, onOpenStorage = {}, row = true)
-}
+fun rememberEpisodePreloadUi(set: MediaSet, catalogState: CatalogUiState): TitlePreloadUi? =
+    rememberPreloadUi(set, preloadName(set), catalogState, onOpenStorage = {}, row = true)
+
+/** The name a preload goes by in the queue and under "On this device": an episode's "Show · S1E4", anything else its title. */
+fun preloadName(set: MediaSet): String = locationOf(set).takeIf { set.kind == Kind.EPISODE } ?: set.title
 
 @Composable
 private fun rememberPreloadUi(

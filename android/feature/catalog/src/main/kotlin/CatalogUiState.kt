@@ -1,5 +1,6 @@
 package catalog
 
+import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
 import playback.FilmPreloadRow
@@ -108,20 +109,21 @@ fun CatalogUiState.mediaSet(setId: String): MediaSet? =
         }?.find { it.setId == setId }
 
 /**
- * Films this device holds in full — the Preloads page's own "On this
+ * Titles this device holds in full — the Preloads page's own "On this
  * device" section, read off [CatalogUiState.Ready.heldIds] rather than a
- * second held-set query of its own. [Entry.Film] is exactly the shelves'
- * own film card (a documentary included — TMDB shelves it under the same
- * kind), so filtering to it is the film/documentary distinction the
- * engine's own films-only preload already draws, with nothing further to
- * decide here. Empty while the library is still loading, the same as
- * [heldIdsOrEmpty] and its neighbours.
+ * second held-set query of its own: the shelves' film cards (a documentary
+ * included — TMDB shelves it under the same kind), then the finished
+ * episodes, in show and episode order. Episodes are resolved through
+ * [mediaSet], so a profile whose catalogue lacks one never lists it. Empty
+ * while the library is still loading, the same as [heldIdsOrEmpty] and its
+ * neighbours.
  */
-fun CatalogUiState.heldFilms(): List<MediaSet> =
-    (this as? CatalogUiState.Ready)
-        ?.let { ready -> ready.shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set }.filter { it.setId in ready.heldIds } }
-        ?.toList()
-        .orEmpty()
+fun CatalogUiState.heldFilms(): List<MediaSet> {
+    val ready = this as? CatalogUiState.Ready ?: return emptyList()
+    val films = ready.shelves.asSequence().flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set }.filter { it.setId in ready.heldIds }
+    val episodes = ready.heldIds.mapNotNull(::mediaSet).filter { it.kind == Kind.EPISODE }.sortedWith(compareBy({ it.show }, { it.season }, { it.episodeFirst }))
+    return films.toList() + episodes
+}
 
 /**
  * Only the rows this profile's own catalogue can resolve — a kids
