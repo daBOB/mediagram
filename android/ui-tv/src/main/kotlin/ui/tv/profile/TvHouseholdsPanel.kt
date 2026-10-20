@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -30,9 +31,10 @@ import model.HouseholdWords
  * PIN at the first change. The PIN is dropped when the panel is left, for
  * anything — another section, the app — and asked again on the way back.
  *
- * A change stays on the step that sent it until its answer: one that took
- * lands the remote on its household's row; a refusal is said on that step.
- * While one is out, presses send nothing more. Back walks out a row at a
+ * A change stays on the step that sent it until its answer — a PIN pad given
+ * up is none — and keeps what was typed: one that took lands the remote on
+ * its household's row; a refusal is said on that step. While one is out,
+ * presses send nothing more. Back walks out a row at a
  * time; from the list it is [onDone]. [onJoined] runs once Use on this
  * device has moved the box; asking who is watching again is the gate's.
  * [reread] reads the households again as the panel opens.
@@ -49,6 +51,8 @@ internal fun TvHouseholdsPanel(
     val joined by rememberUpdatedState(onJoined)
     var step by remember { mutableStateOf<TvHouseholdStep>(TvHouseholdStep.List()) }
     var sentFrom by remember { mutableStateOf<TvHouseholdStep?>(null) }
+    // The answers counted when it was sent: only a later count is its answer.
+    var sentAt by remember { mutableIntStateOf(0) }
     LaunchedEffect(owner) {
         reread()
         owner.joined.collect { joined() }
@@ -56,7 +60,11 @@ internal fun TvHouseholdsPanel(
     LifecycleStartEffect(owner) {
         // The way in, and back from the background: the owner's PIN, unless the owner is watching.
         if (owner.state.value is HouseholdsOwnerUiState.Closed) owner.open()
-        onStopOrDispose { owner.close() }
+        onStopOrDispose {
+            // close() counts the answers afresh, and an answer to what was out is dropped with it.
+            owner.close()
+            sentFrom = null
+        }
     }
     val asking = prompt
     if (asking != null) {
@@ -74,8 +82,9 @@ internal fun TvHouseholdsPanel(
         return
     }
     LaunchedEffect(part.answers) {
-        if (sentFrom != null && part.notice == null) {
-            step = sentFrom?.done() ?: step
+        val from = sentFrom
+        if (from != null && part.answers > sentAt && part.notice == null) {
+            step = from.done()
             sentFrom = null
         }
     }
@@ -88,9 +97,13 @@ internal fun TvHouseholdsPanel(
         notice = part.notice.takeIf { sentFrom == shown },
         owner = owner,
         go = { step = it },
-        send = { change ->
-            if (!part.sending) {
-                sentFrom = shown
+        send = { from, change ->
+            // Read as pressed, not as last drawn: two presses in one frame send once.
+            val now = owner.state.value as? HouseholdsOwnerUiState.Open
+            if (now != null && !now.sending) {
+                step = from
+                sentFrom = from
+                sentAt = now.answers
                 change()
             }
         },

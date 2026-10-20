@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -145,6 +149,21 @@ private fun Household(
     val part by hiltViewModel<HouseholdsOwnerViewModel>().state.collectAsStateWithLifecycle()
     // Read again as the page shows: a household made or renamed on another device since.
     LaunchedEffect(households) { households.reread() }
+    val ownerRow = asOwner || part is HouseholdsOwnerUiState.Open || (part as? HouseholdsOwnerUiState.Closed)?.canOpen == true
+    val shown = setOfNotNull(TvSettingsPanel.Join.takeIf { join.canSwitch }, TvSettingsPanel.Households.takeIf { ownerRow })
+    // Which of the rows that can go holds the remote. Its going hands the
+    // remote to Manage profiles rather than nothing; a row only stops holding
+    // it by focus moving on while it is still shown.
+    val showing by rememberUpdatedState(shown)
+    var holding by remember { mutableStateOf<TvSettingsPanel?>(null) }
+    fun held(row: TvSettingsPanel) = Modifier.onFocusChanged { if (it.isFocused) holding = row else if (holding == row && row in showing) holding = null }
+    val lost = holding?.let { it !in shown } == true
+    LaunchedEffect(lost) {
+        if (lost) {
+            holding = null
+            rows.getValue(TvSettingsPanel.Profiles).requestFocus()
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         TvInfoBlock(
             heading = EVERYONE_HERE,
@@ -153,14 +172,14 @@ private fun Household(
             focusable = true,
         )
         TvTextRow(MANAGE_PROFILES, onClick = { onOpen(TvSettingsPanel.Profiles) }, focusRequester = rows.getValue(TvSettingsPanel.Profiles))
-        if (join.canSwitch) {
+        if (TvSettingsPanel.Join in shown) {
             val here = listOfNotNull(HouseholdWords.THIS_DEVICE, join.here?.name).joinToString(" · ")
-            TvTextRow(here, onClick = { onOpen(TvSettingsPanel.Join) }, focusRequester = rows.getValue(TvSettingsPanel.Join))
+            TvTextRow(here, onClick = { onOpen(TvSettingsPanel.Join) }, held(TvSettingsPanel.Join), rows.getValue(TvSettingsPanel.Join))
         }
         if (!asOwner) TvQuietLine(HouseholdWords.OWNER_NOTE)
-        if (asOwner || part is HouseholdsOwnerUiState.Open || (part as? HouseholdsOwnerUiState.Closed)?.canOpen == true) {
+        if (TvSettingsPanel.Households in shown) {
             val words = if (asOwner) HouseholdWords.HOUSEHOLDS else HouseholdWords.OWNER
-            TvTextRow(words, onClick = { onOpen(TvSettingsPanel.Households) }, focusRequester = rows.getValue(TvSettingsPanel.Households))
+            TvTextRow(words, onClick = { onOpen(TvSettingsPanel.Households) }, held(TvSettingsPanel.Households), rows.getValue(TvSettingsPanel.Households))
         }
     }
 }

@@ -27,7 +27,8 @@ internal sealed interface TvHouseholdStep {
     /** What the rule allows on household [id], the remote on [action], the step it opened, or the first. */
     data class Actions(override val id: String, val action: String? = null) : TvHouseholdStep
 
-    data class Rename(override val id: String) : TvHouseholdStep
+    /** [typed], once sent: what the field held, kept while a PIN is asked over it. */
+    data class Rename(override val id: String, val typed: String? = null) : TvHouseholdStep
 
     data class ChangeAdmin(override val id: String) : TvHouseholdStep
 
@@ -37,7 +38,7 @@ internal sealed interface TvHouseholdStep {
 
     data class CreateAdmin(val name: String) : TvHouseholdStep
 
-    data class CreateGrownUp(val name: String) : TvHouseholdStep
+    data class CreateGrownUp(val name: String, val typed: String = "") : TvHouseholdStep
 
     /** Back: out the way the remote came in, a row at a time; null leaves the panel. */
     fun back(): TvHouseholdStep? =
@@ -58,8 +59,9 @@ internal sealed interface TvHouseholdStep {
 
 /**
  * [step]'s screen. [go] moves to another step; [send] sends a change from
- * this one, which stays, saying [notice] if it was refused, until it takes.
- * A blank name is not sent, as the web's forms send none.
+ * a step — this one, holding what was typed — which stays, saying [notice]
+ * if it was refused, until it takes. A blank name is not sent, as the web's
+ * forms send none.
  */
 @Composable
 internal fun TvHouseholdStepScreen(
@@ -68,7 +70,7 @@ internal fun TvHouseholdStepScreen(
     notice: String?,
     owner: HouseholdsOwnerViewModel,
     go: (TvHouseholdStep) -> Unit,
-    send: (() -> Unit) -> Unit,
+    send: (from: TvHouseholdStep, change: () -> Unit) -> Unit,
 ) {
     val row = part.rows.find { it.household.id == step.id }
     val name = row?.household?.name.orEmpty()
@@ -91,32 +93,34 @@ internal fun TvHouseholdStepScreen(
                     HouseholdWords.RENAME -> go(TvHouseholdStep.Rename(step.id))
                     HouseholdWords.CHANGE_ADMIN -> go(TvHouseholdStep.ChangeAdmin(step.id))
                     HouseholdWords.MOVE_HERE -> go(TvHouseholdStep.Move(step.id))
-                    HouseholdWords.USE_HERE -> send { owner.useHere(step.id) }
-                    else -> send { owner.delete(step.id) }
+                    HouseholdWords.USE_HERE -> send(step) { owner.useHere(step.id) }
+                    else -> send(step) { owner.delete(step.id) }
                 }
             }
         }
         is TvHouseholdStep.Rename ->
-            TvNameStep("${HouseholdWords.RENAME} · $name", HouseholdWords.HOUSEHOLD_NAME, name, notice) { send { owner.rename(step.id, it) } }
+            TvNameStep("${HouseholdWords.RENAME} · $name", HouseholdWords.HOUSEHOLD_NAME, step.typed ?: name, notice) { typed ->
+                send(step.copy(typed = typed)) { owner.rename(step.id, typed) }
+            }
         is TvHouseholdStep.ChangeAdmin ->
             TvChoicesScreen("${HouseholdWords.CHANGE_ADMIN} · $name", null, row?.adminChoices.orEmpty().map { it.id to it.name }, null, notice) {
-                send { owner.changeAdmin(step.id, it) }
+                send(step) { owner.changeAdmin(step.id, it) }
             }
         is TvHouseholdStep.Move ->
             TvChoicesScreen("${HouseholdWords.MOVE_HERE} · $name", null, row?.moveChoices.orEmpty().map { it.id to it.name }, null, notice) {
-                send { owner.moveHere(step.id, it) }
+                send(step) { owner.moveHere(step.id, it) }
             }
         is TvHouseholdStep.CreateName ->
             TvNameStep(HouseholdWords.CREATE_A_HOUSEHOLD, HouseholdWords.HOUSEHOLD_NAME, step.name, null) { go(TvHouseholdStep.CreateAdmin(it)) }
         is TvHouseholdStep.CreateAdmin -> {
             val admins = listOf(NEW to HouseholdWords.A_NEW_GROWN_UP) + part.createChoices.map { it.id to it.name }
             TvChoicesScreen("${HouseholdWords.CREATE_A_HOUSEHOLD} · ${step.name}", HouseholdWords.ADMIN, admins, null, notice) { id ->
-                if (id == NEW) go(TvHouseholdStep.CreateGrownUp(step.name)) else send { owner.create(step.name, id, null) }
+                if (id == NEW) go(TvHouseholdStep.CreateGrownUp(step.name)) else send(step) { owner.create(step.name, id, null) }
             }
         }
         is TvHouseholdStep.CreateGrownUp ->
-            TvNameStep("${HouseholdWords.CREATE_A_HOUSEHOLD} · ${step.name}", HouseholdWords.NEW_GROWN_UP_NAME, "", notice) {
-                send { owner.create(step.name, null, it) }
+            TvNameStep("${HouseholdWords.CREATE_A_HOUSEHOLD} · ${step.name}", HouseholdWords.NEW_GROWN_UP_NAME, step.typed, notice) { typed ->
+                send(step.copy(typed = typed)) { owner.create(step.name, null, typed) }
             }
     }
 }

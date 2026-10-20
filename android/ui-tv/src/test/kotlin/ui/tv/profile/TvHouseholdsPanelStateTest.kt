@@ -1,107 +1,19 @@
 package ui.tv.profile
 
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isFocused
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performTextClearance
-import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.pressKey
-import androidx.test.platform.app.InstrumentationRegistry
-import catalog.profile.HouseholdsOwnerViewModel
-import data.DefaultHouseholdsRepository
-import data.DefaultWatchStateRepository
-import io.mockk.mockk
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
 import model.HouseholdWords
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import testing.FakeCore
-import testing.FakeCoreProvider
-import ui.tv.catalog.TvScreenStateTest
-import ui.tv.setup.TvTextQuestionFieldTag
-import uniffi.mediagram_core.Profile
 import kotlin.test.assertEquals
 
-/**
- * The owner's Households panel by remote alone, over the real view model and
- * [FakeCore]: andre, the owner, runs Home; Bea runs Flat, with Cy. Nobody is
- * watching, so the panel opens as the Owner row opens it: the owner's PIN first.
- */
+/** The owner's Households panel by remote alone ([TvHouseholdsPanelHarness]): the owner's PIN first, then the households and their steps. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
-class TvHouseholdsPanelStateTest : TvScreenStateTest() {
-    private val core =
-        FakeCore().apply {
-            profiles =
-                listOf(
-                    Profile("a", "andre", admin = true, owner = true),
-                    Profile("b", "Bea", admin = true, household = "flat"),
-                    Profile("c", "Cy", household = "flat"),
-                )
-            roles.pins["a"] = "1234"
-            roles.pins["b"] = "5678"
-            homes.names["flat"] = "Flat"
-        }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-    private var left = 0
-
-    @Before
-    fun leaveTouchMode() {
-        InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
-    }
-
-    @After
-    fun stopReading() = scope.cancel()
-
-    private fun panel() {
-        val provider = FakeCoreProvider(core)
-        val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
-        runBlocking { repository.reload() }
-        val owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true))
-        show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) }
-    }
-
-    /** The panel, the owner's PIN given. */
-    private fun opened() {
-        panel()
-        pin("1234")
-    }
-
-    private fun press(key: Key) {
-        compose.onNode(isFocused()).performKeyInput { pressKey(key) }
-        compose.waitForIdle()
-    }
-
-    /** By the remote's own digit keys, as a remote that has them types. */
-    private fun pin(digits: String) = digits.forEach { press(DigitKeys[it - '0']) }
-
-    /** Through the system keyboard, as the remote's text field takes one, over what the field held. */
-    private fun name(text: String) {
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextClearance()
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput(text)
-        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
-        compose.waitForIdle()
-    }
-
-    private fun row(text: String) = compose.onNode(hasText(text) and hasClickAction())
-
-    private fun noRow(text: String) = compose.onAllNodes(hasText(text) and hasClickAction()).assertCountEquals(0)
-
+class TvHouseholdsPanelStateTest : TvHouseholdsPanelHarness() {
     @Test
     fun theOwnerRowAsksThePinThenListsHouseholds() {
         panel()
@@ -191,9 +103,5 @@ class TvHouseholdsPanelStateTest : TvScreenStateTest() {
         assertEquals(0, left)
         back()
         assertEquals(1, left)
-    }
-
-    private companion object {
-        val DigitKeys = listOf(Key.Zero, Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key.Six, Key.Seven, Key.Eight, Key.Nine)
     }
 }

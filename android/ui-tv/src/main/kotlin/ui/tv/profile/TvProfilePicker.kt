@@ -55,9 +55,9 @@ internal const val TvProfilePickerFirstTileTag = "tv-profile-picker-first-tile"
  * The television counterpart to `ui.profile.ProfilePickerScreen` and the
  * web's `profile-picker.js`: the same [ProfileUiState] and the same words,
  * in the web's order — a refusal, then the first profile on a device with no
- * grown-up or "Who runs this household?" while nobody does, the tiles in a
- * single row a D-pad moves across, Manage profiles once there is a grown-up,
- * and the honest note. The first profile's name is asked in place, as every
+ * grown-up ([onJoin], Join a household, where another household has one) or
+ * "Who runs this household?" while nobody does, the tiles in a single row a
+ * D-pad moves across, Manage profiles once there is a grown-up, and the note. The first profile's name is asked in place, as every
  * TV text question is. Renders nothing for [ProfileUiState.Chosen] — the
  * caller only shows this while there is something left to decide.
  *
@@ -74,12 +74,13 @@ internal fun TvProfilePicker(
     onClaim: (String) -> Unit = {},
     onCreateFirst: (String) -> Unit = {},
     onManage: () -> Unit = {},
+    onJoin: (() -> Unit)? = null,
     landing: TvPickerSpot? = null,
     tiles: LazyListState = rememberLazyListState(),
 ) {
     when (state) {
         ProfileUiState.Loading -> TvLibraryLoading()
-        is ProfileUiState.Picking -> TvPickerBody(state, TvPickerActions(onChoose, onStay, onRetry, onClaim, onCreateFirst, onManage), landing, tiles)
+        is ProfileUiState.Picking -> TvPickerBody(state, TvPickerActions(onChoose, onStay, onRetry, onClaim, onCreateFirst, onManage, onJoin), landing, tiles)
         is ProfileUiState.Chosen -> Unit
     }
 }
@@ -91,6 +92,7 @@ private class TvPickerActions(
     val onClaim: (String) -> Unit,
     val onCreateFirst: (String) -> Unit,
     val onManage: () -> Unit,
+    val onJoin: (() -> Unit)?,
 )
 
 @Composable
@@ -141,7 +143,7 @@ private fun TvPickerBody(
         // A failed load says nothing of whether a household exists, so
         // neither question is asked over one.
         if (error == null && state.needsFirstProfile) {
-            TvFirstProfileRow(onStart = { naming = true }, focusRequester = at(TvPickerSpot.FirstProfile))
+            TvFirstProfileRow(onStart = actions.onJoin ?: { naming = true }, focusRequester = at(TvPickerSpot.FirstProfile), joins = actions.onJoin != null)
         }
         // No first profile until a sync round has landed; look again meanwhile.
         if (error == null && state.awaitingHousehold) {
