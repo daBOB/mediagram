@@ -7,6 +7,7 @@ export const HOUSEHOLD_WORDS: {
   switchHousehold: string;
   joinAHousehold: string;
   joinNote: string;
+  noneToJoin: string;
   createAHousehold: string;
   householdName: string;
   admin: string;

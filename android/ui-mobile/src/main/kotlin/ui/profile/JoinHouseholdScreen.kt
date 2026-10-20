@@ -25,10 +25,11 @@ import ui.settings.QuietPill
 /**
  * Join a household — the web's `household-join.js`: which household's
  * profiles this device shows, one button for each live one but the one it
- * shows now. A press asks that household's admin's PIN or the owner's; the
- * gate draws that prompt ([ProfileGate]), so it outlives a page that leaves
- * once the join takes. Read again as it is shown: a household made on another
- * device changes nobody here, so nothing else would read it. The gate's, the
+ * shows now that a PIN can open, or a line saying there is none. A press
+ * asks that household's admin's PIN or the owner's; the gate draws that
+ * prompt ([ProfileGate]), so it outlives a page that leaves once the join
+ * takes. Read again as it is shown: a household made on another device
+ * changes nobody here, so nothing else would read it. The gate's, the
  * picker's in place of a first profile, and Switch household's alike.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -48,12 +49,16 @@ internal fun JoinHousehold(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.small),
         )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.small),
-            verticalArrangement = Arrangement.spacedBy(Spacing.small),
-            modifier = Modifier.padding(top = Spacing.medium),
-        ) {
-            state.households.forEach { household -> QuietPill(household.name, onClick = { join.pick(household.id) }) }
+        if (state.read && state.households.isEmpty()) {
+            Text(HouseholdWords.NONE_TO_JOIN, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Spacing.medium))
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+                verticalArrangement = Arrangement.spacedBy(Spacing.small),
+                modifier = Modifier.padding(top = Spacing.medium),
+            ) {
+                state.households.forEach { household -> QuietPill(household.name, onClick = { join.pick(household.id) }) }
+            }
         }
     }
 }

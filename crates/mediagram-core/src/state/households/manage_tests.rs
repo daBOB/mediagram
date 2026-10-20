@@ -137,6 +137,20 @@ fn a_kid_is_made_in_its_parents_household() {
     assert_eq!(store.row(&mia.id).household_id, "flat", "stored where its parent is, as the web stores it");
 }
 
+/// Home's own are undated, as everyone from before households is; one made
+/// in another household is dated, so where it was made reaches the other devices.
+#[test]
+fn a_profile_made_in_home_is_undated_and_one_made_elsewhere_is_dated() {
+    let store = store_with(&[grown_up("owner", "home", true, 1), household("flat", Some("maja")), grown_up("maja", "flat", false, 2)]);
+    assert_eq!(store.run(|m| m.create_grown_up("owner", PIN, "Paul", "5678")), Done);
+    assert_eq!(store.run(|m| m.create_kid("owner", PIN, "Ben", 6, None)), Done);
+    assert_eq!(store.run(|m| m.create_grown_up("maja", PIN, "Lena", "5678")), Done);
+    assert_eq!(store.run(|m| m.create_kid("maja", PIN, "Mia", 6, None)), Done);
+    for (name, stamp) in [("Paul", 0), ("Ben", 0), ("Lena", T), ("Mia", T)] {
+        assert_eq!(store.row(&store.named(name).id).household_updated_at, stamp, "{name}");
+    }
+}
+
 #[test]
 fn the_admin_of_one_household_cannot_remove_a_grown_up_of_another() {
     let store = store_with(&[
@@ -492,4 +506,12 @@ fn wrong_join_pins_wait_per_household_not_per_profile() {
     assert_eq!(store.run(|m| m.join_household("home", PIN)), Done);
     assert_eq!(store.run(|m| m.unlock("owner", PIN)), Done);
     assert_eq!(store.run(|m| m.unlock("maja", PIN)), Done);
+}
+
+/// A write that lands on no household says which, in the log a failed write leaves.
+#[test]
+fn an_admin_given_to_no_household_names_it() {
+    let store = store_with(&[]);
+    let refused = store.db.with(|conn| Ok(super::writes::admin(conn, "nowhere", "maja", T).unwrap_err())).unwrap();
+    assert!(refused.to_string().contains("nowhere"), "{refused}");
 }

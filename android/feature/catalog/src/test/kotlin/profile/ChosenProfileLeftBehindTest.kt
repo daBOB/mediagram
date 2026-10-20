@@ -21,8 +21,8 @@ class ChosenProfileLeftBehindTest : HouseholdsOwnerHarness() {
     /** The households read after a join fail while this is set; who is here still reads. */
     private var failing = false
 
-    private suspend fun TestScope.flaky(): HouseholdsRepository {
-        core.chosen = "a"
+    private suspend fun TestScope.flaky(chosen: String? = "a"): HouseholdsRepository {
+        core.chosen = chosen
         repository.reload()
         households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
         val read = households
@@ -57,6 +57,24 @@ class ChosenProfileLeftBehindTest : HouseholdsOwnerHarness() {
             assertNull(repository.chosenProfileId.value)
             // The switch took: the prompt closes for the picker, never saying it did not go through.
             assertNull(join.pin.value)
+            assertEquals(listOf(false), said)
+        }
+
+    /** Nobody was chosen here, so nobody was left behind: the prompt says the read failed and asks again. */
+    @Test
+    fun aJoinWithNobodyChosenAsksAgainWhenTheHouseholdsCannotBeReadAfterIt() =
+        runTest(UnconfinedTestDispatcher()) {
+            val join = JoinHouseholdViewModel(repository, flaky(chosen = null))
+            backgroundScope.launch { join.joined.collect { said += it } }
+            join.pick("flat")
+            failing = true
+            join.enterPin("5678")
+            assertEquals(DID_NOT_GO_THROUGH, join.pin.value?.error)
+            assertEquals(emptyList(), said)
+            failing = false
+            join.enterPin("5678")
+            assertNull(join.pin.value)
+            assertEquals("flat", households.view.value.joined)
             assertEquals(listOf(false), said)
         }
 

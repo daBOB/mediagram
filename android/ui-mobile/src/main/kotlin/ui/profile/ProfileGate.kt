@@ -69,7 +69,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     LaunchedEffect(owners, chosen?.profile?.id) { owners.watching(chosen?.profile?.id) }
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
     // Here, not on the page that switched: that page leaves with the chosen profile
-    // before the join has said so, and a chosen profile no longer here reads as loading.
+    // before the join has said so. Who is watching is asked again, and Manage closes.
     LaunchedEffect(join, owners) {
         merge(join.joined, owners.joined).collect { kept ->
             if (!kept) {

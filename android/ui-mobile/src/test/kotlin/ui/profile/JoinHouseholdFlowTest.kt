@@ -89,6 +89,18 @@ class JoinHouseholdFlowTest : ProfileGateHarness() {
         compose.onNodeWithText(HouseholdWords.JOIN_A_HOUSEHOLD).assertExists()
     }
 
+    /** Nobody with a PIN to let this device in anywhere: a line says so where the buttons would be. */
+    @Test fun noHouseholdThisDeviceCanJoinSaysSo() {
+        open {
+            profiles = listOf(CoreProfile("a", "andre", admin = true, owner = true), CoreProfile("b", "Bea", admin = true, household = "flat"))
+            homes.names["flat"] = "Flat"
+            homes.joined = null
+        }
+        compose.onNodeWithText(HouseholdWords.JOIN_A_HOUSEHOLD).assertExists()
+        compose.onNodeWithText(HouseholdWords.NONE_TO_JOIN).assertExists()
+        choice("Flat").assertDoesNotExist()
+    }
+
     /** No first profile before the households are read: with grown-ups in another household, the core would refuse it. */
     @Test fun theFirstProfileWaitsUntilTheHouseholdsAreRead() {
         // A core that names no household at all has not been read: Home is never deleted.
