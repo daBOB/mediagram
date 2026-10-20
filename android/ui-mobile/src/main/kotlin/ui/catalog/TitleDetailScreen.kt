@@ -122,7 +122,7 @@ fun TitleDetailScreen(
                     preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
                         { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }
                     },
-                castPill = playOnTv?.let { tv -> { PlayOnTvPill(tv, set.setId, resumeAt ?: 0.0) } },
+                castPill = playOnTv?.let { tv -> { PlayOnTvPill(tv, set.setId, resumeAt ?: 0.0, onPlay) } },
             )
         }
         preload?.takeIf { showsPreloadBar(it.state) || it.state is FilmPreloadState.NeedsSpace || it.serverLine != null }?.let { p ->

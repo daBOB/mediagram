@@ -140,7 +140,7 @@ internal fun SeriesPage(
                         onToggleWatchlist = onToggleWatchlist,
                         editorsChoicePinned = editorsChoice == firstEpisode.setId,
                         onToggleEditorsChoice = onToggleEditorsChoice,
-                        castPill = resume?.let { r -> playOnTv?.let { tv -> { PlayOnTvPill(tv, r.set.setId, r.at ?: 0.0) } } },
+                        castPill = resume?.let { r -> playOnTv?.let { tv -> { PlayOnTvPill(tv, r.set.setId, r.at ?: 0.0) { onPlay(r.set.setId) } } } },
                     )
                 }
             }
