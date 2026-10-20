@@ -87,12 +87,7 @@ internal fun showsPreloadBar(state: FilmPreloadState): Boolean = state is FilmPr
  */
 @Composable
 internal fun PreloadProgressBar(state: FilmPreloadState, onCancel: () -> Unit, modifier: Modifier = Modifier) {
-    val (held, total) =
-        when (state) {
-            is FilmPreloadState.Running -> state.heldBytes to state.totalBytes
-            is FilmPreloadState.Paused -> state.heldBytes to state.totalBytes
-            else -> return
-        }
+    val (held, total) = preloadBarBytes(state) ?: return
     val fraction = if (total <= 0L) 0f else (held.toFloat() / total.toFloat()).coerceIn(0f, 1f)
     val label = preloadBarLabel(held, total)
     val hint = preloadAccessibilityHint(state)
@@ -112,6 +107,14 @@ internal fun PreloadProgressBar(state: FilmPreloadState, onCancel: () -> Unit, m
         Text(label, style = MaterialTheme.typography.bodySmall)
     }
 }
+
+/** The held and total bytes a bar reads — `null` for every state [showsPreloadBar] answers false for. */
+internal fun preloadBarBytes(state: FilmPreloadState): Pair<Long, Long>? =
+    when (state) {
+        is FilmPreloadState.Running -> state.heldBytes to state.totalBytes
+        is FilmPreloadState.Paused -> state.heldBytes to state.totalBytes
+        else -> null
+    }
 
 /** NeedsSpace's own second control, beside its own retry pill — opens Settings › Storage. */
 @Composable

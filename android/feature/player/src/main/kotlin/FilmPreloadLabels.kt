@@ -126,6 +126,9 @@ fun preloadIsAffirmative(state: FilmPreloadState): Boolean =
         else -> false
     }
 
+/** Whether [state] reads as held in full — Done, or an Idle the cache already holds whole. */
+fun preloadIsHeldInFull(state: FilmPreloadState): Boolean = normalized(state) == FilmPreloadState.Done
+
 /** Whether the control still takes a press — false only for Done, which is read-only until "Remove preload" is asked for beside it. */
 fun preloadIsEnabled(state: FilmPreloadState): Boolean = preloadTapAction(state) != PreloadTapAction.NONE
 
@@ -164,7 +167,7 @@ fun preloadServerLine(bytesHeld: Long, totalBytes: Long): String? =
 private fun heldPercent(held: Long, total: Long): Int = if (total <= 0) 0 else (held * 100 / total).toInt().coerceIn(0, 100)
 
 /** As [heldPercent], but a film with some real bytes held never reads as flatly "0%" — the same reason a battery reads "1%" rather than "0%" moments before it actually reaches empty. */
-private fun heldPercentLabel(held: Long, total: Long): String {
+fun heldPercentLabel(held: Long, total: Long): String {
     val percent = heldPercent(held, total)
     return if (percent <= 0 && held > 0) "< 1%" else "$percent%"
 }
