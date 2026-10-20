@@ -18,7 +18,9 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { cleanName, insertProfile, profileRows, toProfile, type Profile, type ProfileRow } from "./profiles";
+import { cleanName, listProfiles, profileRows, type Profile, type ProfileRow } from "./profiles";
+import { insertProfile } from "./profiles-insert";
+import { HOME } from "../../public/lib/household-rules.js";
 import { writeDailyLimit, writeKidsAge, writePin } from "./profiles-write";
 import { newPin, pinMatches, validPin } from "./profiles-pin";
 import { allowed, nameTaken, type Action } from "./profiles-rules";
@@ -45,8 +47,8 @@ const isKid = (row: ProfileRow): boolean => row.kids !== 0;
 
 export class ProfileManager {
   constructor(
-    private readonly db: Database | null,
-    private readonly wait: PinWait,
+    protected readonly db: Database | null,
+    protected readonly wait: PinWait,
     private readonly household: Pick<Household, "heard"> = { heard: () => true },
   ) {}
 
@@ -70,14 +72,14 @@ export class ProfileManager {
   createGrownUp(actorId: string, pin: unknown, name: unknown, next: unknown): Refused | Profile {
     if (!validPin(next)) return refuse("invalid");
     const refused = this.unusable(name) ?? this.check(actorId, pin, "create-grown-up", null);
-    return refused ?? insertProfile(this.db, name, { pin: newPin(next) }) ?? refuse("invalid");
+    return refused ?? insertProfile(this.db, name, { pin: newPin(next), ...this.householdOf(actorId) }) ?? refuse("invalid");
   }
 
   /** A kid, belonging to whichever grown-up adds it, with its own limit. */
   createKid(actorId: string, pin: unknown, name: unknown, kidsAge: unknown, dailyLimit: unknown = null): Refused | Profile {
     if (!validAge(kidsAge) || !validMinutes(dailyLimit)) return refuse("invalid");
     const refused = this.unusable(name) ?? this.check(actorId, pin, "create-kid", null);
-    return refused ?? insertProfile(this.db, name, { kids: true, kidsAge, parentId: actorId, ...(dailyLimit === null ? {} : { dailyLimit }) }) ?? refuse("invalid");
+    return refused ?? insertProfile(this.db, name, { kids: true, kidsAge, parentId: actorId, ...this.householdOf(actorId), ...(dailyLimit === null ? {} : { dailyLimit }) }) ?? refuse("invalid");
   }
 
   /** Removing a grown-up takes its kids with it; removing a kid takes only it. */
@@ -120,32 +122,6 @@ export class ProfileManager {
     return isKid(target) ? null : this.prove(target, pin);
   }
 
-  /**
-   * Makes `id` the household's admin — once, while this player knows of
-   * none. A grown-up with a PIN gives it; one without takes the PIN given,
-   * which is why that one has to be a PIN at all.
-   */
-  claimAdmin(id: string, pin: unknown): Outcome {
-    const rows = profileRows(this.db);
-    const target = rows.find((row) => row.id === id);
-    if (target !== undefined && !isKid(target) && target.pinHash === null && !validPin(pin)) {
-      return refuse("invalid");
-    }
-    if (target === undefined) return refuse("not-found");
-    // A claim a kid's row still holds is no admin: see `toProfile`.
-    if (isKid(target) || rows.some((row) => toProfile(row).admin)) return refuse("not-allowed");
-    if (target.pinHash !== null) {
-      const refused = this.prove(target, pin);
-      if (refused) return refused;
-    }
-    const db = this.db!;
-    db.transaction(() => {
-      if (target.pinHash === null && validPin(pin)) writePin(db, id, pin, false);
-      db.query("UPDATE profiles SET admin_claimed_at = ?2 WHERE id = ?1").run(id, Date.now());
-    })();
-    return null;
-  }
-
   /** A grown-up's PIN: its own, or — for the admin — anyone's. */
   setPin(actorId: string, pin: unknown, id: string, next: unknown): Outcome {
     if (!validPin(next)) return refuse("invalid");
@@ -169,6 +145,12 @@ export class ProfileManager {
     return nameTaken(profileRows(this.db).map((row) => row.name), name) ? refuse("name-taken") : null;
   }
 
+  /** The household a new profile joins: its maker's, resolved. Home is left undated, as before households. */
+  private householdOf(actorId: string): { household?: string } {
+    const household = listProfiles(this.db).find((one) => one.id === actorId)?.household;
+    return household === undefined || household === HOME ? {} : { household };
+  }
+
   private row(id: string): ProfileRow | undefined {
     return profileRows(this.db).find((row) => row.id === id);
   }
@@ -177,7 +159,7 @@ export class ProfileManager {
    * Somebody there, a grown-up acting, its PIN unless `unproven`, then the
    * rule. A player that cannot remember has no rows, so nothing gets past.
    */
-  private check(actorId: string, pin: unknown, action: Action, targetId: string | null, unproven = false): Outcome {
+  protected check(actorId: string, pin: unknown, action: Action, targetId: string | null, unproven = false): Outcome {
     const rows = profileRows(this.db);
     const actor = rows.find((row) => row.id === actorId);
     if (actor === undefined || (targetId !== null && !rows.some((row) => row.id === targetId))) {
@@ -189,8 +171,8 @@ export class ProfileManager {
       const refused = this.prove(actor, pin);
       if (refused) return refused;
     }
-    // A `Profile` is the rule's view of a role, with a kid never the admin.
-    return allowed(rows.map(toProfile), actorId, action, targetId ?? "") ? null : refuse("not-allowed");
+    // A listed `Profile` is the rule's view of a role: in its household, a kid never the admin.
+    return allowed(listProfiles(this.db), actorId, action, targetId ?? "") ? null : refuse("not-allowed");
   }
 
   /**
@@ -198,7 +180,7 @@ export class ProfileManager {
    * compared — that profile's wait, then the comparison and the count it
    * keeps. A PIN that is not four digits is compared like any other, and is wrong.
    */
-  private prove(row: ProfileRow, pin: unknown): Outcome {
+  protected prove(row: ProfileRow, pin: unknown): Outcome {
     if (row.pinHash === null || row.pinSalt === null) return refuse("no-pin");
     const left = this.wait.secondsLeft(row.id);
     if (left > 0) return { reason: "wait", retryAfter: left };

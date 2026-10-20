@@ -28,6 +28,7 @@ use icu_normalizer::ComposingNormalizerBorrowed;
 use serde::{Deserialize, Serialize};
 
 mod hostile_json;
+mod households_record;
 mod list_record;
 mod parse;
 mod preference_record;
@@ -36,8 +37,10 @@ mod stats_record;
 pub(crate) use stats_record::is_day;
 pub use list_record::{CollectionRow, ListRow};
 pub use preference_record::{SYNCED_NAMES, SyncPreference};
+pub use households_record::{HouseholdAdmin, HouseholdEntry, HouseholdName, ProfileHousehold};
 pub use parse::parse_record;
-pub use roles_record::{AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles};
+pub use roles_record::{AdminClaim, DailyLimit, HiddenSections, KidsAge, PinRecord, ProfileRoles};
+pub(crate) use roles_record::hidden_sections_of;
 pub use stats_record::{DayStatRow, TitleStatRow};
 
 /// Bumped when a reader could no longer make sense of an older document.
@@ -143,6 +146,11 @@ pub struct SyncRecord {
     /// bump — an old document simply says nothing about it.
     #[serde(default)]
     pub editors_choice: Vec<ListRow>,
+    /// Each household's stamped fields (`households_record.rs`): a new key
+    /// like `kids`, written only when there is something to say, so a
+    /// document without households reads as it did before them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub households: Vec<HouseholdEntry>,
 }
 
 /// How a viewer is the same person on two machines.

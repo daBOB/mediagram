@@ -16,6 +16,8 @@
  * management is `profile-api.js`'s, which reads the list here again after.
  */
 
+import { here } from "./household.js";
+
 /** Where this device's answer to "who is watching" is kept. */
 const CHOSEN = "mediagram.profile";
 
@@ -38,12 +40,14 @@ function changed() {
 
 /**
  * @type {{remembers: boolean, heard: boolean, profiles: import("../../src/state/profiles.ts").Profile[], profileId: string|null,
+ *   everyone: import("../../src/state/profiles.ts").Profile[], households: import("../../src/state/households.ts").Household[],
  *   progress: Map<string, {at: number, duration: number|null, updatedAt: number}>,
  *   watchlist: Set<string>, collections: import("../../src/state/store.ts").Collection[], watched: Map<string, number>,
  *   kids: Map<string, number>, preferences: Map<string, string>}}
  */
 const held = {
   remembers: false, heard: true,
+  everyone: [], households: [], // the install's; `profiles` is this device's household of `everyone`
   profiles: [],
   profileId: null,
   progress: new Map(),
@@ -126,7 +130,8 @@ export async function loadProfiles() {
     const response = await fetch("/api/profiles");
     if (!response.ok) return false;
     const said = await response.json();
-    Object.assign(held, { remembers: said.remembers === true, heard: said.heard !== false, profiles: said.profiles ?? [] });
+    const [everyone, households, heard] = [said.profiles ?? [], said.households ?? [], said.heard !== false];
+    Object.assign(held, { remembers: said.remembers === true, heard, everyone, households, profiles: here(everyone, households, remembered(), heard) });
     return true;
   } catch {
     return false;
@@ -134,6 +139,8 @@ export async function loadProfiles() {
 }
 
 export const profiles = () => held.profiles;
+export const everyone = () => held.everyone;
+export const households = () => held.households;
 export const profileId = () => held.profileId;
 export const profile = () => held.profiles.find((entry) => entry.id === held.profileId) ?? null;
 

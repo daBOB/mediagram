@@ -120,6 +120,25 @@ class ManageProfilesViewModelTest {
             assertNull(managing().notice)
         }
 
+    @Test
+    fun hiddenSectionsAreSetForAKidByItsOwnerAndForAGrownUpByTheAdminOnly() =
+        runTest {
+            panelAs("b", "5678")
+            vm.setHiddenSections("t", listOf("series", "anime"))
+            assertEquals(listOf("anime", "series"), repository.profiles.value.single { it.id == "t" }.hiddenSections)
+            assertNull(managing().notice)
+            vm.setHiddenSections("m", listOf("anime"))
+            vm.setHiddenSections("a", listOf("anime"))
+            assertEquals(emptyList(), repository.profiles.value.single { it.id == "m" }.hiddenSections)
+            assertEquals(emptyList(), repository.profiles.value.single { it.id == "a" }.hiddenSections)
+            assertEquals(listOf("t"), managing().sectionRows.map { it.id })
+            vm.close()
+            panelAs("a", "1234")
+            vm.setHiddenSections("b", listOf("tutorials"))
+            assertEquals(listOf("tutorials"), repository.profiles.value.single { it.id == "b" }.hiddenSections)
+            assertEquals(listOf("b", "m", "o"), managing().sectionRows.map { it.id })
+        }
+
     /** Whoever may not set a kid's age limit may not set its daily limit either. */
     @Test
     fun aDailyLimitIsRefusedWhereTheAgeLimitIsAndAnOutOfRangeOneIsInvalid() =

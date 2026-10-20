@@ -691,5 +691,403 @@
     "action": "remove",
     "targetId": "mia",
     "expect": true
+  },
+  {
+    "name": "a parent may set what its own kid can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "maja",
+    "action": "set-access",
+    "targetId": "mia",
+    "expect": true
+  },
+  {
+    "name": "another grown-up may not set what someone else's kid can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "ben",
+    "action": "set-access",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "the admin may not set what another grown-up's kid can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "the admin may set what a kid of its own can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "leo",
+    "expect": true
+  },
+  {
+    "name": "the admin may set what a kid with no parent can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "tv-kids",
+    "expect": true
+  },
+  {
+    "name": "the admin may set what a kid whose parent is gone can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "lost",
+    "expect": true
+  },
+  {
+    "name": "a grown-up who is not the admin may not set what an orphan kid can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "maja",
+    "action": "set-access",
+    "targetId": "tv-kids",
+    "expect": false
+  },
+  {
+    "name": "the admin may set what a grown-up can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "maja",
+    "expect": true
+  },
+  {
+    "name": "a grown-up who is not the admin may not set what another grown-up can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "maja",
+    "action": "set-access",
+    "targetId": "ben",
+    "expect": false
+  },
+  {
+    "name": "a grown-up may not set what they themselves can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "maja",
+    "action": "set-access",
+    "targetId": "maja",
+    "expect": false
+  },
+  {
+    "name": "the admin may not set what it can see itself",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "admin",
+    "expect": false
+  },
+  {
+    "name": "a kid may not set what anyone can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "mia",
+    "action": "set-access",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "a kid may not set what a grown-up can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "mia",
+    "action": "set-access",
+    "targetId": "maja",
+    "expect": false
+  },
+  {
+    "name": "nobody sets what an unknown profile can see",
+    "profiles": [
+      {"id":"admin","kids":false,"admin":true,"parentId":null},
+      {"id":"maja","kids":false,"admin":false,"parentId":null},
+      {"id":"ben","kids":false,"admin":false,"parentId":null},
+      {"id":"mia","kids":true,"admin":false,"parentId":"maja"},
+      {"id":"leo","kids":true,"admin":false,"parentId":"admin"},
+      {"id":"tv-kids","kids":true,"admin":false,"parentId":null},
+      {"id":"lost","kids":true,"admin":false,"parentId":"gone"},
+      {"id":"odd","kids":true,"admin":false,"parentId":"mia"}
+    ],
+    "actorId": "admin",
+    "action": "set-access",
+    "targetId": "nobody",
+    "expect": false
+  },
+  {
+    "name": "each household's admin may create a grown-up",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "create-grown-up",
+    "targetId": "",
+    "expect": true
+  },
+  {
+    "name": "a household's admin may not remove a grown-up of another",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "tvtest",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may remove a grown-up of its own",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "remove",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "nobody sets the PIN of a grown-up in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-pin",
+    "targetId": "tvtest",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may reset the PIN of its own grown-up",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-pin",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "a kid whose parent is gone belongs to its household's admin",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "remove",
+    "targetId": "lostb",
+    "expect": true
+  },
+  {
+    "name": "a kid whose parent is gone is not another household's admin's",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "lostb",
+    "expect": false
+  },
+  {
+    "name": "a grown-up may not set a kid's limit across households",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "test",
+    "action": "set-kids-age",
+    "targetId": "tvkids",
+    "expect": false
+  },
+  {
+    "name": "no one hides sections across households",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "tvtest",
+    "expect": false
+  },
+  {
+    "name": "a household's admin is never removed, by another household's admin either",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "oma",
+    "expect": false
   }
 ]

@@ -42,10 +42,15 @@ async function call(method, path, body) {
   }
 }
 
-/** A call that changes who there is: on success the list is read again. @returns {Promise<Outcome>} */
-async function change(method, path, body) {
+/**
+ * A call that changes who there is: on success `first` runs — a device that
+ * joined a household notes it — and the list is read again. Shared with `household-api.js`.
+ * @returns {Promise<Outcome>}
+ */
+export async function change(method, path, body, first = () => {}) {
   const outcome = await call(method, path, body);
   if (outcome.ok) {
+    first();
     await loadProfiles();
     if (profileId() !== null && profile() === null) await useProfile(null);
   }

@@ -43,6 +43,7 @@ import { reconcileWatched } from "./watched-reconcile";
 import { keep, type Held } from "./tie-break";
 import { mergeStats } from "./stats-merge";
 import { kidsMarkRank, mergeRoles } from "./roles-merge";
+import { mergeHouseholds } from "./households-merge";
 import type { MergedProfile, MergedState } from "./merged";
 
 /**
@@ -158,9 +159,11 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       ...roles.get(name),
     });
   }
+  const households = mergeHouseholds(records);
   return {
     profiles,
     kids: [...kids.values()].map((one) => one.row),
     editorsChoice: [...editorsChoice.values()].map((one) => one.row),
+    ...(households.length > 0 ? { households } : {}),
   };
 }

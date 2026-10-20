@@ -10,7 +10,6 @@
 import { jsonBody } from "../http/browser-write";
 import type { PlayerRequest, PlayerResponse } from "../http/contracts";
 import { bodiless, withBody } from "../response";
-import type { Profile } from "./profiles";
 import type { Refusal, Refused } from "./profiles-manage";
 import { json, P } from "./route-shared";
 import type { WatchState } from "./store";
@@ -18,10 +17,10 @@ import type { WatchState } from "./store";
 const PROFILES = /^\/api\/profiles$/;
 const PROFILE = new RegExp(`^/api/profiles/${P}$`);
 const TODAY = new RegExp(`^/api/profiles/${P}/today$`);
-const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age|daily-limit)$`);
+const ACTION = new RegExp(`^/api/profiles/${P}/(unlock|claim-admin|pin|kids-age|daily-limit|hidden-sections)$`);
 
 /** A wrong PIN and a refused role are both 403; a taken name, a missing PIN and an unheard household all 409; the body says which. */
-const CODES: Record<Refusal, number> = {
+export const CODES: Record<Refusal, number> = {
   invalid: 400,
   "name-taken": 409,
   "not-found": 404,
@@ -50,7 +49,7 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       return seen === null ? bodiless(404) : json(JSON.stringify(seen), method === "HEAD");
     }
     if (!list) return bodiless(405);
-    const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles() };
+    const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles(), households: state.households() };
     return json(JSON.stringify(said), method === "HEAD");
   }
 
@@ -84,6 +83,8 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       return answer(manage.setKidsAge(actorId, said.pin, id, said.age));
     case "PUT daily-limit":
       return answer(manage.setDailyLimit(actorId, said.pin, id, said.minutes));
+    case "PUT hidden-sections":
+      return answer(manage.setHiddenSections(actorId, said.pin, id, said.sections));
     default:
       return bodiless(405);
   }
@@ -95,8 +96,8 @@ export function leftToday(state: WatchState, profileId: string): PlayerResponse 
   return today?.limitMinutes == null ? bodiless(204) : json(JSON.stringify(today), false);
 }
 
-/** 204 for done, 201 and the profile for one made, a reason for a refusal. */
-function answer(result: Refused | Profile | null): PlayerResponse {
+/** 204 for done, 201 and what was made (a profile, a household), a reason for a refusal. */
+export function answer(result: Refused | object | null): PlayerResponse {
   if (result === null) return bodiless(204);
   if (!("reason" in result)) return json(JSON.stringify(result), false, 201);
   const headers: Record<string, string> =

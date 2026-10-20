@@ -6,7 +6,8 @@
 //! any grown-up's PIN, but is never removed — by anyone, itself included. A
 //! kid belongs to exactly one grown-up, the one who made it, and only that one
 //! removes it or sets its limit; a kid whose parent is not a grown-up here —
-//! none recorded, removed, or never met — is the admin's.
+//! none recorded, removed, or never met — is the admin's. All of this stays
+//! inside one household; nobody manages a profile in another.
 
 use serde::Deserialize;
 
@@ -35,7 +36,17 @@ pub struct RoleView {
     pub id: String,
     pub kids: bool,
     pub admin: bool,
+    /// Only the owner may manage households.
+    #[serde(default)]
+    pub owner: bool,
     pub parent_id: Option<String>,
+    /// Absent is the first household, as on a device from before households.
+    #[serde(default)]
+    pub household: Option<String>,
+}
+
+fn household_of(one: &RoleView) -> &str {
+    one.household.as_deref().unwrap_or("home")
 }
 
 /// What an actor asks to do, spelled as the web spells it.
@@ -47,6 +58,7 @@ pub enum Action {
     Remove,
     SetPin,
     SetKidsAge,
+    SetAccess,
 }
 
 /// Only a grown-up is ever the admin. A view can still say a kid is — a
@@ -56,14 +68,17 @@ fn is_admin(one: &RoleView) -> bool {
     one.admin && !one.kids
 }
 
-/// Who manages `kid`: its parent while that is a grown-up here, else the
-/// admin, else nobody.
+/// Who manages `kid`: its parent while that is a grown-up in its household,
+/// else that household's admin, else nobody.
 fn owner_of<'a>(profiles: &'a [RoleView], kid: &RoleView) -> Option<&'a str> {
-    let parent = profiles
+    let mut here = profiles
         .iter()
+        .filter(|one| household_of(one) == household_of(kid));
+    let parent = here
+        .clone()
         .find(|one| kid.parent_id.as_deref() == Some(one.id.as_str()) && !one.kids);
     parent
-        .or_else(|| profiles.iter().find(|one| is_admin(one)))
+        .or_else(|| here.find(|one| is_admin(one)))
         .map(|one| one.id.as_str())
 }
 
@@ -78,10 +93,15 @@ pub fn allowed(profiles: &[RoleView], actor_id: &str, action: Action, target_id:
         (Action::CreateGrownUp, _) => actor.admin,
         (Action::CreateKid, _) => true,
         (_, None) => false,
+        // Households are separate: nobody manages a profile in another one.
+        (_, Some(target)) if household_of(target) != household_of(actor) => false,
         (Action::Remove, Some(target)) if is_admin(target) => false,
         (Action::Remove, Some(target)) if target.kids => owns(target),
         (Action::Remove, Some(target)) => target.id != actor.id && actor.admin,
         (Action::SetPin, Some(target)) => !target.kids && (target.id == actor.id || actor.admin),
         (Action::SetKidsAge, Some(target)) => target.kids && owns(target),
+        // The admin never narrows its own view, as it is never removed.
+        (Action::SetAccess, Some(target)) if target.kids => owns(target),
+        (Action::SetAccess, Some(target)) => !is_admin(target) && actor.admin,
     }
 }

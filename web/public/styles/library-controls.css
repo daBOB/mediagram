@@ -75,12 +75,15 @@
 .who-ask { margin: 0 0 32px; }
 .who-ask h2, .manage-section h2 { margin: 0 0 12px; font: 500 1.35rem/1.1 var(--display); color: var(--ink); }
 .who-ask .pill { margin: 4px; }
+/* Join a household's note sits with its heading, above the choices. */
+.who-ask .who-note { margin: 0 auto 16px; }
 .manage-section { margin: 0 0 32px; text-align: left; }
 .manage-section .who-new { justify-content: flex-start; margin: 16px 0 0; }
 .manage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .manage-row > span { flex: 1; min-width: 0; color: var(--ink); }
 .manage-row select, .who-new select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 0.875rem; }
-.everyone-row > .setting-value { margin: 0; text-align: right; }
+/* A row's line keeps its own width; the name beside it takes the rest, and wraps first. */
+:is(.everyone-row, .household-row) > .setting-value { flex: 0 1 auto; margin: 0; text-align: right; }
 
 @media (max-width: 767px) {
   .who-tiles { gap: 20px; }

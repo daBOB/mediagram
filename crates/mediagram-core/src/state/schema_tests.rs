@@ -60,6 +60,7 @@ fn every_step_applies_in_turn_to_an_empty_file() {
             "collection_items",
             "collections",
             "editors_choice",
+            "households",
             "kids",
             "preferences",
             "profiles",

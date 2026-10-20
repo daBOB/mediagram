@@ -1,0 +1,24 @@
+export const HOUSEHOLD_WORDS: {
+  households: string;
+  owner: string;
+  ownerNote: string;
+  ownersPin: string;
+  thisDevice: string;
+  switchHousehold: string;
+  joinAHousehold: string;
+  joinNote: string;
+  createAHousehold: string;
+  householdName: string;
+  admin: string;
+  aNewGrownUp: string;
+  newGrownUpName: string;
+  rename: string;
+  changeAdmin: string;
+  moveHere: string;
+  useHere: string;
+  delete: string;
+  householdNameTaken: string;
+  profileNameTaken: string;
+};
+export function householdLine(adminName: string | null, count: number): string;
+export function joinPinTitle(admin: { name: string; owner?: boolean } | null): string;

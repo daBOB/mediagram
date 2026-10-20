@@ -556,5 +556,248 @@
         }
       ]
     }
+  },
+  {
+    "name": "hidden sections read back as written, a grown-up's and a kid's, an empty list included",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"André\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"anime\",\"movies\"],\"updatedAt\":1789000000000}},{\"name\":\"Mia\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[],\"updatedAt\":1789000000000}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "André",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "anime",
+              "movies"
+            ],
+            "updatedAt": 1789000000000
+          }
+        },
+        {
+          "name": "Mia",
+          "progress": [],
+          "watched": [],
+          "kids": true,
+          "hiddenSections": {
+            "sections": [],
+            "updatedAt": 1789000000000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "hidden sections are read sorted, each key once",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"series\",\"anime\",\"series\",\"movies\",\"anime\"],\"updatedAt\":1}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "anime",
+              "movies",
+              "series"
+            ],
+            "updatedAt": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "a section key this build does not know is kept, if it is 1 to 24 lowercase letters",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"podcasts\",\"movies\",\"abcdefghijklmnopqrstuvwx\"],\"updatedAt\":1}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "abcdefghijklmnopqrstuvwx",
+              "movies",
+              "podcasts"
+            ],
+            "updatedAt": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "one malformed section entry drops the key alone; the profile and its other keys survive",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"movies\",\"Movies\"],\"updatedAt\":1}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"movies\",\"\"],\"updatedAt\":1}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"abcdefghijklmnopqrstuvwxy\"],\"updatedAt\":1}},{\"name\":\"D\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"docu-mentaries\"],\"updatedAt\":1}},{\"name\":\"E\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"movies\",5],\"updatedAt\":1}},{\"name\":\"F\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[null],\"updatedAt\":1}},{\"name\":\"G\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":\"movies\",\"updatedAt\":1}},{\"name\":\"H\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"updatedAt\":1}},{\"name\":\"I\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"movies\"]}},{\"name\":\"J\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":{\"sections\":[\"movies\"],\"updatedAt\":-1}},{\"name\":\"K\",\"progress\":[],\"watched\":[],\"kids\":true,\"hiddenSections\":[\"movies\"]}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "D",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "E",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "F",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "G",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "H",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "I",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "J",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        },
+        {
+          "name": "K",
+          "progress": [],
+          "watched": [],
+          "kids": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "at most 16 section entries, counted as written: 17 drops the key, a repeated one included",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\"],\"updatedAt\":1}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\",\"q\"],\"updatedAt\":1}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\",\"a\"],\"updatedAt\":1}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "a",
+              "b",
+              "c",
+              "d",
+              "e",
+              "f",
+              "g",
+              "h",
+              "i",
+              "j",
+              "k",
+              "l",
+              "m",
+              "n",
+              "o",
+              "p"
+            ],
+            "updatedAt": 1
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": []
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "hiddenSections.updatedAt: 0 and 2^53 - 1 are kept, 2^53 drops the key",
+    "input": "{\"format\":1,\"device\":\"laptop\",\"writtenAt\":1789000000000,\"profiles\":[{\"name\":\"A\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"anime\"],\"updatedAt\":0}},{\"name\":\"B\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"anime\"],\"updatedAt\":9007199254740991}},{\"name\":\"C\",\"progress\":[],\"watched\":[],\"hiddenSections\":{\"sections\":[\"anime\"],\"updatedAt\":9007199254740992}}]}",
+    "expect": {
+      "format": 1,
+      "device": "laptop",
+      "writtenAt": 1789000000000,
+      "profiles": [
+        {
+          "name": "A",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "anime"
+            ],
+            "updatedAt": 0
+          }
+        },
+        {
+          "name": "B",
+          "progress": [],
+          "watched": [],
+          "hiddenSections": {
+            "sections": [
+              "anime"
+            ],
+            "updatedAt": 9007199254740991
+          }
+        },
+        {
+          "name": "C",
+          "progress": [],
+          "watched": []
+        }
+      ]
+    }
   }
 ]

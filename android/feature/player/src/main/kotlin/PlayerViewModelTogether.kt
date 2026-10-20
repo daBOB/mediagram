@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import model.MediaSet
 import model.forKidsProfile
+import model.hiddenFrom
+import model.sectionKey
 import player.together.TogetherController
 import player.together.ViewerPlayer
 import player.together.ViewerRelay
@@ -59,9 +61,11 @@ internal fun PlayerViewModel.closeTogether(relay: ViewerRelay) {
     if (relay.controller === togetherController) relay.controller = null
 }
 
-/** Whether the chosen profile sees [set]: a kids profile sees only what its limit allows, as its catalog shows it. */
-private fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
-    val kid = repository.chosenProfile.value?.takeIf { it.kids } ?: return true
+/** Whether the chosen profile sees [set]: not in a section hidden from it, and a kids profile only what its limit allows, as its catalog shows it. */
+internal fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
+    val profile = repository.chosenProfile.value
+    if (profile != null && set.sectionKey() in profile.hiddenFrom) return false
+    val kid = profile?.takeIf { it.kids } ?: return true
     return forKidsProfile(listOf(set), repository.snapshot.value.kidsMarks, kid.kidsLimit).isNotEmpty()
 }
 

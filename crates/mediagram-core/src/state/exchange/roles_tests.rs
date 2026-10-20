@@ -3,7 +3,8 @@ use rusqlite::types::FromSql;
 use crate::state::exchange::{export_record, import_merged};
 use crate::state::merge::{MergedProfile, MergedState, merge_states};
 use crate::state::record::{
-    AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles, SyncRecord, parse_record,
+    AdminClaim, DailyLimit, HiddenSections, KidsAge, PinRecord, ProfileRoles, SyncRecord,
+    parse_record,
 };
 use crate::state::{StateDb, profiles};
 
@@ -94,6 +95,35 @@ fn a_daily_limit_exports_once_chosen_and_imports_the_newer_even_when_none() {
     import(&db, vec![viewer("Mia", true, roles(held(Some(90), 15.0)))]);
     assert_eq!(export(&db), held(None, 20.0));
     let _ = mia;
+}
+
+/// Any profile's, a grown-up's too; said once dated, an empty list
+/// included, and taken in only when newer — or as new and different, the
+/// winner the merge chose by device id.
+#[test]
+fn hidden_sections_export_once_dated_and_import_the_newer_even_when_empty() {
+    let (_dir, db) = db();
+    make(&db, "Bea", false);
+    let export = |db: &StateDb| {
+        let record = db.with(|c| export_record(c, "dev")).unwrap();
+        roles_of(&record, "Bea").hidden_sections
+    };
+    assert_eq!(export(&db), None);
+    sql(&db, r#"UPDATE profiles SET hidden_sections = '["anime","movies"]', hidden_sections_updated_at = 10"#);
+    let held = |sections: &[&str], updated_at| {
+        let sections = sections.iter().map(|key| key.to_string()).collect();
+        Some(HiddenSections { sections, updated_at })
+    };
+    assert_eq!(export(&db), held(&["anime", "movies"], 10.0));
+
+    let roles = |hidden_sections| ProfileRoles { hidden_sections, ..Default::default() };
+    assert_eq!(import(&db, vec![viewer("Bea", false, roles(held(&[], 20.0)))]), 1);
+    assert_eq!(export(&db), held(&[], 20.0));
+    // An older list does not come back over a newer empty one.
+    assert_eq!(import(&db, vec![viewer("Bea", false, roles(held(&["series"], 15.0)))]), 0);
+    assert_eq!(import(&db, vec![viewer("Bea", false, roles(held(&[], 20.0)))]), 0);
+    assert_eq!(import(&db, vec![viewer("Bea", false, roles(held(&["series"], 20.0)))]), 1);
+    assert_eq!(export(&db), held(&["series"], 20.0));
 }
 
 #[test]

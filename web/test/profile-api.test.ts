@@ -122,7 +122,10 @@ describe("what each grown-up may manage", () => {
 
 /** Whether the panel offers `action` on `targetId` — which the server's rule must agree with. */
 function offered(profiles: object[], actorId: string, action: string, targetId: string | null) {
-  const { actor, grownUps, kids } = api.manageable(profiles, actorId);
+  // The panel only ever sees the actor's own household.
+  const householdOf = (one: object) => (one as { household?: string }).household ?? "home";
+  const mine = householdOf(profiles.find((one) => (one as { id: string }).id === actorId) ?? {});
+  const { actor, grownUps, kids } = api.manageable(profiles.filter((one) => householdOf(one) === mine), actorId);
   const has = (list: Array<{ id: string }>) => list.some((entry) => entry.id === targetId);
   if (!actor) return false;
   if (action === "create-grown-up") return actor.admin === true;
@@ -130,6 +133,7 @@ function offered(profiles: object[], actorId: string, action: string, targetId: 
   if (action === "remove") return has(grownUps) || has(kids);
   if (action === "set-pin") return targetId === actorId || has(grownUps);
   if (action === "set-kids-age") return has(kids);
+  if (action === "set-access") return has(grownUps) || has(kids);
   throw new Error(`Unknown action ${action}`);
 }
 

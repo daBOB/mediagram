@@ -16,7 +16,8 @@ import { PROFILES, profilesPanel } from "./catalog/settings-profiles.js";
 export function openProfilesPage(parent, onClose) {
   const screen = el("div", "who who-manage");
   const card = el("div", "who-card");
-  const { box, stop } = profilesPanel(screen, { profile: null });
+  // Switching household goes back to the picker, which then shows that household.
+  const { box, stop } = profilesPanel(screen, { profile: null, switchProfile: close });
 
   function close() {
     stop();

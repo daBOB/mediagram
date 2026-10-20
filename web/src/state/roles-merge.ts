@@ -10,6 +10,15 @@
  * documents that carry it; none saying it leaves it unsaid, and a grown-up
  * never carries one.
  *
+ * **Hidden sections: the newest whole list, an empty one included.** Never
+ * joined with an older list: two people changing it at once, the later one
+ * wins it all. Any profile's, a grown-up's too — unlike a limit, it is not
+ * a kid's alone.
+ *
+ * **A household: the newest move, any profile's.** Kept as said even when
+ * that household is removed or unknown: only the view reads it as Home
+ * (`householdView`), so a merge never invents a move nobody made.
+ *
  * **A PIN: a proven one, then the newest; else the oldest** (`keepPin`). A
  * first PIN — set where its grown-up had none — never replaces one set
  * earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
@@ -56,6 +65,8 @@ export const kidsMarkRank = (row: ListRow): number => (row.age === 6 && !row.rem
 type KidsAge = NonNullable<RoleKeys["kidsAge"]>;
 type DailyLimit = NonNullable<RoleKeys["dailyLimit"]>;
 type Pin = NonNullable<RoleKeys["pin"]>;
+type HiddenSections = NonNullable<RoleKeys["hiddenSections"]>;
+type Household = NonNullable<RoleKeys["household"]>;
 
 const FROM_TWELVE: KidsAge = { age: 12, updatedAt: 0 };
 
@@ -66,6 +77,8 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
   const limits = new Map<string, Held<KidsAge>>();
   const daily = new Map<string, Held<DailyLimit>>();
   const pins = new Map<string, Held<Pin>>();
+  const hidden = new Map<string, Held<HiddenSections>>();
+  const households = new Map<string, Held<Household>>();
   const parents = new Map<string, { name: string; from: string }>();
   const claims = new Map<string, number>();
 
@@ -79,6 +92,8 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
       if (profile.kidsAge) keep(limits, name, profile.kidsAge, device);
       if (profile.dailyLimit) keep(daily, name, profile.dailyLimit, device);
       if (profile.pin) keepPin(pins, name, profile.pin, device);
+      if (profile.hiddenSections) keep(hidden, name, profile.hiddenSections, device);
+      if (profile.household) keep(households, name, profile.household, device);
       const parent = normalName(profile.parent);
       const standing = parents.get(name);
       if (parent !== null && (standing === undefined || device > standing.from)) parents.set(name, { name: parent, from: device });
@@ -94,12 +109,16 @@ export function mergeRoles(records: SyncRecord[]): Map<string, MergedRoles> {
     const parent = parents.get(name)?.name;
     const pin = pins.get(name)?.row;
     const dailyLimit = daily.get(name)?.row;
+    const hiddenSections = hidden.get(name)?.row;
+    const household = households.get(name)?.row;
     merged.set(name, {
       ...(admin === name ? { admin: { claimedAt: claims.get(name)! } } : {}),
       ...(kid ? { kidsAge: limits.get(name)?.row ?? FROM_TWELVE } : {}),
       ...(kid && dailyLimit !== undefined ? { dailyLimit } : {}),
       ...(kid && parent !== undefined ? { parent } : {}),
       ...(!kid && pin !== undefined ? { pin } : {}),
+      ...(hiddenSections !== undefined ? { hiddenSections } : {}),
+      ...(household !== undefined ? { household } : {}),
     });
   }
   return merged;

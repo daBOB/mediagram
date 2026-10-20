@@ -53,6 +53,7 @@
  * than "nothing there".
  */
 
+import { parseHouseholds, type HouseholdEntry } from "./households-record";
 import { parsePreferenceRows, type PreferenceRow } from "./preferences-record";
 import { asArray, isStamp, numberFromScalar, objectRow, parseRows, text_ } from "./record-scalars";
 import { parseRoleKeys, type RoleKeys } from "./roles-record";
@@ -143,6 +144,8 @@ export interface SyncRecord {
   kids?: ListRow[];
   /** The household's editor's choice marks; a new optional key like `kids`. */
   editorsChoice?: ListRow[];
+  /** Household-wide too: each household's stamped fields (`households-record.ts`). */
+  households?: HouseholdEntry[];
 }
 
 /**
@@ -214,6 +217,7 @@ export function parseRecord(text: string): SyncRecord | null {
     profiles,
     kids: held.kids === undefined ? undefined : parseRows(held.kids, kidsRow),
     editorsChoice: held.editorsChoice === undefined ? undefined : parseRows(held.editorsChoice, listRow),
+    households: held.households === undefined ? undefined : parseHouseholds(held.households),
   };
 }
 

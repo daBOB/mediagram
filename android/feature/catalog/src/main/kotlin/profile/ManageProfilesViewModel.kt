@@ -100,6 +100,9 @@ class ManageProfilesViewModel
             minutes: Int?,
         ) = change { actor, pin -> ProfileRequest.SetDailyLimit(actor, pin, kidId, minutes) }
 
+        /** The whole list of section keys hidden from [id]. */
+        fun setHiddenSections(id: String, sections: List<String>) = change { actor, pin -> ProfileRequest.SetHiddenSections(actor, pin, id, sections) }
+
         fun setKidsAge(
             kidId: String,
             age: Int,

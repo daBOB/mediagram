@@ -1,16 +1,21 @@
 /**
  * The one Profiles page, Settings' Profiles tab: You — who is watching, the way
  * to switch, your subtitle language — then everyone in the household, then
- * managing them. A kid sees only You; with nobody chosen, which is how the
- * picker's Manage profiles opens it, there is no You. Seeing the list needs no
- * PIN; changing anything asks who you are and that grown-up's PIN, which the
- * body holds only until the page is left.
+ * managing them, then — while there is more than one — the household this
+ * device shows, then the owner's Households. A kid sees only You; with nobody
+ * chosen, which is how the picker's Manage profiles opens it, there is no You.
+ * Seeing the list needs no PIN; changing anything asks who you are and that
+ * grown-up's PIN, which the body holds only until the page is left.
  */
 
 import { el } from "../dom.js";
 import { href } from "../address.js";
-import { mountManage } from "../profile-manage.js";
+import { mountManage, pill } from "../profile-manage.js";
 import * as state from "../watch-state.js";
+import { thisHousehold } from "../household.js";
+import { joinChoices } from "../household-join.js";
+import { HOUSEHOLD_WORDS } from "../household-words.js";
+import { householdsPart } from "./settings-households.js";
 import { ownerOf } from "../profile-api.js";
 import { kidsLimitOf } from "../age-rating.js";
 import { dailyLimitWords } from "../daily-limit.js";
@@ -67,7 +72,7 @@ function roleLine(entry, profiles) {
     if (entry.dailyLimit != null) parts.push(dailyLimitWords(entry.dailyLimit));
     return parts.filter(Boolean).join(" · ");
   }
-  return `${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
+  return `${entry.owner ? `${HOUSEHOLD_WORDS.owner} · ` : ""}${entry.admin ? "Admin" : "Grown-up"} · ${entry.hasPin ? "PIN set" : "No PIN"}`;
 }
 
 /** Draws the household into `set`, read afresh from the watch state. */
@@ -83,10 +88,29 @@ function drawEveryone(set) {
 }
 
 /**
+ * Draws into `set` which household's profiles this device shows, and a way to
+ * another — only while there is more than one. Joining one takes the device
+ * off the profile chosen here, so `onJoined` asks who is watching again.
+ */
+function drawThisDevice(set, promptHost, onJoined) {
+  set.textContent = "";
+  // Hidden, not just empty: an empty section would still take the panel's gap.
+  set.hidden = state.households().length < 2;
+  if (set.hidden) return;
+  const here = thisHousehold();
+  const change = pill(HOUSEHOLD_WORDS.switchHousehold, () => {
+    change.hidden = true;
+    set.append(joinChoices(promptHost, { except: here?.id, onJoined }));
+  });
+  set.append(el("h2", "setting-title", HOUSEHOLD_WORDS.thisDevice), el("p", "setting-value", here?.name ?? ""), change);
+}
+
+/**
  * @param {HTMLElement} promptHost PIN prompts open over this element
  * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null}|null,
- *   switchProfile?: () => void, systemVisible?: boolean }} chosen who is watching, if anyone
- * @returns {{ box: HTMLElement, stop: () => void }} `stop` removes the body and drops the PIN
+ *   switchProfile?: () => void, systemVisible?: boolean }} chosen who is watching, if anyone;
+ *   `switchProfile` asks again, after switching household too
+ * @returns {{ box: HTMLElement, stop: () => void }} `stop` removes the bodies and drops their PINs
  */
 export function profilesPanel(promptHost, { profile, switchProfile, systemVisible = false }) {
   const box = el("div", "settings-panel");
@@ -97,10 +121,29 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   drawEveryone(list);
   // Scoped faces (appearance.css) make the shared body read as settings sections.
   const manage = el("div", "setting manage-inline");
-  box.append(list, manage);
-  const stop = mountManage(manage, {
-    promptHost,
-    onChange: () => drawEveryone(list),
+  const device = el("div", "setting");
+  drawThisDevice(device, promptHost, switchProfile);
+  /** Who Manage was drawn over, and who runs them: a household change that alters it starts Manage again. */
+  const shown = () => state.profiles().map((one) => `${one.id}:${one.admin}`).join();
+  let drawnOver = null;
+  let stopManage = () => {};
+  // A household change can move people out of this household, or add the second one: the page follows.
+  const households = householdsPart(promptHost, { profile, switchProfile }, () => {
+    drawEveryone(list);
+    drawThisDevice(device, promptHost, switchProfile);
+    // Manage starts again at who you are only when what it showed may no longer be yours.
+    if (shown() !== drawnOver) mount();
   });
-  return { box, stop };
+  function mount() {
+    stopManage();
+    drawnOver = shown();
+    stopManage = mountManage(manage, { promptHost, onChange: () => {
+      drawnOver = shown();
+      drawEveryone(list);
+      households.redraw();
+    } });
+  }
+  mount();
+  box.append(list, manage, device, households.box);
+  return { box, stop: () => { stopManage(); households.stop(); } };
 }

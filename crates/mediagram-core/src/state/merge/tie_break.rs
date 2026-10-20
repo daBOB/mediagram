@@ -5,8 +5,9 @@
 use std::collections::HashMap;
 
 use crate::state::record::{
-    CollectionRow, DailyLimit, DayStatRow, KidsAge, ListRow, PinRecord, ProgressRow, SyncPreference,
-    TitleStatRow, UnwatchedRow, WatchedRow,
+    CollectionRow, DailyLimit, DayStatRow, HiddenSections, HouseholdAdmin, HouseholdName, KidsAge,
+    ListRow, PinRecord, ProfileHousehold, ProgressRow, SyncPreference, TitleStatRow, UnwatchedRow,
+    WatchedRow,
 };
 
 /// Which device a held row (or spelling) came from, for the tie-break below.
@@ -16,8 +17,9 @@ pub(super) struct Held<T> {
 }
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
-/// watchlist or Kids mark, a collection, a preference, a stats row, or a
-/// kid's limit. A PIN has an order of its own: `keep_pin`.
+/// watchlist or Kids mark, a collection, a preference, a stats row, a kid's
+/// limit, or a profile's hidden sections. A PIN has an order of its own:
+/// `keep_pin`.
 pub(super) trait Timestamped {
     fn updated_at(&self) -> f64;
 }
@@ -41,7 +43,11 @@ timestamped_by_own_field!(
     TitleStatRow,
     DayStatRow,
     KidsAge,
-    DailyLimit
+    DailyLimit,
+    HiddenSections,
+    HouseholdName,
+    HouseholdAdmin,
+    ProfileHousehold
 );
 
 /// Keeps whichever of two rows should win.

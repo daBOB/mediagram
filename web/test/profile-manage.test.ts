@@ -1,6 +1,7 @@
 /** Manage profiles: who you are first, then what your role offers, with the PIN held only while it is open. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
 import { mountManage } from "../public/lib/profile-manage.js";
 import * as state from "../public/lib/watch-state.js";
@@ -201,7 +202,7 @@ test("a grown-up's name already here is said, and the PIN dialog is gone", async
   await answerPin(root, "2468", "2468");
   expect(prompting(root)).toBe(false);
   expect(writes("POST")).toBe(2);
-  expect(textOf(byClass(root, "pin-message"))).toBe("A profile with that name already exists.");
+  expect(textOf(byClass(root, "pin-message"))).toBe(HOUSEHOLD_WORDS.profileNameTaken);
   expect(rowOf(root, "Maja")).toBeDefined();
 });
 
@@ -212,7 +213,7 @@ test("a kid's name already here is said, and the panel stays as it was", async (
   descendants(form).find((node) => node.tagName === "INPUT")!.value = "Lea";
   form.fire("submit");
   await settle();
-  expect(textOf(byClass(root, "pin-message"))).toBe("A profile with that name already exists.");
+  expect(textOf(byClass(root, "pin-message"))).toBe(HOUSEHOLD_WORDS.profileNameTaken);
   expect(rowOf(root, "Tim")).toBeDefined();
 });
 

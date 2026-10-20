@@ -1,6 +1,7 @@
 //! Managing the household across the boundary: making its first profile, a
 //! grown-up or a kid, removing one, entering one from the picker, claiming
-//! the admin role, setting a PIN or a kid's limit. Split out of `state.rs` to
+//! the admin role, setting a PIN, a kid's limit or the sections a profile
+//! does not see. Split out of `state.rs` to
 //! keep it under the line limit; every rule lives in
 //! `crate::state::profiles::manage`, which refuses as the web does.
 //!
@@ -135,6 +136,24 @@ impl Core {
         self.blocking(move |core| {
             core.state_db
                 .manage(|m| m.set_daily_limit(&actor_id, &pin, &id, minutes))
+        })
+        .await
+    }
+
+    /// The sections of the library `id` does not see, as a whole list of
+    /// section keys; an empty one hides nothing. A kid's by its own grown-up,
+    /// a grown-up's by the admin, the admin's by nobody. `Invalid` for more
+    /// than 16 keys or one that is not 1 to 24 lowercase letters.
+    pub async fn set_hidden_sections(
+        self: Arc<Self>,
+        actor_id: String,
+        pin: String,
+        id: String,
+        sections: Vec<String>,
+    ) -> ProfileOutcome {
+        self.blocking(move |core| {
+            core.state_db
+                .manage(|m| m.set_hidden_sections(&actor_id, &pin, &id, sections))
         })
         .await
     }

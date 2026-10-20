@@ -2,21 +2,31 @@
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
-import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
+import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
+import { create, fieldOf, fill, open, optionsOf, rowOf } from "./support/households-part";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 let household: object[];
+/** The live households; left out, as the one-household tests leave them. */
+let households: object[] | undefined;
+/** What a household write that went through changes on the stub server. */
+let written: () => void;
 beforeEach(async () => {
   env = browserEnvironment();
   household = [ANDRE, MAJA, { ...TIM, dailyLimit: 45 }, LEA];
+  households = undefined;
+  written = () => {};
   env.respondWith(async (url, options) => {
-    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household });
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household, households });
+    if (url.startsWith("/api/households")) written();
     if (options?.method === "POST" && url === "/api/profiles") {
       const made = JSON.parse(String(options.body));
-      household = [...household, { id: "ben", name: made.name, kids: true, kidsAge: made.kidsAge, parentId: made.actorId, admin: false, hasPin: false }];
+      household = [...household, { id: made.name.toLowerCase(), name: made.name, kids: made.kids, kidsAge: made.kidsAge ?? null,
+        parentId: made.kids ? made.actorId : null, admin: false, hasPin: !made.kids, household: "home" }];
     }
     return new Response(null, { status: 204 });
   });
@@ -54,14 +64,14 @@ test("a kid sees only You", () => {
 test("a grown-up sees You, then Everyone here, then Manage profiles", () => {
   const { main } = settings(find("Maja"));
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles"]);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.households]);
   expect(textOf(main)).toContain("Who are you?");
 });
 
 test("with nobody chosen there is no You, only Everyone here and Manage profiles", () => {
   const { main } = settings(null);
   openProfiles(main);
-  expect(sectionsOf(main)).toEqual(["Settings", "Everyone here", "Manage profiles"]);
+  expect(sectionsOf(main)).toEqual(["Settings", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.households]);
   expect(textOf(main)).not.toContain("Switch profile");
 });
 
@@ -75,6 +85,15 @@ test("everyoneIsListedWithTheirRole", () => {
     "TimKid · Maja · FSK 6 · 45 min",
     "LeaKid · andre · FSK 12",
   ]);
+});
+
+test("the owner's line reads Owner · Admin", async () => {
+  household = [{ ...ANDRE, owner: true }, MAJA, TIM, LEA];
+  await state.loadProfiles();
+  const { main } = settings(find("andre"));
+  openProfiles(main);
+  const lines = descendants(main).filter((node) => node.classes.has("everyone-row")).map(textOf);
+  expect(lines.slice(0, 2)).toEqual([`andre${HOUSEHOLD_WORDS.owner} · Admin · PIN set`, "MajaGrown-up · PIN set"]);
 });
 
 test("managingAsksWhoYouAreAndThePin, then a kid added appears in Everyone", async () => {
@@ -134,4 +153,82 @@ test("leavingThePageDropsThePin", async () => {
   await settle();
   expect(writesOf(env.requests).length).toBe(before);
   expect(textOf(main)).not.toContain("As Maja");
+});
+
+/** A device in the flat, of the two households. */
+async function inTheFlat() {
+  household = SPLIT;
+  households = [FLAT, AT_HOME];
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
+  await state.loadProfiles();
+}
+
+test("the Profiles page says this device's household and offers Switch only with two", async () => {
+  const alone = settings(find("Maja")).main;
+  openProfiles(alone);
+  expect(sectionsOf(alone)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+
+  await inTheFlat();
+  const { main } = settings(find("Maja"));
+  openProfiles(main);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.thisDevice, HOUSEHOLD_WORDS.households]);
+  const row = descendants(main).find((node) => node.className === "setting" && textOf(node).startsWith(HOUSEHOLD_WORDS.thisDevice))!;
+  expect(textOf(byClass(row, "setting-value"))).toBe("Flat");
+  buttonNamed(row, HOUSEHOLD_WORDS.switchHousehold).fire("click");
+  // Every other household, never the one this device is in.
+  expect(descendants(byClass(row, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["Home"]);
+});
+
+test("a kid sees no household row", async () => {
+  await inTheFlat();
+  const { main } = settings(find("Tim"));
+  openProfiles(main);
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.switchHousehold);
+});
+
+test("a household change shows on the rest of the page: who is here, Manage, and this device's household", async () => {
+  household = [{ ...ANDRE, owner: true, household: "home" }, { ...MAJA, household: "home" }, { ...TIM, household: "home" }, { ...LEA, household: "home" }];
+  households = [AT_HOME];
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "home" }) });
+  await state.loadProfiles();
+  const { main } = settings(find("andre"));
+  openProfiles(main);
+  expect(sectionsOf(main)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+
+  // Maja runs the new flat, and her Tim goes with her.
+  written = () => {
+    household = household.map((one: any) => (["maja", "tim"].includes(one.id) ? { ...one, household: "flat", admin: one.id === "maja" } : one));
+    households = [FLAT, AT_HOME];
+  };
+  await create(main, "Flat", { id: "maja" });
+  await answerPin(main, "1357");
+  expect(sectionsOf(main)).toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(descendants(main).filter((node) => node.classes.has("everyone-row")).map((row) => row.children[0]!.textContent)).toEqual(["andre", "Lea"]);
+  // Manage starts again over who is here now.
+  expect(descendants(byClass(main, "manage-inline")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre"]);
+});
+
+test("a grown-up added in Manage is offered by Households at once, and a rename leaves Manage as it was", async () => {
+  household = SPLIT;
+  households = [FLAT, AT_HOME];
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "home" }) });
+  await state.loadProfiles();
+  const { main } = settings(find("andre"));
+  openProfiles(main);
+  buttonNamed(byClass(main, "manage-inline"), "andre").fire("click");
+  await answerPin(main, "1357");
+  const form = descendants(main).find((node) => node.tagName === "FORM" && textOf(node).includes("Add a grown-up"))!;
+  descendants(form).find((node) => node.tagName === "INPUT")!.value = "Opa";
+  form.fire("submit");
+  await settle();
+  await answerPin(main, "2468", "2468");
+  expect(textOf(rowOf(main, "Home").children[1]!)).toBe("Admin andre · 3 profiles");
+  expect(optionsOf(fieldOf(open(main, "Flat", HOUSEHOLD_WORDS.moveHere), HOUSEHOLD_WORDS.moveHere))).toContain("Opa");
+
+  // Renaming another household changes nobody here: Manage keeps who you are.
+  await fill(main, "Flat", HOUSEHOLD_WORDS.rename, "The flat");
+  await answerPin(main, "1357");
+  expect(writesOf(env.requests).at(-1)?.[1]).toBe("/api/households/flat/name");
+  expect(textOf(main)).toContain("As andre");
 });

@@ -27,6 +27,7 @@ fn merged(name: &str, kids: bool) -> MergedState {
         }],
         kids: vec![],
         editors_choice: vec![],
+        households: vec![],
     }
 }
 

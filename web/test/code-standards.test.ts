@@ -87,6 +87,17 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `player.js`, by 10, to wire the Report sheet (its facts, the title it opens
  * and closes with, the errors it attaches, and why a refused Play keeps a media error over its own),
  * and for `playback.css`, by 12, for the sheet's card.
+ * Raised 2026-10-20 for `src/state/store.ts`, by 7, to list the households and to import
+ * making a profile from `profiles-insert.ts`, which it left `profiles.ts` for; and
+ * `src/state/profiles-manage.ts`, by 1, for that same import.
+ * Raised the same day for `src/state/store.ts`, by 4, to write and take in the
+ * households on the sync record, and `src/state/sync-record.ts`, by 4, to read
+ * them — each the import, the key and the line that fills it.
+ * Lowered 2026-10-20 for `src/state/profiles-manage.ts`, to 194, once `claimAdmin` moved to
+ * `households-manage.ts`, net of the household a new profile joins.
+ * Raised the same day for `public/lib/watch-state.js`, by 6, to hold everyone and the live
+ * households beside this device's household of them — the import, their types and fields,
+ * the line that works the household out, and the two that hand them on.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -100,7 +111,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
-  "public/lib/watch-state.js": 485,
+  "public/lib/watch-state.js": 491,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,
@@ -113,10 +124,10 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
-  "src/state/profiles-manage.ts": 212,
+  "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 729,
-  "src/state/sync-record.ts": 293,
+  "src/state/store.ts": 740,
+  "src/state/sync-record.ts": 297,
   "src/transcode/registry.ts": 338,
 };
 

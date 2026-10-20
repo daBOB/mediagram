@@ -23,9 +23,12 @@ import { GROUPS } from "./schema";
 import { Settings } from "./settings";
 import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merged";
-import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
+import { cleanName, deleteProfileById, listProfiles, profileExists, type Profile } from "./profiles";
+import { findOrCreateProfile, insertProfile } from "./profiles-insert";
+import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
-import { ProfileManager } from "./profiles-manage";
+import { exportHouseholds, importHouseholds } from "./households-exchange";
+import { HouseholdManager } from "./households-manage";
 import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
@@ -120,6 +123,11 @@ export class WatchState {
   /** Who watches this library. Empty until someone says. */
   profiles(): Profile[] {
     return listProfiles(this.db);
+  }
+
+  /** The households sharing this library, by name, each with who runs it. */
+  households(): LiveHousehold[] {
+    return listHouseholds(this.db, this.profiles());
   }
 
   /** A test seam, as `deleteProfile` is: the player adds profiles through
@@ -354,6 +362,7 @@ export class WatchState {
    */
   exportRecord(device: string): SyncRecord {
     const roles = exportRoles(this.db);
+    const households = exportHouseholds(this.db);
     const profiles = this.profiles().map((profile) => {
       const { watched, unwatched } = exportWatched(this.db, profile.id);
       return {
@@ -372,6 +381,7 @@ export class WatchState {
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
       kids: exportTitleMarks(this.db, "kids"),
       editorsChoice: exportTitleMarks(this.db, "editors_choice"),
+      ...(households.length > 0 ? { households } : {}),
     };
   }
 
@@ -425,6 +435,7 @@ export class WatchState {
       // After the loop, not in it: a kid's parent may be a viewer this same
       // import has only just made.
       changed += importRoles(db, merged.profiles);
+      changed += importHouseholds(db, merged.households ?? []);
       return changed;
     })();
   }
@@ -621,8 +632,8 @@ export class WatchState {
   }
 
   /** Adding, removing and entering profiles, PIN and rule checked. */
-  manage(): ProfileManager {
-    return new ProfileManager(this.db, this.pins, this.household);
+  manage(): HouseholdManager {
+    return new HouseholdManager(this.db, this.pins, this.household);
   }
 }
 
