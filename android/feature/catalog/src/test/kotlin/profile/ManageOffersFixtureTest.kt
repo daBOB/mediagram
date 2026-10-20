@@ -57,6 +57,7 @@ private fun offered(
         "remove" -> panel.grownUps.has() || panel.kids.has()
         "set-pin" -> targetId == actorId || panel.grownUps.has()
         "set-kids-age" -> panel.kids.has()
+        "set-access" -> panel.grownUps.has() || panel.kids.has()
         else -> error("Unknown action $action")
     }
 }

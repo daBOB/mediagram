@@ -47,6 +47,7 @@ pub enum Action {
     Remove,
     SetPin,
     SetKidsAge,
+    SetAccess,
 }
 
 /// Only a grown-up is ever the admin. A view can still say a kid is — a
@@ -83,5 +84,8 @@ pub fn allowed(profiles: &[RoleView], actor_id: &str, action: Action, target_id:
         (Action::Remove, Some(target)) => target.id != actor.id && actor.admin,
         (Action::SetPin, Some(target)) => !target.kids && (target.id == actor.id || actor.admin),
         (Action::SetKidsAge, Some(target)) => target.kids && owns(target),
+        // The admin never narrows its own view, as it is never removed.
+        (Action::SetAccess, Some(target)) if target.kids => owns(target),
+        (Action::SetAccess, Some(target)) => !is_admin(target) && actor.admin,
     }
 }

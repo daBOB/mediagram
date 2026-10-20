@@ -32,7 +32,7 @@ export interface RoleView {
   parentId: string | null;
 }
 
-export type Action = "create-grown-up" | "create-kid" | "remove" | "set-pin" | "set-kids-age";
+export type Action = "create-grown-up" | "create-kid" | "remove" | "set-pin" | "set-kids-age" | "set-access";
 
 /**
  * Only a grown-up is ever the admin. A view can still say a kid is — a
@@ -64,6 +64,9 @@ export function allowed(profiles: RoleView[], actorId: string, action: Action, t
       return !target.kids && (target.id === actor.id || actor.admin);
     case "set-kids-age":
       return target.kids && ownerOf(profiles, target) === actor.id;
+    case "set-access":
+      // The admin never narrows its own view, as it is never removed; a kid's sections are its owner's to set.
+      return target.kids ? ownerOf(profiles, target) === actor.id : !isAdmin(target) && actor.admin;
     default:
       return false;
   }
