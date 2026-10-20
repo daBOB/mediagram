@@ -49,7 +49,8 @@ internal class CastRemoteRig(
     private val test: TestScope,
 ) {
     val core = FakeCore().apply { togetherMessages[CAST_ID] = writeSession(CAST_ON_TV) }
-    private val events = MutableSharedFlow<LibraryEvent>()
+    /** The core's push stream: someone subscribed to it is a connection held open. */
+    val events = MutableSharedFlow<LibraryEvent>()
     private val now = { NOW + test.testScheduler.currentTime }
     val live =
         DefaultTogetherLive(

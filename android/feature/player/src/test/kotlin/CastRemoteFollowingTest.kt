@@ -46,6 +46,25 @@ class CastRemoteFollowingTest {
         }
 
     @Test
+    fun aRemoteNotOnScreenHoldsNoStreamOpenAndCatchesUpOnReturn() =
+        runTest {
+            val rig = castRemote()
+            assertEquals(1, rig.events.subscriptionCount.value)
+
+            rig.vm.screenShown(false)
+            runCurrent()
+            assertEquals(0, rig.events.subscriptionCount.value, "the phone in a pocket listens to nothing")
+
+            // Paused on the TV meanwhile, and not heard.
+            rig.core.togetherMessages[CAST_ID] = writeSession(rig.message().copy(playing = false, pos = 105.0, at = NOW, by = TV.screen))
+            rig.vm.screenShown(true)
+            runCurrent()
+
+            assertEquals(1, rig.events.subscriptionCount.value)
+            assertFalse(rig.vm.player.playWhenReady, "one read on return catches up")
+        }
+
+    @Test
     fun theFilmEndingSaysFinished() =
         runTest {
             val rig = castRemote()

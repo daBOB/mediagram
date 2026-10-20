@@ -13,7 +13,9 @@ import data.TOGETHER_UNREACHABLE
 import data.TogetherLive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import model.MediaSet
@@ -62,6 +64,9 @@ class CastRemoteViewModel internal constructor(
     private var current: Session? = null
     private var following: Job? = null
 
+    /** Whether the remote's screen is started: only then is the session followed, and the push stream held open. */
+    private val started = MutableStateFlow(true)
+
     /**
      * Joins cast [id] as a remote and follows it. Next episode goes on
      * through [runOf] a title's run, as the player's own does.
@@ -82,7 +87,8 @@ class CastRemoteViewModel internal constructor(
                 joined
                     .onFailure { view.show(TOGETHER_UNREACHABLE) }
                     .onSuccess { if (it == null) return@launch finish(null) else take(it.session) }
-                live.live.collect(::heard)
+                // A remote left on top in a pocket holds nothing open.
+                started.collectLatest { if (it) live.live.collect(::heard) }
             }
     }
 
@@ -100,6 +106,13 @@ class CastRemoteViewModel internal constructor(
         release()
         view.close()
         live.end(id, me.screen)
+    }
+
+    /** The remote's screen started or stopped. Back on screen, one read catches up on what went unheard. */
+    fun screenShown(shown: Boolean) {
+        if (started.value == shown) return
+        started.value = shown
+        if (shown && id != null) viewModelScope.launch { live.refresh() }
     }
 
     fun next() {

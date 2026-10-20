@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
@@ -53,6 +54,11 @@ fun CastRemoteScreen(
         remote.open(id) { latestRunOf(it) }
         // The model outlives a recreated activity: leaving and joining again would be noticed on the TV.
         onDispose { if (activity?.isChangingConfigurations != true) remote.close() }
+    }
+    // Followed only while on screen: a phone in a pocket holds no push stream open.
+    LifecycleStartEffect(remote) {
+        remote.screenShown(true)
+        onStopOrDispose { remote.screenShown(false) }
     }
     CastRemote(
         // An ended cast's last words stay in the model until another one draws.
