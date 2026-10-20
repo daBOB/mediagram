@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
+import catalog.showsPreloads
 import catalog.MenuScreen
 import catalog.updateDisabledReason
 import data.CatalogEnrichmentState
@@ -54,7 +55,7 @@ internal fun tvMenuActions(
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
         updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
         onPreloads =
-            if (preloadCount > 0) {
+            if (catalogState.showsPreloads(preloadCount)) {
                 {
                     onLeavePage()
                     restore.forget(depth)
