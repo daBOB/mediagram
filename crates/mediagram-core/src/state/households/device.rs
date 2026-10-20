@@ -17,10 +17,15 @@ fn stored(conn: &Connection) -> rusqlite::Result<Option<String>> {
 /// The household this device shows, remembered when it differs from what is
 /// stored. `None` means ask to join one, or wait for the first sync round.
 pub fn joined(conn: &Connection) -> rusqlite::Result<Option<String>> {
-    let everyone = profiles::list(conn)?;
+    joined_over(conn, &profiles::list(conn)?)
+}
+
+/// [`joined`] over profiles already listed, so a caller that needs them too
+/// lists once.
+fn joined_over(conn: &Connection, everyone: &[Profile]) -> rusqlite::Result<Option<String>> {
     let chosen = profiles::chosen(conn)?;
     let chosen_in = chosen.as_ref().and_then(|id| everyone.iter().find(|one| &one.id == id)).map(|one| one.household.as_str());
-    let live_ids: Vec<String> = live(conn, &everyone)?.into_iter().map(|one| one.id).collect();
+    let live_ids: Vec<String> = live(conn, everyone)?.into_iter().map(|one| one.id).collect();
     let before = stored(conn)?;
     let answer = device_household(before.as_deref(), chosen_in, &live_ids, sync::round_imported(conn)?);
     if let Some(id) = answer.as_ref().filter(|id| before.as_ref() != Some(id)) {
@@ -35,10 +40,11 @@ pub fn joined(conn: &Connection) -> rusqlite::Result<Option<String>> {
 
 /// The joined household's profiles; none while this device has joined none.
 pub fn profiles_here(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
-    let Some(here) = joined(conn)? else {
+    let everyone = profiles::list(conn)?;
+    let Some(here) = joined_over(conn, &everyone)? else {
         return Ok(Vec::new());
     };
-    Ok(profiles::list(conn)?.into_iter().filter(|one| one.household == here).collect())
+    Ok(everyone.into_iter().filter(|one| one.household == here).collect())
 }
 
 /// The remembered "who's watching", only while that profile is in the joined
@@ -47,7 +53,11 @@ pub fn chosen_here(conn: &Connection) -> rusqlite::Result<Option<String>> {
     let Some(id) = profiles::chosen(conn)? else {
         return Ok(None);
     };
-    Ok(profiles_here(conn)?.into_iter().any(|one| one.id == id).then_some(id))
+    let everyone = profiles::list(conn)?;
+    let Some(here) = joined_over(conn, &everyone)? else {
+        return Ok(None);
+    };
+    Ok(everyone.iter().any(|one| one.id == id && one.household == here).then_some(id))
 }
 
 #[cfg(test)]

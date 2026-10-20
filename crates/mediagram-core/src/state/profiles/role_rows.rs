@@ -6,12 +6,11 @@
 
 use rusqlite::{Connection, params};
 
-mod insert;
-
 use super::role_writes::write_pin;
-pub(crate) use insert::{NewProfile, insert};
 use super::rules::RoleView;
 
+mod insert;
+pub(crate) use insert::{NewProfile, insert};
 
 /// Everything stored about a profile, the PIN included.
 #[derive(Debug, Clone)]

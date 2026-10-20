@@ -82,3 +82,18 @@ fn the_chosen_profile_outside_the_joined_household_is_nobody() {
     db.with(|conn| profiles::choose(conn, "b")).unwrap();
     assert_eq!(db.with(chosen_here).unwrap(), Some("b".to_string()));
 }
+
+#[test]
+fn a_device_whose_household_was_removed_follows_its_chosen_profile() {
+    let (_dir, db) = db();
+    sql(&db, TWO_HOUSEHOLDS);
+    sql(&db, "INSERT INTO state_meta(key, value) VALUES ('joined_household', 'h2')");
+    db.with(|conn| profiles::choose(conn, "a")).unwrap();
+    sql(&db, "UPDATE households SET removed = 1 WHERE id = 'h2'");
+
+    assert_eq!(db.with(joined).unwrap(), Some("home".to_string()));
+    assert_eq!(remembered(&db), Some("home".to_string()));
+
+    sql(&db, "CREATE TRIGGER no_more_writes BEFORE UPDATE ON state_meta BEGIN SELECT RAISE(ABORT, 'rewritten'); END");
+    assert_eq!(db.with(joined).unwrap(), Some("home".to_string()), "a second call writes nothing");
+}

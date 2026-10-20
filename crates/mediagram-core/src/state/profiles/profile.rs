@@ -50,7 +50,8 @@ impl From<role_rows::Stored> for Profile {
         Profile {
             kids_age: row.kids.then_some(if row.kids_age == Some(6) { 6 } else { 12 }),
             daily_limit: row.daily_limit.filter(|_| row.kids).and_then(|m| u32::try_from(m).ok()),
-            admin: row.is_admin(),
+            // Who runs a household is for `households::resolve` to say.
+            admin: false,
             owner: row.is_owner(),
             household: row.household_id.clone(),
             has_pin: !row.kids && row.pin_hash.is_some(),
