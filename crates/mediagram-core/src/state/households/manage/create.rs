@@ -32,7 +32,8 @@ impl ProfileManager<'_> {
         if admin_name.is_some_and(|name| clean_name(name).is_none()) || unusable_pin(new_pin) {
             return Ok(Invalid);
         }
-        let names: Vec<String> = self.rows()?.into_iter().map(|row| row.name).collect();
+        // A former name stays taken, as a current one is: sync would join the two.
+        let names = crate::state::profiles::role_rows::taken_names(self.conn, None)?;
         if self.household_name_taken(name, None)? || admin_name.is_some_and(|name| name_taken(&names, name)) {
             return Ok(NameTaken);
         }

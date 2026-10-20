@@ -268,6 +268,13 @@ fn a_new_grown_ups_name_is_unique_on_the_whole_install() {
 }
 
 #[test]
+fn a_new_household_admin_may_not_take_a_name_another_profile_had_before() {
+    let store = store_with(&[grown_up("owner", "home", true, 1), "UPDATE profiles SET former_names = '[\"mia\"]' WHERE id = 'owner'".to_string()]);
+    assert_eq!(store.run(|m| m.create_household("owner", PIN, "Loft", &new_admin("Mia", "5678"))), NameTaken);
+    assert_eq!(store.names(), ["Home"]);
+}
+
+#[test]
 fn an_admin_without_a_pin_is_given_one_and_refused_without() {
     let store = store_with(&[
         grown_up("owner", "home", true, 1),
