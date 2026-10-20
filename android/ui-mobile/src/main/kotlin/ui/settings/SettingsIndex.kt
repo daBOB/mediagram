@@ -59,13 +59,15 @@ private val IconOf =
         SettingsSection.STORAGE to R.drawable.core_designsystem_ic_settings_storage,
         SettingsSection.APPEARANCE to R.drawable.core_designsystem_ic_settings_appearance,
         SettingsSection.PROFILE to R.drawable.core_designsystem_ic_settings_profile,
+        SettingsSection.PROFILES to R.drawable.core_designsystem_ic_settings_profile,
         SettingsSection.SYSTEM to R.drawable.core_designsystem_ic_settings_system,
     )
 
 /**
- * The index: back arrow and wordmark, the SETTINGS eyebrow, the five
- * section rows each with their own status, and — only on a width wide
- * enough to show it beside the page — the library's own tally underneath.
+ * The index: back arrow and wordmark, the SETTINGS eyebrow, a row for each
+ * section with a status — so none for Profiles until a grown-up is chosen —
+ * and, only on a width wide enough to show it beside the page, the library's
+ * own tally underneath.
  */
 @Composable
 internal fun SettingsIndex(
@@ -97,7 +99,7 @@ internal fun SettingsIndex(
             color = tones.quiet,
             modifier = Modifier.padding(start = Spacing.small, end = Spacing.small, bottom = Spacing.small),
         )
-        for (section in SettingsSection.entries) {
+        for (section in SettingsSection.entries.filter { it in statuses }) {
             // The mockup's own "apart" gap: System sits a little away from
             // the other three, which read as one group about the account
             // and the device, and it as the one about the app itself.

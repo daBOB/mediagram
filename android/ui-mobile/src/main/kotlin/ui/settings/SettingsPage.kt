@@ -100,6 +100,7 @@ internal fun SettingsPage(
                 )
 
             SettingsSection.PROFILE -> ProfileSettingsSection(profile, profileSubtitle, onChooseProfileSubtitle)
+            SettingsSection.PROFILES -> ProfilesSettingsSection()
             SettingsSection.SYSTEM -> SystemScreen(expanded = expanded)
         }
     }

@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +28,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
+import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import model.DAILY_LIMIT_CHOICES
 import model.KIDS_LIMITS
@@ -122,4 +127,23 @@ internal fun DailyLimitChips(
             SettingsChip(choice.label, selected = shown == choice, onClick = { if (choice != shown) onChoose(choice.minutes) })
         }
     }
+}
+
+/** A name and its controls on one line, a soft rule beneath — the web's `manage-row`, which Settings' Profiles list shares. */
+@Composable
+internal fun ProfileRow(
+    name: String,
+    below: @Composable () -> Unit = {},
+    controls: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = Spacing.extraSmall),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
+    ) {
+        Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        controls()
+    }
+    below()
+    HorizontalDivider(thickness = 0.5.dp, color = LocalCatalogueTones.current.ruleSoft)
 }

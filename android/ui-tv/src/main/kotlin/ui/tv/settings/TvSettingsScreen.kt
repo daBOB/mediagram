@@ -172,6 +172,9 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onRetry = systemViewModel::retry,
                     )
+
+                // Never shown: the television's index does not offer it yet.
+                SettingsSection.PROFILES -> Unit
             }
         }
     }

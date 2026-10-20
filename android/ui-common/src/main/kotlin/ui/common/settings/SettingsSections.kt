@@ -1,7 +1,7 @@
 package ui.common.settings
 
 /**
- * Settings' five sections, one per index row and one per page: a title for
+ * Settings' sections, one per index row and one per page: a title for
  * the row and the page head alike, and the small sentence under the page's
  * own huge title — the same per-section line the web's Settings/System pages
  * carry (`settings-page.js`, `status-view.js:85-113`).
@@ -15,6 +15,9 @@ enum class SettingsSection(val title: String, val pageEyebrow: String) {
     STORAGE("Storage", "What this device keeps and where it comes from"),
     APPEARANCE("Appearance", "How the player looks on this device"),
     PROFILE("Profile", "Who is watching and how"),
+
+    /** Only while a grown-up is chosen, as the web's tab: a kid manages nothing. */
+    PROFILES("Profiles", "The household and who manages it"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
 }
 
