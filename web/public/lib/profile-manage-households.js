@@ -41,8 +41,10 @@ export function byHousehold({ actor, grownUps, kids }, draw) {
       parts.push(section("Grown-ups", [...of(grownUps).map(draw.grownUp), ...(own && actor.admin ? [draw.addGrownUp()] : [])], level));
     }
     if (of(kids).length > 0 || own) parts.push(section("Kids", [...of(kids).map(draw.kid), ...(own ? [draw.addKid()] : [])], level));
-    if (!named || parts.length === 0) return parts;
-    const household = section(live.find((one) => one.id === id).name, parts);
+    // A household the list doesn't name yet (a sync mid-way) keeps its rows, unheaded, rather than breaking the page.
+    const name = live.find((one) => one.id === id)?.name;
+    if (!named || parts.length === 0 || name === undefined) return parts;
+    const household = section(name, parts);
     household.classList.add("manage-household");
     return [household];
   });

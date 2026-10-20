@@ -158,3 +158,14 @@ test("a household is headed by its name, never its id", async () => {
   const root = await manageAs("andre", "1357");
   expect(headings(root)).toEqual(["Manage profiles", "Home", "Grown-ups", "Kids", "Flat", "Grown-ups", "Kids", "Your PIN"]);
 });
+
+test("a household the list does not name keeps its rows, unheaded, instead of breaking Manage", async () => {
+  // Mid-sync the list can lack this device's household; its rows still show, without a heading.
+  households = [LOFT, FLAT];
+  await state.loadProfiles();
+  const root = await manageAs("andre", "1357");
+  const seen = headings(root);
+  expect(seen.slice(0, 2)).toEqual(["Manage profiles", "Grown-ups"]);
+  expect(seen).toContain("Loft");
+  expect(seen).not.toContain("home");
+});
