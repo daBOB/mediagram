@@ -180,7 +180,7 @@ class HouseholdsOwnerViewModel
          */
         private suspend fun sent(request: ProfileRequest): ProfileOutcome =
             if (request is JoinHousehold) {
-                repository.manage(request).also { if (it == ProfileOutcome.Done) stillHere.emit(households.rereadAfterJoin(repository) { stillHere.tryEmit(false) }) }
+                households.joinThenReread(repository, request, { stillHere.tryEmit(false) }) { stillHere.emit(it) }
             } else {
                 repository.manageAndShare(request, sync).also { if (it == ProfileOutcome.Done) households.reloadQuietly() }
             }
