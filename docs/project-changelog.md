@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.136.0 — households on Android
+
+**Added** (Android phone, tablet and TV)
+
+- **A phone, tablet or TV joins one household**, as a browser does: with more than one household, a device that hasn't joined asks **Join a household** (the households by name, then that household's admin's PIN or the owner's) and its "Who's watching?" lists only that household's profiles. A device that chose someone before stays in that profile's household; while only one household exists nothing is asked. Households nobody could let a device into are not offered, and a device whose household has no grown-up left is offered the others.
+- **Settings → Profiles → This device · Switch household**, for anyone but a kid, while more than one household exists.
+- **The owner's Households part**, as on the web: every household with its admin and member count; create one (with a new grown-up, or a grown-up who moves in with their kids), rename, change who runs it, move a grown-up here, use it on this device, delete an empty one (never Home). The owner's PIN is asked once per visit and dropped on leaving, including from the picker's Manage profiles.
+- **The owner's Manage profiles lists every household's profiles**, grouped under each household's name, with Reset PIN, Remove, Sections and a kid's limits — as on the web.
+- **Sync keeps a renamed profile as one person** on Android too (the core understands the web's rename keys), ready for the Rename button.
+
+**Fixed**
+
+- A device whose chosen profile was left behind by a household switch shows the picker instead of waiting.
+
 ## 0.135.0 — sync keeps a renamed profile as one person
 
 **Changed** (web player, Android phone, tablet and TV; nothing a viewer sees)
