@@ -6,7 +6,9 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.lifecycle.ViewModelProvider
 import catalog.profile.FIRST_PROFILE
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.WAITING_FOR_HOUSEHOLD
 import model.HOME_HOUSEHOLD
 import model.HouseholdWords
@@ -66,16 +68,21 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
         assertEquals("flat", fixture.core.homes.joined)
     }
 
-    /** A box whose household has no grown-up left is offered the others, never "Create the first profile". */
+    /** A box whose household has no grown-up left offers the others where "Create the first profile" would be; its kids stay. */
     @Test
-    fun anEmptyHouseholdOffersTheOthersInsteadOfAFirstProfile() {
-        val homeIsEmpty: FakeCore.() -> Unit = {
-            profiles = listOf(CoreProfile("a", "andre", admin = true, owner = true, household = "flat"))
+    fun aHouseholdWithNoGrownUpOffersTheOthersBesideItsKids() {
+        val noGrownUpHere: FakeCore.() -> Unit = {
+            profiles = listOf(CoreProfile("a", "andre", admin = true, owner = true, household = "flat"), CoreProfile("k", "Kim", kids = true))
             homes.names["flat"] = "Flat"
         }
-        launch(emptyList(), chosen = null, ready = HouseholdWords.JOIN_A_HOUSEHOLD, seed = homeIsEmpty)
+        launch(emptyList(), chosen = null, seed = noGrownUpHere)
         compose.onAllNodesWithText(FIRST_PROFILE).assertCountEquals(0)
+        compose.onNode(rowOf("Kim")).assertExists()
+        compose.onNode(rowOf(HouseholdWords.JOIN_A_HOUSEHOLD)).assertIsFocused()
+        press(Key.DirectionCenter)
         compose.onNode(rowOf("Flat")).assertIsFocused()
+        back()
+        compose.onNode(rowOf(HouseholdWords.JOIN_A_HOUSEHOLD)).assertIsFocused()
     }
 
     /** No grown-up here and the households not read: the picker waits, and Try again reads them, before a first profile is offered. */
@@ -133,5 +140,38 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
 
         compose.onNode(rowOf("Home · Admin andre · 3 profiles")).assertIsFocused()
         assertEquals(HOME_HOUSEHOLD, fixture.core.profiles.single { it.id == "d" }.household)
+    }
+
+    /** Leaving the owner's panel drops their PIN: the Owner row asks it again. */
+    @Test
+    fun leavingTheOwnersPanelForgetsThePin() {
+        launch(emptyList(), chosen = "b", seed = households())
+        openSettingsAt(rowOf("Profiles"))
+        press(Key.DirectionCenter)
+        walkTo(rowOf(HouseholdWords.OWNER), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        pin("1234")
+        compose.onNode(rowOf("Flat · Admin Dan · 1 profile")).assertIsFocused()
+
+        back()
+        compose.onNode(rowOf(HouseholdWords.OWNER)).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertExists()
+    }
+
+    /** The This device row going — the other household deleted elsewhere — hands the remote to Manage profiles, not to nothing. */
+    @Test
+    fun aRowThatGoesHandsTheRemoteToManageProfiles() {
+        launch(emptyList(), chosen = "a", seed = households())
+        openSettingsAt(rowOf("Profiles"))
+        press(Key.DirectionCenter)
+        walkTo(rowOf("${HouseholdWords.THIS_DEVICE} · Home"), Key.DirectionDown)
+        compose.runOnUiThread {
+            fixture.core.homes.names.remove("flat")
+            ViewModelProvider(fixture)[JoinHouseholdViewModel::class.java].reread()
+        }
+        compose.waitForIdle()
+        compose.onAllNodes(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertCountEquals(0)
+        compose.onNode(rowOf("Manage profiles")).assertIsFocused()
     }
 }

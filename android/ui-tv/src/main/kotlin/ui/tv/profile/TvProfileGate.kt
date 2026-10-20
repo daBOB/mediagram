@@ -37,10 +37,10 @@ data class TvChosenProfile(
  * [ProfileViewModel] and [ManageProfilesViewModel] decide the same things
  * they decide on a phone, and [TvProfilePicker] stands in for [content] until
  * a viewer has been chosen. Before either, a box that has joined no
- * household — or whose household has no grown-up left while another has —
- * shows only Join a household ([JoinHouseholdViewModel]), never the first
- * profile the core would refuse, and waits for the households to be read
- * before it offers one. One screen at a time — whichever PIN is asked
+ * household shows only Join a household ([JoinHouseholdViewModel]); one
+ * whose household has no grown-up left while another has offers it where
+ * the first profile — which the core would refuse — would be, beside its
+ * kids; and none is offered before the households are read. One screen at a time — whichever PIN is asked
  * replaces what asked for it, the picker's Manage profiles opens Settings' own
  * Profiles page in the picker's place, with nobody chosen, and that page's
  * Manage profiles row replaces it with Manage — so nothing behind competes
@@ -84,7 +84,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
             viewModel.reopen()
         }
     }
-    if (joining.needsJoin || (joining.joinsElsewhere && (state as? ProfileUiState.Picking)?.needsFirstProfile == true)) {
+    if (joining.needsJoin) {
         TvJoinHousehold(join)
         return
     }
@@ -102,16 +102,21 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     // while a PIN, the Profiles page or Manage stands in for the picker.
     var landing by remember { mutableStateOf<TvPickerSpot?>(null) }
     var profilesPage by remember { mutableStateOf(false) }
+    var joiningElsewhere by remember { mutableStateOf(false) }
     val tiles = rememberLazyListState()
     val inManage = managing != ManageUiState.Closed
     val pickPrompt = pickPin
-    // No grown-up here, the households not read yet: wait for them as for a
-    // sync round, Try again reading them, never offering a first profile they may rule out.
-    val unread = (state as? ProfileUiState.Picking)?.takeIf { it.needsFirstProfile && !joining.read }?.copy(synced = false)
+    // No grown-up here, the households not read yet: wait for them as for a sync round, Try again
+    // reading them, never offering a first profile they may rule out. A failed read keeps its own Try again.
+    val unread = (state as? ProfileUiState.Picking)?.takeIf { it.error == null && it.needsFirstProfile && !joining.read }?.copy(synced = false)
     when {
         inManage -> TvManageScreen(manage)
         pickPrompt != null -> TvPinPrompt(pickPrompt, onPin = viewModel::enterPin, onCancel = viewModel::cancelPin)
         profilesPage -> TvProfilesOverPicker(onManage = manage::open, onDone = { profilesPage = false })
+        joiningElsewhere && joining.joinsElsewhere -> {
+            BackHandler { joiningElsewhere = false }
+            TvJoinHousehold(join) { joiningElsewhere = false }
+        }
         else ->
             TvProfilePicker(
                 state = unread ?: state,
@@ -126,6 +131,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
                     viewModel.claim(id)
                 },
                 onCreateFirst = viewModel::createFirst,
+                onJoin = { joiningElsewhere = true }.takeIf { joining.joinsElsewhere },
                 onManage = {
                     landing = TvPickerSpot.Manage
                     profilesPage = true

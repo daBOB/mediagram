@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -80,9 +81,12 @@ internal fun TvChoicesScreen(
 ) {
     // One requester per choice for as long as it is shown, so no row's chain ever changes.
     val rows = remember { mutableMapOf<String, FocusRequester>() }
+    // The row last holding the remote; every focusable here is a row, so that is the one holding it.
+    var holding by remember { mutableStateOf<String?>(null) }
     val land = (choices.find { it.first == landing } ?: choices.firstOrNull())?.first
-    // Again once they arrive: a list not read yet has nothing to land on.
-    LaunchedEffect(land) { land?.let { rows[it]?.requestFocus() } }
+    val lost = holding != null && choices.none { it.first == holding }
+    // Again once they arrive — a list not read yet has nothing to land on — and when the row holding the remote goes.
+    LaunchedEffect(land, lost) { land?.let { rows[it]?.requestFocus() } }
     Column(
         Modifier
             .fillMaxSize()
@@ -96,7 +100,7 @@ internal fun TvChoicesScreen(
         choices.forEach { (id, words) ->
             key(id) {
                 val row = remember { FocusRequester() }.also { rows[id] = it }
-                TvTextRow(words, onClick = { onChoose(id) }, focusRequester = row, modifier = Modifier.padding(top = Spacing.small))
+                TvTextRow(words, onClick = { onChoose(id) }, focusRequester = row, modifier = Modifier.onFocusChanged { if (it.isFocused) holding = id }.padding(top = Spacing.small))
             }
         }
     }
