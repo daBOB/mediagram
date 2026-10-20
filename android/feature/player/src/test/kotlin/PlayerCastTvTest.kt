@@ -32,6 +32,7 @@ class PlayerCastTvTest {
     private val tablet = Member("tab-1", "Tablet")
     private val anna = Profile("A", "Anna")
     private val kim = Profile("K", "Kim", kids = true, kidsAge = 6, dailyLimit = 30)
+    private val episodes = listOf("e1", "e2")
 
     @After
     fun tearDown() = Dispatchers.resetMain()
@@ -101,6 +102,25 @@ class PlayerCastTvTest {
 
             assertEquals(PendingPlayerSwitch("e2", run), rig.vm.pendingSwitch.value)
             assertEquals(castFrom("Tablet"), rig.vm.together.value.label)
+            rig.clear()
+        }
+
+    @Test
+    fun aKidsCastOverTheProfilePickerFollowsNextToAMarkedTitle() =
+        runTest {
+            installMainDispatcher()
+            // Nobody chosen on the TV: no snapshot of its own, but the Kids marks are the household's.
+            val watch = WatchStateFixture(listOf(anna, kim), chosen = null)
+            episodes.forEach { watch.core.setKids(it, 6u) }
+            val rig = armed(watch, set = "e1")
+            rig.vm.open("e1", episodes)
+            runCurrent()
+
+            rig.push(960, rig.message(960).copy(set = "e2", pos = 0.0, at = System.currentTimeMillis(), by = tablet.screen))
+            runCurrent()
+
+            assertEquals(PendingPlayerSwitch("e2", episodes), rig.vm.pendingSwitch.value)
+            assertFalse(rig.vm.castOver.value)
             rig.clear()
         }
 

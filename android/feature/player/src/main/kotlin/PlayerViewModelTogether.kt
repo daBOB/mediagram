@@ -52,7 +52,7 @@ internal fun PlayerViewModel.togetherController(
         titleOf = { id ->
             val set = last?.takeIf { it.setId == id } ?: orDefault(null, "looking up $id") { catalog.mediaSet(id) }
             last = set ?: last
-            set?.takeIf(::onThisProfile)
+            set?.takeIf { onThisProfile(it) }
         },
         label = { labelOf(context) },
         scope = viewModelScope,
@@ -94,11 +94,14 @@ internal fun PlayerViewModel.closeTogether(relay: ViewerRelay) {
  * a kids profile only what its limit allows, as its catalog shows it. Playing a
  * cast that is the caster, never the TV's own chosen profile.
  */
-internal fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
+internal suspend fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
     val profile = playingAs.value ?: repository.chosenProfile.value
     if (profile != null && set.sectionKey() in profile.hiddenFrom) return false
     val kid = profile?.takeIf { it.kids } ?: return true
-    return forKidsProfile(listOf(set), repository.snapshot.value.kidsMarks, kid.kidsLimit).isNotEmpty()
+    // The Kids marks are the household's, in any profile's snapshot; a TV on its profile picker has none of its own.
+    // shortcut: that case reads the core on every drift check; cache the caster's marks at open if it shows on the box.
+    val marks = if (repository.chosenProfile.value != null) repository.snapshot.value.kidsMarks else repository.snapshotOf(kid.id)?.kidsMarks.orEmpty()
+    return forKidsProfile(listOf(set), marks, kid.kidsLimit).isNotEmpty()
 }
 
 /** What this screen is called in a session's members, beside the web player's `Browser`. */
