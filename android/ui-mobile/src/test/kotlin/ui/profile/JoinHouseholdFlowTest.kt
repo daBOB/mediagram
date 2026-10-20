@@ -79,6 +79,16 @@ class JoinHouseholdFlowTest : ProfileGateHarness() {
         compose.onNodeWithText(HouseholdWords.JOIN_A_HOUSEHOLD).assertExists()
     }
 
+    /** A prompt left open is not waiting for whoever picks the device up next. */
+    @Test fun leavingTheAppDropsThePrompt() {
+        openUnjoined()
+        choice("Flat").performClick()
+        inDialog("Bea’s PIN, or the owner’s").assertExists()
+        leaveAndReturn()
+        inDialog("Bea’s PIN, or the owner’s").assertDoesNotExist()
+        compose.onNodeWithText(HouseholdWords.JOIN_A_HOUSEHOLD).assertExists()
+    }
+
     /** No first profile before the households are read: with grown-ups in another household, the core would refuse it. */
     @Test fun theFirstProfileWaitsUntilTheHouseholdsAreRead() {
         // A core that names no household at all has not been read: Home is never deleted.

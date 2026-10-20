@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -74,13 +75,14 @@ internal fun PersonForm(
 /**
  * A new household: its name, then its admin — a new grown-up, named here, or
  * one of [movers]. Hands over the name and the grown-up's id, or the new
- * one's name, and empties, as Manage's add forms do.
+ * one's name, and empties once a change from it went through ([took] rises).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun CreateHouseholdForm(
     movers: List<Profile>,
     enabled: Boolean,
+    took: Int,
     onCreate: (name: String, adminId: String?, adminName: String?) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -88,14 +90,14 @@ internal fun CreateHouseholdForm(
     var adminId by rememberSaveable { mutableStateOf<String?>(null) }
     var newName by rememberSaveable { mutableStateOf("") }
     val ready = enabled && name.isNotBlank() && (adminId != null || newName.isNotBlank())
-    val send = {
-        if (ready) {
-            onCreate(name.trim(), adminId, newName.trim().takeIf { adminId == null })
+    LaunchedEffect(took) {
+        if (took > 0) {
             name = ""
             newName = ""
             adminId = null
         }
     }
+    val send = { if (ready) onCreate(name.trim(), adminId, newName.trim().takeIf { adminId == null }) }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         NameField(name, { name = it }, HouseholdWords.HOUSEHOLD_NAME, send)
         Text(HouseholdWords.ADMIN, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
