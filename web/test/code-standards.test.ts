@@ -98,13 +98,20 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `public/lib/watch-state.js`, by 6, to hold everyone and the live
  * households beside this device's household of them — the import, their types and fields,
  * the line that works the household out, and the two that hand them on.
+ * Raised the same day for `public/app.js`, by 7, so the sections a profile is not shown leave the
+ * nav and the masthead — the import, the list, the links and why Anime's rule agrees, the masthead's
+ * filter — and a change made in Manage profiles filters the catalogue again at once; and
+ * `public/lib/library-session.js`, to 201, to import the sections filter its `filtered` now calls.
+ * Raised the same day for `public/lib/catalog/shelf-view.js`, by 1, so an empty shelf for a section
+ * the profile is not shown says only that it is empty, with no upload hint and no age limit.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 705,
+  "public/app.js": 712,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 285,
+  "public/lib/catalog/shelf-view.js": 286,
+  "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 1018,

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { collectionGrid, emptyState, movieGrid, setGrid } from "../public/lib/catalog/shelf-view.js";
+import { SECTIONS } from "../public/lib/catalog/sections.js";
 import { GRID, LIST } from "../public/lib/catalog/shelf-mode.js";
 
 const priorDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
@@ -47,6 +48,12 @@ describe("emptyState", () => {
   test("a kid is told to wait for a rating at its own limit, not to upload", () => {
     expect(emptyState("anime", { kidsLimit: 12 }).textContent).toBe("Nothing rated FSK 12 or under yet.");
     expect(emptyState("movies", { kidsLimit: 6 }).textContent).toBe("Nothing rated FSK 6 or under yet.");
+  });
+
+  test("a section this profile is not shown says only that it is empty: no upload hint, no age limit", () => {
+    expect(emptyState("anime", { hidden: ["anime"] }).textContent).toBe(SECTIONS.anime.empty);
+    expect(emptyState("movies", { kidsLimit: 12, hidden: ["movies"] }).textContent).toBe(SECTIONS.movies.empty);
+    expect(emptyState("movies", { kidsLimit: 12, hidden: ["anime"] }).textContent).toBe("Nothing rated FSK 12 or under yet.");
   });
 
   test("anime points at the edit command, not an upload one — there is nothing to upload", () => {

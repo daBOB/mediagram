@@ -1,5 +1,5 @@
 /**
- * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
+ * Manage profiles: who there is, a kid's age and daily limits, the sections each is shown, and grown-ups' PINs.
  *
  * Part of the Profiles page (`catalog/settings-profiles.js`), in Settings and
  * over the picker. A device left on a grown-up's profile does not hand a child
@@ -21,6 +21,7 @@ import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
 import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
+import { sectionSwitches } from "./section-switches.js";
 import { askGrownUp, askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
 
 /** What a change reports once the body is gone: nothing was sent. */
@@ -80,8 +81,14 @@ export function mountManage(container, { promptHost, onChange }) {
   const prompts = promptsOver(promptHost);
   const ask = prompts.ask;
 
-  /** Runs a change with the PIN held; once the body is gone nothing is sent. */
-  function send(call) {
+  /** Controls by a name that outlives a redraw: the one a change was made with has focus again after it, not the page. */
+  const named = new Map();
+  let changedWith = null;
+  const keep = (name, node) => { named.set(name, node); return node; };
+
+  /** Runs a change with the PIN held, made with the control kept as `name`; once the body is gone nothing is sent. */
+  function send(call, name = null) {
+    changedWith = name;
     return gone ? Promise.resolve(GONE) : call(session.actorId, session.pin);
   }
 
@@ -96,11 +103,18 @@ export function mountManage(container, { promptHost, onChange }) {
       : outcome.reason === "wrong-pin" ? "Your PIN is no longer valid. Choose who you are again." : refusalText(outcome);
     if (outcome.reason === "wrong-pin") session = null;
     draw();
+    named.get(changedWith)?.focus();
     if (outcome.ok) onChange?.();
   }
 
+  /** Which sections `entry` is shown: a switch sends the whole list with the PIN held, and the panel redraws. */
+  const access = (entry) => sectionSwitches(entry,
+    async (hidden, key) => report(await send((id, pin) => api.setHiddenSections(id, pin, entry.id, hidden), `${key} ${entry.id}`)),
+    (key, node) => keep(`${key} ${entry.id}`, node));
+
   function draw() {
     body.textContent = "";
+    named.clear();
     const view = session === null ? null : api.manageable(state.profiles(), session.actorId);
     if (view?.actor) drawRole(view);
     else drawWho();
@@ -133,7 +147,8 @@ export function mountManage(container, { promptHost, onChange }) {
       body.append(section("Grown-ups",
         ...grownUps.map((entry) => row(entry.name,
           pill("Reset PIN", () => void newPin(entry)),
-          pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)))),
+          pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)),
+          access(entry))),
         addForm("Add a grown-up", [], async (name) => {
           const made = await ask(() => askPin(promptHost, { title: newPinTitle(name), confirm: true, refused: report,
             send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
@@ -144,14 +159,14 @@ export function mountManage(container, { promptHost, onChange }) {
     const newDaily = dailyChoice(null, `${DAILY_LIMIT_WORDS.label} for the new kid`);
     body.append(section("Kids",
       ...kids.map((kid) => {
-        const limit = limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`);
+        const limit = keep(`age ${kid.id}`, limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`));
         limit.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)))));
-        const daily = dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`);
+          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)), `age ${kid.id}`)));
+        const daily = keep(`daily ${kid.id}`, dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`));
         daily.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)))));
+          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)), `daily ${kid.id}`)));
         return row(kid.name, limit, daily,
-          pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)));
+          pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)), access(kid));
       }),
       addForm("Add a kid", [newLimit, newDaily], async (name) =>
         report(await send((id, pin) => api.create(id, pin,
