@@ -159,4 +159,19 @@ class PlayerTogetherWiringTest {
 
             assertEquals(TogetherUi(TogetherButton.JOIN, enabled = false, reason = NOT_HERE), rig.vm.together.value)
         }
+
+    @Test
+    fun aProfileIsNotOfferedASessionOnATitleInASectionHiddenFromIt() =
+        runTest {
+            installMainDispatcher()
+            val viewer = WatchStateFixture(listOf(Profile("p1", "Ben", hiddenSections = listOf("movies"))))
+            val catalog = FakeCatalogRepository(mapOf("film" to fakeMediaSet("film"), "e1" to fakeMediaSet("e1")))
+            val rig = PlayerTogetherRig(this, viewer, catalog)
+            rig.put(950, tvSession(set = "film", playing = false))
+
+            rig.vm.open("e1")
+            runCurrent()
+
+            assertEquals(TogetherUi(TogetherButton.JOIN, enabled = false, reason = NOT_HERE), rig.vm.together.value)
+        }
 }

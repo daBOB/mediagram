@@ -15,3 +15,16 @@ val SECTIONS: List<Section> =
         Section("documentaries", "Documentaries"),
         Section("tutorials", "Tutorials"),
     )
+
+/** The [Section] key this set sits in; anime leaves its kind's department first, as the catalog shelves it. */
+fun MediaSet.sectionKey(): String =
+    when {
+        anime -> "anime"
+        kind == Kind.DOCUMENTARY -> "documentaries"
+        kind == Kind.EPISODE -> "series"
+        kind == Kind.TUTORIAL || kind == Kind.DOCUMENT -> "tutorials"
+        else -> "movies"
+    }
+
+/** The keys this profile does not see. The household admin hides nothing, whatever its stored list says. */
+val Profile.hiddenFrom: Set<String> get() = if (admin && !kids) emptySet() else hiddenSections.toSet()

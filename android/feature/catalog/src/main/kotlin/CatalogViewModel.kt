@@ -57,16 +57,16 @@ class CatalogViewModel
         private var lastSets: List<MediaSet> = emptyList()
 
         /**
-         * The chosen kid's [KidsView], `null` for a grown-up. Distinct, so
+         * The chosen profile's [ProfileView]. Distinct, so
          * progress updates — which also move `snapshot` — do not regroup the
          * shelves; a limit changed in Manage or by sync does.
          */
-        private val kidsFilter: Flow<KidsView?> =
-            combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentKids() }
+        private val kidsFilter: Flow<ProfileView> =
+            combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentView() }
                 .distinctUntilChanged()
 
         /** [kidsFilter] as a synchronous read, for a value computed outside collection. */
-        private fun currentKids(): KidsView? = watchState.kidsView()
+        private fun currentView(): ProfileView = watchState.profileView()
 
         /**
          * Whether the chosen profile is a kids profile — the title page's own
@@ -103,7 +103,7 @@ class CatalogViewModel
          * button's absence: the pin is the household's, not a kid's, to make.
          */
         fun toggleEditorsChoice(setId: String) {
-            if (currentKids() != null) return
+            if (currentView().kids != null) return
             val marked = watchState.snapshot.value.editorsChoice != setId
             writeState("Could not confirm the editor's choice update. Check it and try again.") {
                 watchState.setEditorsChoice(setId, marked)
@@ -160,13 +160,13 @@ class CatalogViewModel
         val state: StateFlow<CatalogUiState> =
             object : StateFlow<CatalogUiState> {
                 override val value: CatalogUiState
-                    get() = project(unfiltered.value, currentKids())
+                    get() = project(unfiltered.value, currentView())
 
                 override val replayCache: List<CatalogUiState>
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
-                    combine(unfiltered, kidsFilter) { shown, kids -> project(shown, kids) }
+                    combine(unfiltered, kidsFilter) { shown, view -> project(shown, view) }
                         .distinctUntilChanged()
                         .collect(collector)
                     error("unreachable: a StateFlow-backed combine never completes")
@@ -175,8 +175,8 @@ class CatalogViewModel
 
         private fun project(
             shown: CatalogUiState,
-            kids: KidsView?,
-        ): CatalogUiState = projected(shown, kids, lastSets)
+            view: ProfileView,
+        ): CatalogUiState = projected(shown, view, lastSets)
 
         /**
          * Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one

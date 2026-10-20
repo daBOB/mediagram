@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import model.Kind
 import model.ListOfSets
+import model.MediaSet
 import model.Profile
 import model.ProfileRequest
 import model.WatchSnapshot
@@ -963,5 +964,51 @@ class CatalogViewModelTest {
                 val unheld = awaitItem() as CatalogUiState.Ready
                 assertTrue(unheld.heldIds.isEmpty())
             }
+        }
+
+    private suspend fun TestScope.shelvesFor(
+        profile: Profile,
+        given: List<MediaSet>,
+    ): List<Shelf> {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = catalogViewModel(FakeCatalogRepository(given = given), WatchStateFixture(listOf(profile)).repository)
+        var shelves = emptyList<Shelf>()
+        vm.state.test {
+            awaitItem()
+            shelves = (awaitItem() as CatalogUiState.Ready).shelves
+        }
+        return shelves
+    }
+
+    @Test
+    fun aHiddenSectionLeavesTheShelvesAndTheTabs() =
+        runTest {
+            val given = listOf(fakeSet(Kind.MOVIE, "Film"), fakeSet(Kind.DOCUMENTARY, "Docu"), fakeSet(Kind.MOVIE, "Toon").copy(anime = true))
+            val shelves = shelvesFor(Profile("a", "Ana", hiddenSections = listOf("documentaries", "anime")), given)
+
+            assertEquals(listOf(Department.MOVIES), shelves.map { it.department })
+            assertEquals(
+                listOf<CatalogTab>(CatalogTab.Home, CatalogTab.Dept(Department.MOVIES), CatalogTab.Kept(KeptKind.COLLECTIONS)),
+                mastheadTabsOf(shelves),
+            )
+        }
+
+    @Test
+    fun aKidsProfileSeesWhatBothFiltersLeave() =
+        runTest {
+            val given = listOf(fakeSet(Kind.MOVIE, "Family").copy(fsk = "6"), fakeSet(Kind.MOVIE, "Toon").copy(fsk = "6", anime = true))
+            val shelves = shelvesFor(Profile("k", "Mia", kids = true, hiddenSections = listOf("anime")), given)
+
+            assertEquals(listOf(Department.MOVIES, Department.DOCUMENTARIES), shelves.map { it.department })
+            assertEquals(setOf("Family"), shelves.flatMap { it.entries }.filterIsInstance<Entry.Film>().map { it.set.setId }.toSet())
+        }
+
+    @Test
+    fun theHouseholdAdminHidesNothingWhateverItsListSays() =
+        runTest {
+            val given = listOf(fakeSet(Kind.MOVIE, "Film"), fakeSet(Kind.MOVIE, "Toon").copy(anime = true))
+            val shelves = shelvesFor(Profile("a", "Ana", admin = true, hiddenSections = listOf("movies", "anime")), given)
+
+            assertEquals(setOf(Department.MOVIES, Department.ANIME), shelves.filter { it.entries.isNotEmpty() }.map { it.department }.toSet())
         }
 }
