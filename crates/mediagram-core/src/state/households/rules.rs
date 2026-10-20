@@ -60,8 +60,10 @@ pub fn view(
     // A kid is wherever its parent is, whatever its own field says: moving a
     // grown-up moves their kids, and a kid's stale field cannot split them.
     let household_of = |one: &MemberView| {
-        let parent = by_id
-            .get(one.parent_id.as_deref().unwrap_or_default())
+        let parent = one
+            .parent_id
+            .as_deref()
+            .and_then(|id| by_id.get(id))
             .filter(|parent| one.kids && !parent.kids);
         stored(parent.copied().unwrap_or(one))
     };

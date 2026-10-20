@@ -13,7 +13,7 @@
 
 use std::sync::Arc;
 
-use crate::state::{editors_choice, lists, profiles, rows};
+use crate::state::{editors_choice, households, lists, profiles, rows};
 
 use super::Core;
 
@@ -55,13 +55,13 @@ impl Core {
 
     /// Who watches this library. Empty until someone says.
     pub async fn profiles(self: Arc<Self>) -> Vec<profiles::Profile> {
-        self.blocking(|core| core.state_db.with(profiles::list).unwrap_or_default())
+        self.blocking(|core| core.state_db.with(households::device::profiles_here).unwrap_or_default())
             .await
     }
 
     /// This install's remembered "who's watching".
     pub async fn chosen_profile(self: Arc<Self>) -> Option<String> {
-        self.blocking(|core| core.state_db.with(profiles::chosen).flatten())
+        self.blocking(|core| core.state_db.with(households::device::chosen_here).flatten())
             .await
     }
 

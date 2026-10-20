@@ -143,5 +143,47 @@ fn a_store_from_before_roles_keeps_every_kid_and_mark_at_twelve() {
         .unwrap();
     assert_eq!(age, None);
     let version: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0)).unwrap();
-    assert_eq!(version, 11);
+    assert_eq!(version, 12);
+}
+
+/// A store from before households puts every profile in Home, undated, makes
+/// Home a row named Home with nothing dated, and the owner runs it.
+#[test]
+fn a_store_from_before_households_puts_everyone_in_home_run_by_the_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let conn = Connection::open(dir.path().join(STATE_FILE)).unwrap();
+        for statement in schema::migrations_up_to(11) {
+            conn.execute(statement, []).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 11i64).unwrap();
+        conn.execute_batch(
+            "INSERT INTO profiles(id, name, created_at, admin_claimed_at) VALUES ('p1', 'andre', 1, 5);
+             INSERT INTO profiles(id, name, created_at) VALUES ('p2', 'test', 2);
+             INSERT INTO profiles(id, name, created_at) VALUES ('p3', 'TV test', 3);
+             INSERT INTO profiles(id, name, created_at, kids, kids_age, parent_id) VALUES ('k1', 'TV kids', 4, 1, 12, 'p1');",
+        )
+        .unwrap();
+    }
+
+    let conn = open(dir.path()).unwrap();
+
+    let placed: Vec<(String, String, bool, bool)> =
+        profiles::list(&conn).unwrap().into_iter().map(|p| (p.id, p.household, p.owner, p.admin)).collect();
+    let row = |id: &str, owner: bool, admin: bool| (id.to_string(), "home".to_string(), owner, admin);
+    assert_eq!(placed, [row("p1", true, true), row("p2", false, false), row("p3", false, false), row("k1", false, false)]);
+    let home: (String, String, i64, Option<String>, i64, i64) = conn
+        .query_row("SELECT id, name, name_updated_at, admin_id, admin_updated_at, removed FROM households", [], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
+        })
+        .unwrap();
+    assert_eq!(home, ("home".into(), "Home".into(), 0, None, 0, 0));
+    let places: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM profiles WHERE household_id = 'home' AND household_updated_at = 0",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(places, 4);
 }

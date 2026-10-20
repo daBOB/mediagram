@@ -158,6 +158,7 @@ const GROUPS: &[&[&str]] = &[
     roles::PIN_PROOF,
     roles::DAILY_LIMIT,
     roles::HIDDEN_SECTIONS,
+    roles::HOUSEHOLDS,
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

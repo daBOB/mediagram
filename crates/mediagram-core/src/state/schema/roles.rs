@@ -42,3 +42,23 @@ pub(super) const HIDDEN_SECTIONS: &[&str] = &[
     "ALTER TABLE profiles ADD COLUMN hidden_sections TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE profiles ADD COLUMN hidden_sections_updated_at INTEGER NOT NULL DEFAULT 0",
 ];
+
+/// v11 -> v12: households — the web's v16. Home has the same id on every
+/// device, so each migrates alone and they still agree, and nothing in it is
+/// dated: a device that never changes it says nothing new to an older build.
+/// Every profile already stored is in Home, undated for the same reason.
+/// `admin_id` is not a foreign key, as `parent_id` is not: an admin removed
+/// here may be known elsewhere.
+pub(super) const HOUSEHOLDS: &[&str] = &[
+    "CREATE TABLE IF NOT EXISTS households(
+       id TEXT PRIMARY KEY,
+       name TEXT NOT NULL,
+       name_updated_at INTEGER NOT NULL DEFAULT 0,
+       admin_id TEXT,
+       admin_updated_at INTEGER NOT NULL DEFAULT 0,
+       removed INTEGER NOT NULL DEFAULT 0
+     )",
+    "INSERT OR IGNORE INTO households(id, name) VALUES ('home', 'Home')",
+    "ALTER TABLE profiles ADD COLUMN household_id TEXT NOT NULL DEFAULT 'home'",
+    "ALTER TABLE profiles ADD COLUMN household_updated_at INTEGER NOT NULL DEFAULT 0",
+];
