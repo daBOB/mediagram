@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.128.3 — the library opens without waiting for the channel
+
+**Fixed** (Android phone, tablet and TV)
+
+- **Every launch downloaded the whole channel index again** (~26 MB) before showing the library, even when nothing had been published since: "Loading your library…" stayed up 6.5 s on a Xiaomi Pad 5 Pro, about 8–9 s on the TV emulator, and about 15 s on the TV box. The snapshot already installed from the same library is no longer fetched again; a cold start now moves about 0.7 MB.
+- **The installed catalog shows at once** while the channel is asked, as the web player's does; a newer index replaces it when the refresh lands, and a refresh that brings nothing new leaves the shelves as they are rather than regrouping them under a viewer's thumb. Measured on the TV emulator: library on screen at about 2–3.5 s instead of 11–12 s.
+
 ## 0.128.2 — speech in 5.1 titles no longer sounds under water on tablet speakers
 
 **Fixed** (Android phone and tablet)
