@@ -12,6 +12,12 @@ class SectionsTest {
     }
 
     @Test
+    fun aKidWronglySaidToBeTheOwnerKeepsItsList() {
+        val kid = Profile("k", "Mia", kids = true, owner = true, hiddenSections = listOf("anime"))
+        assertEquals(setOf("anime"), kid.hiddenFrom)
+    }
+
+    @Test
     fun aHouseholdsAdminSeesWhatTheOwnerLeftThem() {
         val celine = Profile("c", "Celine", admin = true, household = "madani", hiddenSections = listOf("anime"))
         assertEquals(setOf("anime"), celine.hiddenFrom)

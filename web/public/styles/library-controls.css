@@ -79,6 +79,9 @@
 .who-ask .who-note { margin: 0 auto 16px; }
 .manage-section { margin: 0 0 32px; text-align: left; }
 .manage-section .who-new { justify-content: flex-start; margin: 16px 0 0; }
+/* The owner's Manage draws each household under its name; its Grown-ups and Kids head quieter beneath it. */
+.manage-section h3 { margin: 0 0 4px; font: 500 0.875rem/1.3 var(--text); color: var(--ink-3); }
+.manage-household { margin-bottom: 48px; }
 .manage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .manage-row > span { flex: 1; min-width: 0; color: var(--ink); }
 .manage-row select, .who-new select { min-height: 44px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-size: 0.875rem; }

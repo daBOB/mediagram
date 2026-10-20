@@ -61,6 +61,8 @@ test("a hidden section's sets are left out, and a key this build does not know l
 test("the owner, and nobody, has nothing hidden; anyone else what their list names, in the nav's order", () => {
   expect(hiddenSectionsOf(null)).toEqual([]);
   expect(hiddenSectionsOf({ kids: false, admin: true, owner: true, hiddenSections: ["anime"] })).toEqual([]);
+  // A kid wrongly said to be the owner is still a kid: its list holds.
+  expect(hiddenSectionsOf({ kids: true, kidsAge: 6, owner: true, hiddenSections: ["anime"] })).toEqual(["anime"]);
   // A household's admin sees what the owner left them.
   expect(hiddenSectionsOf({ kids: false, admin: true, hiddenSections: ["anime"] })).toEqual(["anime"]);
   expect(hiddenSectionsOf({ kids: false, admin: false, hiddenSections: ["tutorials", "podcasts", "anime", "movies"] }))

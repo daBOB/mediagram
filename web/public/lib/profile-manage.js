@@ -8,10 +8,10 @@
  * A grown-up says who they are and gives their PIN once; it is held while the
  * body is mounted, sent with every change, and dropped when it is torn down.
  *
- * What the panel offers follows the household's rule: the admin adds,
- * removes and resets grown-ups; every grown-up manages their own kids and
- * their own PIN. The server decides all the same — something offered here by
- * mistake is still refused there, and the refusal is shown as it comes.
+ * What the panel offers follows the household's rule: the admin adds, removes and resets grown-ups;
+ * every grown-up manages their own kids and their own PIN; the owner, everyone in every other
+ * household too. The server decides all the same — something offered here by mistake is still
+ * refused there, and the refusal is shown as it comes.
  */
 
 import { el } from "./dom.js";
@@ -22,6 +22,7 @@ import { kidsLimitOf } from "./age-rating.js";
 import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
 import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
 import { sectionSwitches } from "./section-switches.js";
+import { byHousehold, section } from "./profile-manage-households.js";
 import { askGrownUp, askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
 
 /** What a change reports once the body is gone: nothing was sent. */
@@ -48,12 +49,6 @@ function limitChoice(value, label) {
   }
   choice.value = String(value);
   return choice;
-}
-
-function section(title, ...nodes) {
-  const box = el("section", "manage-section");
-  box.append(el("h2", null, title), ...nodes);
-  return box;
 }
 
 function row(name, ...controls) {
@@ -115,7 +110,7 @@ export function mountManage(container, { promptHost, onChange }) {
   function draw() {
     body.textContent = "";
     named.clear();
-    const view = session === null ? null : api.manageable(state.profiles(), session.actorId);
+    const view = session === null ? null : api.manageable(state.everyone(), session.actorId);
     if (view?.actor) drawRole(view);
     else drawWho();
   }
@@ -141,37 +136,39 @@ export function mountManage(container, { promptHost, onChange }) {
     body.append(choices);
   }
 
-  function drawRole({ actor, grownUps, kids }) {
-    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${actor.name}`));
-    if (actor.admin) {
-      body.append(section("Grown-ups",
-        ...grownUps.map((entry) => row(entry.name,
-          pill("Reset PIN", () => void newPin(entry)),
-          pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)),
-          access(entry))),
-        addForm("Add a grown-up", [], async (name) => {
-          const made = await ask(() => askPin(promptHost, { title: newPinTitle(name), confirm: true, refused: report,
-            send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
-          if (made !== null) report({ ok: true });
-        })));
-    }
-    const newLimit = limitChoice(LIMITS[0], "Age limit for the new kid");
-    const newDaily = dailyChoice(null, `${DAILY_LIMIT_WORDS.label} for the new kid`);
-    body.append(section("Kids",
-      ...kids.map((kid) => {
-        const limit = keep(`age ${kid.id}`, limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`));
-        limit.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)), `age ${kid.id}`)));
-        const daily = keep(`daily ${kid.id}`, dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`));
-        daily.addEventListener("change", async () =>
-          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)), `daily ${kid.id}`)));
-        return row(kid.name, limit, daily,
-          pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)), access(kid));
-      }),
-      addForm("Add a kid", [newLimit, newDaily], async (name) =>
+  /** The rows and forms `byHousehold` lays out: a grown-up's, a kid's, and adding either. */
+  const draws = {
+    grownUp: (entry) => row(entry.name,
+      pill("Reset PIN", () => void newPin(entry)),
+      pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)),
+      access(entry)),
+    kid(kid) {
+      const limit = keep(`age ${kid.id}`, limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`));
+      limit.addEventListener("change", async () =>
+        report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)), `age ${kid.id}`)));
+      const daily = keep(`daily ${kid.id}`, dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`));
+      daily.addEventListener("change", async () =>
+        report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)), `daily ${kid.id}`)));
+      return row(kid.name, limit, daily,
+        pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)), access(kid));
+    },
+    addGrownUp: () => addForm("Add a grown-up", [], async (name) => {
+      const made = await ask(() => askPin(promptHost, { title: newPinTitle(name), confirm: true, refused: report,
+        send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
+      if (made !== null) report({ ok: true });
+    }),
+    addKid() {
+      const newLimit = limitChoice(LIMITS[0], "Age limit for the new kid");
+      const newDaily = dailyChoice(null, `${DAILY_LIMIT_WORDS.label} for the new kid`);
+      return addForm("Add a kid", [newLimit, newDaily], async (name) =>
         report(await send((id, pin) => api.create(id, pin,
-          { name, kids: true, kidsAge: Number(newLimit.value), dailyLimit: minutesOf(newDaily) }))))));
-    body.append(section("Your PIN", pill("Change your PIN", () => void newPin(actor))));
+          { name, kids: true, kidsAge: Number(newLimit.value), dailyLimit: minutesOf(newDaily) }))));
+    },
+  };
+
+  function drawRole(view) {
+    body.append(el("h1", null, "Manage profiles"), el("p", "who-note", `As ${view.actor.name}`), ...byHousehold(view, draws),
+      section("Your PIN", [pill("Change your PIN", () => void newPin(view.actor))]));
   }
 
   /** A new PIN for `entry`, asked twice. Changing one's own changes the one held here, or the next change would be refused. */
@@ -191,8 +188,11 @@ export function mountManage(container, { promptHost, onChange }) {
   root.append(body, message);
   container.append(root);
   draw();
+  // A change made elsewhere on the page — a household renamed, someone moved — is drawn here too.
+  window.addEventListener("mediagram:profiles", draw);
   return () => {
     gone = true;
+    window.removeEventListener("mediagram:profiles", draw);
     session = null;
     prompts.close();
     root.remove();
