@@ -93,6 +93,8 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `src/state/store.ts`, by 4, to write and take in the
  * households on the sync record, and `src/state/sync-record.ts`, by 4, to read
  * them — each the import, the key and the line that fills it.
+ * Lowered 2026-10-20 for `src/state/profiles-manage.ts`, to 194, once `claimAdmin` moved to
+ * `households-manage.ts`, net of the household a new profile joins.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -119,7 +121,7 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
-  "src/state/profiles-manage.ts": 213,
+  "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 245,
   "src/state/store.ts": 740,
   "src/state/sync-record.ts": 297,

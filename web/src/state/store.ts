@@ -28,7 +28,7 @@ import { findOrCreateProfile, insertProfile } from "./profiles-insert";
 import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
 import { exportHouseholds, importHouseholds } from "./households-exchange";
-import { ProfileAccess } from "./profiles-access";
+import { HouseholdManager } from "./households-manage";
 import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
@@ -632,8 +632,8 @@ export class WatchState {
   }
 
   /** Adding, removing and entering profiles, PIN and rule checked. */
-  manage(): ProfileAccess {
-    return new ProfileAccess(this.db, this.pins, this.household);
+  manage(): HouseholdManager {
+    return new HouseholdManager(this.db, this.pins, this.household);
   }
 }
 
