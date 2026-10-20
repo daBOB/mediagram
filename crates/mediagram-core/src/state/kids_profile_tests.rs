@@ -24,6 +24,7 @@ fn merged(name: &str, kids: bool) -> MergedState {
             title_stats: vec![],
             day_stats: vec![],
             roles: Default::default(),
+            names: Default::default(),
         }],
         kids: vec![],
         editors_choice: vec![],

@@ -159,6 +159,7 @@ const GROUPS: &[&[&str]] = &[
     roles::DAILY_LIMIT,
     roles::HIDDEN_SECTIONS,
     roles::HOUSEHOLDS,
+    roles::RENAMES,
 ];
 
 pub const VERSION: i64 = GROUPS.len() as i64;

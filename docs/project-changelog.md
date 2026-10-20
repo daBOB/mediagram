@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.135.0 — sync keeps a renamed profile as one person
+
+**Changed** (web player, Android phone, tablet and TV; nothing a viewer sees)
+
+- **A profile renamed on one device stays one person on every device**, with its history, lists, PIN, limits and household, instead of turning up as a second profile under the new name. The sync carries when a profile took its name and the names it had before; a device takes a rename in by renaming its own row, and two rows it holds for one person are folded into the older.
+- **A name a profile had before stays taken on this install**, as a current one is: a new profile may not take it.
+- Nothing renames a profile yet. That comes once every device runs this version: an older one shows both names until it updates, and stops syncing until then if the renamed person has a list.
+
 ## 0.134.0 — the owner manages every profile
 
 **Added** (web player; the Android core and app follow the same rule, its Manage screen follows with the Android households work)

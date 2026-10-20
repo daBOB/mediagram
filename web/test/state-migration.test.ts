@@ -504,7 +504,27 @@ describe("v15 to v16", () => {
       ]);
       expect(db.query("SELECT DISTINCT household_id AS household, household_updated_at AS at FROM profiles").all())
         .toEqual([{ household: "home", at: 0 }]);
-      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "16" });
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("v16 to v17", () => {
+  test("every profile already stored was never renamed", () => {
+    const path = tempPath();
+    atVersion(path, 16, () => [
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p1', 'Celine', 1)",
+      "INSERT INTO profiles(id, name, created_at, kids, kids_age) VALUES ('k1', 'Mia', 2, 1, 6)",
+    ]);
+
+    new WatchState(path).close();
+
+    const db = new Database(path);
+    try {
+      expect(db.query("SELECT renamed_at AS renamedAt, former_names AS formerNames FROM profiles").all())
+        .toEqual([{ renamedAt: 0, formerNames: "[]" }, { renamedAt: 0, formerNames: "[]" }]);
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "17" });
     } finally {
       db.close();
     }

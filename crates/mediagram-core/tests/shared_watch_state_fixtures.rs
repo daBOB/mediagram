@@ -27,12 +27,13 @@ use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::profiles::pin;
 use mediagram_core::state::profiles::pin_wait::PinWait;
 use mediagram_core::state::profiles::rules::{Action, RoleView, allowed, name_taken};
-use mediagram_core::state::record::{HouseholdEntry, ProfileHousehold, SyncRecord, parse_record};
+use mediagram_core::state::record::{HouseholdEntry, NameKeys, ProfileHousehold, SyncRecord, parse_record};
 use mediagram_core::state::stats::achievements::{AchievementInput, Achievements, achievements};
 use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
 use mediagram_core::state::stats::{Tick, again_now, step_seconds};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde_json::{Map, Value, json};
 
 const FIXTURES: &str = "../../web/test/fixtures/watch-state";
 
@@ -613,6 +614,135 @@ fn households_sync_merge_fixtures() {
             let profiles = merged.profiles.into_iter().map(|one| (one.name, one.roles.household));
             let got = canonical_households(merged.households, profiles);
             assert_eq!(got, case.expect, "case: {} ({order})", case.name);
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct RenamesParseCase {
+    name: String,
+    input: String,
+    expect: Value,
+}
+
+#[derive(Deserialize)]
+struct RenamesMergeCase {
+    name: String,
+    records: Vec<SyncRecord>,
+    expect: Value,
+}
+
+/// `profile-renames.json` is one object, like `households-sync.json`; each
+/// `expect` is the web runner's projection, built here the same way.
+#[derive(Deserialize)]
+struct ProfileRenames {
+    parse: Vec<RenamesParseCase>,
+    merge: Vec<RenamesMergeCase>,
+}
+
+/// A profile's name keys as the wire writes them, so a key present but empty
+/// fails here as it does on the web. A whole stamp loses its `.0`, as the
+/// fixture writes it: `serde_json` tells `5` from `5.0`.
+fn wire_name_keys(names: &NameKeys) -> Map<String, Value> {
+    let Value::Object(mut wire) = serde_json::to_value(names).unwrap() else {
+        panic!("name keys are not an object");
+    };
+    if let Some(at) = wire.get_mut("renamedAt")
+        && let Some(whole) = at.as_f64().filter(|n| n.fract() == 0.0)
+    {
+        *at = json!(whole as i64);
+    }
+    wire
+}
+
+/// A list only when it holds something, as the web's `list` writes it.
+fn listed(into: &mut Map<String, Value>, key: &str, rows: Vec<Value>) {
+    if !rows.is_empty() {
+        into.insert(key.to_string(), Value::Array(rows));
+    }
+}
+
+/// The web's `canonicalRenames`: who each viewer is, under which name, with a
+/// few kinds of row to show whose they became. Every list sorted by bytes
+/// (`String`'s order, and the web's `Buffer.compare`), and omitted when empty.
+fn canonical_renames(state: MergedState) -> Value {
+    let mut profiles: Vec<(String, Value)> = state
+        .profiles
+        .into_iter()
+        .map(|profile| {
+            let mut one = Map::new();
+            one.insert("name".into(), json!(profile.name));
+            one.insert("displayName".into(), json!(profile.display_name));
+            one.extend(wire_name_keys(&profile.names));
+            if let Some(parent) = profile.roles.parent {
+                one.insert("parent".into(), json!(parent));
+            }
+            let mut progress: Vec<String> = profile.progress.into_iter().map(|row| row.set_id).collect();
+            progress.sort();
+            listed(&mut one, "progress", progress.into_iter().map(Value::from).collect());
+            let mut watchlist: Vec<(String, bool)> =
+                profile.watchlist.into_iter().map(|row| (row.set_id, row.removed)).collect();
+            watchlist.sort();
+            let watchlist = watchlist
+                .into_iter()
+                .map(|(set_id, removed)| if removed { json!({ "setId": set_id, "removed": true }) } else { json!({ "setId": set_id }) })
+                .collect();
+            listed(&mut one, "watchlist", watchlist);
+            let mut stats: Vec<(String, String)> =
+                profile.title_stats.into_iter().map(|row| (row.set_id, row.device)).collect();
+            stats.sort();
+            let stats = stats.into_iter().map(|(set_id, device)| json!({ "setId": set_id, "device": device })).collect();
+            listed(&mut one, "titleStats", stats);
+            (profile.name, Value::Object(one))
+        })
+        .collect();
+    profiles.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut households: Vec<(String, String)> =
+        state.households.into_iter().filter_map(|one| Some((one.id, one.admin?.name))).collect();
+    households.sort();
+
+    let mut canonical = Map::new();
+    canonical.insert("profiles".into(), Value::Array(profiles.into_iter().map(|(_, one)| one).collect()));
+    let households = households.into_iter().map(|(id, admin)| json!({ "id": id, "admin": admin })).collect();
+    listed(&mut canonical, "households", households);
+    Value::Object(canonical)
+}
+
+/// Each profile's name and name keys, read off the wire.
+#[test]
+fn profile_renames_parse_fixtures_match_the_web() {
+    let Some(fixture) = read::<ProfileRenames>("profile-renames.json") else {
+        return;
+    };
+    assert!(!fixture.parse.is_empty(), "profile-renames.json holds no parse cases");
+    for case in fixture.parse {
+        let record = parse_record(&case.input).unwrap_or_else(|| panic!("case: {} (unparsed)", case.name));
+        let profiles: Vec<Value> = record
+            .profiles
+            .into_iter()
+            .map(|profile| {
+                let mut one = Map::new();
+                one.insert("name".into(), json!(profile.name));
+                one.extend(wire_name_keys(&profile.names));
+                Value::Object(one)
+            })
+            .collect();
+        assert_eq!(json!({ "profiles": profiles }), case.expect, "case: {}", case.name);
+    }
+}
+
+/// A rename, an older build's document, a chain, two renames at once, a
+/// kid's parent and a household's admin by an old name: one person each.
+#[test]
+fn profile_renames_merge_fixtures_match_the_web_in_both_orders() {
+    let Some(fixture) = read::<ProfileRenames>("profile-renames.json") else {
+        return;
+    };
+    assert!(!fixture.merge.is_empty(), "profile-renames.json holds no merge cases");
+    for case in fixture.merge {
+        let reversed: Vec<SyncRecord> = case.records.iter().rev().cloned().collect();
+        for (order, records) in [("forward", &case.records), ("reversed", &reversed)] {
+            assert_eq!(canonical_renames(merge_states(records)), case.expect, "case: {} ({order})", case.name);
         }
     }
 }

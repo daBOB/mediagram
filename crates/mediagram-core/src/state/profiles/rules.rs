@@ -14,21 +14,22 @@
 use serde::Deserialize;
 
 use super::clean_name;
-use crate::state::record::normal_name;
+use crate::state::record::{js_collapse, normal_name};
 
 /// Whether a profile here already answers to `name`. Sync knows a viewer by
 /// its normalised name and only ever turns `kids` on, so a second profile of
 /// the same name would merge with the first everywhere — a kid called after
 /// the admin would make the admin a kid. Compared as stored names are kept:
-/// edges trimmed, runs of space collapsed, then normalised.
+/// edges trimmed, runs of space collapsed, then normalised. `name` is cut as
+/// it would be stored; `existing` is not, because a former name that
+/// lower-casing lengthened past the cut must still be refused whole.
 pub fn name_taken(existing: &[String], name: &str) -> bool {
-    let normal = |name: &str| clean_name(name).and_then(|clean| normal_name(&clean));
-    let Some(wanted) = normal(name) else {
+    let Some(wanted) = clean_name(name).and_then(|clean| normal_name(&clean)) else {
         return false;
     };
     existing
         .iter()
-        .any(|one| normal(one).as_ref() == Some(&wanted))
+        .any(|one| normal_name(&js_collapse(one)).as_ref() == Some(&wanted))
 }
 
 /// What the rule needs to know about a profile, and nothing else.

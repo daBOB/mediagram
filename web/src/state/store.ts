@@ -24,7 +24,8 @@ import { Settings } from "./settings";
 import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merged";
 import { cleanName, deleteProfileById, listProfiles, profileExists, type Profile } from "./profiles";
-import { findOrCreateProfile, insertProfile } from "./profiles-insert";
+import { insertProfile } from "./profiles-insert";
+import { exportNames, takeIn } from "./names-exchange";
 import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
 import { exportHouseholds, importHouseholds } from "./households-exchange";
@@ -362,6 +363,7 @@ export class WatchState {
    */
   exportRecord(device: string): SyncRecord {
     const roles = exportRoles(this.db);
+    const names = exportNames(this.db);
     const households = exportHouseholds(this.db);
     const profiles = this.profiles().map((profile) => {
       const { watched, unwatched } = exportWatched(this.db, profile.id);
@@ -369,6 +371,7 @@ export class WatchState {
         name: profile.name,
         localId: profile.id,
         ...roles.get(profile.id),
+        ...names.get(profile.id),
         progress: exportProgress(this.db, profile.id),
         watched,
         unwatched,
@@ -410,11 +413,11 @@ export class WatchState {
       changed += importTitleMarks(db, "editors_choice", merged.editorsChoice ?? []);
 
       for (const profile of merged.profiles) {
-        // The identity to match on, and the spelling to create with.
-        const matched = findOrCreateProfile(db, profile.name, profile.displayName, profile.kids === true);
+        // By its name and every name it had: renamed in place, two rows folded, or made.
+        const matched = takeIn(db, profile);
         if (matched === null) continue;
         const profileId = matched.id;
-        if (matched.created) changed += 1;
+        changed += matched.changed;
         // Another device made this viewer a kids profile. Only ever upgraded:
         // a merge without the flag says nothing, it does not say "not kids".
         // FSK 12 until `importRoles` brings the merged limit, so a kid never

@@ -2,17 +2,16 @@
 //! `web/src/state/profiles.ts`. Adding to and removing from a household,
 //! behind a grown-up's PIN, is `manage`.
 //!
-//! Rename stays deferred: a sync can only ever add a profile from another
-//! device's document, never carry a rename, and offering one here would let
-//! this device drift from what the others still believe. Delete is safe in
-//! a way rename is not — a profile removed here simply returns the moment
-//! another device that still holds it syncs, the same as the web's own
-//! `DELETE FROM profiles`, so nothing here can make two devices disagree for
-//! longer than one round.
+//! Sync carries a rename made elsewhere, and this device takes it in by
+//! renaming its own row (`exchange/names.rs`); this module still offers no
+//! rename of its own. Delete is safe without one — a profile removed here
+//! simply returns the moment another device that still holds it syncs, the
+//! same as the web's own `DELETE FROM profiles`, so nothing here can make
+//! two devices disagree for longer than one round.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use super::record::normal_name;
+use super::record::{js_collapse, normal_name};
 
 pub mod manage;
 mod outcome;
@@ -131,11 +130,10 @@ pub(super) fn profile_named_with_creation(
     Ok(create(conn, display_name.unwrap_or(name), kids)?.map(|p| (p.id, true, kids)))
 }
 
-/// A name with its edges trimmed and internal whitespace collapsed, or
-/// `None` when there is nothing left.
+/// A name with its edges trimmed and internal whitespace collapsed, as the
+/// web's `cleanName`, or `None` when there is nothing left.
 pub(super) fn clean_name(name: &str) -> Option<String> {
-    let collapsed = name.split_whitespace().collect::<Vec<_>>().join(" ");
-    let clean: String = collapsed.chars().take(MAX_NAME).collect();
+    let clean: String = js_collapse(name).chars().take(MAX_NAME).collect();
     (!clean.is_empty()).then_some(clean)
 }
 

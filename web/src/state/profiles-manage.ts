@@ -19,7 +19,7 @@
 
 import type { Database } from "bun:sqlite";
 import { cleanName, listProfiles, profileRows, type Profile, type ProfileRow } from "./profiles";
-import { insertProfile } from "./profiles-insert";
+import { insertProfile, takenNames } from "./profiles-insert";
 import { HOME } from "../../public/lib/household-rules.js";
 import { writeDailyLimit, writeKidsAge, writePin } from "./profiles-write";
 import { newPin, pinMatches, validPin } from "./profiles-pin";
@@ -138,11 +138,11 @@ export class ProfileManager {
 
   /**
    * A new profile's name: one that cannot be stored, or one another profile
-   * here already answers to — which sync would read as the same viewer.
+   * here answers or once answered to — which sync would read as the same viewer.
    */
   private unusable(name: unknown): Refused | null {
     if (cleanName(name) === null) return refuse("invalid");
-    return nameTaken(profileRows(this.db).map((row) => row.name), name) ? refuse("name-taken") : null;
+    return nameTaken(takenNames(this.db), name) ? refuse("name-taken") : null;
   }
 
   /** The household a new profile joins: its maker's, resolved. Home is left undated, as before households. */
