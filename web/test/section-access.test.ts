@@ -58,11 +58,13 @@ test("a hidden section's sets are left out, and a key this build does not know l
   expect(withoutHidden(all, [])).toEqual(all);
 });
 
-test("whoever runs the household, and nobody, has nothing hidden; anyone else what their list names, in the nav's order", () => {
+test("the owner, and nobody, has nothing hidden; anyone else what their list names, in the nav's order", () => {
   expect(hiddenSectionsOf(null)).toEqual([]);
-  expect(hiddenSectionsOf({ kids: false, admin: true, hiddenSections: ["anime"] })).toEqual([]);
-  // Only a grown-up runs a household: a kid read as admin is still a kid.
-  expect(hiddenSectionsOf({ kids: true, admin: true, hiddenSections: ["anime"] })).toEqual(["anime"]);
+  expect(hiddenSectionsOf({ kids: false, admin: true, owner: true, hiddenSections: ["anime"] })).toEqual([]);
+  // A kid wrongly said to be the owner is still a kid: its list holds.
+  expect(hiddenSectionsOf({ kids: true, kidsAge: 6, owner: true, hiddenSections: ["anime"] })).toEqual(["anime"]);
+  // A household's admin sees what the owner left them.
+  expect(hiddenSectionsOf({ kids: false, admin: true, hiddenSections: ["anime"] })).toEqual(["anime"]);
   expect(hiddenSectionsOf({ kids: false, admin: false, hiddenSections: ["tutorials", "podcasts", "anime", "movies"] }))
     .toEqual(["movies", "anime", "tutorials"]);
   // A profile from a server that sends no list hides nothing.
@@ -86,7 +88,7 @@ test("a kid is shown what both its age limit and its sections allow, where the c
   profile = { kids: false, admin: false, hiddenSections: ["anime"] };
   session.reapply();
   expect(shown()).toEqual(["Family", "Heat", "Grown"]);
-  profile = { kids: false, admin: true, hiddenSections: ["anime"] };
+  profile = { kids: false, admin: true, owner: true, hiddenSections: ["anime"] };
   session.reapply();
   expect(shown()).toEqual(["Family", "Heat", "Grown", "Kids anime"]);
 });
@@ -173,8 +175,8 @@ describe("the page, for a profile with a section hidden", () => {
     expect(page()).toBe(SECTIONS.anime.empty);
   });
 
-  test("whoever runs the household is shown every section, whatever its list says", async () => {
-    profiles = [{ ...ANDRE, id: "viewer", hiddenSections: ["movies"] }];
+  test("the owner is shown every section, whatever their list says", async () => {
+    profiles = [{ ...ANDRE, owner: true, id: "viewer", hiddenSections: ["movies"] }];
     await start();
     expect(link("movies").hidden).toBe(false);
     expect(env.node("n-movies").textContent).toBe("1");

@@ -17,6 +17,7 @@
  */
 
 import { loadProfiles, profile, profileId, useProfile } from "./watch-state.js";
+import { placed } from "./household.js";
 
 const REASONS = new Set(["invalid", "name-taken", "not-found", "wait", "no-pin", "wrong-pin", "not-allowed"]);
 
@@ -101,15 +102,20 @@ export function ownerOf(profiles, kid) {
 }
 
 /**
- * What `actorId` may manage, as Manage profiles draws it: every other
- * grown-up when the actor is the admin, and the kids that are the actor's own.
- * `actor` is `null` for a kid or for nobody, who manage nothing.
+ * What `actorId` may manage among `profiles` — everyone on the install, as
+ * Manage profiles draws it. In the actor's own household: every other
+ * grown-up when the actor is its admin, and the kids that are the actor's own.
+ * Only the owner reaches into the others, where they manage everyone, each
+ * household's admin too. `actor` is `null` for a kid or for nobody, who manage nothing.
  */
 export function manageable(profiles, actorId) {
   const actor = profiles.find((entry) => entry.id === actorId && !entry.kids) ?? null;
+  if (actor === null) return { actor, grownUps: [], kids: [] };
+  const mine = profiles.filter((entry) => placed(entry) === placed(actor));
+  const elsewhere = actor.owner === true ? profiles.filter((entry) => placed(entry) !== placed(actor)) : [];
   return {
     actor,
-    grownUps: actor?.admin ? profiles.filter((entry) => !entry.kids && entry.id !== actorId) : [],
-    kids: actor ? profiles.filter((entry) => entry.kids && ownerOf(profiles, entry) === actorId) : [],
+    grownUps: [...(actor.admin ? mine : []), ...elsewhere].filter((entry) => !entry.kids && entry.id !== actorId),
+    kids: [...mine.filter((entry) => ownerOf(mine, entry) === actorId), ...elsewhere].filter((entry) => entry.kids),
   };
 }

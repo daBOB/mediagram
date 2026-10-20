@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as api from "../public/lib/profile-api.js";
 import * as state from "../public/lib/watch-state.js";
-import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
+import { ANDRE, LEA, MAJA, SPLIT, TIM, writesOf } from "./support/household-fixture";
 import { browserEnvironment } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -118,14 +118,28 @@ describe("what each grown-up may manage", () => {
     const ida = { ...TIM, id: "ida", parentId: "removed-elsewhere" };
     expect(api.ownerOf([ANDRE, MAJA, ida], ida)).toBe("andre");
   });
+
+  const ids = (list: Array<{ id: string }>) => list.map((entry) => entry.id);
+
+  test("the owner, given everyone: their own household as its admin, and everyone in every other, its admin too", () => {
+    const view = api.manageable(SPLIT, "andre");
+    expect(ids(view.grownUps)).toEqual(["maja"]);
+    expect(ids(view.kids)).toEqual(["lea", "tim"]);
+  });
+
+  test("anyone else, given everyone, manages only in their own household", () => {
+    const maja = api.manageable(SPLIT, "maja");
+    expect(ids(maja.grownUps)).toEqual([]);
+    expect(ids(maja.kids)).toEqual(["tim"]);
+    const lena = { ...MAJA, id: "lena", name: "Lena", admin: false, household: "flat" };
+    expect(ids(api.manageable([...SPLIT, lena], "lena").kids)).toEqual([]);
+  });
 });
 
 /** Whether the panel offers `action` on `targetId` — which the server's rule must agree with. */
 function offered(profiles: object[], actorId: string, action: string, targetId: string | null) {
-  // The panel only ever sees the actor's own household.
-  const householdOf = (one: object) => (one as { household?: string }).household ?? "home";
-  const mine = householdOf(profiles.find((one) => (one as { id: string }).id === actorId) ?? {});
-  const { actor, grownUps, kids } = api.manageable(profiles.filter((one) => householdOf(one) === mine), actorId);
+  // The panel is given everyone on the install, as the page holds them.
+  const { actor, grownUps, kids } = api.manageable(profiles, actorId);
   const has = (list: Array<{ id: string }>) => list.some((entry) => entry.id === targetId);
   if (!actor) return false;
   if (action === "create-grown-up") return actor.admin === true;
@@ -142,6 +156,7 @@ const RULES = JSON.parse(readFileSync(join(import.meta.dir, "fixtures", "watch-s
 
 describe("the panel offers what the server's rule allows", () => {
   for (const rule of RULES) {
-    test(rule.name, () => expect(offered(rule.profiles, rule.actorId, rule.action, rule.targetId ?? null)).toBe(rule.expect));
+    test(rule.name, () =>
+      expect(offered(rule.profiles, rule.actorId, rule.action, rule.targetId ?? null)).toBe(rule.expect));
   }
 });

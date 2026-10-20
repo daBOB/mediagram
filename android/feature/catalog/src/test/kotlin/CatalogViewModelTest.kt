@@ -1066,10 +1066,10 @@ class CatalogViewModelTest {
         }
 
     @Test
-    fun theHouseholdAdminHidesNothingWhateverItsListSays() =
+    fun theOwnerHidesNothingWhateverTheirListSays() =
         runTest {
             val given = listOf(fakeSet(Kind.MOVIE, "Film"), fakeSet(Kind.MOVIE, "Toon").copy(anime = true))
-            val shelves = shelvesFor(Profile("a", "Ana", admin = true, hiddenSections = listOf("movies", "anime")), given)
+            val shelves = shelvesFor(Profile("a", "Ana", admin = true, owner = true, hiddenSections = listOf("movies", "anime")), given)
 
             assertEquals(setOf(Department.MOVIES, Department.ANIME), shelves.filter { it.entries.isNotEmpty() }.map { it.department }.toSet())
         }
