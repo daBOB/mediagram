@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import model.HOME_HOUSEHOLD
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -36,6 +37,7 @@ class TogetherCastFixtureTest {
                 "stopped" to CastWords.STOPPED,
                 "libraryMissing" to CastWords.LIBRARY_MISSING,
                 "profileUnknown" to CastWords.PROFILE_UNKNOWN,
+                "joinFirst" to CastWords.JOIN_FIRST,
             )
         assertEquals(words.getValue("object").jsonObject.mapValues { it.value.jsonPrimitive.content }, ported)
     }
@@ -60,7 +62,7 @@ class TogetherCastFixtureTest {
     fun offeredAgreesWithTheWeb() {
         for (case in cases("cast.json", "offered")) {
             val args = case.getValue("args").jsonObject
-            val got = offered(args.str("id")!!, args.member("me"), args.getValue("own").jsonObject.toPlayback(), args.str("profile")!!, args.long("now"))
+            val got = offered(args.str("id")!!, args.member("me"), args.getValue("own").jsonObject.toPlayback(), args.str("profile")!!, args.str("household")!!, args.long("now"))
             assertEquals(case.getValue("expect").jsonObject.toSession(), got, case.label())
         }
     }
@@ -68,7 +70,7 @@ class TogetherCastFixtureTest {
     @Test
     fun answerAgreesWithTheWeb() {
         for (case in cases("cast.json", "answer")) {
-            val tv = case.getValue("tv").jsonObject.let { TvState(it.str("screen")!!, it.str("busy"), it.str("refusal")) }
+            val tv = case.getValue("tv").jsonObject.let { TvState(it.str("screen")!!, it.str("busy"), it.str("refusal"), it.str("household")) }
             val want = case.getValue("expect").jsonObject
             val expected =
                 when (val kind = want.str("kind")) {
@@ -115,7 +117,7 @@ class TogetherCastFixtureTest {
     fun tracksStayUnderTheMessageLimit() {
         val phone = { n: Int -> Member("screen-$n", "Phone", remote = true) }
         val lists = { n: Int, p: String -> List(n) { Track("$p${it.toString().padStart(15, '0')}", "x".repeat(80)) } }
-        var s = offered("s1", phone(0), Playback("film-1", true, 100.0, 1.0), "p1", 1000)
+        var s = offered("s1", phone(0), Playback("film-1", true, 100.0, 1.0), "p1", HOME_HOUSEHOLD, 1000)
         s = accepted(s, Member("tv-1", "TV"), 2000)!!
         s = s.copy(members = s.members + phone(1) + phone(2))
         s = tracked(s, "tv-1", CastTracks(lists(30, "a"), lists(40, "t")), "a000000000000000", "t000000000000000")
@@ -128,7 +130,7 @@ class TogetherCastFixtureTest {
 
     @Test
     fun aTakenCastIsNotTakenTwice() {
-        val on = offered("s1", Member("ph-1", "Phone"), Playback("film-1", true, 1.0, 1.0), "p1", 1000)
+        val on = offered("s1", Member("ph-1", "Phone"), Playback("film-1", true, 1.0, 1.0), "p1", HOME_HOUSEHOLD, 1000)
         val taken = accepted(on, Member("tv-1", "TV"), 2000)!!
         assertNull(accepted(taken, Member("tv-2", "TV"), 3000))
     }
@@ -140,7 +142,7 @@ class TogetherCastFixtureTest {
             "#mlib-together v=2\n" +
                 """{"session":"s1","set":"film-1","playing":false,"pos":100,"rate":1,"at":1000,"by":"tv-1",""" +
                 """"members":[{"screen":"ph-1","label":"Phone","remote":true},{"screen":"tv-1","label":"TV","remote":false}],""" +
-                """"ended":false,"cast":{"to":"TV","from":"Phone","profile":"p1","state":"on","tv":"tv-1","note":"",""" +
+                """"ended":false,"cast":{"to":"TV","from":"Phone","profile":"p1","household":"home","state":"on","tv":"tv-1","note":"",""" +
                 """"tracks":{"audio":[{"id":"a1","label":"English"}],"text":[{"id":"t1","label":"Français \"forcé\""}]},""" +
                 """"audio":"a1","text":"t1"}}"""
         assertEquals(expected, writeSession(case.getValue("expect").jsonObject.toSession()))
@@ -148,3 +150,18 @@ class TogetherCastFixtureTest {
 }
 
 private fun JsonObject.toCastTracks() = CastTracks(toTracks("audio"), toTracks("text"))
+
+/** A cast from before casts carried a household is Home's, as the web reads it. */
+internal fun JsonObject.toCast() =
+    Cast(
+        to = str("to")!!,
+        from = str("from")!!,
+        profile = str("profile")!!,
+        household = str("household") ?: HOME_HOUSEHOLD,
+        state = CastState.entries.single { it.word == str("state") },
+        tv = str("tv")!!,
+        note = str("note")!!,
+        tracks = getValue("tracks").jsonObject.toCastTracks(),
+        audio = str("audio")!!,
+        text = str("text")!!,
+    )

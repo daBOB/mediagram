@@ -39,7 +39,7 @@ class PlayerCastSwitchTest : PlayerCardScreenBase() {
         compose.onNodeWithText(CastWords.ASKING).assertExists()
         // Home while the TV is asked: a playing title shrinks into picture-in-picture on its own.
         compose.runOnUiThread { controller.get().enterPictureInPictureMode(PictureInPictureParams.Builder().build()) }
-        val taken = offered("s", Member("tab", "Tablet", remote = true), Playback("set-one", true, 300.0, 1.0), "p1", 0L)
+        val taken = offered("s", Member("tab", "Tablet", remote = true), Playback("set-one", true, 300.0, 1.0), "p1", "home", 0L)
         compose.runOnUiThread { tv.complete(CastAnswer(Answer.ON, LiveSession(11, taken), "")) }
         compose.waitForIdle()
 

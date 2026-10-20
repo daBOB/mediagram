@@ -121,7 +121,7 @@ class TogetherCastTvTest {
     fun aCastReplacingTheOneThisTvPlaysIsTakenAndStaysOpen() =
         runTest {
             val rig = casting()
-            val next = offered("s-next", TABLET, Playback(EP2, playing = false, pos = 30.0, rate = 1.0), "kid", NOW)
+            val next = offered("s-next", TABLET, Playback(EP2, playing = false, pos = 30.0, rate = 1.0), "kid", "home", NOW)
             rig.put(961, next)
             rig.live.refresh()
 

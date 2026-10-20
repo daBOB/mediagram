@@ -5,6 +5,7 @@ import { askTv } from "../public/lib/cast/cast-ask.js";
 import { CAST_ANSWER_MS } from "../public/lib/together/cast.js";
 import { CAST_WORDS, busyQuestion, refusedLine } from "../public/lib/together/cast-words.js";
 import { UNREACHABLE, screen, type Live } from "../public/lib/together-now.js";
+import { here } from "../public/lib/household.js";
 
 let env: ReturnType<typeof browserEnvironment>;
 let sent: Array<Record<string, unknown>>;
@@ -26,7 +27,7 @@ function answers(...replies: Array<{ status?: number; body?: unknown }>) {
   });
 }
 
-beforeEach(() => { env = browserEnvironment(); sent = []; });
+beforeEach(() => { env = browserEnvironment(); sent = []; here([], [], null, true); });
 afterEach(() => env.restore());
 
 test("on resolves the live session and closes the dialog", async () => {
@@ -36,7 +37,7 @@ test("on resolves the live session and closes the dialog", async () => {
   expect(status()).toBe(CAST_WORDS.asking);
   expect(await asked).toEqual(live);
   expect(dialog().open).toBe(false);
-  expect(sent).toEqual([{ op: "offer", screen, profile: "mia", ...own }]);
+  expect(sent).toEqual([{ op: "offer", screen, profile: "mia", household: "home", ...own }]);
 });
 
 test("busy asks to replace, and Replace sends replace and resolves on", async () => {
@@ -46,7 +47,7 @@ test("busy asks to replace, and Replace sends replace and resolves on", async ()
   expect(status()).toBe(busyQuestion("Dune (2021)"));
   press(CAST_WORDS.replace);
   expect(await asked).toEqual(live);
-  expect(sent[1]).toEqual({ op: "replace", screen, profile: "mia", ...own, id: 7 });
+  expect(sent[1]).toEqual({ op: "replace", screen, profile: "mia", household: "home", ...own, id: 7 });
   expect(dialog().open).toBe(false);
 });
 

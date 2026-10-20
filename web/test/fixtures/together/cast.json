@@ -12,7 +12,8 @@
    "finished": "Finished",
    "stopped": "Stopped on the TV",
    "libraryMissing": "the TV's library doesn't have it yet",
-   "profileUnknown": "the TV doesn't know this profile yet"
+   "profileUnknown": "the TV doesn't know this profile yet",
+   "joinFirst": "Join a household first"
   },
   "lines": [
    {
@@ -70,6 +71,7 @@
      "rate": 1
     },
     "profile": "p1",
+    "household": "h2",
     "now": 1000
    },
    "expect": {
@@ -92,6 +94,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "h2",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -128,6 +131,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -142,7 +146,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -171,6 +176,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -185,7 +191,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": "Dune",
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -215,6 +222,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "replace",
      "tv": "",
      "note": "",
@@ -229,7 +237,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": "Dune",
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -258,6 +267,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -272,7 +282,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": "Dune",
-    "refusal": "it's rated above Mia's age limit"
+    "refusal": "it's rated above Mia's age limit",
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -307,6 +318,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -321,7 +333,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -350,6 +363,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "busy",
      "tv": "",
      "note": "Dune",
@@ -364,7 +378,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -393,6 +408,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "refused",
      "tv": "",
      "note": "x",
@@ -407,7 +423,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -436,6 +453,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -450,7 +468,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 61000,
    "expect": {
@@ -479,6 +498,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -493,7 +513,8 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
@@ -523,11 +544,147 @@
    "tv": {
     "screen": "tv-1",
     "busy": null,
-    "refusal": null
+    "refusal": null,
+    "household": "home"
    },
    "now": 2000,
    "expect": {
     "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV of another household ignores an offer, even one it would refuse or is busy for",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-2",
+    "busy": "Dune",
+    "refusal": "it's rated above Mia's age limit",
+    "household": "h2"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV that has joined no household ignores an offer",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": null
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV of the caster's household accepts, whichever household that is",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "h2",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-2",
+    "busy": null,
+    "refusal": null,
+    "household": "h2"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "accept"
    }
   }
  ],
@@ -555,6 +712,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -590,6 +748,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "busy",
      "tv": "",
      "note": "Dune",
@@ -625,6 +784,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -660,6 +820,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "refused",
      "tv": "",
      "note": "it's rated above Mia's age limit",
@@ -695,6 +856,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "busy",
      "tv": "",
      "note": "Dune",
@@ -736,6 +898,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "replace",
      "tv": "",
      "note": "",
@@ -771,6 +934,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "offer",
      "tv": "",
      "note": "",
@@ -815,6 +979,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -855,6 +1020,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -904,6 +1070,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1075,6 +1242,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1217,6 +1385,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1272,6 +1441,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1322,6 +1492,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1364,6 +1535,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1405,6 +1577,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1446,6 +1619,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1510,6 +1684,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1551,6 +1726,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1597,6 +1773,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1644,6 +1821,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1688,6 +1866,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1732,6 +1911,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1776,6 +1956,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",
@@ -1820,6 +2001,7 @@
      "to": "TV",
      "from": "Phone",
      "profile": "p1",
+     "household": "home",
      "state": "on",
      "tv": "tv-1",
      "note": "",

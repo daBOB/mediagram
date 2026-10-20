@@ -52,7 +52,7 @@ class TogetherFixtureTest {
             "#mlib-together v=2\n" +
                 """{"session":"s1","set":"film-1","playing":true,"pos":100,"rate":1,"at":1000,"by":"tv-1",""" +
                 """"members":[{"screen":"ph-1","label":"Phone","remote":true}],"ended":false,""" +
-                """"cast":{"to":"TV","from":"Phone","profile":"p1","state":"busy","tv":"","note":"Dune",""" +
+                """"cast":{"to":"TV","from":"Phone","profile":"p1","household":"home","state":"busy","tv":"","note":"Dune",""" +
                 """"tracks":{"audio":[],"text":[]},"audio":"","text":""}}"""
         assertEquals(expected, writeSession(session))
         assertEquals(session, parseSession(expected))
@@ -184,19 +184,6 @@ internal fun JsonObject.member(key: String) = getValue(key).jsonObject.toMember(
 internal fun JsonObject.toMember() = Member(str("screen")!!, str("label")!!, this["remote"]?.jsonPrimitive?.boolean ?: false)
 
 internal fun JsonObject.toTracks(key: String) = getValue(key).jsonArray.map { Track(it.jsonObject.str("id")!!, it.jsonObject.str("label")!!) }
-
-internal fun JsonObject.toCast() =
-    Cast(
-        to = str("to")!!,
-        from = str("from")!!,
-        profile = str("profile")!!,
-        state = CastState.entries.single { it.word == str("state") },
-        tv = str("tv")!!,
-        note = str("note")!!,
-        tracks = getValue("tracks").jsonObject.let { CastTracks(it.toTracks("audio"), it.toTracks("text")) },
-        audio = str("audio")!!,
-        text = str("text")!!,
-    )
 
 internal fun JsonObject.toSession() =
     Session(

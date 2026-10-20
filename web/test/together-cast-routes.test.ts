@@ -6,7 +6,7 @@ import { parseSession, writeSession } from "../public/lib/together/session.js";
 import { accepted } from "../public/lib/together/cast.js";
 import { harness, settle } from "./together-fixture";
 
-const offer = { op: "offer", screen: "tab-a", profile: "kid", set: "film-1", playing: true, pos: 12.5, rate: 1 };
+const offer = { op: "offer", screen: "tab-a", profile: "kid", household: "h2", set: "film-1", playing: true, pos: 12.5, rate: 1 };
 const TV = { screen: "tv-1", label: "TV", remote: false };
 
 describe("/api/together cast ops", () => {
@@ -22,6 +22,7 @@ describe("/api/together cast ops", () => {
     expect(status).toBe(200);
     expect(json).toMatchObject({ answer: "on", note: "", live: { id }, serverNow: expect.any(Number) });
     expect(json.live.session.cast.tv).toBe("tv-1");
+    expect(json.live.session.cast.household).toBe("h2");
   });
 
   test("offer without Telegram is 503 with the reason", async () => {
@@ -36,6 +37,8 @@ describe("/api/together cast ops", () => {
     ["no profile", { ...offer, profile: undefined }],
     ["an empty profile", { ...offer, profile: "" }],
     ["a profile over 128 characters", { ...offer, profile: "k".repeat(129) }],
+    ["no household", { ...offer, household: undefined }],
+    ["an empty household", { ...offer, household: "" }],
     ["an unknown set", { ...offer, set: "nope" }],
     ["a replace with no id", { ...offer, op: "replace" }],
   ])("offer with %s is 400", async (_, body) => {

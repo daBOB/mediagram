@@ -36,8 +36,8 @@ describe("cast words", () => {
 describe("offer fixtures", () => {
   for (const one of cast.offered) {
     test(one.name, () => {
-      const { id, me, own, profile, now } = one.args;
-      expect(offered(id, me, own, profile, now)).toEqual(one.expect);
+      const { id, me, own, profile, household, now } = one.args;
+      expect(offered(id, me, own, profile, household, now)).toEqual(one.expect);
     });
   }
 });
@@ -81,7 +81,7 @@ describe("remote notice fixtures", () => {
 test("a full cast stays under Telegram's 4096 characters", () => {
   const phone = (n: number) => ({ screen: `screen-${n}`, label: "Phone", remote: true });
   const lists = (n: number, p: string) => Array.from({ length: n }, (_, i) => ({ id: `${p}${String(i).padStart(15, "0")}`, label: "x".repeat(80) }));
-  let s = offered("s1", phone(0), { set: "film-1", playing: true, pos: 100, rate: 1 }, "p1", 1000);
+  let s = offered("s1", phone(0), { set: "film-1", playing: true, pos: 100, rate: 1 }, "p1", "home", 1000);
   s = accepted(s, { screen: "tv-1", label: "TV", remote: false }, 2000)!;
   s = { ...s, members: [...s.members, phone(1), phone(2)] };
   s = tracked(s, "tv-1", { audio: lists(30, "a"), text: lists(40, "t") }, "a000000000000000", "t000000000000000");

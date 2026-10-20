@@ -17,14 +17,25 @@ export const TRACK_LABEL_MAX = 32;
 
 const toMillis = (secs) => Math.round(secs * 1000) / 1000;
 
-export function offered(id, me, own, profile, now) {
-  const cast = { to: "TV", from: me.label, profile, state: "offer", tv: "", note: "", tracks: { audio: [], text: [] }, audio: "", text: "" };
+export function offered(id, me, own, profile, household, now) {
+  const cast = { to: "TV", from: me.label, profile, household, state: "offer", tv: "", note: "", tracks: { audio: [], text: [] }, audio: "", text: "" };
   return { session: id, ...own, pos: toMillis(own.pos), at: now, by: me.screen, members: [{ ...me, remote: true }], ended: false, cast };
 }
 
-/** Refusing wins over busy: a TV that will not play it has nothing to replace. */
+/**
+ * Whether `s` is a cast for another household than `household` (`null`, a
+ * device that has joined none, has none of its own): that household's TV, not
+ * this device's to answer, join or steer.
+ */
+export const castElsewhere = (s, household) => s.cast != null && s.cast.household !== household;
+
+/**
+ * Refusing wins over busy: a TV that will not play it has nothing to replace.
+ * Another household's TV says nothing at all, not no: its refusal would
+ * overwrite the answer of the TV the cast is for.
+ */
 export function answerOf(s, tv, now) {
-  if (!isRequest(s) || s.ended || s.cast.state === "busy" || s.cast.state === "refused" || !isLive(s, null, now)) {
+  if (!isRequest(s) || castElsewhere(s, tv.household) || s.ended || s.cast.state === "busy" || s.cast.state === "refused" || !isLive(s, null, now)) {
     return { kind: "ignore" };
   }
   if (tv.refusal !== null) return { kind: "refuse", note: tv.refusal };

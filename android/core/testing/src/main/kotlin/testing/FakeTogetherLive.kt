@@ -92,8 +92,9 @@ class FakeTogetherLive(
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer {
-        casts += "offer ${me.label} ${own.set} $profile"
+        casts += "offer ${me.label} ${own.set} $profile $household"
         return onOffer()
     }
 
@@ -102,8 +103,9 @@ class FakeTogetherLive(
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer {
-        casts += "replace $id ${own.set} $profile"
+        casts += "replace $id ${own.set} $profile $household"
         return onReplace()
     }
 

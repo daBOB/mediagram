@@ -10,6 +10,7 @@ import { el } from "../dom.js";
 import { screen, together, UNREACHABLE } from "../together-now.js";
 import { CAST_ANSWER_MS } from "../together/cast.js";
 import { CAST_WORDS, busyQuestion, refusedLine } from "../together/cast-words.js";
+import { householdId } from "../household.js";
 
 /** What the server's own deadline leaves for the round trip. */
 const MARGIN_MS = 3000;
@@ -64,7 +65,8 @@ async function tell(line) {
 }
 
 async function ask(own, profile) {
-  const body = { screen, profile, ...own };
+  // Only a TV that joined this device's household answers.
+  const body = { screen, profile, household: householdId(), ...own };
   show(CAST_WORDS.asking, []);
   let move = { op: "offer", ...body };
   for (;;) {

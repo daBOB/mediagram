@@ -34,6 +34,7 @@ import player.PlaybackServiceController
 import player.PresentationDisplays
 import player.together.ViewerRelay
 import org.robolectric.RuntimeEnvironment
+import testing.FakeHouseholdsRepository
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
@@ -108,7 +109,7 @@ internal class PlayerLifecycleFixture(
         }
 
     /** Play on TV over the same watch together and profile as the player. */
-    fun castSender() = CastSenderViewModel(togetherLive, repository, RuntimeEnvironment.getApplication())
+    fun castSender() = CastSenderViewModel(togetherLive, repository, FakeHouseholdsRepository(), RuntimeEnvironment.getApplication())
 
     override fun close() = scope.cancel()
 }

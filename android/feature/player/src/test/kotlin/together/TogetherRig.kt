@@ -144,7 +144,7 @@ internal class TogetherRig(
 internal val TABLET = Member("tab-1", "Tablet")
 
 /** The tablet's offer of [EP1], playing two minutes in, for a kid's profile. */
-internal val CAST_OFFER = offered("s-cast", TABLET, Playback(EP1, playing = true, pos = 120.0, rate = 1.0), "kid", NOW)
+internal val CAST_OFFER = offered("s-cast", TABLET, Playback(EP1, playing = true, pos = 120.0, rate = 1.0), "kid", "home", NOW)
 
 /** [CAST_OFFER] as message 960, armed for the TV's player. */
 internal val CAST = ArmedCast(960, EP1, "kid", "Tablet", playing = true)

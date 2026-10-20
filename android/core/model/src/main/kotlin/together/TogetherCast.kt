@@ -15,11 +15,12 @@ const val AUDIO_TRACKS_MAX = 8
 const val TEXT_TRACKS_MAX = 24
 const val TRACK_LABEL_MAX = 32
 
-/** What the TV knows when an offer reaches it: what it is playing, and why it would refuse. */
+/** What the TV knows when an offer reaches it: what it is playing, why it would refuse, and the household it joined. */
 data class TvState(
     val screen: String,
     val busy: String?,
     val refusal: String?,
+    val household: String?,
 )
 
 sealed interface TvAnswer {
@@ -43,6 +44,7 @@ fun offered(
     me: Member,
     own: Playback,
     profile: String,
+    household: String,
     now: Long,
 ): Session =
     Session(
@@ -55,17 +57,31 @@ fun offered(
         by = me.screen,
         members = listOf(me.copy(remote = true)),
         ended = false,
-        cast = Cast(from = me.label, profile = profile, state = CastState.OFFER),
+        cast = Cast(from = me.label, profile = profile, household = household, state = CastState.OFFER),
     )
 
-/** Refusing wins over busy: a TV that will not play it has nothing to replace. */
+/**
+ * Whether [s] is a cast for another household than [household] (`null`, a
+ * device that has joined none, has none of its own): that household's TV, not
+ * this device's to answer, join or steer.
+ */
+fun castElsewhere(
+    s: Session,
+    household: String?,
+): Boolean = s.cast != null && s.cast.household != household
+
+/**
+ * Refusing wins over busy: a TV that will not play it has nothing to replace.
+ * Another household's TV says nothing at all, not no: its refusal would
+ * overwrite the answer of the TV the cast is for.
+ */
 fun answerOf(
     s: Session,
     tv: TvState,
     now: Long,
 ): TvAnswer {
     val cast = s.cast
-    if (cast == null || !isRequest(s) || s.ended || cast.state == CastState.BUSY || cast.state == CastState.REFUSED || !isLive(s, null, now)) {
+    if (cast == null || !isRequest(s) || castElsewhere(s, tv.household) || s.ended || cast.state == CastState.BUSY || cast.state == CastState.REFUSED || !isLive(s, null, now)) {
         return TvAnswer.Ignore
     }
     if (tv.refusal != null) return TvAnswer.Refuse(tv.refusal)

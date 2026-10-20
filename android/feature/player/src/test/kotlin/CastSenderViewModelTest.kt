@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import model.HOME_HOUSEHOLD
 import model.Profile
 import model.together.CAST_ANSWER_MS
 import model.together.CastWords
@@ -22,6 +23,7 @@ import org.junit.After
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import testing.FakeHouseholdsRepository
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import kotlin.test.Test
@@ -40,7 +42,7 @@ class CastSenderViewModelTest {
     private fun viewModel(scope: kotlinx.coroutines.test.TestScope): CastSenderViewModel {
         scope.installMainDispatcher()
         val watch = WatchStateFixture(listOf(Profile("A", "Anna")), chosen = "A")
-        return CastSenderViewModel(live, watch.repository, RuntimeEnvironment.getApplication())
+        return CastSenderViewModel(live, watch.repository, FakeHouseholdsRepository(), RuntimeEnvironment.getApplication())
     }
 
     private fun answer(
@@ -49,7 +51,7 @@ class CastSenderViewModelTest {
         id: Int = 11,
     ) = CastAnswer(
         answer,
-        LiveSession(id, offered("s", Member("tab", "Tablet", remote = true), own, "A", 0L)),
+        LiveSession(id, offered("s", Member("tab", "Tablet", remote = true), own, "A", HOME_HOUSEHOLD, 0L)),
         note,
     )
 
@@ -61,7 +63,7 @@ class CastSenderViewModelTest {
         vm.playOnTv(own)
 
         assertEquals(CastAsk.On(11), vm.ask.value)
-        assertEquals(listOf("offer Phone film-1 A"), live.casts)
+        assertEquals(listOf("offer Phone film-1 A home"), live.casts)
     }
 
     @Test
@@ -75,7 +77,7 @@ class CastSenderViewModelTest {
         vm.replace()
 
         assertEquals(CastAsk.On(11), vm.ask.value)
-        assertEquals(listOf("offer Phone film-1 A", "replace 11 film-1 A"), live.casts)
+        assertEquals(listOf("offer Phone film-1 A home", "replace 11 film-1 A home"), live.casts)
     }
 
     @Test
@@ -87,7 +89,7 @@ class CastSenderViewModelTest {
         vm.cancel()
 
         assertNull(vm.ask.value)
-        assertEquals(listOf("offer Phone film-1 A", "cancel 11"), live.casts)
+        assertEquals(listOf("offer Phone film-1 A home", "cancel 11"), live.casts)
     }
 
     @Test
@@ -151,7 +153,7 @@ class CastSenderViewModelTest {
 
         ViewModelStore().apply { put("sender", vm) }.clear()
 
-        assertEquals(listOf("offer Phone film-1 A", "cancel 11"), live.casts)
+        assertEquals(listOf("offer Phone film-1 A home", "cancel 11"), live.casts)
     }
 
     @Test
@@ -166,7 +168,7 @@ class CastSenderViewModelTest {
         reply.complete(answer(Answer.ON))
         runCurrent()
 
-        assertEquals(listOf("offer Phone film-1 A"), live.casts)
+        assertEquals(listOf("offer Phone film-1 A home"), live.casts)
     }
 
     @Test

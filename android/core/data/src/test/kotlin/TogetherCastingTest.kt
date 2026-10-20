@@ -25,7 +25,7 @@ private const val OFFER = 900
 /** A phone offers a cast and waits for the TV's answer: heard, or read at the deadline. */
 class TogetherCastingTest {
     /** [B] offers [FILM], and waits. */
-    private fun TestScope.offering(h: TogetherHarness) = async { h.live.offer(B, FILM, "kid") }.also { runCurrent() }
+    private fun TestScope.offering(h: TogetherHarness) = async { h.live.offer(B, FILM, "kid", "home") }.also { runCurrent() }
 
     private fun TestScope.timeOut() = advanceTimeBy(CAST_ANSWER_MS + 1)
 
@@ -156,7 +156,7 @@ class TogetherCastingTest {
             val h = TogetherHarness(this)
             busyAnswered(h)
             h.clock += 61_000
-            val again = async { h.live.replace(OFFER, B, FILM.copy(pos = 40.0), "kid") }
+            val again = async { h.live.replace(OFFER, B, FILM.copy(pos = 40.0), "kid", "home") }
             runCurrent()
 
             assertEquals(CastState.OFFER, h.message(OFFER + 1).cast?.state)
@@ -171,7 +171,7 @@ class TogetherCastingTest {
             val h = TogetherHarness(this)
             busyAnswered(h)
             h.clock += 2_000
-            val again = async { h.live.replace(OFFER, B, FILM.copy(pos = 40.0), "kid") }
+            val again = async { h.live.replace(OFFER, B, FILM.copy(pos = 40.0), "kid", "home") }
             runCurrent()
 
             val asked = h.edits.single()

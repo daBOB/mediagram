@@ -44,7 +44,7 @@ const accept = (s: Session) => accepted(s, TV, NOW + 1_000)!;
 describe("CastDesk", () => {
   test("an idle TV's accept answers the offer", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv(accept);
     const { answer, live, note } = await offer;
     expect(answer).toBe("on");
@@ -55,7 +55,7 @@ describe("CastDesk", () => {
 
   test("a busy TV answers with its title", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv((s) => busied(s, "tv-1", "Dune"));
     const busy = await offer;
     expect(busy).toMatchObject({ answer: "busy", note: "Dune", live: { id } });
@@ -63,7 +63,7 @@ describe("CastDesk", () => {
 
   test("a refusing TV answers with its reason and the offer's message", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv((s) => refusedBy(s, "tv-1", "too young"));
     expect(await offer).toMatchObject({ answer: "refused", note: "too young", live: { id } });
   });
@@ -71,7 +71,7 @@ describe("CastDesk", () => {
   test("no answer in five seconds withdraws the offer", async () => {
     const h = harness();
     h.timeOut();
-    expect(await h.hub.cast.offer(ME, FILM, "kid")).toEqual({ answer: "none", live: null, note: "" });
+    expect(await h.hub.cast.offer(ME, FILM, "kid", "home")).toEqual({ answer: "none", live: null, note: "" });
     const [id] = h.channel.removed;
     expect(h.channel.reads).toEqual([id!]);
     expect(h.channel.messages.size).toBe(0);
@@ -81,7 +81,7 @@ describe("CastDesk", () => {
 
   test("an answer missed by push is read at the deadline", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv(accept, false);
     h.timeOut();
     const { answer, live } = await offer;
@@ -98,7 +98,7 @@ describe("CastDesk", () => {
     const sent = deferred<void>();
     const send = h.channel.send.bind(h.channel);
     h.channel.send = async (text) => { const id = await send(text); await sent.promise; return id; };
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     await h.tv(accept);
     sent.resolve();
     await settle();
@@ -111,18 +111,18 @@ describe("CastDesk", () => {
     const h = harness();
     h.channel.failReads = true;
     h.timeOut();
-    expect(await h.hub.cast.offer(ME, FILM, "kid")).toEqual({ answer: "none", live: null, note: "" });
+    expect(await h.hub.cast.offer(ME, FILM, "kid", "home")).toEqual({ answer: "none", live: null, note: "" });
     expect(h.channel.removed).toHaveLength(1);
     expect(h.channel.messages.size).toBe(0);
   });
 
   test("replace after the offer went stale offers anew", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv((s) => busied(s, "tv-1", "Dune"));
     await offer;
     h.clock.now += 61_000;
-    const again = h.hub.cast.replace(id, ME, { ...FILM, pos: 40 }, "kid");
+    const again = h.hub.cast.replace(id, ME, { ...FILM, pos: 40 }, "kid", "home");
     await settle();
     expect(h.channel.sent).toHaveLength(2);
     expect(parseSession(h.channel.sent[1]!)?.cast?.state).toBe("offer");
@@ -133,11 +133,11 @@ describe("CastDesk", () => {
 
   test("replace on a live busy request asks the TV to switch", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv((s) => busied(s, "tv-1", "Dune"));
     await offer;
     h.clock.now += 2_000;
-    const replace = h.hub.cast.replace(id, ME, { ...FILM, pos: 40 }, "kid");
+    const replace = h.hub.cast.replace(id, ME, { ...FILM, pos: 40 }, "kid", "home");
     await settle();
     expect(h.channel.edits).toHaveLength(1);
     expect(h.channel.edits[0]).toMatchObject({ pos: 40, at: NOW + 2_000, by: "tab-1", cast: { state: "replace", note: "" } });
@@ -150,7 +150,7 @@ describe("CastDesk", () => {
 
   test("cancel deletes the message", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     await settle();
     const [id] = h.channel.messages.keys();
     h.hub.cast.cancel(id!);
@@ -163,7 +163,7 @@ describe("CastDesk", () => {
 
   test("a remote's track choice is queued", async () => {
     const h = harness();
-    const offer = h.hub.cast.offer(ME, FILM, "kid");
+    const offer = h.hub.cast.offer(ME, FILM, "kid", "home");
     const id = await h.tv(accept);
     await offer;
     const tracks = { audio: [{ id: "a1", label: "English" }], text: [{ id: "de", label: "Deutsch" }] };

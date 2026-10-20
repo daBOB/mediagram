@@ -79,14 +79,14 @@ describe("TogetherHub", () => {
 
   test("an offer is not the live session", async () => {
     const h = harness();
-    h.channel.messages.set(11, writeSession(offered("s-offer", TV, FILM, "kid", NOW)));
+    h.channel.messages.set(11, writeSession(offered("s-offer", TV, FILM, "kid", "home", NOW)));
     expect(await h.hub.live(h.durationOf)).toBeNull();
   });
 
   test("an offer beside a running session leaves that one live", async () => {
     const h = harness();
     h.channel.messages.set(10, writeSession(foreign()));
-    h.channel.messages.set(11, writeSession(offered("s-offer", A, FILM, "kid", NOW)));
+    h.channel.messages.set(11, writeSession(offered("s-offer", A, FILM, "kid", "home", NOW)));
     expect((await h.hub.live(h.durationOf))?.id).toBe(10);
   });
 

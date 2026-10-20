@@ -1,5 +1,6 @@
 package player
 
+import data.HouseholdsRepository
 import data.LiveSession
 import io.mockk.coEvery
 import io.mockk.spyk
@@ -10,6 +11,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import model.HOME_HOUSEHOLD
 import model.Profile
 import model.together.CastWords
 import model.together.Member
@@ -18,6 +20,7 @@ import model.together.ageReason
 import model.together.offered
 import model.together.replaced
 import org.junit.After
+import testing.FakeHouseholdsRepository
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import kotlin.test.Test
@@ -37,9 +40,12 @@ class CastReceiverViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun TestScope.receiver(watch: WatchStateFixture = WatchStateFixture(listOf(anna, mia), chosen = "A")): CastReceiverViewModel {
+    private fun TestScope.receiver(
+        watch: WatchStateFixture = WatchStateFixture(listOf(anna, mia), chosen = "A"),
+        households: HouseholdsRepository = FakeHouseholdsRepository(),
+    ): CastReceiverViewModel {
         installMainDispatcher()
-        val vm = CastReceiverViewModel(live, FakeCatalogRepository(sets), watch.repository, handle)
+        val vm = CastReceiverViewModel(live, FakeCatalogRepository(sets), watch.repository, households, handle)
         vm.opening.launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
         return vm
     }
@@ -47,7 +53,7 @@ class CastReceiverViewModelTest {
     private fun request(
         set: String = "film-1",
         profile: String = "A",
-    ) = offered("s-cast", tablet, Playback(set, true, pos = 30.0, rate = 1.0), profile, System.currentTimeMillis())
+    ) = offered("s-cast", tablet, Playback(set, true, pos = 30.0, rate = 1.0), profile, HOME_HOUSEHOLD, System.currentTimeMillis())
 
     private fun hear(s: model.together.Session) {
         live.requests.value = LiveSession(11, s)
@@ -131,7 +137,7 @@ class CastReceiverViewModelTest {
         var reads = 0
         coEvery { repo.watchedToday("M") } coAnswers { if (reads++ == 0) throw IllegalStateException("core down") else 0.0 }
         installMainDispatcher()
-        CastReceiverViewModel(live, FakeCatalogRepository(sets), repo, handle).opening.launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+        CastReceiverViewModel(live, FakeCatalogRepository(sets), repo, FakeHouseholdsRepository(), handle).opening.launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
         val offer = request(set = "film-3", profile = "M")
         hear(offer)
         assertEquals(emptyList(), live.casts)
@@ -146,6 +152,25 @@ class CastReceiverViewModelTest {
         handle.openSet.value = "vanished"
         hear(request())
         assertEquals(true, live.casts.single().endsWith(" vanished"), live.casts.toString())
+        assertNull(vm.opening.value)
+    }
+
+    @Test
+    fun aTvOfAnotherHouseholdSaysNothingNotEvenNo() = runTest {
+        // Busy, and with nobody of that name here: at home this TV would answer twice over.
+        val vm = receiver(households = FakeHouseholdsRepository("h2"))
+        handle.openSet.value = "film-1"
+        hear(request(profile = "Z"))
+        assertEquals(emptyList(), live.casts)
+        assertNull(vm.opening.value)
+        assertNull(live.takeCast())
+    }
+
+    @Test
+    fun aTvInNoHouseholdYetSaysNothing() = runTest {
+        val vm = receiver(households = FakeHouseholdsRepository(null))
+        hear(request())
+        assertEquals(emptyList(), live.casts)
         assertNull(vm.opening.value)
     }
 

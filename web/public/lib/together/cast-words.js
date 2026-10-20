@@ -18,6 +18,7 @@ export const CAST_WORDS = {
   stopped: "Stopped on the TV",
   libraryMissing: "the TV's library doesn't have it yet",
   profileUnknown: "the TV doesn't know this profile yet",
+  joinFirst: "Join a household first",
 };
 
 export const busyQuestion = (title) => `The TV is playing ${title}. Replace it?`;

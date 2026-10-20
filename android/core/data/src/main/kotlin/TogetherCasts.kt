@@ -60,12 +60,14 @@ interface TogetherCasts {
      * the answer is [CastAnswer.Answer.NONE]. Throws when the offer can't be
      * sent. Once sent, the offer is this device's to answer or withdraw only
      * while the caller waits, so a screen that can close mid-call calls this
-     * as it does [TogetherLive.start].
+     * as it does [TogetherLive.start]. Only a TV that joined [household],
+     * this device's, answers.
      */
     suspend fun offer(
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer
 
     /**
@@ -78,6 +80,7 @@ interface TogetherCasts {
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer
 
     /** Withdraws offer [id]: its message is deleted. Sent even after the caller is gone. */

@@ -43,6 +43,8 @@ export interface Cast {
   from: string;
   /** The caster's profile id; the TV plays as this profile. */
   profile: string;
+  /** The household the casting device joined: only a TV that joined the same one answers. */
+  household: string;
   state: CastState;
   /** The screen id of the TV that took the cast; "" until one has. */
   tv: string;

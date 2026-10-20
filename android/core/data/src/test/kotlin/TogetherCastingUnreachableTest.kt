@@ -17,7 +17,7 @@ class TogetherCastingUnreachableTest {
             val h = TogetherHarness(this)
             h.core.togetherFailure = unreachable
 
-            val thrown = assertFailsWith<IllegalStateException> { h.live.offer(B, FILM, "kid") }
+            val thrown = assertFailsWith<IllegalStateException> { h.live.offer(B, FILM, "kid", "home") }
             assertEquals(unreachable.message, thrown.message)
             assertEquals(emptyList(), h.core.togetherDeletes)
             assertEquals(emptyMap(), h.core.togetherMessages)
@@ -30,7 +30,7 @@ class TogetherCastingUnreachableTest {
             val h = TogetherHarness(this)
             h.core.togetherFailure = unreachable
 
-            val thrown = assertFailsWith<IllegalStateException> { h.live.replace(900, B, FILM, "kid") }
+            val thrown = assertFailsWith<IllegalStateException> { h.live.replace(900, B, FILM, "kid", "home") }
             assertEquals(unreachable.message, thrown.message)
             assertEquals(emptyMap(), h.core.togetherMessages)
             assertEquals(emptyList(), h.edits)

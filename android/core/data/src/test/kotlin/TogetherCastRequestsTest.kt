@@ -15,7 +15,7 @@ import kotlin.test.assertNull
 
 /** A cast request is heard beside the session screens show, never instead of it. */
 class TogetherCastRequestsTest {
-    private val offer: Session = offered("s-offer", A, FILM, "kid", NOW)
+    private val offer: Session = offered("s-offer", A, FILM, "kid", "home", NOW)
 
     @Test
     fun requestsAreNeverShown() =

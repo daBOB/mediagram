@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import data.CastAnswer
 import data.CastAnswer.Answer
+import data.HouseholdsRepository
 import data.TOGETHER_UNREACHABLE
 import data.TogetherLive
 import data.WatchStateRepository
@@ -54,6 +55,7 @@ internal const val CAST_WAIT_MS = CAST_ANSWER_MS + 3_000L
 class CastSenderViewModel @Inject constructor(
     private val live: TogetherLive,
     private val repository: WatchStateRepository,
+    private val households: HouseholdsRepository,
     @ApplicationContext context: Context,
 ) : ViewModel() {
     private val _ask = MutableStateFlow<CastAsk?>(null)
@@ -62,6 +64,7 @@ class CastSenderViewModel @Inject constructor(
     private val me = Member(UUID.randomUUID().toString(), labelOf(context), remote = true)
     private var offered: Playback? = null
     private var profile = ""
+    private var household = ""
 
     private val inSession = MutableStateFlow(false)
 
@@ -71,31 +74,34 @@ class CastSenderViewModel @Inject constructor(
     }
 
     /**
-     * Why Play on TV can't be pressed, or `null` when it may be: Telegram
-     * unavailable, or this device's player in a session (see [inSession]).
+     * Why Play on TV can't be pressed, or `null` when it may be: no household
+     * joined yet, whose TVs alone are asked, Telegram unavailable, or this
+     * device's player in a session (see [inSession]).
      */
     val castable: StateFlow<String?> =
-        combine(live.available, inSession) { available, session ->
+        combine(live.available, inSession, households.view) { available, session, view ->
             when {
+                view.joined == null -> CastWords.JOIN_FIRST
                 !available -> TOGETHER_UNREACHABLE
                 session -> CastWords.LEAVE_FIRST
                 else -> null
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    /** Offers [own] to the TV, as the chosen profile; nothing while an ask is open. */
+    /** Offers [own] to a TV of this device's household, as the chosen profile; nothing while an ask is open. */
     fun playOnTv(own: Playback) {
         if (_ask.value != null) return
+        household = households.view.value.joined ?: return
         profile = repository.chosenProfileId.value ?: return
         offered = own
-        send { live.offer(me, own, profile) }
+        send { live.offer(me, own, profile, household) }
     }
 
     /** After [CastAsk.Busy]: asks the TV to switch. */
     fun replace() {
         val busy = _ask.value as? CastAsk.Busy ?: return
         val own = offered ?: return
-        send { live.replace(busy.id, me, own, profile) }
+        send { live.replace(busy.id, me, own, profile, household) }
     }
 
     /** After [CastAsk.Busy]: withdraws the offer. */

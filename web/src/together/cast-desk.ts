@@ -30,18 +30,19 @@ export class CastDesk {
     private readonly sleep: (ms: number) => Promise<void> = Bun.sleep,
   ) {}
 
-  async offer(me: Member, own: Playback, profile: string): Promise<OfferAnswer> {
-    const live = await this.hub.create(me.screen, offered(crypto.randomUUID(), me, own, profile, this.now()));
+  /** Only a TV that joined `household`, the caster's, answers. */
+  async offer(me: Member, own: Playback, profile: string, household: string): Promise<OfferAnswer> {
+    const live = await this.hub.create(me.screen, offered(crypto.randomUUID(), me, own, profile, household, this.now()));
     // The TV may answer before the send has returned.
     return answered(live.id, live.session) ?? this.wait(live.id);
   }
 
   /** The caster's answer to "busy": the same request, now asking the TV to switch. */
-  async replace(id: number, me: Member, own: Playback, profile: string): Promise<OfferAnswer> {
+  async replace(id: number, me: Member, own: Playback, profile: string, household: string): Promise<OfferAnswer> {
     const s = await this.hub.latest(id);
     const stale = !s || !isRequest(s) || !isLive(s, null, this.now());
     // Nothing is moved for a message this server no longer knows, as after a restart: it is offered anew too.
-    if (stale || !this.hub.move(id, me.screen, (current) => replaced(current, me.screen, own, this.now()))) return this.offer(me, own, profile);
+    if (stale || !this.hub.move(id, me.screen, (current) => replaced(current, me.screen, own, this.now()))) return this.offer(me, own, profile, household);
     return this.wait(id);
   }
 

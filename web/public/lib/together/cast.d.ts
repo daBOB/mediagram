@@ -7,8 +7,11 @@ export const AUDIO_TRACKS_MAX: 8;
 export const TEXT_TRACKS_MAX: 24;
 export const TRACK_LABEL_MAX: 32;
 
-/** A request from `me` for a TV to play `own`, as the caster's `profile`. */
-export function offered(id: string, me: Member, own: Playback, profile: string, now: number): Session;
+/** A request from `me` for a TV of `household` to play `own`, as the caster's `profile`. */
+export function offered(id: string, me: Member, own: Playback, profile: string, household: string, now: number): Session;
+
+/** A cast for another household's TV than `household`'s; for `null`, every cast is. */
+export function castElsewhere(s: Session, household: string | null): boolean;
 
 export type TvAnswer =
   | { kind: "ignore" }
@@ -16,10 +19,10 @@ export type TvAnswer =
   | { kind: "busy"; note: string }
   | { kind: "accept" };
 
-/** What a TV should write to a request it hears; `busy` is the title it plays, `refusal` why it will not. */
+/** What a TV should write to a request it hears; `busy` is the title it plays, `refusal` why it will not, `household` the one it joined. */
 export function answerOf(
   s: Session,
-  tv: { screen: string; busy: string | null; refusal: string | null },
+  tv: { screen: string; busy: string | null; refusal: string | null; household: string | null },
   now: number,
 ): TvAnswer;
 export function busied(s: Session, tv: string, note: string): Session;

@@ -143,7 +143,7 @@ test("a heard request never becomes the live session", () => {
   heardTogether({ id: 10, session: session(), serverNow: 0 });
   const heard: unknown[] = [];
   const off = onTogether((_, news) => heard.push(news));
-  const offer = offered("s-offer", { screen: "tab", label: "Browser", remote: false }, { set: "film-1", playing: true, pos: 10, rate: 1 }, "kid", 0);
+  const offer = offered("s-offer", { screen: "tab", label: "Browser", remote: false }, { set: "film-1", playing: true, pos: 10, rate: 1 }, "kid", "home", 0);
   heardTogether({ id: 11, session: offer, serverNow: 0 });
   off();
   expect(togetherNow().live?.id).toBe(10);

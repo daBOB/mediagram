@@ -13,6 +13,7 @@ export const CAST_WORDS: {
   stopped: string;
   libraryMissing: string;
   profileUnknown: string;
+  joinFirst: string;
 };
 
 export function busyQuestion(title: string): string;

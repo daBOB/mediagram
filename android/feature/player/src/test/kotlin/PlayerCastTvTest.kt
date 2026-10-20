@@ -45,7 +45,7 @@ class PlayerCastTvTest {
         playing: Boolean = false,
     ): PlayerTogetherRig {
         val rig = PlayerTogetherRig(this, watch, catalog)
-        rig.put(960, offered("s-cast", tablet, Playback(set, playing, pos = 300.0, rate = 1.0), profile, System.currentTimeMillis()))
+        rig.put(960, offered("s-cast", tablet, Playback(set, playing, pos = 300.0, rate = 1.0), profile, "home", System.currentTimeMillis()))
         rig.live.refresh()
         rig.live.castOnOpen(ArmedCast(960, set, profile, "Tablet", playing))
         return rig

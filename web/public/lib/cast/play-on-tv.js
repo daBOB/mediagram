@@ -7,12 +7,14 @@
 import { el } from "../dom.js";
 import { inTogether, onTogether, togetherNow, UNREACHABLE } from "../together-now.js";
 import { profileId } from "../watch-state.js";
+import { householdId } from "../household.js";
 import { CAST_WORDS } from "../together/cast-words.js";
 import { askTv } from "./cast-ask.js";
 import { openRemote } from "./cast-remote.js";
 
-/** Why Play on TV can't be pressed now, or `null` when it can. */
+/** Why Play on TV can't be pressed now, or `null` when it can. Only a TV of this device's household is asked. */
 export function castReason() {
+  if (householdId() === null) return CAST_WORDS.joinFirst;
   if (inTogether()) return CAST_WORDS.leaveFirst;
   const { available, reason } = togetherNow();
   return available ? null : reason ?? UNREACHABLE;

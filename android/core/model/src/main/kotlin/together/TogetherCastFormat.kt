@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import model.HOME_HOUSEHOLD
 
 // The cast carried by a session message, ported from `castOf` and `writeSession` in
 // `web/public/lib/together/session.js`; the key order below is the web's.
@@ -33,6 +34,8 @@ data class Cast(
     val to: String = "TV",
     val from: String,
     val profile: String,
+    /** The household the casting device joined: only a TV that joined the same one answers. */
+    val household: String = HOME_HOUSEHOLD,
     val state: CastState,
     val tv: String = "",
     val note: String = "",
@@ -57,6 +60,8 @@ internal fun JsonElement?.cast(): Cast? {
         to = o.named("to") ?: return null,
         from = o.named("from") ?: return null,
         profile = o.named("profile") ?: return null,
+        // A cast written before casts carried a household is Home's, where every older screen is.
+        household = if ("household" in o) o.named("household") ?: return null else HOME_HOUSEHOLD,
         state = CastState.entries.firstOrNull { it.word == o.text("state") } ?: return null,
         tv = o.text("tv") ?: return null,
         note = o.text("note") ?: return null,
@@ -74,6 +79,7 @@ internal fun castJson(c: Cast) =
             "to" to JsonPrimitive(c.to),
             "from" to JsonPrimitive(c.from),
             "profile" to JsonPrimitive(c.profile),
+            "household" to JsonPrimitive(c.household),
             "state" to JsonPrimitive(c.state.word),
             "tv" to JsonPrimitive(c.tv),
             "note" to JsonPrimitive(c.note),

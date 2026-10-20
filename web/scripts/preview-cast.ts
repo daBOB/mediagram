@@ -12,6 +12,7 @@ import { accepted, answerOf, busied, refusedBy, tracked } from "../public/lib/to
 import { ageReason } from "../public/lib/together/cast-words.js";
 import { isRequest, parseSession, writeSession } from "../public/lib/together/session.js";
 import type { Session } from "../public/lib/together/session.js";
+import { HOME } from "../public/lib/household-rules.js";
 
 export type CastMode = "accept" | "busy" | "refuse" | "none";
 
@@ -43,7 +44,7 @@ export function previewCast(mode: CastMode, events: CatalogEvents): TogetherHub 
 
   /** The TV's reply to a request it has not answered yet. */
   const answer = (id: number, s: Session) => {
-    const reply = answerOf(s, { screen: TV.screen, refusal: mode === "refuse" ? ageReason("Mia") : null, busy: mode === "busy" ? "Dune (2021)" : null }, Date.now());
+    const reply = answerOf(s, { screen: TV.screen, refusal: mode === "refuse" ? ageReason("Mia") : null, busy: mode === "busy" ? "Dune (2021)" : null, household: HOME }, Date.now());
     if (reply.kind === "refuse") say(id, refusedBy(s, TV.screen, reply.note));
     else if (reply.kind === "busy") say(id, busied(s, TV.screen, reply.note));
     else if (reply.kind === "accept") {

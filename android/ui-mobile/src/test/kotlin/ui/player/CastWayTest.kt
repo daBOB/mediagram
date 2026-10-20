@@ -93,7 +93,7 @@ class CastWayTest : PlayerPresentationBase() {
 
         compose.onNodeWithText(CastWayWords.THE_TV).assertDoesNotExist()
         compose.onNodeWithText(CastWords.ASKING).assertExists()
-        coVerify { live.offer(any(), Playback("set-one", playing = true, pos = 300.0, rate = 1.5), any()) }
+        coVerify { live.offer(any(), Playback("set-one", playing = true, pos = 300.0, rate = 1.5), any(), any()) }
         assertNull(startedAction())
     }
 

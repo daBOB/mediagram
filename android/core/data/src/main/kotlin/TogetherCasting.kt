@@ -57,9 +57,10 @@ internal class TogetherCasting(
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer =
         withContext(serial) {
-            val offer = offered(UUID.randomUUID().toString(), me, own.sane(), profile, now())
+            val offer = offered(UUID.randomUUID().toString(), me, own.sane(), profile, household, now())
             waitFor {
                 // Once on its way, the message is this device's to answer for, whatever becomes of the caller.
                 withContext(NonCancellable) {
@@ -77,6 +78,7 @@ internal class TogetherCasting(
         me: Member,
         own: Playback,
         profile: String,
+        household: String,
     ): CastAnswer =
         withContext(serial) {
             val read = channel.read(id)?.let(::parseSession)
@@ -85,7 +87,7 @@ internal class TogetherCasting(
             val asking = read != null && isRequest(read) && isLive(read, null, at)
             // Nothing is moved for a message no longer known here, as after a restart: it is offered anew too.
             if (!asking || sessions.queue(id, me.screen) { replaced(it, me.screen, playback, at) } == null) {
-                return@withContext offer(me, own, profile)
+                return@withContext offer(me, own, profile, household)
             }
             // The edit goes from this dispatcher only once this suspends, so its answer is listened for first.
             waitFor { id }

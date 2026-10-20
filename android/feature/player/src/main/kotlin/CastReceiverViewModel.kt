@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import data.ArmedCast
 import data.CatalogRepository
+import data.HouseholdsRepository
 import data.LiveSession
 import data.TogetherLive
 import data.WatchStateRepository
@@ -44,6 +45,7 @@ class CastReceiverViewModel @Inject constructor(
     private val live: TogetherLive,
     private val catalog: CatalogRepository,
     private val repository: WatchStateRepository,
+    private val households: HouseholdsRepository,
     private val handle: PlayerHandle,
 ) : ViewModel() {
     private val screen = UUID.randomUUID().toString()
@@ -71,7 +73,9 @@ class CastReceiverViewModel @Inject constructor(
         try {
             // A set that no longer resolves is still open: busy never reads as idle.
             val busy = handle.openSet.value?.let { titleLine(catalog.mediaSet(it)).ifEmpty { it } }
-            val answer = answerOf(s, TvState(screen, busy, refusalOf(s.set, cast.profile)), System.currentTimeMillis())
+            // Only a request from this TV's household is answered: another household's TV says nothing.
+            val tv = TvState(screen, busy, refusalOf(s.set, cast.profile), households.view.value.joined)
+            val answer = answerOf(s, tv, System.currentTimeMillis())
             if (answer is TvAnswer.Ignore) return
             answered += key
             when (answer) {

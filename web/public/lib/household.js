@@ -75,6 +75,9 @@ export function here(everyone, households, chosenId, heard) {
 /** The household this device shows, as `GET /api/profiles` lists it, or `null`. */
 export const thisHousehold = () => device.households.find((one) => one.id === device.id) ?? null;
 
+/** The id of the household this device joined, or `null` while it has none: it is waiting, or about to ask. */
+export const householdId = () => device.id;
+
 /** Whether the picker asks "Join a household": no answer, and the household has been heard. */
 export const needsJoin = () => device.id === null && device.heard;
 

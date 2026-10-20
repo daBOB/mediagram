@@ -167,9 +167,9 @@ class DefaultTogetherLive(
 
     override fun takeJoin(): Int? = joinNext.getAndSet(null)
 
-    override suspend fun offer(me: Member, own: Playback, profile: String) = casting.offer(me, own, profile)
-    override suspend fun replace(id: Int, me: Member, own: Playback, profile: String) =
-        casting.replace(id, me, own, profile)
+    override suspend fun offer(me: Member, own: Playback, profile: String, household: String) = casting.offer(me, own, profile, household)
+    override suspend fun replace(id: Int, me: Member, own: Playback, profile: String, household: String) =
+        casting.replace(id, me, own, profile, household)
     override fun cancel(id: Int) = casting.cancel(id)
     override fun refuse(id: Int, by: String, note: String) = casting.refuse(id, by, note)
     override fun busy(id: Int, by: String, note: String) = casting.busy(id, by, note)

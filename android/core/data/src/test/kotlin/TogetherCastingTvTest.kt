@@ -22,7 +22,7 @@ private const val MESSAGE_MAX = 4096
 
 /** The TV answers an offer and keeps its track list; a remote chooses a track. */
 class TogetherCastingTvTest {
-    private val offer: Session = offered("s-offer", B, FILM, "kid", NOW)
+    private val offer: Session = offered("s-offer", B, FILM, "kid", "home", NOW)
     private val tv2 = Member("tv-2", "Kitchen")
 
     /** The TV has heard [offer] as message 11. */

@@ -25,10 +25,11 @@ export async function castRoute(
     case "replace": {
       if (!reachable) return reply({ reason: UNREACHABLE }, 503);
       const own = change(body, db, true);
-      if (!own || !text(body.profile, PROFILE_MAX) || (body.op === "replace" && id === null)) return bodiless(400);
+      const { profile, household } = body;
+      if (!own || !text(profile, PROFILE_MAX) || !text(household, PROFILE_MAX) || (body.op === "replace" && id === null)) return bodiless(400);
       const answer = body.op === "offer"
-        ? await hub.cast.offer(me, own as Playback, body.profile)
-        : await hub.cast.replace(id!, me, own as Playback, body.profile);
+        ? await hub.cast.offer(me, own as Playback, profile, household)
+        : await hub.cast.replace(id!, me, own as Playback, profile, household);
       return reply({ ...answer, serverNow: Date.now() });
     }
     case "cancel":

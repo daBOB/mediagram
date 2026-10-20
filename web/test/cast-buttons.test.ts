@@ -7,6 +7,7 @@ import { CAST_WORDS } from "../public/lib/together/cast-words.js";
 import { UNREACHABLE, refreshTogether, screen, setInTogether, setTogetherOpener } from "../public/lib/together-now.js";
 import { closeRemote } from "../public/lib/cast/cast-remote.js";
 import * as state from "../public/lib/watch-state.js";
+import { here } from "../public/lib/household.js";
 
 let env: ReturnType<typeof browserEnvironment>;
 let available: boolean;
@@ -22,6 +23,7 @@ beforeEach(async () => {
   available = true;
   answer = { answer: "on", live, note: "", serverNow: 0 };
   await state.useProfile(null);
+  here([], [], null, true);
   setTogetherOpener(() => {}, (id) => ({ setId: id, title: "Dune", duration: 7200 }) as never, () => null);
   env.respondWith(async (_url, options) => {
     if (!options?.body) return Response.json({ available, reason: available ? null : UNREACHABLE, live: null, serverNow: Date.now() });
@@ -45,7 +47,7 @@ test("the pill asks with the resume point", async () => {
   expect(pill.textContent).toBe(CAST_WORDS.playOnTv);
   pill.fire("click");
   await tick();
-  expect(posts()[0]).toEqual({ op: "offer", screen, profile: state.profileId(), set: "film-1", playing: true, pos: 90, rate: 1 });
+  expect(posts()[0]).toEqual({ op: "offer", screen, profile: state.profileId(), household: "home", set: "film-1", playing: true, pos: 90, rate: 1 });
 });
 
 test("the pill is greyed with the reason while Telegram is unreachable", async () => {
@@ -54,6 +56,14 @@ test("the pill is greyed with the reason while Telegram is unreachable", async (
   const pill = castPill("film-1", 0) as unknown as Node & { disabled: boolean; title: string };
   expect(pill.disabled).toBe(true);
   expect(pill.title).toBe(UNREACHABLE);
+});
+
+test("a device that has joined no household offers no TV: the pill is greyed with the reason", () => {
+  // Two households and nothing chosen or stored: this device has not joined one yet.
+  here([], [{ id: "h2", name: "Upstairs", adminId: null }] as never, null, true);
+  const pill = castPill("film-1", 0) as unknown as Node & { disabled: boolean; title: string };
+  expect(pill.disabled).toBe(true);
+  expect(pill.title).toBe(CAST_WORDS.joinFirst);
 });
 
 test("the player's button is greyed while in watch together", () => {
@@ -76,7 +86,7 @@ test("an accepted cast closes the player and opens the remote", async () => {
   const { button, closed } = player();
   button.fire("click");
   await tick();
-  expect(posts()[0]).toEqual({ op: "offer", screen, profile: state.profileId(), set: "film-1", playing: true, pos: 321, rate: 1.5 });
+  expect(posts()[0]).toEqual({ op: "offer", screen, profile: state.profileId(), household: "home", set: "film-1", playing: true, pos: 321, rate: 1.5 });
   expect(closed()).toBe(1);
   expect(node("cast-remote").open).toBe(true);
 });

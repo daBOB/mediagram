@@ -18,6 +18,7 @@ object CastWords {
     const val STOPPED = "Stopped on the TV"
     const val LIBRARY_MISSING = "the TV's library doesn't have it yet"
     const val PROFILE_UNKNOWN = "the TV doesn't know this profile yet"
+    const val JOIN_FIRST = "Join a household first"
 }
 
 fun busyQuestion(title: String) = "The TV is playing $title. Replace it?"

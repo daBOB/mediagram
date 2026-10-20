@@ -339,7 +339,7 @@ internal class TvAppFixture(
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.
                 AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),
                 // The library and the profile picker each listen for casts through it.
-                CastReceiverViewModel::class.java to CastReceiverViewModel(casts, repository, viewer.repository, playback.handle),
+                CastReceiverViewModel::class.java to CastReceiverViewModel(casts, repository, viewer.repository, households, playback.handle),
             )
         val held =
             ViewModelProvider(

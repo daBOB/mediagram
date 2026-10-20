@@ -7,6 +7,8 @@
  * this by `web/test/fixtures/together/`. Types are in `session.d.ts`.
  */
 
+import { HOME } from "../household-rules.js";
+
 export const TOGETHER_MARKER = "#mlib-together v=2";
 export const TOGETHER_MARKER_V1 = "#mlib-together v=1";
 
@@ -45,14 +47,16 @@ function tracksOf(value) {
 function castOf(value) {
   if (!object(value)) return null;
   const { to, from, profile, state, tv, note, audio, text } = value;
+  // A cast written before casts carried a household is Home's, where every older screen is.
+  const household = "household" in value ? value.household : HOME;
   if (!object(value.tracks)) return null;
   const tracks = { audio: tracksOf(value.tracks.audio), text: tracksOf(value.tracks.text) };
   if (
-    !named(to) || !named(from) || !named(profile) || !CAST_STATES.includes(state) ||
+    !named(to) || !named(from) || !named(profile) || !named(household) || !CAST_STATES.includes(state) ||
     typeof tv !== "string" || typeof note !== "string" || typeof audio !== "string" || typeof text !== "string" ||
     tracks.audio === null || tracks.text === null
   ) return null;
-  return { to, from, profile, state, tv, note, tracks, audio, text };
+  return { to, from, profile, household, state, tv, note, tracks, audio, text };
 }
 
 /** A cast the TV has not yet taken is a request, not something to watch. */
@@ -92,7 +96,7 @@ export function writeSession(s) {
   const members = s.members.map(({ screen, label, remote }) => ({ screen, label, remote: remote === true }));
   const c = s.cast ?? null; // a session built by a move has no cast key yet
   const cast = c === null ? null : {
-    to: c.to, from: c.from, profile: c.profile, state: c.state, tv: c.tv, note: c.note,
+    to: c.to, from: c.from, profile: c.profile, household: c.household, state: c.state, tv: c.tv, note: c.note,
     tracks: {
       audio: c.tracks.audio.map(({ id, label }) => ({ id, label })),
       text: c.tracks.text.map(({ id, label }) => ({ id, label })),
