@@ -23,6 +23,10 @@ private val KIDS_AGES = setOf<UByte>(6u, 12u)
 /** The minutes a daily limit may be, as `manage/daily_limit.rs` checks them. */
 private val DAILY_MINUTES = 1..1440
 
+/** A hidden section's key and how many a list may hold, as `record/roles_record.rs` checks them. */
+private val SECTION_KEY = Regex("[a-z]{1,24}")
+private const val MAX_SECTIONS = 16
+
 /**
  * [FakeCore]'s household: who may add, remove, enter and re-PIN whom,
  * refusing for the reasons and in the order
@@ -149,6 +153,18 @@ class FakeProfiles(
             { ProfileOutcome.Invalid.takeUnless { validMinutes(minutes) } },
             { check(actorId, pin, RoleAction.SET_KIDS_AGE, id) },
         ) ?: update(id) { it.copy(dailyLimit = minutes?.toUInt()) }
+
+    /** The whole list, stored sorted and each key once; set where the `set-access` rule allows. */
+    fun setHiddenSections(
+        actorId: String,
+        pin: String,
+        id: String,
+        sections: List<String>,
+    ): ProfileOutcome =
+        first(
+            { ProfileOutcome.Invalid.takeUnless { sections.size <= MAX_SECTIONS && sections.all(SECTION_KEY::matches) } },
+            { check(actorId, pin, RoleAction.SET_ACCESS, id) },
+        ) ?: update(id) { it.copy(hiddenSections = sections.distinct().sorted()) }
 
     /** A kid's opens freely; a grown-up's with its PIN. */
     fun unlock(

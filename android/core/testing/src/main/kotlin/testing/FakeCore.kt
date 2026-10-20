@@ -590,6 +590,9 @@ class FakeCore(
     override suspend fun setDailyLimit(actorId: String, pin: String, id: String, minutes: UShort?): ProfileOutcome =
         roles.setDailyLimit(actorId, pin, id, minutes)
 
+    override suspend fun setHiddenSections(actorId: String, pin: String, id: String, sections: List<String>): ProfileOutcome =
+        roles.setHiddenSections(actorId, pin, id, sections)
+
     /** Seconds watched today, per profile id; a test sets it, as the fake records no watch time itself. */
     val watchedTodayByProfile: MutableMap<String, Double> = mutableMapOf()
 
