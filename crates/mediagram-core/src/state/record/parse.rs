@@ -6,6 +6,7 @@
 use serde_json::Value;
 
 use super::hostile_json::{as_array, is_integer, js_number, text_};
+use super::households_record::household_entry;
 use super::list_record::{collection_row, kids_row, list_row};
 use super::preference_record::preference_row;
 use super::roles_record::profile_roles;
@@ -49,6 +50,11 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         .filter_map(list_row)
         .collect();
 
+    let households = as_array(held.get("households"))
+        .iter()
+        .filter_map(household_entry)
+        .collect();
+
     // `Number(held.writtenAt) || 0`: NaN and 0 both fall back to 0, and a
     // negative or positive finite number passes through unchanged.
     let written_at = js_number(held.get("writtenAt"));
@@ -61,6 +67,7 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         profiles,
         kids,
         editors_choice,
+        households,
     })
 }
 

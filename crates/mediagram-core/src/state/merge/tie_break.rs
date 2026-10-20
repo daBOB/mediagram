@@ -5,8 +5,9 @@
 use std::collections::HashMap;
 
 use crate::state::record::{
-    CollectionRow, DailyLimit, DayStatRow, HiddenSections, KidsAge, ListRow, PinRecord, ProgressRow,
-    SyncPreference, TitleStatRow, UnwatchedRow, WatchedRow,
+    CollectionRow, DailyLimit, DayStatRow, HiddenSections, HouseholdAdmin, HouseholdName, KidsAge,
+    ListRow, PinRecord, ProfileHousehold, ProgressRow, SyncPreference, TitleStatRow, UnwatchedRow,
+    WatchedRow,
 };
 
 /// Which device a held row (or spelling) came from, for the tie-break below.
@@ -43,7 +44,10 @@ timestamped_by_own_field!(
     DayStatRow,
     KidsAge,
     DailyLimit,
-    HiddenSections
+    HiddenSections,
+    HouseholdName,
+    HouseholdAdmin,
+    ProfileHousehold
 );
 
 /// Keeps whichever of two rows should win.

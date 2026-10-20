@@ -10,6 +10,7 @@ use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
 use super::stats;
 
+mod households;
 mod lists;
 mod preferences;
 mod roles;
@@ -63,6 +64,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         profiles,
         kids,
         editors_choice,
+        households: households::export(conn)?,
     })
 }
 
@@ -119,6 +121,7 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     // After the loop, not in it: a kid's parent may be a viewer this same
     // import has only just made.
     changed += roles::import(conn, &merged.profiles)?;
+    changed += households::import(conn, &merged.households)?;
     transaction.commit()?;
     Ok(changed)
 }

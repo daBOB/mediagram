@@ -27,7 +27,7 @@ use mediagram_core::state::merge::{MergedProfile, MergedState, merge_states};
 use mediagram_core::state::profiles::pin;
 use mediagram_core::state::profiles::pin_wait::PinWait;
 use mediagram_core::state::profiles::rules::{Action, RoleView, allowed, name_taken};
-use mediagram_core::state::record::{SyncRecord, parse_record};
+use mediagram_core::state::record::{HouseholdEntry, ProfileHousehold, SyncRecord, parse_record};
 use mediagram_core::state::stats::achievements::{AchievementInput, Achievements, achievements};
 use mediagram_core::state::stats::summary::{DayBar, HistoryEntry, SummaryInput, summarize};
 use mediagram_core::state::stats::{Tick, again_now, step_seconds};
@@ -533,5 +533,86 @@ fn device_household_fixtures() {
     for case in fixture.device {
         let got = device_household(case.stored.as_deref(), case.chosen.as_deref(), &case.live, case.heard);
         assert_eq!(got, case.expect, "case: {}", case.name);
+    }
+}
+
+/// The households and who is in which; a profile is listed only when it
+/// carries a household. Names compare in byte order, which matches the web's
+/// `localeCompare` for the fixture's ASCII names — keep them ASCII.
+#[derive(Debug, PartialEq, Deserialize)]
+struct HouseholdsCanonical {
+    households: Vec<HouseholdEntry>,
+    profiles: Vec<HouseholdsMember>,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+struct HouseholdsMember {
+    name: String,
+    household: ProfileHousehold,
+}
+
+fn canonical_households(
+    households: Vec<HouseholdEntry>,
+    profiles: impl Iterator<Item = (String, Option<ProfileHousehold>)>,
+) -> HouseholdsCanonical {
+    let mut profiles: Vec<HouseholdsMember> = profiles
+        .filter_map(|(name, household)| Some(HouseholdsMember { name, household: household? }))
+        .collect();
+    profiles.sort_by(|a, b| a.name.cmp(&b.name));
+    HouseholdsCanonical { households, profiles }
+}
+
+#[derive(Deserialize)]
+struct HouseholdsParseCase {
+    name: String,
+    input: String,
+    expect: HouseholdsCanonical,
+}
+
+#[derive(Deserialize)]
+struct HouseholdsMergeCase {
+    name: String,
+    records: Vec<SyncRecord>,
+    expect: HouseholdsCanonical,
+}
+
+/// `households-sync.json` is one object: parse cases and merge cases.
+#[derive(Deserialize)]
+struct HouseholdsSync {
+    parse: Vec<HouseholdsParseCase>,
+    merge: Vec<HouseholdsMergeCase>,
+}
+
+#[test]
+fn households_sync_parse_fixtures() {
+    let Some(fixture) = read::<HouseholdsSync>("households-sync.json") else {
+        return;
+    };
+    assert!(!fixture.parse.is_empty(), "households-sync.json holds no parse cases");
+    for case in fixture.parse {
+        let record = parse_record(&case.input).unwrap_or_else(|| panic!("case: {} (unparsed)", case.name));
+        let profiles = record.profiles.into_iter().map(|one| (one.name, one.roles.household));
+        assert_eq!(canonical_households(record.households, profiles), case.expect, "case: {}", case.name);
+    }
+}
+
+#[test]
+fn households_sync_merge_fixtures() {
+    let Some(fixture) = read::<HouseholdsSync>("households-sync.json") else {
+        return;
+    };
+    assert!(!fixture.merge.is_empty(), "households-sync.json holds no merge cases");
+    for case in fixture.merge {
+        for (order, records) in [("forward", case.records.clone()), ("reversed", case.records.into_iter().rev().collect())] {
+            let merged = merge_states(&records);
+            // Nothing to say is no key at all: the wire form of an empty list.
+            if case.expect.households.is_empty() {
+                let wire = serde_json::to_value(&merged).unwrap();
+                assert!(wire.get("households").is_none(), "case: {} ({order}): an empty key", case.name);
+            }
+            let profiles = merged.profiles.into_iter().map(|one| (one.name, one.roles.household));
+            let got = canonical_households(merged.households, profiles);
+            assert_eq!(got, case.expect, "case: {} ({order})", case.name);
+        }
     }
 }

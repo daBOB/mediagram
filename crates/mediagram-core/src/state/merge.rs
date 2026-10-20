@@ -30,6 +30,7 @@ use super::record::{
     CollectionRow, ListRow, ProgressRow, SyncRecord, UnwatchedRow, WatchedRow, normal_name,
 };
 
+mod households;
 mod merged;
 mod preferences;
 mod roles;
@@ -171,5 +172,6 @@ pub fn merge_states(records: &[SyncRecord]) -> MergedState {
         profiles,
         kids: kids.into_values().map(|h| h.row).collect(),
         editors_choice: editors_choice.into_values().map(|h| h.row).collect(),
+        households: households::merge(records),
     }
 }

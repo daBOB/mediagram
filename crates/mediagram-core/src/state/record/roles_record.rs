@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::hostile_json::{js_number, text_};
+use super::households_record::{ProfileHousehold, profile_household};
 use super::is_stamp;
 
 /// When a grown-up became the household's admin; the earliest claim
@@ -88,6 +89,8 @@ pub struct ProfileRoles {
     pub pin: Option<PinRecord>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hidden_sections: Option<HiddenSections>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub household: Option<ProfileHousehold>,
 }
 
 pub(super) fn profile_roles(row: &Map<String, Value>) -> ProfileRoles {
@@ -98,6 +101,7 @@ pub(super) fn profile_roles(row: &Map<String, Value>) -> ProfileRoles {
         parent: text_(row.get("parent")),
         pin: pin(row.get("pin")),
         hidden_sections: hidden_sections(row.get("hiddenSections")),
+        household: profile_household(row.get("household")),
     }
 }
 

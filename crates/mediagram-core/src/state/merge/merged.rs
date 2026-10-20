@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, ListRow, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
+    CollectionRow, DayStatRow, HouseholdEntry, ListRow, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
     UnwatchedRow, WatchedRow,
 };
 
@@ -56,6 +56,10 @@ pub struct MergedState {
     /// `schema.rs`'s v5.
     #[serde(default, rename = "editorsChoice")]
     pub editors_choice: Vec<ListRow>,
+    /// Every household any device names, by id; omitted when empty, like the
+    /// record's own key.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub households: Vec<HouseholdEntry>,
 }
 
 #[cfg(test)]
