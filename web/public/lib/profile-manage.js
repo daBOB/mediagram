@@ -110,7 +110,7 @@ export function mountManage(container, { promptHost, onChange }) {
   function draw() {
     body.textContent = "";
     named.clear();
-    const view = session === null ? null : api.manageable(state.everyone(), session.actorId);
+    const view = session === null || !state.profiles().some((one) => one.id === session.actorId) ? null : api.manageable(state.everyone(), session.actorId);
     if (view?.actor) drawRole(view);
     else drawWho();
   }
