@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import designsystem.Spacing
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.profileStatus
@@ -36,9 +35,8 @@ import ui.setup.TelegramApplicationScreen
 private enum class SettingsPanel { Library, Application }
 
 /**
- * Settings + System, one frame: an index (Telegram · Storage · Appearance ·
- * System, each with its own one-line status) and a page — two panes on
- * EXPANDED width, one pane below it.
+ * Settings + System, one frame: an index (each section with its own one-line
+ * status) and a page — two panes on EXPANDED width, one pane below it.
  *
  * @param initial The section the page opens on — `null` shows the compact
  * index first (the Settings menu item); a section opens straight to it (the
@@ -89,6 +87,7 @@ internal fun SettingsScreen(
     LaunchedEffect(settingsState.completedActionId) {
         if (settingsState.completedActionId > openedBeforeAction) panel = null
     }
+    ProfilesVisit(open = section == SettingsSection.PROFILES)
 
     when (panel) {
         SettingsPanel.Library -> {
@@ -121,13 +120,14 @@ internal fun SettingsScreen(
 
         null -> {
             val statuses =
-                mapOf(
+                listOfNotNull(
                     SettingsSection.TELEGRAM to IndexStatus(telegramStatus(settingsState)),
                     SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                     SettingsSection.APPEARANCE to IndexStatus("${appearance.theme.label} · ${appearance.accent.label}"),
                     SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
+                    profilesStatus(profile)?.let { SettingsSection.PROFILES to it },
                     SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
-                )
+                ).toMap()
             SettingsPanes(
                 section = section,
                 statuses = statuses,

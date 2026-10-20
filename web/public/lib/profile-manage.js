@@ -1,10 +1,12 @@
 /**
  * Manage profiles: who there is, a kid's age and daily limits, and grown-ups' PINs.
  *
- * Opened from the picker only — entering a profile never opens it, so a
- * device left on a grown-up's profile does not hand a child these controls.
- * A grown-up says who they are and gives their PIN once; it is held in this
- * panel while it is open, sent with every change, and dropped when it closes.
+ * Opened from the picker — entering a profile never opens it, so a device
+ * left on a grown-up's profile does not hand a child these controls. The body
+ * is also mounted by Settings' Profiles tab, which keeps that promise by
+ * hiding from kids and asking who you are and the PIN on every visit.
+ * A grown-up says who they are and gives their PIN once; it is held while the
+ * body is mounted, sent with every change, and dropped when it is torn down.
  *
  * What the panel offers follows the household's rule: the admin adds,
  * removes and resets grown-ups; every grown-up manages their own kids and
@@ -13,6 +15,7 @@
  */
 
 import { el } from "./dom.js";
+import { addForm } from "./profile-add-form.js";
 import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
@@ -20,10 +23,13 @@ import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
 import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
 import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 
+/** What a change reports once the body is gone: nothing was sent. */
+const GONE = { ok: false, reason: "not-found" };
+
 /** The two limits a kid can have. A new kid starts at the stricter; its parent raises it. */
 const LIMITS = [6, 12];
 
-function pill(label, onClick) {
+export function pill(label, onClick) {
   const button = el("button", "pill pill-line", label);
   button.type = "button";
   button.addEventListener("click", onClick);
@@ -55,50 +61,34 @@ function row(name, ...controls) {
   return line;
 }
 
-/** A name, whatever `extra` asks beside it, and the button that adds. The picker's first-profile form is one too. */
-export function addForm(label, extra, submit) {
-  const form = el("form", "who-new");
-  const name = el("input");
-  name.maxLength = 120;
-  name.placeholder = "Name";
-  name.setAttribute("aria-label", `${label}: name`);
-  const add = el("button", "who-create", label);
-  add.type = "submit";
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    if (name.value.trim() !== "") void submit(name.value.trim());
-  });
-  form.append(name, ...extra, add);
-  return form;
-}
-
 /**
- * Covers `parent` — the picker — with the panel.
- * @param {HTMLElement} parent
- * @param {() => void} onClose called once the panel is gone
+ * Draws Manage profiles into `container`.
+ * @param {HTMLElement} container
+ * @param {{ promptHost: HTMLElement, onChange?: () => void }} options PIN prompts open over
+ *   this element; `onChange` runs after each change that went through, once the list is read again
+ * @returns {() => void} removes the body and drops the PIN held for the visit
  */
-export function openManage(parent, onClose) {
-  const screen = el("div", "who who-manage");
-  const card = el("div", "who-card");
+export function mountManage(container, { promptHost, onChange }) {
+  const root = el("div");
   const body = el("div");
   const message = el("p", "pin-message");
   message.setAttribute("role", "alert");
   /** `{ actorId, pin }` once a grown-up has said who they are. */
   let session = null;
-
-  const done = pill("Done", close);
-
-  function close() {
-    session = null;
-    document.removeEventListener("keydown", onKey);
-    screen.remove();
-    onClose();
+  let gone = false;
+  /** PIN prompts this body opened, closed again if it goes while one is up. */
+  const prompts = [];
+  /** Opens a prompt over the host and remembers it. */
+  function ask(open) {
+    const before = new Set(promptHost.children);
+    const answer = open();
+    prompts.push(...Array.from(promptHost.children).filter((child) => !before.has(child)));
+    return answer;
   }
 
-  // Escape closes the panel as Done does, as Back does on Android — unless a
-  // PIN prompt lies over it (a second child of the screen), which goes first.
-  function onKey(event) {
-    if (event.key === "Escape" && screen.childElementCount === 1) close();
+  /** Runs a change with the PIN held; once the body is gone nothing is sent. */
+  function send(call) {
+    return gone ? Promise.resolve(GONE) : call(session.actorId, session.pin);
   }
 
   /**
@@ -107,10 +97,12 @@ export function openManage(parent, onClose) {
    * spend that profile's tries.
    */
   function report(outcome) {
+    if (gone) return;
     message.textContent = outcome.ok ? ""
       : outcome.reason === "wrong-pin" ? "Your PIN is no longer valid. Choose who you are again." : refusalText(outcome);
     if (outcome.reason === "wrong-pin") session = null;
     draw();
+    if (outcome.ok) onChange?.();
   }
 
   function draw() {
@@ -127,11 +119,12 @@ export function openManage(parent, onClose) {
     for (const entry of state.profiles().filter((profile) => !profile.kids)) {
       choices.append(pill(entry.name, async () => {
         // A first PIN refused is news from another player: read who is here again.
-        const pin = await askGrownUp(screen, entry, (given) => api.prove(entry, given), async (outcome) => {
+        const pin = await ask(() => askGrownUp(promptHost, entry, (given) => (gone ? GONE : api.prove(entry, given)), async (outcome) => {
+          if (gone) return;
           message.textContent = refusalText(outcome);
-          if (await state.loadProfiles()) draw();
-        });
-        if (pin === null) return;
+          if (await state.loadProfiles() && !gone) draw();
+        }));
+        if (pin === null || gone) return;
         session = { actorId: entry.id, pin };
         message.textContent = "";
         draw();
@@ -148,8 +141,8 @@ export function openManage(parent, onClose) {
           pill("Reset PIN", () => void newPin(entry)),
           pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)))),
         addForm("Add a grown-up", [], async (name) => {
-          const made = await askPin(screen, { title: `A PIN for ${name}`, confirm: true, refused: report,
-            send: (pin) => api.create(session.actorId, session.pin, { name, kids: false, newPin: pin }) });
+          const made = await ask(() => askPin(promptHost, { title: `A PIN for ${name}`, confirm: true, refused: report,
+            send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
           if (made !== null) report({ ok: true });
         })));
     }
@@ -159,37 +152,40 @@ export function openManage(parent, onClose) {
       ...kids.map((kid) => {
         const limit = limitChoice(kidsLimitOf(kid), `Age limit for ${kid.name}`);
         limit.addEventListener("change", async () =>
-          report(await api.setKidsAge(session.actorId, session.pin, kid.id, Number(limit.value))));
+          report(await send((id, pin) => api.setKidsAge(id, pin, kid.id, Number(limit.value)))));
         const daily = dailyChoice(kid.dailyLimit ?? null, `${DAILY_LIMIT_WORDS.label} for ${kid.name}`);
         daily.addEventListener("change", async () =>
-          report(await api.setDailyLimit(session.actorId, session.pin, kid.id, minutesOf(daily))));
+          report(await send((id, pin) => api.setDailyLimit(id, pin, kid.id, minutesOf(daily)))));
         return row(kid.name, limit, daily,
           pill("Remove", () => void removeOne(kid, `Remove ${kid.name} and everything they have watched?`)));
       }),
       addForm("Add a kid", [newLimit, newDaily], async (name) =>
-        report(await api.create(session.actorId, session.pin,
-          { name, kids: true, kidsAge: Number(newLimit.value), dailyLimit: minutesOf(newDaily) })))));
+        report(await send((id, pin) => api.create(id, pin,
+          { name, kids: true, kidsAge: Number(newLimit.value), dailyLimit: minutesOf(newDaily) }))))));
     body.append(section("Your PIN", pill("Change your PIN", () => void newPin(actor))));
   }
 
   /** A new PIN for `entry`, asked twice. Changing one's own changes the one held here, or the next change would be refused. */
   async function newPin(entry) {
     const own = entry.id === session.actorId;
-    const given = await askPin(screen, { title: own ? "Your new PIN" : `A new PIN for ${entry.name}`, confirm: true,
-      refused: report, send: (pin) => api.setPin(session.actorId, session.pin, entry.id, pin) });
-    if (given === null) return;
+    const given = await ask(() => askPin(promptHost, { title: own ? "Your new PIN" : `A new PIN for ${entry.name}`, confirm: true,
+      refused: report, send: (pin) => send((id, held) => api.setPin(id, held, entry.id, pin)) }));
+    if (given === null || gone) return;
     if (own) session.pin = given;
     report({ ok: true });
   }
 
   async function removeOne(entry, question) {
     if (!window.confirm(question)) return;
-    report(await api.remove(session.actorId, session.pin, entry.id));
+    report(await send((id, pin) => api.remove(id, pin, entry.id)));
   }
-
-  card.append(body, message, done);
-  screen.append(card);
-  parent.append(screen);
-  document.addEventListener("keydown", onKey);
+  root.append(body, message);
+  container.append(root);
   draw();
+  return () => {
+    gone = true;
+    session = null;
+    for (const prompt of prompts) prompt.close();
+    root.remove();
+  };
 }

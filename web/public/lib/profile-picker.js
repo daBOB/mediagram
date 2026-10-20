@@ -19,7 +19,8 @@ import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
-import { addForm, openManage } from "./profile-manage.js";
+import { addForm } from "./profile-add-form.js";
+import { openManage } from "./profile-manage-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */

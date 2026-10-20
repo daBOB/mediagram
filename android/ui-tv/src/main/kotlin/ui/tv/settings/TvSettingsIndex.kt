@@ -78,7 +78,8 @@ internal fun TvSettingsIndex(
             color = tones.quiet,
             modifier = Modifier.padding(start = Spacing.small, bottom = Spacing.large),
         )
-        for (section in SettingsSection.entries) {
+        // Profiles has no television section yet, so the remote is never offered it.
+        for (section in SettingsSection.entries - SettingsSection.PROFILES) {
             // The mockup's own "apart" gap: System reads as its own group,
             // away from the account/device questions above it.
             if (section == SettingsSection.SYSTEM) Spacer(Modifier.height(Spacing.medium))

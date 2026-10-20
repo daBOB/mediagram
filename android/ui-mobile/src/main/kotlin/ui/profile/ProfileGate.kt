@@ -25,10 +25,11 @@ import ui.common.profile.manageActions
  * — the name [ui.chrome.LibraryScaffold] shows, and what tapping it reopens.
  *
  * Manage profiles, opened from the picker, takes the picker's place until
- * Done; once a profile is chosen it cannot be reached, so a phone left on a
- * grown-up does not hand a child the controls. It closes, and forgets its
- * PIN, when the library shows again or the app is left
- * ([ForgetManageWhenAway]).
+ * Done. Once a profile is chosen it is reached only from Settings' Profiles
+ * section, shown to a grown-up alone and asking who you are and that PIN on
+ * every visit, so a phone left on a grown-up does not hand a child the
+ * controls. It closes, and forgets its PIN, when the library shows again or
+ * the app is left ([ForgetManageWhenAway]).
  */
 @Composable
 internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {

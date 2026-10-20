@@ -1,6 +1,7 @@
 /**
  * Settings, in the player's own language rather than an admin form: the
  * department-sized heading, then tabs. Appearance and Profile for everyone;
+ * Profiles — the household and its management — only while a grown-up is chosen;
  * "Library & Telegram" — the admin-gated account, cache and sessions panel
  * (`lib/settings-view.js`) — only for a viewer on this household's own
  * network, the same rule the System page follows.
@@ -14,6 +15,7 @@ import { tabbed } from "./tabs.js";
 import { href } from "../address.js";
 import { preferenceOf, setPreference } from "../watch-state.js";
 import { kidsLimitOf } from "../age-rating.js";
+import { profilesPanel } from "./settings-profiles.js";
 
 const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
 
@@ -50,6 +52,7 @@ function write(name, value) {
  */
 export function renderSettings(main, { profile, switchProfile, systemVisible, admin }) {
   let stopAdmin = null;
+  let stopProfiles = null;
   const head = el("header", "dept-hero no-art");
   const copy = el("div", "dept-copy");
   copy.append(el("h1", "dept-title", "Settings"));
@@ -58,13 +61,18 @@ export function renderSettings(main, { profile, switchProfile, systemVisible, ad
   main.append(tabbed([
     { label: "Appearance", build: appearance },
     { label: "Profile", build: () => profilePanel(profile, switchProfile, systemVisible) },
+    ...(profile && !profile.kids ? [{
+      label: "Profiles",
+      build: () => { const panel = profilesPanel(main); stopProfiles = panel.stop; return panel.box; },
+      leave: () => stopProfiles?.(),
+    }] : []),
     ...(admin ? [{ label: "Library & Telegram", build: () => {
       const box = el("div", "settings-panel settings-admin");
       stopAdmin = admin(box);
       return box;
     } }] : []),
   ], "Settings"));
-  return () => stopAdmin?.();
+  return () => { stopAdmin?.(); stopProfiles?.(); };
 }
 
 function appearance() {

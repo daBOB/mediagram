@@ -2,6 +2,8 @@ package catalog.profile
 
 import model.Profile
 import model.ProfileOutcome
+import model.dailyLimitChoiceFor
+import model.ownerOf
 
 /**
  * What the PIN prompt shows, on a phone and a television alike: [title]
@@ -56,6 +58,28 @@ const val CHANGE_YOUR_PIN = "Change your PIN"
 const val RESET_PIN = "Reset PIN"
 const val REMOVE = "Remove"
 const val DONE = "Done"
+
+const val EVERYONE_HERE = "Everyone here"
+
+/** Under Profiles in Settings' index. */
+fun profileCount(count: Int): String = if (count == 1) "1 profile" else "$count profiles"
+
+/**
+ * Settings' Profiles list (`settings-profiles.js`): grown-ups first, each
+ * beside one quiet line — a grown-up's role and whether it has a PIN; a kid's
+ * owner, its FSK and any daily limit.
+ */
+fun everyoneHere(profiles: List<Profile>): List<Pair<Profile, String>> =
+    profiles.sortedBy { it.kids }.map { entry ->
+        entry to
+            if (entry.kids) {
+                val owner = profiles.find { it.id == profiles.ownerOf(entry) }?.name
+                val limit = entry.dailyLimit?.let { dailyLimitChoiceFor(it).label }
+                listOfNotNull("Kid", owner, "FSK ${entry.kidsLimit}", limit).joinToString(" · ")
+            } else {
+                "${if (entry.admin) "Admin" else "Grown-up"} · ${if (entry.hasPin) "PIN set" else "No PIN"}"
+            }
+    }
 
 /** Under Manage's heading once a grown-up has said who they are. */
 fun managingAs(name: String): String = "As $name"

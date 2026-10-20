@@ -51,6 +51,9 @@ class ManageProfilesViewModel
         private var heldPin: String? = null
         private val ask = PinAsk(viewModelScope)
 
+        /** Everyone in the household — what Settings' Profiles lists before anyone says who they are. */
+        val profiles: StateFlow<List<Profile>> = repository.profiles
+
         /** The PIN Manage is asking for: the actor's own, or a new one typed twice. */
         val pin: StateFlow<PinPrompt?> = ask.prompt
 

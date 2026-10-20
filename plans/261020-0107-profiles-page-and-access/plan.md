@@ -8,7 +8,7 @@
 
 **Goal:**
 1. A **Profiles** page in Settings on the web player: everyone in the household, and the same create/remove/PIN/limit actions as Manage profiles, inline. Android gets the same section (Surface Parity).
-2. **Access per profile** (phase 03): which library sections a profile may open. Controller's reading of "access management"; built only after the user confirms it (see phase 03).
+2. **Access per profile** (phase 03): which library sections a profile may open. Confirmed by the user 2026-10-20 ("yes, section access per profile"); its design decisions are the controller's (phase 03).
 
 **Architecture:** no new server rule or API for phases 01–02. The page reuses the household rule, the profile API (`web/public/lib/profile-api.js`) and the manage panel's drawing, lifted out of its overlay so the overlay and the page share one body. Android reuses `ManageProfilesViewModel` and its screens.
 
@@ -40,7 +40,7 @@
 |---|---|---|---|
 | 01 | [Web: Profiles tab in Settings](phase-01-web-profiles-tab.md) | none | pending |
 | 02 | [Android: Profiles section in Settings](phase-02-android-profiles-section.md) | 01 | pending |
-| 03 | [Access per profile (to confirm)](phase-03-section-access.md) | user's confirmation | blocked |
+| 03 | [Access per profile: hidden sections](phase-03-section-access.md) | 02 | pending |
 | 04 | [Docs, version, checks](phase-04-docs-version-checks.md) | 01, 02 (03 if built) | pending |
 
 ## Review
