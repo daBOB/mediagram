@@ -19,7 +19,7 @@ import kotlin.test.assertEquals
 import uniffi.mediagram_core.Profile as CoreProfile
 
 /**
- * Joining and switching household, by remote alone ([TvProfilesHarness]):
+ * Joining and switching household, and the owner's Households, by remote alone ([TvProfilesHarness]):
  * andre, the owner, runs Home with Bo; Dan runs Flat and has no PIN, so the
  * owner's opens it.
  */
@@ -111,5 +111,27 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
         switchFromSettings()
         back()
         compose.onNode(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertIsFocused()
+    }
+
+    /** The owner watching opens Households with no PIN; the first change asks it, and the remote is back on the household. */
+    @Test
+    fun theOwnerMovesAGrownUpWithTheRemote() {
+        launch(emptyList(), chosen = "a", seed = households())
+        openSettingsAt(rowOf("Profiles"))
+        press(Key.DirectionCenter)
+        walkTo(rowOf(HouseholdWords.HOUSEHOLDS), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNode(rowOf("Flat · Admin Dan · 1 profile")).assertIsFocused()
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        walkTo(rowOf(HouseholdWords.MOVE_HERE), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        compose.onNode(rowOf("Dan")).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNodeWithText(HouseholdWords.OWNERS_PIN).assertExists()
+        pin("1234")
+
+        compose.onNode(rowOf("Home · Admin andre · 3 profiles")).assertIsFocused()
+        assertEquals(HOME_HOUSEHOLD, fixture.core.profiles.single { it.id == "d" }.household)
     }
 }

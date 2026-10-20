@@ -11,6 +11,8 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.merge
+import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
@@ -56,6 +58,7 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val manage: ManageProfilesViewModel = hiltViewModel()
     val join: JoinHouseholdViewModel = hiltViewModel()
+    val owner: HouseholdsOwnerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val joining by join.state.collectAsStateWithLifecycle()
     val managing by manage.state.collectAsStateWithLifecycle()
@@ -69,12 +72,13 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val places = rememberSaveableStateHolder()
     var lastChosen by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(chosen?.profile?.id) { chosen?.let { lastChosen = it.profile.id } }
-    // A join that left the profile chosen here behind asks who is watching
-    // again, and forgets the places it kept here. Heard here, not by Switch
-    // household: the library, Settings with it, leaves the moment the profile
-    // is gone, before the join has finished reading.
-    LaunchedEffect(join) {
-        join.joined.collect { kept ->
+    // A join — Switch household, or the owner's Use on this device — that
+    // left the profile chosen here behind asks who is watching again, and
+    // forgets the places it kept here. Heard here, not by the panel that
+    // joined: the library, Settings with it, leaves the moment the profile is
+    // gone, before the join has finished reading.
+    LaunchedEffect(join, owner) {
+        merge(join.joined, owner.joined).collect { kept ->
             if (kept) return@collect
             lastChosen?.let(places::removeState)
             viewModel.reopen()
