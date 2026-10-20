@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.130.1 — Preloads stays reachable
+
+**Changed** (Android phone, tablet and TV)
+
+- **"Preloads" stays in the menu while anything is preloaded on this device**, not only while something is queued, so finished films and episodes can always be found and removed under "On this device". The number beside it still counts the queue; with nothing queued the entry reads plain "Preloads". A kid gets no entry for a title its profile hides.
+
 ## 0.130.0 — preload an episode, and see how much of it is held
 
 **Added** (Android phone, tablet and TV)
