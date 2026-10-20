@@ -1,6 +1,7 @@
 //! Households: which one each profile is in, who runs each, and which one
-//! this device shows. See [`rules`] for the rule and [`device`] for the
-//! household this device joined.
+//! this device shows. See [`rules`] for the rule, [`device`] for the
+//! household this device joined, and [`manage`] for the owner's actions,
+//! joining one and claiming one nobody runs.
 
 use rusqlite::Connection;
 
@@ -9,7 +10,10 @@ use super::record::normal_name;
 use rules::{HouseholdRecord, MemberView};
 
 pub mod device;
+pub mod manage;
 pub mod rules;
+
+pub use manage::NewHouseholdAdmin;
 
 /// The first household. The same id on every device, so each can migrate
 /// alone; never deleted.
@@ -23,20 +27,31 @@ pub struct Household {
     pub admin_id: Option<String>,
 }
 
-/// A household's stored row, a removed one included.
+/// A household's stored row, a removed one included, its fields' stamps too.
 #[derive(Debug, Clone)]
 pub(crate) struct Row {
-    id: String,
-    name: String,
-    admin_id: Option<String>,
-    removed: bool,
+    pub(crate) id: String,
+    pub(crate) name: String,
+    pub(crate) name_updated_at: i64,
+    pub(crate) admin_id: Option<String>,
+    pub(crate) admin_updated_at: i64,
+    pub(crate) removed: bool,
 }
 
 /// Every household's row, removed ones included, by id.
 pub(crate) fn load_rows(conn: &Connection) -> rusqlite::Result<Vec<Row>> {
-    let mut stmt = conn.prepare("SELECT id, name, admin_id, removed FROM households ORDER BY id")?;
+    let mut stmt = conn.prepare(
+        "SELECT id, name, name_updated_at, admin_id, admin_updated_at, removed FROM households ORDER BY id",
+    )?;
     let rows = stmt.query_map([], |row| {
-        Ok(Row { id: row.get(0)?, name: row.get(1)?, admin_id: row.get(2)?, removed: row.get::<_, i64>(3)? != 0 })
+        Ok(Row {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            name_updated_at: row.get(2)?,
+            admin_id: row.get(3)?,
+            admin_updated_at: row.get(4)?,
+            removed: row.get::<_, i64>(5)? != 0,
+        })
     })?;
     rows.collect()
 }

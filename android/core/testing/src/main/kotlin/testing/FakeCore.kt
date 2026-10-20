@@ -154,7 +154,7 @@ class FakeCore(
      * the real core's order for a tie is unspecified.
      */
     var clock: () -> Long = monotonicClock(),
-) : FakeCoreHandle {
+) : FakeHouseholdCalls() {
     // Wrapped rather than passed straight through: `clock` is a `var`, and a
     // lambda over it keeps reading whatever it holds now, including after a
     // test reassigns it mid-run. `exists` reads `profiles` below the same

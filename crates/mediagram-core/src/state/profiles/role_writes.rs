@@ -12,7 +12,7 @@ use crate::state::record::MAX_STAMP;
 /// another device's clock, and this one running behind must not write a
 /// change that loses to the value it replaced. Kept below the largest time a
 /// peer keeps, as `set_watched`'s stamps are.
-pub(super) const LAST_STAMP: i64 = MAX_STAMP as i64 - 1;
+pub(crate) const LAST_STAMP: i64 = MAX_STAMP as i64 - 1;
 
 /// A fresh salt, and the hash of `pin` under it. `proven`: set by someone
 /// who knew the PIN before it, or the admin's reset — not a first PIN.

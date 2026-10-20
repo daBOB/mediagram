@@ -1,6 +1,7 @@
 //! A profile as the app sees it.
 
 use super::role_rows;
+use super::rules::RoleView;
 
 /// A profile as the app sees it. Says whether there is a PIN, never what.
 /// Every field after `name` is defaulted in the generated Kotlin (uniffi
@@ -60,6 +61,22 @@ impl From<role_rows::Stored> for Profile {
             kids: row.kids,
             parent_id: row.parent_id,
             hidden_sections: row.hidden_sections,
+        }
+    }
+}
+
+/// The rule's view of a profile [`crate::state::households::resolve`] placed:
+/// in its household, and the admin only where it runs it. A stored row is
+/// never the rule's view: its household and claim say neither.
+impl From<&Profile> for RoleView {
+    fn from(one: &Profile) -> Self {
+        RoleView {
+            id: one.id.clone(),
+            kids: one.kids,
+            admin: one.admin,
+            owner: one.owner,
+            parent_id: one.parent_id.clone(),
+            household: Some(one.household.clone()),
         }
     }
 }

@@ -85,8 +85,9 @@ impl Core {
             .await
     }
 
-    /// Makes `id` the household's admin while there is none. A grown-up
-    /// with a PIN gives it; one without takes `pin` as its first.
+    /// Makes `id` the owner while this install has none, else the admin of
+    /// its household while that has none. A grown-up with a PIN gives it;
+    /// one without takes `pin` as its first.
     pub async fn claim_admin(self: Arc<Self>, id: String, pin: String) -> ProfileOutcome {
         self.blocking(move |core| core.state_db.manage(|m| m.claim_admin(&id, &pin)))
             .await
