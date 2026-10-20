@@ -82,6 +82,22 @@ class HouseholdsOwnerVisitsTest : HouseholdsOwnerHarness() {
             assertEquals("c", households.view.value.list.single { it.name == "Loft" }.adminId)
         }
 
+    /** A grown-up chosen who has gone from the view since: sent all the same, so the core's refusal is said each time, never nothing. */
+    @Test
+    fun aGrownUpGoneSinceIsSaidNotSkipped() =
+        runTest(UnconfinedTestDispatcher()) {
+            val vm = opened()
+            core.profiles = core.profiles.filterNot { it.id == "c" }
+            households.reload()
+            vm.moveHere("barn", "c")
+            assertEquals("That profile is not here any more.", vm.part().notice)
+            vm.changeAdmin("flat", "c")
+            vm.create("Loft", adminId = "c", adminName = null)
+            assertEquals("That profile is not here any more.", vm.part().notice)
+            assertEquals(3, vm.part().answers)
+            assertNull(vm.pin.value)
+        }
+
     /** A change still out when the part closes answers nothing on the next visit, and does not leave it sending. */
     @Test
     fun anAnswerAfterCloseStaysWithItsVisit() =

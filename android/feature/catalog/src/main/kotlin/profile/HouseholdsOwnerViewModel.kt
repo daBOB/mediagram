@@ -79,12 +79,12 @@ class HouseholdsOwnerViewModel
             val clean = name.trim().takeIf { it.isNotEmpty() } ?: return
             val fresh = adminName?.trim()?.takeIf { it.isNotEmpty() }
             val admin = adminId?.let(::grownUp)
-            if ((fresh == null) == (admin == null)) return
+            if ((fresh == null) == (adminId == null)) return
             act(
                 newPinFor = fresh ?: admin?.takeUnless { it.hasPin }?.name,
                 // Both names can be taken; the household's is said first, as the core checks it first.
-                named = admin != null || households.view.value.list.any { householdKey(it.name) == householdKey(clean) },
-            ) { actor, pin, newPin -> CreateHousehold(actor, pin, clean, admin?.id, fresh, newPin) }
+                named = adminId != null || households.view.value.list.any { householdKey(it.name) == householdKey(clean) },
+            ) { actor, pin, newPin -> CreateHousehold(actor, pin, clean, adminId, fresh, newPin) }
         }
 
         fun rename(id: String, name: String) {
@@ -94,15 +94,15 @@ class HouseholdsOwnerViewModel
 
         /** One of the household's own grown-ups. */
         fun changeAdmin(id: String, adminId: String) {
-            val admin = grownUp(adminId) ?: return
-            act(newPinFor = admin.takeUnless { it.hasPin }?.name) { actor, pin, newPin -> SetHouseholdAdmin(actor, pin, id, adminId, newPin) }
+            val admin = grownUp(adminId)
+            act(newPinFor = admin?.takeUnless { it.hasPin }?.name) { actor, pin, newPin -> SetHouseholdAdmin(actor, pin, id, adminId, newPin) }
         }
 
         /** A grown-up and their kids. Into a household nobody runs they run it, so need a PIN. */
         fun moveHere(id: String, profileId: String) {
-            val mover = grownUp(profileId) ?: return
+            val mover = grownUp(profileId)
             val nobodyRuns = households.view.value.list.find { it.id == id }?.adminId == null
-            act(newPinFor = mover.name.takeIf { nobodyRuns && !mover.hasPin }) { actor, pin, newPin -> MoveToHousehold(actor, pin, id, profileId, newPin) }
+            act(newPinFor = mover?.takeIf { nobodyRuns && !it.hasPin }?.name) { actor, pin, newPin -> MoveToHousehold(actor, pin, id, profileId, newPin) }
         }
 
         /** Only an empty household other than Home. */
