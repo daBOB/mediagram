@@ -158,7 +158,7 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         manageAs("andre", "1111")
         named("Add a kid").performScrollTo().performTextInput("bea")
         compose.onNodeWithText("Add a kid").performScrollTo().performClick()
-        compose.onNodeWithText("A profile with that name already exists.").assertExists()
+        compose.onNodeWithText("That name is already used on this install.").assertExists()
         assertEquals(2, household.core.profiles.size)
     }
 }

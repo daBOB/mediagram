@@ -1,5 +1,6 @@
 package catalog.profile
 
+import model.HouseholdWords
 import model.Profile
 import model.ProfileOutcome
 import kotlin.test.Test
@@ -17,7 +18,12 @@ class ProfileWordsTest {
         assertEquals("This profile has no PIN yet. Choose it again to set one.", ProfileOutcome.NoPin.sentence())
         assertEquals("That profile is not here any more.", ProfileOutcome.NotFound.sentence())
         assertEquals("That was not accepted. Check the name and the PIN.", ProfileOutcome.Invalid.sentence())
-        assertEquals("A profile with that name already exists.", ProfileOutcome.NameTaken.sentence())
+    }
+
+    /** Names are compared across every household on the install, so the web's wording says so. */
+    @Test
+    fun aTakenNameIsUsedOnThisInstall() {
+        assertEquals(HouseholdWords.PROFILE_NAME_TAKEN, ProfileOutcome.NameTaken.sentence())
     }
 
     @Test
@@ -53,9 +59,17 @@ class ProfileWordsTest {
         val maja = Profile("m", "Maja", kids = true, kidsAge = 6, parentId = "b", dailyLimit = 45, hiddenSections = listOf("tutorials", "anime"))
         val tom = Profile("t", "Tom", kids = true, parentId = "b")
         assertEquals(
-            listOf("Admin · PIN set", "Grown-up · No PIN · hides Movies, Tutorials", "Kid · Bea · FSK 6 · 45 min · hides Anime, Tutorials", "Kid · Bea · FSK 12"),
+            listOf("Owner · Admin · PIN set", "Grown-up · No PIN · hides Movies, Tutorials", "Kid · Bea · FSK 6 · 45 min · hides Anime, Tutorials", "Kid · Bea · FSK 12"),
             everyoneHere(listOf(andre, bea, maja, tom)).map { it.second },
         )
+    }
+
+    /** The web's `roleLine`: the owner's line starts with the word, then the role it has in its own household. */
+    @Test
+    fun theOwnerIsSaidFirstInEveryoneHere() {
+        val andre = Profile("a", "andre", admin = true, owner = true, hasPin = true)
+        val bea = Profile("b", "Bea", admin = true, hasPin = true)
+        assertEquals(listOf("Owner · Admin · PIN set", "Admin · PIN set"), everyoneHere(listOf(andre, bea)).map { it.second })
     }
 
     @Test

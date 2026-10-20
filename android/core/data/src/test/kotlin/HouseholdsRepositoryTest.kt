@@ -75,6 +75,19 @@ class HouseholdsRepositoryTest {
             assertEquals(listOf("Flat", "Home"), households.names())
         }
 
+    /** Home is always live, so a view with no household at all is not a read: the last one stays. */
+    @Test
+    fun aViewWithNoHouseholdIsNotPublished() =
+        runTest(UnconfinedTestDispatcher()) {
+            val households = households()
+            val before = households.view.value
+            core.homes.names.clear()
+
+            households.reload()
+
+            assertEquals(before, households.view.value)
+        }
+
     @Test
     fun keepsTheLastViewWhenAReadFails() =
         runTest(UnconfinedTestDispatcher()) {

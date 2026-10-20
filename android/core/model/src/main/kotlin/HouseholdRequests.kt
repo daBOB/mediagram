@@ -3,7 +3,10 @@ package model
 // Households asked of the core, beside the profile requests in ProfileRequests.kt:
 // plain classes for the same reason, since they carry PINs.
 
-/** This device shows household [id] from now, opened by its admin's PIN or the owner's. */
+/**
+ * This device shows household [id] from now, opened by its admin's PIN or the
+ * owner's. Local to this device: sent with `manage`, never `manageAndShare`.
+ */
 class JoinHousehold(
     val id: String,
     val pin: String,

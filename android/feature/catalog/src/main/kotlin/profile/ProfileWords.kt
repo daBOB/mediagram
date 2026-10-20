@@ -1,5 +1,6 @@
 package catalog.profile
 
+import model.HouseholdWords
 import model.Profile
 import model.ProfileOutcome
 import model.dailyLimitChoiceFor
@@ -80,8 +81,9 @@ fun profilesLine(
 
 /**
  * Settings' Profiles list (`settings-profiles.js`): grown-ups first, each
- * beside one quiet line — a grown-up's role and whether it has a PIN; a kid's
- * owner, its FSK and any daily limit; then, for either, the sections it is not shown.
+ * beside one quiet line — a grown-up's role, the owner's said first, and
+ * whether it has a PIN; a kid's owner, its FSK and any daily limit; then,
+ * for either, the sections it is not shown.
  */
 fun everyoneHere(profiles: List<Profile>): List<Pair<Profile, String>> =
     profiles.sortedBy { it.kids }.map { entry ->
@@ -90,7 +92,7 @@ fun everyoneHere(profiles: List<Profile>): List<Pair<Profile, String>> =
                 val owner = profiles.find { it.id == profiles.ownerOf(entry) }?.name
                 listOfNotNull("Kid", owner, "FSK ${entry.kidsLimit}", entry.dailyLimit?.let { dailyLimitChoiceFor(it).label })
             } else {
-                listOf(if (entry.admin) "Admin" else "Grown-up", if (entry.hasPin) "PIN set" else "No PIN")
+                listOfNotNull(HouseholdWords.OWNER.takeIf { entry.owner }, if (entry.admin) "Admin" else "Grown-up", if (entry.hasPin) "PIN set" else "No PIN")
             }
         entry to (role + listOfNotNull(entry.hidesWords)).joinToString(" · ")
     }
@@ -120,7 +122,8 @@ fun ProfileOutcome.sentence(): String? =
     when (this) {
         ProfileOutcome.Done -> null
         ProfileOutcome.Invalid -> "That was not accepted. Check the name and the PIN."
-        ProfileOutcome.NameTaken -> "A profile with that name already exists."
+        // Names are unique across every household on the install, not only this one.
+        ProfileOutcome.NameTaken -> HouseholdWords.PROFILE_NAME_TAKEN
         ProfileOutcome.NotFound -> "That profile is not here any more."
         is ProfileOutcome.Wait -> "Too many wrong PINs. Try again in $seconds s."
         ProfileOutcome.NoPin -> "This profile has no PIN yet. Choose it again to set one."

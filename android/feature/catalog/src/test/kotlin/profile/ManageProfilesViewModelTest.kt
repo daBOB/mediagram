@@ -168,7 +168,7 @@ class ManageProfilesViewModelTest {
             vm.remove("a")
             assertEquals("That is not allowed.", managing().notice)
             vm.addKid("bea")
-            assertEquals("A profile with that name already exists.", managing().notice)
+            assertEquals("That name is already used on this install.", managing().notice)
             vm.addKid("Lina", 6)
             assertNull(managing().notice, "a change that took clears the last refusal")
         }
@@ -206,7 +206,7 @@ class ManageProfilesViewModelTest {
             vm.enterPin("2468")
             vm.enterPin("2468")
             assertNull(vm.pin.value)
-            assertEquals("A profile with that name already exists.", managing().notice)
+            assertEquals("That name is already used on this install.", managing().notice)
         }
 
     @Test

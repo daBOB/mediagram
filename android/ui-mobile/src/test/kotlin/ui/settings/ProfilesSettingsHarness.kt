@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.WatchSync
@@ -56,6 +57,9 @@ abstract class ProfilesSettingsHarness {
     private val store = ViewModelStore()
     lateinit var controller: ActivityController<ComponentActivity>
     lateinit var manage: ManageProfilesViewModel
+
+    /** Stands in for the owner's part, which the visit closes beside Manage. */
+    lateinit var households: HouseholdsOwnerViewModel
     lateinit var household: WatchStateFixture
 
     val andre = Profile("a", "andre", admin = true)
@@ -88,6 +92,7 @@ abstract class ProfilesSettingsHarness {
             household = WatchStateFixture(listOf(tom, andre, bea), chosen.id, FakeCore().apply { roles.pins += pins })
             val sync = mockk<WatchSync>(relaxed = true)
             manage = ManageProfilesViewModel(household.repository, sync)
+            households = mockk(relaxed = true)
             // Only the chosen profile matters here; every other model's state is read and left unread.
             val none = MutableStateFlow(null)
             val models =
@@ -101,6 +106,7 @@ abstract class ProfilesSettingsHarness {
                     AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                     ProfileViewModel::class.java to ProfileViewModel(household.repository, sync),
                     ManageProfilesViewModel::class.java to manage,
+                    HouseholdsOwnerViewModel::class.java to households,
                 )
             val provider =
                 ViewModelProvider(

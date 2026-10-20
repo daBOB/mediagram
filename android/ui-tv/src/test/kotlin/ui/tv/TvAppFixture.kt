@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.SearchViewModel
+import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
@@ -306,8 +307,9 @@ internal class TvAppFixture(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
                 ProfileViewModel::class.java to profile,
-                // Beside the picker's in TvProfileGate, for Manage profiles.
+                // Beside the picker's in TvProfileGate, for Manage profiles; the visit closes the owner's part with it.
                 ManageProfilesViewModel::class.java to manage,
+                HouseholdsOwnerViewModel::class.java to mockk<HouseholdsOwnerViewModel>(relaxed = true),
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,
@@ -316,10 +318,8 @@ internal class TvAppFixture(
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cacheBudget,
                 LanCacheViewModel::class.java to lanCache,
-                // TvApp's TvTheme and TvSettingsScreen each resolve an
-                // AppearanceViewModel through hiltViewModel(), the same reason
-                // every other entry in this map exists (see the comment above
-                // login/profile/etc.).
+                // TvApp's TvTheme and TvSettingsScreen each resolve an AppearanceViewModel through hiltViewModel(), the
+                // same reason every other entry in this map exists (see the comment above login/profile/etc.).
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                 ProfileSettingsViewModel::class.java to profileSettingsModel(if (settingsSeeTheViewer) viewer.repository.chosenProfile else MutableStateFlow(null)),
                 // TvLibrary resolves BrowseViewModel through hiltViewModel()

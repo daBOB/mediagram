@@ -20,7 +20,9 @@ import uniffi.mediagram_core.ProfileOutcome
  * Who is where stays on [FakeCore.profiles]: each profile's `household`,
  * and the `admin` flag of the grown-up who runs one. PINs and their waits
  * are [roles]'s; a household's door keeps a wait of its own, as the core's
- * does. [names] and [joined] are written directly to seed a test.
+ * does. [names] and [joined] are written directly to seed a test. Two
+ * differences from the core: a deleted [joined] reads as none joined, where the
+ * core falls back, and [FakeProfiles.claimAdmin] refuses while any household has an admin.
  */
 class FakeHouseholds(
     private val read: () -> List<Profile>,
