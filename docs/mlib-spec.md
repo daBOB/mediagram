@@ -698,15 +698,15 @@ goes stale.
 member, `remote: true`, with `cast.state: "offer"`. Every TV of
 `cast.household` with Mediagram open hears it and answers by editing the
 message; a TV of another household, or of none, writes nothing. A TV that may
-not play the title for that profile (age limit, daily limit) writes `refused`
-with the reason in `note`. A TV whose player is open writes `busy`, naming what
-it plays in `note`; the casting screen then asks, and `replace` (with a fresh
-`pos` and `at`) makes the TV leave what it plays. An idle TV adds itself as a
-member, sets `tv` to its screen id and `state` to `on`, and opens the title
-under `cast.profile`. From `on`, the TV is an ordinary member, so its remote
-control moves are edits like any other; `tracks`, `audio` and `text` are
-written by the TV and chosen from the remote. A TV that reads a `tv` that is
-not its own closes its player.
+not play the title for that profile (a hidden section, age limit, daily limit)
+writes `refused` with the reason in `note`. A TV whose player is open writes
+`busy`, naming what it plays in `note`; the casting screen then asks, and
+`replace` (with a fresh `pos` and `at`) makes the TV leave what it plays. An
+idle TV adds itself as a member, sets `tv` to its screen id and `state` to
+`on`, and opens the title under `cast.profile`. From `on`, the TV is an
+ordinary member, so its remote control moves are edits like any other;
+`tracks`, `audio` and `text` are written by the TV and chosen from the remote.
+A TV that reads a `tv` that is not its own closes its player.
 
 Section 8's versioning rule applies: a change to the fields or their meaning
 bumps the marker, and a reader never guesses at a marker it does not know.

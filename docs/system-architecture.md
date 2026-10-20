@@ -917,7 +917,10 @@ web server's side is `web/src/together/cast-desk.ts` and `cast-routes.ts`
 **Household.** A device offers a cast only when it has joined a household, and
 only a TV of that household answers. A TV answers by ignoring, not refusing,
 what is not its own: with a TV open in each household, a refusal from the wrong
-one would overwrite the answer of the right one.
+one would overwrite the answer of the right one. A TV holds the newest request
+of each household, so another household's offer never hides its own. The
+design assumes one TV per household: with two of one household open, both
+answer the same offer.
 
 **The remote and the bar.** The remote is the player screen with the title's
 backdrop where the video would be. While a session with `cast.state: "on"` is
