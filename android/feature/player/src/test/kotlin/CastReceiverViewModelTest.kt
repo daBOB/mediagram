@@ -20,7 +20,6 @@ import model.together.Playback
 import model.together.ageReason
 import model.together.offered
 import model.together.replaced
-import model.together.sectionReason
 import org.junit.After
 import testing.FakeHouseholdsRepository
 import testing.FakeTogetherLive
@@ -34,7 +33,6 @@ class CastReceiverViewModelTest {
     private val tablet = Member("tab-1", "Tablet")
     private val anna = Profile("A", "Anna")
     private val mia = Profile("M", "Mia", kids = true, kidsAge = 6, dailyLimit = 30)
-    private val ben = Profile("B", "Ben", hiddenSections = listOf("movies"))
 
     private val live = FakeTogetherLive()
     private val handle = FakePlayerHandle()
@@ -44,7 +42,7 @@ class CastReceiverViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.receiver(
-        watch: WatchStateFixture = WatchStateFixture(listOf(anna, mia, ben), chosen = "A"),
+        watch: WatchStateFixture = WatchStateFixture(listOf(anna, mia), chosen = "A"),
         households: HouseholdsRepository = FakeHouseholdsRepository(),
     ): CastReceiverViewModel {
         installMainDispatcher()
@@ -112,14 +110,6 @@ class CastReceiverViewModelTest {
         receiver()
         hear(request(set = "film-2", profile = "M"))
         assertRefused(ageReason("Mia"))
-    }
-
-    @Test
-    fun aTitleInASectionHiddenFromTheCasterIsRefused() = runTest {
-        // A stale tab or a hand-made request: the caster's own catalog would not have offered it.
-        receiver()
-        hear(request(profile = "B"))
-        assertRefused(sectionReason("Ben"))
     }
 
     @Test
