@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.136.1 — households on Android, fixes
+
+**Fixed** (Android phone, tablet and TV)
+
+- **The owner's Households part over the picker asks the owner's PIN.** After the owner had been watching, Switch profile then Manage profiles showed the part open to whoever came to the picker, and the TV opened it without the PIN. It now opens at once only for the owner chosen on the device, as on the web.
+- **A fresh device on a one-household install no longer flashes Join a household** while the households are read again after its first sync round.
+- **A household switch that took closes its PIN prompt** when only the households re-read after it failed, instead of saying the switch did not go through.
+- **TV: back from Switch household lands on Manage profiles** when the This device row has gone meanwhile, instead of on nothing.
+- **The owner's changes for a grown-up who has gone since say so** ("That profile is not here any more.") instead of doing nothing; on TV the step no longer waits forever.
+
 ## 0.136.0 — households on Android
 
 **Added** (Android phone, tablet and TV)
