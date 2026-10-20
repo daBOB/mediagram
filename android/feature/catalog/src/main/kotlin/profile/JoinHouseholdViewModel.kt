@@ -97,7 +97,8 @@ class JoinHouseholdViewModel
                 PinPrompt(joinPinTitle(admin), newPin = false),
                 send = { pin ->
                     repository.manage(JoinHousehold(id, pin)).also {
-                        if (it == ProfileOutcome.Done) kept = households.rereadAfterJoin(repository) { stillHere.tryEmit(false) }
+                        // Left behind, the switch took: the picker shows, with no prompt over it saying otherwise.
+                        if (it == ProfileOutcome.Done) kept = households.rereadAfterJoin(repository) { ask.cancel(); stillHere.tryEmit(false) }
                     }
                 },
                 done = { stillHere.tryEmit(kept) },
