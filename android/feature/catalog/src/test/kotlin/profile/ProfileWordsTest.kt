@@ -48,7 +48,7 @@ class ProfileWordsTest {
     /** The web's `roleLine`: the sections someone is not shown, in the nav's order, a key this build does not know left out — never for whoever runs the household. */
     @Test
     fun theEveryoneLineSaysWhichSectionsSomeoneIsNotShown() {
-        val andre = Profile("a", "andre", admin = true, hasPin = true, hiddenSections = listOf("anime"))
+        val andre = Profile("a", "andre", admin = true, owner = true, hasPin = true, hiddenSections = listOf("anime"))
         val bea = Profile("b", "Bea", hiddenSections = listOf("later", "movies", "tutorials"))
         val maja = Profile("m", "Maja", kids = true, kidsAge = 6, parentId = "b", dailyLimit = 45, hiddenSections = listOf("tutorials", "anime"))
         val tom = Profile("t", "Tom", kids = true, parentId = "b")

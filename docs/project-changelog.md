@@ -13,6 +13,13 @@ to `main`. Full phase-by-phase detail lives in
 - **A name a profile had before stays taken on this install**, as a current one is: a new profile may not take it.
 - Nothing renames a profile yet. That comes once every device runs this version: an older one shows both names until it updates, and stops syncing until then if the renamed person has a list.
 
+## 0.134.0 — the owner manages every profile
+
+**Added** (web player; the Android core and app follow the same rule, its Manage screen follows with the Android households work)
+
+- **The owner manages profiles in every household.** In Settings → Profiles → Manage profiles, as the owner, every household's profiles are listed, grouped under the household's name (this device's first), each with Reset PIN, Remove and Sections — and a kid's age and daily limit. A household's admin can now have sections hidden, by the owner only; the owner never has any hidden. Inside the owner's own household the rules are as before (another parent's kid stays theirs). Add a grown-up / Add a kid still add to this device's household; the Households part creates profiles elsewhere.
+- Anyone else's Manage profiles is unchanged.
+
 ## 0.133.0 — set sections from Android
 
 **Added** (Android phone, tablet and TV)

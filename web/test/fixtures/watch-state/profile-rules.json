@@ -979,7 +979,7 @@
     "expect": true
   },
   {
-    "name": "nobody sets the PIN of a grown-up in another household",
+    "name": "a household's admin sets no PIN in another household",
     "profiles": [
       {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
       {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
@@ -1059,7 +1059,7 @@
     "expect": false
   },
   {
-    "name": "no one hides sections across households",
+    "name": "a household's admin hides no sections in another household",
     "profiles": [
       {"id":"andre","kids":false,"admin":true,"parentId":null,"household":"home"},
       {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
@@ -1088,6 +1088,454 @@
     "actorId": "andre",
     "action": "remove",
     "targetId": "oma",
+    "expect": false
+  },
+  {
+    "name": "the owner may remove a grown-up in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "the owner may remove another household's admin, leaving it without one",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "oma",
+    "expect": true
+  },
+  {
+    "name": "the owner may remove a kid in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "tvkids",
+    "expect": true
+  },
+  {
+    "name": "the owner may reset the PIN of a grown-up in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-pin",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "the owner may reset the PIN of another household's admin",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-pin",
+    "targetId": "oma",
+    "expect": true
+  },
+  {
+    "name": "the owner may hide sections from a grown-up in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "the owner may hide sections from another household's admin",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "oma",
+    "expect": true
+  },
+  {
+    "name": "the owner may hide sections from a kid in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "tvkids",
+    "expect": true
+  },
+  {
+    "name": "the owner may set the limit of a kid in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-kids-age",
+    "targetId": "tvkids",
+    "expect": true
+  },
+  {
+    "name": "the owner may set the limit of a kid whose parent is gone, in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-kids-age",
+    "targetId": "lostb",
+    "expect": true
+  },
+  {
+    "name": "in their own household the owner is its admin: another parent's kid is not theirs to remove",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "in their own household the owner is its admin: another parent's kid is not theirs to limit",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-kids-age",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "in their own household the owner is its admin: another parent's kid is not theirs to hide sections from",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "the owner may not remove themselves",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "andre",
+    "expect": false
+  },
+  {
+    "name": "the owner may not hide their own sections",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-access",
+    "targetId": "andre",
+    "expect": false
+  },
+  {
+    "name": "the owner still sets their own PIN",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-pin",
+    "targetId": "andre",
+    "expect": true
+  },
+  {
+    "name": "a kid has no PIN to set, even by the owner",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-pin",
+    "targetId": "tvkids",
+    "expect": false
+  },
+  {
+    "name": "a grown-up has no limit to set, even by the owner",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "set-kids-age",
+    "targetId": "oma",
+    "expect": false
+  },
+  {
+    "name": "the owner manages nobody who is not here",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "remove",
+    "targetId": "nobody",
+    "expect": false
+  },
+  {
+    "name": "the owner creates grown-ups as the admin they are",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "andre",
+    "action": "create-grown-up",
+    "targetId": "",
+    "expect": true
+  },
+  {
+    "name": "a household's admin may not hide their own sections",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-access",
+    "targetId": "oma",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may still hide sections from a grown-up of its own",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-access",
+    "targetId": "tvtest",
+    "expect": true
+  },
+  {
+    "name": "a household's admin may not hide the owner's sections",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-access",
+    "targetId": "andre",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may not reset the owner's PIN",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-pin",
+    "targetId": "andre",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may not remove the owner",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "remove",
+    "targetId": "andre",
+    "expect": false
+  },
+  {
+    "name": "a household's admin may not set a kid's limit in another household",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "oma",
+    "action": "set-kids-age",
+    "targetId": "mia",
+    "expect": false
+  },
+  {
+    "name": "a grown-up who is not an admin may not hide another household's sections either",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "test",
+    "action": "set-access",
+    "targetId": "tvtest",
+    "expect": false
+  },
+  {
+    "name": "a kid said to be the owner manages nothing",
+    "profiles": [
+      {"id":"andre","kids":false,"admin":true,"owner":true,"parentId":null,"household":"home"},
+      {"id":"test","kids":false,"admin":false,"parentId":null,"household":"home"},
+      {"id":"mia","kids":true,"admin":false,"owner":true,"parentId":"test","household":"home"},
+      {"id":"oma","kids":false,"admin":true,"parentId":null,"household":"b"},
+      {"id":"tvtest","kids":false,"admin":false,"parentId":null,"household":"b"},
+      {"id":"tvkids","kids":true,"admin":false,"parentId":"tvtest","household":"b"},
+      {"id":"lostb","kids":true,"admin":false,"parentId":"gone","household":"b"}
+    ],
+    "actorId": "mia",
+    "action": "remove",
+    "targetId": "tvtest",
     "expect": false
   }
 ]

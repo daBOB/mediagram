@@ -2,12 +2,14 @@
  * Who may manage whom. Pure, and the one place the rule is written; the
  * Android core runs the same `profile-rules.json` against its port.
  *
- * A kid manages nothing. The admin adds and removes grown-ups and may set any
- * grown-up's PIN, but is never removed — by anyone, itself included. A kid
- * belongs to exactly one grown-up, the one who made it, and only that one
- * removes it or sets its limit; a kid whose parent is not a grown-up here —
- * none recorded, removed, or never met — is the admin's. All of this stays
- * inside one household; nobody manages a profile in another.
+ * A kid manages nothing. A household's admin adds and removes grown-ups and
+ * may set any grown-up's PIN, but nobody in the household removes it, itself
+ * included. A kid belongs to exactly one grown-up, the one who made it, and
+ * only that one removes it or sets its limit; a kid whose parent is not a
+ * grown-up here — none recorded, removed, or never met — is the admin's. All
+ * of this stays inside one household, where the owner is the admin. Only the
+ * owner reaches into another: there they set the PIN of, hide sections from,
+ * set the limits of and remove anyone, that household's admin too.
  */
 
 import { cleanName } from "./profiles";
@@ -33,6 +35,8 @@ export interface RoleView {
   kids: boolean;
   admin: boolean;
   parentId: string | null;
+  /** Holds the install-wide claim; absent is not the owner. */
+  owner?: boolean;
   /** Absent is the first household, as on a device from before households. */
   household?: string;
 }
@@ -63,8 +67,9 @@ export function allowed(profiles: RoleView[], actorId: string, action: Action, t
   if (action === "create-kid") return true;
 
   const target = profiles.find((one) => one.id === targetId);
-  // Households are separate: nobody manages a profile in another one.
-  if (target === undefined || householdOf(target) !== householdOf(actor)) return false;
+  if (target === undefined) return false;
+  // Households are separate: only the owner manages a profile in another one.
+  if (householdOf(target) !== householdOf(actor)) return actor.owner === true && ownerReaches(action, target);
   switch (action) {
     case "remove":
       if (isAdmin(target)) return false;
@@ -74,9 +79,19 @@ export function allowed(profiles: RoleView[], actorId: string, action: Action, t
     case "set-kids-age":
       return target.kids && ownerOf(profiles, target) === actor.id;
     case "set-access":
-      // The admin never narrows its own view, as it is never removed; a kid's sections are its owner's to set.
+      // A household's admin never narrows its own view; a kid's sections are its owner's to set.
       return target.kids ? ownerOf(profiles, target) === actor.id : !isAdmin(target) && actor.admin;
     default:
       return false;
   }
+}
+
+/**
+ * What the owner may do to anyone in another household, its admin too: remove
+ * them, set their sections, a grown-up's PIN, a kid's limits.
+ */
+function ownerReaches(action: Action, target: RoleView): boolean {
+  if (action === "set-pin") return !target.kids;
+  if (action === "set-kids-age") return target.kids;
+  return action === "remove" || action === "set-access";
 }
