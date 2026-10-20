@@ -65,6 +65,8 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     val pickPin by viewModel.pin.collectAsStateWithLifecycle()
 
     val chosen = state as? ProfileUiState.Chosen
+    // The owner's part opens at once only for the owner chosen here: over a picker shown again it is anybody's, as on the web.
+    LaunchedEffect(owner, chosen?.profile?.id) { owner.watching(chosen?.profile?.id) }
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
     // The picker stands in for the library, which leaves composition and with
     // it every saved place: the tab, the scroll. Held here per profile, so

@@ -73,6 +73,8 @@ abstract class TvHouseholdsPanelHarness : TvScreenStateTest() {
         val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
         runBlocking { repository.reload() }
         owner = HouseholdsOwnerViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined), mockk(relaxed = true))
+        // As the gate says it, which this panel is drawn without.
+        if (watching) owner.watching("a")
         show { TvHouseholdsPanel(owner, reread = {}, onDone = { left++ }) }
     }
 

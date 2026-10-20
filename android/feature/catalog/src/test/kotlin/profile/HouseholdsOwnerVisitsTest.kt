@@ -25,7 +25,7 @@ class HouseholdsOwnerVisitsTest : HouseholdsOwnerHarness() {
     fun theWatchingOwnerSeesThePartOnEveryVisit() =
         runTest(UnconfinedTestDispatcher()) {
             core.chosen = "a"
-            val vm = owning()
+            val vm = owning().apply { watching("a") }
             vm.part()
             assertNull(vm.pin.value)
             vm.rename("barn", "Shed")
@@ -80,6 +80,38 @@ class HouseholdsOwnerVisitsTest : HouseholdsOwnerHarness() {
             vm.enterPin("2468")
             vm.enterPin("2468")
             assertEquals("c", households.view.value.list.single { it.name == "Loft" }.adminId)
+        }
+
+    /** The core still holding the owner chosen opens nothing: only the gate's watching does, which a picker shown again clears. */
+    @Test
+    fun onlyTheOwnerTheGateSaysIsWatchingOpensThePart() =
+        runTest(UnconfinedTestDispatcher()) {
+            core.chosen = "a"
+            val vm = owning()
+            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
+            vm.watching("a")
+            vm.part()
+            vm.watching(null)
+            assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
+            vm.rename("barn", "Shed")
+            assertNull(vm.pin.value)
+            assertEquals("Barn", household("barn")?.name)
+        }
+
+    /** A grown-up chosen who has gone from the view since: sent all the same, so the core's refusal is said each time, never nothing. */
+    @Test
+    fun aGrownUpGoneSinceIsSaidNotSkipped() =
+        runTest(UnconfinedTestDispatcher()) {
+            val vm = opened()
+            core.profiles = core.profiles.filterNot { it.id == "c" }
+            households.reload()
+            vm.moveHere("barn", "c")
+            assertEquals("That profile is not here any more.", vm.part().notice)
+            vm.changeAdmin("flat", "c")
+            vm.create("Loft", adminId = "c", adminName = null)
+            assertEquals("That profile is not here any more.", vm.part().notice)
+            assertEquals(3, vm.part().answers)
+            assertNull(vm.pin.value)
         }
 
     /** A change still out when the part closes answers nothing on the next visit, and does not leave it sending. */

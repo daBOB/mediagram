@@ -55,6 +55,9 @@ class FakeProfiles(
     /** Each grown-up's PIN, by profile id — what [Profile.hasPin] reads. */
     val pins: MutableMap<String, String> = mutableMapOf()
 
+    /** The names each profile had before, by profile id: `taken_names` keeps them taken while the profile is here. */
+    val formerNames: MutableMap<String, List<String>> = mutableMapOf()
+
     /** The wrong-PIN wait's clock, in milliseconds. */
     var nowMs: Long = 0L
 
@@ -209,10 +212,7 @@ class FakeProfiles(
         return first(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
             { check(actorId, pin, RoleAction.SET_PIN, id, unproven = firstPin) },
-        ) ?: run {
-            pins[id] = newPin
-            ProfileOutcome.Done
-        }
+        ) ?: ProfileOutcome.Done.also { pins[id] = newPin }
     }
 
     /** The first refusal any of [checks] finds, asked in order and no further. */
@@ -244,10 +244,10 @@ class FakeProfiles(
         return ProfileOutcome.Done
     }
 
-    /** A blank name, or one a profile here already answers to — which sync would read as the same viewer. */
-    private fun unusable(name: String): ProfileOutcome? {
+    /** A blank name, or one a profile here answers to or did before ([formerNames]) — which sync would read as the same viewer. */
+    internal fun unusable(name: String): ProfileOutcome? {
         val wanted = normalName(name) ?: return ProfileOutcome.Invalid
-        return ProfileOutcome.NameTaken.takeIf { read().any { normalName(it.name) == wanted } }
+        return ProfileOutcome.NameTaken.takeIf { read().any { one -> (formerNames[one.id].orEmpty() + one.name).any { normalName(it) == wanted } } }
     }
 
     /** Somebody there, a grown-up acting, its PIN unless [unproven], then the rule. */

@@ -55,7 +55,8 @@ class ChosenProfileLeftBehindTest : HouseholdsOwnerHarness() {
             failing = true
             join.enterPin("5678")
             assertNull(repository.chosenProfileId.value)
-            assertEquals(DID_NOT_GO_THROUGH, join.pin.value?.error)
+            // The switch took: the prompt closes for the picker, never saying it did not go through.
+            assertNull(join.pin.value)
             assertEquals(listOf(false), said)
         }
 

@@ -39,7 +39,7 @@ interface HouseholdsRepository {
  */
 class DefaultHouseholdsRepository(
     private val coreProvider: CoreProvider,
-    watchState: WatchStateRepository,
+    private val watchState: WatchStateRepository,
     scope: CoroutineScope,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : HouseholdsRepository {
@@ -64,8 +64,10 @@ class DefaultHouseholdsRepository(
 
     override suspend fun reload() {
         reading.withLock {
+            // Taken before the households are: a round heard by then is in what they say.
+            val synced = watchState.syncedOnce.value
             val core = coreProvider.awaitCore()
-            val read = withContext(dispatcher) { core.households() }.toModel()
+            val read = withContext(dispatcher) { core.households() }.toModel().copy(synced = synced)
             // Home is never deleted, so a view with no household at all is no read: screens keep waiting.
             if (read.list.isNotEmpty()) _view.value = read
         }

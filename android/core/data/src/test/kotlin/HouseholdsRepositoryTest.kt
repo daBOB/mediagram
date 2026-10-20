@@ -42,6 +42,7 @@ class HouseholdsRepositoryTest {
                     joined = HOME_HOUSEHOLD,
                     list = listOf(Household("flat", "Flat", "b"), Household(HOME_HOUSEHOLD, "Home", "a")),
                     everyone = listOf(Profile("a", "Ada", admin = true, owner = true), Profile("b", "Bo", admin = true, household = "flat")),
+                    synced = true,
                 ),
                 households().view.value,
             )
@@ -67,12 +68,14 @@ class HouseholdsRepositoryTest {
             val households = households()
             core.homes.names["flat"] = "Flat"
             assertEquals(listOf("Home"), households.names())
+            assertEquals(false, households.view.value.synced)
 
             core.syncedOnce = true
             // The same profiles: only the round is news.
             fixture.repository.reload()
 
             assertEquals(listOf("Flat", "Home"), households.names())
+            assertEquals(true, households.view.value.synced)
         }
 
     /** Home is always live, so a view with no household at all is not a read: the last one stays. */
