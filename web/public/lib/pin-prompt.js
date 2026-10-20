@@ -128,6 +128,26 @@ export function askPin(parent, { title, confirm = false, send, refused = () => {
   });
 }
 
+/** What a new PIN for `name` is asked as: a grown-up being added, or made an admin with none yet. */
+export const newPinTitle = (name) => `A PIN for ${name}`;
+
+/**
+ * Prompts opened over `host` through `ask`, all closed again by `close`: for
+ * a body that may be torn down while one is up, dropping the PIN it holds.
+ */
+export function promptsOver(host) {
+  const opened = [];
+  return {
+    ask(open) {
+      const before = new Set(host.children);
+      const answer = open();
+      opened.push(...Array.from(host.children).filter((child) => !before.has(child)));
+      return answer;
+    },
+    close: () => { for (const prompt of opened) prompt.close(); },
+  };
+}
+
 /**
  * A grown-up's PIN — or, for one from before PINs, a new one, asked twice —
  * handed to `send`; a new one refused goes to `refused`, as `askPin` says.

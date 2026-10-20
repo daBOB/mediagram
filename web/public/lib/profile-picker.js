@@ -18,7 +18,7 @@ import { el } from "./dom.js";
 import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
-import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
+import { askGrownUp, askPin, newPinTitle, refusalText } from "./pin-prompt.js";
 import { addForm } from "./profile-add-form.js";
 import { openProfilesPage } from "./profiles-page-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
@@ -107,7 +107,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       box.append(el("h2", null, "Create the first profile — it runs this household"),
         addForm("Create", [], async (name) => {
           notice = null;
-          const made = await askPin(screen, { title: `A PIN for ${name}`, confirm: true, refused: tell,
+          const made = await askPin(screen, { title: newPinTitle(name), confirm: true, refused: tell,
             send: (pin) => api.createFirst(name, pin) });
           if (made !== null && !closed) draw();
         }));

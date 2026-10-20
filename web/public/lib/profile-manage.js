@@ -21,7 +21,7 @@ import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { DAILY_LIMIT_WORDS } from "./daily-limit.js";
 import { dailyChoice, minutesOf } from "./daily-limit-choice.js";
-import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
+import { askGrownUp, askPin, newPinTitle, promptsOver, refusalText } from "./pin-prompt.js";
 
 /** What a change reports once the body is gone: nothing was sent. */
 const GONE = { ok: false, reason: "not-found" };
@@ -77,14 +77,8 @@ export function mountManage(container, { promptHost, onChange }) {
   let session = null;
   let gone = false;
   /** PIN prompts this body opened, closed again if it goes while one is up. */
-  const prompts = [];
-  /** Opens a prompt over the host and remembers it. */
-  function ask(open) {
-    const before = new Set(promptHost.children);
-    const answer = open();
-    prompts.push(...Array.from(promptHost.children).filter((child) => !before.has(child)));
-    return answer;
-  }
+  const prompts = promptsOver(promptHost);
+  const ask = prompts.ask;
 
   /** Runs a change with the PIN held; once the body is gone nothing is sent. */
   function send(call) {
@@ -141,7 +135,7 @@ export function mountManage(container, { promptHost, onChange }) {
           pill("Reset PIN", () => void newPin(entry)),
           pill("Remove", () => void removeOne(entry, `Remove ${entry.name}, their kids, and everything they have watched?`)))),
         addForm("Add a grown-up", [], async (name) => {
-          const made = await ask(() => askPin(promptHost, { title: `A PIN for ${name}`, confirm: true, refused: report,
+          const made = await ask(() => askPin(promptHost, { title: newPinTitle(name), confirm: true, refused: report,
             send: (pin) => send((id, held) => api.create(id, held, { name, kids: false, newPin: pin })) }));
           if (made !== null) report({ ok: true });
         })));
@@ -185,7 +179,7 @@ export function mountManage(container, { promptHost, onChange }) {
   return () => {
     gone = true;
     session = null;
-    for (const prompt of prompts) prompt.close();
+    prompts.close();
     root.remove();
   };
 }

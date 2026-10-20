@@ -74,3 +74,12 @@
 /* It ends at its last control, so the panel's own gap is all that parts it from the section after. */
 .manage-inline :is(.who-ask, .manage-section):last-child { margin-bottom: 0; }
 .manage-inline .pin-message:empty { min-height: 0; }
+/* An inline form's select sits on the line with its fields, not a settings select's own row. */
+.setting .who-new select { margin-bottom: 0; }
+/* Households: a household's name and line, then what the owner may do to it, then the form it opened and what was refused. */
+.household-row > :is(.household-actions, .household-form, .pin-message) { flex-basis: 100%; }
+.household-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.households :is(.household-form, .pin-message):empty { display: none; }
+.households .who-new { justify-content: flex-start; margin: 0; }
+.household-create { margin-top: 16px; }
+.household-admin { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
