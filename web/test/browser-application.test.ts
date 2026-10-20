@@ -832,7 +832,7 @@ describe("kids profiles", () => {
     kidAt(6);
     await start();
     await env.navigate("#/settings");
-    descendants(env.node("main")).find((node) => node.className.split(" ").includes("tab") && textOf(node) === "Profile")!.fire("click");
+    descendants(env.node("main")).find((node) => node.className.split(" ").includes("tab") && textOf(node) === "Profiles")!.fire("click");
     expect(page()).toContain("Viewer · Kids · FSK 6");
   });
 

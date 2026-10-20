@@ -12,7 +12,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.SettingsViewModel
-import setup.profileStatus
 import setup.telegramStatus
 import system.CacheBudgetViewModel
 import system.LanCacheViewModel
@@ -51,7 +50,6 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     val profileViewModel: ProfileSettingsViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle()
-    val profileSubtitle by profileViewModel.subtitle.collectAsStateWithLifecycle()
     val cacheViewModel: CacheBudgetViewModel = hiltViewModel()
     val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
     val lanViewModel: LanCacheViewModel = hiltViewModel()
@@ -101,14 +99,13 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
         TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, onClose = { panel = null })
     } else {
         val statuses =
-            listOfNotNull(
+            mapOf(
                 SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                 SettingsSection.APPEARANCE to IndexStatus("${appearance.style.label} · ${appearance.accent.label} · ${appearance.backdrop.label}"),
-                SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
-                profilesStatus(profile)?.let { SettingsSection.PROFILES to it },
+                SettingsSection.PROFILES to profilesStatus(profile),
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
-            ).toMap()
+            )
         TvSettingsPanes(
             section = section,
             statuses = statuses,
@@ -154,15 +151,6 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         onSelectStyle = appearanceViewModel::chooseStyle,
                     )
 
-                SettingsSection.PROFILE ->
-                    TvProfileSection(
-                        profile = profile,
-                        subtitle = profileSubtitle,
-                        focusInContent = entered,
-                        entryFocusRequester = entryRequester,
-                        onChooseSubtitle = profileViewModel::chooseSubtitle,
-                    )
-
                 SettingsSection.SYSTEM ->
                     TvSystemSection(
                         focusInContent = entered,
@@ -171,7 +159,8 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onRetry = systemViewModel::retry,
                     )
-                SettingsSection.PROFILES -> TvProfilesSection(entered, entryRequester, onManage = { open(TvSettingsPanel.Profiles) })
+                SettingsSection.PROFILES ->
+                    TvProfilesPage(profile, entered, landOnManage = lastPanel == TvSettingsPanel.Profiles, entryRequester, onManage = { open(TvSettingsPanel.Profiles) })
             }
         }
     }

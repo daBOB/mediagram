@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.ManageProfilesViewModel
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.every
 import io.mockk.mockk
@@ -33,6 +34,7 @@ import org.robolectric.annotation.Config
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import ui.common.settings.SettingsSection
+import ui.householdModel
 import ui.profileSettingsModel
 import setup.SettingsUiState
 import setup.SettingsViewModel
@@ -97,6 +99,7 @@ class SettingsPanesTest {
                 SettingsViewModel::class.java to settingsModel,
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                 ProfileSettingsViewModel::class.java to profileSettingsModel(),
+                ManageProfilesViewModel::class.java to householdModel(),
                 CacheBudgetViewModel::class.java to cacheModel,
                 LanCacheViewModel::class.java to lanModel,
                 SystemViewModel::class.java to systemModel,

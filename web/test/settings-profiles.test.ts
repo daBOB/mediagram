@@ -1,4 +1,4 @@
-/** Settings' Profiles tab: who is here, and the same management as the picker's, inline. */
+/** Settings' one Profiles tab: you, then who is here, then the management the picker opens too. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
@@ -34,13 +34,35 @@ function settings(profile: { name: string; kids?: boolean } | null) {
 }
 const openProfiles = (main: Node) => buttonNamed(main, "Profiles").fire("click");
 
-test("aGrownUpSeesAProfilesTab", () => {
-  expect(tabsOf(settings(find("Maja")).main)).toEqual(["Appearance", "Profile", "Profiles"]);
+test("there is one Profiles tab and no Profile tab, for a grown-up, a kid and nobody", () => {
+  for (const profile of [find("Maja"), find("Tim"), null]) {
+    expect(tabsOf(settings(profile).main)).toEqual(["Appearance", "Profiles"]);
+  }
 });
 
-test("aKidAndNobodySeeNoProfilesTab", () => {
-  expect(tabsOf(settings(find("Tim")).main)).toEqual(["Appearance", "Profile"]);
-  expect(tabsOf(settings(null).main)).toEqual(["Appearance", "Profile"]);
+/** The page's section titles, top to bottom. */
+const sectionsOf = (main: Node) => descendants(main).filter((node) => ["H1", "H2"].includes(node.tagName)).map(textOf);
+
+test("a kid sees only You", () => {
+  const { main } = settings(find("Tim"));
+  openProfiles(main);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles"]);
+  expect(textOf(main)).toContain("Tim · Kids · FSK 6");
+  expect(buttonNamed(main, "Switch profile")).toBeDefined();
+});
+
+test("a grown-up sees You, then Everyone here, then Manage profiles", () => {
+  const { main } = settings(find("Maja"));
+  openProfiles(main);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles"]);
+  expect(textOf(main)).toContain("Who are you?");
+});
+
+test("with nobody chosen there is no You, only Everyone here and Manage profiles", () => {
+  const { main } = settings(null);
+  openProfiles(main);
+  expect(sectionsOf(main)).toEqual(["Settings", "Everyone here", "Manage profiles"]);
+  expect(textOf(main)).not.toContain("Switch profile");
 });
 
 test("everyoneIsListedWithTheirRole", () => {

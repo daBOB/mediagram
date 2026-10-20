@@ -27,6 +27,8 @@
 
 /* The Settings page's controls: native radios drawn as swatches. */
 .settings-panel { display: grid; gap: 40px; max-width: 52rem; }
+/* The System link closes You mid-page: its own width, the panel's gap rather than a department's margin. */
+.settings-panel > .dept-all { justify-self: start; margin-top: 0; }
 .setting { margin: 0; padding: 0; border: 0; min-width: 0; }
 .setting legend, .setting-title { margin: 0 0 16px; padding: 0; font: 600 1rem/1.3 var(--text); }
 .setting-value { margin: 0 0 16px; color: var(--ink-2); }
@@ -65,7 +67,7 @@
 .accent-rose { background: #f08aa2; }
 .accents .option-label { font-size: 0.75rem; color: var(--ink-2); }
 
-/* Manage profiles drawn inside Settings: its heads take the settings faces, at the left edge. */
-.manage-inline h1, .manage-inline .manage-section h2 { margin: 0 0 4px; font: 600 1rem/1.3 var(--text); letter-spacing: 0; color: var(--ink); text-align: left; }
+/* Manage profiles drawn inside the Profiles page: its heads take the settings faces, at the left edge — over the picker's too. */
+.manage-inline :is(h1, .manage-section h2) { margin: 0 0 4px; font: 600 1rem/1.3 var(--text); letter-spacing: 0; color: var(--ink); text-align: left; }
 .manage-inline .who-note { margin: 0 0 16px; max-width: none; text-align: left; font-size: 1rem; color: var(--ink-2); }
 .manage-inline .manage-section h2 { margin-bottom: 12px; }

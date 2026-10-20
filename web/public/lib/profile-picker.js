@@ -20,7 +20,7 @@ import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
 import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 import { addForm } from "./profile-add-form.js";
-import { openManage } from "./profile-manage-overlay.js";
+import { openProfilesPage } from "./profiles-page-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */
@@ -174,7 +174,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
         const manage = el("button", "quiet", "Manage profiles");
         manage.disabled = selecting;
         manage.addEventListener("click", () => {
-          if (!closed && !selecting) openManage(screen, () => { if (!closed) draw(); });
+          if (!closed && !selecting) openProfilesPage(screen, () => { if (!closed) draw(); });
         });
         choices.append(manage);
       }

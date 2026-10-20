@@ -1,19 +1,31 @@
 package ui.profile
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.profile.DONE
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
+import designsystem.Spacing
 import ui.chrome.ProfileBarState
 import ui.common.profile.ForgetManageWhenAway
-import ui.common.profile.manageActions
+import ui.common.settings.SettingsSection
+import ui.settings.ProfilesPage
+import ui.settings.QuietPill
 
 /**
  * Gates [content] on a chosen profile: a viewer, not the setup step the app
@@ -24,12 +36,11 @@ import ui.common.profile.manageActions
  * chosen yet, and hands [content] the bar state for whoever is once there is
  * — the name [ui.chrome.LibraryScaffold] shows, and what tapping it reopens.
  *
- * Manage profiles, opened from the picker, takes the picker's place until
- * Done. Once a profile is chosen it is reached only from Settings' Profiles
- * section, shown to a grown-up alone and asking who you are and that PIN on
- * every visit, so a phone left on a grown-up does not hand a child the
- * controls. It closes, and forgets its PIN, when the library shows again or
- * the app is left ([ForgetManageWhenAway]).
+ * The picker's Manage profiles opens Settings' own Profiles page in the
+ * picker's place, with nobody chosen, until Done. Manage asks who you are and
+ * that PIN on every visit, there and in Settings, so a phone left on a
+ * grown-up does not hand a child the controls. It closes, and forgets its
+ * PIN, when the library shows again or the app is left ([ForgetManageWhenAway]).
  */
 @Composable
 internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
@@ -49,7 +60,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
             places.SaveableStateProvider(chosen.profile.id) {
                 content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
             }
-        managing != ManageUiState.Closed -> ManageRoute(manage, managing)
+        managing != ManageUiState.Closed -> ProfilesOverPicker(onDone = manage::close)
         else -> PickerRoute(viewModel, state, onManage = manage::open)
     }
 }
@@ -75,15 +86,17 @@ private fun PickerRoute(
     pin?.let { PinDialog(it, onPin = viewModel::enterPin, onDismiss = viewModel::cancelPin) }
 }
 
-/** Manage over its view model: the screen, the PIN over it, and Back as Done — which drops the PIN it held. */
+/**
+ * The Profiles page with nobody chosen — everyone here and managing them, no
+ * You — under the page's own name, as the web's picker shows it; Done and Back
+ * leave it for the picker, dropping the PIN Manage held.
+ */
 @Composable
-private fun ManageRoute(
-    viewModel: ManageProfilesViewModel,
-    state: ManageUiState,
-) {
-    val pin by viewModel.pin.collectAsStateWithLifecycle()
-    val actions = remember(viewModel) { viewModel.manageActions() }
-    BackHandler(onBack = viewModel::close)
-    ManageProfilesScreen(state, actions)
-    pin?.let { PinDialog(it, onPin = viewModel::enterPin, onDismiss = viewModel::cancelPin) }
+private fun ProfilesOverPicker(onDone: () -> Unit) {
+    BackHandler(onBack = onDone)
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.large)) {
+        Text(SettingsSection.PROFILES.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = Spacing.large))
+        ProfilesPage(chosen = null)
+        QuietPill(DONE, onClick = onDone, modifier = Modifier.padding(top = Spacing.large))
+    }
 }

@@ -30,6 +30,15 @@ class ProfileWordsTest {
     }
 
     @Test
+    fun profilesIndexLineNamesWhoIsWatchingThenHowManyThereAre() {
+        assertEquals("Bea · 3 profiles", profilesLine(Profile("b", "Bea"), 3))
+        assertEquals("Ann · 1 profile", profilesLine(Profile("a", "Ann", admin = true), 1))
+        assertEquals("3 profiles", profilesLine(null, 3))
+        // A kid's page shows nobody else, so its line counts nobody either.
+        assertEquals("Tom", profilesLine(Profile("t", "Tom", kids = true), 3))
+    }
+
+    @Test
     fun aKidsTileNamesItsOwnLimitAndAGrownUpsNothing() {
         assertEquals("Kids · FSK 6", Profile("m", "Mia", kids = true, kidsAge = 6).kidsTag)
         assertEquals("Kids · FSK 12", Profile("o", "TV kids", kids = true).kidsTag)

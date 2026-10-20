@@ -1,4 +1,4 @@
-/** Covers `settings-page.js`'s Profile panel: the subtitle language row. */
+/** Covers the subtitle language row in the You part of Settings' Profiles tab. */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
@@ -16,24 +16,23 @@ afterEach(async () => {
   env.restore();
 });
 
-/** Renders Settings and switches to the Profile tab, where the row lives. */
+/** Renders Settings and switches to the Profiles tab, where the row lives. */
 function subtitleSelect(profile: { name: string; kids?: boolean } | null) {
   const main = env.node("main");
   renderSettings(main, { profile, switchProfile: () => {}, systemVisible: false, admin: null });
-  descendants(main).find((node) => node.tagName === "BUTTON" && node.textContent === "Profile")!.fire("click");
-  return descendants(main).find((node) => node.tagName === "SELECT")!;
+  descendants(main).find((node) => node.tagName === "BUTTON" && node.textContent === "Profiles")!.fire("click");
+  return descendants(main).find((node) => node.tagName === "SELECT");
 }
 
 describe("the Subtitles row", () => {
-  test("is disabled and says so without a chosen profile", () => {
-    const select = subtitleSelect(null);
-    expect(select.disabled).toBe(true);
+  test("is not offered with nobody chosen", () => {
+    expect(subtitleSelect(null)).toBeUndefined();
   });
 
   test("shows Off by default and persists a change once a profile is chosen", async () => {
     env.respondWith(async () => Response.json({}));
     await state.useProfile("viewer");
-    const select = subtitleSelect({ name: "Viewer" });
+    const select = subtitleSelect({ name: "Viewer" })!;
     expect(select.disabled).toBe(false);
     expect(select.value).toBe("off");
 
@@ -46,7 +45,7 @@ describe("the Subtitles row", () => {
     env.respondWith(async () => Response.json({}));
     await state.useProfile("viewer");
     state.setPreference("profile", "subtitle", "en");
-    const select = subtitleSelect({ name: "Viewer" });
+    const select = subtitleSelect({ name: "Viewer" })!;
     expect(select.value).toBe("en");
   });
 });
