@@ -2,6 +2,7 @@ package ui.settings
 
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import catalog.profile.ManageUiState
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,27 +13,61 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Settings › Profiles on the phone, the web's Profiles tab: shown only while a grown-up is
- * chosen, everyone listed with their role, and Manage inline over the real view model and a
- * fake core — its PIN held for the visit and dropped once the section is left.
+ * Settings › Profiles on the phone, the web's Profiles tab: one page for everyone — who is
+ * watching, then everyone listed with their role, then Manage inline over the real view model
+ * and a fake core, its PIN held for the visit and dropped once the section is left. A kid sees
+ * only who is watching.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ProfilesSettingsTest : ProfilesSettingsHarness() {
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h800dp")
-    fun aGrownUpSeesProfilesInSettings() {
+    fun aGrownUpHasOneProfilesSectionNamingThemAndTheCount() {
         open(chosen = bea)
         compose.onNodeWithText("Profiles").assertExists()
-        compose.onNodeWithText("3 profiles").assertExists()
+        compose.onNodeWithText("Bea · 3 profiles").assertExists()
+        compose.onNodeWithText("Profile").assertDoesNotExist()
     }
 
     @Test
     @Config(sdk = [35], qualifiers = "w400dp-h800dp")
-    fun aKidSeesNoProfilesSection() {
+    fun aKidHasTheSameOneProfilesSection() {
         open(chosen = tom)
-        compose.onNodeWithText("Profile").assertExists()
-        compose.onNodeWithText("Profiles").assertDoesNotExist()
+        compose.onNodeWithText("Profiles").assertExists()
+        compose.onNodeWithText("Tom · 3 profiles").assertExists()
+        compose.onNodeWithText("Profile").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
+    fun aKidSeesOnlyWhoIsWatching() {
+        open(chosen = tom, initial = SettingsSection.PROFILES)
+        compose.onNodeWithText("Who is watching").assertExists()
+        compose.onNodeWithText("Tom · Kids · FSK 12").assertExists()
+        compose.onNodeWithText("Subtitles").assertExists()
+        compose.onNodeWithText("Everyone here").assertDoesNotExist()
+        compose.onNodeWithText("Manage profiles").assertDoesNotExist()
+        assertEquals(ManageUiState.Closed, manage.state.value, "a kid's visit asked who manages")
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
+    fun aGrownUpSeesWhoIsWatchingThenEveryoneThenManage() {
+        open(chosen = bea, initial = SettingsSection.PROFILES)
+        val you = compose.onNodeWithText("Who is watching").fetchSemanticsNode().boundsInRoot.top
+        val everyone = compose.onNodeWithText("Everyone here").fetchSemanticsNode().boundsInRoot.top
+        val manage = compose.onNodeWithText("Manage profiles").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(you < everyone && everyone < manage, "expected You, then Everyone here, then Manage profiles")
+        compose.onNodeWithText("Subtitles").assertExists()
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w400dp-h2400dp")
+    fun switchProfileOpensThePicker() {
+        open(chosen = bea, initial = SettingsSection.PROFILES)
+        compose.onNodeWithText("Switch profile").performScrollTo().performClick()
+        compose.onNodeWithText("Who's watching?").assertExists()
     }
 
     @Test

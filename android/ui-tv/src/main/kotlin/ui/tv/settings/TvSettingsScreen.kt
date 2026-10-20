@@ -106,7 +106,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                 SettingsSection.APPEARANCE to IndexStatus("${appearance.style.label} · ${appearance.accent.label} · ${appearance.backdrop.label}"),
                 SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
-                profilesStatus(profile)?.let { SettingsSection.PROFILES to it },
+                profilesStatus(chosen = null).takeIf { profile?.kids == false }?.let { SettingsSection.PROFILES to it },
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
             ).toMap()
         TvSettingsPanes(

@@ -14,10 +14,16 @@ enum class SettingsSection(val title: String, val pageEyebrow: String) {
     TELEGRAM("Telegram", "Your account and where it's signed in"),
     STORAGE("Storage", "What this device keeps and where it comes from"),
     APPEARANCE("Appearance", "How the player looks on this device"),
+
+    /** The television's alone, beside its Profiles; the phone's Profiles page holds what it shows. */
     PROFILE("Profile", "Who is watching and how"),
 
-    /** Only while a grown-up is chosen, as the web's tab: a kid manages nothing. */
-    PROFILES("Profiles", "The household and who manages it"),
+    /**
+     * The web's Profiles tab: who is watching, then everyone here and managing
+     * them — a kid sees only the first. The television still shows only the
+     * household here, to a grown-up, beside its own [PROFILE].
+     */
+    PROFILES("Profiles", "Who is watching, and everyone here"),
     SYSTEM("System", "What this player is doing, refreshed as it happens"),
 }
 

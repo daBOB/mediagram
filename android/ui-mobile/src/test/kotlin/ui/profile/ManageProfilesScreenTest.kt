@@ -69,8 +69,8 @@ class ManageProfilesScreenTest {
         compose.onNodeWithText("Who are you?").assertExists()
         compose.onNodeWithText("Your PIN is no longer valid. Choose who you are again.").assertExists()
         compose.onNodeWithText("Bea").performClick()
-        compose.onNodeWithText("Done").performClick()
-        assertEquals(listOf("actAs b", "close"), calls)
+        compose.onNodeWithText("Done").assertDoesNotExist()
+        assertEquals(listOf("actAs b"), calls)
     }
 
     @Test fun aParentSeesItsKidsWithTheirLimitAndNoGrownUps() {
@@ -148,7 +148,6 @@ class ManageProfilesScreenTest {
         compose.onNodeWithText("A profile with that name already exists.").assertExists()
         compose.onNodeWithText("Your PIN").assertExists()
         compose.onNodeWithText("Change your PIN").performClick()
-        compose.onNodeWithText("Done").performClick()
-        assertEquals(listOf("pin b", "close"), calls)
+        assertEquals(listOf("pin b"), calls)
     }
 }

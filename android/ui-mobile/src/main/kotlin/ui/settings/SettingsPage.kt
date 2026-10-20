@@ -53,8 +53,6 @@ internal fun SettingsPage(
     onChooseAccent: (Accent) -> Unit,
     onChooseBackdrop: (Backdrop) -> Unit,
     profile: Profile?,
-    profileSubtitle: String,
-    onChooseProfileSubtitle: (String) -> Unit,
 ) {
     val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     val tones = LocalCatalogueTones.current
@@ -99,8 +97,8 @@ internal fun SettingsPage(
                     onChooseBackdrop = onChooseBackdrop,
                 )
 
-            SettingsSection.PROFILE -> ProfileSettingsSection(profile, profileSubtitle, onChooseProfileSubtitle)
-            SettingsSection.PROFILES -> ProfilesSettingsSection()
+            // PROFILE is the television's own row; the phone never lists it.
+            SettingsSection.PROFILE, SettingsSection.PROFILES -> ProfilesPage(profile)
             SettingsSection.SYSTEM -> SystemScreen(expanded = expanded)
         }
     }

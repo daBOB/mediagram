@@ -30,6 +30,13 @@ class ProfileWordsTest {
     }
 
     @Test
+    fun profilesIndexLineNamesWhoIsWatchingThenHowManyThereAre() {
+        assertEquals("Bea · 3 profiles", profilesLine("Bea", 3))
+        assertEquals("Tom · 1 profile", profilesLine("Tom", 1))
+        assertEquals("3 profiles", profilesLine(null, 3))
+    }
+
+    @Test
     fun aKidsTileNamesItsOwnLimitAndAGrownUpsNothing() {
         assertEquals("Kids · FSK 6", Profile("m", "Mia", kids = true, kidsAge = 6).kidsTag)
         assertEquals("Kids · FSK 12", Profile("o", "TV kids", kids = true).kidsTag)

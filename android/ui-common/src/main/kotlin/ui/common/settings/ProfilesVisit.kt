@@ -8,19 +8,14 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
-import catalog.profile.profileCount
+import catalog.profile.profilesLine
 import model.Profile
 
-/**
- * Profiles' line in Settings' index — how many there are — only while a
- * grown-up is chosen; null leaves the row out. A phone and a television ask
- * this alike, so a kid sees the section on neither.
- */
+/** Profiles' line in Settings' index: who is watching, if anyone, and how many profiles there are. */
 @Composable
-fun profilesStatus(chosen: Profile?): IndexStatus? {
-    if (chosen == null || chosen.kids) return null
+fun profilesStatus(chosen: Profile?): IndexStatus {
     val profiles by hiltViewModel<ManageProfilesViewModel>().profiles.collectAsStateWithLifecycle()
-    return IndexStatus(profileCount(profiles.size))
+    return IndexStatus(profilesLine(chosen?.name, profiles.size))
 }
 
 /**

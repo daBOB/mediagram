@@ -35,6 +35,26 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         compose.onNodeWithText("Who are you?").assertExists()
     }
 
+    /** The picker's Manage profiles is Settings' own Profiles page, with nobody chosen even when the device has someone. */
+    @Test fun thePickersManageProfilesIsTheProfilesPageWithNobodyChosenAndDoneReturnsToThePicker() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111"), chosen = "a")
+        compose.onNodeWithText("Change").performClick()
+        manageAs("andre", "1111")
+        compose.onNodeWithText("Profiles").assertExists()
+        compose.onNodeWithText("Everyone here").assertExists()
+        compose.onNodeWithText("Kid · Bea · FSK 12").assertExists()
+        compose.onNodeWithText("Who is watching").assertDoesNotExist()
+        compose.onNodeWithText("Switch profile").assertDoesNotExist()
+
+        compose.onNodeWithText("Done").performScrollTo().performClick()
+        compose.onNodeWithText("Who's watching?").assertExists()
+        compose.runOnUiThread { manage.setKidsAge("t", 6) }
+        compose.waitForIdle()
+        assertEquals(12, profile("t").kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
+        compose.onNodeWithText("Manage profiles").performClick()
+        compose.onNodeWithText("Who are you?").assertExists()
+    }
+
     @Test fun theAdminAddsAGrownUpWithAPinAndAKidThatStartsAtSix() {
         open(andre, pins = mapOf("a" to "1111"))
         manageAs("andre", "1111")

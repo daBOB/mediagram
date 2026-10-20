@@ -23,9 +23,9 @@ private const val OFF = SUBTITLE_OFF
 val ProfileSubtitleChoices: List<Pair<String, String>> = listOf(OFF to "Off", "de" to "German", "en" to "English")
 
 /**
- * Settings › Profile: who is watching, and that profile's default subtitle
- * language. The language is per profile, so it is only offered once one is
- * chosen, and only ever written from the offered set.
+ * Who is watching, and that profile's default subtitle language — the
+ * Profiles page's first part. The language is per profile, so it is only
+ * offered once one is chosen, and only ever written from the offered set.
  */
 @HiltViewModel
 class ProfileSettingsViewModel
@@ -68,5 +68,5 @@ class ProfileSettingsViewModel
             }?.takeIf { v -> ProfileSubtitleChoices.any { it.first == v } }
     }
 
-/** The index row's line under "Profile" — the web's own: a kid's limit is its own, so it is named. */
+/** Who is watching, in the web's own words: a kid's limit is its own, so it is named. */
 fun profileStatus(profile: Profile?): String = profile?.let { "${it.name}${if (it.kids) " · Kids · FSK ${it.kidsLimit}" else ""}" } ?: "Nobody chosen"

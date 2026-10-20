@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.lifecycle.ViewModel
@@ -146,7 +148,8 @@ abstract class ProfileGateHarness {
     ) {
         compose.onNodeWithText("Manage profiles").performClick()
         compose.onNodeWithText("Who are you?").assertExists()
-        compose.onNodeWithText(name).performClick()
+        // The pill, not the same name in Everyone here above it.
+        compose.onNode(hasText(name) and hasClickAction()).performScrollTo().performClick()
         pin(digits)
         compose.onNodeWithText("As $name").assertExists()
     }

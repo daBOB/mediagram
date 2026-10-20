@@ -20,11 +20,11 @@ import ui.tv.catalog.TvQuietLine
 
 /**
  * Settings › Profile, television-side: who is watching, then that profile's
- * default subtitle language as one radio row per choice — the phone's
- * `ProfileSettingsSection`, which says why the rows are disabled with no
- * profile chosen. The name block is [entryFocusRequester]'s target: it is
- * drawn whether or not a profile exists, so the section always has a stop
- * ready to be entered.
+ * default subtitle language as one radio row per choice — the first part of
+ * the phone's `ProfilesPage`. The rows are disabled with no profile chosen,
+ * since the default belongs to one. The name block is [entryFocusRequester]'s
+ * target: it is drawn whether or not a profile exists, so the section always
+ * has a stop ready to be entered.
  */
 @Composable
 internal fun TvProfileSection(
