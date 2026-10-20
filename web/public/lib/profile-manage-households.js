@@ -30,8 +30,8 @@ export function byHousehold({ actor, grownUps, kids }, draw) {
   const live = households();
   const named = actor.owner === true && live.length > 1;
   const mine = placed(actor);
-  // A household a row is in that the list does not name stays visible, after the named ones.
-  const ids = named ? [...new Set([mine, ...live.map((one) => one.id), ...[...grownUps, ...kids].map(placed)])] : [mine];
+  // The server places everyone in a live household, a gone one reading as home, so every row's is listed.
+  const ids = named ? [...new Set([mine, ...live.map((one) => one.id)])] : [mine];
   return ids.flatMap((id) => {
     const own = id === mine;
     const of = (list) => (named ? list.filter((one) => placed(one) === id) : list);
@@ -42,7 +42,7 @@ export function byHousehold({ actor, grownUps, kids }, draw) {
     }
     if (of(kids).length > 0 || own) parts.push(section("Kids", [...of(kids).map(draw.kid), ...(own ? [draw.addKid()] : [])], level));
     if (!named || parts.length === 0) return parts;
-    const household = section(live.find((one) => one.id === id)?.name ?? id, parts);
+    const household = section(live.find((one) => one.id === id).name, parts);
     household.classList.add("manage-household");
     return [household];
   });

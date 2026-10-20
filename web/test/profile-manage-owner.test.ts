@@ -150,3 +150,11 @@ test("a grown-up moved out of this device's household elsewhere is asked who the
   expect(textOf(root)).not.toContain("As Maja");
   expect(textOf(root)).toContain("Who are you?");
 });
+
+test("a household is headed by its name, never its id", async () => {
+  // Ida's household is not in the list read; the server never sends one so, as it reads a gone household as Home.
+  households = [FLAT, AT_HOME];
+  await state.loadProfiles();
+  const root = await manageAs("andre", "1357");
+  expect(headings(root)).toEqual(["Manage profiles", "Home", "Grown-ups", "Kids", "Flat", "Grown-ups", "Kids", "Your PIN"]);
+});
