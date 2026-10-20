@@ -85,12 +85,15 @@ internal fun TvChoicesScreen(
 ) {
     // One requester per choice for as long as it is shown, so no row's chain ever changes.
     val rows = remember { mutableMapOf<String, FocusRequester>() }
-    // The row last holding the remote; every focusable here is a row, so that is the one holding it.
+    // The row holding the remote, if any. A row stops holding it only by focus moving on while it is
+    // still shown — to another row, or out to the chrome bar — so a row going is told from the remote leaving.
+    val showing by rememberUpdatedState(choices)
     var holding by remember { mutableStateOf<String?>(null) }
     val land = (choices.find { it.first == landing } ?: choices.firstOrNull())?.first
     val lost = holding != null && choices.none { it.first == holding }
-    // Again once they arrive — a list not read yet has nothing to land on — and when the row holding the remote goes.
-    LaunchedEffect(land, lost) { land?.let { rows[it]?.requestFocus() } }
+    // Once they arrive — a list not read yet has nothing to land on — and when the row holding the remote goes;
+    // never for a change while the remote is elsewhere.
+    LaunchedEffect(land != null, lost) { land?.let { rows[it]?.requestFocus() } }
     Column(
         Modifier
             .fillMaxSize()
@@ -105,7 +108,7 @@ internal fun TvChoicesScreen(
         choices.forEach { (id, words) ->
             key(id) {
                 val row = remember { FocusRequester() }.also { rows[id] = it }
-                TvTextRow(words, onClick = { onChoose(id) }, focusRequester = row, modifier = Modifier.onFocusChanged { if (it.isFocused) holding = id }.padding(top = Spacing.small))
+                TvTextRow(words, onClick = { onChoose(id) }, focusRequester = row, modifier = Modifier.onFocusChanged { if (it.isFocused) holding = id else if (holding == id && showing.any { one -> one.first == id }) holding = null }.padding(top = Spacing.small))
             }
         }
     }

@@ -1,5 +1,6 @@
 package ui.tv.profile
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
@@ -27,6 +28,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import testing.FakeCore
 import testing.FakeCoreProvider
+import ui.tv.TvTextRow
 import ui.tv.catalog.TvScreenStateTest
 import uniffi.mediagram_core.Profile
 
@@ -64,12 +66,26 @@ class TvJoinHouseholdStateTest : TvScreenStateTest() {
     @After
     fun stopReading() = scope.cancel()
 
-    private fun joining() {
+    /** [barBeside]: a row to the list's left stands in for the chrome bar, as Settings has one. */
+    private fun joining(barBeside: Boolean = false) {
         val provider = FakeCoreProvider(core)
         val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
         runBlocking { repository.reload() }
         join = JoinHouseholdViewModel(repository, DefaultHouseholdsRepository(provider, repository, scope, Dispatchers.Unconfined))
-        show { TvJoinHousehold(join) }
+        show {
+            Row {
+                if (barBeside) TvTextRow(BAR, onClick = {})
+                TvJoinHousehold(join)
+            }
+        }
+    }
+
+    private fun goes(id: String) {
+        compose.runOnUiThread {
+            core.homes.names.remove(id)
+            join.reread()
+        }
+        compose.waitForIdle()
     }
 
     private fun press(key: Key) {
@@ -107,13 +123,32 @@ class TvJoinHouseholdStateTest : TvScreenStateTest() {
         back()
         compose.onNode(hasText("Home") and hasClickAction()).assertIsFocused()
         press(Key.DirectionUp)
-        compose.runOnUiThread {
-            core.homes.names.remove("flat")
-            join.reread()
-        }
-        compose.waitForIdle()
+        goes("flat")
         compose.onAllNodes(hasText("Flat") and hasClickAction()).assertCountEquals(0)
         compose.onNode(hasText("Home") and hasClickAction()).assertIsFocused()
+    }
+
+    /** The row the remote left for the bar going leaves the remote in the bar. */
+    @Test
+    fun theRowLeftForTheBarGoingKeepsTheRemoteInTheBar() {
+        joining(barBeside = true)
+        press(Key.DirectionDown)
+        press(Key.DirectionLeft)
+        compose.onNode(hasText(BAR) and hasClickAction()).assertIsFocused()
+        goes("flat")
+        compose.onAllNodes(hasText("Flat") and hasClickAction()).assertCountEquals(0)
+        compose.onNode(hasText(BAR) and hasClickAction()).assertIsFocused()
+    }
+
+    /** So does the first row going, the one the remote lands on: landing is for the list arriving, not for each change. */
+    @Test
+    fun theFirstRowGoingKeepsTheRemoteInTheBar() {
+        joining(barBeside = true)
+        press(Key.DirectionLeft)
+        compose.onNode(hasText(BAR) and hasClickAction()).assertIsFocused()
+        goes("attic")
+        compose.onAllNodes(hasText("Attic") and hasClickAction()).assertCountEquals(0)
+        compose.onNode(hasText(BAR) and hasClickAction()).assertIsFocused()
     }
 
     /** No household any PIN here opens: a line says so where the rows would be. */
@@ -125,3 +160,5 @@ class TvJoinHouseholdStateTest : TvScreenStateTest() {
         compose.onAllNodes(hasClickAction()).assertCountEquals(0)
     }
 }
+
+private const val BAR = "Menu"
