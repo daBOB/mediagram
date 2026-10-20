@@ -1,11 +1,13 @@
 package ui.tv
 
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -14,7 +16,10 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.test.platform.app.InstrumentationRegistry
@@ -30,6 +35,7 @@ import org.robolectric.android.controller.ActivityController
 import ui.tv.catalog.films
 import ui.tv.profile.TvManageProfilesTag
 import ui.tv.profile.tvPinKeyTag
+import ui.tv.setup.TvTextQuestionFieldTag
 
 /**
  * Who's watching, PINs and the Profiles page walked through the whole app
@@ -125,6 +131,21 @@ abstract class TvProfilesHarness {
         val inDialog = isFocused() and hasAnyAncestor(isDialog())
         val target = if (compose.onAllNodes(inDialog).fetchSemanticsNodes().isNotEmpty()) inDialog else isFocused()
         compose.onNode(target).performKeyInput { pressKey(key) }
+        compose.waitForIdle()
+    }
+
+    /** The masthead's avatar, then its menu's "Switch profile", as selecting them does. */
+    internal fun reopenPicker() {
+        compose.onNode(hasContentDescription("Menu, watching as andre")).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        compose.onNode(hasText("Switch profile") and hasClickAction()).performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+    }
+
+    /** A name through the system keyboard, as the remote's text field takes one. */
+    internal fun name(text: String) {
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performTextInput(text)
+        compose.onNodeWithTag(TvTextQuestionFieldTag).performImeAction()
         compose.waitForIdle()
     }
 

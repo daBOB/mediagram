@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.MaterialTheme
@@ -44,7 +45,8 @@ import ui.tv.rememberStableRequester
  * accent instead — the phone's line pill for an affirmative action, which a
  * film's Preload is while it waits to be started. Focus is the style's pill
  * treatment — mediagram's accent ring, or Apple TV and Google TV styles'
- * white fill — with the scale every other control carries.
+ * white fill — with the scale every other control carries. [struck] draws
+ * the words struck through: a section a profile is not shown, on a solid pill.
  */
 @Composable
 internal fun TvSpreadPill(
@@ -54,6 +56,7 @@ internal fun TvSpreadPill(
     solid: Boolean = false,
     accent: Boolean = false,
     description: String? = null,
+    struck: Boolean = false,
 ) {
     val ink = MaterialTheme.colorScheme.onSurface
     val container = if (solid) ink else ink.copy(alpha = 0.05f)
@@ -72,7 +75,7 @@ internal fun TvSpreadPill(
         glow = TvFocus.surfaceGlow(),
     ) {
         Box(modifier = Modifier.heightIn(min = PillHeight).padding(horizontal = Spacing.large), contentAlignment = Alignment.Center) {
-            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium))
+            Text(text = text, style = TvType.bodyMedium.copy(fontWeight = FontWeight.Medium), textDecoration = if (struck) TextDecoration.LineThrough else null)
         }
     }
 }

@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.133.0 — set sections from Android
+
+**Added** (Android phone, tablet and TV)
+
+- **Sections per profile on Android**, as on the web player: in Settings → Profiles → Manage profiles every profile you manage has a Sections row (Movies, Series, Anime, Documentaries, Tutorials). A section the profile sees is a quiet chip; a hidden one is filled and struck through. On the TV, a row's Sections opens a step like Daily limit, and focus stays on the chip just pressed.
+- The switches hold until the answer comes, so a quick second press can't undo the first; a refusal frees them and, on the TV, says why in the step.
+- **Everyone here** says what each profile hides ("· hides Anime"), as on the web.
+
 ## 0.132.0 — hide sections from a profile
 
 **Added** (web player; Android already hides them, its switches follow)
