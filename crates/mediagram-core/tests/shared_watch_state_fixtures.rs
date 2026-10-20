@@ -82,8 +82,9 @@ fn stats_record_parse_fixtures_match_the_web() {
     run_record_parse_fixture("stats-record-parse.json");
 }
 
-/// Admin, limit, parent and PIN: each bad key dropped on its own, never the
-/// profile; the role-stamp bounds; a Kids tombstone's age stripped.
+/// Admin, limits, parent, PIN and hidden sections: each bad key dropped on
+/// its own, never the profile; the role-stamp bounds; a Kids tombstone's age
+/// stripped.
 #[test]
 fn profile_roles_record_parse_fixtures_match_the_web() {
     run_record_parse_fixture("profile-roles-record-parse.json");
@@ -211,8 +212,9 @@ fn roles_only(state: MergedState) -> MergedState {
     MergedState { profiles, kids: state.kids, ..Default::default() }
 }
 
-/// Admin, limit, parent and PIN across devices, and a Kids mark's age —
-/// including the tie a mark from 6 wins before the device id is asked.
+/// Admin, limits, parent, PIN and hidden sections across devices, and a Kids
+/// mark's age — including the tie a mark from 6 wins before the device id is
+/// asked.
 #[test]
 fn profile_roles_merge_fixtures_match_the_web_in_both_orders() {
     run_merge_fixture("profile-roles-merge.json", roles_only);

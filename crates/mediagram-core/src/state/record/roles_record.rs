@@ -1,5 +1,6 @@
 //! A profile's place in the household on the sync record: the admin claim,
-//! a kid's limit and parent, a grown-up's PIN. A port of
+//! a kid's limit and parent, a grown-up's PIN, the sections any profile does
+//! not see. A port of
 //! `web/src/state/roles-record.ts`, pinned to it by
 //! `profile-roles-record-parse.json`.
 //!
@@ -59,6 +60,17 @@ pub struct PinRecord {
     pub proven: bool,
 }
 
+/// The sections of the library a profile does not see, sorted and each key
+/// once, and when the list last changed — whole, so the newest list wins. Any
+/// profile's, a grown-up's too; an empty list is said, not absent, so it beats
+/// an older one. Keys this build does not know are kept for a build that does.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HiddenSections {
+    pub sections: Vec<String>,
+    pub updated_at: f64,
+}
+
 /// Every role key a profile's entry may carry, each absent unless said.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -74,6 +86,8 @@ pub struct ProfileRoles {
     pub parent: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pin: Option<PinRecord>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hidden_sections: Option<HiddenSections>,
 }
 
 pub(super) fn profile_roles(row: &Map<String, Value>) -> ProfileRoles {
@@ -83,6 +97,7 @@ pub(super) fn profile_roles(row: &Map<String, Value>) -> ProfileRoles {
         daily_limit: daily_limit(row.get("dailyLimit")),
         parent: text_(row.get("parent")),
         pin: pin(row.get("pin")),
+        hidden_sections: hidden_sections(row.get("hiddenSections")),
     }
 }
 
@@ -136,6 +151,34 @@ fn pin(raw: Option<&Value>) -> Option<PinRecord> {
         // Only the literal true: a PIN that wins over others is not guessed at.
         proven: held.get("proven") == Some(&Value::Bool(true)),
     })
+}
+
+/// More than any build has sections, and a bound on what a document makes a
+/// device store.
+const MAX_SECTIONS: usize = 16;
+
+/// A list of hidden sections, sorted and each key once — or `None` for
+/// anything else: more than 16 entries as written, or any entry that is not a
+/// section's key (1 to 24 lowercase letters: today's five, and room for any a
+/// newer build adds). The record and the management call read it alike.
+pub(crate) fn hidden_sections_of(mut keys: Vec<String>) -> Option<Vec<String>> {
+    let key = |k: &String| (1..=24).contains(&k.len()) && k.bytes().all(|b| b.is_ascii_lowercase());
+    if keys.len() > MAX_SECTIONS || !keys.iter().all(key) {
+        return None;
+    }
+    keys.sort();
+    keys.dedup();
+    Some(keys)
+}
+
+/// Its time may be 0, as a daily limit's may.
+fn hidden_sections(raw: Option<&Value>) -> Option<HiddenSections> {
+    let held = raw?.as_object()?;
+    let keys = held.get("sections")?.as_array()?;
+    let keys = keys.iter().map(|k| k.as_str().map(str::to_string)).collect::<Option<_>>()?;
+    let sections = hidden_sections_of(keys)?;
+    let updated_at = js_number(held.get("updatedAt"));
+    (updated_at == 0.0 || is_stamp(updated_at)).then_some(HiddenSections { sections, updated_at })
 }
 
 /// Exactly `len` characters of `0-9a-f`, as both surfaces write a hash and a

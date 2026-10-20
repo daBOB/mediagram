@@ -7,7 +7,7 @@ use rusqlite::{Connection, params};
 use super::ProfileManager;
 use crate::state::profiles::Answer;
 use crate::state::profiles::ProfileOutcome::{Done, Invalid};
-use crate::state::profiles::role_rows::LAST_STAMP;
+use crate::state::profiles::role_writes::LAST_STAMP;
 use crate::state::profiles::rules::Action;
 
 pub(super) fn valid_minutes(minutes: u16) -> bool {

@@ -19,6 +19,7 @@ mod outcome;
 pub mod pin;
 pub mod pin_wait;
 pub(crate) mod role_rows;
+mod role_writes;
 pub mod rules;
 
 pub use manage::ProfileManager;
@@ -31,8 +32,7 @@ const MAX_NAME: usize = 120;
 
 /// A profile as the app sees it. Says whether there is a PIN, never what.
 /// Every field after `name` is defaulted in the generated Kotlin (uniffi
-/// 0.32 supports field defaults), so `Profile(id, name)` call sites keep
-/// compiling.
+/// field defaults), so `Profile(id, name)` call sites keep compiling.
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct Profile {
     pub id: String,
@@ -56,6 +56,9 @@ pub struct Profile {
     /// Whether a PIN is set — never the PIN, its hash or its salt.
     #[uniffi(default = false)]
     pub has_pin: bool,
+    /// Section keys this profile does not see, sorted; any profile's.
+    #[uniffi(default = [])]
+    pub hidden_sections: Vec<String>,
 }
 
 /// The profile the app sees. A kid always has a limit, whatever the column
@@ -74,6 +77,7 @@ impl From<role_rows::Stored> for Profile {
             name: row.name,
             kids: row.kids,
             parent_id: row.parent_id,
+            hidden_sections: row.hidden_sections,
         }
     }
 }

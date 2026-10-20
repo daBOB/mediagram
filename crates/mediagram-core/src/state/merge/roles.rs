@@ -10,6 +10,11 @@
 //! **A daily limit: the newest wins too**, `None` minutes included, and
 //! only a kid carries it; a document without the key never unsays one.
 //!
+//! **Hidden sections: the newest whole list, an empty one included.** Never
+//! joined with an older list: two people changing it at once, the later one
+//! wins it all. Any profile's, a grown-up's too — unlike a limit, it is not
+//! a kid's alone.
+//!
 //! **A PIN: a proven one, then the newest; else the oldest** (`keep_pin`).
 //! A first PIN — set where its grown-up had none — never replaces one set
 //! earlier elsewhere: a kid's tablet that never heard of a parent's PIN, and
@@ -36,7 +41,8 @@ use std::collections::{HashMap, HashSet};
 
 use super::tie_break::{Held, keep, keep_pin};
 use crate::state::record::{
-    AdminClaim, DailyLimit, KidsAge, ListRow, PinRecord, ProfileRoles, SyncRecord, normal_name,
+    AdminClaim, DailyLimit, HiddenSections, KidsAge, ListRow, PinRecord, ProfileRoles, SyncRecord,
+    normal_name,
 };
 
 const FROM_TWELVE: KidsAge = KidsAge {
@@ -65,6 +71,7 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
     let mut limits: HashMap<String, Held<KidsAge>> = HashMap::new();
     let mut daily: HashMap<String, Held<DailyLimit>> = HashMap::new();
     let mut pins: HashMap<String, Held<PinRecord>> = HashMap::new();
+    let mut hidden: HashMap<String, Held<HiddenSections>> = HashMap::new();
     let mut parents: HashMap<String, (String, &str)> = HashMap::new();
     let mut claims: HashMap<String, f64> = HashMap::new();
 
@@ -86,6 +93,9 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
             }
             if let Some(pin) = &roles.pin {
                 keep_pin(&mut pins, name.clone(), pin.clone(), device);
+            }
+            if let Some(list) = &roles.hidden_sections {
+                keep(&mut hidden, name.clone(), list.clone(), device);
             }
             if let Some(parent) = roles.parent.as_deref().and_then(normal_name) {
                 let standing = parents
@@ -120,6 +130,7 @@ pub(super) fn merge(records: &[SyncRecord]) -> HashMap<String, ProfileRoles> {
                     .filter(|_| kid)
                     .map(|(parent, _)| parent),
                 pin: pins.remove(&name).filter(|_| !kid).map(|held| held.row),
+                hidden_sections: hidden.remove(&name).map(|held| held.row),
             };
             (name, roles)
         })

@@ -22,12 +22,14 @@ use rusqlite::Connection;
 
 use super::Answer;
 use super::role_rows::{self, NewProfile, Stored};
+use super::role_writes;
 use super::rules::Action;
 use super::{ProfileOutcome::*, pin};
 use crate::state::sync;
 
 mod checks;
 mod daily_limit;
+mod hidden_sections;
 
 fn valid_age(age: u8) -> bool {
     age == 6 || age == 12
@@ -123,7 +125,7 @@ impl ProfileManager<'_> {
         if let Some(refused) = self.check(actor_id, pin, Action::SetKidsAge, Some(id), false)? {
             return Ok(refused);
         }
-        role_rows::write_kids_age(self.conn, id, kids_age, self.now)?;
+        role_writes::write_kids_age(self.conn, id, kids_age, self.now)?;
         Ok(Done)
     }
 
@@ -178,7 +180,7 @@ impl ProfileManager<'_> {
         }
         // Proven unless it is that first one: the actor's own PIN was right,
         // whether it changed its own or, as the admin, reset another's.
-        role_rows::write_pin(self.conn, id, new_pin, self.now, !first)?;
+        role_writes::write_pin(self.conn, id, new_pin, self.now, !first)?;
         Ok(Done)
     }
 }

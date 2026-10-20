@@ -1,5 +1,6 @@
 //! A profile's role between its `profiles` row and the wire: the admin
-//! claim, a kid's limit and parent, a grown-up's PIN. A port of
+//! claim, a kid's limit and parent, a grown-up's PIN, any profile's hidden
+//! sections. A port of
 //! `web/src/state/roles-exchange.ts`, split out of `exchange.rs` for the
 //! reason `exchange/lists.rs` is.
 //!
@@ -14,8 +15,8 @@ use std::collections::HashMap;
 use rusqlite::{Connection, params};
 
 use crate::state::merge::MergedProfile;
-use crate::state::profiles;
-use crate::state::record::{AdminClaim, DailyLimit, KidsAge, PinRecord, ProfileRoles, normal_name};
+use crate::state::profiles::{self, role_rows};
+use crate::state::record::{AdminClaim, DailyLimit, HiddenSections, KidsAge, PinRecord, ProfileRoles, normal_name};
 
 /// This profile's role keys, as `export_record` writes them beside `kids`.
 /// A claim and a PIN are written whatever the profile is now; the merge
@@ -24,7 +25,7 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
     conn.query_row(
         "SELECT kids, kids_age, kids_age_updated_at, admin_claimed_at, pin_hash, pin_salt,
                 pin_updated_at, (SELECT parent.name FROM profiles AS parent WHERE parent.id = profiles.parent_id),
-                pin_proven, daily_limit, daily_limit_updated_at
+                pin_proven, daily_limit, daily_limit_updated_at, hidden_sections, hidden_sections_updated_at
            FROM profiles WHERE id = ?1",
         [profile_id],
         |row| {
@@ -42,6 +43,8 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
             let proven: bool = row.get(8)?;
             let minutes: Option<u16> = row.get(9)?;
             let daily_at = row.get::<_, i64>(10)? as f64;
+            let sections = role_rows::hidden_sections(row, 11)?;
+            let hidden_at = row.get::<_, i64>(12)? as f64;
             Ok(ProfileRoles {
                 admin: claimed_at.map(|at| AdminClaim { claimed_at: at as f64 }),
                 kids_age: kids.then_some(limit),
@@ -52,6 +55,8 @@ pub(super) fn export(conn: &Connection, profile_id: &str) -> rusqlite::Result<Pr
                 // parent removed here is simply not said.
                 parent: row.get(7)?,
                 pin: pin.map(|(hash, salt)| PinRecord { hash, salt, updated_at: pin_at, proven }),
+                // Any profile's, once dated: a list nobody set (0) says nothing.
+                hidden_sections: (hidden_at > 0.0).then_some(HiddenSections { sections, updated_at: hidden_at }),
             })
         },
     )
@@ -89,6 +94,16 @@ pub(super) fn import(conn: &Connection, merged: &[MergedProfile]) -> rusqlite::R
                    WHERE id = ?1 AND (daily_limit_updated_at < ?3
                      OR (daily_limit_updated_at = ?3 AND daily_limit IS NOT ?2))",
                 params![id, limit.minutes, limit.updated_at as i64],
+            )?;
+        }
+        if let Some(list) = &roles.hidden_sections {
+            // Compared as stored: both sides sorted, each key once
+            // (`hidden_sections_of`), serialised alike.
+            changed += conn.execute(
+                "UPDATE profiles SET hidden_sections = ?2, hidden_sections_updated_at = ?3
+                   WHERE id = ?1 AND (hidden_sections_updated_at < ?3
+                     OR (hidden_sections_updated_at = ?3 AND hidden_sections IS NOT ?2))",
+                params![id, serde_json::json!(list.sections).to_string(), list.updated_at as i64],
             )?;
         }
         // In the merge's own order (`merge::tie_break::keep_pin`): over no PIN
