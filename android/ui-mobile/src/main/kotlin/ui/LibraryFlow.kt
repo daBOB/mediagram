@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import catalog.MenuScreen
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
+import catalog.showsPreloads
 import catalog.updateDisabledReason
 import designsystem.Spacing
 import player.LibraryPlayGate
@@ -104,7 +105,7 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
         onStartOver = onStartOver,
         updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
         updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
-        onPreloads = if (queueCount > 0) at::openPreloads else null,
+        onPreloads = if (catalogState.showsPreloads(queueCount)) at::openPreloads else null,
         preloadCount = queueCount,
     )
 

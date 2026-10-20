@@ -4,13 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewModelScope
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
 import catalog.SearchViewModel
+import catalog.profile.HouseholdsOwnerViewModel
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
 import data.CatalogEnrichmentFetcher
 import data.CatalogRepository
+import data.DefaultHouseholdsRepository
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.LibraryUpdateCoordinator
@@ -104,7 +108,9 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * for the core's ranking with a plain match on each set's title. [watch]
  * is where the viewer already stands — writes made through the repository
  * before the app opens, stamped by the core — and [heldIds] the titles this device
- * is taken to hold in full.
+ * is taken to hold in full. [settingsSeeTheViewer] lets Settings read the chosen
+ * profile, as the app's does; left off, Settings sees nobody, which the menu's
+ * own tests were written against. [seed] writes the core first: households, and profiles placed in them.
  */
 internal class TvAppFixture(
     stage: TvSetupStage,
@@ -115,6 +121,8 @@ internal class TvAppFixture(
     heldIds: Set<String> = emptySet(),
     achievements: Achievements = NO_ACHIEVEMENTS,
     pins: Map<String, String> = emptyMap(),
+    settingsSeeTheViewer: Boolean = false,
+    seed: FakeCore.() -> Unit = {},
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
@@ -180,7 +188,7 @@ internal class TvAppFixture(
             FakeCore(
                 authorized = stage == TvSetupStage.LIBRARY || stage == TvSetupStage.READY,
                 libraries = listOf(LibraryChoice("films", "Family films")),
-            )
+            ).apply(seed)
         core.roles.pins.putAll(pins)
         val telegram = InMemoryTelegramSettings()
         val library = InMemoryLibrarySettings()
@@ -210,7 +218,9 @@ internal class TvAppFixture(
         login = LoginViewModel(provider, dispatcher)
         val viewer = WatchStateFixture(profiles, chosenProfileId, core, watch)
         profile = ProfileViewModel(viewer.repository, NoopWatchSync)
-        manage = ManageProfilesViewModel(viewer.repository, NoopWatchSync)
+        // Over the same core, read for as long as the store holds the picker.
+        val households = DefaultHouseholdsRepository(viewer.provider, viewer.repository, profile.viewModelScope, Dispatchers.Unconfined)
+        manage = ManageProfilesViewModel(viewer.repository, households, NoopWatchSync)
         coEvery { repository.refresh() } returns Result.success(sets.size)
         coEvery { repository.sets() } returns sets
         coEvery { repository.titleInfo(any()) } returns null
@@ -222,10 +232,8 @@ internal class TvAppFixture(
         // round for search's People group; the strict mock has to answer the
         // call or every search in this fixture fails.
         coEvery { repository.searchPeople(any()) } returns emptyList()
-        // The lookups the title tabs, person and franchise pages make through
-        // CatalogViewModel and BrowseViewModel — this mock is strict, so every
-        // one this fixture's walk can reach needs its own answer, the same
-        // reason `searchPeople` above does.
+        // The lookups the title tabs, person and franchise pages make through CatalogViewModel and BrowseViewModel —
+        // this mock is strict, so every one this fixture's walk can reach needs its own answer, as `searchPeople` does.
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.person(any()) } returns null
         coEvery { repository.franchises() } returns emptyList()
@@ -296,8 +304,7 @@ internal class TvAppFixture(
         every { cacheBudget.chosenVolumeId } returns MutableStateFlow(null)
         every { lanCache.state } returns lanCacheState
         every { lanCache.failure } returns MutableStateFlow(null)
-        // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the
-        // same reason as every entry below.
+        // TvStatsFrame resolves StatsViewModel through hiltViewModel(), the same reason as every entry below.
         every { stats.state } returns
             MutableStateFlow<StatsRead>(
                 StatsRead.Done(StatsSummary(weekSeconds = 0.0, monthSeconds = 0.0, allSeconds = 0.0, last30 = emptyList(), history = emptyList()), ZonedDateTime.now()),
@@ -309,8 +316,10 @@ internal class TvAppFixture(
                 SetupViewModel::class.java to setup,
                 LoginViewModel::class.java to login,
                 ProfileViewModel::class.java to profile,
-                // Beside the picker's in TvProfileGate, for Manage profiles.
+                // Beside the picker's in TvProfileGate: Manage profiles, Join a household, and the owner's Households.
                 ManageProfilesViewModel::class.java to manage,
+                JoinHouseholdViewModel::class.java to JoinHouseholdViewModel(viewer.repository, households),
+                HouseholdsOwnerViewModel::class.java to HouseholdsOwnerViewModel(viewer.repository, households, NoopWatchSync),
                 CatalogViewModel::class.java to catalog,
                 FetchViewModel::class.java to fetch,
                 SearchViewModel::class.java to search,
@@ -319,24 +328,18 @@ internal class TvAppFixture(
                 SystemViewModel::class.java to system,
                 CacheBudgetViewModel::class.java to cacheBudget,
                 LanCacheViewModel::class.java to lanCache,
-                // TvApp's TvTheme and TvSettingsScreen each resolve an
-                // AppearanceViewModel through hiltViewModel(), the same reason
-                // every other entry in this map exists (see the comment above
-                // login/profile/etc.).
+                // TvApp's TvTheme and TvSettingsScreen each resolve an AppearanceViewModel through hiltViewModel(), the
+                // same reason every other entry in this map exists (see the comment above login/profile/etc.).
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
-                ProfileSettingsViewModel::class.java to profileSettingsModel(),
-                // TvLibrary resolves BrowseViewModel through hiltViewModel()
-                // for the same reason every entry above exists — see that
-                // comment.
+                ProfileSettingsViewModel::class.java to profileSettingsModel(if (settingsSeeTheViewer) viewer.repository.chosenProfile else MutableStateFlow(null)),
+                // TvLibrary resolves BrowseViewModel through hiltViewModel(), for the same reason as every entry above.
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),
-                // A film's own TvTitlePage resolves TitlePreloadViewModel
-                // through hiltViewModel() too, films only — same reason.
+                // A film's own TvTitlePage resolves TitlePreloadViewModel through hiltViewModel() too, films only.
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
                 // The library's daily-limit door, resolved beside the catalog on every draw.
                 LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
-                // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(), the
-                // same reason every entry here exists — and every library test reaches it.
+                // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.
                 AchievementDotViewModel::class.java to AchievementDotViewModel(FakeCoreProvider(achievementsCore), viewer.repository, achievementsSeen),
                 // The library and the profile picker each listen for casts through it.
                 CastReceiverViewModel::class.java to CastReceiverViewModel(casts, repository, viewer.repository, playback.handle),

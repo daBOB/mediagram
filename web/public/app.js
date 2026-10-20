@@ -52,6 +52,7 @@ import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
 import { mountCastBar } from "./lib/cast/cast-bar.js";
+import { hiddenSectionsOf } from "./lib/section-access.js";
 import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener, takeJoin } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
 import { markCurrent } from "./lib/nav-current.js";
@@ -103,12 +104,16 @@ const librarySession = createLibrarySession({
 // fires it again moments later against whoever was actually chosen.
 librarySession.onData((change) => {
   ({ library, byId } = librarySession.current());
+  const hidden = hiddenSectionsOf(state.profile());
   for (const section of ["movies", "series", "tutorials"]) document.getElementById(`n-${section}`).textContent = String(library[section].length);
   document.getElementById("n-documentaries").textContent = String(countDocumentaries(library.documentaries));
   const animeCount = countAnime(library.anime);
   document.getElementById("n-anime").textContent = String(animeCount);
+  // A section this profile is not shown loses its link; Anime's own rule agrees, as a hidden Anime counts none.
+  for (const link of document.querySelectorAll(".departments a")) link.hidden = hidden.includes(link.dataset.section);
   document.getElementById("nav-anime").hidden = animeCount === 0;
   document.getElementById("rail-masthead").textContent = ["movies", "series", "tutorials"]
+    .filter((section) => !hidden.includes(section))
     .map((section) => countOf(library[section].length, SECTIONS[section].extent))
     .join("\n");
   renderColophon(librarySession.current().visibleSets);
@@ -193,7 +198,7 @@ function viewMovies(requested) {
     // and offering the choice would be offering it about nothing.
     library.movies.length > 0 ? movieControls() : null,
   );
-  if (library.movies.length === 0) return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()) }));
+  if (library.movies.length === 0) return main.append(emptyState("movies", { kidsLimit: kidsLimitOf(state.profile()), hidden: hiddenSectionsOf(state.profile()) }));
   main.append(movieGrid(items, openFilm, { mode }));
   const links = pager(page, pages);
   if (links) main.append(links);
@@ -225,7 +230,7 @@ function reelButton() {
 const deptContext = () => ({
   library, byId, progress: state.inProgress(), watchedAt: state.watchedAt, isWatched: state.isWatched,
   kidsLimit: kidsLimitOf(state.profile()), play: (set) => play(set), openFilm, reel: reelButton(),
-  openShow,
+  hidden: hiddenSectionsOf(state.profile()), openShow,
 });
 
 // Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
@@ -407,6 +412,8 @@ async function switchProfile() {
   route();
 }
 document.getElementById("who").addEventListener("click", switchProfile);
+// Manage profiles changed someone here, perhaps whoever is watching: filter again at once, no fetch.
+window.addEventListener("mediagram:profiles", () => librarySession.reapply());
 
 /** What was started and not finished, most recent first. */
 function viewContinue() {
@@ -579,7 +586,7 @@ function drawRoute() {
     });
     return;
   }
-  if (address.page === "stats") return renderStats(main, { byId }, () => generation === routeGeneration);
+  if (address.page === "stats") return renderStats(main, () => generation === routeGeneration);
   if (address.page === "system") return viewSystem();
   if (address.page === "continue") return viewContinue();
   if (address.page === "watchlist") return viewWatchlist();
@@ -587,7 +594,7 @@ function drawRoute() {
   if (address.page === "list") {
     const list = state.collections().find((entry) => entry.id === address.id);
     return renderList(main, list, list ? setsFor(list.items) : [], {
-      play, onEditing: setShelfEditing, onGone: () => {
+      play, onEditing: setShelfEditing, visible: (setId) => byId.has(setId), onGone: () => {
         if (navigation === navigationGeneration && location.hash === visitedHash) go({ page: "collections" });
       },
     });

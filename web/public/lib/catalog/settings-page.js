@@ -1,9 +1,10 @@
 /**
  * Settings, in the player's own language rather than an admin form: the
- * department-sized heading, then tabs. Appearance and Profile for everyone;
- * "Library & Telegram" — the admin-gated account, cache and sessions panel
- * (`lib/settings-view.js`) — only for a viewer on this household's own
- * network, the same rule the System page follows.
+ * department-sized heading, then tabs. Appearance and Profiles for everyone —
+ * Profiles is the one page for you, the household and managing it
+ * (`settings-profiles.js`); "Library & Telegram" — the admin-gated account,
+ * cache and sessions panel (`lib/settings-view.js`) — only for a viewer on
+ * this household's own network, the same rule the System page follows.
  *
  * Appearance is kept in this browser (a screen's property, not a profile's)
  * and applied by `lib/appearance-boot.js`, which this nudges on every change.
@@ -11,11 +12,7 @@
 
 import { el } from "../dom.js";
 import { tabbed } from "./tabs.js";
-import { href } from "../address.js";
-import { preferenceOf, setPreference } from "../watch-state.js";
-import { kidsLimitOf } from "../age-rating.js";
-
-const SUBTITLE_LANGUAGES = [["off", "Off"], ["de", "German"], ["en", "English"]];
+import { PROFILES, profilesPanel } from "./settings-profiles.js";
 
 const THEMES = [
   ["dark", "Dark", "Cinematic and focused"],
@@ -50,6 +47,7 @@ function write(name, value) {
  */
 export function renderSettings(main, { profile, switchProfile, systemVisible, admin }) {
   let stopAdmin = null;
+  let stopProfiles = null;
   const head = el("header", "dept-hero no-art");
   const copy = el("div", "dept-copy");
   copy.append(el("h1", "dept-title", "Settings"));
@@ -57,14 +55,18 @@ export function renderSettings(main, { profile, switchProfile, systemVisible, ad
   main.append(head);
   main.append(tabbed([
     { label: "Appearance", build: appearance },
-    { label: "Profile", build: () => profilePanel(profile, switchProfile, systemVisible) },
+    {
+      label: PROFILES,
+      build: () => { const panel = profilesPanel(main, { profile, switchProfile, systemVisible }); stopProfiles = panel.stop; return panel.box; },
+      leave: () => stopProfiles?.(),
+    },
     ...(admin ? [{ label: "Library & Telegram", build: () => {
       const box = el("div", "settings-panel settings-admin");
       stopAdmin = admin(box);
       return box;
     } }] : []),
   ], "Settings"));
-  return () => stopAdmin?.();
+  return () => { stopAdmin?.(); stopProfiles?.(); };
 }
 
 function appearance() {
@@ -97,49 +99,5 @@ function choice(legend, name, current, options, preview, variant = "cards") {
     option.append(words);
     set.append(option);
   }
-  return set;
-}
-
-function profilePanel(profile, switchProfile, systemVisible) {
-  const box = el("div", "settings-panel");
-  const set = el("div", "setting");
-  set.append(el("h2", "setting-title", "Who is watching"));
-  set.append(el("p", "setting-value", profile ? `${profile.name}${profile.kids ? ` · Kids · FSK ${kidsLimitOf(profile)}` : ""}` : "Nobody chosen"));
-  const change = el("button", "pill pill-line", "Switch profile");
-  change.type = "button";
-  change.addEventListener("click", switchProfile);
-  set.append(change);
-  box.append(set, subtitlePreference(profile));
-  if (systemVisible) {
-    const system = el("a", "dept-all", "System and playback status →");
-    system.href = href({ page: "system" });
-    box.append(system);
-  }
-  return box;
-}
-
-/**
- * The profile-wide subtitle language: the fallback `subtitle-choice.js` uses
- * once a show has no remembered choice of its own. Stored under the fixed
- * scope `"profile"`, unlike every other preference here, which is per show.
- */
-function subtitlePreference(profile) {
-  const set = el("div", "setting");
-  set.append(el("h2", "setting-title", "Subtitles"));
-  const select = el("select");
-  select.disabled = profile === null;
-  for (const [value, label] of SUBTITLE_LANGUAGES) {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    select.append(option);
-  }
-  select.value = preferenceOf("profile", "subtitle") ?? "off";
-  select.addEventListener("change", () => setPreference("profile", "subtitle", select.value));
-  set.append(select);
-  set.append(el(
-    "p", "setting-value",
-    profile === null ? "Choose a profile first." : "Forced subtitles still appear when a film switches language.",
-  ));
   return set;
 }

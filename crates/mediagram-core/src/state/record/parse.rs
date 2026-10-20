@@ -6,7 +6,9 @@
 use serde_json::Value;
 
 use super::hostile_json::{as_array, is_integer, js_number, text_};
+use super::households_record::household_entry;
 use super::list_record::{collection_row, kids_row, list_row};
+use super::name_record::name_keys;
 use super::preference_record::preference_row;
 use super::roles_record::profile_roles;
 use super::stats_record::{day_stat_row, title_stat_row};
@@ -49,6 +51,11 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         .filter_map(list_row)
         .collect();
 
+    let households = as_array(held.get("households"))
+        .iter()
+        .filter_map(household_entry)
+        .collect();
+
     // `Number(held.writtenAt) || 0`: NaN and 0 both fall back to 0, and a
     // negative or positive finite number passes through unchanged.
     let written_at = js_number(held.get("writtenAt"));
@@ -61,12 +68,14 @@ pub fn parse_record(text: &str) -> Option<SyncRecord> {
         profiles,
         kids,
         editors_choice,
+        households,
     })
 }
 
 fn profile_state(raw: &Value) -> Option<ProfileState> {
     let row = raw.as_object()?;
     let name = text_(row.get("name"))?;
+    let names = name_keys(row, &name);
     Some(ProfileState {
         name,
         local_id: text_(row.get("localId")),
@@ -106,6 +115,7 @@ fn profile_state(raw: &Value) -> Option<ProfileState> {
             .filter_map(day_stat_row)
             .collect(),
         roles: profile_roles(row),
+        names,
     })
 }
 

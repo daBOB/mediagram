@@ -12,7 +12,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import setup.SettingsViewModel
-import setup.profileStatus
 import setup.telegramStatus
 import system.CacheBudgetViewModel
 import system.LanCacheViewModel
@@ -21,17 +20,16 @@ import system.storageStatus
 import system.systemStatus
 import ui.common.settings.IndexStatus
 import ui.common.settings.SettingsSection
+import ui.common.settings.profilesStatus
 import ui.tv.setup.TvConfirmDialog
 import ui.tv.system.TvSystemSection
 
 /**
- * Settings and System, one hub, television-side: an index (Telegram ·
- * Storage · Appearance · System, each with its own one-line status) beside
- * the section it is showing — the approved round-2 mockups' own EXPANDED
- * layout, at ten-foot sizes; [TvMenuBranches] opens this on [initial],
- * `TELEGRAM` for the Settings menu row, `SYSTEM` for the System shortcut.
- * Every ViewModel underneath is the one Settings and System always used;
- * only the layout is new.
+ * Settings and System, one hub, television-side: an index (a one-line status
+ * per section) beside the section it is showing — the approved round-2
+ * mockups' own EXPANDED layout, at ten-foot sizes; [TvMenuBranches] opens
+ * this on [initial], `TELEGRAM` for the Settings menu row, `SYSTEM` for the
+ * System shortcut.
  *
  * [section] and [focusInContent] are hoisted here rather than kept inside
  * [TvSettingsPanes]: a library-choice or an address panel takes the whole
@@ -52,7 +50,6 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
     val appearance by appearanceViewModel.state.collectAsStateWithLifecycle()
     val profileViewModel: ProfileSettingsViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle()
-    val profileSubtitle by profileViewModel.subtitle.collectAsStateWithLifecycle()
     val cacheViewModel: CacheBudgetViewModel = hiltViewModel()
     val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
     val lanViewModel: LanCacheViewModel = hiltViewModel()
@@ -95,9 +92,8 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
         lastPanel = which
     }
 
-    // A local val, not the `panel` property itself: only a true local can
-    // be smart-cast to the non-null enum the panel screen takes, once this
-    // branch is the one running.
+    // A local val, not the `panel` property: only a local can be smart-cast
+    // to the non-null enum the panel screen takes.
     val openPanel = panel
     if (openPanel != null) {
         TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, onClose = { panel = null })
@@ -107,7 +103,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                 SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                 SettingsSection.APPEARANCE to IndexStatus("${appearance.style.label} · ${appearance.accent.label} · ${appearance.backdrop.label}"),
-                SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
+                SettingsSection.PROFILES to profilesStatus(profile),
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
             )
         TvSettingsPanes(
@@ -155,15 +151,6 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         onSelectStyle = appearanceViewModel::chooseStyle,
                     )
 
-                SettingsSection.PROFILE ->
-                    TvProfileSection(
-                        profile = profile,
-                        subtitle = profileSubtitle,
-                        focusInContent = entered,
-                        entryFocusRequester = entryRequester,
-                        onChooseSubtitle = profileViewModel::chooseSubtitle,
-                    )
-
                 SettingsSection.SYSTEM ->
                     TvSystemSection(
                         focusInContent = entered,
@@ -172,6 +159,8 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onRetry = systemViewModel::retry,
                     )
+                SettingsSection.PROFILES ->
+                    TvProfilesPage(profile, entered, returningFrom = lastPanel, entryRequester, onOpen = open)
             }
         }
     }

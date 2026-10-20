@@ -89,6 +89,19 @@ describe("revalidation", () => {
   });
 });
 
+test("the catalog stays compressed while a page load's static files pass through", () => {
+  const catalog = large(200_000);
+  const first = negotiatedResponse({ acceptEncoding: "br", ifNoneMatch: null }, catalog, "application/json");
+  for (let file = 0; file < 300; file++) {
+    negotiatedResponse({ acceptEncoding: "br", ifNoneMatch: null }, `/* file ${file} */ ${"x".repeat(2000)}`, "text/javascript");
+  }
+
+  const again = negotiatedResponse({ acceptEncoding: "br", ifNoneMatch: null }, catalog, "application/json");
+
+  // The same bytes object: served from the cache, not compressed a second time.
+  expect(again.body).toBe(first.body);
+});
+
 test("a HEAD request carries the headers without a body", () => {
   const response = negotiatedResponse({ acceptEncoding: "gzip", ifNoneMatch: null }, large(4000), "application/json", { headOnly: true });
 

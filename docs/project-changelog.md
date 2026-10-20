@@ -5,6 +5,132 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.136.1 — households on Android, fixes
+
+**Fixed** (Android phone, tablet and TV)
+
+- **The owner's Households part over the picker asks the owner's PIN.** After the owner had been watching, Switch profile then Manage profiles showed the part open to whoever came to the picker, and the TV opened it without the PIN. It now opens at once only for the owner chosen on the device, as on the web.
+- **A fresh device on a one-household install no longer flashes Join a household** while the households are read again after its first sync round.
+- **A household switch that took closes its PIN prompt** when only the households re-read after it failed, instead of saying the switch did not go through.
+- **TV: back from Switch household lands on Manage profiles** when the This device row has gone meanwhile, instead of on nothing.
+- **The owner's changes for a grown-up who has gone since say so** ("That profile is not here any more.") instead of doing nothing; on TV the step no longer waits forever.
+
+## 0.136.0 — households on Android
+
+**Added** (Android phone, tablet and TV)
+
+- **A phone, tablet or TV joins one household**, as a browser does: with more than one household, a device that hasn't joined asks **Join a household** (the households by name, then that household's admin's PIN or the owner's) and its "Who's watching?" lists only that household's profiles. A device that chose someone before stays in that profile's household; while only one household exists nothing is asked. Households nobody could let a device into are not offered, and a device whose household has no grown-up left is offered the others.
+- **Settings → Profiles → This device · Switch household**, for anyone but a kid, while more than one household exists.
+- **The owner's Households part**, as on the web: every household with its admin and member count; create one (with a new grown-up, or a grown-up who moves in with their kids), rename, change who runs it, move a grown-up here, use it on this device, delete an empty one (never Home). The owner's PIN is asked once per visit and dropped on leaving, including from the picker's Manage profiles.
+- **The owner's Manage profiles lists every household's profiles**, grouped under each household's name, with Reset PIN, Remove, Sections and a kid's limits — as on the web.
+- **Sync keeps a renamed profile as one person** on Android too (the core understands the web's rename keys), ready for the Rename button.
+
+**Fixed**
+
+- A device whose chosen profile was left behind by a household switch shows the picker instead of waiting.
+
+## 0.135.0 — sync keeps a renamed profile as one person
+
+**Changed** (web player, Android phone, tablet and TV; nothing a viewer sees)
+
+- **A profile renamed on one device stays one person on every device**, with its history, lists, PIN, limits and household, instead of turning up as a second profile under the new name. The sync carries when a profile took its name and the names it had before; a device takes a rename in by renaming its own row, and two rows it holds for one person are folded into the older.
+- **A name a profile had before stays taken on this install**, as a current one is: a new profile may not take it.
+- Nothing renames a profile yet. That comes once every device runs this version: an older one shows both names until it updates, and stops syncing until then if the renamed person has a list.
+
+## 0.134.0 — the owner manages every profile
+
+**Added** (web player; the Android core and app follow the same rule, its Manage screen follows with the Android households work)
+
+- **The owner manages profiles in every household.** In Settings → Profiles → Manage profiles, as the owner, every household's profiles are listed, grouped under the household's name (this device's first), each with Reset PIN, Remove and Sections — and a kid's age and daily limit. A household's admin can now have sections hidden, by the owner only; the owner never has any hidden. Inside the owner's own household the rules are as before (another parent's kid stays theirs). Add a grown-up / Add a kid still add to this device's household; the Households part creates profiles elsewhere.
+- Anyone else's Manage profiles is unchanged.
+
+## 0.133.0 — set sections from Android
+
+**Added** (Android phone, tablet and TV)
+
+- **Sections per profile on Android**, as on the web player: in Settings → Profiles → Manage profiles every profile you manage has a Sections row (Movies, Series, Anime, Documentaries, Tutorials). A section the profile sees is a quiet chip; a hidden one is filled and struck through. On the TV, a row's Sections opens a step like Daily limit, and focus stays on the chip just pressed.
+- The switches hold until the answer comes, so a quick second press can't undo the first; a refusal frees them and, on the TV, says why in the step.
+- **Everyone here** says what each profile hides ("· hides Anime"), as on the web.
+
+## 0.132.0 — hide sections from a profile
+
+**Added** (web player; Android already hides them, its switches follow)
+
+- **Sections per profile.** In Settings → Profiles → Manage profiles, every profile you manage has a **Sections** row: Movies, Series, Anime, Documentaries, Tutorials. A household's admin sets them for its grown-ups, a kid's parent for that kid; whoever runs a household always sees everything. A section the profile sees is a quiet outlined chip; a hidden one is filled and struck through.
+- **A hidden section is gone for that profile**: its menu link and masthead count, its shelves and pages, and its titles in Home, Continue, My List, search, Latest, Genres, collections, next-up and the "Add titles" picker. A link to it says only "No anime yet." It works with the kids' age limit, not instead of it.
+- **Everyone here** says what each profile hides ("· hides Anime").
+- It is a household rule, not a lock, like the kids' age limit: the server still serves any title asked for by id, and stats count the whole library.
+
+## 0.131.0 — households
+
+**Added** (web player; the Android core carries them, its screens follow)
+
+- **Households.** One install can be shared by more than one household; each sees only its own profiles: its picker, its "Everyone here", its Manage profiles. The four profiles that existed are the first household, **Home**, run by the owner (the install's first admin). It is a household rule, not real separation: everyone shares the same library and server.
+- **The owner sets households up** from Settings → Profiles → Households: create one (with a new grown-up who runs it, or an existing grown-up who moves in with their kids), rename it, change who runs it, move a grown-up and their kids to another, and delete an empty one (never Home). Every action asks the owner's PIN once per visit. Anyone else sees an Owner button that asks it.
+- **A browser joins one household**, once, with that household's admin's PIN or the owner's: "Join a household" on the picker when there is more than one, and "This device · Switch household" on the Profiles page. A browser that chose someone before stays in that profile's household; while only Home exists nothing changes and nothing is asked.
+- **Profile names stay unique across the whole install** ("That name is already used on this install"); household names are unique among the live ones.
+- Households and each profile's household travel in the state sync (stamped, newest wins). The Android core already stores, merges and imports them, so phones and TVs keep them; Android apps installed today keep showing every profile until the Android screens ship.
+
+## 0.130.1 — Preloads stays reachable
+
+**Changed** (Android phone, tablet and TV)
+
+- **"Preloads" stays in the menu while anything is preloaded on this device**, not only while something is queued, so finished films and episodes can always be found and removed under "On this device". The number beside it still counts the queue; with nothing queued the entry reads plain "Preloads". A kid gets no entry for a title its profile hides.
+
+## 0.130.0 — preload an episode, and see how much of it is held
+
+**Added** (Android phone, tablet and TV)
+
+- **Every episode on a show page has a Preload control**, the same one a film page has: the same queue, budget and words. On the TV the row still plays on OK; Right moves onto its control.
+- **Every episode row shows how much of it is on this device**, whatever put it there (a preload, the next-episode preloader, or watching): "42%" beside the control, live while it preloads, the held badge at 100%, nothing at 0%. A queued row shows its own share, never another episode's.
+- **A finished episode is listed under Preloads → On this device** as "Show · S1E4", removable there like a film; the queue names episodes the same way. TalkBack says "episode", not "film".
+
+## 0.129.0 — one Profiles page
+
+**Changed** (web player, Android phone, tablet and TV)
+
+- **Profiles live on one page.** Settings → Profile and Settings → Profiles, and the picker's separate Manage profiles screen, are one **Profiles** page: who is watching (with Switch profile and your subtitle language), then everyone here, then Manage profiles. A kid sees only the first part. The picker only chooses now; its "Manage profiles" opens the same page with nobody chosen. Every visit still asks who you are and that grown-up's PIN, and leaving drops it. On the TV, Manage profiles opens the TV's own Manage screen from a row on the page.
+- On Android the Settings line reads "<name> · <n> profiles" (a kid's: the name alone).
+
+## 0.128.3 — the library opens without waiting for the channel
+
+**Fixed** (Android phone, tablet and TV)
+
+- **Every launch downloaded the whole channel index again** (~26 MB) before showing the library, even when nothing had been published since: "Loading your library…" stayed up 6.5 s on a Xiaomi Pad 5 Pro, about 8–9 s on the TV emulator, and about 15 s on the TV box. The snapshot already installed from the same library is no longer fetched again; a cold start now moves about 0.7 MB.
+- **The installed catalog shows at once** while the channel is asked, as the web player's does; a newer index replaces it when the refresh lands, and a refresh that brings nothing new leaves the shelves as they are rather than regrouping them under a viewer's thumb. Measured on the TV emulator: library on screen at about 2–3.5 s instead of 11–12 s.
+
+## 0.128.2 — speech in 5.1 titles no longer sounds under water on tablet speakers
+
+**Fixed** (Android phone and tablet)
+
+- **5.1 AAC titles played with muffled dialogue** on a tablet's own speakers (seen on a Xiaomi Pad 5 Pro, MIUI 14): since Android 12L the player let the AAC decoder output all six channels for a spatializer, and with none present MIUI sent the six channels straight to the speakers, where the centre channel — the speech — came out wrong. Where the output cannot render surround itself (built-in speakers, headphones, Bluetooth), the decoder now downmixes to stereo; a TV keeps 5.1. Checked on the tablet: the track is stereo and the speech is clear.
+- Not yet covered: DTS and TrueHD titles, which FFmpeg decodes, still reach the output as six channels; a speaker downmix there is a follow-up. The choice is made when a title starts, so a route change mid-title takes effect from the next one.
+
+## 0.128.1 — Profiles in TV Settings
+
+**Added** (Android TV)
+
+- **Settings → Profiles on the TV**, for a grown-up only: the same "Everyone here" list, and a "Manage profiles" row that opens the TV's own Manage profiles screen (who you are, the PIN, then what your role allows). Leaving it, Settings or the app drops the PIN.
+
+## 0.128.0 — a Profiles page in Settings
+
+**Added** (web player, Android phone and tablet)
+
+- **Settings → Profiles**, for a grown-up only: "Everyone here" lists the household — Admin, Grown-up (with whether a PIN is set) or Kid with its parent, FSK limit and daily limit — and below it the same management as the picker's Manage profiles: add or remove grown-ups (the admin), add or remove kids, set a kid's age and daily limit, change PINs. Every visit asks who you are and that grown-up's PIN; leaving the tab, the page or the app drops it. A kid never sees the tab. Manage profiles stays on the picker too.
+- On Android the same section sits in Settings on phones and tablets; the TV follows. No rename: devices sync a profile by its name, so a renamed profile would split in two.
+
+## 0.127.0 — Stats no longer lists every title watched
+
+**Removed** (web player, Android phone, tablet and TV)
+
+- **The History list under Stats.** The page now ends with the achievements: totals, the counting-since line, the last 30 days and achievements are unchanged. The server and core still record and send every start, finish and rewatch, since that history still decides "Nothing watched yet." and dates "Counting since". On Android the Stats page no longer waits for the catalogue, which it needed only to name the history's titles.
+
+## 0.126.2 — the web player no longer hangs on "Loading your library…"
+
+**Fixed** (web player)
+
+- **Every page load waited about 9 s on the leader, and the whole server stood still meanwhile.** Brotli at its default quality 11 took 9.4 s to compress the 16 MB catalog, synchronously, and the compression cache held only 64 bodies while a page load asks for about 145 static files, so each load evicted the catalog and compressed it again. Brotli now runs at quality 5 (85 ms, body 14% larger), and the cache is bounded at 32 MB, newest-used last, so the catalog stays compressed across page loads. `/api/sets` went from about 9 s to about 0.25 s.
+
 ## 0.126.1 — Report no longer closes the Android app
 
 **Fixed** (Android phone, tablet and TV)

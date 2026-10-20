@@ -57,12 +57,15 @@ data class MenuActions(
      * The menu's own further, conditional row, beyond the five above and
      * the phone's own four browse utilities beside them — "Preloads · n",
      * Android only. `null` (not merely a zero count) while nothing is
-     * running or queued: the page it opens stays reachable from nowhere
-     * else while idle, which is fine, so the row is simply not offered
-     * rather than disabled. Kept on this same struct rather than threaded
+     * queued and nothing is held on this device; [preloadCount] is the queue
+     * alone, so the row reads plain "Preloads" when only finished titles are
+     * there to find and remove. Kept on this same struct rather than threaded
      * as a parameter of its own — every scaffold that already carries
      * [MenuActions] would otherwise need a second one just for this.
      */
     val onPreloads: (() -> Unit)? = null,
     val preloadCount: Int = 0,
-)
+) {
+    /** "Preloads · n" while something is queued; plain "Preloads" when the row is only there for what is held. */
+    val preloadsLabel: String get() = if (preloadCount > 0) "Preloads · $preloadCount" else "Preloads"
+}

@@ -17,6 +17,7 @@
  */
 
 import { loadProfiles, profile, profileId, useProfile } from "./watch-state.js";
+import { placed } from "./household.js";
 
 const REASONS = new Set(["invalid", "name-taken", "not-found", "wait", "no-pin", "wrong-pin", "not-allowed"]);
 
@@ -42,12 +43,19 @@ async function call(method, path, body) {
   }
 }
 
-/** A call that changes who there is: on success the list is read again. @returns {Promise<Outcome>} */
-async function change(method, path, body) {
+/**
+ * A call that changes who there is: on success `first` runs — a device that
+ * joined a household notes it — and the list is read again. Shared with `household-api.js`.
+ * @returns {Promise<Outcome>}
+ */
+export async function change(method, path, body, first = () => {}) {
   const outcome = await call(method, path, body);
   if (outcome.ok) {
+    first();
     await loadProfiles();
     if (profileId() !== null && profile() === null) await useProfile(null);
+    // The page filters its catalogue again: what changed may be whoever is watching.
+    window.dispatchEvent(new Event("mediagram:profiles"));
   }
   return outcome;
 }
@@ -74,6 +82,8 @@ export const setKidsAge = (actorId, pin, id, age) => change("PUT", at(id, "/kids
 
 /** Sets the kid `id`'s daily watching limit to `minutes`, or none for `null`. */
 export const setDailyLimit = (actorId, pin, id, minutes) => change("PUT", at(id, "/daily-limit"), { actorId, pin, minutes });
+/** Sets which sections `id` is not shown, as a whole list; an empty one hides nothing. */
+export const setHiddenSections = (actorId, pin, id, sections) => change("PUT", at(id, "/hidden-sections"), { actorId, pin, sections });
 
 /**
  * A grown-up saying who they are: their PIN, or — for one from before PINs —
@@ -92,15 +102,20 @@ export function ownerOf(profiles, kid) {
 }
 
 /**
- * What `actorId` may manage, as Manage profiles draws it: every other
- * grown-up when the actor is the admin, and the kids that are the actor's own.
- * `actor` is `null` for a kid or for nobody, who manage nothing.
+ * What `actorId` may manage among `profiles` — everyone on the install, as
+ * Manage profiles draws it. In the actor's own household: every other
+ * grown-up when the actor is its admin, and the kids that are the actor's own.
+ * Only the owner reaches into the others, where they manage everyone, each
+ * household's admin too. `actor` is `null` for a kid or for nobody, who manage nothing.
  */
 export function manageable(profiles, actorId) {
   const actor = profiles.find((entry) => entry.id === actorId && !entry.kids) ?? null;
+  if (actor === null) return { actor, grownUps: [], kids: [] };
+  const mine = profiles.filter((entry) => placed(entry) === placed(actor));
+  const elsewhere = actor.owner === true ? profiles.filter((entry) => placed(entry) !== placed(actor)) : [];
   return {
     actor,
-    grownUps: actor?.admin ? profiles.filter((entry) => !entry.kids && entry.id !== actorId) : [],
-    kids: actor ? profiles.filter((entry) => entry.kids && ownerOf(profiles, entry) === actorId) : [],
+    grownUps: [...(actor.admin ? mine : []), ...elsewhere].filter((entry) => !entry.kids && entry.id !== actorId),
+    kids: [...mine.filter((entry) => ownerOf(mine, entry) === actorId), ...elsewhere].filter((entry) => entry.kids),
   };
 }

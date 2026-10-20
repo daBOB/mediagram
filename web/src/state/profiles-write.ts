@@ -1,5 +1,5 @@
 /**
- * Own writes of a profile's PIN, age limit and daily limit, split from the
+ * Own writes of a profile's PIN, limits and hidden sections, split from the
  * rows' reads (`profiles.ts`) to keep that file's size down.
  */
 
@@ -12,7 +12,7 @@ import { newPin } from "./profiles-pin";
  * one running behind must not write a change that loses to the value it
  * replaced. Clamped below the largest time a peer keeps, as `setWatched` is.
  */
-const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
+export const LAST_STAMP = Number.MAX_SAFE_INTEGER - 1;
 
 /** A fresh salt and hash for `pin`; `proven` unless it is a first PIN, set where there was none. */
 export function writePin(db: Database, id: string, pin: string, proven: boolean): void {
@@ -33,4 +33,11 @@ export function writeDailyLimit(db: Database, id: string, minutes: number | null
   db.query(`UPDATE profiles SET daily_limit = ?2,
               daily_limit_updated_at = MAX(?3, MIN(daily_limit_updated_at, ?4) + 1) WHERE id = ?1`)
     .run(id, minutes, Date.now(), LAST_STAMP);
+}
+
+/** The whole list, already sorted and each key once; dated like a limit, so it wins over an older list elsewhere. */
+export function writeHiddenSections(db: Database, id: string, sections: string[]): void {
+  db.query(`UPDATE profiles SET hidden_sections = ?2,
+              hidden_sections_updated_at = MAX(?3, MIN(hidden_sections_updated_at, ?4) + 1) WHERE id = ?1`)
+    .run(id, JSON.stringify(sections), Date.now(), LAST_STAMP);
 }

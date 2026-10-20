@@ -43,6 +43,8 @@ import { reconcileWatched } from "./watched-reconcile";
 import { keep, type Held } from "./tie-break";
 import { mergeStats } from "./stats-merge";
 import { kidsMarkRank, mergeRoles } from "./roles-merge";
+import { mergeHouseholds } from "./households-merge";
+import { resolveRenames } from "./renames";
 import type { MergedProfile, MergedState } from "./merged";
 
 /**
@@ -51,8 +53,12 @@ import type { MergedProfile, MergedState } from "./merged";
  * Order-independent by construction: merging A then B gives what merging B
  * then A gives, which matters because devices see each other's documents in
  * whatever order Telegram hands them over.
+ *
+ * Renames are resolved first (`renames.ts`): everything below runs on records
+ * in which each person has one name, so it never needs to know about them.
  */
-export function mergeStates(records: SyncRecord[]): MergedState {
+export function mergeStates(given: SyncRecord[]): MergedState {
+  const { records, people } = resolveRenames(given);
   /** Per viewer, the best row seen so far for each title. */
   const byViewer = new Map<
     string,
@@ -156,11 +162,14 @@ export function mergeStates(records: SyncRecord[]): MergedState {
       preferences: [...held.preferences.values()].map((one) => one.row),
       ...stats.get(name),
       ...roles.get(name),
+      ...people.get(name),
     });
   }
+  const households = mergeHouseholds(records);
   return {
     profiles,
     kids: [...kids.values()].map((one) => one.row),
     editorsChoice: [...editorsChoice.values()].map((one) => one.row),
+    ...(households.length > 0 ? { households } : {}),
   };
 }

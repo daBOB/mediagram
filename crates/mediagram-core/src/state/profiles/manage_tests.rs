@@ -1050,3 +1050,68 @@ mod a_proven_pin {
         assert_eq!(phone.run(unlock(&there, "1111")), Done);
     }
 }
+
+/// The sections a profile does not see: the `set-access` rule, the order
+/// refusals come in, and a whole list stamped like a limit.
+mod hidden_sections {
+    use super::*;
+
+    fn set(home: &Home, actor: &str, pin: &'static str, id: &str, keys: &[&str]) -> ProfileOutcome {
+        let (actor, id) = (actor.to_string(), id.to_string());
+        let keys: Vec<String> = keys.iter().map(|key| key.to_string()).collect();
+        home.run(Box::new(move |h| h.set_hidden_sections(&actor, pin, &id, keys)))
+    }
+
+    /// A kid's by its own grown-up, a grown-up's by the admin, the admin's
+    /// by nobody; a kid sets nothing.
+    #[test]
+    fn are_set_by_whoever_the_rule_names() {
+        let Household {
+            home,
+            andre,
+            maja,
+            mia,
+            leo,
+        } = household();
+        assert_eq!(set(&home, &maja, "2222", &mia, &["anime"]), Done);
+        assert_eq!(set(&home, &andre, "1111", &leo, &["anime"]), Done);
+        assert_eq!(set(&home, &andre, "1111", &maja, &["anime"]), Done);
+        assert_eq!(set(&home, &andre, "1111", &mia, &["anime"]), NotAllowed);
+        assert_eq!(set(&home, &maja, "2222", &maja, &["anime"]), NotAllowed);
+        assert_eq!(set(&home, &andre, "1111", &andre, &["anime"]), NotAllowed);
+        assert_eq!(set(&home, &maja, "2222", &andre, &["anime"]), NotAllowed);
+        assert_eq!(set(&home, &mia, "", &mia, &[]), NotAllowed);
+        assert_eq!(set(&home, &maja, "0000", &mia, &[]), WrongPin);
+        assert_eq!(set(&home, &maja, "2222", "nobody", &[]), NotFound);
+    }
+
+    /// Input that cannot be used is refused before anybody is looked up.
+    #[test]
+    fn take_up_to_sixteen_keys_of_one_to_twenty_four_lowercase_letters() {
+        let Household { home, maja, mia, .. } = household();
+        let (long, longest) = ("a".repeat(25), "a".repeat(24));
+        for bad in [&["Anime"][..], &[""], &["docu-series"], &[long.as_str()], &["anime"; 17]] {
+            assert_eq!(set(&home, &maja, "0000", &mia, bad), Invalid, "{bad:?}");
+        }
+        assert_eq!(set(&home, &maja, "2222", &mia, &["anime"; 16]), Done);
+        assert_eq!(set(&home, &maja, "2222", &mia, &["zzz", longest.as_str()]), Done);
+    }
+
+    /// Sorted and each key once; every write stamped past the last, an
+    /// empty list and an unchanged one included.
+    #[test]
+    fn are_stored_sorted_once_each_and_stamped_on_every_write() {
+        let Household { home, maja, mia, .. } = household();
+        assert_eq!(home.named("Mia").hidden_sections, Vec::<String>::new());
+        assert_eq!(home.column::<i64>("hidden_sections_updated_at", &mia), 0);
+        assert_eq!(set(&home, &maja, "2222", &mia, &["series", "anime", "series"]), Done);
+        assert_eq!(home.named("Mia").hidden_sections, ["anime", "series"]);
+        assert_eq!(home.column::<String>("hidden_sections", &mia), r#"["anime","series"]"#);
+        assert_eq!(home.column::<i64>("hidden_sections_updated_at", &mia), T);
+        assert_eq!(set(&home, &maja, "2222", &mia, &[]), Done);
+        assert_eq!(home.named("Mia").hidden_sections, Vec::<String>::new());
+        assert_eq!(home.column::<i64>("hidden_sections_updated_at", &mia), T + 1);
+        assert_eq!(set(&home, &maja, "2222", &mia, &[]), Done);
+        assert_eq!(home.column::<i64>("hidden_sections_updated_at", &mia), T + 2);
+    }
+}

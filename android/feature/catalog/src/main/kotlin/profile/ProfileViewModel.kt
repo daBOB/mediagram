@@ -60,15 +60,9 @@ class ProfileViewModel
         val state: StateFlow<ProfileUiState> =
             combine(mode, repository.profiles, repository.chosenProfileId, repository.syncedOnce) { current, profiles, chosenId, synced ->
                 when (current) {
-                    Mode.Loading -> {
-                        ProfileUiState.Loading
-                    }
-
+                    Mode.Loading -> ProfileUiState.Loading
                     // Someone to stay as: a profile removed in Manage takes the offer with it.
-                    is Mode.Picking -> {
-                        ProfileUiState.Picking(profiles, current.canStay && chosenId != null, current.error, current.notice, synced)
-                    }
-
+                    is Mode.Picking -> ProfileUiState.Picking(profiles, current.canStay && chosenId != null, current.error, current.notice, synced)
                     is Mode.Chosen -> {
                         profiles
                             .find { it.id == current.profileId }
@@ -84,6 +78,11 @@ class ProfileViewModel
                     SharingStarted.WhileSubscribed(stopTimeoutMillis = 0, replayExpirationMillis = 0),
                     ProfileUiState.Loading,
                 )
+
+        init {
+            // Nobody chosen any more — a switch left the profile behind — is the picker, not a wait until the app is left.
+            viewModelScope.launch { repository.chosenProfileId.collect { if (it == null && mode.value is Mode.Chosen) mode.value = Mode.Picking(canStay = false) } }
+        }
 
         /** Re-derives what to show from scratch: this device's own choice first, a sync round only when it has none. */
         private suspend fun settle() {

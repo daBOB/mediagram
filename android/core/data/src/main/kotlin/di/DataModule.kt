@@ -18,8 +18,10 @@ import data.DefaultPlayerPreferences
 import data.DefaultTogetherLive
 import data.DefaultWatchStateRepository
 import data.DeviceBackdropWidth
+import data.DefaultHouseholdsRepository
 import data.DefaultWatchSync
 import data.FileCoreStorage
+import data.HouseholdsRepository
 import data.LibraryEvents
 import data.PlayerPreferences
 import data.ReportChannel
@@ -148,6 +150,14 @@ object DataModule {
         coreProvider: CoreProvider,
         dispatcher: CoroutineDispatcher,
     ): WatchStateRepository = DefaultWatchStateRepository(coreProvider, dispatcher)
+
+    @Provides
+    @Singleton
+    fun provideHouseholdsRepository(
+        coreProvider: CoreProvider,
+        watchState: WatchStateRepository,
+        @AppScope scope: CoroutineScope,
+    ): HouseholdsRepository = DefaultHouseholdsRepository(coreProvider, watchState, scope)
 
     @Provides
     @Singleton

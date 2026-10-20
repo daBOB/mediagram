@@ -14,6 +14,7 @@
  */
 
 import { el } from "./dom.js";
+import { HOUSEHOLD_WORDS } from "./household-words.js";
 
 const FOUR_DIGITS = /^[0-9]{4}$/;
 
@@ -26,7 +27,8 @@ export function pinProblem(pin, again, confirm = false) {
 
 const REFUSALS = {
   invalid: "That was not accepted. Check the name and the PIN.",
-  "name-taken": "A profile with that name already exists.",
+  // Names are unique across the install, not per household: one in another household takes it too.
+  "name-taken": HOUSEHOLD_WORDS.profileNameTaken,
   "not-found": "That profile is not here any more.",
   "no-pin": "This profile has no PIN yet. Choose it again to set one.",
   "wrong-pin": "Wrong PIN.",
@@ -124,6 +126,26 @@ export function askPin(parent, { title, confirm = false, send, refused = () => {
     dialog.showModal();
     pin.focus();
   });
+}
+
+/** What a new PIN for `name` is asked as: a grown-up being added, or made an admin with none yet. */
+export const newPinTitle = (name) => `A PIN for ${name}`;
+
+/**
+ * Prompts opened over `host` through `ask`, all closed again by `close`: for
+ * a body that may be torn down while one is up, dropping the PIN it holds.
+ */
+export function promptsOver(host) {
+  const opened = [];
+  return {
+    ask(open) {
+      const before = new Set(host.children);
+      const answer = open();
+      opened.push(...Array.from(host.children).filter((child) => !before.has(child)));
+      return answer;
+    },
+    close: () => { for (const prompt of opened) prompt.close(); },
+  };
 }
 
 /**

@@ -46,15 +46,17 @@ internal fun PreloadPill(
     modifier: Modifier = Modifier,
     queuedAheadLabel: String? = null,
     needsSpaceBudgetBytes: Long? = null,
+    small: Boolean = false,
+    noun: String = "film",
 ) {
     val label = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes)
-    val hint = preloadAccessibilityHint(state)
+    val hint = preloadAccessibilityHint(state, noun)
     val enabled = preloadIsEnabled(state)
     val description = if (hint != null) "$label. $hint" else null
     if (preloadIsAffirmative(state)) {
-        LinePill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier)
+        LinePill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier, small = small)
     } else {
-        QuietPill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier)
+        QuietPill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier, small = small)
     }
 }
 

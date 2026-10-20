@@ -110,6 +110,23 @@ class PreloadsScreenTest {
         assertEquals("held-1", removed)
     }
 
+    private fun heldEpisode() = held("ep-1", "Pilot").copy(kind = Kind.EPISODE, show = "30 Rock", season = 1, episodeFirst = 4, episodeLast = 4)
+
+    @Test
+    fun aFinishedEpisodeIsListedOnThisDevice() {
+        show { PreloadsScreen(rows = emptyList(), heldFilms = listOf(heldEpisode()), onOpenTitle = {}, onCancel = {}, onRemove = {}, onResume = {}) }
+        compose.onNodeWithText("On this device").assertIsDisplayed()
+        compose.onNodeWithText("30 Rock · S1E4").assertIsDisplayed()
+    }
+
+    @Test
+    fun removingAFinishedEpisodeFromThisDeviceRemovesItsPreload() {
+        var removed: String? = null
+        show { PreloadsScreen(rows = emptyList(), heldFilms = listOf(heldEpisode()), onOpenTitle = {}, onCancel = {}, onRemove = { removed = it }, onResume = {}) }
+        compose.onNodeWithText("Remove").performClick()
+        assertEquals("ep-1", removed)
+    }
+
     @Test
     fun onlyNonEmptySectionsAreOffered() {
         val rows = listOf(FilmPreloadRow.Waiting("f2", "The Green Mile", TOTAL))

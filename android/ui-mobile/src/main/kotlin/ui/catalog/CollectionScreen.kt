@@ -8,8 +8,10 @@ import catalog.CollectionKind
 import catalog.Entry
 import catalog.Shelf
 import data.PortraitRequestLog
+import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.TitlePreloadUi
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -22,6 +24,8 @@ import uniffi.mediagram_core.TitleInfo
  * the page with only what it checks; `LibraryTitleBranches` wires every
  * one — the same rule as [TitleDetailScreen]'s on the film side.
  * [state] is the page's list, hoisted as a department page's is.
+ * [episodePreload] gives a show's episode rows their Preload control; a
+ * course's lessons have none.
  */
 @Composable
 fun CollectionScreen(
@@ -44,13 +48,14 @@ fun CollectionScreen(
     season: String? = null,
     onSelectSeason: (String) -> Unit = {},
     state: LazyListState = rememberLazyListState(),
+    episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
     playOnTv: PlayOnTv? = null,
 ) {
     if (collection.kind == CollectionKind.SHOW) {
         SeriesPage(
             collection, info, watch, heldIds, onOpenTitle, onOpenGenre, shelves, onOpenCollection,
             onOpenPerson, onPlay, editorsChoice, onToggleEditorsChoice, onToggleWatchlist,
-            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state, playOnTv,
+            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state, episodePreload, playOnTv,
         )
         return
     }

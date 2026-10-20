@@ -154,7 +154,7 @@ class FakeCore(
      * the real core's order for a tie is unspecified.
      */
     var clock: () -> Long = monotonicClock(),
-) : FakeCoreHandle {
+) : FakeHouseholdCalls() {
     // Wrapped rather than passed straight through: `clock` is a `var`, and a
     // lambda over it keeps reading whatever it holds now, including after a
     // test reassigns it mid-run. `exists` reads `profiles` below the same
@@ -168,7 +168,7 @@ class FakeCore(
      * seed a test, or grown through [createFirstAdmin] and the other calls
      * [roles] answers; [profiles] reads them as the real core does.
      */
-    var profiles: List<Profile> = emptyList()
+    override var profiles: List<Profile> = emptyList()
 
     /** Who this fake reports as chosen, read back by [chosenProfile]. */
     var chosen: String? = null
@@ -182,7 +182,7 @@ class FakeCore(
     var syncedOnce: Boolean = true
 
     /** The household's PINs and wrong-PIN wait, and the rules every profile change is checked against. */
-    val roles =
+    override val roles =
         FakeProfiles(read = { profiles }, write = { profiles = it }, synced = { syncedOnce }) { id ->
             if (chosen == id) chosen = null
             watchState.forget(id)
@@ -567,7 +567,7 @@ class FakeCore(
     override suspend fun profiles(): List<Profile> {
         profilesCalls++
         profilesFailure?.let { throw it }
-        return profiles.map(roles::shown)
+        return profiles.filter { it.household == homes.here }.map(roles::shown)
     }
 
     override suspend fun createFirstAdmin(name: String, newPin: String): ProfileOutcome = roles.createFirst(name, newPin)
@@ -593,6 +593,9 @@ class FakeCore(
     override suspend fun setDailyLimit(actorId: String, pin: String, id: String, minutes: UShort?): ProfileOutcome =
         roles.setDailyLimit(actorId, pin, id, minutes)
 
+    override suspend fun setHiddenSections(actorId: String, pin: String, id: String, sections: List<String>): ProfileOutcome =
+        roles.setHiddenSections(actorId, pin, id, sections)
+
     /** Seconds watched today, per profile id; a test sets it, as the fake records no watch time itself. */
     val watchedTodayByProfile: MutableMap<String, Double> = mutableMapOf()
 
@@ -607,7 +610,7 @@ class FakeCore(
     // Checked against `profiles` on every read, not trusted from whatever
     // was last written — the same reason `profiles::chosen` re-checks on
     // the real core: a profile named here can have been deleted since.
-    override suspend fun chosenProfile(): String? = chosen?.takeIf { id -> profiles.any { it.id == id } }
+    override suspend fun chosenProfile(): String? = chosen?.takeIf { id -> profiles.any { it.id == id && it.household == homes.here } }
 
     override suspend fun chooseProfile(id: String): Boolean {
         if (profiles.none { it.id == id }) return false

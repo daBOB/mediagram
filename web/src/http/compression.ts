@@ -11,12 +11,12 @@
  * than by where it came from: a static file reread from disk, or a catalog
  * JSON body rebuilt after a swap, gets the same cached compression the
  * moment its bytes are unchanged, and a change is simply a different key
- * rather than something to invalidate. Bounded so a long-running process
- * serving many catalog swaps does not grow this forever.
+ * rather than something to invalidate. Bounded by bytes so a long-running
+ * process serving many catalog swaps does not grow this forever.
  */
 
 import { createHash } from "node:crypto";
-import { brotliCompressSync, gzipSync } from "node:zlib";
+import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import type { PlayerRequest, PlayerResponse } from "./contracts";
 import { withBody } from "../response";
 
@@ -26,8 +26,23 @@ const MIN_COMPRESSIBLE_BYTES = 1024;
 /** Text types worth spending CPU compressing. Fonts, images and media are already compressed formats. */
 const COMPRESSIBLE_PREFIXES = ["text/html", "text/javascript", "text/css", "application/json", "image/svg+xml"];
 
-/** Distinct bodies kept compressed at once: every static file plus a handful of catalog generations. */
-const MAX_CACHED = 64;
+/**
+ * Bytes kept compressed at once: every static file (well under a megabyte
+ * together) plus a handful of catalog generations (about 2 MB each). Bytes,
+ * not entries: a page load asks for well over a hundred static files, and an
+ * entry cap that falls below that evicts the catalog on every load.
+ */
+const MAX_CACHED_BYTES = 32 * 1024 * 1024;
+
+/** What an entry costs beyond its compressed bodies, so etag-only entries stay bounded too. */
+const ENTRY_OVERHEAD = 256;
+
+/**
+ * Brotli's default quality, 11, took 9.4 s on the 16 MB catalog, all of it
+ * synchronous, so no request or stream was answered meanwhile. Quality 5 took
+ * 85 ms for a body 14% larger.
+ */
+const BROTLI_QUALITY = 5;
 
 interface Encoded {
   etag: string;
@@ -36,6 +51,9 @@ interface Encoded {
 }
 
 const cache = new Map<string, Encoded>();
+let cachedBytes = 0;
+
+const costOf = (encoded: Encoded) => ENTRY_OVERHEAD + (encoded.br?.byteLength ?? 0) + (encoded.gzip?.byteLength ?? 0);
 
 function isCompressibleType(contentType: string): boolean {
   return COMPRESSIBLE_PREFIXES.some((prefix) => contentType.startsWith(prefix));
@@ -44,21 +62,26 @@ function isCompressibleType(contentType: string): boolean {
 function encodedFor(body: Uint8Array, contentType: string): Encoded {
   const digest = createHash("sha1").update(body).digest("hex");
   const found = cache.get(digest);
-  if (found) return found;
+  if (found) {
+    // Moved to the back, so the Map's order is recency: a static file asked
+    // on every page load outlives a catalog generation nobody asks for again.
+    cache.delete(digest);
+    cache.set(digest, found);
+    return found;
+  }
 
   const etag = `"${digest}"`;
   const encoded: Encoded = !isCompressibleType(contentType) || body.byteLength < MIN_COMPRESSIBLE_BYTES
     ? { etag }
-    : { etag, br: brotliCompressSync(body), gzip: gzipSync(body) };
+    : { etag, br: brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY } }), gzip: gzipSync(body) };
 
-  // Insertion order stands in for recency, as it does for the other bounded
-  // caches in this project: cheap, and more than enough for a set of static
-  // files that does not change size at runtime.
-  if (!cache.has(digest) && cache.size >= MAX_CACHED) {
-    const oldest = cache.keys().next().value;
-    if (oldest !== undefined) cache.delete(oldest);
-  }
   cache.set(digest, encoded);
+  cachedBytes += costOf(encoded);
+  for (const [key, oldest] of cache) {
+    if (cachedBytes <= MAX_CACHED_BYTES) break;
+    cache.delete(key);
+    cachedBytes -= costOf(oldest);
+  }
   return encoded;
 }
 

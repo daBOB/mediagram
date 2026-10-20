@@ -16,10 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import designsystem.Spacing
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
-import setup.profileStatus
 import setup.SettingsViewModel
 import setup.telegramStatus
 import system.CacheBudgetViewModel
@@ -28,7 +26,9 @@ import system.SystemViewModel
 import system.storageStatus
 import system.systemStatus
 import ui.common.settings.IndexStatus
+import ui.common.settings.ProfilesVisit
 import ui.common.settings.SettingsSection
+import ui.common.settings.profilesStatus
 import ui.setup.LibraryScreen
 import ui.setup.TelegramApplicationScreen
 
@@ -36,9 +36,8 @@ import ui.setup.TelegramApplicationScreen
 private enum class SettingsPanel { Library, Application }
 
 /**
- * Settings + System, one frame: an index (Telegram · Storage · Appearance ·
- * System, each with its own one-line status) and a page — two panes on
- * EXPANDED width, one pane below it.
+ * Settings + System, one frame: an index (each section with its own one-line
+ * status) and a page — two panes on EXPANDED width, one pane below it.
  *
  * @param initial The section the page opens on — `null` shows the compact
  * index first (the Settings menu item); a section opens straight to it (the
@@ -63,7 +62,6 @@ internal fun SettingsScreen(
     val cacheState by cacheViewModel.state.collectAsStateWithLifecycle()
     val profileViewModel: ProfileSettingsViewModel = hiltViewModel()
     val profile by profileViewModel.profile.collectAsStateWithLifecycle()
-    val profileSubtitle by profileViewModel.subtitle.collectAsStateWithLifecycle()
     val lanViewModel: LanCacheViewModel = hiltViewModel()
     val lanState by lanViewModel.state.collectAsStateWithLifecycle()
     val systemViewModel: SystemViewModel = hiltViewModel()
@@ -89,6 +87,8 @@ internal fun SettingsScreen(
     LaunchedEffect(settingsState.completedActionId) {
         if (settingsState.completedActionId > openedBeforeAction) panel = null
     }
+    // A kid's page has no Manage, so a kid's visit asks nobody who they are.
+    ProfilesVisit(open = section == SettingsSection.PROFILES && profile?.kids != true)
 
     when (panel) {
         SettingsPanel.Library -> {
@@ -125,7 +125,7 @@ internal fun SettingsScreen(
                     SettingsSection.TELEGRAM to IndexStatus(telegramStatus(settingsState)),
                     SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                     SettingsSection.APPEARANCE to IndexStatus("${appearance.theme.label} · ${appearance.accent.label}"),
-                    SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
+                    SettingsSection.PROFILES to profilesStatus(profile),
                     SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
                 )
             SettingsPanes(
@@ -158,8 +158,6 @@ internal fun SettingsScreen(
                     onChooseAccent = appearanceViewModel::chooseAccent,
                     onChooseBackdrop = appearanceViewModel::chooseBackdrop,
                     profile = profile,
-                    profileSubtitle = profileSubtitle,
-                    onChooseProfileSubtitle = profileViewModel::chooseSubtitle,
                 )
             }
         }

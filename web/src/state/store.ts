@@ -23,9 +23,13 @@ import { GROUPS } from "./schema";
 import { Settings } from "./settings";
 import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merged";
-import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
+import { cleanName, deleteProfileById, listProfiles, profileExists, type Profile } from "./profiles";
+import { insertProfile } from "./profiles-insert";
+import { exportNames, takeIn } from "./names-exchange";
+import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
-import { ProfileManager } from "./profiles-manage";
+import { exportHouseholds, importHouseholds } from "./households-exchange";
+import { HouseholdManager } from "./households-manage";
 import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
 import { readMeta, writeMeta } from "./state-meta";
@@ -120,6 +124,11 @@ export class WatchState {
   /** Who watches this library. Empty until someone says. */
   profiles(): Profile[] {
     return listProfiles(this.db);
+  }
+
+  /** The households sharing this library, by name, each with who runs it. */
+  households(): LiveHousehold[] {
+    return listHouseholds(this.db, this.profiles());
   }
 
   /** A test seam, as `deleteProfile` is: the player adds profiles through
@@ -354,12 +363,15 @@ export class WatchState {
    */
   exportRecord(device: string): SyncRecord {
     const roles = exportRoles(this.db);
+    const names = exportNames(this.db);
+    const households = exportHouseholds(this.db);
     const profiles = this.profiles().map((profile) => {
       const { watched, unwatched } = exportWatched(this.db, profile.id);
       return {
         name: profile.name,
         localId: profile.id,
         ...roles.get(profile.id),
+        ...names.get(profile.id),
         progress: exportProgress(this.db, profile.id),
         watched,
         unwatched,
@@ -372,6 +384,7 @@ export class WatchState {
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
       kids: exportTitleMarks(this.db, "kids"),
       editorsChoice: exportTitleMarks(this.db, "editors_choice"),
+      ...(households.length > 0 ? { households } : {}),
     };
   }
 
@@ -400,11 +413,11 @@ export class WatchState {
       changed += importTitleMarks(db, "editors_choice", merged.editorsChoice ?? []);
 
       for (const profile of merged.profiles) {
-        // The identity to match on, and the spelling to create with.
-        const matched = findOrCreateProfile(db, profile.name, profile.displayName, profile.kids === true);
+        // By its name and every name it had: renamed in place, two rows folded, or made.
+        const matched = takeIn(db, profile);
         if (matched === null) continue;
         const profileId = matched.id;
-        if (matched.created) changed += 1;
+        changed += matched.changed;
         // Another device made this viewer a kids profile. Only ever upgraded:
         // a merge without the flag says nothing, it does not say "not kids".
         // FSK 12 until `importRoles` brings the merged limit, so a kid never
@@ -425,6 +438,7 @@ export class WatchState {
       // After the loop, not in it: a kid's parent may be a viewer this same
       // import has only just made.
       changed += importRoles(db, merged.profiles);
+      changed += importHouseholds(db, merged.households ?? []);
       return changed;
     })();
   }
@@ -621,8 +635,8 @@ export class WatchState {
   }
 
   /** Adding, removing and entering profiles, PIN and rule checked. */
-  manage(): ProfileManager {
-    return new ProfileManager(this.db, this.pins, this.household);
+  manage(): HouseholdManager {
+    return new HouseholdManager(this.db, this.pins, this.household);
   }
 }
 

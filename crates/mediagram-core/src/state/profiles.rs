@@ -2,85 +2,39 @@
 //! `web/src/state/profiles.ts`. Adding to and removing from a household,
 //! behind a grown-up's PIN, is `manage`.
 //!
-//! Rename stays deferred: a sync can only ever add a profile from another
-//! device's document, never carry a rename, and offering one here would let
-//! this device drift from what the others still believe. Delete is safe in
-//! a way rename is not — a profile removed here simply returns the moment
-//! another device that still holds it syncs, the same as the web's own
-//! `DELETE FROM profiles`, so nothing here can make two devices disagree for
-//! longer than one round.
+//! Sync carries a rename made elsewhere, and this device takes it in by
+//! renaming its own row (`exchange/names.rs`); this module still offers no
+//! rename of its own. Delete is safe without one — a profile removed here
+//! simply returns the moment another device that still holds it syncs, the
+//! same as the web's own `DELETE FROM profiles`, so nothing here can make
+//! two devices disagree for longer than one round.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use super::record::normal_name;
+use super::record::{js_collapse, normal_name};
 
 pub mod manage;
 mod outcome;
 pub mod pin;
 pub mod pin_wait;
+mod profile;
 pub(crate) mod role_rows;
+pub(crate) mod role_writes;
 pub mod rules;
 
 pub use manage::ProfileManager;
 pub use outcome::{Answer, ProfileOutcome};
+pub use profile::Profile;
 
 const CHOSEN_KEY: &str = "chosen_profile";
 /// How long a name may be. Long enough for a sentence, short enough to show
 /// — the same cap `store.ts`'s `MAX_NAME` uses.
 const MAX_NAME: usize = 120;
 
-/// A profile as the app sees it. Says whether there is a PIN, never what.
-/// Every field after `name` is defaulted in the generated Kotlin (uniffi
-/// 0.32 supports field defaults), so `Profile(id, name)` call sites keep
-/// compiling.
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
-pub struct Profile {
-    pub id: String,
-    pub name: String,
-    /// Sees only what its own limit allows, and manages nothing.
-    #[uniffi(default = false)]
-    pub kids: bool,
-    /// FSK 6 or 12 on a kid; `None` on a grown-up.
-    #[uniffi(default = None)]
-    pub kids_age: Option<u8>,
-    /// Minutes a kid may watch a day, the same every day; `None` is no limit,
-    /// and always on a grown-up.
-    #[uniffi(default = None)]
-    pub daily_limit: Option<u32>,
-    /// The grown-up who made this kid. `None`, or one not here, is the admin's.
-    #[uniffi(default = None)]
-    pub parent_id: Option<String>,
-    /// The household's admin: a grown-up, and at most one.
-    #[uniffi(default = false)]
-    pub admin: bool,
-    /// Whether a PIN is set — never the PIN, its hash or its salt.
-    #[uniffi(default = false)]
-    pub has_pin: bool,
-}
-
-/// The profile the app sees. A kid always has a limit, whatever the column
-/// holds — 12 is what every kid saw before there was a choice — and is never
-/// the admin and never has a PIN: it manages nothing and opens freely. A
-/// grown-up another device later calls a kid keeps its old claim and PIN in
-/// their columns; they must not make it an admin, or a profile with a PIN.
-impl From<role_rows::Stored> for Profile {
-    fn from(row: role_rows::Stored) -> Self {
-        Profile {
-            kids_age: row.kids.then_some(if row.kids_age == Some(6) { 6 } else { 12 }),
-            daily_limit: row.daily_limit.filter(|_| row.kids).and_then(|m| u32::try_from(m).ok()),
-            admin: row.is_admin(),
-            has_pin: !row.kids && row.pin_hash.is_some(),
-            id: row.id,
-            name: row.name,
-            kids: row.kids,
-            parent_id: row.parent_id,
-        }
-    }
-}
-
-/// Who watches this library, oldest first. Empty until someone says.
+/// Who watches this library, oldest first, each in its household. Empty until
+/// someone says.
 pub fn list(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
-    Ok(role_rows::load(conn)?.into_iter().map(Profile::from).collect())
+    Ok(super::households::resolve(role_rows::load(conn)?, &super::households::load_rows(conn)?))
 }
 
 /// A profile with no role beside `kids` — the way sync makes a viewer it has
@@ -176,11 +130,10 @@ pub(super) fn profile_named_with_creation(
     Ok(create(conn, display_name.unwrap_or(name), kids)?.map(|p| (p.id, true, kids)))
 }
 
-/// A name with its edges trimmed and internal whitespace collapsed, or
-/// `None` when there is nothing left.
-pub(super) fn clean_name(name: &str) -> Option<String> {
-    let collapsed = name.split_whitespace().collect::<Vec<_>>().join(" ");
-    let clean: String = collapsed.chars().take(MAX_NAME).collect();
+/// A name with its edges trimmed and internal whitespace collapsed, as the
+/// web's `cleanName`, or `None` when there is nothing left.
+pub(crate) fn clean_name(name: &str) -> Option<String> {
+    let clean: String = js_collapse(name).chars().take(MAX_NAME).collect();
     (!clean.is_empty()).then_some(clean)
 }
 

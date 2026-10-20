@@ -1,7 +1,7 @@
-/** The Stats page's words: durations, times, names and history lines. */
+/** The Stats page's words: durations, times and dates. */
 
 import { describe, expect, test } from "bun:test";
-import { countingSince, historyLine, historyTitle, shortDate, watchTime, weekdayInitial, whenLabel } from "../public/lib/catalog/stats-format.js";
+import { countingSince, shortDate, watchTime, weekdayInitial, whenLabel } from "../public/lib/catalog/stats-format.js";
 
 describe("watchTime", () => {
   test.each([
@@ -47,38 +47,6 @@ test("a day's date and weekday initial", () => {
   expect(shortDate("2026-10-03")).toBe("3 Oct");
   expect(weekdayInitial("2026-10-03")).toBe("S");
   expect(weekdayInitial("2026-09-28")).toBe("M");
-});
-
-describe("historyTitle names a set the way Continue watching does", () => {
-  test("a film by its title", () => {
-    expect(historyTitle({ kind: "movie", title: "Der Pate", show: null, setId: "01A" })).toBe("Der Pate");
-  });
-  test("an episode by its show and number", () => {
-    expect(historyTitle({ kind: "ep", title: "Pilot", show: "Crime 101", season: 1, episode: "4", setId: "01B" })).toBe("Crime 101 S1E4");
-  });
-  test("a lesson by its course and number", () => {
-    expect(historyTitle({ kind: "tut", title: "Zinsen", show: "Geldhochschule", episode: "3", setId: "01C" })).toBe("Geldhochschule 3");
-  });
-  test("a set the library no longer holds", () => {
-    expect(historyTitle(null)).toBe("No longer in the library");
-  });
-});
-
-describe("historyLine", () => {
-  const now = new Date(2026, 9, 3, 21, 30).getTime();
-  const film = { kind: "movie", title: "Der Pate", show: null, setId: "01A" };
-  const saturday = new Date(2026, 9, 3, 21, 14).getTime();
-  const friday = new Date(2026, 9, 2, 20, 0).getTime();
-
-  test.each([
-    [{ kind: "started", at: friday, seconds: 42 * 60 }, "Started · Der Pate · Fri 20:00 · 42 min"],
-    [{ kind: "again", at: saturday, seconds: 3 * 3600 }, "Watched again · Der Pate · today 21:14 · 3 h"],
-    [{ kind: "finished", at: saturday, seconds: 30 }, "Finished · Der Pate · today 21:14 · 0 min"],
-    // Finished before stats existed: nothing was counted, so no duration is claimed.
-    [{ kind: "finished", at: friday, seconds: 0 }, "Finished · Der Pate · Fri 20:00"],
-  ] as const)("%j", (entry, line) => {
-    expect(historyLine(entry, film, now)).toBe(line);
-  });
 });
 
 describe("countingSince", () => {

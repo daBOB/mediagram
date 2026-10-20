@@ -98,7 +98,7 @@ internal fun TvMenuPage(
         }
         TvTextRow(text = "TMDB key…", onClick = menu.onTmdbKey, focusRequester = rows.getValue(MenuRow.TmdbKey))
         TvTextRow(text = "Start over", onClick = { askingStartOver = true }, focusRequester = rows.getValue(MenuRow.StartOver))
-        menu.onPreloads?.let { onPreloads -> TvTextRow(text = "Preloads · ${menu.preloadCount}", onClick = onPreloads) }
+        menu.onPreloads?.let { onPreloads -> TvTextRow(text = menu.preloadsLabel, onClick = onPreloads) }
     }
 
     if (askingStartOver) {

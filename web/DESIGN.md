@@ -216,7 +216,7 @@ Results grouped by type (Movies, Series, Episodes, Lessons, People, Collections)
 
 ### Settings page (admin-gated)
 
-Three tabs: **Appearance** (theme Dark/Light/Auto + 7-swatch accent picker), **Profile** (who is watching, Switch profile), **Library & Telegram** (admin-only: Telegram account and sign-in, library, cache budget, sessions — shown only when `/api/settings` answers).
+Three tabs: **Appearance** (theme Dark/Light/Auto + 7-swatch accent picker), **Profiles** (who is watching, Switch profile and subtitles; then everyone here and Manage profiles — a kid sees only the first part, and the picker's Manage profiles opens this page with nobody chosen), **Library & Telegram** (admin-only: Telegram account and sign-in, library, cache budget, sessions — shown only when `/api/settings` answers).
 
 ### Rail (sidebar)
 

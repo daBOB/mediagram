@@ -88,20 +88,42 @@ const ROOT = join(import.meta.dir, "..");
  * and closes with, the errors it attaches, and why a refused Play keeps a media error over its own),
  * and for `playback.css`, by 12, for the sheet's card.
  * Raised 2026-10-18 for `app.js`, by 2, to mount the Playing on TV bar.
+ * Raised 2026-10-20 for `src/state/store.ts`, by 7, to list the households and to import
+ * making a profile from `profiles-insert.ts`, which it left `profiles.ts` for; and
+ * `src/state/profiles-manage.ts`, by 1, for that same import.
+ * Raised the same day for `src/state/store.ts`, by 4, to write and take in the
+ * households on the sync record, and `src/state/sync-record.ts`, by 4, to read
+ * them — each the import, the key and the line that fills it.
+ * Lowered 2026-10-20 for `src/state/profiles-manage.ts`, to 194, once `claimAdmin` moved to
+ * `households-manage.ts`, net of the household a new profile joins.
+ * Raised the same day for `public/lib/watch-state.js`, by 6, to hold everyone and the live
+ * households beside this device's household of them — the import, their types and fields,
+ * the line that works the household out, and the two that hand them on.
+ * Raised the same day for `public/app.js`, by 7, so the sections a profile is not shown leave the
+ * nav and the masthead — the import, the list, the links and why Anime's rule agrees, the masthead's
+ * filter — and a change made in Manage profiles filters the catalogue again at once; and
+ * `public/lib/library-session.js`, to 201, to import the sections filter its `filtered` now calls.
+ * Raised the same day for `public/lib/catalog/shelf-view.js`, by 1, so an empty shelf for a section
+ * the profile is not shown says only that it is empty, with no upload hint and no age limit.
+ * Raised 2026-10-20 for `src/state/sync-record.ts`, by 2, to read a profile's renames — the import
+ * and the line that fills them.
+ * Raised the same day for `src/state/store.ts`, by 3, to write a profile's renames and take one in
+ * by renaming the row — the import, the names read once, and the line that spreads them.
  */
 const CEILINGS: Record<string, number> = {
-  "public/app.js": 707,
+  "public/app.js": 714,
   "public/lib/catalog/course-view.js": 237,
   "public/lib/catalog/featured-reel.js": 212,
   "public/lib/catalog/series-summary.js": 201,
-  "public/lib/catalog/shelf-view.js": 285,
+  "public/lib/catalog/shelf-view.js": 286,
+  "public/lib/library-session.js": 201,
   "public/lib/library.js": 288,
   "public/lib/playback/notes/markdown.js": 227,
   "public/lib/playback/player.js": 1018,
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
-  "public/lib/watch-state.js": 485,
+  "public/lib/watch-state.js": 491,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,
@@ -114,10 +136,10 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
-  "src/state/profiles-manage.ts": 212,
+  "src/state/profiles-manage.ts": 194,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 729,
-  "src/state/sync-record.ts": 293,
+  "src/state/store.ts": 743,
+  "src/state/sync-record.ts": 299,
   "src/transcode/registry.ts": 338,
 };
 

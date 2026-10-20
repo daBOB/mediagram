@@ -7,14 +7,9 @@
  * than reading it, so a test can say what "today" is.
  */
 
-import { episodeLabel } from "../format.js";
-
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_MS = 86_400_000;
-
-/** What a history line calls each kind of entry. */
-export const KIND_LABELS = { started: "Started", finished: "Finished", again: "Watched again" };
 
 const two = (n) => String(n).padStart(2, "0");
 const midnight = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -85,27 +80,3 @@ export function weekdayInitial(day) {
   return WEEKDAYS[new Date(`${day}T00:00:00Z`).getUTCDay()].slice(0, 1);
 }
 
-/**
- * The library's own name for a set, the way Continue watching names it: a
- * film by its title, an episode or lesson by its show and number. A set the
- * library no longer holds — or that this profile cannot see — is not named.
- */
-export function historyTitle(set) {
-  if (!set) return "No longer in the library";
-  if (set.kind !== "movie" && set.show) return [set.show, episodeLabel(set)].filter(Boolean).join(" ");
-  return set.title ?? set.setId;
-}
-
-/**
- * One history line: "Started · Der Pate · Sat 21:14 · 42 min". No duration
- * when nothing was counted — a finish from before stats existed was not
- * watched in 0 min.
- * @param {{ kind: "started"|"finished"|"again", at: number, seconds: number }} entry
- * @param {any} set the catalog set, or `null`
- * @param {number} now
- */
-export function historyLine(entry, set, now) {
-  const parts = [KIND_LABELS[entry.kind], historyTitle(set), whenLabel(entry.at, now)];
-  if (entry.seconds > 0) parts.push(watchTime(entry.seconds));
-  return parts.join(" · ");
-}

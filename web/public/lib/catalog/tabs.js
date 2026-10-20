@@ -5,7 +5,8 @@
  *
  * A panel is built when its tab is first chosen, not up front — Similar ranks
  * the whole shelf, and most visits never open it. A tab whose content arrives
- * later (Cast, once its credits load) is added with `root.addTab`.
+ * later (Cast, once its credits load) is added with `root.addTab`. A tab with
+ * a `leave` hook is torn down when another is chosen and built afresh on return.
  */
 
 import { el, focusWhenAttached } from "../dom.js";
@@ -22,7 +23,7 @@ const chosenOn = new Map();
 let focusedOn = null;
 
 /**
- * @param {{ label: string, build: () => Node }[]} tabs in order; the first is selected
+ * @param {{ label: string, build: () => Node, leave?: () => void }[]} tabs in order; the first is selected
  * @param {string} name what the tabs are about, for a screen reader
  * @returns {HTMLElement}
  */
@@ -83,6 +84,11 @@ export function tabbed(tabs, name) {
   }
 
   function select(chosen) {
+    const left = entries[selected];
+    if (chosen !== selected && left?.leave && panels[selected].childElementCount > 0) {
+      left.leave();
+      panels[selected].textContent = "";
+    }
     selected = chosen;
     chosenOn.set(name, entries[chosen].label);
     buttons.forEach((button, at) => {

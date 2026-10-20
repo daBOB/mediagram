@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::state::record::{
-    CollectionRow, DayStatRow, ListRow, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
+    CollectionRow, DayStatRow, HouseholdEntry, ListRow, NameKeys, ProfileRoles, ProgressRow, SyncPreference, TitleStatRow,
     UnwatchedRow, WatchedRow,
 };
 
@@ -43,6 +43,10 @@ pub struct MergedProfile {
     /// `roles::merge` — each only where it applies.
     #[serde(flatten)]
     pub roles: ProfileRoles,
+    /// The newest rename's stamp and every other name the person had, from
+    /// `renames::resolve`; neither written when nobody renamed them.
+    #[serde(flatten)]
+    pub names: NameKeys,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -56,6 +60,10 @@ pub struct MergedState {
     /// `schema.rs`'s v5.
     #[serde(default, rename = "editorsChoice")]
     pub editors_choice: Vec<ListRow>,
+    /// Every household any device names, by id; omitted when empty, like the
+    /// record's own key.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub households: Vec<HouseholdEntry>,
 }
 
 #[cfg(test)]

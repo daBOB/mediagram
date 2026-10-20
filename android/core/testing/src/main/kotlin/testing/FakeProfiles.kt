@@ -1,6 +1,7 @@
 package testing
 
 import data.toModel
+import model.HOME_HOUSEHOLD
 import model.RoleAction
 import model.allowed
 import uniffi.mediagram_core.Profile
@@ -17,25 +18,31 @@ private const val MAX_NAME = 120
 
 private const val PIN_LENGTH = 4
 
+private val SIX: UByte = 6u
+private val TWELVE: UByte = 12u
+
 /** The two limits a kid may have. */
-private val KIDS_AGES = setOf<UByte>(6u, 12u)
+private val KIDS_AGES = setOf(SIX, TWELVE)
 
 /** The minutes a daily limit may be, as `manage/daily_limit.rs` checks them. */
 private val DAILY_MINUTES = 1..1440
 
+/** A hidden section's key and how many a list may hold, as `record/roles_record.rs` checks them. */
+private val SECTION_KEY = Regex("[a-z]{1,24}")
+private const val MAX_SECTIONS = 16
+
 /**
- * [FakeCore]'s household: who may add, remove, enter and re-PIN whom,
+ * [FakeCore]'s profiles: who may add, remove, enter and re-PIN whom,
  * refusing for the reasons and in the order
  * `crates/mediagram-core/src/state/profiles/manage.rs` does — the web's
- * order — so a test meets what the tablet's core answers. Split out of
- * `FakeCore.kt` to keep that class under detekt's `LargeClass` limit.
+ * order — so a test meets what the tablet's core answers.
  *
  * The profiles themselves stay [FakeCore.profiles], seedable as before; a
- * seeded profile's `admin` flag is its claim. This holds what a [Profile]
- * never says: each grown-up's PIN in [pins] — kept as given, not hashed,
- * since this fake keeps nothing a hash would protect — and the wrong-PIN
- * counts per profile, read against [nowMs], which a test moves rather than
- * waiting. [shown] is a profile as `profiles()` answers it.
+ * seeded profile's `admin` flag runs its household. One made here lands in
+ * its maker's household, and the first grown-up is the owner, as in the
+ * core. This holds what a [Profile] never says: each grown-up's PIN in
+ * [pins], kept as given, and the wrong-PIN counts, by profile or household
+ * door ([prove]), read against [nowMs], which a test moves rather than waiting.
  */
 class FakeProfiles(
     private val read: () -> List<Profile>,
@@ -47,6 +54,9 @@ class FakeProfiles(
 ) {
     /** Each grown-up's PIN, by profile id — what [Profile.hasPin] reads. */
     val pins: MutableMap<String, String> = mutableMapOf()
+
+    /** The names each profile had before, by profile id: `taken_names` keeps them taken while the profile is here. */
+    val formerNames: MutableMap<String, List<String>> = mutableMapOf()
 
     /** The wrong-PIN wait's clock, in milliseconds. */
     var nowMs: Long = 0L
@@ -93,7 +103,7 @@ class FakeProfiles(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
             { unusable(name) },
             { check(actorId, pin, RoleAction.CREATE_GROWN_UP, null) },
-        ) ?: add(name, newPin = newPin)
+        ) ?: add(name, newPin = newPin, maker = actorId)
 
     fun createKid(
         actorId: String,
@@ -107,7 +117,7 @@ class FakeProfiles(
             { ProfileOutcome.Invalid.takeUnless { validMinutes(dailyLimit) } },
             { unusable(name) },
             { check(actorId, pin, RoleAction.CREATE_KID, null) },
-        ) ?: add(name, kidsAge = kidsAge, parentId = actorId, dailyLimit = dailyLimit?.toUInt())
+        ) ?: add(name, kidsAge = kidsAge, maker = actorId, dailyLimit = dailyLimit?.toUInt())
 
     /** A grown-up takes the kids it is the parent of with it; a kid takes only itself. */
     fun remove(
@@ -150,6 +160,18 @@ class FakeProfiles(
             { check(actorId, pin, RoleAction.SET_KIDS_AGE, id) },
         ) ?: update(id) { it.copy(dailyLimit = minutes?.toUInt()) }
 
+    /** The whole list, stored sorted and each key once; set where the `set-access` rule allows. */
+    fun setHiddenSections(
+        actorId: String,
+        pin: String,
+        id: String,
+        sections: List<String>,
+    ): ProfileOutcome =
+        first(
+            { ProfileOutcome.Invalid.takeUnless { sections.size <= MAX_SECTIONS && sections.all(SECTION_KEY::matches) } },
+            { check(actorId, pin, RoleAction.SET_ACCESS, id) },
+        ) ?: update(id) { it.copy(hiddenSections = sections.distinct().sorted()) }
+
     /** A kid's opens freely; a grown-up's with its PIN. */
     fun unlock(
         id: String,
@@ -190,10 +212,7 @@ class FakeProfiles(
         return first(
             { ProfileOutcome.Invalid.takeUnless { validPin(newPin) } },
             { check(actorId, pin, RoleAction.SET_PIN, id, unproven = firstPin) },
-        ) ?: run {
-            pins[id] = newPin
-            ProfileOutcome.Done
-        }
+        ) ?: ProfileOutcome.Done.also { pins[id] = newPin }
     }
 
     /** The first refusal any of [checks] finds, asked in order and no further. */
@@ -204,14 +223,15 @@ class FakeProfiles(
         newPin: String? = null,
         admin: Boolean = false,
         kidsAge: UByte? = null,
-        parentId: String? = null,
+        maker: String? = null,
         dailyLimit: UInt? = null,
     ): ProfileOutcome {
         val clean = cleanName(name) ?: return ProfileOutcome.Invalid
         while (read().any { it.id == "p$nextId" }) nextId++
         val id = "p${nextId++}"
         val kids = kidsAge != null
-        write(read() + Profile(id, clean, kids = kids, kidsAge = kidsAge, parentId = parentId, admin = admin && !kids, dailyLimit = dailyLimit))
+        val household = read().find { it.id == maker }?.household ?: HOME_HOUSEHOLD
+        write(read() + Profile(id, clean, kids = kids, kidsAge = kidsAge, parentId = maker.takeIf { kids }, admin = admin && !kids, dailyLimit = dailyLimit, owner = admin && !kids, household = household))
         newPin?.let { pins[id] = it }
         return ProfileOutcome.Done
     }
@@ -224,10 +244,10 @@ class FakeProfiles(
         return ProfileOutcome.Done
     }
 
-    /** A blank name, or one a profile here already answers to — which sync would read as the same viewer. */
-    private fun unusable(name: String): ProfileOutcome? {
+    /** A blank name, or one a profile here answers to or did before ([formerNames]) — which sync would read as the same viewer. */
+    internal fun unusable(name: String): ProfileOutcome? {
         val wanted = normalName(name) ?: return ProfileOutcome.Invalid
-        return ProfileOutcome.NameTaken.takeIf { read().any { normalName(it.name) == wanted } }
+        return ProfileOutcome.NameTaken.takeIf { read().any { one -> (formerNames[one.id].orEmpty() + one.name).any { normalName(it) == wanted } } }
     }
 
     /** Somebody there, a grown-up acting, its PIN unless [unproven], then the rule. */
@@ -251,18 +271,19 @@ class FakeProfiles(
         )
     }
 
-    /** No PIN yet; or, only now one is about to be compared, that profile's wait, then the comparison. */
-    private fun prove(
-        id: String,
+    /** No PIN [held] (by default [key]'s own); or, only now one is about to be compared, [key]'s wait, then the comparison. */
+    fun prove(
+        key: String,
         pin: String,
+        held: List<String> = listOfNotNull(pins[key]),
     ): ProfileOutcome? {
-        val held = pins[id] ?: return ProfileOutcome.NoPin
-        val left = secondsLeft(id)
+        if (held.isEmpty()) return ProfileOutcome.NoPin
+        val left = secondsLeft(key)
         return when {
             left > 0 -> ProfileOutcome.Wait(left.toUInt())
             // A PIN that is not four digits can never equal one that is, so it is wrong, and counts.
-            pin != held -> ProfileOutcome.WrongPin.also { failed(id) }
-            else -> null.also { counts.remove(id) }
+            pin !in held -> ProfileOutcome.WrongPin.also { failed(key) }
+            else -> null.also { counts.remove(key) }
         }
     }
 
@@ -279,20 +300,15 @@ class FakeProfiles(
         count.wrong++
         if (count.wrong >= MAX_WRONG_PINS) count.until = nowMs + WAIT_MS
     }
-
-    private companion object {
-        val SIX: UByte = 6u
-        val TWELVE: UByte = 12u
-    }
 }
 
 private fun validMinutes(minutes: UShort?): Boolean = minutes == null || minutes.toInt() in DAILY_MINUTES
 
 /** Four ASCII digits, nothing else. */
-private fun validPin(pin: String): Boolean = pin.length == PIN_LENGTH && pin.all { it in '0'..'9' }
+internal fun validPin(pin: String): Boolean = pin.length == PIN_LENGTH && pin.all { it in '0'..'9' }
 
 /** As `clean_name`: edges trimmed, runs of space collapsed, capped; `null` when nothing is left. */
-private fun cleanName(name: String): String? =
+internal fun cleanName(name: String): String? =
     name
         .split(Regex("\\s+"))
         .filter { it.isNotEmpty() }
@@ -301,5 +317,5 @@ private fun cleanName(name: String): String? =
         .takeIf { it.isNotEmpty() }
 
 /** As `normal_name` over a cleaned name: the identity sync knows a viewer by. */
-private fun normalName(name: String): String? =
+internal fun normalName(name: String): String? =
     cleanName(name)?.let { Normalizer.normalize(it, Normalizer.Form.NFC).trim().lowercase() }?.takeIf { it.isNotEmpty() }

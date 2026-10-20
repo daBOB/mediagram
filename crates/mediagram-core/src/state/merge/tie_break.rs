@@ -1,12 +1,13 @@
 //! The tie-break every kept row goes through. Split out only to keep
-//! `merge.rs` under the line limit; `merge_states` and its `stats` and `roles`
-//! halves are the callers.
+//! `merge.rs` under the line limit; `merge_states` and its `stats`, `roles`
+//! and `households` parts are the callers.
 
 use std::collections::HashMap;
 
 use crate::state::record::{
-    CollectionRow, DailyLimit, DayStatRow, KidsAge, ListRow, PinRecord, ProgressRow, SyncPreference,
-    TitleStatRow, UnwatchedRow, WatchedRow,
+    CollectionRow, DailyLimit, DayStatRow, HiddenSections, HouseholdAdmin, HouseholdName, KidsAge,
+    ListRow, PinRecord, ProfileHousehold, ProgressRow, SyncPreference, TitleStatRow, UnwatchedRow,
+    WatchedRow,
 };
 
 /// Which device a held row (or spelling) came from, for the tie-break below.
@@ -16,8 +17,9 @@ pub(super) struct Held<T> {
 }
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
-/// watchlist or Kids mark, a collection, a preference, a stats row, or a
-/// kid's limit. A PIN has an order of its own: `keep_pin`.
+/// watchlist or Kids mark, a collection, a preference, a stats row, a kid's
+/// limit, a profile's hidden sections or household, or a household's name
+/// or admin. A PIN has an order of its own: `keep_pin`.
 pub(super) trait Timestamped {
     fn updated_at(&self) -> f64;
 }
@@ -41,7 +43,11 @@ timestamped_by_own_field!(
     TitleStatRow,
     DayStatRow,
     KidsAge,
-    DailyLimit
+    DailyLimit,
+    HiddenSections,
+    HouseholdName,
+    HouseholdAdmin,
+    ProfileHousehold
 );
 
 /// Keeps whichever of two rows should win.

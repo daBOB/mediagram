@@ -52,11 +52,13 @@ import system.SystemViewModel
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
+import testing.FakeHeldSets
 import testing.FakeLanChunkProtocol
 import testing.FakeLanServerSource
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import ui.player.PlayerLifecycleFixture
+import ui.profile.householdViewModels
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.StatsSummary
 import java.time.ZonedDateTime
@@ -70,6 +72,7 @@ internal class LibraryFlowFixture(
     loading: Boolean = false,
     settingsModel: SettingsViewModel? = null,
     achievements: Achievements = NO_ACHIEVEMENTS,
+    heldIds: Set<String> = emptySet(),
 ) : ViewModelStoreOwner,
     AutoCloseable {
     override val viewModelStore = ViewModelStore()
@@ -118,15 +121,12 @@ internal class LibraryFlowFixture(
             sets
         }
         coEvery { repository.titleInfo(any()) } returns null
-        // The title/series page's own Cast tab and franchise link: this
-        // fixture's own sets carry neither, so both stay off exactly as they
-        // did before either existed — but the pages ask every time they
-        // render, and a strict `mockk<CatalogRepository>()` throws for an
-        // unstubbed call whether or not a test ever opens that tab.
+        // The Cast tab and franchise link: these sets carry neither, but the
+        // pages ask on every render, and a strict mockk throws for an unstubbed call.
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.fetchPortrait(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together)
+        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, heldSets = FakeHeldSets(heldIds))
         player = playback.factory.create(PlayerViewModel::class.java)
         if (settingsModel == null) {
             every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))
@@ -169,8 +169,8 @@ internal class LibraryFlowFixture(
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
                 ProfileViewModel::class.java to ProfileViewModel(stored, mockk<WatchSync>(relaxed = true)),
-                // The gate resolves Manage profiles beside the picker every time it draws.
-                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, mockk<WatchSync>(relaxed = true)),
+                // The gate resolves Manage profiles beside the picker every time it draws, and Join a household (below).
+                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true)),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 // Play on TV, which the title pages, the player and the library's answer to it all resolve.
@@ -196,12 +196,11 @@ internal class LibraryFlowFixture(
                 // test can drive a state or count a poll.
                 TitlePreloadViewModel::class.java to
                     TitlePreloadViewModel(filmPreloading, InMemoryLanCacheSettings(), lanServerSource, lanChunkProtocol),
-                // MobileApp's MediagramTheme and SettingsScreen (reachable from
-                // this flow's own menu) each resolve an AppearanceViewModel
-                // through hiltViewModel(); this owner has to hand it back too.
+                // MobileApp's MediagramTheme and SettingsScreen (reachable from this flow's own menu) each
+                // resolve an AppearanceViewModel through hiltViewModel(); this owner has to hand it back too.
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                 ProfileSettingsViewModel::class.java to profileSettingsModel(),
-            )
+            ) + householdViewModels(stored)
         val provider =
             ViewModelProvider(
                 viewModelStore,

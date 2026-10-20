@@ -2,6 +2,7 @@ package ui.tv.catalog
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -9,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -20,8 +22,12 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CollectionRow
 import catalog.watchedFractionOf
+import designsystem.Spacing
 import designsystem.TvType
 import model.Kind
+import model.MediaSet
+import ui.common.catalog.TitlePreloadUi
+import ui.common.catalog.heldInFull
 import ui.tv.TvFocus
 import ui.tv.TvTextRow
 import ui.tv.rememberStableRequester
@@ -30,7 +36,8 @@ import ui.tv.rememberStableRequester
  * One of [TvCollectionRows]' rows — a folder's heading, or an episode or
  * lesson to play — shared with a show's own Episodes tab, which lists one
  * season the same way. [focus] is the requester a caller lands the remote
- * on, for the one row that takes it.
+ * on, for the one row that takes it. [preloadOf] is asked inside the row's
+ * own lazy item, so only the rows on screen collect a preload state.
  */
 @Composable
 internal fun TvCollectionRow(
@@ -40,6 +47,7 @@ internal fun TvCollectionRow(
     onPlay: (setId: String) -> Unit,
     focus: FocusRequester?,
     modifier: Modifier = Modifier,
+    preloadOf: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
 ) {
     when (row) {
         is CollectionRow.Heading -> TvSectionHeading(row.title, modifier.padding(start = indentOf(row.depth)), if (row.depth == 0) TopSeasonHeading else SeasonHeading)
@@ -52,6 +60,7 @@ internal fun TvCollectionRow(
                 onPlay = onPlay,
                 focus = focus,
                 modifier = modifier,
+                preload = if (row.set.kind == Kind.DOCUMENT) null else preloadOf?.invoke(row.set),
             )
     }
 }
@@ -77,14 +86,19 @@ private fun ItemRow(
     onPlay: (setId: String) -> Unit,
     focus: FocusRequester?,
     modifier: Modifier = Modifier,
+    preload: TitlePreloadUi?,
 ) {
     val text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}"
     Column(modifier = modifier.fillMaxWidth().padding(start = indentOf(row.depth))) {
         if (row.set.kind == Kind.DOCUMENT) {
             DocumentRow(text, focus)
         } else {
-            TvTextRow(text = text, onClick = { onPlay(row.set.setId) }, modifier = Modifier.fillMaxWidth(), focusRequester = focus)
-            TvItemMarks(progress, held)
+            // The title keeps one chain whether or not a control sits beside it: the remote may be on it as one arrives.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TvTextRow(text = text, onClick = { onPlay(row.set.setId) }, modifier = Modifier.weight(1f), focusRequester = focus)
+                preload?.let { TvEpisodePreload(it, row.set.totalBytes, Modifier.padding(start = Spacing.medium)) }
+            }
+            TvItemMarks(progress, heldInFull(held, preload, row.set.totalBytes))
         }
     }
 }

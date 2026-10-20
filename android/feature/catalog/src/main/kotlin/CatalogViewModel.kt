@@ -59,16 +59,16 @@ class CatalogViewModel
         private var lastSets: List<MediaSet> = emptyList()
 
         /**
-         * The chosen kid's [KidsView], `null` for a grown-up. Distinct, so
+         * The chosen profile's [ProfileView]. Distinct, so
          * progress updates — which also move `snapshot` — do not regroup the
          * shelves; a limit changed in Manage or by sync does.
          */
-        private val kidsFilter: Flow<KidsView?> =
-            combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentKids() }
+        private val kidsFilter: Flow<ProfileView> =
+            combine(watchState.chosenProfile, watchState.snapshot) { _, _ -> currentView() }
                 .distinctUntilChanged()
 
         /** [kidsFilter] as a synchronous read, for a value computed outside collection. */
-        private fun currentKids(): KidsView? = watchState.kidsView()
+        private fun currentView(): ProfileView = watchState.profileView()
 
         /**
          * Whether the chosen profile is a kids profile — the title page's own
@@ -105,7 +105,7 @@ class CatalogViewModel
          * button's absence: the pin is the household's, not a kid's, to make.
          */
         fun toggleEditorsChoice(setId: String) {
-            if (currentKids() != null) return
+            if (currentView().kids != null) return
             val marked = watchState.snapshot.value.editorsChoice != setId
             writeState("Could not confirm the editor's choice update. Check it and try again.") {
                 watchState.setEditorsChoice(setId, marked)
@@ -163,13 +163,13 @@ class CatalogViewModel
         val state: StateFlow<CatalogUiState> =
             object : StateFlow<CatalogUiState> {
                 override val value: CatalogUiState
-                    get() = project(unfiltered.value, currentKids())
+                    get() = project(unfiltered.value, currentView())
 
                 override val replayCache: List<CatalogUiState>
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
-                    combine(unfiltered, kidsFilter) { shown, kids -> project(shown, kids) }
+                    combine(unfiltered, kidsFilter) { shown, view -> project(shown, view) }
                         .distinctUntilChanged()
                         .collect(collector)
                     error("unreachable: a StateFlow-backed combine never completes")
@@ -178,8 +178,8 @@ class CatalogViewModel
 
         private fun project(
             shown: CatalogUiState,
-            kids: KidsView?,
-        ): CatalogUiState = projected(shown, kids, lastSets)
+            view: ProfileView,
+        ): CatalogUiState = projected(shown, view, lastSets)
 
         /**
          * Watch together's Join for Home and the title pages, and the cast bar ([togetherOffers]); collected only while
@@ -215,7 +215,30 @@ class CatalogViewModel
         }
 
         private suspend fun refresh(kind: LibraryUpdateKind) {
-            updates.update(kind, ::readCatalog, ::regrouped)
+            val coldStart = kind == LibraryUpdateKind.Read && lastReady == null
+            updates.update(kind, ::readCatalog, ::regrouped, showInstalled = if (coldStart) ::showInstalled else null)
+        }
+
+        /**
+         * The catalog already on this device, shown while a cold start's refresh
+         * is still out. Quiet when there is none or it cannot be read: the read
+         * after the refresh is the one that reports.
+         */
+        private suspend fun showInstalled() {
+            try {
+                val sets = repository.sets()
+                val shelves = shelvesOf(sets)
+                if (!shelves.hasContent()) return
+                val ready = CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves))
+                lastSets = sets
+                show(ready)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
+            ) {
+                return
+            }
         }
 
         private suspend fun readCatalog(refreshed: Result<Int>) {
@@ -224,12 +247,25 @@ class CatalogViewModel
                     val failure = refreshed.exceptionOrNull()
                     failure?.let { Log.w("Catalog", "could not refresh the library", it) }
                     val sets = repository.sets()
-                    lastSets = sets
-                    val shelves = shelvesOf(sets)
-                    when {
-                        shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
-                        failure != null -> CatalogUiState.Failed(failure.refreshSentence())
-                        else -> CatalogUiState.Empty
+                    val kept = lastReady
+                    if (failure == null && kept != null && sets == lastSets) {
+                        // Nothing new — the usual refresh, now that an unchanged index is
+                        // not downloaded again: the shelves up stand, rather than being
+                        // regrouped on the main thread under a viewer's thumb. What the
+                        // cache holds is still asked: eviction changes it without an event.
+                        kept.copy(notice = null, heldIds = heldIdsOf(kept.shelves))
+                    } else {
+                        val shelves = shelvesOf(sets)
+                        val answer =
+                            when {
+                                shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
+                                failure != null -> CatalogUiState.Failed(failure.refreshSentence())
+                                else -> CatalogUiState.Empty
+                            }
+                        // Only once nothing above can still fail: an unchanged later read
+                        // keeps the shelves on screen on the strength of this.
+                        lastSets = sets
+                        answer
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -249,8 +285,9 @@ class CatalogViewModel
                 val shelves = shelvesOf(sets)
                 val kept = lastReady ?: return
                 if (shelves.hasContent()) {
+                    val regrouped = kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves))
                     lastSets = sets
-                    show(kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves)))
+                    show(regrouped)
                 }
             } catch (e: CancellationException) {
                 throw e

@@ -30,6 +30,11 @@ pub(crate) fn follow_library(conn: &Connection, handle: &str) -> rusqlite::Resul
     write(conn, FOLLOWED_KEY, handle)
 }
 
+/// The library this device follows, if one was ever recorded.
+pub(crate) fn followed_library(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    read(conn, FOLLOWED_KEY)
+}
+
 /// A round of the library this device follows has been taken in.
 pub(crate) fn round_imported(conn: &Connection) -> rusqlite::Result<bool> {
     Ok(

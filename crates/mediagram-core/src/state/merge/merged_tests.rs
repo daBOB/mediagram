@@ -91,6 +91,7 @@ fn a_merged_state_survives_a_round_trip() {
             age: Some(6),
         }],
         editors_choice: Vec::new(),
+        households: Vec::new(),
     };
     let text = serde_json::to_string(&state).unwrap();
     assert!(text.contains("\"editorsChoice\":[]"));

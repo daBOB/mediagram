@@ -44,6 +44,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
             onAddKid = { name, age, daily -> calls += "addKid $name $age $daily" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
             onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
+            onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
             onRemove = { calls += "remove $it" },
             onAddGrownUp = { calls += "addGrownUp $it" },
             onChangePin = { calls += "pin $it" },
@@ -117,9 +118,8 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
     fun aKidIsRemovedOnlyOnceTheQuestionIsAnswered() {
         manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
         press(Key.DirectionCenter)
-        // FSK 12 -> Daily limit -> Remove.
-        press(Key.DirectionDown)
-        press(Key.DirectionDown)
+        // FSK 12 -> Daily limit -> Sections -> Remove.
+        repeat(3) { press(Key.DirectionDown) }
         press(Key.DirectionCenter)
         compose.onNodeWithText("Remove Tom and everything they have watched?").assertExists()
         // Cancel holds the remote first: Centre now would remove nobody.
@@ -135,7 +135,7 @@ class TvManageProfilesStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Bea").assertIsFocused()
         press(Key.DirectionCenter)
         compose.onNode(hasText("Reset PIN") and hasAnyAncestor(isDialog())).assertIsFocused()
-        press(Key.DirectionDown)
+        repeat(2) { press(Key.DirectionDown) }
         press(Key.DirectionCenter)
         compose.onNodeWithText("Remove Bea, their kids, and everything they have watched?").assertExists()
         press(Key.DirectionCenter)

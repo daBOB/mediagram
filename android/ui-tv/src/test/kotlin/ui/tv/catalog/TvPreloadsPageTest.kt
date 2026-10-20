@@ -97,6 +97,17 @@ class TvPreloadsPageTest : TvScreenStateTest() {
         assertEquals("held-1", removed)
     }
 
+    @Test
+    fun aFinishedEpisodeIsListedOnThisDeviceOnTv() {
+        var removed: String? = null
+        val held = set("ep-1", Kind.EPISODE, "Pilot", show = "30 Rock", addedAt = 0, episode = 4).copy(season = 1)
+        show { TvPreloadsPage(rows = emptyList(), heldFilms = listOf(held), onOpenTitle = {}, onCancel = {}, onRemove = { removed = it }, onResume = {}) }
+        compose.onNodeWithText("On this device").assertExists()
+        compose.onNodeWithText("30 Rock · S1E4").performKeyInput { pressKey(Key.DirectionRight) }
+        compose.onNodeWithText("Remove").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals("ep-1", removed)
+    }
+
     /** The user decision: a film the background time limit paused stays under Preloading (it was the one writing), named plainly, with one Resume action rather than Cancel. */
     @Test
     fun aTimeLimitPausedFilmThatWasActiveStaysUnderPreloadingWithResume() {

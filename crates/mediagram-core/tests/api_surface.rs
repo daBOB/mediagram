@@ -5,6 +5,7 @@
 
 use std::path::Path;
 
+use mediagram_core::state::households::NewHouseholdAdmin;
 use mediagram_core::state::profiles::ProfileOutcome::{
     Done, Invalid, NameTaken, NotAllowed, NotFound, NotSynced, Wait, WrongPin,
 };
@@ -388,6 +389,15 @@ async fn unavailable_state_storage_returns_safe_defaults_and_can_be_retried() {
     assert_eq!(p().claim_admin(id(), pin()).await, Invalid);
     assert_eq!(p().set_pin(id(), pin(), id(), pin()).await, Invalid);
     assert_eq!(p().set_kids_age(id(), pin(), id(), 6).await, Invalid);
+    assert_eq!(p().set_hidden_sections(id(), pin(), id(), vec![]).await, Invalid);
+    assert_eq!(p().households().await, Default::default());
+    assert_eq!(p().join_household(id(), pin()).await, Invalid);
+    let admin = NewHouseholdAdmin::Existing { id: id(), new_pin: None };
+    assert_eq!(p().create_household(id(), pin(), "Flat".into(), admin).await, Invalid);
+    assert_eq!(p().rename_household(id(), pin(), id(), "Flat".into()).await, Invalid);
+    assert_eq!(p().set_household_admin(id(), pin(), id(), id(), None).await, Invalid);
+    assert_eq!(p().move_to_household(id(), pin(), id(), id(), None).await, Invalid);
+    assert_eq!(p().delete_household(id(), pin(), id()).await, Invalid);
     assert!(!player.clone().choose_profile("viewer".into()).await);
     assert_eq!(
         player.clone().snapshot("viewer".into()).await,
@@ -519,6 +529,21 @@ async fn managing_profiles_answers_one_outcome_per_reason_across_the_boundary() 
     assert_eq!(p().unlock_profile(bea.id.clone(), "2222".into()).await, Done);
     assert_eq!(p().create_kid(bea.id.clone(), "2222".into(), "Leo".into(), 12, None).await, Done);
 
+    // Hidden sections: a grown-up's by the admin, a kid's by its own, the
+    // admin's by nobody; read back sorted, each key once.
+    let keys = |keys: &[&str]| keys.iter().map(|key| key.to_string()).collect::<Vec<_>>();
+    assert!(named(&player, "Bea").await.hidden_sections.is_empty());
+    let hide = |actor: &str, pin: &str, id: &str, sections| {
+        p().set_hidden_sections(actor.into(), pin.into(), id.into(), sections)
+    };
+    assert_eq!(hide(&andre, "1234", &bea.id, keys(&["series", "anime", "series"])).await, Done);
+    assert_eq!(named(&player, "Bea").await.hidden_sections, ["anime", "series"]);
+    assert_eq!(hide(&andre, "1234", &mia.id, keys(&["Movies"])).await, Invalid);
+    assert_eq!(hide(&bea.id, "2222", &mia.id, keys(&["movies"])).await, NotAllowed);
+    assert_eq!(hide(&andre, "1234", &mia.id, keys(&["movies"])).await, Done);
+    assert_eq!(named(&player, "Mia").await.hidden_sections, ["movies"]);
+    assert_eq!(hide(&bea.id, "2222", &andre, keys(&[])).await, NotAllowed);
+
     // A grown-up leaves with the kids it is the parent of; the admin's stay.
     assert_eq!(p().delete_profile(andre.clone(), pin(), bea.id).await, Done);
     let names: Vec<String> = p().profiles().await.into_iter().map(|x| x.name).collect();
@@ -577,4 +602,40 @@ async fn a_kids_mark_says_from_six_or_from_twelve_in_the_snapshot() {
     assert!(player.clone().snapshot(viewer.clone()).await.kids_from_six.is_empty());
     player.clone().set_kids("six".into(), None).await;
     assert_eq!(player.snapshot(viewer).await.kids, ["twelve"]);
+}
+
+/// The owner's household actions and a device joining one, each answering
+/// one outcome per reason, as the profile calls do.
+#[tokio::test]
+async fn the_owners_household_actions_answer_one_outcome_per_reason_across_the_boundary() {
+    let dir = tempfile::tempdir().unwrap();
+    let player = core(dir.path());
+    let p = || player.clone();
+    let made = state_seed::household(&player, dir.path(), &["André", "Bea"], &[]).await;
+    let (andre, bea) = (made[0].id.clone(), made[1].id.clone());
+    let pin = || String::from(state_seed::PIN);
+    let new = |name: &str| NewHouseholdAdmin::New { name: name.into(), new_pin: "5678".into() };
+
+    assert_eq!(p().create_household(bea.clone(), pin(), "Flat".into(), new("Maja")).await, NotAllowed);
+    assert_eq!(p().create_household(andre.clone(), pin(), "Flat".into(), new("Maja")).await, Done);
+    assert_eq!(p().create_household(andre.clone(), pin(), " flat".into(), new("Lena")).await, NameTaken);
+    let flat = p().households().await.households.remove(0);
+    assert_eq!(flat.name, "Flat");
+    assert_eq!(p().rename_household(andre.clone(), "0000".into(), flat.id.clone(), "Loft".into()).await, WrongPin);
+    assert_eq!(p().rename_household(andre.clone(), pin(), flat.id.clone(), "Loft".into()).await, Done);
+    assert_eq!(p().move_to_household(andre.clone(), pin(), flat.id.clone(), bea.clone(), None).await, Done);
+    assert_eq!(p().set_household_admin(andre.clone(), pin(), flat.id.clone(), bea.clone(), None).await, Done);
+    assert_eq!(p().set_household_admin(andre.clone(), pin(), "nowhere".into(), bea.clone(), None).await, NotFound);
+    assert_eq!(p().delete_household(andre.clone(), pin(), flat.id.clone()).await, NotAllowed);
+    assert_eq!(p().delete_household(andre, pin(), "home".into()).await, NotAllowed);
+    assert_eq!(p().join_household(flat.id.clone(), "5678".into()).await, WrongPin);
+    assert_eq!(p().join_household(flat.id.clone(), pin()).await, Done);
+
+    let view = p().households().await;
+    let names: Vec<&str> = view.households.iter().map(|one| one.name.as_str()).collect();
+    assert_eq!(names, ["Home", "Loft"]);
+    assert_eq!(view.joined, Some(flat.id.clone()));
+    assert_eq!(view.households[1].admin_id, Some(bea));
+    let here: Vec<String> = p().profiles().await.into_iter().map(|one| one.name).collect();
+    assert_eq!(here, ["Bea", "Maja"]);
 }

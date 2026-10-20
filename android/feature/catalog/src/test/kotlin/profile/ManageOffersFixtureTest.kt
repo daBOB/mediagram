@@ -7,6 +7,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import model.HOME_HOUSEHOLD
+import model.Households
 import model.Profile
 import testing.webFixture
 import kotlin.test.Test
@@ -26,19 +28,19 @@ class ManageOffersFixtureTest {
     fun offersWhatTheRuleAllowsOnEveryCase() {
         val cases = Json.parseToJsonElement(webFixture("watch-state/profile-rules.json").readText()).jsonArray
         assertTrue(cases.isNotEmpty(), "profile-rules.json holds no cases")
-        for (case in cases.map { it.jsonObject }) {
-            val profiles = case.getValue("profiles").jsonArray.map { it.jsonObject.toProfile() }
-            assertEquals(
-                case.getValue("expect").jsonPrimitive.boolean,
-                offered(
-                    profiles,
-                    case.getValue("actorId").jsonPrimitive.content,
-                    case.getValue("action").jsonPrimitive.content,
-                    case["targetId"]?.jsonPrimitive?.contentOrNull,
-                ),
-                "case: ${case.getValue("name").jsonPrimitive.content}",
-            )
-        }
+        // Every case that disagrees, by name, so one run lists them all.
+        val wrong =
+            cases.map { it.jsonObject }.filter { case ->
+                val offers =
+                    offered(
+                        case.getValue("profiles").jsonArray.map { it.jsonObject.toProfile() },
+                        case.getValue("actorId").jsonPrimitive.content,
+                        case.getValue("action").jsonPrimitive.content,
+                        case["targetId"]?.jsonPrimitive?.contentOrNull,
+                    )
+                offers != case.getValue("expect").jsonPrimitive.boolean
+            }
+        assertEquals(emptyList(), wrong.map { it.getValue("name").jsonPrimitive.content })
     }
 }
 
@@ -49,7 +51,10 @@ private fun offered(
     action: String,
     targetId: String?,
 ): Boolean {
-    val panel = manageable(profiles, actorId, null) as? ManageUiState.Managing ?: return false
+    // The panel is given the actor's household as this device's, and everyone on the install, as the households are read.
+    val mine = profiles.find { it.id == actorId }?.household ?: HOME_HOUSEHOLD
+    val install = Households(mine, emptyList(), profiles)
+    val panel = manageable(profiles.filter { it.household == mine }, actorId, null, install = install) as? ManageUiState.Managing ?: return false
     fun List<Profile>.has() = any { it.id == targetId }
     return when (action) {
         "create-grown-up" -> panel.canAddGrownUp
@@ -57,11 +62,12 @@ private fun offered(
         "remove" -> panel.grownUps.has() || panel.kids.has()
         "set-pin" -> targetId == actorId || panel.grownUps.has()
         "set-kids-age" -> panel.kids.has()
+        "set-access" -> panel.grownUps.has() || panel.kids.has()
         else -> error("Unknown action $action")
     }
 }
 
-/** A fixture `RoleView` — `{ id, kids, admin, parentId }` — as the profile the panel reads. */
+/** A fixture `RoleView` — `{ id, kids, admin, owner?, parentId, household? }` — as the profile the panel reads. */
 private fun JsonObject.toProfile(): Profile {
     val id = getValue("id").jsonPrimitive.content
     return Profile(
@@ -70,5 +76,7 @@ private fun JsonObject.toProfile(): Profile {
         kids = getValue("kids").jsonPrimitive.boolean,
         admin = getValue("admin").jsonPrimitive.boolean,
         parentId = get("parentId")?.jsonPrimitive?.contentOrNull,
+        household = get("household")?.jsonPrimitive?.contentOrNull ?: HOME_HOUSEHOLD,
+        owner = get("owner")?.jsonPrimitive?.boolean ?: false,
     )
 }

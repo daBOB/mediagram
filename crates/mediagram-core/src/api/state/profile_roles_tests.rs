@@ -66,6 +66,9 @@ async fn wrong_pins_given_to_different_calls_add_up_to_one_wait() {
 async fn a_grown_up_claims_the_admin_role_while_nobody_holds_it() {
     let dir = tempfile::tempdir().unwrap();
     let core = Core::at(dir.path());
+    // A device lists nobody until it has joined a household, which a heard
+    // round of a lone one does.
+    core.state_db.with(|conn| crate::state::sync::mark_round_imported(conn, "household")).unwrap();
     let bea = core.add_profile("Bea", false).id;
     let sam = core.add_profile("Sam", false).id;
 

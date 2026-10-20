@@ -220,7 +220,7 @@ internal fun LibraryBranches(
         FrameKind.LATEST -> LatestFrame(at, catalogState, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
-        FrameKind.STATS -> StatsFrame(at, catalogState, menuActions, profileBar, browse)
+        FrameKind.STATS -> StatsFrame(at, menuActions, profileBar, browse)
 
         // The remote of a cast, over the window as the player is; Next episode follows the title's run as there.
         FrameKind.REMOTE -> at.remoteId?.let { id ->

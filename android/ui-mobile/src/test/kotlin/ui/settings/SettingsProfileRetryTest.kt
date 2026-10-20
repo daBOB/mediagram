@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import catalog.profile.ManageProfilesViewModel
 import data.DefaultWatchStateRepository
 import data.InMemoryCoreStorage
 import data.StoredCoreProvider
@@ -39,6 +40,7 @@ import designsystem.InMemoryAppearanceSettings
 import setup.AppearanceViewModel
 import setup.ProfileSettingsViewModel
 import ui.common.settings.SettingsSection
+import ui.householdModel
 import ui.profileSettingsModel
 import setup.Libraries
 import setup.SettingsViewModel
@@ -108,6 +110,7 @@ class SettingsProfileRetryTest {
                 SettingsViewModel::class.java to model,
                 AppearanceViewModel::class.java to appearanceModel,
                 ProfileSettingsViewModel::class.java to profileSettingsModel(),
+                ManageProfilesViewModel::class.java to householdModel(),
                 CacheBudgetViewModel::class.java to cacheModel,
                 LanCacheViewModel::class.java to lanModel,
                 SystemViewModel::class.java to systemModel,

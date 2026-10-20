@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import model.MediaSet
 import model.forKidsProfile
+import model.hiddenFrom
+import model.sectionKey
 import player.together.CastTrackSync
 import player.together.TogetherController
 import player.together.ViewerPlayer
@@ -88,12 +90,14 @@ internal fun PlayerViewModel.closeTogether(relay: ViewerRelay) {
 }
 
 /**
- * Whether the profile watching sees [set]: a kids profile sees only what its
- * limit allows, as its catalog shows it. Playing a cast that is the caster,
- * never the TV's own chosen profile.
+ * Whether the profile watching sees [set]: not in a section hidden from it, and
+ * a kids profile only what its limit allows, as its catalog shows it. Playing a
+ * cast that is the caster, never the TV's own chosen profile.
  */
-private fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
-    val kid = (playingAs.value ?: repository.chosenProfile.value)?.takeIf { it.kids } ?: return true
+internal fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
+    val profile = playingAs.value ?: repository.chosenProfile.value
+    if (profile != null && set.sectionKey() in profile.hiddenFrom) return false
+    val kid = profile?.takeIf { it.kids } ?: return true
     return forKidsProfile(listOf(set), repository.snapshot.value.kidsMarks, kid.kidsLimit).isNotEmpty()
 }
 

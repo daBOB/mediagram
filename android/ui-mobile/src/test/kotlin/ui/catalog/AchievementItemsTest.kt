@@ -21,7 +21,6 @@ import stats.AchievementsUi
 import stats.EarnedLine
 import stats.NextLine
 import stats.StatsBar
-import stats.StatsLine
 import stats.StatsUiState
 
 /** The Achievements section on [StatsScreen], drawn straight from a state; its words are `feature:stats`' and tested there. */
@@ -48,7 +47,6 @@ class AchievementItemsTest {
         StatsUiState.Ready(
             totals = listOf("This week" to "42 min", "This month" to "42 min", "All time" to "42 min"),
             bars = List(30) { StatsBar(fraction = 0f, initial = "M", description = "day $it") },
-            history = listOf(StatsLine("STARTED:f1", "Started · Der Pate · today 21:14 · 42 min")),
         )
 
     private fun seen(text: String) {
@@ -67,7 +65,7 @@ class AchievementItemsTest {
                     ),
             ),
         )
-        for (text in listOf("Achievements", "First film", "today", "Next", "10 films", "1 of 10 films", "History")) seen(text)
+        for (text in listOf("Achievements", "First film", "today", "Next", "10 films", "1 of 10 films")) seen(text)
     }
 
     @Test

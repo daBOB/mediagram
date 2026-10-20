@@ -61,7 +61,14 @@ class FakeFilmPreloading : FilmPreloading {
     private fun flowFor(setId: String, totalBytes: Long) =
         states.getOrPut(setId) { MutableStateFlow(FilmPreloadState.Idle(0L, totalBytes)) }
 
-    override fun stateOf(setId: String, totalBytes: Long): Flow<FilmPreloadState> = flowFor(setId, totalBytes)
+    /** How often [stateOf] was asked — a page that keys its own collection asks once per film, not once per recomposition. */
+    var stateOfCalls = 0
+        private set
+
+    override fun stateOf(setId: String, totalBytes: Long): Flow<FilmPreloadState> {
+        stateOfCalls++
+        return flowFor(setId, totalBytes)
+    }
 
     override fun enqueue(setId: String, title: String, totalBytes: Long) {
         enqueueCalls += Triple(setId, title, totalBytes)

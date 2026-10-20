@@ -693,13 +693,46 @@ a separate profile-read retry without submitting replacement credentials again.
 
 "Who's watching?" chooses among the account's profiles, which arrive from the
 other devices' documents, and removes one as the web does: locally, taking its
-rows with it. Neither surface renames. A removed profile that another device's
+rows with it. Neither surface offers a rename yet, though sync already keeps a
+renamed profile as one person (below). A removed profile that another device's
 document still names comes back with the next round that pulls it, on both
 surfaces alike — the record has no tombstone for a profile. Deliberate
 differences from the web, not gaps: sync is on by default, where the web player
 needs `MEDIAGRAM_SYNC_STATE`; "Add to list" is a checklist rather than the
 web's numbered prompt; the Films and Series shelves open as posters, where the
 web opens on its list.
+
+**A rename travels as two more optional keys on a profile's entry,
+`renamedAt` and `formerNames`.** `renamedAt` is when the profile took the
+name it has now, written only above 0; `formerNames` is every name it had
+before, normalised, sorted, each once, at most 32, written only when not
+empty. Nobody renamed, a document is byte-for-byte what it was, and
+`SYNC_FORMAT` stays 1. Before the merge, a pre-pass (`renames.ts`,
+`merge/renames.rs`) makes one person of every name joined through a former
+name, gives it the spelling of the newest `renamedAt` (ties to the greater
+device id, as every row's), and rewrites each entry's name, each kid's parent
+and each household's admin to it; the merge then runs untouched. The import
+never rekeys rows, because only the wire uses names: the first local row of
+the merged name and of each former name are that person; the oldest
+(`created_at`, then the smaller id) is kept and renamed in place
+(`renamed_at`, `former_names`; web schema v17, core v13), and any other is
+folded into it — its rows, its lists by id, a kid's `parent_id`, a
+household's `admin_id`, the core's chosen profile — inside the import's one
+transaction. A former name is taken for good on the install, as a current one
+is: an older build, or a retired device's last document, still writes it for
+the renamed person. The rename action itself ships only once every device in
+use runs this merge.
+
+An older build drops both keys on reading. Without a hand-built list it shows
+both names: the new one as a second profile carrying the person's history, the
+old one taking in nothing new, and what it still writes under the old name is
+folded into the person on every current build. With a list, live or deleted,
+its import of the new name inserts list ids its old row already holds; the
+primary key refuses them, the round rolls back, and it takes in and publishes
+nothing, for every profile, until it updates. Nothing is lost: its first round
+on a current build renames the old row in place, or folds the two. Both are
+pinned by `web/test/state-profile-rename-sync.test.ts` and the core's
+`exchange_tests.rs`. Design: `docs/superpowers/specs/2026-10-20-profile-rename-design.md`.
 
 **Viewing stats travel as two more optional keys on each profile,
 `titleStats` and `dayStats`.** A title row is `{setId, device, startedAt,

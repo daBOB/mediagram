@@ -5,10 +5,11 @@
  * These fixtures are read by other languages too, so a case here is a rule
  * both engines must agree on. The sync, resume and Next up cases describe
  * behaviour the web already has, and a case that only passes after a change
- * to `src/state` or `public/lib` does not belong with them. The stats and
- * profile-roles fixtures are different: they pin new rules first, and the
- * web's modules under `src/state/stats-*` and `src/state/roles-*` are
- * written to satisfy them.
+ * to `src/state` or `public/lib` does not belong with them. The stats,
+ * profile-roles, households-sync and profile-renames fixtures are different:
+ * they pin new rules first, and the web's modules under `src/state/stats-*`,
+ * `src/state/roles-*`, `src/state/households-*`, `src/state/name-record.ts`
+ * and `src/state/renames.ts` are written to satisfy them.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -19,6 +20,7 @@ import { join } from "node:path";
 import { mergeStates } from "../src/state/merge";
 import type { MergedState } from "../src/state/merged";
 import { parseRecord, type SyncRecord } from "../src/state/sync-record";
+import type { HouseholdEntry } from "../src/state/households-record";
 import { achievements, type AchievementInput, type Achievements } from "../src/state/achievements";
 import { achievementLabel, progressLine } from "../public/lib/catalog/stats-achievements.js";
 import { againNow, stepSeconds } from "../src/state/stats-step";
@@ -166,6 +168,7 @@ describe("profile-roles-merge fixtures", () => {
           ...(profile.dailyLimit ? { dailyLimit: profile.dailyLimit } : {}),
           ...(profile.parent !== undefined ? { parent: profile.parent } : {}),
           ...(profile.pin ? { pin: profile.pin } : {}),
+          ...(profile.hiddenSections ? { hiddenSections: profile.hiddenSections } : {}),
         }))
         .sort((a, b) => a.name.localeCompare(b.name)),
       kids: [...(state.kids ?? [])].sort((a, b) => a.setId.localeCompare(b.setId)),
@@ -176,6 +179,109 @@ describe("profile-roles-merge fixtures", () => {
     test(one.name, () => {
       expect(canonicalRoles(mergeStates(one.records))).toEqual(one.expect);
       expect(canonicalRoles(mergeStates([...one.records].reverse()))).toEqual(one.expect);
+    });
+  }
+});
+
+interface HouseholdsCanonical {
+  households: HouseholdEntry[];
+  profiles: { name: string; household: { id: string; updatedAt: number } }[];
+}
+
+const householdsSync = load<{
+  parse: { name: string; input: string; expect: HouseholdsCanonical }[];
+  merge: { name: string; records: SyncRecord[]; expect: HouseholdsCanonical }[];
+}>("households-sync.json");
+
+/** The households and who is in which — everything else is the other
+ * fixtures'. A profile is listed only when it carries a household. */
+function canonicalHouseholds(state: {
+  households?: HouseholdEntry[];
+  profiles: { name: string; household?: { id: string; updatedAt: number } }[];
+}): HouseholdsCanonical {
+  return {
+    households: state.households ?? [],
+    profiles: state.profiles.flatMap(({ name, household }) => (household ? [{ name, household }] : []))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+describe("households-sync parse fixtures", () => {
+  for (const one of householdsSync.parse) {
+    test(one.name, () => {
+      expect(canonicalHouseholds(parseRecord(one.input)!)).toEqual(one.expect);
+    });
+  }
+});
+
+describe("households-sync merge fixtures", () => {
+  for (const one of householdsSync.merge) {
+    test(one.name, () => {
+      for (const records of [one.records, [...one.records].reverse()]) {
+        const merged = mergeStates(records);
+        expect(canonicalHouseholds(merged)).toEqual(one.expect);
+        // Nothing to say is no key at all, not an empty one.
+        if (one.expect.households.length === 0) expect("households" in merged).toBe(false);
+      }
+    });
+  }
+});
+
+const profileRenames = load<{
+  parse: { name: string; input: string; expect: unknown }[];
+  merge: { name: string; records: SyncRecord[]; expect: unknown }[];
+}>("profile-renames.json");
+
+/** By UTF-8 bytes, the core's `String` order too. */
+const byBytes = (a: string, b: string) => Buffer.compare(Buffer.from(a), Buffer.from(b));
+
+/** A profile's name keys, each only when said: a key present but empty is a failure. */
+function nameKeys(profile: { renamedAt?: number; formerNames?: string[] }) {
+  return {
+    ...(profile.renamedAt !== undefined ? { renamedAt: profile.renamedAt } : {}),
+    ...(profile.formerNames !== undefined ? { formerNames: profile.formerNames } : {}),
+  };
+}
+
+/** Who each viewer is, under which name, with a few kinds of row to show whose
+ * they became — every list sorted, and omitted when empty. */
+function canonicalRenames(state: MergedState) {
+  const list = <T>(key: string, rows: T[]) => (rows.length > 0 ? { [key]: rows } : {});
+  const households = (state.households ?? []).flatMap(({ id, admin }) => (admin ? [{ id, admin: admin.name }] : []));
+  return {
+    profiles: state.profiles
+      .map((profile) => ({
+        name: profile.name,
+        displayName: profile.displayName,
+        ...nameKeys(profile),
+        ...(profile.parent !== undefined ? { parent: profile.parent } : {}),
+        ...list("progress", profile.progress.map((row) => row.setId).sort(byBytes)),
+        ...list("watchlist", (profile.watchlist ?? [])
+          .map(({ setId, removed }) => ({ setId, ...(removed ? { removed } : {}) }))
+          .sort((a, b) => byBytes(a.setId, b.setId))),
+        ...list("titleStats", (profile.titleStats ?? [])
+          .map(({ setId, device }) => ({ setId, device }))
+          .sort((a, b) => byBytes(a.setId, b.setId) || byBytes(a.device, b.device))),
+      }))
+      .sort((a, b) => byBytes(a.name, b.name)),
+    ...list("households", households.sort((a, b) => byBytes(a.id, b.id))),
+  };
+}
+
+describe("profile-renames parse fixtures", () => {
+  for (const one of profileRenames.parse) {
+    test(one.name, () => {
+      const profiles = parseRecord(one.input)!.profiles.map((profile) => ({ name: profile.name, ...nameKeys(profile) }));
+      expect({ profiles }).toEqual(one.expect as { profiles: typeof profiles });
+    });
+  }
+});
+
+describe("profile-renames merge fixtures", () => {
+  for (const one of profileRenames.merge) {
+    test(one.name, () => {
+      expect(canonicalRenames(mergeStates(one.records))).toEqual(one.expect as ReturnType<typeof canonicalRenames>);
+      expect(canonicalRenames(mergeStates([...one.records].reverse()))).toEqual(one.expect as ReturnType<typeof canonicalRenames>);
     });
   }
 });

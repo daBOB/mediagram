@@ -17,6 +17,7 @@
 pub(crate) mod channel;
 pub mod editors_choice;
 pub mod exchange;
+pub mod households;
 pub mod lists;
 pub mod merge;
 mod open;

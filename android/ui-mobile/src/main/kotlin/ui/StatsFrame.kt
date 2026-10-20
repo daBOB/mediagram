@@ -1,7 +1,6 @@
 package ui
 
 import androidx.compose.runtime.Composable
-import catalog.CatalogUiState
 import ui.catalog.StatsScreen
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
@@ -16,12 +15,11 @@ import ui.common.rememberStatsPage
 @Composable
 internal fun StatsFrame(
     at: LibraryPositions,
-    catalogState: CatalogUiState,
     menuActions: MenuActions,
     profileBar: ProfileBarState,
     browse: BrowseActions,
 ) {
-    val state = rememberStatsPage(catalogState)
+    val state = rememberStatsPage()
     LibraryBranch(Destination.Stats, menuActions, profileBar, browse, at, at::pop) {
         StatsScreen(state)
     }

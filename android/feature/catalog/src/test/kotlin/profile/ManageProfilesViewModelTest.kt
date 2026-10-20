@@ -35,7 +35,7 @@ class ManageProfilesViewModelTest {
 
     // Lazy: the view model reaches Dispatchers.Main as it is built, and the
     // rule installs the test one only once the test itself starts.
-    private val vm by lazy { ManageProfilesViewModel(repository, sync) }
+    private val vm by lazy { ManageProfilesViewModel(repository, HouseholdsUnread, sync) }
 
     private suspend fun panelAs(
         id: String,
@@ -120,6 +120,25 @@ class ManageProfilesViewModelTest {
             assertNull(managing().notice)
         }
 
+    @Test
+    fun hiddenSectionsAreSetForAKidByItsOwnerAndForAGrownUpByTheAdminOnly() =
+        runTest {
+            panelAs("b", "5678")
+            vm.setHiddenSections("t", listOf("series", "anime"))
+            assertEquals(listOf("anime", "series"), repository.profiles.value.single { it.id == "t" }.hiddenSections)
+            assertNull(managing().notice)
+            vm.setHiddenSections("m", listOf("anime"))
+            vm.setHiddenSections("a", listOf("anime"))
+            assertEquals(emptyList(), repository.profiles.value.single { it.id == "m" }.hiddenSections)
+            assertEquals(emptyList(), repository.profiles.value.single { it.id == "a" }.hiddenSections)
+            assertEquals(listOf("t"), managing().sectionRows.map { it.id })
+            vm.close()
+            panelAs("a", "1234")
+            vm.setHiddenSections("b", listOf("tutorials"))
+            assertEquals(listOf("tutorials"), repository.profiles.value.single { it.id == "b" }.hiddenSections)
+            assertEquals(listOf("b", "m", "o"), managing().sectionRows.map { it.id })
+        }
+
     /** Whoever may not set a kid's age limit may not set its daily limit either. */
     @Test
     fun aDailyLimitIsRefusedWhereTheAgeLimitIsAndAnOutOfRangeOneIsInvalid() =
@@ -149,7 +168,7 @@ class ManageProfilesViewModelTest {
             vm.remove("a")
             assertEquals("That is not allowed.", managing().notice)
             vm.addKid("bea")
-            assertEquals("A profile with that name already exists.", managing().notice)
+            assertEquals("That name is already used on this install.", managing().notice)
             vm.addKid("Lina", 6)
             assertNull(managing().notice, "a change that took clears the last refusal")
         }
@@ -187,7 +206,7 @@ class ManageProfilesViewModelTest {
             vm.enterPin("2468")
             vm.enterPin("2468")
             assertNull(vm.pin.value)
-            assertEquals("A profile with that name already exists.", managing().notice)
+            assertEquals("That name is already used on this install.", managing().notice)
         }
 
     @Test

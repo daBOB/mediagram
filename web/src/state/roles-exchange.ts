@@ -1,6 +1,7 @@
 /**
  * A profile's role between the `profiles` row and the wire: the admin
- * claim, a kid's limit and parent, a grown-up's PIN.
+ * claim, a kid's limit and parent, a grown-up's PIN, any profile's hidden
+ * sections and household.
  *
  * Kept out of `store.ts` for the reason `lists-exchange.ts` is. Corrective,
  * like everything `importMerged` calls: local news the merge ranks higher is
@@ -38,6 +39,13 @@ export function exportRoles(db: Database | null): Map<string, RoleKeys> {
     if (row.pinHash !== null && row.pinSalt !== null) {
       keys.pin = { hash: row.pinHash, salt: row.pinSalt, updatedAt: row.pinUpdatedAt, ...(row.pinProven ? { proven: true as const } : {}) };
     }
+    // Any profile's, once dated: a list nobody set (0) says nothing.
+    if (row.hiddenSectionsUpdatedAt > 0) {
+      keys.hiddenSections = { sections: JSON.parse(row.hiddenSections) as string[], updatedAt: row.hiddenSectionsUpdatedAt };
+    }
+    // As stored, once dated: a removed or unknown household is still said;
+    // only the view reads it as Home.
+    if (row.householdUpdatedAt > 0) keys.household = { id: row.householdId, updatedAt: row.householdUpdatedAt };
     return [row.id, keys];
   }));
 }
@@ -47,13 +55,7 @@ export function exportRoles(db: Database | null): Map<string, RoleKeys> {
  * row, because a kid's parent may be a viewer this same import made.
  */
 export function importRoles(db: Database, merged: MergedProfile[]): number {
-  // The first profile of each name, the one `findOrCreateProfile` matches.
-  const local = new Map<string, ProfileRow>();
-  for (const row of profileRows(db)) {
-    const name = normalName(row.name);
-    if (name !== null && !local.has(name)) local.set(name, row);
-  }
-
+  const local = firstOfEachName(db);
   let changed = 0;
   for (const profile of merged) {
     const row = local.get(profile.name);
@@ -68,6 +70,22 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
     if (daily && newer(daily.updatedAt, row.dailyLimitUpdatedAt, daily.minutes !== row.dailyLimit)) {
       db.query("UPDATE profiles SET daily_limit = ?2, daily_limit_updated_at = ?3 WHERE id = ?1")
         .run(row.id, daily.minutes, daily.updatedAt);
+      changed += 1;
+    }
+    const hidden = profile.hiddenSections;
+    if (hidden) {
+      // Compared as stored: both sides are sorted, each key once (`hiddenSectionsOf`).
+      const sections = JSON.stringify(hidden.sections);
+      if (newer(hidden.updatedAt, row.hiddenSectionsUpdatedAt, sections !== row.hiddenSections)) {
+        db.query("UPDATE profiles SET hidden_sections = ?2, hidden_sections_updated_at = ?3 WHERE id = ?1")
+          .run(row.id, sections, hidden.updatedAt);
+        changed += 1;
+      }
+    }
+    const household = profile.household;
+    if (household && newer(household.updatedAt, row.householdUpdatedAt, household.id !== row.householdId)) {
+      db.query("UPDATE profiles SET household_id = ?2, household_updated_at = ?3 WHERE id = ?1")
+        .run(row.id, household.id, household.updatedAt);
       changed += 1;
     }
     const pin = profile.pin;
@@ -87,8 +105,18 @@ export function importRoles(db: Database, merged: MergedProfile[]): number {
   return changed + importAdmin(db, merged, local);
 }
 
+/** Each profile by its normalised name — the first of each, the one `findOrCreateProfile` matches. */
+export function firstOfEachName(db: Database): Map<string, ProfileRow> {
+  const local = new Map<string, ProfileRow>();
+  for (const row of profileRows(db)) {
+    const name = normalName(row.name);
+    if (name !== null && !local.has(name)) local.set(name, row);
+  }
+  return local;
+}
+
 /** Merged news beats local when it is newer, or as new and different. */
-function newer(merged: number, local: number, different: boolean): boolean {
+export function newer(merged: number, local: number, different: boolean): boolean {
   return merged > local || (merged === local && different);
 }
 

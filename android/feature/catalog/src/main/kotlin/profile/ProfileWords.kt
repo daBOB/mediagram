@@ -1,7 +1,11 @@
 package catalog.profile
 
+import model.HouseholdWords
 import model.Profile
 import model.ProfileOutcome
+import model.dailyLimitChoiceFor
+import model.hidesWords
+import model.ownerOf
 
 /**
  * What the PIN prompt shows, on a phone and a television alike: [title]
@@ -57,6 +61,42 @@ const val RESET_PIN = "Reset PIN"
 const val REMOVE = "Remove"
 const val DONE = "Done"
 
+const val EVERYONE_HERE = "Everyone here"
+const val WHO_IS_WATCHING = "Who is watching"
+const val SWITCH_PROFILE = "Switch profile"
+
+/**
+ * Under Profiles in Settings' index: who is watching, if anyone, then how many
+ * profiles there are — for a kid, its name alone, as its page shows nobody else.
+ */
+fun profilesLine(
+    chosen: Profile?,
+    count: Int,
+): String =
+    if (chosen?.kids == true) {
+        chosen.name
+    } else {
+        listOfNotNull(chosen?.name, if (count == 1) "1 profile" else "$count profiles").joinToString(" · ")
+    }
+
+/**
+ * Settings' Profiles list (`settings-profiles.js`): grown-ups first, each
+ * beside one quiet line — a grown-up's role, the owner's said first, and
+ * whether it has a PIN; a kid's owner, its FSK and any daily limit; then,
+ * for either, the sections it is not shown.
+ */
+fun everyoneHere(profiles: List<Profile>): List<Pair<Profile, String>> =
+    profiles.sortedBy { it.kids }.map { entry ->
+        val role =
+            if (entry.kids) {
+                val owner = profiles.find { it.id == profiles.ownerOf(entry) }?.name
+                listOfNotNull("Kid", owner, "FSK ${entry.kidsLimit}", entry.dailyLimit?.let { dailyLimitChoiceFor(it).label })
+            } else {
+                listOfNotNull(HouseholdWords.OWNER.takeIf { entry.owner }, if (entry.admin) "Admin" else "Grown-up", if (entry.hasPin) "PIN set" else "No PIN")
+            }
+        entry to (role + listOfNotNull(entry.hidesWords)).joinToString(" · ")
+    }
+
 /** Under Manage's heading once a grown-up has said who they are. */
 fun managingAs(name: String): String = "As $name"
 
@@ -82,7 +122,8 @@ fun ProfileOutcome.sentence(): String? =
     when (this) {
         ProfileOutcome.Done -> null
         ProfileOutcome.Invalid -> "That was not accepted. Check the name and the PIN."
-        ProfileOutcome.NameTaken -> "A profile with that name already exists."
+        // Names are unique across every household on the install, not only this one.
+        ProfileOutcome.NameTaken -> HouseholdWords.PROFILE_NAME_TAKEN
         ProfileOutcome.NotFound -> "That profile is not here any more."
         is ProfileOutcome.Wait -> "Too many wrong PINs. Try again in $seconds s."
         ProfileOutcome.NoPin -> "This profile has no PIN yet. Choose it again to set one."

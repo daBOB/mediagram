@@ -778,6 +778,20 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_in_collection(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_create_household(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_delete_household(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_households(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_join_household(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_move_to_household(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_rename_household(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_household_admin(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_claim_admin(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_create_first_admin(
@@ -789,6 +803,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_mediagram_core_checksum_method_core_delete_profile(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_daily_limit(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_set_hidden_sections(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_kids_age(
     ): Int
@@ -948,6 +964,20 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_in_collection(`ptr`: Long,`profileId`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`setId`: RustBuffer.ByValue,`included`: Byte,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_create_household(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`admin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_delete_household(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_households(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_join_household(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_move_to_household(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`profileId`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_rename_household(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_household_admin(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`adminId`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
+    ): Long
     external fun uniffi_mediagram_core_fn_method_core_claim_admin(`ptr`: Long,`id`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_create_first_admin(`ptr`: Long,`name`: RustBuffer.ByValue,`newPin`: RustBuffer.ByValue,
@@ -959,6 +989,8 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_delete_profile(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_daily_limit(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`minutes`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_set_hidden_sections(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`sections`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_set_kids_age(`ptr`: Long,`actorId`: RustBuffer.ByValue,`pin`: RustBuffer.ByValue,`id`: RustBuffer.ByValue,`kidsAge`: Byte,
     ): Long
@@ -1221,7 +1253,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_editors_choice() and 0xFFFF) != 8907) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 5418) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_profiles() and 0xFFFF) != 65036) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_retire_local_state() and 0xFFFF) != 24465) {
@@ -1260,7 +1292,28 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_in_collection() and 0xFFFF) != 28898) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_claim_admin() and 0xFFFF) != 31626) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_create_household() and 0xFFFF) != 63096) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_delete_household() and 0xFFFF) != 64463) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_households() and 0xFFFF) != 64004) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_join_household() and 0xFFFF) != 1221) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_move_to_household() and 0xFFFF) != 49992) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_rename_household() and 0xFFFF) != 5967) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_household_admin() and 0xFFFF) != 1569) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_claim_admin() and 0xFFFF) != 36803) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_create_first_admin() and 0xFFFF) != 20033) {
@@ -1276,6 +1329,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_daily_limit() and 0xFFFF) != 6510) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_set_hidden_sections() and 0xFFFF) != 50388) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_set_kids_age() and 0xFFFF) != 63867) {
@@ -2204,8 +2260,43 @@ public interface CoreInterface {
     suspend fun `setInCollection`(`profileId`: kotlin.String, `id`: kotlin.String, `setId`: kotlin.String, `included`: kotlin.Boolean): kotlin.Boolean
 
     /**
-     * Makes `id` the household's admin while there is none. A grown-up
-     * with a PIN gives it; one without takes `pin` as its first.
+     * The owner makes a household, run by an existing grown-up who moves in
+     * with their kids, or by a new one.
+     */
+    suspend fun `createHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `admin`: NewHouseholdAdmin): ProfileOutcome
+
+    /**
+     * The owner deletes an empty household other than Home, for good.
+     */
+    suspend fun `deleteHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String): ProfileOutcome
+
+    suspend fun `households`(): HouseholdsView
+
+    /**
+     * This device shows household `id` from now, opened by its admin's PIN
+     * or the owner's. `NoPin` where nobody with a PIN runs it.
+     */
+    suspend fun `joinHousehold`(`id`: kotlin.String, `pin`: kotlin.String): ProfileOutcome
+
+    /**
+     * The owner moves a grown-up and their kids into household `id`. Into
+     * one nobody runs they run it, and one with no PIN takes `new_pin` as
+     * their first; elsewhere `new_pin` changes nothing.
+     */
+    suspend fun `moveToHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `profileId`: kotlin.String, `newPin`: kotlin.String?): ProfileOutcome
+
+    suspend fun `renameHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String): ProfileOutcome
+
+    /**
+     * The owner names one of the household's grown-ups its admin; one with
+     * no PIN takes `new_pin` as their first.
+     */
+    suspend fun `setHouseholdAdmin`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `adminId`: kotlin.String, `newPin`: kotlin.String?): ProfileOutcome
+
+    /**
+     * Makes `id` the owner while this install has none, else the admin of
+     * its household while that has none. A grown-up with a PIN gives it;
+     * one without takes `pin` as its first.
      */
     suspend fun `claimAdmin`(`id`: kotlin.String, `pin`: kotlin.String): ProfileOutcome
 
@@ -2242,6 +2333,14 @@ public interface CoreInterface {
      * takes it off. Allowed exactly where `set_kids_age` is.
      */
     suspend fun `setDailyLimit`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `minutes`: kotlin.UShort?): ProfileOutcome
+
+    /**
+     * The sections of the library `id` does not see, as a whole list of
+     * section keys; an empty one hides nothing. A kid's by its own grown-up,
+     * a grown-up's by the admin, the admin's by nobody. `Invalid` for more
+     * than 16 keys or one that is not 1 to 24 lowercase letters.
+     */
+    suspend fun `setHiddenSections`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `sections`: List<kotlin.String>): ProfileOutcome
 
     /**
      * A parent sets its kid's limit: 6 or 12.
@@ -3736,8 +3835,192 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Makes `id` the household's admin while there is none. A grown-up
-     * with a PIN gives it; one without takes `pin` as its first.
+     * The owner makes a household, run by an existing grown-up who moves in
+     * with their kids, or by a new one.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `name`: kotlin.String, `admin`: NewHouseholdAdmin) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_create_household(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`name`),
+        FfiConverterTypeNewHouseholdAdmin.lower(`admin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The owner deletes an empty household other than Home, for good.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_delete_household(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `households`() : HouseholdsView {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_households(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeHouseholdsView.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * This device shows household `id` from now, opened by its admin's PIN
+     * or the owner's. `NoPin` where nobody with a PIN runs it.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `joinHousehold`(`id`: kotlin.String, `pin`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_join_household(
+                uniffiHandle,
+
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`pin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The owner moves a grown-up and their kids into household `id`. Into
+     * one nobody runs they run it, and one with no PIN takes `new_pin` as
+     * their first; elsewhere `new_pin` changes nothing.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `moveToHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `profileId`: kotlin.String, `newPin`: kotlin.String?) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_move_to_household(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`profileId`),
+        FfiConverterOptionalString.lower(`newPin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `renameHousehold`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `name`: kotlin.String) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_rename_household(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The owner names one of the household's grown-ups its admin; one with
+     * no PIN takes `new_pin` as their first.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setHouseholdAdmin`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `adminId`: kotlin.String, `newPin`: kotlin.String?) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_household_admin(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterString.lower(`adminId`),
+        FfiConverterOptionalString.lower(`newPin`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Makes `id` the owner while this install has none, else the admin of
+     * its household while that has none. A grown-up with a PIN gives it;
+     * one without takes `pin` as its first.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `claimAdmin`(`id`: kotlin.String, `pin`: kotlin.String) : ProfileOutcome {
@@ -3890,6 +4173,36 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         FfiConverterString.lower(`pin`),
         FfiConverterString.lower(`id`),
         FfiConverterOptionalUShort.lower(`minutes`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeProfileOutcome.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * The sections of the library `id` does not see, as a whole list of
+     * section keys; an empty one hides nothing. A kid's by its own grown-up,
+     * a grown-up's by the admin, the admin's by nobody. `Invalid` for more
+     * than 16 keys or one that is not 1 to 24 lowercase letters.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setHiddenSections`(`actorId`: kotlin.String, `pin`: kotlin.String, `id`: kotlin.String, `sections`: List<kotlin.String>) : ProfileOutcome {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_set_hidden_sections(
+                uniffiHandle,
+
+        FfiConverterString.lower(`actorId`),
+        FfiConverterString.lower(`pin`),
+        FfiConverterString.lower(`id`),
+        FfiConverterSequenceString.lower(`sections`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -4989,6 +5302,108 @@ public object FfiConverterTypeHistoryEntry: FfiConverterRustBuffer<HistoryEntry>
 
 
 /**
+ * A live household and the profile that runs it.
+ */
+data class Household (
+    var `id`: kotlin.String
+    ,
+    var `name`: kotlin.String
+    ,
+    var `adminId`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHousehold: FfiConverterRustBuffer<Household> {
+    override fun read(buf: ByteBuffer): Household {
+        return Household(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: Household) = (
+            FfiConverterString.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`adminId`)
+    )
+
+    override fun write(value: Household, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`adminId`, buf)
+    }
+}
+
+
+
+/**
+ * The households, and who is where: what the owner's screens draw.
+ */
+data class HouseholdsView (
+    /**
+     * The household this device shows; `None` asks to join one.
+     */
+    var `joined`: kotlin.String?
+    ,
+    /**
+     * The live households by name, each with who runs it.
+     */
+    var `households`: List<Household>
+    ,
+    /**
+     * Every profile on this install, each placed in its household — not
+     * only this device's, as `profiles` lists.
+     */
+    var `everyone`: List<Profile>
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeHouseholdsView: FfiConverterRustBuffer<HouseholdsView> {
+    override fun read(buf: ByteBuffer): HouseholdsView {
+        return HouseholdsView(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceTypeHousehold.read(buf),
+            FfiConverterSequenceTypeProfile.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: HouseholdsView) = (
+            FfiConverterOptionalString.allocationSize(value.`joined`) +
+            FfiConverterSequenceTypeHousehold.allocationSize(value.`households`) +
+            FfiConverterSequenceTypeProfile.allocationSize(value.`everyone`)
+    )
+
+    override fun write(value: HouseholdsView, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`joined`, buf)
+            FfiConverterSequenceTypeHousehold.write(value.`households`, buf)
+            FfiConverterSequenceTypeProfile.write(value.`everyone`, buf)
+    }
+}
+
+
+
+/**
  * One library the signed-in account could choose, as the caller sees it.
  *
  * A title to render and a handle to send back, and nothing else. The handle
@@ -5277,8 +5692,7 @@ public object FfiConverterTypePreferenceRow: FfiConverterRustBuffer<PreferenceRo
 /**
  * A profile as the app sees it. Says whether there is a PIN, never what.
  * Every field after `name` is defaulted in the generated Kotlin (uniffi
- * 0.32 supports field defaults), so `Profile(id, name)` call sites keep
- * compiling.
+ * field defaults), so `Profile(id, name)` call sites keep compiling.
  */
 data class Profile (
     var `id`: kotlin.String
@@ -5307,7 +5721,7 @@ data class Profile (
     var `parentId`: kotlin.String? = null
     ,
     /**
-     * The household's admin: a grown-up, and at most one.
+     * Runs its household: a grown-up, and at most one to a household.
      */
     var `admin`: kotlin.Boolean = false
     ,
@@ -5315,6 +5729,22 @@ data class Profile (
      * Whether a PIN is set — never the PIN, its hash or its salt.
      */
     var `hasPin`: kotlin.Boolean = false
+    ,
+    /**
+     * Section keys this profile does not see, sorted; any profile's.
+     */
+    var `hiddenSections`: List<kotlin.String> = listOf()
+    ,
+    /**
+     * The owner: the one grown-up who holds the install-wide claim, and who
+     * manages households.
+     */
+    var `owner`: kotlin.Boolean = false
+    ,
+    /**
+     * The household it is in; a kid is wherever its parent is.
+     */
+    var `household`: kotlin.String = "home"
 
 ){
 
@@ -5339,6 +5769,9 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
         )
     }
 
@@ -5350,7 +5783,10 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalUInt.allocationSize(value.`dailyLimit`) +
             FfiConverterOptionalString.allocationSize(value.`parentId`) +
             FfiConverterBoolean.allocationSize(value.`admin`) +
-            FfiConverterBoolean.allocationSize(value.`hasPin`)
+            FfiConverterBoolean.allocationSize(value.`hasPin`) +
+            FfiConverterSequenceString.allocationSize(value.`hiddenSections`) +
+            FfiConverterBoolean.allocationSize(value.`owner`) +
+            FfiConverterString.allocationSize(value.`household`)
     )
 
     override fun write(value: Profile, buf: ByteBuffer) {
@@ -5362,6 +5798,9 @@ public object FfiConverterTypeProfile: FfiConverterRustBuffer<Profile> {
             FfiConverterOptionalString.write(value.`parentId`, buf)
             FfiConverterBoolean.write(value.`admin`, buf)
             FfiConverterBoolean.write(value.`hasPin`, buf)
+            FfiConverterSequenceString.write(value.`hiddenSections`, buf)
+            FfiConverterBoolean.write(value.`owner`, buf)
+            FfiConverterString.write(value.`household`, buf)
     }
 }
 
@@ -6640,6 +7079,107 @@ public object FfiConverterTypeLibraryEvent: FfiConverterRustBuffer<LibraryEvent>
 
 
 /**
+ * A new household's admin.
+ */
+sealed class NewHouseholdAdmin {
+
+    /**
+     * A grown-up already here, by id. `new_pin` is their first PIN, used
+     * only when they have none.
+     */
+    data class Existing(
+        val `id`: kotlin.String,
+        val `newPin`: kotlin.String?) : NewHouseholdAdmin()
+
+    {
+
+
+        companion object
+    }
+
+    /**
+     * A grown-up made with the household, by name, with their first PIN.
+     */
+    data class New(
+        val `name`: kotlin.String,
+        val `newPin`: kotlin.String) : NewHouseholdAdmin()
+
+    {
+
+
+        companion object
+    }
+
+
+
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeNewHouseholdAdmin : FfiConverterRustBuffer<NewHouseholdAdmin>{
+    override fun read(buf: ByteBuffer): NewHouseholdAdmin {
+        return when(buf.getInt()) {
+            1 -> NewHouseholdAdmin.Existing(
+                FfiConverterString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                )
+            2 -> NewHouseholdAdmin.New(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: NewHouseholdAdmin): ULong = when(value) {
+        is NewHouseholdAdmin.Existing -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`id`)
+                + FfiConverterOptionalString.allocationSize(value.`newPin`)
+            )
+        }
+        is NewHouseholdAdmin.New -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`name`)
+                + FfiConverterString.allocationSize(value.`newPin`)
+            )
+        }
+    }
+
+    override fun write(value: NewHouseholdAdmin, buf: ByteBuffer) {
+        when(value) {
+            is NewHouseholdAdmin.Existing -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`id`, buf)
+                FfiConverterOptionalString.write(value.`newPin`, buf)
+                Unit
+            }
+            is NewHouseholdAdmin.New -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`name`, buf)
+                FfiConverterString.write(value.`newPin`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
  * One variant per reason the web answers a refusal with — `invalid`,
  * `name-taken`, `not-found`, `wait`, `no-pin`, `wrong-pin`, `not-allowed`,
  * `not-synced` — so both surfaces can say exactly what went wrong.
@@ -7572,6 +8112,34 @@ public object FfiConverterSequenceTypeHistoryEntry: FfiConverterRustBuffer<List<
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeHistoryEntry.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeHousehold: FfiConverterRustBuffer<List<Household>> {
+    override fun read(buf: ByteBuffer): List<Household> {
+        val len = buf.getInt()
+        return List<Household>(len) {
+            FfiConverterTypeHousehold.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<Household>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeHousehold.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<Household>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeHousehold.write(it, buf)
         }
     }
 }

@@ -62,13 +62,13 @@ import kotlin.test.assertTrue
  * would infer that as the method's return type — which JUnit4 rejects,
  * since a `@Test` method must return `void`.
  */
-abstract class CoreContract {
+abstract class CoreContract : HouseholdContract() {
     /**
      * A fresh core. [synced]: its directory has taken in one sync round that
      * found nobody — a new household's first, which every profile case needs,
      * since a first profile waits for one. Called once per case.
      */
-    abstract fun core(synced: Boolean = true): CoreInterface
+    abstract override fun core(synced: Boolean): CoreInterface
 
     private companion object {
         /** Every grown-up's PIN in these cases. */
@@ -164,6 +164,24 @@ abstract class CoreContract {
             assertEquals(ProfileOutcome.Done, core.setDailyLimit(admin.id, PIN, kid.id, null))
             assertNull(core.profiles().single { it.id == kid.id }.dailyLimit)
             assertNull(core.profiles().single { it.id == admin.id }.dailyLimit)
+        }
+    }
+
+    @Test
+    fun hiddenSectionsAreStoredSortedOnceAndSetOnlyWhereTheAccessRuleAllows() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null))
+            val kid = core.profiles().single { it.name == "Kim" }
+            assertEquals(emptyList(), kid.hiddenSections)
+            assertEquals(ProfileOutcome.Done, core.setHiddenSections(admin.id, PIN, kid.id, listOf("series", "anime", "series", "later")))
+            assertEquals(listOf("anime", "later", "series"), core.profiles().single { it.id == kid.id }.hiddenSections)
+            assertEquals(ProfileOutcome.Invalid, core.setHiddenSections(admin.id, PIN, kid.id, listOf("Not A Key")))
+            assertEquals(ProfileOutcome.WrongPin, core.setHiddenSections(admin.id, "0000", kid.id, emptyList()))
+            assertEquals(ProfileOutcome.NotAllowed, core.setHiddenSections(admin.id, PIN, admin.id, listOf("anime")))
+            assertEquals(ProfileOutcome.Done, core.setHiddenSections(admin.id, PIN, kid.id, emptyList()))
+            assertEquals(emptyList(), core.profiles().single { it.id == kid.id }.hiddenSections)
         }
     }
 

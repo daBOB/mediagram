@@ -179,7 +179,7 @@ internal fun TvLibrary(
 
                 FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
 
-                FrameKind.STATS -> TvStatsFrame(catalogState, leave)
+                FrameKind.STATS -> TvStatsFrame(leave)
 
                 // The TV is what a remote drives; it never opens one.
                 FrameKind.REMOTE -> Unit

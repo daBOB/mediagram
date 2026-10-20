@@ -16,7 +16,6 @@ import model.Kind
 import stats.AchievementsUi
 import stats.NextLine
 import stats.StatsBar
-import stats.StatsLine
 import stats.StatsUiState
 import ui.tv.catalog.home.TvContinueBand
 import ui.tv.catalog.home.TvHomeFeatures
@@ -112,7 +111,6 @@ class TvDisplayFacesTest : TvScreenStateTest() {
             StatsUiState.Ready(
                 totals = listOf("This week" to "42 min", "This month" to "42 min", "All time" to "42 min"),
                 bars = List(30) { StatsBar(fraction = 0f, initial = "M", description = "day $it") },
-                history = listOf(StatsLine("STARTED:f1", "Started · Der Pate · today 21:14 · 42 min")),
                 achievements = AchievementsUi(earned = emptyList(), next = listOf(NextLine("films-10", "10 films", "1 of 10 films", 0.1f))),
             )
         show { TvStatsPage(ready) }

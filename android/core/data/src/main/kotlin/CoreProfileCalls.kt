@@ -1,9 +1,19 @@
 package data
 
+import model.CreateHousehold
+import model.DeleteHousehold
+import model.Households
+import model.JoinHousehold
+import model.MoveToHousehold
 import model.Profile
 import model.ProfileOutcome
 import model.ProfileRequest
+import model.RenameHousehold
+import model.SetHouseholdAdmin
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.HouseholdsView
+import uniffi.mediagram_core.NewHouseholdAdmin
+import model.Household as ModelHousehold
 import uniffi.mediagram_core.Profile as CoreProfile
 import uniffi.mediagram_core.ProfileOutcome as CoreOutcome
 
@@ -20,7 +30,20 @@ internal suspend fun ProfileRequest.sendTo(core: CoreInterface): ProfileOutcome 
         is ProfileRequest.SetPin -> core.setPin(actorId, pin, id, newPin)
         is ProfileRequest.SetKidsAge -> ageOrNull(age)?.let { core.setKidsAge(actorId, pin, id, it) } ?: CoreOutcome.Invalid
         is ProfileRequest.SetDailyLimit -> limitOrNull(minutes)?.let { core.setDailyLimit(actorId, pin, id, it.value) } ?: CoreOutcome.Invalid
+        is ProfileRequest.SetHiddenSections -> core.setHiddenSections(actorId, pin, id, sections)
+        is JoinHousehold -> core.joinHousehold(id, pin)
+        is CreateHousehold -> admin()?.let { core.createHousehold(actorId, pin, name, it) } ?: CoreOutcome.Invalid
+        is RenameHousehold -> core.renameHousehold(actorId, pin, id, name)
+        is SetHouseholdAdmin -> core.setHouseholdAdmin(actorId, pin, id, adminId, newPin)
+        is MoveToHousehold -> core.moveToHousehold(actorId, pin, id, profileId, newPin)
+        is DeleteHousehold -> core.deleteHousehold(actorId, pin, id)
     }.toModel()
+
+/** Who runs the new household: one already here, or a new one with a first PIN; null for neither, or both. */
+private fun CreateHousehold.admin(): NewHouseholdAdmin? {
+    val name = adminName ?: return adminId?.let { NewHouseholdAdmin.Existing(it, newPin) }
+    return if (adminId == null) newPin?.let { NewHouseholdAdmin.New(name, it) } else null
+}
 
 /**
  * An age as the core's unsigned byte, or null when it does not fit one — an
@@ -54,4 +77,24 @@ private fun CoreOutcome.toModel(): ProfileOutcome =
     }
 
 /** The core's profile as this app's own — the one place the two meet, shared with `testing.FakeProfiles`. */
-fun CoreProfile.toModel(): Profile = Profile(id, name, kids, kidsAge?.toInt(), parentId, admin, hasPin, dailyLimit?.toInt())
+fun CoreProfile.toModel(): Profile = Profile(
+        id = id,
+        name = name,
+        kids = kids,
+        kidsAge = kidsAge?.toInt(),
+        parentId = parentId,
+        admin = admin,
+        hasPin = hasPin,
+        dailyLimit = dailyLimit?.toInt(),
+        hiddenSections = hiddenSections,
+        owner = owner,
+        household = household,
+    )
+
+/** The core's households view as this app's own. */
+fun HouseholdsView.toModel(): Households =
+    Households(
+        joined = joined,
+        list = households.map { ModelHousehold(it.id, it.name, it.adminId) },
+        everyone = everyone.map { it.toModel() },
+    )

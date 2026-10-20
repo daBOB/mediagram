@@ -26,8 +26,10 @@ import catalog.walk
 import data.PortraitRequestLog
 import designsystem.Spacing
 import designsystem.entrance
+import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
+import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.rememberTitleCredits
 import ui.common.catalog.togetherJoinIn
 import uniffi.mediagram_core.TitleInfo
@@ -70,6 +72,7 @@ internal fun SeriesPage(
     season: String?,
     onSelectSeason: (String) -> Unit,
     state: LazyListState,
+    episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)?,
     playOnTv: PlayOnTv? = null,
 ) {
     val firstEpisode = remember(collection) { firstItemOf(collection.divisions) }
@@ -147,7 +150,7 @@ internal fun SeriesPage(
         }
         item(key = "tab-row") { TitleTabRow(labels, shownTab, onSelectTab, modifier = Modifier.padding(top = Spacing.small)) }
         when (shownTab) {
-            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay, modifier = panel)
+            "Episodes" -> seriesEpisodes(collection, shownSeason, onSelectSeason, watch, heldIds, onPlay, panel, episodePreload)
             "Cast" ->
                 item(key = "cast") {
                     Box(panel) { CastPanel(credits, onOpenPerson, fetchPortrait, portraits) }

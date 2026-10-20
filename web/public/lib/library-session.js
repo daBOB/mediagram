@@ -18,6 +18,7 @@
 
 import { groupDepartments } from "./departments.js";
 import { forKidsProfile, kidsLimitOf } from "./age-rating.js";
+import { hiddenSectionsOf, withoutHidden } from "./section-access.js";
 
 /**
  * @param {{ port: import("./library-session.js").LibraryPort,
@@ -52,9 +53,9 @@ export function createLibrarySession({ port, state, remoteState, together }) {
   let askedAgain = false;
   let stopStream = null;
 
-  /** What the chosen profile may see of a catalog; a kids profile is a filter at its own limit, nothing else. */
-  const filtered = (sets, limit = kidsLimitOf(state.profile())) =>
-    (limit === null ? sets : forKidsProfile(sets, state.kidsMarks(), limit));
+  /** What the chosen profile may see of a catalog: a kid's own limit, and the sections it is not shown, both. */
+  const filtered = (sets, limit = kidsLimitOf(state.profile())) => withoutHidden(
+    limit === null ? sets : forKidsProfile(sets, state.kidsMarks(), limit), hiddenSectionsOf(state.profile()));
 
   function notify(listeners, what, change) {
     for (const listener of listeners) {
@@ -73,7 +74,7 @@ export function createLibrarySession({ port, state, remoteState, together }) {
   /**
    * Builds the library and counts the current profile sees from a catalog.
    *
-   * The one place a kids profile's filter is applied — every shelf, search,
+   * The one place a profile's filters are applied — every shelf, search,
    * reel and Play next reads `current()`, so none can miss it. Cheap enough
    * to run on every profile change, which is what lets `reapply()` skip a
    * second download. Takes the sets explicitly, defaulting to what is

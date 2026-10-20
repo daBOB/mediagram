@@ -5,21 +5,29 @@
 
 use super::ProfileManager;
 use crate::state::StateDb;
-use crate::state::profiles::Answer;
+use crate::state::households::HOME;
+use crate::state::profiles::{self, Answer};
 use crate::state::profiles::ProfileOutcome::{
     self, Done, Invalid, NameTaken, NoPin, NotAllowed, NotFound, Wait, WrongPin,
 };
 use crate::state::profiles::pin_wait::PinWait;
 use crate::state::profiles::role_rows::{self, NewProfile, Stored};
-use crate::state::profiles::rules::{self, Action};
+use crate::state::profiles::rules::{self, Action, RoleView};
 use crate::state::profiles::{clean_name, now_ms, pin};
 
 /// `None` goes on; `Some` is the refusal.
 pub(super) type Check = rusqlite::Result<Option<ProfileOutcome>>;
 
 impl ProfileManager<'_> {
-    pub(super) fn rows(&self) -> rusqlite::Result<Vec<Stored>> {
+    pub(crate) fn rows(&self) -> rusqlite::Result<Vec<Stored>> {
         role_rows::load(self.conn)
+    }
+
+    /// The household a new profile joins: its maker's, resolved. Home is
+    /// left undated, as before households.
+    pub(super) fn household_of(&self, actor_id: &str) -> rusqlite::Result<Option<String>> {
+        let maker = profiles::list(self.conn)?.into_iter().find(|one| one.id == actor_id);
+        Ok(maker.map(|one| one.household).filter(|household| household != HOME))
     }
 
     pub(super) fn insert(&self, name: &str, role: &NewProfile) -> Answer {
@@ -28,14 +36,13 @@ impl ProfileManager<'_> {
     }
 
     /// A new profile's name: one that cannot be stored, or one another
-    /// profile here already answers to — which sync would read as the same
-    /// viewer.
+    /// profile here answers or once answered to — which sync would read as
+    /// the same viewer.
     pub(super) fn unusable(&self, name: &str) -> Check {
         if clean_name(name).is_none() {
             return Ok(Some(Invalid));
         }
-        let names: Vec<String> = self.rows()?.into_iter().map(|row| row.name).collect();
-        Ok(rules::name_taken(&names, name).then_some(NameTaken))
+        Ok(rules::name_taken(&role_rows::taken_names(self.conn, None)?, name).then_some(NameTaken))
     }
 
     /// Somebody there, a grown-up acting, its PIN unless `unproven`, then
@@ -63,29 +70,39 @@ impl ProfileManager<'_> {
         if !unproven && let Some(refused) = self.prove(actor, pin)? {
             return Ok(Some(refused));
         }
-        let views: Vec<_> = rows.iter().map(Stored::view).collect();
+        // Placed, as the web's listed profiles are: in its household, a kid never the admin.
+        let views: Vec<RoleView> = profiles::list(self.conn)?.iter().map(RoleView::from).collect();
         let allowed = rules::allowed(&views, actor_id, action, target_id.unwrap_or_default());
         Ok((!allowed).then_some(NotAllowed))
     }
 
-    /// A grown-up's PIN: none yet; or — only now that one is about to be
-    /// compared — that profile's wait, then the comparison and the count it
-    /// keeps, stored before the answer leaves. A PIN that is not four digits
-    /// is compared like any other, and is wrong. A count that cannot be
-    /// stored fails the call, so a guess never goes uncounted and answered.
-    pub(super) fn prove(&self, row: &Stored, pin: &str) -> Check {
-        let (Some(hash), Some(salt)) = (&row.pin_hash, &row.pin_salt) else {
+    /// A grown-up's PIN: none yet; or that profile's [`compare`](Self::compare).
+    pub(crate) fn prove(&self, row: &Stored, pin: &str) -> Check {
+        if row.pin_hash.is_none() || row.pin_salt.is_none() {
             return Ok(Some(NoPin));
+        }
+        self.compare(&row.id, &[row], pin)
+    }
+
+    /// Only now that a PIN is about to be compared: `key`'s wait, then
+    /// whether `pin` opens any of `doors`, and the count it keeps, stored
+    /// before the answer leaves. A PIN that is not four digits is compared
+    /// like any other, and is wrong. A count that cannot be stored fails the
+    /// call, so a guess never goes uncounted and answered.
+    pub(crate) fn compare(&self, key: &str, doors: &[&Stored], pin: &str) -> Check {
+        let opens = |row: &&Stored| match (&row.pin_hash, &row.pin_salt) {
+            (Some(hash), Some(salt)) => pin::matches(hash, salt, pin),
+            _ => false,
         };
         let mut wait = PinWait::load(self.conn)?;
-        let seconds = wait.seconds_left(&row.id, self.now);
+        let seconds = wait.seconds_left(key, self.now);
         let refused = if seconds > 0 {
             Some(Wait { seconds })
-        } else if !pin::valid(pin) || !pin::matches(hash, salt, pin) {
-            wait.failed(&row.id, self.now);
+        } else if !pin::valid(pin) || !doors.iter().any(opens) {
+            wait.failed(key, self.now);
             Some(WrongPin)
         } else {
-            wait.succeeded(&row.id);
+            wait.succeeded(key);
             None
         };
         wait.save(self.conn)?;

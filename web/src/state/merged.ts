@@ -8,10 +8,13 @@ import type { CollectionRow, ListRow, ProgressRow, UnwatchedRow, WatchedRow } fr
 import type { PreferenceRow } from "./preferences-record";
 import type { StatsRows } from "./stats-record";
 import type { MergedRoles } from "./roles-merge";
+import type { HouseholdEntry } from "./households-record";
+import type { NameKeys } from "./name-record";
 
 /** Everything the devices agree on, once they have been reconciled. Its role
- * keys — `admin`, `kidsAge`, `parent`, `pin` — are `roles-merge.ts`'s. */
-export interface MergedProfile extends StatsRows, MergedRoles {
+ * keys — `admin`, `kidsAge`, `parent`, `pin` — are `roles-merge.ts`'s; its
+ * name keys — `renamedAt`, `formerNames` — are `renames.ts`'s. */
+export interface MergedProfile extends StatsRows, MergedRoles, NameKeys {
   /** The normalised name, which is what identifies a viewer across machines. */
   name: string;
   /**
@@ -43,4 +46,7 @@ export interface MergedState {
   kids?: ListRow[];
   /** Household-wide too, and kept per title the same way; see `schema.ts` v8. */
   editorsChoice?: ListRow[];
+  /** Each household, field by field (`households-merge.ts`); absent, not
+   * empty, when no device says anything about one. */
+  households?: HouseholdEntry[];
 }

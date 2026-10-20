@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.Role
 import designsystem.Spacing
 import model.MediaSet
 import playback.FilmPreloadRow
+import ui.common.catalog.preloadName
 import player.preloadLabel
 import player.preloadRowState
 
@@ -86,7 +87,7 @@ internal fun PreloadsScreen(
         if (heldFilms.isNotEmpty()) {
             item(key = "held-heading") { SectionHeading("On this device") }
             items(items = heldFilms, key = { "held-${it.setId}" }) { set ->
-                TitleActionRow(set.title, onOpen = { onOpenTitle(set.setId) }, actionLabel = "Remove", onAction = { onRemove(set.setId) })
+                TitleActionRow(preloadName(set), onOpen = { onOpenTitle(set.setId) }, actionLabel = "Remove", onAction = { onRemove(set.setId) })
                 HorizontalDivider()
             }
         }

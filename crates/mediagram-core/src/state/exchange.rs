@@ -10,7 +10,9 @@ use super::record::{ProfileState, ProgressRow, SYNC_FORMAT, SyncRecord};
 use super::rows;
 use super::stats;
 
+mod households;
 mod lists;
+mod names;
 mod preferences;
 mod roles;
 mod watched;
@@ -39,6 +41,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         let preferences = preferences::export_preferences(conn, &profile.id)?;
         let (title_stats, day_stats) = stats::exchange::export(conn, &profile.id)?;
         let roles = roles::export(conn, &profile.id)?;
+        let names = names::export(conn, &profile.id)?;
         profiles.push(ProfileState {
             name: profile.name,
             local_id: Some(profile.id),
@@ -52,6 +55,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
             title_stats,
             day_stats,
             roles,
+            names,
         });
     }
     let kids = lists::export_kids(conn)?;
@@ -63,6 +67,7 @@ pub fn export_record(conn: &Connection, device: &str) -> rusqlite::Result<SyncRe
         profiles,
         kids,
         editors_choice,
+        households: households::export(conn)?,
     })
 }
 
@@ -82,17 +87,11 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     let mut changed = lists::import_kids(conn, &merged.kids)?;
     changed += lists::import_editors_choice(conn, &merged.editors_choice)?;
     for profile in &merged.profiles {
-        // The identity to match on, and the spelling to create with.
-        let Some((profile_id, created, already_kids)) = profiles::profile_named_with_creation(
-            conn,
-            &profile.name,
-            Some(&profile.display_name),
-            profile.kids,
-        )?
-        else {
+        // By its name and every name it had: renamed in place, two rows folded, or made.
+        let Some((profile_id, took, already_kids)) = names::take_in(conn, profile)? else {
             continue;
         };
-        changed += u64::from(created);
+        changed += took;
         // Another device made this viewer a kids profile. Only ever upgraded:
         // a merge without the flag says nothing, it does not say "not kids".
         // FSK 12 until `roles::import` brings the merged limit, so a kid
@@ -119,6 +118,7 @@ pub fn import_merged(conn: &Connection, merged: &MergedState) -> rusqlite::Resul
     // After the loop, not in it: a kid's parent may be a viewer this same
     // import has only just made.
     changed += roles::import(conn, &merged.profiles)?;
+    changed += households::import(conn, &merged.households)?;
     transaction.commit()?;
     Ok(changed)
 }

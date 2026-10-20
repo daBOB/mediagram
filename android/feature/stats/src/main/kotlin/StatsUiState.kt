@@ -1,11 +1,6 @@
 package stats
 
-import model.Kind
-import model.MediaSet
-import model.episodeLabel
 import uniffi.mediagram_core.Achievements
-import uniffi.mediagram_core.HistoryEntry
-import uniffi.mediagram_core.HistoryKind
 import uniffi.mediagram_core.StatsSummary
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -18,10 +13,6 @@ const val STATS_HEADING = "Stats"
 const val LAST_30_DAYS_HEADING = "Last 30 days"
 const val ACHIEVEMENTS_HEADING = "Achievements"
 const val NEXT_HEADING = "Next"
-const val HISTORY_HEADING = "History"
-
-/** A history line's title for a set this profile's catalogue does not hold. */
-const val NO_LONGER_IN_LIBRARY = "No longer in the library"
 
 /** What the core answered for the chosen profile, before any set is named — [StatsViewModel]'s state. */
 sealed interface StatsRead {
@@ -57,8 +48,6 @@ sealed interface StatsUiState {
         val totals: List<Pair<String, String>>,
         /** Thirty days, oldest first, today last. */
         val bars: List<StatsBar>,
-        /** Newest first, in the core's order. */
-        val history: List<StatsLine>,
         /** What was earned and what is next; [AchievementsUi.None] draws no section. */
         val achievements: AchievementsUi = AchievementsUi.None,
         /** "Counting since 3 Oct", the line under the totals while nothing is counted yet; `null` draws none. */
@@ -73,36 +62,21 @@ data class StatsBar(
     val description: String,
 )
 
-/** One history line. [key] is unique on the page: a set has at most one line of each kind. */
-data class StatsLine(
-    val key: String,
-    val text: String,
-)
-
-/**
- * The page for [read], every set named from [sets]: this profile's own
- * catalogue by set id, so a title this profile cannot see is never named.
- * [sets] is `null` while that catalogue is still loading; a page with
- * history waits for it rather than calling every title gone.
- */
-fun statsUiStateOf(
-    read: StatsRead,
-    sets: Map<String, MediaSet>?,
-): StatsUiState =
+/** The page for [read]. */
+fun statsUiStateOf(read: StatsRead): StatsUiState =
     when (read) {
         StatsRead.Loading -> StatsUiState.Loading
         is StatsRead.Failed -> StatsUiState.Failed(failureLine(read.reason))
         is StatsRead.Done ->
-            when {
-                read.summary.history.isEmpty() -> StatsUiState.Empty
-                sets == null -> StatsUiState.Loading
-                else -> pageOf(read.summary, sets, read.now).copy(achievements = achievementsUiOf(read.achievements, read.now))
+            if (read.summary.history.isEmpty()) {
+                StatsUiState.Empty
+            } else {
+                pageOf(read.summary, read.now).copy(achievements = achievementsUiOf(read.achievements, read.now))
             }
     }
 
 private fun pageOf(
     summary: StatsSummary,
-    sets: Map<String, MediaSet>,
     now: ZonedDateTime,
 ): StatsUiState.Ready {
     val busiest = summary.last30.maxOfOrNull { it.seconds } ?: 0.0
@@ -122,42 +96,6 @@ private fun pageOf(
                     description = "${shortDate(date)} · ${durationText(bar.seconds)}",
                 )
             },
-        history = summary.history.map { entry -> StatsLine(key = "${entry.kind}:${entry.setId}", text = historyLine(entry, sets[entry.setId], now)) },
         countingSince = countingSinceText(summary, now),
     )
-}
-
-/**
- * One history line: "Started · Der Pate · Sat 21:14 · 42 min". No duration
- * when nothing was counted: a finish from before stats existed was not
- * watched in 0 min.
- */
-fun historyLine(
-    entry: HistoryEntry,
-    set: MediaSet?,
-    now: ZonedDateTime,
-): String {
-    val parts = mutableListOf(kindLabel(entry.kind), statsTitle(set), whenText(entry.at, now))
-    if (entry.seconds > 0) parts += durationText(entry.seconds)
-    return parts.joinToString(" · ")
-}
-
-fun kindLabel(kind: HistoryKind): String =
-    when (kind) {
-        HistoryKind.STARTED -> "Started"
-        HistoryKind.FINISHED -> "Finished"
-        HistoryKind.AGAIN -> "Watched again"
-    }
-
-/**
- * The library's own name for a set, the way Continue watching names it: a
- * film by its title, an episode or lesson by its show and number ("Crime
- * 101 S1E4", "Geldhochschule 3"). A set this profile's catalogue does not
- * hold — gone, or not for this profile — is not named.
- */
-fun statsTitle(set: MediaSet?): String {
-    if (set == null) return NO_LONGER_IN_LIBRARY
-    val show = set.show?.takeIf { it.isNotEmpty() }
-    if (set.kind == Kind.MOVIE || show == null) return set.title
-    return listOf(show, episodeLabel(set)).filter { it.isNotEmpty() }.joinToString(" ")
 }

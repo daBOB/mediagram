@@ -3,7 +3,11 @@ package ui.profile
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -13,7 +17,10 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.style.TextDecoration
 import catalog.profile.ManageUiState
 import model.Profile
 import org.junit.After
@@ -26,6 +33,7 @@ import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import ui.common.profile.ManageActions
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 /** Manage profiles drawn from its state, section for section as `profile-manage.js` draws it. */
 @RunWith(RobolectricTestRunner::class)
@@ -37,12 +45,14 @@ class ManageProfilesScreenTest {
     private val bea = Profile("b", "Bea", hasPin = true)
     private val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
     private val calls = mutableListOf<String>()
+    private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
             onAddKid = { name, age, daily -> calls += "addKid $name $age $daily" },
             onSetKidsAge = { id, age -> calls += "age $id $age" },
             onSetDailyLimit = { id, minutes -> calls += "daily $id $minutes" },
+            onSetHiddenSections = { id, sections -> calls += "sections $id $sections" },
             onRemove = { calls += "remove $it" },
             onAddGrownUp = { calls += "addGrownUp $it" },
             onChangePin = { calls += "pin $it" },
@@ -54,9 +64,10 @@ class ManageProfilesScreenTest {
     }
 
     private fun show(state: ManageUiState) {
+        shown.value = state
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { MaterialTheme { ManageProfilesScreen(state, actions) } }
+            controller.get().setContent { MaterialTheme { ManageProfilesScreen(shown.value, actions) } }
         }
         compose.waitForIdle()
     }
@@ -69,8 +80,8 @@ class ManageProfilesScreenTest {
         compose.onNodeWithText("Who are you?").assertExists()
         compose.onNodeWithText("Your PIN is no longer valid. Choose who you are again.").assertExists()
         compose.onNodeWithText("Bea").performClick()
-        compose.onNodeWithText("Done").performClick()
-        assertEquals(listOf("actAs b", "close"), calls)
+        compose.onNodeWithText("Done").assertDoesNotExist()
+        assertEquals(listOf("actAs b"), calls)
     }
 
     @Test fun aParentSeesItsKidsWithTheirLimitAndNoGrownUps() {
@@ -143,12 +154,44 @@ class ManageProfilesScreenTest {
         assertEquals(listOf("addGrownUp Carl"), calls)
     }
 
+    /** A turn sends the whole list, an unknown key kept, and holds every switch until the answer; the next turn builds on the new list. */
+    @Test fun aKidsSectionsAreSwitchesAndASecondTurnWaitsForTheFirstsAnswer() {
+        show(ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("anime", "later")))))
+        val ofTom = hasAnyAncestor(hasContentDescription("Sections for Tom"))
+        compose.onNode(hasText("Movies") and ofTom).assertIsOn()
+        compose.onNode(hasText("Anime") and ofTom).assertIsOff().performClick()
+        compose.onNode(hasText("Series") and ofTom).assertIsNotEnabled().performClick()
+        assertEquals(listOf("sections t [later]"), calls)
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("later"))), answers = 1) }
+        compose.onNode(hasText("Series") and ofTom).performClick()
+        assertEquals(listOf("sections t [later]", "sections t [later, series]"), calls)
+    }
+
+    /** The look the user chose: a section the profile sees is a quiet outlined chip; only a hidden one is struck through. */
+    @Test fun aHiddenSectionIsStruckThroughAndAShownOneIsNot() {
+        show(ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("anime")))))
+        assertEquals(TextDecoration.LineThrough, decorationOf("Anime"))
+        assertNotEquals(TextDecoration.LineThrough, decorationOf("Movies"))
+    }
+
+    @Test fun theAdminSetsAnotherGrownUpsSectionsAndHasNoneOfItsOwn() {
+        show(ManageUiState.Managing(andre, grownUps = listOf(bea), kids = emptyList()))
+        compose.onNode(hasContentDescription("Sections for andre")).assertDoesNotExist()
+        compose.onNode(hasText("Tutorials") and hasAnyAncestor(hasContentDescription("Sections for Bea"))).performClick()
+        assertEquals(listOf("sections b [tutorials]"), calls)
+    }
+
+    private fun decorationOf(text: String): TextDecoration? {
+        val layouts = mutableListOf<TextLayoutResult>()
+        compose.onNode(hasText(text), useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single().layoutInput.style.textDecoration
+    }
+
     @Test fun whyTheLastChangeFailedIsSaidAndOwnPinIsChangedHere() {
         show(ManageUiState.Managing(bea, emptyList(), emptyList(), notice = "A profile with that name already exists."))
         compose.onNodeWithText("A profile with that name already exists.").assertExists()
         compose.onNodeWithText("Your PIN").assertExists()
         compose.onNodeWithText("Change your PIN").performClick()
-        compose.onNodeWithText("Done").performClick()
-        assertEquals(listOf("pin b", "close"), calls)
+        assertEquals(listOf("pin b"), calls)
     }
 }

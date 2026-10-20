@@ -5,6 +5,7 @@ use rusqlite::Connection;
 
 use super::*;
 use crate::state::open::migrate;
+use crate::state::record::normal_name;
 
 const T: i64 = 1_700_000_000_000;
 
@@ -58,6 +59,24 @@ fn a_new_name_must_be_storable_and_answer_to_nobody_here() {
         assert_eq!(m.unusable(taken).unwrap(), Some(NameTaken), "{taken:?}");
     }
     assert_eq!(m.unusable("Bea").unwrap(), None);
+}
+
+/// A former name never comes free: an older build, or a retired device's
+/// last document, still writes it for the renamed person.
+#[test]
+fn a_new_profile_may_not_take_a_name_another_profile_had_before() {
+    let conn = store();
+    let celi = add(&conn, "Celi", grown_up(None, false));
+    // "İ" lower-cases to two code points: 61 of them are a name a device may
+    // store, and a former name of 122, longer than a new name may be.
+    let long = "İ".repeat(61);
+    let former = serde_json::to_string(&["celine".to_string(), normal_name(&long).unwrap()]).unwrap();
+    conn.execute("UPDATE profiles SET former_names = ?2 WHERE id = ?1", [&celi, &former]).unwrap();
+    let m = manager(&conn, T);
+    for taken in ["Celine", " CELINE ", long.as_str()] {
+        assert_eq!(m.unusable(taken).unwrap(), Some(NameTaken), "{taken:?}");
+    }
+    assert_eq!(m.unusable("Celina").unwrap(), None);
 }
 
 #[test]

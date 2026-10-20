@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.hilt.lifecycle.viewmodel.HiltViewModelFactory
 import androidx.lifecycle.ViewModel
@@ -31,11 +33,15 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
+import data.DefaultHouseholdsRepository
 import data.WatchSync
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import model.Profile
 import org.junit.After
 import org.junit.Before
@@ -68,6 +74,9 @@ abstract class ProfileGateHarness {
     lateinit var manage: ManageProfilesViewModel
     private val store = ViewModelStore()
 
+    /** Where the households are read again whenever who is here changes. */
+    private val scope = CoroutineScope(Dispatchers.Unconfined)
+
     val andre = Profile("a", "andre", admin = true)
     val bea = Profile("b", "Bea")
     val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
@@ -85,22 +94,25 @@ abstract class ProfileGateHarness {
                 if (::controller.isInitialized) controller.close()
                 store.clear()
             }
+            scope.cancel()
         } finally {
             unmockkStatic(::HiltViewModelFactory)
         }
     }
 
-    /** [profiles] in the core with their [pins], [chosen] already chosen on this device, and the gate drawn over them. */
+    /** [profiles] in the core with their [pins] and whatever [seed] adds, [chosen] already chosen on this device, and the gate drawn over them. */
     fun open(
         vararg profiles: Profile,
         pins: Map<String, String> = emptyMap(),
         chosen: String? = null,
+        seed: FakeCore.() -> Unit = {},
     ) {
         compose.runOnUiThread {
-            household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins })
+            household = WatchStateFixture(profiles.toList(), chosen, FakeCore().apply { roles.pins += pins }.apply(seed))
             val sync = mockk<WatchSync>(relaxed = true)
-            manage = ManageProfilesViewModel(household.repository, sync)
-            val models = listOf(ProfileViewModel(household.repository, sync), manage)
+            val homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
+            manage = ManageProfilesViewModel(household.repository, homes, sync)
+            val models = listOf(ProfileViewModel(household.repository, sync), manage) + householdViewModels(household.repository, homes).values
             val provider =
                 ViewModelProvider(
                     store,
@@ -146,7 +158,8 @@ abstract class ProfileGateHarness {
     ) {
         compose.onNodeWithText("Manage profiles").performClick()
         compose.onNodeWithText("Who are you?").assertExists()
-        compose.onNodeWithText(name).performClick()
+        // The pill, not the same name in Everyone here above it.
+        compose.onNode(hasText(name) and hasClickAction()).performScrollTo().performClick()
         pin(digits)
         compose.onNodeWithText("As $name").assertExists()
     }

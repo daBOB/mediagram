@@ -17,6 +17,7 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.tvSp
+import model.HouseholdWords
 import model.Profile
 import ui.tv.TvTextRow
 
@@ -71,14 +72,15 @@ internal fun focusSpot(
     }
 }
 
-/** The first grown-up on a device with none; it runs the household. */
+/** The first grown-up on a device with none; it runs the household. Or, where it [joins], Join a household in its place. */
 @Composable
 internal fun TvFirstProfileRow(
     onStart: () -> Unit,
     focusRequester: FocusRequester?,
+    joins: Boolean = false,
 ) {
     TvTextRow(
-        text = FIRST_PROFILE,
+        text = if (joins) HouseholdWords.JOIN_A_HOUSEHOLD else FIRST_PROFILE,
         onClick = onStart,
         focusRequester = focusRequester,
         modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium),

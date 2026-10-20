@@ -1,6 +1,6 @@
 /**
  * The Stats page: this profile's watching this week, this month and ever, the
- * last thirty days as bars, and every start, restart and finish, newest first.
+ * last thirty days as bars, and its achievements.
  *
  * Asked of the server each time it opens — the minutes live there, counted
  * from every device — and drawn only if the viewer is still on the page when
@@ -10,16 +10,15 @@
 import { el } from "../dom.js";
 import { profileId } from "../watch-state.js";
 import { heading } from "./shelf-view.js";
-import { countingSince, historyLine, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
+import { countingSince, shortDate, watchTime, weekdayInitial, whenLabel } from "./stats-format.js";
 import { achievementsSection } from "./stats-achievements.js";
 import { markSeen } from "./stats-dot.js";
 
 /**
  * @param {HTMLElement} main
- * @param {{ byId: Map<string, any> }} context
  * @param {() => boolean} stillHere
  */
-export async function renderStats(main, { byId }, stillHere) {
+export async function renderStats(main, stillHere) {
   heading(main, "Stats");
   const id = profileId();
   if (id === null) return main.append(el("p", "empty", "Nothing watched yet."));
@@ -42,9 +41,8 @@ export async function renderStats(main, { byId }, stillHere) {
   const since = countingSince(summary, now);
   if (since) main.append(el("p", "stats-since", since));
   main.append(lastThirty(summary.last30));
-  // Before the history, which has no end; nothing at all while there is nothing in it.
+  // Nothing at all while there is nothing in it.
   if (earned.length + next.length > 0) main.append(achievementsSection(summary.achievements, (at) => whenLabel(at, now)));
-  main.append(history(summary.history, byId, now));
   // Drawn, so shown: what this page holds is no longer news on this browser.
   markSeen(id, earned);
 }
@@ -81,15 +79,5 @@ function lastThirty(days) {
     bars.append(day);
   }
   section.append(bars);
-  return section;
-}
-
-/** Every entry; the stylesheet's `content-visibility` keeps a long one cheap. */
-function history(entries, byId, now) {
-  const section = el("section", "stats-history");
-  section.append(el("h2", "shelf-sub", "History"));
-  const list = el("ol", "stats-history-list");
-  for (const entry of entries) list.append(el("li", null, historyLine(entry, byId.get(entry.setId) ?? null, now)));
-  section.append(list);
   return section;
 }

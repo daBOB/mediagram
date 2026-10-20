@@ -16,6 +16,7 @@ import model.Kind
 import model.MediaSet
 import model.WatchSnapshot
 import ui.common.LibraryPositions
+import ui.common.catalog.rememberEpisodePreloadUi
 import ui.common.catalog.rememberFilmPreloadUi
 import ui.common.catalog.rememberTitleCredits
 import ui.common.catalog.rememberTitleInfo
@@ -85,8 +86,7 @@ internal fun TvTitleFrame(
                 } else {
                     { catalogViewModel.toggleEditorsChoice(set.setId) }
                 },
-            // Films only, same as the phone's own TitleDetailScreen — a
-            // show's episodes preload two at a time on their own already.
+            // Films only here, as on the phone — an episode's own control sits on its row of the show page.
             preload = if (set.kind == Kind.MOVIE) rememberFilmPreloadUi(set, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
             watchlisted = set.setId in watch.watchlist,
             onToggleWatchlist = { catalogViewModel.toggleWatchlist(set.setId) },
@@ -160,6 +160,7 @@ internal fun TvCollectionFrame(
                 } else {
                     { catalogViewModel.toggleEditorsChoice(firstEpisodeId) }
                 },
+            episodePreload = { set -> rememberEpisodePreloadUi(set, catalogState) },
         )
     }
 }

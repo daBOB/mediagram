@@ -1,5 +1,8 @@
 package ui.profile
 
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -35,6 +38,26 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         compose.onNodeWithText("Who are you?").assertExists()
     }
 
+    /** The picker's Manage profiles is Settings' own Profiles page, with nobody chosen even when the device has someone. */
+    @Test fun thePickersManageProfilesIsTheProfilesPageWithNobodyChosenAndDoneReturnsToThePicker() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111"), chosen = "a")
+        compose.onNodeWithText("Change").performClick()
+        manageAs("andre", "1111")
+        compose.onNodeWithText("Profiles").assertExists()
+        compose.onNodeWithText("Everyone here").assertExists()
+        compose.onNodeWithText("Kid · Bea · FSK 12").assertExists()
+        compose.onNodeWithText("Who is watching").assertDoesNotExist()
+        compose.onNodeWithText("Switch profile").assertDoesNotExist()
+
+        compose.onNodeWithText("Done").performScrollTo().performClick()
+        compose.onNodeWithText("Who's watching?").assertExists()
+        compose.runOnUiThread { manage.setKidsAge("t", 6) }
+        compose.waitForIdle()
+        assertEquals(12, profile("t").kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
+        compose.onNodeWithText("Manage profiles").performClick()
+        compose.onNodeWithText("Who are you?").assertExists()
+    }
+
     @Test fun theAdminAddsAGrownUpWithAPinAndAKidThatStartsAtSix() {
         open(andre, pins = mapOf("a" to "1111"))
         manageAs("andre", "1111")
@@ -66,6 +89,49 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         limitOf("Tom", 6).assertIsSelected()
     }
 
+    /** A parent hides a section from its kid and shows it again; the switch and the Everyone line follow the core's answer. */
+    @Test fun aParentHidesASectionFromItsKid() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("Bea", "2222")
+        val anime = compose.onNode(hasText("Anime") and hasAnyAncestor(hasContentDescription("Sections for Tom")))
+        anime.performScrollTo().performClick()
+        assertEquals(listOf("anime"), profile("t").hiddenSections)
+        anime.assertIsOff()
+        compose.onNodeWithText("Kid · Bea · FSK 12 · hides Anime").assertExists()
+        anime.performClick()
+        assertEquals(emptyList(), profile("t").hiddenSections)
+        anime.assertIsOn()
+    }
+
+    /** The same refusal twice leaves the switches free each time, and the retry that goes through is sent. */
+    @Test fun theSameRefusalTwiceLeavesTheSwitchesFreeForTheRetry() {
+        open(andre, bea, tom, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("Bea", "2222")
+        // The core hands Tom to andre behind the panel's back: Bea's turns are refused until he is handed back.
+        handTomTo("a")
+        val anime = compose.onNode(hasText("Anime") and hasAnyAncestor(hasContentDescription("Sections for Tom")))
+        repeat(2) {
+            anime.performScrollTo().performClick()
+            compose.onNodeWithText("That is not allowed.").assertExists()
+            anime.assertIsEnabled()
+        }
+        handTomTo("b")
+        anime.performClick()
+        assertEquals(listOf("anime"), profile("t").hiddenSections)
+        compose.onNodeWithText("That is not allowed.").assertDoesNotExist()
+    }
+
+    private fun handTomTo(parent: String) =
+        compose.runOnUiThread { household.core.profiles = household.core.profiles.map { if (it.id == "t") it.copy(parentId = parent) else it } }
+
+    @Test fun theAdminHidesASectionFromAnotherGrownUp() {
+        open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"))
+        manageAs("andre", "1111")
+        compose.onNode(hasText("Tutorials") and hasAnyAncestor(hasContentDescription("Sections for Bea"))).performScrollTo().performClick()
+        assertEquals(listOf("tutorials"), profile("b").hiddenSections)
+        compose.onNodeWithText("Grown-up · PIN set · hides Tutorials").assertExists()
+    }
+
     @Test fun theAdminResetsAnotherGrownUpsPin() {
         open(andre, bea, pins = mapOf("a" to "1111", "b" to "2222"))
         manageAs("andre", "1111")
@@ -92,7 +158,7 @@ class ManageProfilesFlowTest : ProfileGateHarness() {
         manageAs("andre", "1111")
         named("Add a kid").performScrollTo().performTextInput("bea")
         compose.onNodeWithText("Add a kid").performScrollTo().performClick()
-        compose.onNodeWithText("A profile with that name already exists.").assertExists()
+        compose.onNodeWithText("That name is already used on this install.").assertExists()
         assertEquals(2, household.core.profiles.size)
     }
 }

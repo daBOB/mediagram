@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +30,6 @@ import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.tvSp
-import stats.HISTORY_HEADING
 import stats.LAST_30_DAYS_HEADING
 import stats.NOTHING_WATCHED
 import stats.STATS_HEADING
@@ -47,9 +44,8 @@ private val ChartHeight = 120.dp
  * `StatsScreen` at a television's sizes, with the same strings
  * `feature:stats` hands both. Nothing on the page opens anything, but the
  * remote still needs somewhere to rest and stepping is what scrolls: the
- * totals, the chart and each history line are stops of their own, and the
- * totals take the remote on arrival. The history is a lazy list, so a
- * profile with years of it composes only what is on screen.
+ * totals and the chart are stops of their own, and the totals take the
+ * remote on arrival.
  */
 @Composable
 internal fun TvStatsPage(state: StatsUiState) {
@@ -98,10 +94,6 @@ internal fun TvStatsPage(state: StatsUiState) {
                     }
                 }
                 tvAchievementItems(state.achievements)
-                item(key = "history") { Text(text = HISTORY_HEADING, style = TvType.titleMedium, modifier = Modifier.padding(top = Spacing.small)) }
-                items(items = state.history, key = { it.key }) { line ->
-                    TvStatsStop { focused -> Text(text = line.text, style = TvFocus.textStyle(TvType.bodyMedium, focused)) }
-                }
             }
         }
     }

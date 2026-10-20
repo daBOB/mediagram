@@ -161,3 +161,49 @@ fn a_version_directory_name_carries_its_push_time() {
     assert_eq!(pushed_at_of("v-not-a-number"), None);
     assert_eq!(pushed_at_of(""), None);
 }
+
+/// A version directory holding an empty but valid catalog.
+fn write_library(version_dir: &std::path::Path) {
+    let conn = rusqlite::Connection::open(library_db(version_dir)).unwrap();
+    for stmt in mlib_spec::schema::migrations_up_to(mlib_spec::schema::SCHEMA_VERSION) {
+        conn.execute(stmt, []).unwrap();
+    }
+}
+
+/// Every launch refreshes, and the channel's snapshot is tens of megabytes:
+/// the one already installed is recognised by its push time, including when
+/// it was installed beside itself with a `-<n>` suffix, so it is not fetched
+/// again.
+#[test]
+fn the_installed_channel_snapshot_is_recognised_by_its_push_time() {
+    let data = tempfile::tempdir().unwrap();
+    let core = Core::at(data.path());
+    assert_eq!(installed_from_channel(&core, 100), None, "nothing installed yet");
+
+    point_current_at(&core, "v-100-1");
+    write_library(&dir(&core).join("v-100-1"));
+
+    assert_eq!(installed_from_channel(&core, 100), Some(0));
+    assert_eq!(installed_from_channel(&core, 101), None, "a newer snapshot is fetched");
+}
+
+/// A package's catalog can carry the same push time as the channel's
+/// snapshot without being it, so it never stands in for a download.
+#[test]
+fn a_catalog_installed_from_a_package_is_never_taken_for_the_channels_snapshot() {
+    let data = tempfile::tempdir().unwrap();
+    let core = Core::at(data.path());
+    point_current_at(&core, "v-100");
+    let version = dir(&core).join("v-100");
+    write_library(&version);
+    let identity = crate::versions::identity::Identity {
+        format: 1,
+        created_at: 100,
+        key_id: "key".into(),
+        schema: 1,
+        spec: 1,
+    };
+    crate::versions::identity::write_identity(&version, &identity).unwrap();
+
+    assert_eq!(installed_from_channel(&core, 100), None);
+}

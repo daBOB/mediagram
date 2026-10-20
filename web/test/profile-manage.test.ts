@@ -1,7 +1,10 @@
 /** Manage profiles: who you are first, then what your role offers, with the PIN held only while it is open. */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { openManage } from "../public/lib/profile-manage.js";
+import { SECTIONS } from "../public/lib/catalog/sections.js";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
+import { openProfilesPage } from "../public/lib/profiles-page-overlay.js";
+import { mountManage } from "../public/lib/profile-manage.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
@@ -35,7 +38,7 @@ const formOf = (root: Node, label: string) => descendants(root).find((node) => n
 async function manageAs(name: string, ...pins: string[]) {
   const root = new Node();
   let closes = 0;
-  openManage(root, () => { closes++; });
+  openProfilesPage(root, () => { closes++; });
   buttonNamed(root, name).fire("click");
   await answerPin(root, ...pins);
   return { root, closes: () => closes };
@@ -43,7 +46,7 @@ async function manageAs(name: string, ...pins: string[]) {
 
 test("only grown-ups are offered as who you are", () => {
   const root = new Node();
-  openManage(root, () => {});
+  openProfilesPage(root, () => {});
   expect(descendants(byClass(root, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
 });
 
@@ -75,6 +78,7 @@ test("a kid's limit changes with the PIN given once", async () => {
   limitOf(root, "Tim").fire("change");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/kids-age", { actorId: "maja", pin: "4321", age: 12 }]);
+  expect(env.document.activeElement).toBe(limitOf(root, "Tim"));
 });
 
 test("a new kid starts at FSK 6 unless its parent picks 12", async () => {
@@ -108,6 +112,7 @@ test("a kid's daily limit is set and cleared with the PIN given once, beside the
   dailyOf(root, "Tim").fire("change");
   await settle();
   expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/daily-limit", { actorId: "maja", pin: "4321", minutes: 90 }]);
+  expect(env.document.activeElement).toBe(dailyOf(root, "Tim"));
   dailyOf(root, "Tim").value = "";
   dailyOf(root, "Tim").fire("change");
   await settle();
@@ -124,6 +129,56 @@ test("a new kid can start with a daily limit", async () => {
   form.fire("submit");
   await settle();
   expect(sent().at(-1)).toEqual(["POST", "/api/profiles", { actorId: "maja", pin: "4321", name: "Ben", kids: true, kidsAge: 6, dailyLimit: 30 }]);
+});
+
+const sectionsOf = (root: Node, name: string) => descendants(root).find((node) => node.getAttribute("aria-label") === `Sections for ${name}`);
+const switchesOf = (root: Node, name: string) => descendants(sectionsOf(root, name)!).filter((node) => node.getAttribute("role") === "switch");
+const shownTo = (root: Node, name: string) =>
+  switchesOf(root, name).filter((node) => node.getAttribute("aria-checked") === "true").map((node) => node.textContent);
+
+test("Sections are offered where the rule lets you set them: a parent's own kids, the admin's grown-ups and kids", async () => {
+  const parent = await manageAs("Maja", "4321");
+  expect(sectionsOf(parent.root, "Tim")).toBeDefined();
+  expect(sectionsOf(parent.root, "Maja")).toBeUndefined();
+  expect(sectionsOf(parent.root, "andre")).toBeUndefined();
+  expect(sectionsOf(parent.root, "Lea")).toBeUndefined();
+  buttonNamed(parent.root, "Done").fire("click");
+  const admin = await manageAs("andre", "1234");
+  expect(sectionsOf(admin.root, "Maja")).toBeDefined();
+  expect(sectionsOf(admin.root, "Lea")).toBeDefined();
+  expect(sectionsOf(admin.root, "andre")).toBeUndefined();
+  expect(sectionsOf(admin.root, "Tim")).toBeUndefined();
+});
+
+test("a kid's sections are switched with the PIN given once, and the panel redraws from the answer", async () => {
+  // A key this build does not know is sent back as it came.
+  household = [ANDRE, MAJA, { ...TIM, hiddenSections: ["podcasts"] }, LEA];
+  await state.loadProfiles();
+  env.respondWith(async (url, options) => {
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household });
+    if (url === "/api/profiles/tim/hidden-sections") {
+      const { sections } = JSON.parse(String(options!.body));
+      household = household.map((entry: any) => (entry.id === "tim" ? { ...entry, hiddenSections: sections } : entry));
+    }
+    return new Response(null, { status: 204 });
+  });
+  const { root } = await manageAs("Maja", "4321");
+  const labels = Object.values(SECTIONS).map((section) => section.label);
+  expect(switchesOf(root, "Tim").map((node) => node.textContent)).toEqual(labels);
+  expect(shownTo(root, "Tim")).toEqual(labels);
+  const anime = () => switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!;
+  const turned = anime();
+  turned.fire("click");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts", "anime"] }]);
+  expect(shownTo(root, "Tim")).toEqual(labels.filter((label) => label !== SECTIONS.anime.label));
+  // The panel is drawn anew, and focus is back on the switch just turned, not lost to the page.
+  expect(anime()).not.toBe(turned);
+  expect(env.document.activeElement).toBe(anime());
+  switchesOf(root, "Tim").find((node) => node.textContent === SECTIONS.anime.label)!.fire("click");
+  await settle();
+  expect(sent().at(-1)).toEqual(["PUT", "/api/profiles/tim/hidden-sections", { actorId: "maja", pin: "4321", sections: ["podcasts"] }]);
+  expect(shownTo(root, "Tim")).toEqual(labels);
 });
 
 test("a new grown-up is given a first PIN, asked twice", async () => {
@@ -200,7 +255,7 @@ test("a grown-up's name already here is said, and the PIN dialog is gone", async
   await answerPin(root, "2468", "2468");
   expect(prompting(root)).toBe(false);
   expect(writes("POST")).toBe(2);
-  expect(textOf(byClass(root, "pin-message"))).toBe("A profile with that name already exists.");
+  expect(textOf(byClass(root, "pin-message"))).toBe(HOUSEHOLD_WORDS.profileNameTaken);
   expect(rowOf(root, "Maja")).toBeDefined();
 });
 
@@ -211,7 +266,7 @@ test("a kid's name already here is said, and the panel stays as it was", async (
   descendants(form).find((node) => node.tagName === "INPUT")!.value = "Lea";
   form.fire("submit");
   await settle();
-  expect(textOf(byClass(root, "pin-message"))).toBe("A profile with that name already exists.");
+  expect(textOf(byClass(root, "pin-message"))).toBe(HOUSEHOLD_WORDS.profileNameTaken);
   expect(rowOf(root, "Tim")).toBeDefined();
 });
 
@@ -255,7 +310,40 @@ test("closing drops the PIN: the next opening asks who you are", async () => {
   buttonNamed(root, "Done").fire("click");
   expect(closes()).toBe(1);
   expect(descendants(root).some((node) => node.className.includes("who-manage"))).toBe(false);
-  openManage(root, () => {});
+  openProfilesPage(root, () => {});
   expect(textOf(root)).toContain("Who are you?");
   expect(rowOf(root, "Tim")).toBeUndefined();
+});
+
+test("theBodyMountsOutsideTheOverlay", async () => {
+  const page = new Node();
+  const host = new Node();
+  const unmount = mountManage(page, { promptHost: host });
+  expect(textOf(page)).toContain("Who are you?");
+  expect(descendants(byClass(page, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["andre", "Maja"]);
+  buttonNamed(page, "Maja").fire("click");
+  await settle();
+  expect(host.childElementCount).toBe(1);
+  expect(page.childElementCount).toBe(1);
+  await answerPin(host, "4321");
+  expect(textOf(page)).toContain("As Maja");
+  unmount();
+  expect(page.childElementCount).toBe(0);
+});
+
+test("closingTheBodyMidPrompt leavesNothingBehind", async () => {
+  const page = new Node();
+  const host = new Node();
+  const unmount = mountManage(page, { promptHost: host });
+  buttonNamed(page, "Maja").fire("click");
+  await settle();
+  const prompt = byClass(host, "pin-prompt");
+  unmount();
+  expect(host.childElementCount).toBe(0);
+  // A late answer to the prompt that was up must send nothing.
+  descendants(prompt).filter((node) => node.tagName === "INPUT").forEach((field) => { field.value = "4321"; });
+  descendants(prompt).find((node) => node.tagName === "FORM")!.fire("submit");
+  await settle();
+  expect(sent()).toEqual([]);
+  expect(page.childElementCount).toBe(0);
 });

@@ -1,7 +1,5 @@
 package stats
 
-import model.Kind
-import model.MediaSet
 import uniffi.mediagram_core.DayBar
 import uniffi.mediagram_core.HistoryEntry
 import uniffi.mediagram_core.HistoryKind
@@ -52,24 +50,3 @@ internal fun summary(
     days: List<DayBar> = last30(),
     history: List<HistoryEntry> = emptyList(),
 ) = StatsSummary(weekSeconds = week, monthSeconds = month, allSeconds = all, last30 = days, history = history)
-
-internal fun mediaSet(
-    id: String,
-    title: String,
-    kind: Kind = Kind.MOVIE,
-    show: String? = null,
-    season: Int? = null,
-    episode: Int? = null,
-) = MediaSet(
-    setId = id, kind = kind, title = title, show = show, chapter = null, path = null,
-    season = season, episodeFirst = episode, episodeLast = null, year = null, durationSecs = null,
-    posterPath = null, totalBytes = 0,
-)
-
-/** A film, an episode and a lesson — this profile's catalogue, by id. */
-internal val Catalogue: Map<String, MediaSet> =
-    listOf(
-        mediaSet("f1", "Der Pate"),
-        mediaSet("e1", "Pilot", Kind.EPISODE, show = "Crime 101", season = 1, episode = 4),
-        mediaSet("l3", "Zinsen", Kind.TUTORIAL, show = "Geldhochschule", episode = 3),
-    ).associateBy { it.setId }

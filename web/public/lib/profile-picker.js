@@ -18,9 +18,12 @@ import { el } from "./dom.js";
 import * as state from "./watch-state.js";
 import * as api from "./profile-api.js";
 import { kidsLimitOf } from "./age-rating.js";
-import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
-import { addForm, openManage } from "./profile-manage.js";
+import { askGrownUp, askPin, newPinTitle, refusalText } from "./pin-prompt.js";
+import { addForm } from "./profile-add-form.js";
+import { openProfilesPage } from "./profiles-page-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
+import { needsJoin } from "./household.js";
+import { joinChoices, joinElsewhere } from "./household-join.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */
 const NOTE = "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; it is not a login, and someone who knows their way around a browser can get past it.";
@@ -104,7 +107,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       box.append(el("h2", null, "Create the first profile — it runs this household"),
         addForm("Create", [], async (name) => {
           notice = null;
-          const made = await askPin(screen, { title: `A PIN for ${name}`, confirm: true, refused: tell,
+          const made = await askPin(screen, { title: newPinTitle(name), confirm: true, refused: tell,
             send: (pin) => api.createFirst(name, pin) });
           if (made !== null && !closed) draw();
         }));
@@ -162,18 +165,19 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       }
       if (stateFailed) choices.append(el("p", "error", "Could not load this profile. Choose it again to retry."));
       if (notice) choices.append(el("p", "error", notice));
+      if (needsJoin()) { choices.append(joinChoices(screen, { onJoined: draw })); return; }
       // The three ways a household can stand: nobody grown-up yet, grown-ups
       // with nobody running things, or an admin — and only once there is a
       // grown-up is there anyone who could manage.
       const grownUps = state.profiles().filter((entry) => !entry.kids);
-      if (grownUps.length === 0) choices.append(state.heard() ? firstProfile() : waitingForHousehold(reread));
+      if (grownUps.length === 0) choices.append(state.heard() ? joinElsewhere(screen, draw) ?? firstProfile() : waitingForHousehold(reread));
       else if (!grownUps.some((entry) => entry.admin)) choices.append(householdQuestion(grownUps));
       choices.append(tiles());
       if (grownUps.length > 0) {
         const manage = el("button", "quiet", "Manage profiles");
         manage.disabled = selecting;
         manage.addEventListener("click", () => {
-          if (!closed && !selecting) openManage(screen, () => { if (!closed) draw(); });
+          if (!closed && !selecting) openProfilesPage(screen, () => { if (!closed) draw(); });
         });
         choices.append(manage);
       }
