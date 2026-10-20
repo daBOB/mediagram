@@ -4,12 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
@@ -39,28 +43,41 @@ internal fun sectionsLine(profile: Profile): String = listOfNotNull(SectionAcces
  * the whole hidden list, keys this app does not know kept, and the dialog
  * stays: the switches are keyed and their chains never change, so the
  * answer redraws them in place and the remote stays on the one it pressed.
- * Done or Back closes it.
+ * Until that answer — the list changed, or a refusal, said as the body
+ * ([notice]) — a press does nothing, so a second never sends a list the
+ * first has not settled; the switches stay enabled, as a disabled one would
+ * drop the remote. Done or Back closes it.
  */
 @Composable
 internal fun TvSectionSwitches(
     profile: Profile,
+    notice: String?,
     onSet: (List<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
+    var held by remember(profile.hiddenSections, notice) { mutableStateOf(false) }
     TvDialog(
         title = "${SectionAccessWords.TITLE} · ${profile.name}",
-        body = "",
+        body = notice.orEmpty(),
         onDismissRequest = onDismiss,
         initialFocus = first,
         content = {
-            Column(Modifier.padding(top = Spacing.medium), verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
+            Column(
+                Modifier.padding(top = Spacing.medium).semantics { contentDescription = SectionAccessWords.forName(profile.name) },
+                verticalArrangement = Arrangement.spacedBy(Spacing.small),
+            ) {
                 SECTIONS.forEachIndexed { index, section ->
                     key(section.key) {
                         val shown = section.key !in profile.hiddenSections
                         TvSpreadPill(
                             text = section.label,
-                            onClick = { onSet(profile.hiddenSections.turning(section.key)) },
+                            onClick = {
+                                if (!held) {
+                                    held = true
+                                    onSet(profile.hiddenSections.turning(section.key))
+                                }
+                            },
                             modifier =
                                 Modifier.focusRequester(rememberStableRequester(first.takeIf { index == 0 })).semantics {
                                     role = Role.Switch

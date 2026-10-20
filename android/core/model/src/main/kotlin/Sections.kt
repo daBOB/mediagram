@@ -33,16 +33,14 @@ val Profile.hiddenFrom: Set<String> get() = if (admin && !kids) emptySet() else 
 object SectionAccessWords {
     const val TITLE = "Sections"
     const val HIDES = "hides"
+
+    /** The switches' group, named for whose they are — the web's `aria-label`. */
+    fun forName(name: String): String = "$TITLE for $name"
 }
 
 /** What the Everyone line adds for this profile ("hides Anime, Tutorials", in nav order), or null when it is shown every section. */
 val Profile.hidesWords: String?
     get() = SECTIONS.filter { it.key in hiddenFrom }.takeIf { it.isNotEmpty() }?.joinToString(", ", "${SectionAccessWords.HIDES} ") { it.label }
 
-/**
- * This hidden list with [key] turned: hidden if it was shown, shown again if it was hidden; keys this app does not know kept as they came.
- *
- * shortcut: turned against the list the panel shows, so a second turn before the first one's answer can undo it — the web holds
- * its switches until then; hold these too if the answer ever leaves the device.
- */
+/** This hidden list with [key] turned: hidden if it was shown, shown again if it was hidden; keys this app does not know kept as they came. */
 fun List<String>.turning(key: String): List<String> = if (key in this) filter { it != key } else this + key

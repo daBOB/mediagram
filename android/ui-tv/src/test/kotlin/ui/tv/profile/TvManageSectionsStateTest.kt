@@ -1,5 +1,6 @@
 package ui.tv.profile
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocused
@@ -56,13 +58,30 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
             onClose = { calls += "close" },
         )
     private val inDialog = hasAnyAncestor(isDialog())
+    private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
 
     @Before
     fun leaveTouchMode() {
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
     }
 
-    private fun manage(state: ManageUiState) = show { TvManageProfiles(state, actions) }
+    private fun manage(state: ManageUiState) {
+        shown.value = state
+        show { TvManageProfiles(shown.value, actions) }
+    }
+
+    /** What the panel would draw next: [tom] as the core now holds him, and why the last change did not take. */
+    private fun answer(hidden: List<String>, notice: String? = null) =
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = hidden)), notice) }
+
+    /** Tom's row → Sections, which says what is hidden as the Everyone line does: FSK 12 → Daily limit → Sections. */
+    private fun openTomsSections() {
+        manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
+        press(Key.DirectionCenter)
+        repeat(2) { press(Key.DirectionDown) }
+        switch("Sections · hides Anime").assertIsFocused()
+        press(Key.DirectionCenter)
+    }
 
     private fun switch(label: String) = compose.onNode(hasText(label) and inDialog)
 
@@ -73,15 +92,12 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         compose.waitForIdle()
     }
 
+    /** A press sends the whole list, an unknown key kept; the next does nothing until the answer, then builds on the new list. */
     @Test
-    fun aKidsSectionsAreSwitchesAndAPressKeepsTheRemoteOnIt() {
-        manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
-        press(Key.DirectionCenter)
-        // FSK 12 -> Daily limit -> Sections, which says what is hidden as the Everyone line does.
-        repeat(2) { press(Key.DirectionDown) }
-        switch("Sections · hides Anime").assertIsFocused()
-        press(Key.DirectionCenter)
+    fun aKidsSectionsAreSwitchesAndASecondPressWaitsForTheFirstsAnswer() {
+        openTomsSections()
         compose.onNodeWithText("Sections · Tom").assertExists()
+        compose.onNode(hasContentDescription("Sections for Tom") and inDialog).assertExists()
         switch("Movies").assertIsFocused().assertIsOn().assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
         repeat(2) { press(Key.DirectionDown) }
         switch("Anime").assertIsFocused().assertIsOff()
@@ -89,16 +105,29 @@ class TvManageSectionsStateTest : TvScreenStateTest() {
         switch("Anime").assertIsFocused()
         press(Key.DirectionUp)
         press(Key.DirectionCenter)
-        assertEquals(listOf("sections t [later]", "sections t [anime, later, series]"), calls)
+        assertEquals(listOf("sections t [later]"), calls)
+        answer(listOf("later"))
+        switch("Series").assertIsFocused()
+        press(Key.DirectionCenter)
+        assertEquals(listOf("sections t [later]", "sections t [later, series]"), calls)
+    }
+
+    /** A refusal is said in the dialog, and frees the switches for another try. */
+    @Test
+    fun aRefusalIsSaidInTheDialogAndFreesTheSwitches() {
+        openTomsSections()
+        press(Key.DirectionCenter)
+        answer(listOf("anime", "later"), notice = "That is not allowed.")
+        compose.onNode(hasText("That is not allowed.") and inDialog).assertExists()
+        switch("Movies").assertIsFocused()
+        press(Key.DirectionCenter)
+        assertEquals(listOf("sections t [anime, later, movies]", "sections t [anime, later, movies]"), calls)
     }
 
     /** The look the user chose: a section the profile sees is a quiet line pill; only a hidden one is filled and struck through. */
     @Test
     fun aHiddenSectionIsStruckThroughAndAShownOneIsNot() {
-        manage(ManageUiState.Managing(bea, emptyList(), listOf(tom)))
-        press(Key.DirectionCenter)
-        repeat(2) { press(Key.DirectionDown) }
-        press(Key.DirectionCenter)
+        openTomsSections()
         assertEquals(TextDecoration.LineThrough, styleOf("Anime").textDecoration)
         assertNotEquals(TextDecoration.LineThrough, styleOf("Movies").textDecoration)
     }

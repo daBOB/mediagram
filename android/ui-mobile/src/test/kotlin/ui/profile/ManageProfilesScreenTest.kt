@@ -3,6 +3,7 @@ package ui.profile
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -44,6 +45,7 @@ class ManageProfilesScreenTest {
     private val bea = Profile("b", "Bea", hasPin = true)
     private val tom = Profile("t", "Tom", kids = true, kidsAge = 12, parentId = "b")
     private val calls = mutableListOf<String>()
+    private val shown = mutableStateOf<ManageUiState>(ManageUiState.Closed)
     private val actions =
         ManageActions(
             onActAs = { calls += "actAs $it" },
@@ -62,9 +64,10 @@ class ManageProfilesScreenTest {
     }
 
     private fun show(state: ManageUiState) {
+        shown.value = state
         compose.runOnUiThread {
             controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
-            controller.get().setContent { MaterialTheme { ManageProfilesScreen(state, actions) } }
+            controller.get().setContent { MaterialTheme { ManageProfilesScreen(shown.value, actions) } }
         }
         compose.waitForIdle()
     }
@@ -151,15 +154,17 @@ class ManageProfilesScreenTest {
         assertEquals(listOf("addGrownUp Carl"), calls)
     }
 
-    /** The web's Sections switches under a row, on while the section is shown: a turn sends the whole list, a key this build does not know kept. */
-    @Test fun aKidsSectionsAreSwitchesAndATurnSendsTheWholeList() {
+    /** A turn sends the whole list, an unknown key kept, and holds every switch until the answer; the next turn builds on the new list. */
+    @Test fun aKidsSectionsAreSwitchesAndASecondTurnWaitsForTheFirstsAnswer() {
         show(ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("anime", "later")))))
         val ofTom = hasAnyAncestor(hasContentDescription("Sections for Tom"))
         compose.onNode(hasText("Movies") and ofTom).assertIsOn()
-        compose.onNode(hasText("Anime") and ofTom).assertIsOff()
-        compose.onNode(hasText("Anime") and ofTom).performClick()
+        compose.onNode(hasText("Anime") and ofTom).assertIsOff().performClick()
+        compose.onNode(hasText("Series") and ofTom).assertIsNotEnabled().performClick()
+        assertEquals(listOf("sections t [later]"), calls)
+        compose.runOnUiThread { shown.value = ManageUiState.Managing(bea, emptyList(), listOf(tom.copy(hiddenSections = listOf("later")))) }
         compose.onNode(hasText("Series") and ofTom).performClick()
-        assertEquals(listOf("sections t [later]", "sections t [anime, later, series]"), calls)
+        assertEquals(listOf("sections t [later]", "sections t [later, series]"), calls)
     }
 
     /** The look the user chose: a section the profile sees is a quiet outlined chip; only a hidden one is struck through. */
