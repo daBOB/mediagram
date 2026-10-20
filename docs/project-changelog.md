@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.129.0 — one Profiles page
+
+**Changed** (web player, Android phone, tablet and TV)
+
+- **Profiles live on one page.** Settings → Profile and Settings → Profiles, and the picker's separate Manage profiles screen, are one **Profiles** page: who is watching (with Switch profile and your subtitle language), then everyone here, then Manage profiles. A kid sees only the first part. The picker only chooses now; its "Manage profiles" opens the same page with nobody chosen. Every visit still asks who you are and that grown-up's PIN, and leaving drops it. On the TV, Manage profiles opens the TV's own Manage screen from a row on the page.
+- On Android the Settings line reads "<name> · <n> profiles" (a kid's: the name alone).
+
 ## 0.128.3 — the library opens without waiting for the channel
 
 **Fixed** (Android phone, tablet and TV)

@@ -360,7 +360,7 @@ so it fails if this table and `address.js` ever disagree.
 | `#/latest` | Latest added |
 | `#/person/<id>` | Person page (cast/crew filmography) |
 | `#/search/<query>` | Search results (grouped by type) |
-| `#/settings` | Settings (Appearance/Profile/Profiles for a grown-up/admin Library & Telegram) |
+| `#/settings` | Settings (Appearance / Profiles: who is watching, everyone here, Manage profiles / admin Library & Telegram); the picker's Manage profiles opens the same Profiles page |
 | `#/stats` | Stats: minutes watched, the last 30 days, achievements |
 | `#/system` | Player status, own-network viewers only |
 | `#/continue` | Continue |
