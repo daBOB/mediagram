@@ -50,7 +50,7 @@ export function profileRoute(request: PlayerRequest, state: WatchState): PlayerR
       return seen === null ? bodiless(404) : json(JSON.stringify(seen), method === "HEAD");
     }
     if (!list) return bodiless(405);
-    const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles() };
+    const said = { remembers: state.remembers, heard: state.household.heard(), profiles: state.profiles(), households: state.households() };
     return json(JSON.stringify(said), method === "HEAD");
   }
 

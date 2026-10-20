@@ -57,11 +57,13 @@ describe("a profile as the page sees it", () => {
     const mia = state.createProfile("Mia", true)!;
     expect(me).toEqual({
       id: me.id, name: "André", createdAt: me.createdAt,
-      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
+      kids: false, kidsAge: null, dailyLimit: null, parentId: null, owner: false, household: "home", admin: false,
+      hasPin: false, hiddenSections: [],
     });
     expect(mia).toEqual({
       id: mia.id, name: "Mia", createdAt: mia.createdAt,
-      kids: true, kidsAge: 12, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
+      kids: true, kidsAge: 12, dailyLimit: null, parentId: null, owner: false, household: "home", admin: false,
+      hasPin: false, hiddenSections: [],
     });
     expect(state.profiles()).toEqual([me, mia]);
     state.close();

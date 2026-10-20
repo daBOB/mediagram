@@ -1,19 +1,20 @@
 /**
- * Who watches this library: the `profiles` rows, read and made.
+ * Who watches this library: the `profiles` rows, read (made in `profiles-insert.ts`).
  *
  * Kept out of `store.ts`, which carries every other read and write, and
  * because a profile is more than a name: a kid carries its own limit and the
- * grown-up who made it, one grown-up may be the household's admin, and a
- * grown-up may hold a PIN. The page, the sync import and the sync export all
- * read the same row, so it is read in one place and no two readers can
- * disagree about a column.
+ * grown-up who made it, one grown-up owns the install, each household has a
+ * grown-up who runs it, and a grown-up may hold a PIN. The page, the sync
+ * import and the sync export all read the same row, so it is read in one
+ * place and no two readers can disagree about a column.
  *
  * Every function takes the raw `Database | null` that `WatchState` holds; a
- * null database reads as nobody and makes nobody.
+ * null database reads as nobody.
  */
 
 import type { Database } from "bun:sqlite";
-import { normalName } from "./sync-record";
+import { householdView } from "../../public/lib/household-rules.js";
+import { householdRows } from "./households";
 
 /** A profile as the page sees it. Says whether there is a PIN, never what. */
 export interface Profile {
@@ -28,6 +29,11 @@ export interface Profile {
   dailyLimit: number | null;
   /** The grown-up who made this kid. `null`, or one not here, is the admin's. */
   parentId: string | null;
+  /** Holds the install-wide claim: sets households up. Only ever a grown-up. */
+  owner: boolean;
+  /** The household it is in, resolved: a kid's parent's, and Home for one gone or unknown. */
+  household: string;
+  /** Runs its household: the owner there, else the grown-up its record names. */
   admin: boolean;
   hasPin: boolean;
   /** Section keys this profile does not see, sorted; any profile's, a grown-up's too. */
@@ -52,21 +58,8 @@ export interface ProfileRow {
   pinProven: number; // 1: set by someone who knew the PIN before it, or the admin's reset
   hiddenSections: string; // a JSON list of section keys, sorted, each once
   hiddenSectionsUpdatedAt: number;
-}
-
-/** What a new profile is, beside its name. */
-export interface NewProfile {
-  kids?: boolean;
-  /** A kid's limit, chosen now. Absent is FSK 12, dated 0. */
-  kidsAge?: 6 | 12;
-  /** A kid's daily limit in minutes, chosen now. Absent is none, dated 0. */
-  dailyLimit?: number;
-  /** The grown-up adding this kid. */
-  parentId?: string;
-  /** A grown-up's first PIN, already salted and hashed. */
-  pin?: { hash: string; salt: string };
-  /** The first grown-up on a player, which runs the household from the start. */
-  admin?: boolean;
+  householdId: string; // as stored; `listProfiles` puts a kid with its parent, and a gone household's profile in Home
+  householdUpdatedAt: number;
 }
 
 /** How long a name may be. Long enough for a sentence, short enough to show. */
@@ -89,12 +82,14 @@ export function profileRows(db: Database | null): ProfileRow[] {
               daily_limit AS dailyLimit, daily_limit_updated_at AS dailyLimitUpdatedAt, parent_id AS parentId,
               admin_claimed_at AS adminClaimedAt, pin_hash AS pinHash, pin_salt AS pinSalt,
               pin_updated_at AS pinUpdatedAt, pin_proven AS pinProven,
-              hidden_sections AS hiddenSections, hidden_sections_updated_at AS hiddenSectionsUpdatedAt
+              hidden_sections AS hiddenSections, hidden_sections_updated_at AS hiddenSectionsUpdatedAt,
+              household_id AS householdId, household_updated_at AS householdUpdatedAt
          FROM profiles ORDER BY created_at`,
     )
     .all() as ProfileRow[];
 }
 
+/** One row on its own: the stored household, and nobody running anything — only `listProfiles` sees enough to say. */
 export function toProfile(row: ProfileRow): Profile {
   const kids = row.kids !== 0;
   return {
@@ -108,56 +103,21 @@ export function toProfile(row: ProfileRow): Profile {
     parentId: row.parentId,
     // A kid manages nothing and opens freely. A grown-up another device
     // later calls a kid keeps its old claim and PIN in their columns; they
-    // must not make it an admin, or a profile with a PIN, here.
-    admin: !kids && row.adminClaimedAt !== null,
+    // must not make it the owner, or a profile with a PIN, here.
+    owner: !kids && row.adminClaimedAt !== null,
+    household: row.householdId,
+    admin: false,
     hasPin: !kids && row.pinHash !== null,
     hiddenSections: JSON.parse(row.hiddenSections) as string[],
   };
 }
 
-/** Who watches this library, oldest first. Empty until someone says. */
+/** Who watches this library, oldest first, each in its household and saying whether it runs it. Empty until someone says. */
 export function listProfiles(db: Database | null): Profile[] {
-  return profileRows(db).map(toProfile);
-}
-
-/**
- * Makes a profile. A kid nobody chose a limit for starts at FSK 12 dated 0 —
- * older than any limit a parent chooses, so the first real choice, made here
- * or synced in, wins; a chosen limit, a first PIN and a first admin's claim
- * are dated now. A kid made by sync takes its merged limit right after.
- */
-export function insertProfile(db: Database | null, name: unknown, role: NewProfile = {}): Profile | null {
-  if (!db) return null;
-  const clean = cleanName(name);
-  if (clean === null) return null;
-  const kids = role.kids === true;
-  const createdAt = Date.now();
-  const row: ProfileRow = {
-    id: crypto.randomUUID(),
-    name: clean,
-    createdAt,
-    kids: kids ? 1 : 0,
-    kidsAge: kids ? role.kidsAge ?? 12 : null,
-    kidsAgeUpdatedAt: kids && role.kidsAge !== undefined ? createdAt : 0,
-    dailyLimit: kids ? role.dailyLimit ?? null : null,
-    dailyLimitUpdatedAt: kids && role.dailyLimit !== undefined ? createdAt : 0,
-    parentId: kids ? role.parentId ?? null : null,
-    adminClaimedAt: !kids && role.admin === true ? createdAt : null,
-    pinHash: kids ? null : role.pin?.hash ?? null,
-    pinSalt: kids ? null : role.pin?.salt ?? null,
-    pinUpdatedAt: !kids && role.pin !== undefined ? createdAt : 0,
-    pinProven: 0,
-    hiddenSections: "[]", // the column's own default: hides nothing, undated
-    hiddenSectionsUpdatedAt: 0,
-  };
-  db.query(
-    `INSERT INTO profiles(id, name, created_at, kids, kids_age, kids_age_updated_at, parent_id,
-                          admin_claimed_at, pin_hash, pin_salt, pin_updated_at,
-                          daily_limit, daily_limit_updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`,
-  ).run(row.id, row.name, row.createdAt, row.kids, row.kidsAge, row.kidsAgeUpdatedAt, row.parentId,
-    row.adminClaimedAt, row.pinHash, row.pinSalt, row.pinUpdatedAt, row.dailyLimit, row.dailyLimitUpdatedAt);
-  return toProfile(row);
+  const profiles = profileRows(db).map(toProfile);
+  const households = householdRows(db).map((row) => ({ ...row, removed: row.removed !== 0 }));
+  const view = householdView(profiles, households).profiles;
+  return profiles.map((one) => ({ ...one, ...view[one.id]! }));
 }
 
 /** Its own rows cascade; a grown-up's kids stay (`parent_id` is no foreign key) — `ProfileManager.remove` takes them. */
@@ -169,28 +129,4 @@ export function deleteProfileById(db: Database | null, id: string): boolean {
 export function profileExists(db: Database | null, id: string): boolean {
   if (!db) return false;
   return db.query("SELECT 1 FROM profiles WHERE id = ?1").get(id) !== null;
-}
-
-/**
- * This player's id for a viewer, made if it has never seen them.
- *
- * Made rather than skipped, because the first thing a second machine knows
- * about a viewer is a document written by the first — refusing to create
- * one would mean the sync could only ever flow towards a machine that had
- * already met them.
- */
-export function findOrCreateProfile(
-  db: Database | null,
-  name: string,
-  displayName?: string,
-  kids = false,
-): { id: string; created: boolean; kids: boolean } | null {
-  const wanted = normalName(name);
-  if (wanted === null) return null;
-  const found = listProfiles(db).find((profile) => normalName(profile.name) === wanted);
-  // Created from the spelling somebody typed, never from the normalised
-  // identity — that would greet a viewer as "andré" on every new machine.
-  if (found) return { id: found.id, created: false, kids: found.kids };
-  const created = insertProfile(db, displayName ?? name, { kids });
-  return created ? { id: created.id, created: true, kids } : null;
 }

@@ -87,6 +87,9 @@ const ROOT = join(import.meta.dir, "..");
  * Raised the same day for `player.js`, by 10, to wire the Report sheet (its facts, the title it opens
  * and closes with, the errors it attaches, and why a refused Play keeps a media error over its own),
  * and for `playback.css`, by 12, for the sheet's card.
+ * Raised 2026-10-20 for `src/state/store.ts`, by 7, to list the households and to import
+ * making a profile from `profiles-insert.ts`, which it left `profiles.ts` for; and
+ * `src/state/profiles-manage.ts`, by 1, for that same import.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -113,9 +116,9 @@ const CEILINGS: Record<string, number> = {
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,
-  "src/state/profiles-manage.ts": 212,
+  "src/state/profiles-manage.ts": 213,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 729,
+  "src/state/store.ts": 736,
   "src/state/sync-record.ts": 293,
   "src/transcode/registry.ts": 338,
 };

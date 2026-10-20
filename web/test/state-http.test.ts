@@ -217,7 +217,7 @@ describe("a player that remembers nothing", () => {
         new TextDecoder().decode((await rawRequest(forgetful.port, "/api/profiles")).body),
       );
       // `heard`: a player that syncs with nobody has no household to wait for.
-      expect(listed).toEqual({ remembers: false, heard: true, profiles: [] });
+      expect(listed).toEqual({ remembers: false, heard: true, profiles: [], households: [] });
 
       // A profile cannot be made, so nothing can be written under one — which
       // is a 404 about the profile rather than a pretence that it worked.
@@ -249,7 +249,8 @@ describe("profiles", () => {
   test("are listed with their role, and never a PIN", async () => {
     expect((await listed()).find((profile) => profile.id === me)).toEqual({
       id: me, name: "André", createdAt: expect.any(Number),
-      kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false, hiddenSections: [],
+      kids: false, kidsAge: null, dailyLimit: null, parentId: null, owner: false, household: "home", admin: false,
+      hasPin: false, hiddenSections: [],
     });
   });
 

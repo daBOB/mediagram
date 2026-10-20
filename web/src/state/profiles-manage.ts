@@ -18,7 +18,8 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { cleanName, insertProfile, profileRows, toProfile, type Profile, type ProfileRow } from "./profiles";
+import { cleanName, listProfiles, profileRows, toProfile, type Profile, type ProfileRow } from "./profiles";
+import { insertProfile } from "./profiles-insert";
 import { writeDailyLimit, writeKidsAge, writePin } from "./profiles-write";
 import { newPin, pinMatches, validPin } from "./profiles-pin";
 import { allowed, nameTaken, type Action } from "./profiles-rules";
@@ -132,8 +133,8 @@ export class ProfileManager {
       return refuse("invalid");
     }
     if (target === undefined) return refuse("not-found");
-    // A claim a kid's row still holds is no admin: see `toProfile`.
-    if (isKid(target) || rows.some((row) => toProfile(row).admin)) return refuse("not-allowed");
+    // A claim a kid's row still holds is no owner: see `toProfile`.
+    if (isKid(target) || rows.some((row) => toProfile(row).owner)) return refuse("not-allowed");
     if (target.pinHash !== null) {
       const refused = this.prove(target, pin);
       if (refused) return refused;
@@ -189,8 +190,8 @@ export class ProfileManager {
       const refused = this.prove(actor, pin);
       if (refused) return refused;
     }
-    // A `Profile` is the rule's view of a role, with a kid never the admin.
-    return allowed(rows.map(toProfile), actorId, action, targetId ?? "") ? null : refuse("not-allowed");
+    // A listed `Profile` is the rule's view of a role: in its household, a kid never the admin.
+    return allowed(listProfiles(this.db), actorId, action, targetId ?? "") ? null : refuse("not-allowed");
   }
 
   /**

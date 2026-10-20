@@ -23,7 +23,9 @@ import { GROUPS } from "./schema";
 import { Settings } from "./settings";
 import { SYNC_FORMAT, type SyncRecord } from "./sync-record";
 import type { MergedState } from "./merged";
-import { cleanName, deleteProfileById, findOrCreateProfile, insertProfile, listProfiles, profileExists, type Profile } from "./profiles";
+import { cleanName, deleteProfileById, listProfiles, profileExists, type Profile } from "./profiles";
+import { findOrCreateProfile, insertProfile } from "./profiles-insert";
+import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
 import { ProfileAccess } from "./profiles-access";
 import { PinWait } from "./profiles-wait";
@@ -120,6 +122,11 @@ export class WatchState {
   /** Who watches this library. Empty until someone says. */
   profiles(): Profile[] {
     return listProfiles(this.db);
+  }
+
+  /** The households sharing this library, by name, each with who runs it. */
+  households(): LiveHousehold[] {
+    return listHouseholds(this.db, this.profiles());
   }
 
   /** A test seam, as `deleteProfile` is: the player adds profiles through

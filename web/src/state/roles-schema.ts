@@ -54,7 +54,28 @@ export const HIDDEN_SECTIONS_GROUP: readonly string[] = [
   `ALTER TABLE profiles ADD COLUMN hidden_sections_updated_at INTEGER NOT NULL DEFAULT 0`,
 ];
 
+/**
+ * v15 -> v16: households. Home has the same id on every device, so each
+ * migrates alone and they still agree, and nothing in it is dated: a device
+ * that never changes it says nothing new to an older build. Every profile
+ * already stored is in Home, undated for the same reason. `admin_id` is not a
+ * foreign key, as `parent_id` is not: an admin removed here may be known elsewhere.
+ */
+export const HOUSEHOLDS_GROUP: readonly string[] = [
+  `CREATE TABLE IF NOT EXISTS households(
+     id TEXT PRIMARY KEY,
+     name TEXT NOT NULL,
+     name_updated_at INTEGER NOT NULL DEFAULT 0,
+     admin_id TEXT,
+     admin_updated_at INTEGER NOT NULL DEFAULT 0,
+     removed INTEGER NOT NULL DEFAULT 0
+   )`,
+  `INSERT OR IGNORE INTO households(id, name) VALUES ('home', 'Home')`,
+  `ALTER TABLE profiles ADD COLUMN household_id TEXT NOT NULL DEFAULT 'home'`,
+  `ALTER TABLE profiles ADD COLUMN household_updated_at INTEGER NOT NULL DEFAULT 0`,
+];
+
 /** All, in order, as `schema.ts` lists them. */
 export const ROLES_GROUPS: readonly (readonly string[])[] = [
-  ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP, HIDDEN_SECTIONS_GROUP,
+  ROLES_GROUP, PIN_PROOF_GROUP, DAILY_LIMIT_GROUP, HIDDEN_SECTIONS_GROUP, HOUSEHOLDS_GROUP,
 ];

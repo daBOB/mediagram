@@ -35,8 +35,8 @@ function migrationsUpTo(version: number): string[] {
 
 /** The one profile these files hold, as `profiles()` reads it back: a grown-up with no role. */
 const ANDRE = {
-  id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, dailyLimit: null, parentId: null, admin: false, hasPin: false,
-  hiddenSections: [],
+  id: "p1", name: "André", createdAt: 1, kids: false, kidsAge: null, dailyLimit: null, parentId: null, owner: false,
+  household: "home", admin: false, hasPin: false, hiddenSections: [],
 };
 
 /** A database at version 1, as a player that ran before profiles left one. */
@@ -472,6 +472,39 @@ describe("v14 to v15", () => {
     try {
       expect(db.query("SELECT hidden_sections AS hidden, hidden_sections_updated_at AS at FROM profiles").all())
         .toEqual([{ hidden: "[]", at: 0 }, { hidden: "[]", at: 0 }]);
+    } finally {
+      db.close();
+    }
+  });
+});
+
+describe("v15 to v16", () => {
+  test("every profile already stored is in Home, Home is named Home with nothing dated, and the owner runs it", () => {
+    const path = tempPath();
+    atVersion(path, 15, () => [
+      "INSERT INTO profiles(id, name, created_at, admin_claimed_at) VALUES ('p1', 'andre', 1, 5)",
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p2', 'test', 2)",
+      "INSERT INTO profiles(id, name, created_at) VALUES ('p3', 'TV test', 3)",
+      "INSERT INTO profiles(id, name, created_at, kids, kids_age, parent_id) VALUES ('k1', 'TV kids', 4, 1, 12, 'p1')",
+    ]);
+
+    const state = new WatchState(path);
+    expect(state.profiles().map(({ id, household, owner, admin }) => ({ id, household, owner, admin }))).toEqual([
+      { id: "p1", household: "home", owner: true, admin: true },
+      { id: "p2", household: "home", owner: false, admin: false },
+      { id: "p3", household: "home", owner: false, admin: false },
+      { id: "k1", household: "home", owner: false, admin: false },
+    ]);
+    state.close();
+
+    const db = new Database(path);
+    try {
+      expect(db.query("SELECT * FROM households").all()).toEqual([
+        { id: "home", name: "Home", name_updated_at: 0, admin_id: null, admin_updated_at: 0, removed: 0 },
+      ]);
+      expect(db.query("SELECT DISTINCT household_id AS household, household_updated_at AS at FROM profiles").all())
+        .toEqual([{ household: "home", at: 0 }]);
+      expect(db.query("SELECT value FROM state_meta WHERE key = 'schema_version'").get()).toEqual({ value: "16" });
     } finally {
       db.close();
     }
