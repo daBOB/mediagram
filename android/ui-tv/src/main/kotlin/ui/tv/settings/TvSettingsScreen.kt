@@ -25,9 +25,8 @@ import ui.tv.setup.TvConfirmDialog
 import ui.tv.system.TvSystemSection
 
 /**
- * Settings and System, one hub, television-side: an index (Telegram ·
- * Storage · Appearance · System, each with its own one-line status) beside
- * the section it is showing — the approved round-2 mockups' own EXPANDED
+ * Settings and System, one hub, television-side: an index (a one-line status
+ * per section) beside the section it is showing — the approved round-2 mockups' own EXPANDED
  * layout, at ten-foot sizes; [TvMenuBranches] opens this on [initial],
  * `TELEGRAM` for the Settings menu row, `SYSTEM` for the System shortcut.
  * Every ViewModel underneath is the one Settings and System always used;
@@ -172,9 +171,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onRetry = systemViewModel::retry,
                     )
-
-                // Never shown: the television's index does not offer it yet.
-                SettingsSection.PROFILES -> Unit
+                SettingsSection.PROFILES -> Unit // never shown: the television's index does not offer it yet
             }
         }
     }

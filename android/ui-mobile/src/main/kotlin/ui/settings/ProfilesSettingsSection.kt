@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.EVERYONE_HERE
 import catalog.profile.ManageProfilesViewModel
+import catalog.profile.ManageUiState
 import catalog.profile.everyoneHere
 import catalog.profile.profileCount
 import designsystem.SectionHead
@@ -70,9 +72,12 @@ internal fun profilesStatus(chosen: Profile?): IndexStatus? {
 }
 
 /**
- * One visit to Profiles while [open]: Manage starts at "Who are you?" on the
- * way in, and drops the PIN on the way out — to another section, out of
- * Settings, or out of the app, which asks again on the way back. Held by the
+ * One visit to Profiles while [open]: Manage drops the PIN on the way out — to
+ * another section, out of Settings, or out of the app — and asks "Who are
+ * you?" whenever it finds itself closed while the section is still open. That
+ * covers the way in, the way back from the background, and the gate's own
+ * close when it is composed afresh around an open section (the activity
+ * recreated, or restored), whichever of the two effects runs first. Held by the
  * frame rather than the page, which a tablet turned between one pane and two
  * draws afresh.
  */
@@ -80,8 +85,7 @@ internal fun profilesStatus(chosen: Profile?): IndexStatus? {
 internal fun ProfilesVisit(open: Boolean) {
     if (!open) return
     val manage: ManageProfilesViewModel = hiltViewModel()
-    LifecycleStartEffect(manage) {
-        manage.open()
-        onStopOrDispose { manage.close() }
-    }
+    val closed = manage.state.collectAsStateWithLifecycle().value == ManageUiState.Closed
+    LaunchedEffect(closed) { if (closed) manage.open() }
+    LifecycleStartEffect(manage) { onStopOrDispose { manage.close() } }
 }
