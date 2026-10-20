@@ -1,6 +1,7 @@
 /** The one PIN dialog: what it checks before sending, what it says after, and how it gives up. */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import { askGrownUp, askPin, pinProblem, refusalText } from "../public/lib/pin-prompt.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
 import { browserEnvironment, Node } from "./support/player-environment";
@@ -28,8 +29,12 @@ describe("what is said before and after sending", () => {
     expect(refusalText({ reason: "no-pin" })).toBe("This profile has no PIN yet. Choose it again to set one.");
     expect(refusalText({ reason: "not-found" })).toBe("That profile is not here any more.");
     expect(refusalText({ reason: "invalid" })).toBe("That was not accepted. Check the name and the PIN.");
-    expect(refusalText({ reason: "name-taken" })).toBe("A profile with that name already exists.");
     expect(refusalText({ reason: null })).toBe("That did not go through. Please try again.");
+  });
+
+  test("a taken name says it is used on this install", () => {
+    // Names are unique across the install, not per household, so the household words say it.
+    expect(refusalText({ reason: "name-taken" })).toBe(HOUSEHOLD_WORDS.profileNameTaken);
   });
 });
 

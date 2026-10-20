@@ -166,11 +166,13 @@ test("before the household has been heard, no first profile is offered: the pick
   void chooseProfile(root);
   expect(textOf(root)).toContain("Waiting for this household’s profiles…");
   expect(textOf(root)).not.toContain("Create the first profile");
-  expect(tile(root, "Lea")).toBeDefined();
+  // A new device is in no household until one is heard, so it shows nobody yet.
+  expect(tile(root, "Lea")).toBeUndefined();
   heard = true;
   buttonNamed(root, "Try again").fire("click");
   await settle();
   expect(textOf(root)).toContain("Create the first profile — it runs this household");
+  expect(tile(root, "Lea")).toBeDefined();
   expect(textOf(root)).not.toContain("Waiting for");
 });
 

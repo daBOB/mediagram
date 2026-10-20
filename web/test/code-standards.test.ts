@@ -95,6 +95,9 @@ const ROOT = join(import.meta.dir, "..");
  * them — each the import, the key and the line that fills it.
  * Lowered 2026-10-20 for `src/state/profiles-manage.ts`, to 194, once `claimAdmin` moved to
  * `households-manage.ts`, net of the household a new profile joins.
+ * Raised the same day for `public/lib/watch-state.js`, by 6, to hold everyone and the live
+ * households beside this device's household of them — the import, their types and fields,
+ * the line that works the household out, and the two that hand them on.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -108,7 +111,7 @@ const CEILINGS: Record<string, number> = {
   "public/lib/playback/streaming/buffer-health.js": 258,
   "public/lib/playback/streaming/hls-playback.js": 220,
   "public/lib/playback/transport.js": 350,
-  "public/lib/watch-state.js": 485,
+  "public/lib/watch-state.js": 491,
   "public/styles/home.css": 363,
   "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,

@@ -14,6 +14,7 @@
  */
 
 import { el } from "./dom.js";
+import { HOUSEHOLD_WORDS } from "./household-words.js";
 
 const FOUR_DIGITS = /^[0-9]{4}$/;
 
@@ -26,7 +27,8 @@ export function pinProblem(pin, again, confirm = false) {
 
 const REFUSALS = {
   invalid: "That was not accepted. Check the name and the PIN.",
-  "name-taken": "A profile with that name already exists.",
+  // Names are unique across the install, not per household: one in another household takes it too.
+  "name-taken": HOUSEHOLD_WORDS.profileNameTaken,
   "not-found": "That profile is not here any more.",
   "no-pin": "This profile has no PIN yet. Choose it again to set one.",
   "wrong-pin": "Wrong PIN.",

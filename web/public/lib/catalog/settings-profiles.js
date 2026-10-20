@@ -1,7 +1,8 @@
 /**
  * The one Profiles page, Settings' Profiles tab: You — who is watching, the way
  * to switch, your subtitle language — then everyone in the household, then
- * managing them. A kid sees only You; with nobody chosen, which is how the
+ * managing them, then — while there is more than one — the household this
+ * device shows. A kid sees only You; with nobody chosen, which is how the
  * picker's Manage profiles opens it, there is no You. Seeing the list needs no
  * PIN; changing anything asks who you are and that grown-up's PIN, which the
  * body holds only until the page is left.
@@ -9,8 +10,11 @@
 
 import { el } from "../dom.js";
 import { href } from "../address.js";
-import { mountManage } from "../profile-manage.js";
+import { mountManage, pill } from "../profile-manage.js";
 import * as state from "../watch-state.js";
+import { thisHousehold } from "../household.js";
+import { joinChoices } from "../household-join.js";
+import { HOUSEHOLD_WORDS } from "../household-words.js";
 import { ownerOf } from "../profile-api.js";
 import { kidsLimitOf } from "../age-rating.js";
 import { dailyLimitWords } from "../daily-limit.js";
@@ -83,9 +87,26 @@ function drawEveryone(set) {
 }
 
 /**
+ * Which household's profiles this device shows, and a way to another. Joining
+ * one takes the device off the profile chosen here, so `onJoined` asks who is
+ * watching again.
+ */
+function thisDevice(promptHost, onJoined) {
+  const set = el("div", "setting");
+  const here = thisHousehold();
+  const change = pill(HOUSEHOLD_WORDS.switchHousehold, () => {
+    change.hidden = true;
+    set.append(joinChoices(promptHost, { except: here?.id, onJoined }));
+  });
+  set.append(el("h2", "setting-title", HOUSEHOLD_WORDS.thisDevice), el("p", "setting-value", here?.name ?? ""), change);
+  return set;
+}
+
+/**
  * @param {HTMLElement} promptHost PIN prompts open over this element
  * @param {{ profile: {name: string, kids?: boolean, kidsAge?: number|null}|null,
- *   switchProfile?: () => void, systemVisible?: boolean }} chosen who is watching, if anyone
+ *   switchProfile?: () => void, systemVisible?: boolean }} chosen who is watching, if anyone;
+ *   `switchProfile` asks again, after switching household too
  * @returns {{ box: HTMLElement, stop: () => void }} `stop` removes the body and drops the PIN
  */
 export function profilesPanel(promptHost, { profile, switchProfile, systemVisible = false }) {
@@ -98,6 +119,7 @@ export function profilesPanel(promptHost, { profile, switchProfile, systemVisibl
   // Scoped faces (appearance.css) make the shared body read as settings sections.
   const manage = el("div", "setting manage-inline");
   box.append(list, manage);
+  if (state.households().length > 1) box.append(thisDevice(promptHost, switchProfile));
   const stop = mountManage(manage, {
     promptHost,
     onChange: () => drawEveryone(list),

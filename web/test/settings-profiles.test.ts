@@ -2,18 +2,22 @@
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { renderSettings } from "../public/lib/catalog/settings-page.js";
+import { HOUSEHOLD_WORDS } from "../public/lib/household-words.js";
 import * as state from "../public/lib/watch-state.js";
 import { answerPin, buttonNamed, byClass, descendants, textOf } from "./support/browser-application";
-import { ANDRE, LEA, MAJA, TIM, writesOf } from "./support/household-fixture";
+import { ANDRE, AT_HOME, FLAT, LEA, MAJA, SPLIT, storage, TIM, writesOf } from "./support/household-fixture";
 import { browserEnvironment, Node, settle } from "./support/player-environment";
 
 let env: ReturnType<typeof browserEnvironment>;
 let household: object[];
+/** The live households; left out, as the one-household tests leave them. */
+let households: object[] | undefined;
 beforeEach(async () => {
   env = browserEnvironment();
   household = [ANDRE, MAJA, { ...TIM, dailyLimit: 45 }, LEA];
+  households = undefined;
   env.respondWith(async (url, options) => {
-    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household });
+    if (url === "/api/profiles" && !options?.method) return Response.json({ remembers: true, profiles: household, households });
     if (options?.method === "POST" && url === "/api/profiles") {
       const made = JSON.parse(String(options.body));
       household = [...household, { id: "ben", name: made.name, kids: true, kidsAge: made.kidsAge, parentId: made.actorId, admin: false, hasPin: false }];
@@ -134,4 +138,36 @@ test("leavingThePageDropsThePin", async () => {
   await settle();
   expect(writesOf(env.requests).length).toBe(before);
   expect(textOf(main)).not.toContain("As Maja");
+});
+
+/** A device in the flat, of the two households. */
+async function inTheFlat() {
+  household = SPLIT;
+  households = [FLAT, AT_HOME];
+  Object.assign(env.window, { localStorage: storage({ "mediagram.household": "flat" }) });
+  await state.loadProfiles();
+}
+
+test("the Profiles page says this device's household and offers Switch only with two", async () => {
+  const alone = settings(find("Maja")).main;
+  openProfiles(alone);
+  expect(sectionsOf(alone)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+
+  await inTheFlat();
+  const { main } = settings(find("Maja"));
+  openProfiles(main);
+  expect(sectionsOf(main)).toEqual(["Settings", "Who is watching", "Subtitles", "Everyone here", "Manage profiles", HOUSEHOLD_WORDS.thisDevice]);
+  const row = descendants(main).find((node) => node.className === "setting" && textOf(node).startsWith(HOUSEHOLD_WORDS.thisDevice))!;
+  expect(textOf(byClass(row, "setting-value"))).toBe("Flat");
+  buttonNamed(row, HOUSEHOLD_WORDS.switchHousehold).fire("click");
+  // Every other household, never the one this device is in.
+  expect(descendants(byClass(row, "who-ask")).filter((node) => node.tagName === "BUTTON").map((node) => node.textContent)).toEqual(["Home"]);
+});
+
+test("a kid sees no household row", async () => {
+  await inTheFlat();
+  const { main } = settings(find("Tim"));
+  openProfiles(main);
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.thisDevice);
+  expect(textOf(main)).not.toContain(HOUSEHOLD_WORDS.switchHousehold);
 });

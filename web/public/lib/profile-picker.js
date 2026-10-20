@@ -22,6 +22,8 @@ import { askGrownUp, askPin, refusalText } from "./pin-prompt.js";
 import { addForm } from "./profile-add-form.js";
 import { openProfilesPage } from "./profiles-page-overlay.js";
 import { waitingForHousehold } from "./household-waiting.js";
+import { needsJoin } from "./household.js";
+import { joinChoices } from "./household-join.js";
 
 /** Said plainly, so nobody takes a PIN for a login. */
 const NOTE = "Profiles keep your places and lists apart. A grown-up’s PIN keeps children out of it; it is not a login, and someone who knows their way around a browser can get past it.";
@@ -163,6 +165,7 @@ export function chooseProfile(root, { canCancel = false, discoveryFailed = false
       }
       if (stateFailed) choices.append(el("p", "error", "Could not load this profile. Choose it again to retry."));
       if (notice) choices.append(el("p", "error", notice));
+      if (needsJoin()) { choices.append(joinChoices(screen, { onJoined: draw })); return; }
       // The three ways a household can stand: nobody grown-up yet, grown-ups
       // with nobody running things, or an admin — and only once there is a
       // grown-up is there anyone who could manage.
