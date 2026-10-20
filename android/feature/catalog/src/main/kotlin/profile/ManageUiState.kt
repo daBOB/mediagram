@@ -29,6 +29,9 @@ sealed interface ManageUiState {
         val notice: String? = null,
     ) : ManageUiState {
         val canAddGrownUp: Boolean get() = actor.admin
+
+        /** The rows that carry the Sections control: every kid listed, every other grown-up — never the actor's own row. */
+        val sectionRows: List<Profile> get() = grownUps + kids
     }
 }
 

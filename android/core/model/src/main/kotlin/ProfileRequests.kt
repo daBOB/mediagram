@@ -70,6 +70,14 @@ sealed interface ProfileRequest {
         val id: String,
         val minutes: Int?,
     ) : ProfileRequest
+
+    /** The whole list of section keys hidden from [id]; empty shows everything. */
+    class SetHiddenSections(
+        val actorId: String,
+        val pin: String,
+        val id: String,
+        val sections: List<String>,
+    ) : ProfileRequest
 }
 
 /** How the core answered a [ProfileRequest] — the contract's reasons. */

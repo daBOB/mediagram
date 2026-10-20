@@ -167,6 +167,24 @@ abstract class CoreContract {
         }
     }
 
+    @Test
+    fun hiddenSectionsAreStoredSortedOnceAndSetOnlyWhereTheAccessRuleAllows() {
+        runBlocking {
+            val core = core()
+            val admin = core.freshProfile("Ada")
+            assertEquals(ProfileOutcome.Done, core.createKid(admin.id, PIN, "Kim", 6u, null))
+            val kid = core.profiles().single { it.name == "Kim" }
+            assertEquals(emptyList(), kid.hiddenSections)
+            assertEquals(ProfileOutcome.Done, core.setHiddenSections(admin.id, PIN, kid.id, listOf("series", "anime", "series", "later")))
+            assertEquals(listOf("anime", "later", "series"), core.profiles().single { it.id == kid.id }.hiddenSections)
+            assertEquals(ProfileOutcome.Invalid, core.setHiddenSections(admin.id, PIN, kid.id, listOf("Not A Key")))
+            assertEquals(ProfileOutcome.WrongPin, core.setHiddenSections(admin.id, "0000", kid.id, emptyList()))
+            assertEquals(ProfileOutcome.NotAllowed, core.setHiddenSections(admin.id, PIN, admin.id, listOf("anime")))
+            assertEquals(ProfileOutcome.Done, core.setHiddenSections(admin.id, PIN, kid.id, emptyList()))
+            assertEquals(emptyList(), core.profiles().single { it.id == kid.id }.hiddenSections)
+        }
+    }
+
     /** Refused for the reasons, and in the order, the web refuses: input, name, somebody there, the PIN, the rule. */
     @Test
     fun aRefusalSaysWhyInTheWebsOrder() {
