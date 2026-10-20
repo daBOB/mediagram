@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.128.0 — a Profiles page in Settings
+
+**Added** (web player, Android phone and tablet)
+
+- **Settings → Profiles**, for a grown-up only: "Everyone here" lists the household — Admin, Grown-up (with whether a PIN is set) or Kid with its parent, FSK limit and daily limit — and below it the same management as the picker's Manage profiles: add or remove grown-ups (the admin), add or remove kids, set a kid's age and daily limit, change PINs. Every visit asks who you are and that grown-up's PIN; leaving the tab, the page or the app drops it. A kid never sees the tab. Manage profiles stays on the picker too.
+- On Android the same section sits in Settings on phones and tablets; the TV follows. No rename: devices sync a profile by its name, so a renamed profile would split in two.
+
 ## 0.127.0 — Stats no longer lists every title watched
 
 **Removed** (web player, Android phone, tablet and TV)
