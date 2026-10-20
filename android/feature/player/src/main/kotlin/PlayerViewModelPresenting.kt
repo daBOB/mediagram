@@ -32,3 +32,13 @@ internal fun PlayerViewModel.presentingOn(displays: PresentationDisplays?): Stat
 fun PlayerViewModel.pauseIfPresenting() {
     if (presenting.value != null) handle.pause()
 }
+
+/**
+ * The screen started again after stopping with its picture on a wireless
+ * display that is gone now: the display's loss paused nothing visible while
+ * the screen was away, and whatever the system did to the title meanwhile
+ * must not leave it playing on a screen nobody was watching.
+ */
+fun PlayerViewModel.pauseIfDisplayLostWhileAway(presentedAtStop: Boolean) {
+    if (presentedAtStop && presenting.value == null) handle.pause()
+}

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
+import io.mockk.clearMocks
 import io.mockk.verify
 import model.together.CastWords
 import org.junit.Test
@@ -118,5 +119,40 @@ class PlayerPresentationTest : PlayerPresentationBase() {
         idle()
 
         verify { fixture.media.pause() }
+    }
+
+    @Test
+    fun aDisplayLostWhileStoppedStaysPausedOnReturn() {
+        open()
+        val id = connectTv()
+
+        compose.runOnUiThread { controller.pause().stop() }
+        idle()
+        compose.runOnUiThread { ShadowDisplayManager.removeDisplay(id) }
+        idle()
+        // Whatever the system did meanwhile (audio focus, a media control), the return must not leave it playing.
+        clearMocks(fixture.media, answers = false)
+        compose.runOnUiThread { controller.start().resume() }
+        idle()
+
+        verify { fixture.media.pause() }
+        verify(exactly = 0) { fixture.media.play() }
+        assertNull(presentation())
+        compose.onNodeWithContentDescription("Restart").assertExists()
+    }
+
+    @Test
+    fun returningWhileStillPresentingLeavesTheTitleAlone() {
+        open()
+        connectTv()
+
+        compose.runOnUiThread { controller.pause().stop() }
+        idle()
+        clearMocks(fixture.media, answers = false)
+        compose.runOnUiThread { controller.start().resume() }
+        idle()
+
+        verify(exactly = 0) { fixture.media.pause() }
+        assertNotNull(presentation(), "the picture is still on the TV")
     }
 }
