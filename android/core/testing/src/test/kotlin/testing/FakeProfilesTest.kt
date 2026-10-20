@@ -2,6 +2,7 @@ package testing
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import uniffi.mediagram_core.NewHouseholdAdmin
 import uniffi.mediagram_core.Profile
 import uniffi.mediagram_core.ProfileOutcome
 import kotlin.test.assertEquals
@@ -55,6 +56,20 @@ class FakeProfilesTest {
             assertEquals(ProfileOutcome.Wait(1u), core.unlockProfile("a", "1234"))
             core.roles.nowMs += 999
             assertEquals(ProfileOutcome.Done, core.unlockProfile("a", "1234"))
+        }
+    }
+
+    /** A name a profile had before stays taken, as `taken_names` keeps it: for a new household's admin, and a new grown-up. */
+    @Test
+    fun aFormerNameIsNeverTakenAgain() {
+        runBlocking {
+            val core = FakeCore().apply { profiles = listOf(Profile("a", "Ana", admin = true, owner = true)) }
+            core.roles.pins["a"] = "1234"
+            core.roles.formerNames["a"] = listOf("Mia")
+            assertEquals(ProfileOutcome.NameTaken, core.createHousehold("a", "1234", "Loft", NewHouseholdAdmin.New(" MIA ", "5678")))
+            assertEquals(listOf("Home"), core.households().households.map { it.name })
+            assertEquals(ProfileOutcome.NameTaken, core.createGrownUp("a", "1234", "mia", "5678"))
+            assertEquals(ProfileOutcome.Done, core.createGrownUp("a", "1234", "Mira", "5678"))
         }
     }
 

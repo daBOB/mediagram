@@ -71,7 +71,7 @@ class FakeHouseholds(
                 is NewHouseholdAdmin.New -> Triple(null, cleanName(admin.name) ?: return ProfileOutcome.Invalid, admin.newPin)
             }
         if (unusable(newPin)) return ProfileOutcome.Invalid
-        if (taken(name, except = null) || (newName != null && read().any { normalName(it.name) == normalName(newName) })) {
+        if (taken(name, except = null) || (newName != null && roles().unusable(newName) == ProfileOutcome.NameTaken)) {
             return ProfileOutcome.NameTaken
         }
         owned(actorId, pin, HouseholdAction.CREATE, "", adminId)?.let { return it }
