@@ -154,7 +154,7 @@ class ProfilePinTest {
             vm.enterPin("2468")
             vm.enterPin("2468")
             assertNull(vm.pin.value)
-            assertEquals("A profile with that name already exists.", vm.picking().notice)
+            assertEquals("That name is already used on this install.", vm.picking().notice)
 
             vm.createFirst("Ann")
             assertNull(vm.picking().notice, "trying something else clears it, as on the web")

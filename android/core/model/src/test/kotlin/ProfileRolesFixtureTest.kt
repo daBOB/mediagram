@@ -41,7 +41,7 @@ class ProfileRolesFixtureTest {
 }
 
 /** A fixture `RoleView` — `{ id, kids, admin, owner?, parentId, household? }` — as the profile the rule reads. */
-private fun JsonObject.toProfile(): Profile {
+internal fun JsonObject.toProfile(): Profile {
     val id = getValue("id").jsonPrimitive.content
     return Profile(
         id = id,

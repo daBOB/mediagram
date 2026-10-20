@@ -97,7 +97,7 @@ class PinAskTest {
             ask.enter("2468")
             runCurrent()
             assertNull(ask.prompt.value)
-            assertEquals("A profile with that name already exists.", told)
+            assertEquals("That name is already used on this install.", told)
         }
 
     @Test

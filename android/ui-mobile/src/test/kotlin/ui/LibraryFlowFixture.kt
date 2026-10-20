@@ -54,6 +54,7 @@ import testing.FakeLanServerSource
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 import ui.player.PlayerLifecycleFixture
+import ui.profile.householdViewModels
 import uniffi.mediagram_core.Achievements
 import uniffi.mediagram_core.StatsSummary
 import java.time.ZonedDateTime
@@ -164,8 +165,8 @@ internal class LibraryFlowFixture(
             mapOf<Class<out ViewModel>, ViewModel>(
                 CatalogViewModel::class.java to catalog,
                 ProfileViewModel::class.java to ProfileViewModel(stored, mockk<WatchSync>(relaxed = true)),
-                // The gate resolves Manage profiles beside the picker every time it draws.
-                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, mockk<WatchSync>(relaxed = true)),
+                // The gate resolves Manage profiles beside the picker every time it draws, and Join a household (below).
+                ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true)),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
                 // The library's daily-limit door, resolved beside the catalog on every draw.
@@ -187,12 +188,11 @@ internal class LibraryFlowFixture(
                 // test can drive a state or count a poll.
                 TitlePreloadViewModel::class.java to
                     TitlePreloadViewModel(filmPreloading, InMemoryLanCacheSettings(), lanServerSource, lanChunkProtocol),
-                // MobileApp's MediagramTheme and SettingsScreen (reachable from
-                // this flow's own menu) each resolve an AppearanceViewModel
-                // through hiltViewModel(); this owner has to hand it back too.
+                // MobileApp's MediagramTheme and SettingsScreen (reachable from this flow's own menu) each
+                // resolve an AppearanceViewModel through hiltViewModel(); this owner has to hand it back too.
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                 ProfileSettingsViewModel::class.java to profileSettingsModel(),
-            )
+            ) + householdViewModels(stored)
         val provider =
             ViewModelProvider(
                 viewModelStore,

@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import model.HOME_HOUSEHOLD
+import model.Households
 import model.Profile
 import testing.webFixture
 import kotlin.test.Test
@@ -27,31 +28,20 @@ class ManageOffersFixtureTest {
     fun offersWhatTheRuleAllowsOnEveryCase() {
         val cases = Json.parseToJsonElement(webFixture("watch-state/profile-rules.json").readText()).jsonArray
         assertTrue(cases.isNotEmpty(), "profile-rules.json holds no cases")
-        for (case in cases.map { it.jsonObject }) {
-            val profiles = case.getValue("profiles").jsonArray.map { it.jsonObject.toProfile() }
-            if (case.getValue("expect").jsonPrimitive.boolean && ownerAcross(profiles, case)) continue
-            assertEquals(
-                case.getValue("expect").jsonPrimitive.boolean,
-                offered(
-                    profiles,
-                    case.getValue("actorId").jsonPrimitive.content,
-                    case.getValue("action").jsonPrimitive.content,
-                    case["targetId"]?.jsonPrimitive?.contentOrNull,
-                ),
-                "case: ${case.getValue("name").jsonPrimitive.content}",
-            )
-        }
+        // Every case that disagrees, by name, so one run lists them all.
+        val wrong =
+            cases.map { it.jsonObject }.filter { case ->
+                val offers =
+                    offered(
+                        case.getValue("profiles").jsonArray.map { it.jsonObject.toProfile() },
+                        case.getValue("actorId").jsonPrimitive.content,
+                        case.getValue("action").jsonPrimitive.content,
+                        case["targetId"]?.jsonPrimitive?.contentOrNull,
+                    )
+                offers != case.getValue("expect").jsonPrimitive.boolean
+            }
+        assertEquals(emptyList(), wrong.map { it.getValue("name").jsonPrimitive.content })
     }
-}
-
-/** What the rule lets the owner do to someone in another household, which Manage on Android does not list. */
-private fun ownerAcross(
-    profiles: List<Profile>,
-    case: JsonObject,
-): Boolean {
-    val actor = profiles.find { it.id == case.getValue("actorId").jsonPrimitive.content } ?: return false
-    val target = profiles.find { it.id == case["targetId"]?.jsonPrimitive?.contentOrNull } ?: return false
-    return actor.owner && target.household != actor.household
 }
 
 /** Whether the panel offers [action] on [targetId]: a button shown, or a row listed. */
@@ -61,9 +51,10 @@ private fun offered(
     action: String,
     targetId: String?,
 ): Boolean {
-    // The panel only ever sees the actor's own household.
+    // The panel is given the actor's household as this device's, and everyone on the install, as the households are read.
     val mine = profiles.find { it.id == actorId }?.household ?: HOME_HOUSEHOLD
-    val panel = manageable(profiles.filter { it.household == mine }, actorId, null) as? ManageUiState.Managing ?: return false
+    val install = Households(mine, emptyList(), profiles)
+    val panel = manageable(profiles.filter { it.household == mine }, actorId, null, install = install) as? ManageUiState.Managing ?: return false
     fun List<Profile>.has() = any { it.id == targetId }
     return when (action) {
         "create-grown-up" -> panel.canAddGrownUp

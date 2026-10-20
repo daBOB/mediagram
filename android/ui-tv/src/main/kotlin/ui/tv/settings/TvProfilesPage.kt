@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -16,6 +20,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.EVERYONE_HERE
+import catalog.profile.HouseholdsOwnerUiState
+import catalog.profile.HouseholdsOwnerViewModel
+import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.MANAGE_PROFILES
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ProfileViewModel
@@ -23,6 +30,7 @@ import catalog.profile.SWITCH_PROFILE
 import catalog.profile.WHO_IS_WATCHING
 import catalog.profile.everyoneHere
 import designsystem.Spacing
+import model.HouseholdWords
 import model.Profile
 import setup.ProfileSettingsViewModel
 import setup.ProfileSubtitleChoices
@@ -36,41 +44,45 @@ import ui.tv.profile.TvManageScreen
  * The one Profiles page, television-side — the web's (`settings-profiles.js`)
  * and the phone's `ProfilesPage`: You — who is watching, the way to switch,
  * their subtitle language — then everyone in the household, then Manage
- * profiles. A kid sees only You; with nobody [chosen], which is how the
+ * profiles, then — while there is more than one household — which one this
+ * device shows, then the owner's Households. A kid sees only You; with nobody [chosen], which is how the
  * picker's Manage profiles opens it, there is no You. Seeing the list needs no
  * PIN; changing anything asks who you are and that grown-up's PIN.
  *
  * Where the phone draws Manage inline under the list, the television opens it
- * as a panel of its own ([TvProfilesPanel]) from the "Manage profiles" row:
- * its PIN pad and its name questions take the whole screen here wherever they
- * open, and one screen at a time keeps nothing behind them competing for the
- * remote.
+ * as a panel of its own ([TvProfilesPanel]) from the "Manage profiles" row,
+ * Switch household (`TvJoinHousehold`) from the This device row, and the
+ * owner's Households (`TvHouseholdsPanel`) from the Owner row: their
+ * PIN pads and name questions take the whole screen here wherever they open,
+ * and one screen at a time keeps nothing behind them competing for the
+ * remote. [onOpen] opens the panel a row names.
  *
  * [entryFocusRequester] is the page's first stop — who is watching, or with
  * nobody chosen the list — drawn whatever has loaded, so the page always has
- * somewhere to be entered. [landOnManage] lands on the Manage profiles row
- * instead: back from the panel that row opened, or over the picker, whose own
- * Manage profiles button opened the page.
+ * somewhere to be entered. [returningFrom] lands on the row that opened that
+ * panel instead: back from it, or over the picker, whose own Manage profiles
+ * button opened the page.
  */
 @Composable
 internal fun TvProfilesPage(
     chosen: Profile?,
     focusInContent: Boolean,
-    landOnManage: Boolean,
+    returningFrom: TvSettingsPanel?,
     entryFocusRequester: FocusRequester,
-    onManage: () -> Unit,
+    onOpen: (TvSettingsPanel) -> Unit,
 ) {
-    val manageRow = remember { FocusRequester() }
+    val rows = remember { listOf(TvSettingsPanel.Profiles, TvSettingsPanel.Join, TvSettingsPanel.Households).associateWith { FocusRequester() } }
     val list = remember { FocusRequester() }
     // Keyed on focusInContent alone, as Telegram's is: the hub forgets the
     // panel it came back from right after, which must not land a second time.
     LaunchedEffect(focusInContent) {
-        if (landOnManage) manageRow.requestFocus() else if (focusInContent) entryFocusRequester.requestFocus()
+        val row = rows[returningFrom]
+        if (row != null) row.requestFocus() else if (focusInContent) entryFocusRequester.requestFocus()
     }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         chosen?.let { You(it, entryFocusRequester) }
         // A kid manages nothing, so is shown nobody else either.
-        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, manageRow, onManage)
+        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, chosen?.owner == true, rows, onOpen)
     }
 }
 
@@ -117,14 +129,41 @@ private fun You(
     }
 }
 
-/** Everyone here at a glance, each name beside its role — one stop, for a household long enough to scroll — then the row that opens Manage. */
+/**
+ * Everyone here at a glance, each name beside its role — one stop, for a
+ * household long enough to scroll — then the row that opens Manage, then,
+ * while there is another household to switch to, the one this device shows,
+ * then the owner's Households: [asOwner]'s to open, and anyone else is told
+ * they are the owner's and may say they are the owner.
+ */
 @Composable
 private fun Household(
     list: FocusRequester,
-    manageRow: FocusRequester,
-    onManage: () -> Unit,
+    asOwner: Boolean,
+    rows: Map<TvSettingsPanel, FocusRequester>,
+    onOpen: (TvSettingsPanel) -> Unit,
 ) {
     val profiles by hiltViewModel<ManageProfilesViewModel>().profiles.collectAsStateWithLifecycle()
+    val households: JoinHouseholdViewModel = hiltViewModel()
+    val join by households.state.collectAsStateWithLifecycle()
+    val part by hiltViewModel<HouseholdsOwnerViewModel>().state.collectAsStateWithLifecycle()
+    // Read again as the page shows: a household made or renamed on another device since.
+    LaunchedEffect(households) { households.reread() }
+    val ownerRow = asOwner || part is HouseholdsOwnerUiState.Open || (part as? HouseholdsOwnerUiState.Closed)?.canOpen == true
+    val shown = setOfNotNull(TvSettingsPanel.Join.takeIf { join.canSwitch }, TvSettingsPanel.Households.takeIf { ownerRow })
+    // Which of the rows that can go holds the remote. Its going hands the
+    // remote to Manage profiles rather than nothing; a row only stops holding
+    // it by focus moving on while it is still shown.
+    val showing by rememberUpdatedState(shown)
+    var holding by remember { mutableStateOf<TvSettingsPanel?>(null) }
+    fun held(row: TvSettingsPanel) = Modifier.onFocusChanged { if (it.isFocused) holding = row else if (holding == row && row in showing) holding = null }
+    val lost = holding?.let { it !in shown } == true
+    LaunchedEffect(lost) {
+        if (lost) {
+            holding = null
+            rows.getValue(TvSettingsPanel.Profiles).requestFocus()
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
         TvInfoBlock(
             heading = EVERYONE_HERE,
@@ -132,7 +171,16 @@ private fun Household(
             modifier = Modifier.focusRequester(list),
             focusable = true,
         )
-        TvTextRow(MANAGE_PROFILES, onClick = onManage, focusRequester = manageRow)
+        TvTextRow(MANAGE_PROFILES, onClick = { onOpen(TvSettingsPanel.Profiles) }, focusRequester = rows.getValue(TvSettingsPanel.Profiles))
+        if (TvSettingsPanel.Join in shown) {
+            val here = listOfNotNull(HouseholdWords.THIS_DEVICE, join.here?.name).joinToString(" · ")
+            TvTextRow(here, onClick = { onOpen(TvSettingsPanel.Join) }, held(TvSettingsPanel.Join), rows.getValue(TvSettingsPanel.Join))
+        }
+        if (!asOwner) TvQuietLine(HouseholdWords.OWNER_NOTE)
+        if (TvSettingsPanel.Households in shown) {
+            val words = if (asOwner) HouseholdWords.HOUSEHOLDS else HouseholdWords.OWNER
+            TvTextRow(words, onClick = { onOpen(TvSettingsPanel.Households) }, held(TvSettingsPanel.Households), rows.getValue(TvSettingsPanel.Households))
+        }
     }
 }
 

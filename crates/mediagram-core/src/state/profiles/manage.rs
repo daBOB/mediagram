@@ -1,6 +1,7 @@
 //! Managing profiles: who may add, remove, enter and re-PIN whom — a port of
 //! the web's `profiles-manage.ts`, refusing for the same reasons in the same
-//! order.
+//! order. Claiming the admin's role, per household, is
+//! `crate::state::households::manage`'s, as on the web.
 //!
 //! Every operation answers in that order: input that cannot be used (a name,
 //! a new PIN, an age); a name another profile here already answers to;
@@ -21,7 +22,7 @@
 use rusqlite::Connection;
 
 use super::Answer;
-use super::role_rows::{self, NewProfile, Stored};
+use super::role_rows::{self, NewProfile};
 use super::role_writes;
 use super::rules::Action;
 use super::{ProfileOutcome::*, pin};
@@ -38,8 +39,8 @@ fn valid_age(age: u8) -> bool {
 /// One management call's view of the store — the wrong-PIN counts in it —
 /// and the time. Made by `StateDb::manage`, one per call.
 pub struct ProfileManager<'a> {
-    conn: &'a Connection,
-    now: i64,
+    pub(crate) conn: &'a Connection,
+    pub(crate) now: i64,
 }
 
 impl ProfileManager<'_> {
@@ -70,7 +71,7 @@ impl ProfileManager<'_> {
         self.insert(name, &role)
     }
 
-    /// A grown-up, with its first PIN. The admin's to add.
+    /// A grown-up, with its first PIN, in its maker's household. The admin's to add.
     pub fn create_grown_up(&mut self, actor_id: &str, pin: &str, name: &str, new_pin: &str) -> Answer {
         if !pin::valid(new_pin) {
             return Ok(Invalid);
@@ -81,10 +82,12 @@ impl ProfileManager<'_> {
         if let Some(refused) = self.check(actor_id, pin, Action::CreateGrownUp, None, false)? {
             return Ok(refused);
         }
-        self.insert(name, &NewProfile { pin: Some(new_pin), ..Default::default() })
+        let household = self.household_of(actor_id)?;
+        self.insert(name, &NewProfile { pin: Some(new_pin), household, ..Default::default() })
     }
 
-    /// A kid, belonging to whichever grown-up adds it, with its own limit.
+    /// A kid, belonging to whichever grown-up adds it, with its own limit,
+    /// in that grown-up's household.
     pub fn create_kid(
         &mut self,
         actor_id: &str,
@@ -102,8 +105,8 @@ impl ProfileManager<'_> {
         if let Some(refused) = self.check(actor_id, pin, Action::CreateKid, None, false)? {
             return Ok(refused);
         }
-        let parent_id = Some(actor_id);
-        let role = NewProfile { kids: true, kids_age: Some(kids_age), daily_limit, parent_id, ..Default::default() };
+        let (parent_id, household) = (Some(actor_id), self.household_of(actor_id)?);
+        let role = NewProfile { kids: true, kids_age: Some(kids_age), daily_limit, parent_id, household, ..Default::default() };
         self.insert(name, &role)
     }
 
@@ -138,32 +141,6 @@ impl ProfileManager<'_> {
             return Ok(Done);
         }
         Ok(self.prove(&target, pin)?.unwrap_or(Done))
-    }
-
-    /// Makes `id` the household's admin — once, while this player knows of
-    /// none. A grown-up with a PIN gives it; one without takes the PIN given,
-    /// which is why that one has to be a PIN at all.
-    pub fn claim_admin(&mut self, id: &str, pin: &str) -> Answer {
-        let rows = self.rows()?;
-        let target = rows.iter().find(|row| row.id == id);
-        if target.is_some_and(|t| !t.kids && t.pin_hash.is_none()) && !pin::valid(pin) {
-            return Ok(Invalid);
-        }
-        let Some(target) = target else {
-            return Ok(NotFound);
-        };
-        // A claim a kid's row still holds is no admin: see `Stored::is_admin`.
-        if target.kids || rows.iter().any(Stored::is_admin) {
-            return Ok(NotAllowed);
-        }
-        let first_pin = target.pin_hash.is_none().then_some(pin);
-        if first_pin.is_none()
-            && let Some(refused) = self.prove(target, pin)?
-        {
-            return Ok(refused);
-        }
-        role_rows::claim_admin(self.conn, id, first_pin, self.now)?;
-        Ok(Done)
     }
 
     /// A grown-up's PIN: its own, or — for the admin — anyone's.

@@ -10,35 +10,9 @@ use std::collections::HashMap;
 use rusqlite::{Connection, params};
 
 use super::roles::first_of_each_name;
-use crate::state::households::HOME;
+use crate::state::households::{HOME, Row, load_rows};
 use crate::state::profiles;
 use crate::state::record::{HouseholdAdmin, HouseholdEntry, HouseholdName, normal_name};
-
-/// A stored household, removed ones included.
-struct Stored {
-    name: String,
-    name_updated_at: i64,
-    admin_id: Option<String>,
-    admin_updated_at: i64,
-    removed: bool,
-}
-
-fn load(conn: &Connection) -> rusqlite::Result<Vec<(String, Stored)>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, name, name_updated_at, admin_id, admin_updated_at, removed FROM households ORDER BY id",
-    )?;
-    let rows = stmt.query_map([], |row| {
-        let stored = Stored {
-            name: row.get(1)?,
-            name_updated_at: row.get(2)?,
-            admin_id: row.get(3)?,
-            admin_updated_at: row.get(4)?,
-            removed: row.get::<_, i64>(5)? != 0,
-        };
-        Ok((row.get(0)?, stored))
-    })?;
-    rows.collect()
-}
 
 /// What this device says about households: a row only once something in it
 /// is dated, or it is removed — so a Home nobody touched says nothing, and
@@ -48,14 +22,14 @@ pub(super) fn export(conn: &Connection) -> rusqlite::Result<Vec<HouseholdEntry>>
     let names: HashMap<String, String> =
         profiles::list(conn)?.into_iter().map(|one| (one.id, one.name)).collect();
     let mut said = Vec::new();
-    for (id, row) in load(conn)? {
+    for row in load_rows(conn)? {
         let name = (row.name_updated_at > 0)
             .then(|| HouseholdName { text: row.name.clone(), updated_at: row.name_updated_at as f64 });
         let admin = row.admin_id.as_ref().and_then(|admin| names.get(admin)).filter(|_| row.admin_updated_at > 0);
         let admin = admin.map(|name| HouseholdAdmin { name: name.clone(), updated_at: row.admin_updated_at as f64 });
-        let removed = row.removed && id != HOME;
+        let removed = row.removed && row.id != HOME;
         if name.is_some() || admin.is_some() || removed {
-            said.push(HouseholdEntry { id, name, admin, removed });
+            said.push(HouseholdEntry { id: row.id, name, admin, removed });
         }
     }
     Ok(said)
@@ -70,7 +44,7 @@ fn newer(merged: f64, local: i64, different: bool) -> bool {
 /// profile has a local row: an admin may be a viewer this same import made.
 pub(super) fn import(conn: &Connection, entries: &[HouseholdEntry]) -> rusqlite::Result<u64> {
     let local = first_of_each_name(conn)?;
-    let mut stored: HashMap<String, Stored> = load(conn)?.into_iter().collect();
+    let mut stored: HashMap<String, Row> = load_rows(conn)?.into_iter().map(|row| (row.id.clone(), row)).collect();
     let mut changed = 0;
     for entry in entries {
         let id = entry.id.as_str();
@@ -81,7 +55,8 @@ pub(super) fn import(conn: &Connection, entries: &[HouseholdEntry]) -> rusqlite:
                 "INSERT INTO households(id, name, name_updated_at) VALUES (?1, ?2, ?3)",
                 params![id, name.text, name.updated_at as i64],
             )?;
-            let made = Stored {
+            let made = Row {
+                id: id.to_string(),
                 name: name.text.clone(),
                 name_updated_at: name.updated_at as i64,
                 admin_id: None,

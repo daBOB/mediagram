@@ -1,13 +1,10 @@
 //! A profile's row with everything stored about it, the PIN included, and
-//! the writes that make one, remove one or make it the admin — the half of
+//! the writes that make one or remove one — the half of
 //! the web's `profiles.ts` the management calls stand on. Never sent as it
 //! is: `Profile` says whether there is a PIN, never what. A PIN's and a
 //! limit's own writes are `role_writes`.
 
-use rusqlite::{Connection, params};
-
-use super::role_writes::write_pin;
-use super::rules::RoleView;
+use rusqlite::Connection;
 
 mod insert;
 pub(crate) use insert::{NewProfile, insert, taken_names};
@@ -43,18 +40,6 @@ impl Stored {
     /// reads it.
     pub(crate) fn is_owner(&self) -> bool {
         self.is_admin()
-    }
-
-    /// The rule's view of this profile, a kid never the admin.
-    pub(crate) fn view(&self) -> RoleView {
-        RoleView {
-            id: self.id.clone(),
-            kids: self.kids,
-            admin: self.is_admin(),
-            owner: self.is_owner(),
-            parent_id: self.parent_id.clone(),
-            household: Some(self.household_id.clone()),
-        }
     }
 }
 
@@ -104,16 +89,5 @@ pub(crate) fn remove(conn: &Connection, id: &str, grown_up: bool) -> rusqlite::R
         tx.execute("DELETE FROM profiles WHERE parent_id = ?1 AND kids = 1", [id])?;
     }
     tx.execute("DELETE FROM profiles WHERE id = ?1", [id])?;
-    tx.commit()
-}
-
-/// Makes `id` the admin from `now`, with `first_pin` as its PIN when it has
-/// none yet — both or neither.
-pub(crate) fn claim_admin(conn: &Connection, id: &str, first_pin: Option<&str>, now: i64) -> rusqlite::Result<()> {
-    let tx = conn.unchecked_transaction()?;
-    if let Some(pin) = first_pin {
-        write_pin(&tx, id, pin, now, false)?;
-    }
-    tx.execute("UPDATE profiles SET admin_claimed_at = ?2 WHERE id = ?1", params![id, now])?;
     tx.commit()
 }

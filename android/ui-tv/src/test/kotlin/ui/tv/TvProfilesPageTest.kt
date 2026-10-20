@@ -1,17 +1,13 @@
 package ui.tv
 
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performSemanticsAction
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -133,13 +129,6 @@ class TvProfilesPageTest : TvProfilesHarness() {
         compose.runOnUiThread { fixture.manage.setKidsAge("c", 12) }
         compose.waitForIdle()
         assertEquals(6, fixture.core.profiles.single { it.id == "c" }.kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
-    }
-
-    /** Settings from the rail, then the remote down its index to [row] — the section beside it shown, not yet entered. */
-    private fun openSettingsAt(row: SemanticsMatcher) {
-        compose.onNodeWithContentDescription("Settings").performSemanticsAction(SemanticsActions.OnClick)
-        compose.waitForIdle()
-        walkTo(row, Key.DirectionDown)
     }
 
     /** Settings › Profiles, entered and walked down to its Manage profiles row → who you are → Bo → Bo's PIN, by remote alone. */

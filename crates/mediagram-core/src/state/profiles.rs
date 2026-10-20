@@ -19,7 +19,7 @@ pub mod pin;
 pub mod pin_wait;
 mod profile;
 pub(crate) mod role_rows;
-mod role_writes;
+pub(crate) mod role_writes;
 pub mod rules;
 
 pub use manage::ProfileManager;
@@ -132,7 +132,7 @@ pub(super) fn profile_named_with_creation(
 
 /// A name with its edges trimmed and internal whitespace collapsed, as the
 /// web's `cleanName`, or `None` when there is nothing left.
-pub(super) fn clean_name(name: &str) -> Option<String> {
+pub(crate) fn clean_name(name: &str) -> Option<String> {
     let clean: String = js_collapse(name).chars().take(MAX_NAME).collect();
     (!clean.is_empty()).then_some(clean)
 }

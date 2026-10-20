@@ -219,3 +219,11 @@ fn missing_or_wrong_typed_lists_read_as_empty() {
         record.profiles.is_empty() && record.kids.is_empty() && record.editors_choice.is_empty()
     );
 }
+
+#[test]
+fn a_households_name_is_cut_to_120_code_points_not_bytes() {
+    let long = "é".repeat(121);
+    let text = document(json!({ "households": [{ "id": "flat", "name": { "text": long, "updatedAt": 7 } }] }));
+    let name = parse_record(&text).unwrap().households.remove(0).name.unwrap();
+    assert_eq!(name.text, "é".repeat(120));
+}

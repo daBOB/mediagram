@@ -1,6 +1,6 @@
 //! The tie-break every kept row goes through. Split out only to keep
-//! `merge.rs` under the line limit; `merge_states` and its `stats` and `roles`
-//! halves are the callers.
+//! `merge.rs` under the line limit; `merge_states` and its `stats`, `roles`
+//! and `households` parts are the callers.
 
 use std::collections::HashMap;
 
@@ -18,8 +18,8 @@ pub(super) struct Held<T> {
 
 /// Any row this merge keeps by timestamp: a position, a completion, a
 /// watchlist or Kids mark, a collection, a preference, a stats row, a kid's
-/// limit, or a profile's hidden sections. A PIN has an order of its own:
-/// `keep_pin`.
+/// limit, a profile's hidden sections or household, or a household's name
+/// or admin. A PIN has an order of its own: `keep_pin`.
 pub(super) trait Timestamped {
     fn updated_at(&self) -> f64;
 }

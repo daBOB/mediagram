@@ -240,7 +240,7 @@ class TvProfilesFlowTest : TvProfilesHarness() {
         name("cy")
         press(Key.DirectionCenter)
         press(Key.DirectionCenter)
-        compose.onNodeWithText("A profile with that name already exists.").assertExists()
+        compose.onNodeWithText("That name is already used on this install.").assertExists()
         assertEquals(3, fixture.core.profiles.size)
     }
 
