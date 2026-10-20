@@ -155,7 +155,7 @@ test("each open of the event stream reads watch together again, for an edit miss
 });
 
 test("a session heard on the stream offers Join on Home and on its title's page, and Join opens it in the session", async () => {
-  const live = { session: "s-1", set: "First", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  const live = { session: "s-1", set: "First", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast: null };
   intercept = (url, init) => (url === "/api/together" && init?.method === "POST" ? Response.json({ id: 7, session: live, serverNow: 0 }) : null);
   await start();
   await env.navigate("#/home");
@@ -176,7 +176,7 @@ test("a course's page offers Join while a session plays one of its lessons", asy
   await start();
   await env.navigate("#/tutorials/Course");
   expect(page()).not.toContain("Join");
-  const live = { session: "s-1", set: "Lesson", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+  const live = { session: "s-1", set: "Lesson", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast: null };
   stream().fire("together", { id: 7, session: live, serverNow: 0 });
   expect(textOf(byClass(env.node("main"), "film-play"))).toBe("Join");
 });
@@ -769,7 +769,7 @@ describe("kids profiles", () => {
   });
 
   test("a Join the daily limit refused is not left armed for the next title opened", async () => {
-    const live = { session: "s-1", set: "Family", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV" }], ended: false };
+    const live = { session: "s-1", set: "Family", playing: false, pos: 0, rate: 1, at: 0, by: "tv", members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast: null };
     let out = true;
     const base = intercept;
     intercept = (url, init) => {

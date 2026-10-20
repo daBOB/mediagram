@@ -4,6 +4,8 @@
  * `follow.d.ts`.
  */
 
+import { isRequest, REQUEST_LIFETIME_MS } from "./session.js";
+
 /** Further apart than this, a screen seeks. */
 export const DRIFT_TOLERANCE_SECS = 0.5;
 /** A playing session lasts this long past its title's end, then it is stale. */
@@ -24,6 +26,7 @@ export function expectedPosition(s, now) {
  */
 export function isLive(s, durationSecs, now) {
   if (s.ended) return false;
+  if (isRequest(s)) return now - s.at < REQUEST_LIFETIME_MS;
   if (!s.playing) return now - s.at < PAUSED_LIFETIME_MS;
   if (durationSecs == null) return now - s.at < UNKNOWN_LENGTH_LIFETIME_MS;
   return expectedPosition(s, now) <= durationSecs + PAST_END_GRACE_SECS;

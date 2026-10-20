@@ -68,7 +68,7 @@ fun TvPlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
-    val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val marks = marksOutsideACast(viewModel)
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val held by viewModel.held.collectAsStateWithLifecycle()
     val choices by viewModel.choices.collectAsStateWithLifecycle()

@@ -12,7 +12,7 @@ import {
   forgetTogether, heardTogether, onTogether, openForTogether, refreshTogether, screen, serverNow, setForTogether, setInTogether,
   takeJoin, together, togetherNow,
 } from "../together-now.js";
-import { DAILY_LIMIT_WORDS } from "../daily-limit.js";
+import { DAILY_LIMIT_NOTICE_MS, DAILY_LIMIT_WORDS } from "../daily-limit.js";
 import { COULD_NOT_START, ENDED, LEFT_NOT_HERE, NOT_HERE, say } from "./together-words.js";
 import { togetherView } from "./together-view.js";
 import { playerSteps } from "./together-steps.js";
@@ -62,11 +62,11 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
   function openTitle(set) {
     if (!setForTogether(set)) return void leave(LEFT_NOT_HERE);
     expecting = set;
-    void openForTogether(set).then((opened) => opened === false && expecting === set && leave(DAILY_LIMIT_WORDS.out));
+    void openForTogether(set).then((opened) => opened === false && expecting === set && leave(DAILY_LIMIT_WORDS.out, DAILY_LIMIT_NOTICE_MS));
   }
 
-  function end(message) {
-    if (message) show(message);
+  function end(message, ms) {
+    if (message) show(message, ms);
     generation++;
     id = null;
     current = null;
@@ -110,9 +110,9 @@ export function mountTogether({ video, button, label, note, filmTime, seekTo, se
     else show(NOT_HERE);
   }
 
-  async function leave(message = null) {
+  async function leave(message = null, ms = undefined) {
     const leaving = id;
-    end(message);
+    end(message, ms);
     if (leaving !== null) await together({ op: "leave", screen, id: leaving });
   }
 

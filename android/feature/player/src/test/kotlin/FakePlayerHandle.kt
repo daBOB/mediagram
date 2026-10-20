@@ -20,6 +20,8 @@ class FakePlayerHandle : PlayerHandle {
     var openedSetId: String? = null
         private set
 
+    override val openSet = MutableStateFlow<String?>(null)
+
     var openedStartAtMs: Long? = null
         private set
 
@@ -62,6 +64,7 @@ class FakePlayerHandle : PlayerHandle {
     override fun open(setId: String, startAtMs: Long, playWhenReady: Boolean) {
         val changingWhilePlaying = isPlayingNow && setId != openedSetId
         openedSetId = setId
+        openSet.value = setId
         openedStartAtMs = startAtMs
         openedPlayWhenReady = playWhenReady
         if (changingWhilePlaying) emitPlaying(false)
@@ -77,6 +80,7 @@ class FakePlayerHandle : PlayerHandle {
 
     override fun stop() {
         stopCalled = true
+        openSet.value = null
     }
 
     override fun positionMs(): Long? = fakePositionMs

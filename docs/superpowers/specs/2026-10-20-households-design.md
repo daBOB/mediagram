@@ -37,7 +37,9 @@ One Mediagram install — one Telegram library, one web server, its phones, tabl
 10. **Out of scope:**
     - real separation: logins, the server refusing other households, per-household libraries or channels;
     - per-household settings (cache, Telegram);
-    - which household a cast or watch-together session belongs to. A TV still takes a cast from any device on the install, as today; a later change can limit it.
+    - which household a watch-together session belongs to.
+
+    Casting is no longer out of scope: the user decided on 2026-10-20, "Only to TVs in my household". A phone, tablet or browser offers only TVs that joined its own household, so a cast always plays as someone that TV knows, and a TV answers no cast from another household (`docs/superpowers/specs/2026-10-18-cast-to-tv-design.md`, decision 10).
 
 ### Settled after the builder check (controller's calls, 2026-10-20)
 

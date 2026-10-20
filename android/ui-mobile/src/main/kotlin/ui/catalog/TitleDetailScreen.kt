@@ -44,6 +44,7 @@ private val POSTER_WIDTH = 120.dp
  * ([TitleSpread]), the pills that start it, then tabs — Overview, Cast (once
  * credits name somebody), Similar, Details. A Compose port of `film-page.js`.
  * While a watch-together session plays this film, Join stands in for Play.
+ * [playOnTv] casts it from where Play or Resume would start.
  *
  * [info] being null is ordinary rather than a failure — a course has no
  * provider entry, and a library assembled without a TMDB key has no rows at
@@ -70,6 +71,7 @@ fun TitleDetailScreen(
     fetchPortrait: suspend (Long) -> String? = { null },
     portraits: PortraitRequestLog = PortraitRequestLog(),
     preload: TitlePreloadUi? = null,
+    playOnTv: PlayOnTv? = null,
 ) {
     val resumeAt =
         remember(set.setId, watch) {
@@ -120,6 +122,7 @@ fun TitleDetailScreen(
                     preload?.takeIf { it.state == FilmPreloadState.Done }?.let { p ->
                         { dismiss: () -> Unit -> PreloadRemoveMenuItem(onRemove = p.onRemove, onDismiss = dismiss) }
                     },
+                castPill = playOnTv?.let { tv -> { PlayOnTvPill(tv, set.setId, resumeAt ?: 0.0, onPlay) } },
             )
         }
         preload?.takeIf { showsPreloadBar(it.state) || it.state is FilmPreloadState.NeedsSpace || it.serverLine != null }?.let { p ->

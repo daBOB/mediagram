@@ -18,7 +18,7 @@ let env: ReturnType<typeof browserEnvironment>;
 let channel: FakeChannel;
 let follower: ReturnType<typeof mountTogether>;
 const film = { setId: "film-1", title: "Film", kind: "movie", duration: 6_000 };
-const TV = { screen: "tv", label: "TV" };
+const TV = { screen: "tv", label: "TV", remote: false };
 
 beforeEach(async () => {
   env = browserEnvironment();
@@ -30,13 +30,13 @@ beforeEach(async () => {
   env.respondWith(async (_url, options) => {
     const body = options?.body ? JSON.parse(String(options.body)) : null;
     if (!body) return Response.json({ available: true, reason: null, live: await hub.live(durationOf), serverNow: Date.now() });
-    if (body.op === "join") return Response.json({ ...await hub.join(body.id, { screen: body.screen, label: "Browser" }), serverNow: Date.now() });
+    if (body.op === "join") return Response.json({ ...await hub.join(body.id, { screen: body.screen, label: "Browser", remote: false }), serverNow: Date.now() });
     if (body.op === "act") return Response.json({ session: hub.act(body.id, body.screen, body.change), serverNow: Date.now() });
     if (body.op === "leave") hub.leave(body.id, body.screen);
     return new Response(null, { status: 204 });
   });
   setTogetherOpener(() => {}, (setId) => (setId === film.setId ? film as never : null));
-  const tv: Session = { session: "s-tv", set: film.setId, playing: true, pos: 0, rate: 1, at: Date.now(), by: TV.screen, members: [TV], ended: false };
+  const tv: Session = { session: "s-tv", set: film.setId, playing: true, pos: 0, rate: 1, at: Date.now(), by: TV.screen, members: [TV], ended: false, cast: null };
   channel.messages.set(950, writeSession(tv));
   await refreshTogether();
   takeJoin();

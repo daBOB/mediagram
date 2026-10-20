@@ -8,17 +8,18 @@ import { describe, expect, test } from "bun:test";
 import { TogetherHub } from "../src/together/hub";
 import type { EditOutcome } from "../src/together/channel";
 import { parseSession, writeSession, type Member, type Session } from "../public/lib/together/session.js";
+import { offered } from "../public/lib/together/cast.js";
 import { joined } from "../public/lib/together/moves.js";
 import { FakeChannel, deferred, settle } from "./together-fixture";
 
 const NOW = 1_791_500_000_000;
-const A: Member = { screen: "tab-a", label: "Browser" };
-const B: Member = { screen: "tab-b", label: "Browser" };
-const TV: Member = { screen: "tv-1", label: "TV" };
+const A: Member = { screen: "tab-a", label: "Browser", remote: false };
+const B: Member = { screen: "tab-b", label: "Browser", remote: false };
+const TV: Member = { screen: "tv-1", label: "TV", remote: false };
 const FILM = { set: "film-1", playing: true, pos: 10, rate: 1 };
 
 const foreign = (over: Partial<Session> = {}): Session => ({
-  session: "s-tv", ...FILM, at: NOW, by: TV.screen, members: [TV], ended: false, ...over,
+  session: "s-tv", ...FILM, at: NOW, by: TV.screen, members: [TV], ended: false, cast: null, ...over,
 });
 
 function harness() {
@@ -51,6 +52,22 @@ describe("TogetherHub", () => {
     expect(h.channel.sent).toHaveLength(1);
   });
 
+  test("a session read while its send is in flight is still announced once the send returns", async () => {
+    const h = harness();
+    const gate = deferred<void>();
+    h.channel.send = async (text: string) => {
+      h.channel.messages.set(901, text);
+      await gate.promise;
+      return 901;
+    };
+    const creating = h.hub.create(A.screen, foreign({ by: A.screen, members: [A] }));
+    await settle();
+    await h.hub.live(h.durationOf);
+    gate.resolve();
+    const { id } = await creating;
+    expect(h.announced.filter(([announcedId]) => announcedId === id)).not.toHaveLength(0);
+  });
+
   test("live skips and removes a stale session, and answers the newest live one", async () => {
     const h = harness();
     h.channel.messages.set(949, writeSession(foreign()));
@@ -58,6 +75,19 @@ describe("TogetherHub", () => {
     h.channel.messages.set(951, writeSession(foreign({ session: "s-3", pos: 300 })));
     expect(await h.hub.live(h.durationOf)).toEqual({ id: 950, session: foreign({ session: "s-2", set: "film-2" }) });
     expect(h.channel.removed).toEqual([951]);
+  });
+
+  test("an offer is not the live session", async () => {
+    const h = harness();
+    h.channel.messages.set(11, writeSession(offered("s-offer", TV, FILM, "kid", "home", NOW)));
+    expect(await h.hub.live(h.durationOf)).toBeNull();
+  });
+
+  test("an offer beside a running session leaves that one live", async () => {
+    const h = harness();
+    h.channel.messages.set(10, writeSession(foreign()));
+    h.channel.messages.set(11, writeSession(offered("s-offer", A, FILM, "kid", "home", NOW)));
+    expect((await h.hub.live(h.durationOf))?.id).toBe(10);
   });
 
   test("a session heard by push and pushed out of the newest 100 is read by id, so no second one starts", async () => {
@@ -224,7 +254,8 @@ describe("TogetherHub", () => {
     h.channel.outcomes.push({ wait: 5 });
     h.hub.leave(id, A.screen);
     await settle();
-    expect(h.announced.at(-1)).toEqual([id, null]);
+    // Over for the tabs: announced as it ended, which a tab's view turns into none.
+    expect(h.announced.at(-1)).toEqual([id, expect.objectContaining({ members: [], ended: true })]);
     const tvJoin = joined(parseSession(h.channel.messages.get(id)!)!, TV);
     h.hub.heard(id, writeSession(tvJoin));
     wait.resolve();
@@ -262,7 +293,7 @@ describe("TogetherHub", () => {
     const first = h.hub.act(id, A.screen, { playing: false })!;
     h.hub.act(id, A.screen, { pos: 30 });
     h.hub.heard(id, writeSession({ ...first, by: TV.screen, ended: true }));
-    expect(h.announced.at(-1)).toEqual([id, null]);
+    expect(h.announced.at(-1)).toEqual([id, { ...first, by: TV.screen, ended: true }]);
     held.resolve("ok");
     await settle();
     expect(h.channel.edits).toHaveLength(1);

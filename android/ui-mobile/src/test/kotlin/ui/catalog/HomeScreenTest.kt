@@ -147,6 +147,12 @@ class HomeScreenTest {
     }
 
     @Test
+    fun homeShowsNoWatchingTogetherRowForACast() {
+        show(together = TogetherOffer(41, film("feature"), "TV", cast = true))
+        compose.onNodeWithText("Watching together", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun noSessionNoLine() {
         show()
         compose.onNodeWithText("Watching together", substring = true).assertDoesNotExist()

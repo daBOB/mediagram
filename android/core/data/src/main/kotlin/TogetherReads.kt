@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import model.together.isLive
+import model.together.isRequest
 import model.together.parseSession
 import uniffi.mediagram_core.TogetherMessage
 
@@ -45,7 +46,8 @@ internal class TogetherReads(
         val known = sessions.known
         val before = known.toMap()
         val found = channel.recent().associateTo(LinkedHashMap()) { it.messageId to parseSession(it.text) }
-        val remembered = known.keys.maxOrNull()
+        // Unlike the web, a request is not remembered: it is read for its own sake, and must not hide the shown session.
+        val remembered = known.filterValues { !isRequest(it) }.keys.maxOrNull()
         if (remembered != null && remembered !in found) {
             val session = channel.read(remembered)?.let(::parseSession)
             if (session != null) found[remembered] = session else sessions.forget(remembered)
@@ -53,6 +55,7 @@ internal class TogetherReads(
         val sets = found.values.mapNotNull { it?.set } + known.keys.mapNotNull { sessions.view(it)?.set }
         val lengths = sets.toSet().associateWith { lengthOf(it) }
         var newest: LiveSession? = null
+        val requests = mutableListOf<LiveSession>()
         for (id in found.keys + known.keys.filter { known[it] !== before[it] }) {
             val pending = sessions.pending(id)
             val session =
@@ -71,8 +74,15 @@ internal class TogetherReads(
                 continue
             }
             if (!pending) known[id] = session
-            if (newest == null || id > newest.id) newest = LiveSession(id, session)
+            if (isRequest(session)) {
+                requests += LiveSession(id, session)
+            } else if (newest == null || id > newest.id) {
+                newest = LiveSession(id, session)
+            }
         }
+        // A held request that now reads as anything else (accepted) is no longer one.
+        sessions.requests.value.filter { sessions.view(it.id)?.let(::isRequest) != true }.forEach { sessions.drop(it.id) }
+        requests.forEach(sessions::hold)
         return newest
     }
 
@@ -117,6 +127,7 @@ internal class TogetherReads(
      */
     private suspend fun recheck() {
         if (sessions.sender.busy) return
+        dropStaleRequests()
         for ((id, session) in sessions.known.toList()) {
             if (sessions.pending(id) || session.members.none { it.screen in sessions.local }) continue
             val text =
@@ -133,6 +144,34 @@ internal class TogetherReads(
             if (sessions.pending(id) || sessions.known[id] !== session) continue
             sessions.reachable.value = true
             if (read == null) sessions.forget(id) else if (!same(read, session)) sessions.take(id, read, live)
+        }
+    }
+
+    /** A request nobody answered goes a minute after it was made; whoever reads it deletes it. */
+    private suspend fun dropStaleRequests() {
+        for (request in sessions.requests.value) dropStale(request)
+    }
+
+    private suspend fun dropStale(request: LiveSession) {
+        if (isLive(request.session, null, now())) return
+        // The copy held may predate an accept this device missed: only what the channel holds now is deleted.
+        val read =
+            try {
+                channel.read(request.id)?.let(::parseSession)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                return
+            }
+        val live = read != null && isLive(read, lengthOf(read.set), now())
+        if (sessions.requests.value.none { it === request } || sessions.pending(request.id)) return
+        if (read == null) {
+            sessions.forget(request.id)
+        } else if (isRequest(read) && !live) {
+            sessions.forget(request.id)
+            scope.launch { orDefault(Unit, "deleting a stale request") { channel.delete(request.id) } }
+        } else {
+            sessions.take(request.id, read, live)
         }
     }
 

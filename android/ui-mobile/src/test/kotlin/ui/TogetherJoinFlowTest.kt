@@ -107,18 +107,17 @@ class TogetherJoinFlowTest {
         assertEquals(41, fixture.together.takeJoin())
     }
 
-    /** A department tab draws no Join, so nothing listens for sessions while one is shown. */
+    /** A department tab draws no Join, but the cast bar can show on it, so the sessions are still listened for. */
     @Test
-    fun onADepartmentTabTheSessionsAreNotListenedFor() {
+    fun onADepartmentTabTheSessionsAreStillListenedForForTheBar() {
         open()
-        assertTrue(fixture.together.live.subscriptionCount.value > 0, "Home listens while it shows Join")
 
         compose.onNode(hasText("Movies") and hasClickAction()).performClick()
         compose.onNodeWithText("Watching together", substring = true).assertDoesNotExist()
         compose.runOnUiThread { shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6)) }
         compose.waitForIdle()
 
-        assertEquals(0, fixture.together.live.subscriptionCount.value)
+        assertTrue(fixture.together.live.subscriptionCount.value > 0)
     }
 
     @Test

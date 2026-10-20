@@ -13,6 +13,7 @@ import catalog.firstItemOf
 import model.Kind
 import ui.catalog.CollectionScreen
 import ui.catalog.TitleDetailScreen
+import ui.catalog.rememberPlayOnTv
 import ui.chrome.BrowseActions
 import ui.chrome.ProfileBarState
 import ui.common.LibraryPositions
@@ -66,6 +67,7 @@ internal fun TitleFrame(
             // the show page; kids profiles get it too, unlike the
             // editor's-choice pin above, since it is not a household mark.
             preload = if (title.kind == Kind.MOVIE) rememberFilmPreloadUi(title, catalogState) { at.openMenu(MenuScreen.Storage) } else null,
+            playOnTv = rememberPlayOnTv(),
         )
     }
 }
@@ -113,6 +115,7 @@ internal fun CollectionFrame(
             portraits = browseViewModel.portraits,
             season = at.collectionSeason,
             onSelectSeason = at::setCollectionSeason,
+            playOnTv = rememberPlayOnTv(),
             episodePreload = { set -> rememberEpisodePreloadUi(set, catalogState) },
         )
     }

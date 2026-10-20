@@ -22,6 +22,7 @@ import { movieGrid } from "./shelf-view.js";
 import { GRID } from "./shelf-mode.js";
 import { href } from "../address.js";
 import { joinOr } from "./together-join.js";
+import { castPill } from "../cast/play-on-tv.js";
 
 /**
  * The page for `set`. `resume` is the second to carry on from, or `null`.
@@ -43,7 +44,7 @@ export function filmPage(set, { resume, onPlay, similar, openFilm, hasFranchise 
     title,
     facts,
     art: set.backdrop ?? set.poster,
-    actions: [play, listToggle(set.setId), moreMenu([pinControl(set.setId)])],
+    actions: [play, castPill(set.setId, resume ?? 0), listToggle(set.setId), moreMenu([pinControl(set.setId)])],
   }));
 
   const tabs = tabbed([

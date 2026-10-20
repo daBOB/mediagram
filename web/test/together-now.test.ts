@@ -4,6 +4,7 @@ import {
   heardTogether, inTogether, onLeaveTogether, onTogether, openForTogether, refreshTogether, screen, serverNow,
   setForTogether, setInTogether, setTogetherOpener, takeJoin, together, togetherNow,
 } from "../public/lib/together-now.js";
+import { offered } from "../public/lib/together/cast.js";
 import type { Session } from "../public/lib/together/session.js";
 
 let env: ReturnType<typeof browserEnvironment>;
@@ -12,7 +13,7 @@ const opened: string[] = [];
 
 const session = (over: Partial<Session> = {}): Session => ({
   session: "s-1", set: "film-1", playing: true, pos: 10, rate: 1, at: 0, by: "tv",
-  members: [{ screen: "tv", label: "TV" }], ended: false, ...over,
+  members: [{ screen: "tv", label: "TV", remote: false }], ended: false, cast: null, ...over,
 });
 
 function answerGet(body: unknown, status = 200) {
@@ -136,4 +137,15 @@ test("a title this profile can't see is not opened, and leaves no join behind", 
   expect(opened).toEqual([]);
   expect(takeJoin()).toBeNull();
   expect(setForTogether("grown-ups-only")).toBeNull();
+});
+
+test("a heard request never becomes the live session", () => {
+  heardTogether({ id: 10, session: session(), serverNow: 0 });
+  const heard: unknown[] = [];
+  const off = onTogether((_, news) => heard.push(news));
+  const offer = offered("s-offer", { screen: "tab", label: "Browser", remote: false }, { set: "film-1", playing: true, pos: 10, rate: 1 }, "kid", "home", 0);
+  heardTogether({ id: 11, session: offer, serverNow: 0 });
+  off();
+  expect(togetherNow().live?.id).toBe(10);
+  expect(heard).toEqual([{ id: 11, session: offer, lost: false }]);
 });

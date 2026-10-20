@@ -40,6 +40,7 @@ import uniffi.mediagram_core.TitleInfo
  * picker over a readable list), About, Cast (once credits name somebody),
  * Similar. A Compose port of `series-page.js`. While a watch-together
  * session plays one of its episodes, Join stands in for the resume pill.
+ * [playOnTv] casts the episode that pill would start, from where it would.
  *
  * [season]/[onSelectSeason] are the caller's own state, not this
  * composable's — a `null` [season] means nobody has chosen one yet, so this
@@ -72,6 +73,7 @@ internal fun SeriesPage(
     onSelectSeason: (String) -> Unit,
     state: LazyListState,
     episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)?,
+    playOnTv: PlayOnTv? = null,
 ) {
     val firstEpisode = remember(collection) { firstItemOf(collection.divisions) }
     val resume = remember(collection, watch) { seriesResumeFor(collection, watch) }
@@ -141,6 +143,7 @@ internal fun SeriesPage(
                         onToggleWatchlist = onToggleWatchlist,
                         editorsChoicePinned = editorsChoice == firstEpisode.setId,
                         onToggleEditorsChoice = onToggleEditorsChoice,
+                        castPill = resume?.let { r -> playOnTv?.let { tv -> { PlayOnTvPill(tv, r.set.setId, r.at ?: 0.0) { onPlay(r.set.setId) } } } },
                     )
                 }
             }

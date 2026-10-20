@@ -10,6 +10,9 @@
 /** At or under this much left, the kid is told once. */
 export const WARN_SECONDS = 300;
 
+/** How long the player's status line holds the words: longer than watch together's two seconds, for a child to read. */
+export const DAILY_LIMIT_NOTICE_MS = 8000;
+
 export const DAILY_LIMIT_WORDS = {
   label: "Daily limit",
   warning: "Only a few minutes of watching left today. This one can finish.",

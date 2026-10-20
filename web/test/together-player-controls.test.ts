@@ -18,10 +18,10 @@ const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration:
 const sets = new Map<string, object>(["film-1", "film-2"].map((id) => [id, film(id)]));
 /** A title the browser can't play as it is: it is converted, and every seek starts ffmpeg again. */
 sets.set("film-3", { ...film("film-3"), container: "mkv" });
-const TV = { screen: "tv", label: "TV" };
-const ME = { screen, label: "Browser" };
+const TV = { screen: "tv", label: "TV", remote: false };
+const ME = { screen, label: "Browser", remote: false };
 const session = (over: Partial<Session> = {}): Session => ({
-  session: "s-1", set: "film-1", playing: false, pos: 0, rate: 1, at: Date.now(), by: "tv", members: [TV], ended: false, ...over,
+  session: "s-1", set: "film-1", playing: false, pos: 0, rate: 1, at: Date.now(), by: "tv", members: [TV], ended: false, cast: null, ...over,
 });
 const posts = () => env.requests
   .filter((request) => request.url === "/api/together" && request.options?.method === "POST")

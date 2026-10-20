@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import playback.PlaybackCounters
+import player.CastSenderViewModel
 import player.DefaultPlayerHandle
 import player.PlayerViewModel
 import player.ProgressRecorder
@@ -30,8 +31,10 @@ import playback.SubtitleTrackSource
 import playback.SeriesPreloading
 import playback.HeldSetsQuery
 import player.PlaybackServiceController
+import player.PresentationDisplays
 import player.together.ViewerRelay
 import org.robolectric.RuntimeEnvironment
+import testing.FakeHouseholdsRepository
 import testing.FakeTogetherLive
 import testing.WatchStateFixture
 
@@ -80,6 +83,8 @@ internal class PlayerLifecycleFixture(
     val factory =
         object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                // The player's Play on TV, beside it in the same owner.
+                if (modelClass == CastSenderViewModel::class.java) return modelClass.cast(castSender())!!
                 @Suppress("UNCHECKED_CAST")
                 return PlayerViewModel(
                     handle,
@@ -97,9 +102,14 @@ internal class PlayerLifecycleFixture(
                     relay = ViewerRelay(),
                     // Real, so the screen can name itself (Phone or Tablet) when it joins a session.
                     context = RuntimeEnvironment.getApplication(),
+                    // Real, so a test can connect a wireless display through Robolectric's display manager.
+                    displays = PresentationDisplays(RuntimeEnvironment.getApplication()),
                 ) as T
             }
         }
+
+    /** Play on TV over the same watch together and profile as the player. */
+    fun castSender() = CastSenderViewModel(togetherLive, repository, FakeHouseholdsRepository(), RuntimeEnvironment.getApplication())
 
     override fun close() = scope.cancel()
 }

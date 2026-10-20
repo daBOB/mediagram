@@ -100,13 +100,19 @@ interface WatchStateRepository {
     /**
      * Saves progress for the chosen profile, the watch time since this
      * device's last write counted on this device's own date; does nothing
-     * without one.
+     * without one. With [profileId] the write is that profile's instead — a
+     * cast the TV plays for someone else — and leaves [snapshot] alone,
+     * unless [profileId] is the chosen profile, whose write it then is.
      */
     suspend fun setProgress(
         setId: String,
         at: Double,
         duration: Double?,
+        profileId: String? = null,
     )
+
+    /** [profileId]'s everything, read straight from the core; [snapshot] is not touched. Null when the core cannot say. */
+    suspend fun snapshotOf(profileId: String): WatchSnapshot?
 
     /** Changes completion for the chosen profile; does nothing without one. */
     suspend fun setWatched(
@@ -182,9 +188,11 @@ interface WatchStateRepository {
      * own, is what could leave a position gone with no completion — which is
      * why this repository offers no way to clear a position on its own.
      */
-    suspend fun markFinished(setId: String) {
-        setWatched(setId, true)
-    }
+    suspend fun markFinished(
+        setId: String,
+        profileId: String? = null,
+    )
+
     /** Clears retained account state after a successful reset; already-running reads cannot restore it. */
     fun invalidate()
 }
@@ -312,9 +320,23 @@ class DefaultWatchStateRepository(
         setId: String,
         at: Double,
         duration: Double?,
-    ) = writing { core, id ->
+        profileId: String?,
+    ) = writingAs(profileId) { core, id ->
         core.setProgress(id, setId, at, duration, today())
     }
+
+    override suspend fun markFinished(
+        setId: String,
+        profileId: String?,
+    ) = writingAs(profileId) { core, id ->
+        core.setWatched(id, setId, true)
+    }
+
+    override suspend fun snapshotOf(profileId: String): WatchSnapshot? =
+        orDefault(null, "a profile's watch state") {
+            val core = coreProvider.awaitCore()
+            withContext(dispatcher) { core.snapshot(profileId) }.toModel()
+        }
 
     override suspend fun setWatched(
         setId: String,
@@ -405,6 +427,30 @@ class DefaultWatchStateRepository(
         val selected = selection() ?: return
         withContext(dispatcher) { write(selected.core, selected.id) }
         refreshSnapshot(selected)
+    }
+
+    /**
+     * [writing] for the chosen profile when [profileId] is null; otherwise
+     * [writingFor] it, then refreshing [snapshot] when it names the chosen
+     * profile. Written by name rather than through [writing], so a choice
+     * moving meanwhile cannot send the write to someone else.
+     */
+    private suspend fun writingAs(
+        profileId: String?,
+        write: suspend (CoreInterface, String) -> Unit,
+    ) {
+        if (profileId == null) return writing(write)
+        writingFor(profileId, write)
+        selection()?.takeIf { it.id == profileId }?.let { refreshSnapshot(it) }
+    }
+
+    /** A write for [profileId] by name; it re-reads no snapshot, which [writingAs] does when that is the chosen profile. */
+    private suspend fun writingFor(
+        profileId: String,
+        write: suspend (CoreInterface, String) -> Unit,
+    ) {
+        val core = coreProvider.awaitCore()
+        withContext(dispatcher) { write(core, profileId) }
     }
 
     /** As [writing], for a call that answers whether it took effect. */

@@ -24,13 +24,16 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.round
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import model.together.Playback
+import player.CastSenderViewModel
 import player.PlayerUiState
 import player.PlayerViewModel
 import player.UpNextPhase
 import player.chooseFraming
 import player.controlsMayShow
 import player.pauseForPipDismissal
-import player.retry
+import player.together.TogetherButton
+import ui.catalog.CastAskHost
 import ui.common.player.PlayerNavigationEffects
 import ui.common.player.shouldStopOnDispose
 
@@ -53,7 +56,7 @@ import ui.common.player.shouldStopOnDispose
  * before the library's own Back is reached. Double-tap seeking, play/pause
  * and pinch framing live in [PlayerGestureLayer], which wraps everything
  * below. All of it is hidden while [LocalIsInPictureInPicture] is true; see
- * [PipController].
+ * [PipController]. With a wireless display it is a remote: [PresentingPlayer].
  */
 @Composable
 fun PlayerScreen(
@@ -63,7 +66,9 @@ fun PlayerScreen(
     handPicked: Boolean,
     onBack: () -> Unit,
     onSwitch: (setId: String, run: List<String>) -> Unit,
+    onCast: (id: Int) -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
+    cast: CastSenderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val player by viewModel.player.collectAsStateWithLifecycle()
@@ -78,9 +83,10 @@ fun PlayerScreen(
     val actionNotice by viewModel.actionNotice.collectAsStateWithLifecycle()
     val together by viewModel.together.collectAsStateWithLifecycle()
     val report by viewModel.report.collectAsStateWithLifecycle()
-    val isInPip = LocalIsInPictureInPicture.current
-    val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
-
+    CastWhileInSession(cast, inSession = together.button == TogetherButton.LEAVE)
+    // Taken by the TV, the title is stopped and saved here, as closing does, before the remote takes the frame:
+    // the frame's own leaving keeps a player in picture-in-picture playing.
+    CastAskHost(onOn = { id -> viewModel.stop(); onCast(id) }, sender = cast)
     PlayerNavigationEffects(viewModel, setId, run, fsk, handPicked, onSwitch)
     PlayerLifecycleEffects(
         viewModel,
@@ -88,6 +94,9 @@ fun PlayerScreen(
         // wait pauses on purpose; neither is a viewer looking away.
         isPlaying = state is PlayerUiState.Playing || upNext.phase != UpNextPhase.HIDDEN || upNext.awaitingStart,
     )
+    viewModel.presenting.collectAsStateWithLifecycle().value?.let { name -> return PresentingPlayer(name, viewModel, onBack) }
+    val isInPip = LocalIsInPictureInPicture.current
+    val pip = PipController(player = player, isPlaying = state is PlayerUiState.Playing, onDismissed = viewModel::pauseForPipDismissal)
 
     // Shown when the screen opens, so a viewer finds out the card is there
     // at all, then left to take itself away.
@@ -139,6 +148,8 @@ fun PlayerScreen(
                     },
         ) {
             player?.let { current ->
+                // What plays here, as it plays: the TV takes it up from there.
+                val playOnTv = playOnTvTool(cast) { Playback(setId, current.playWhenReady, current.currentPosition / 1000.0, current.playbackParameters.speed.toDouble()) }
                 VideoWithSubtitles(current, subtitleCues, choices, barTop = barTop, isInPip = isInPip, onPictureBottomChanged = { pictureBottom = it })
                 PlayerCardLayer(
                     shown = cardShown,
@@ -154,6 +165,8 @@ fun PlayerScreen(
                     onEnterPip = pip.enterPip.takeIf { pip.supported },
                     onScrubbingChanged = { scrubbing = it },
                     together = together,
+                    castReason = playOnTv.reason,
+                    onPlayOnTv = playOnTv.press,
                 )
                 // The countdown that may run it keeps ticking either way — it
                 // lives in the up-next controller, not in this composable.
@@ -171,11 +184,7 @@ fun PlayerScreen(
             }
             episodes?.takeIf { card.sidebarOpen && !isInPip }?.let { list -> PlayerEpisodeSidebar(list, card, viewModel) }
 
-            when (state) {
-                PlayerUiState.Preparing -> PreparingNote()
-                is PlayerUiState.Failed -> PlayerFailure((state as PlayerUiState.Failed).message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
-                PlayerUiState.Playing, PlayerUiState.Paused -> Unit
-            }
+            PlayerStageNote(state, report, viewModel)
 
             PlayerTopChrome(
                 openSet = openSet,
@@ -195,7 +204,6 @@ fun PlayerScreen(
                 report = report,
                 marks = { PlayerMarks(marks = marks, notice = actionNotice, actions = viewModel.marksActions()) },
             )
-            if (report.open) ReportDialog(report, onSend = viewModel::sendReport, onDismiss = viewModel::closeReport)
             ActionNoticeBar(actionNotice, viewModel::dismissActionNotice, Modifier.align(Alignment.BottomCenter))
         }
     }

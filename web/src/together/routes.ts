@@ -8,33 +8,11 @@ import { bodiless } from "../response";
 import { json } from "../state/route-shared";
 import type { Playback } from "../../public/lib/together/moves.js";
 import type { TogetherHub } from "./hub";
+import { change, type Body } from "./body";
+import { castRoute } from "./cast-routes";
 
 const UNREACHABLE = "Telegram isn't reachable";
 const SCREEN = /^[A-Za-z0-9-]{1,64}$/;
-
-type Body = Record<string, unknown>;
-
-/** The playback fields a body carries, all of them when `whole`; `null` when one is wrong. */
-function change(body: Body, db: Database, whole: boolean): Partial<Playback> | null {
-  const out: Partial<Playback> = {};
-  if (body.set !== undefined || whole) {
-    if (typeof body.set !== "string" || playableSet(db, body.set) === null) return null;
-    out.set = body.set;
-  }
-  if (body.playing !== undefined || whole) {
-    if (typeof body.playing !== "boolean") return null;
-    out.playing = body.playing;
-  }
-  if (body.pos !== undefined || whole) {
-    if (typeof body.pos !== "number" || !Number.isFinite(body.pos) || body.pos < 0) return null;
-    out.pos = body.pos;
-  }
-  if (body.rate !== undefined || whole) {
-    if (typeof body.rate !== "number" || !(body.rate > 0 && body.rate <= 4)) return null;
-    out.rate = body.rate;
-  }
-  return out;
-}
 
 export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | undefined, db: Database): Promise<PlayerResponse | null> {
   if (request.path !== "/api/together") return null;
@@ -54,7 +32,7 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
   const body = jsonBody(request.body);
   const screen = typeof body?.screen === "string" && SCREEN.test(body.screen) ? body.screen : null;
   if (!body || !screen) return bodiless(400);
-  const me = { screen, label: "Browser" };
+  const me = { screen, label: "Browser", remote: false };
   const id = Number(body.id);
   try {
     if ((body.op === "start" || body.op === "join") && !reachable) return reply({ reason: UNREACHABLE }, 503);
@@ -64,9 +42,11 @@ export async function togetherRoute(request: PlayerRequest, hub: TogetherHub | u
       const { live, conflict } = await hub.start(me, own as Playback, durationOf);
       return reply({ ...live, serverNow: Date.now() }, conflict ? 409 : 200);
     }
+    const cast = await castRoute(body, me, Number.isInteger(id) && id > 0 ? id : null, hub, db, reachable);
+    if (cast) return cast;
     if (!Number.isInteger(id) || id <= 0) return bodiless(400);
     if (body.op === "join") {
-      const live = await hub.join(id, me);
+      const live = await hub.join(id, { ...me, remote: body.remote === true });
       return live ? reply({ ...live, serverNow: Date.now() }) : bodiless(404);
     }
     if (body.op === "act") {

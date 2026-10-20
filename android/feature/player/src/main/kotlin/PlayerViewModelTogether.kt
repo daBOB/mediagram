@@ -8,17 +8,22 @@ import data.TogetherLive
 import data.isTablet
 import data.isTelevision
 import data.orDefault
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import model.MediaSet
 import model.forKidsProfile
 import model.hiddenFrom
 import model.sectionKey
+import player.together.CastTrackSync
 import player.together.TogetherController
 import player.together.ViewerPlayer
 import player.together.ViewerRelay
+import player.together.firstFrame
 
 /*
  * Watch together in the player (`docs/mlib-spec.md` §7b): the controller,
@@ -47,11 +52,34 @@ internal fun PlayerViewModel.togetherController(
         titleOf = { id ->
             val set = last?.takeIf { it.setId == id } ?: orDefault(null, "looking up $id") { catalog.mediaSet(id) }
             last = set ?: last
-            set?.takeIf(::onThisProfile)
+            set?.takeIf { onThisProfile(it) }
         },
         label = { labelOf(context) },
         scope = viewModelScope,
-    ).also { relay.controller = it }
+    ).also {
+        relay.controller = it
+        CastTrackSync(it, choicesController.choices, choicesController::chooseAudioTrack, choicesController::chooseSubtitleLanguage, viewModelScope)
+        reportFirstFrames(it)
+    }
+}
+
+/** Each first frame the app's player renders, told to [controller] while this ViewModel lives: a cast offered playing starts there. */
+private fun PlayerViewModel.reportFirstFrames(controller: TogetherController) {
+    val listener =
+        object : Player.Listener {
+            override fun onRenderedFirstFrame() = controller.firstFrame()
+        }
+    viewModelScope.launch {
+        handle.player.collectLatest { player ->
+            player ?: return@collectLatest
+            player.addListener(listener)
+            try {
+                awaitCancellation()
+            } finally {
+                player.removeListener(listener)
+            }
+        }
+    }
 }
 
 /** The ViewModel going away: this screen leaves, and the media session's moves no longer reach it. */
@@ -61,12 +89,19 @@ internal fun PlayerViewModel.closeTogether(relay: ViewerRelay) {
     if (relay.controller === togetherController) relay.controller = null
 }
 
-/** Whether the chosen profile sees [set]: not in a section hidden from it, and a kids profile only what its limit allows, as its catalog shows it. */
-internal fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
-    val profile = repository.chosenProfile.value
+/**
+ * Whether the profile watching sees [set]: not in a section hidden from it, and
+ * a kids profile only what its limit allows, as its catalog shows it. Playing a
+ * cast that is the caster, never the TV's own chosen profile.
+ */
+internal suspend fun PlayerViewModel.onThisProfile(set: MediaSet): Boolean {
+    val profile = playingAs.value ?: repository.chosenProfile.value
     if (profile != null && set.sectionKey() in profile.hiddenFrom) return false
     val kid = profile?.takeIf { it.kids } ?: return true
-    return forKidsProfile(listOf(set), repository.snapshot.value.kidsMarks, kid.kidsLimit).isNotEmpty()
+    // The Kids marks are the household's, in any profile's snapshot; a TV on its profile picker has none of its own.
+    // shortcut: that case reads the core on every drift check; cache the caster's marks at open if it shows on the box.
+    val marks = if (repository.chosenProfile.value != null) repository.snapshot.value.kidsMarks else repository.snapshotOf(kid.id)?.kidsMarks.orEmpty()
+    return forKidsProfile(listOf(set), marks, kid.kidsLimit).isNotEmpty()
 }
 
 /** What this screen is called in a session's members, beside the web player's `Browser`. */
@@ -91,3 +126,6 @@ fun PlayerViewModel.onTogetherButton() = togetherController.onButton()
 
 /** Leave watch together, from the player's menu. */
 fun PlayerViewModel.leaveTogether() = togetherController.leave()
+
+/** True once the cast this TV plays is over, or could not be taken: the player closes. */
+val PlayerViewModel.castOver: StateFlow<Boolean> get() = togetherController.castOver

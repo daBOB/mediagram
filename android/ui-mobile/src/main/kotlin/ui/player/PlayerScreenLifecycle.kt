@@ -1,9 +1,11 @@
 package ui.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import player.CONTROLS_LINGER_MS
+import player.CastSenderViewModel
 import player.PlayerViewModel
 import player.controlsShouldFade
 import ui.common.player.KeepScreenOnWhile
@@ -35,5 +37,14 @@ internal fun ControlsAutoHide(controlsShown: Boolean, isPlaying: Boolean, scrubb
         if (!controlsShouldFade(isPlaying = isPlaying, isScrubbing = scrubbing, menuOrSidebarOpen = menuOrSidebarOpen)) return@LaunchedEffect
         delay(CONTROLS_LINGER_MS)
         onHide()
+    }
+}
+
+/** Tells Play on TV whether this player is in a watch-together session, which greys it; once the player goes, it is in none. */
+@Composable
+internal fun CastWhileInSession(cast: CastSenderViewModel, inSession: Boolean) {
+    DisposableEffect(inSession) {
+        cast.inSession(inSession)
+        onDispose { cast.inSession(false) }
     }
 }

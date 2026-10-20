@@ -22,11 +22,11 @@ const seeks: number[] = [];
 const opened: string[] = [];
 const film = (setId: string) => ({ setId, title: setId, kind: "movie", duration: 600 });
 const sets = new Map(["film-1", "film-2"].map((id) => [id, film(id)]));
-const TV = { screen: "tv", label: "TV" };
-const ME = { screen, label: "Browser" };
+const TV = { screen: "tv", label: "TV", remote: false };
+const ME = { screen, label: "Browser", remote: false };
 
 const session = (over: Partial<Session> = {}): Session => ({
-  session: "s-1", set: "film-1", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [TV], ended: false, ...over,
+  session: "s-1", set: "film-1", playing: true, pos: 0, rate: 1, at: 0, by: "tv", members: [TV], ended: false, cast: null, ...over,
 });
 const note = () => env.node("together-note");
 const button = () => env.node("together");
@@ -224,7 +224,12 @@ test("a session move the daily limit refuses is where this screen leaves, and it
   heardFromTv({ set: "film-2" });
   await settle();
   expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
-  env.advance(6000);
+  env.advance(1_999);
+  expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
+  env.advance(6_000);
+  expect(note().textContent).toBe("That's all the watching for today. See you tomorrow.");
+  env.advance(1);
+  expect(note().textContent).toBe("");
   await settle();
   expect(opened).toEqual(["film-2"]);
   expect(posts()).toEqual([{ op: "leave", screen, id: 7 }]);
@@ -327,7 +332,7 @@ test("a session gone stale under this screen, nobody having moved on from its en
 test("at its title's end this screen waits for the next one: neither an edit nor a drift check starts it again", async () => {
   await joined({ pos: 598 });
   Object.assign(env.video, { currentTime: 600, paused: true, ended: true });
-  heardFromTv({ pos: 600, members: [TV, ME, { screen: "tab", label: "Tablet" }] });
+  heardFromTv({ pos: 600, members: [TV, ME, { screen: "tab", label: "Tablet", remote: false }] });
   env.advance(4_000);
   expect([env.video.paused, seeks]).toEqual([true, []]);
 });

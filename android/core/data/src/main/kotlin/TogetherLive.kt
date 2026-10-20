@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import model.together.Member
 import model.together.Playback
@@ -8,6 +9,8 @@ import model.together.Session
 
 /** Why Watch together and Join are greyed out, on every surface: the web player's own words. */
 const val TOGETHER_UNREACHABLE = "Telegram isn't reachable"
+
+private val NOTHING_ENDED: StateFlow<LiveSession?> = MutableStateFlow(null)
 
 /**
  * A session and the channel message that carries it. [lost]: a move of this
@@ -37,19 +40,36 @@ data class Started(
  *
  * A screen is one player instance, named by the random id it passes as
  * `me`/`screen`; its own edits come back from Telegram and are recognised
- * by that id.
+ * by that id. Casting to a TV is in [TogetherCasts].
  */
-interface TogetherLive {
+interface TogetherLive : TogetherCasts {
     /**
      * The newest live session, as this device holds it: its own moves still
-     * to go included, and `null` once it is over. Collecting it is what
+     * to go included, and `null` once it is over. A cast request is never
+     * this: it is [requests]. Collecting it is what
      * listens for edits and re-reads a session a screen here is in every
      * 30 s, so collect it only while a screen that shows it is on screen.
      */
     val live: StateFlow<LiveSession?>
 
+    /**
+     * The newest live cast request (a session whose cast is not `ON`) of
+     * each household, so another household's offer never hides this one's.
+     * It sits beside [live] and never replaces or clears it, so an offer
+     * cannot push anyone out of a running session. Collecting it listens, as
+     * collecting [live] does.
+     */
+    val requests: StateFlow<List<LiveSession>>
+
     /** False while Telegram can't be reached, nobody is signed in, or the last read or edit failed. */
     val available: StateFlow<Boolean>
+
+    /**
+     * The last session heard ending, as it ended, which [live] shows only as
+     * `null`: a remote tells a title that finished from a cast that was
+     * stopped by it. A stand-in that hears nothing has none.
+     */
+    val ended: StateFlow<LiveSession?> get() = NOTHING_ENDED
 
     /**
      * Reads the newest messages again, deleting any stale session found, and

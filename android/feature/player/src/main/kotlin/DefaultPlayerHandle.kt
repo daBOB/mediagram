@@ -46,8 +46,9 @@ class DefaultPlayerHandle(
 
     private data class PendingOpen(val setId: String, val startAtMs: Long, val playWhenReady: Boolean)
 
-    /** Whichever set was last handed to the player; [stop] clears it. */
-    private var currentSetId: String? = null
+    /** Whichever set was last handed to the player, or queued for it; [stop] clears it. */
+    private val currentSet = MutableStateFlow<String?>(null)
+    override val openSet: StateFlow<String?> = currentSet.asStateFlow()
 
     /** Set once the player has failed to build; see [failConstruction]. */
     private var constructionError: String? = null
@@ -119,9 +120,10 @@ class DefaultPlayerHandle(
         val current = _player.value
         if (current == null) {
             pendingOpen = PendingOpen(setId, startAtMs, playWhenReady)
+            currentSet.value = setId
             return
         }
-        if (setId == currentSetId && current.playbackState != Player.STATE_IDLE) {
+        if (setId == currentSet.value && current.playbackState != Player.STATE_IDLE) {
             republishPlaybackState(current)
             return
         }
@@ -141,7 +143,7 @@ class DefaultPlayerHandle(
         // playing the moment construction finishes on a screen the user
         // has already backed out of.
         pendingOpen = null
-        currentSetId = null
+        currentSet.value = null
         _player.value?.stop()
     }
 
@@ -172,7 +174,7 @@ class DefaultPlayerHandle(
      */
     private fun failConstruction(message: String) {
         constructionError = message
-        pendingOpen = null
+        pendingOpen = null; currentSet.value = null // nothing will ever play: a queued open holds no set
         listener?.onError(message)
     }
 
@@ -186,7 +188,7 @@ class DefaultPlayerHandle(
     }
 
     private fun openOn(player: Player, setId: String, startAtMs: Long, playWhenReady: Boolean) {
-        currentSetId = setId
+        currentSet.value = setId
         player.openReal(setId, startAtMs, playWhenReady)
         pendingMetadata.reapply(player)
     }

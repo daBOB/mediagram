@@ -1,6 +1,6 @@
 # Cast to the TV — design
 
-2026-10-18. Status: approved in conversation in five parts, awaiting spec review.
+2026-10-18. Status: approved; implemented in 0.137.0 (AirPlay deferred).
 
 ## What it is for
 
@@ -33,6 +33,7 @@ There are three routes, in this order of importance:
 | 7 | A TV that is already playing | **Ask on the small screen first**: "The TV is playing *X*. Replace it?" |
 | 8 | How | **Approach A**: a cast is a watch-together session with a remote in it. The session message moves to `#mlib-together v=2`. Rejected: a separate `#mlib-cast` message (repeats watch together in three languages), and a server on the box found over mDNS (a second transport the browser can't reach; the box's mDNS already misses the cache server). |
 | 9 | AnyView Cast, AirPlay 2, Miracast | **Box first, then Miracast** as a second screen on Android, and **AirPlay only through Safari**. Android has no AirPlay, and Apple publishes no sender kit: an Android sender would mean re-implementing Apple's pairing from reverse-engineered notes, and commercial players already struggle with Hisense AirPlay. |
+| 10 | Casting across households (2026-10-20) | **Only to TVs in my household.** A phone, tablet or browser offers only TVs that joined the same household as the sending device, so a cast always plays as someone that TV knows. A device that has joined none offers no TV. |
 
 ## 1. The message
 
@@ -43,7 +44,7 @@ writes `v=2`. A `v=1` session decodes as a `v=2` one with no remote members and
 all, which is why all three surfaces ship together.
 
     #mlib-together v=2
-    {"session":"<uuid>","set":"<set id>","playing":false,"pos":312,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"Tablet","remote":true}],"ended":false,"cast":{"to":"TV","from":"Tablet","profile":"<profile id>","state":"offer","tv":"","note":"","tracks":{"audio":[],"text":[]},"audio":"","text":""}}
+    {"session":"<uuid>","set":"<set id>","playing":false,"pos":312,"rate":1,"at":1791500000123,"by":"<screen id>","members":[{"screen":"<screen id>","label":"Tablet","remote":true}],"ended":false,"cast":{"to":"TV","from":"Tablet","profile":"<profile id>","household":"<household id>","state":"offer","tv":"","note":"","tracks":{"audio":[],"text":[]},"audio":"","text":""}}
 
 What `v=2` adds:
 
@@ -54,6 +55,7 @@ What `v=2` adds:
 | `cast.to` | The kind of screen asked to play: always `"TV"` in `v=2`. |
 | `cast.from` | The caster's surface label (`Phone`, `Tablet`, `Browser`), for "Cast from Tablet". |
 | `cast.profile` | The caster's profile id. The TV plays as this profile. Non-empty. |
+| `cast.household` | The household the casting device joined. Only a TV that joined the same one answers; a TV of another household says nothing, because its refusal would overwrite the answer of the TV the cast is for. Non-empty; a cast written without it is Home's (`home`). |
 | `cast.state` | `offer`, `busy`, `refused`, `replace` or `on`; see §2. |
 | `cast.tv` | The screen id of the TV that took the cast; `""` until one has. |
 | `cast.note` | With `busy`, the title the TV is playing; with `refused`, the reason, written for the viewer. `""` otherwise. |
@@ -170,8 +172,9 @@ On the phone, the tablet and the web player. The TV gets no new button.
   - On the title page, beside Play/Resume: casts what Play/Resume would start.
   - In the player, beside Watch together (the tablet's tool row, the web's
     control card): moves what is playing.
-  - Greyed out, with the reason: "Telegram isn't reachable"; "Leave watch
-    together first" while this screen plays in a session.
+  - Greyed out, with the reason: "Join a household first" while this device
+    has joined none; "Telegram isn't reachable"; "Leave watch together first"
+    while this screen plays in a session.
   - Shown to kids too; their limits apply.
 - **After pressing it**: "Asking the TV…" for at most 5 s, then the remote,
   the Replace question, "The TV won't play this: *reason*", or "Mediagram
@@ -191,7 +194,9 @@ On the phone, the tablet and the web player. The TV gets no new button.
   bottom: **Playing on TV · *Title***, with play/pause. Tapping it opens the
   remote. It shows on every phone, tablet and web player of the household, not
   only the caster's. For a cast session it takes the place of Home's
-  "Watching together" notice.
+  "Watching together" notice. A cast on another household's TV shows no bar
+  and offers no Join on its title: that household's TV is not steered from
+  here (decision 10).
 - **On the TV**, only the label **Cast from Tablet** and the notices.
 
 ## 6. Miracast / AnyView Cast (phone and tablet)
@@ -321,7 +326,8 @@ docs, version and device walks.
 
 ## Release
 
-A new feature: the next minor, **0.127.0**, in all three manifests. That is
-also above the box's sideloaded 0.126.1, so the box takes it from the channel.
+A new feature: the next minor, **0.137.0** (main was at 0.136.2 when it merged),
+in all three manifests. AirPlay (§7) is not in this release: it is deferred
+until it can be probed on an Apple device.
 Docs to update: `docs/mlib-spec.md` §7b, `docs/system-architecture.md`,
 `docs/web-player.md` and the changelog.

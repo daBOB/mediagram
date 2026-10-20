@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.roundToIntRect
 import designsystem.Spacing
+import model.together.CastWords
 import player.PlayerChoices
 import player.speedLabel
 import player.together.TogetherUi
@@ -28,10 +29,13 @@ import player.together.words
  * Speed names the speed playing, which in watch together can be another
  * screen's while its menu still marks this viewer's choice, as on the web;
  * Framing names the current choice. Audio is left out for a single
- * track, which is a label, not a choice. Watch together ends the tools, as
- * on the web: it says what it does, and greyed out it tells a screen reader
- * why ([together]). The tools stand at the left and
- * picture-in-picture at the right end, as volume and fullscreen do on the web.
+ * track, which is a label, not a choice. Watch together and Play on TV end
+ * the tools, as on the web: each says what it does, and greyed out tells a
+ * screen reader why ([together], [castReason]). While a wireless display
+ * shows the picture, Play on TV names that display instead ([presentingOn]).
+ * The tools stand at the left and picture-in-picture at the right end, as
+ * volume and fullscreen do on the web; on the TV box's remote
+ * ([PlayerCardActions.onStop]) Stop stands there instead.
  *
  * The tools wrap rather than squeeze: on a 360dp phone a row of 48dp targets
  * does not fit one line. [openMenu] is what a screen reader hears as each
@@ -44,6 +48,8 @@ internal fun CardToolsRow(
     actions: PlayerCardActions,
     openMenu: CardMenu? = null,
     together: TogetherUi = TogetherUi(),
+    castReason: String? = null,
+    presentingOn: String? = null,
 ) {
     fun expanded(vararg menus: CardMenu) = if (openMenu in menus) "Expanded" else "Collapsed"
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -52,22 +58,27 @@ internal fun CardToolsRow(
             horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
+            // On the remote CC opens the list, as the web remote's does: which track "on" means is the viewer's to say.
+            val ccOpens = actions.drivesTv
             GlyphButton(
                 glyph = "CC",
                 description = "Subtitles",
                 enabled = choices.ccVisible,
-                onClick = actions.onToggleSubtitles,
+                onClick = if (ccOpens) ({ actions.onOpenMenu(CardMenu.Subtitles) }) else actions.onToggleSubtitles,
                 dimmed = !choices.subtitlesOn,
-                state = if (choices.subtitlesOn) "On" else "Off",
+                modifier = if (ccOpens) actions.openerFor(CardMenu.Subtitles) else Modifier,
+                state = if (ccOpens) expanded(CardMenu.Subtitles) else if (choices.subtitlesOn) "On" else "Off",
             )
-            GlyphButton(
-                glyph = "▾",
-                description = "Subtitle options",
-                enabled = choices.ccVisible || choices.subtitleStyleVisible,
-                onClick = { actions.onOpenMenu(CardMenu.Subtitles) },
-                modifier = actions.openerFor(CardMenu.Subtitles),
-                state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
-            )
+            if (!ccOpens) {
+                GlyphButton(
+                    glyph = "▾",
+                    description = "Subtitle options",
+                    enabled = choices.ccVisible || choices.subtitleStyleVisible,
+                    onClick = { actions.onOpenMenu(CardMenu.Subtitles) },
+                    modifier = actions.openerFor(CardMenu.Subtitles),
+                    state = expanded(CardMenu.Subtitles, CardMenu.SubtitleStyle),
+                )
+            }
             LabelButton(
                 label = speedLabel(speed),
                 description = "Speed",
@@ -84,20 +95,32 @@ internal fun CardToolsRow(
                     state = expanded(CardMenu.Audio),
                 )
             }
-            LabelButton(
-                label = choices.framing.label,
-                description = "Framing",
-                onClick = { actions.onOpenMenu(CardMenu.Framing) },
-                modifier = actions.openerFor(CardMenu.Framing),
-                state = expanded(CardMenu.Framing),
-            )
-            LabelButton(
-                label = together.button.words,
-                description = together.description,
-                onClick = actions.onTogether,
-                enabled = together.enabled,
-            )
+            if (!actions.drivesTv) {
+                LabelButton(
+                    label = choices.framing.label,
+                    description = "Framing",
+                    onClick = { actions.onOpenMenu(CardMenu.Framing) },
+                    modifier = actions.openerFor(CardMenu.Framing),
+                    state = expanded(CardMenu.Framing),
+                )
+                LabelButton(
+                    label = together.button.words,
+                    description = together.description,
+                    onClick = actions.onTogether,
+                    enabled = together.enabled,
+                )
+            }
+            actions.onPlayOnTv?.let { press ->
+                val words = presentingOn?.let(::playingOn) ?: CastWords.PLAY_ON_TV
+                LabelButton(
+                    label = words,
+                    description = listOfNotNull(words, castReason).joinToString(", "),
+                    onClick = press,
+                    enabled = castReason == null,
+                )
+            }
         }
+        actions.onStop?.let { stop -> LabelButton(label = CastWords.STOP, description = CastWords.STOP, onClick = stop) }
         actions.onEnterPip?.let { enter ->
             GlyphButton(glyph = "⧉", description = "Picture in picture", enabled = true, onClick = enter)
         }

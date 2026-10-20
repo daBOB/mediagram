@@ -28,7 +28,7 @@ import { clockTime } from "../format.js";
  * relied on to have: the pause and full-screen glyphs arrive as emoji, as tofu,
  * or not at all depending on what is installed. These always look the same.
  */
-const ICONS = {
+export const ICONS = {
   play: "M8 5v14l11-7z",
   back: "M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z",
   forward: "M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z",
@@ -40,7 +40,7 @@ const ICONS = {
 };
 
 /** The speeds the Speed menu offers. Anything finer is a setting, not a choice. */
-const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
+export const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
 /** Fifteen: the same every surface skips, and the same the buttons say. */
 export const SKIP_SECONDS = 15;
@@ -76,7 +76,7 @@ function icon(path) {
   return svg;
 }
 
-function setIcon(button, path) {
+export function setIcon(button, path) {
   button.replaceChildren(icon(path));
 }
 
@@ -89,7 +89,7 @@ function setIcon(button, path) {
  * control that does not say is a control that can quietly disagree with its
  * twin. A number without arrows does not say which way it goes.
  */
-function skipButton(button, path, seconds, way) {
+export function skipButton(button, path, seconds, way) {
   button.replaceChildren(icon(path), String(seconds));
   button.setAttribute("aria-label", `${way} ${seconds} seconds`);
 }

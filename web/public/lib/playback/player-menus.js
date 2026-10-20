@@ -13,13 +13,15 @@ import { el } from "../dom.js";
 
 /**
  * @typedef {{value: string, label: string, current?: boolean}} MenuItem
- * @param {{onClose?: () => void}} [options] `onClose` hears every close, so
- *   whatever was held up while a list was open can start its clock again.
+ * @param {{onClose?: () => void, ids?: {dialog: string, dock: string, menu: string}, signal?: AbortSignal}} [options]
+ *   `onClose` hears every close, so whatever was held up while a list was open
+ *   can start its clock again. `ids` names another dialog's dock and menu (the
+ *   cast remote's), and `signal` takes the listeners off again when it closes.
  */
-export function mountPlayerMenus({ onClose } = {}) {
-  const dialog = document.getElementById("player");
-  const dock = document.getElementById("card-dock");
-  const menu = document.getElementById("card-menu");
+export function mountPlayerMenus({ onClose, ids = { dialog: "player", dock: "card-dock", menu: "card-menu" }, signal } = {}) {
+  const dialog = document.getElementById(ids.dialog);
+  const dock = document.getElementById(ids.dock);
+  const menu = document.getElementById(ids.menu);
   /** The button whose list or panel is open, and what it opened. */
   let opener = null;
   let shown = null;
@@ -82,7 +84,7 @@ export function mountPlayerMenus({ onClose } = {}) {
       open(button, menu);
       // A keyboard starts from what is chosen now.
       (rows.find((row) => row.getAttribute("aria-pressed") === "true") ?? rows[0])?.focus();
-    });
+    }, { signal });
   }
 
   /** A panel opened from `button` that stays open while it is used. */
@@ -97,11 +99,11 @@ export function mountPlayerMenus({ onClose } = {}) {
     // the same key as a request of its own.
     event.preventDefault();
     close()?.focus();
-  });
+  }, { signal });
   // Anywhere else in the player is a viewer done with the list.
   dialog.addEventListener("pointerdown", (event) => {
     if (opener !== null && !shown.contains(event.target) && !opener.contains(event.target)) close();
-  });
+  }, { signal });
 
   return { list, panel, close, isOpen: () => opener !== null };
 }

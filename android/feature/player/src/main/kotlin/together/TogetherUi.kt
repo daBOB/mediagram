@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import model.together.Session
+import model.together.castFrom
 
 /** What the player's Watch together button does: start a session, join the one live, or leave the one this screen is in. */
 enum class TogetherButton { START, JOIN, LEAVE }
@@ -18,7 +19,8 @@ enum class TogetherButton { START, JOIN, LEAVE }
 /**
  * What watch together shows in the player: the button, why it is greyed out
  * ([reason], `null` while it can be pressed), the "Together · TV, Tablet"
- * [label] while in a session, and the two-second [notice].
+ * [label] while in a session ("Cast from Tablet" on the TV playing a cast),
+ * and the two-second [notice].
  */
 data class TogetherUi(
     val button: TogetherButton = TogetherButton.START,
@@ -37,6 +39,8 @@ internal const val NOTICE_MS = 2_000L
  */
 internal class TogetherView(
     private val scope: CoroutineScope,
+    /** This screen's id: the TV a cast names is labelled by who cast to it. */
+    private val screen: String,
 ) {
     private val _ui = MutableStateFlow(TogetherUi())
     val ui: StateFlow<TogetherUi> = _ui.asStateFlow()
@@ -79,7 +83,11 @@ internal class TogetherView(
                         available -> NOT_HERE
                         else -> TOGETHER_UNREACHABLE
                     },
-                label = current?.let { s -> "Together · ${s.members.joinToString(", ") { m -> m.label }}" },
+                label =
+                    current?.let { s ->
+                        s.cast?.takeIf { c -> c.tv == screen }?.let { c -> castFrom(c.from) }
+                            ?: "Together · ${s.members.joinToString(", ") { m -> m.label }}"
+                    },
             )
         }
     }

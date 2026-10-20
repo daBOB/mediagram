@@ -1,9 +1,14 @@
 package data
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import model.together.Session
+import model.together.isRequest
 import model.together.writeSession
+
+private const val KEPT_BUFFER = 16
 
 /** Compared as written: what reaches the channel is the text. */
 internal fun same(
@@ -34,6 +39,17 @@ internal class TogetherSessions(
     /** [TogetherLive.live]. */
     val shown = MutableStateFlow<LiveSession?>(null)
 
+    /** [TogetherLive.requests]. */
+    val requests = MutableStateFlow<List<LiveSession>>(emptyList())
+
+    /** [TogetherLive.ended]. */
+    val ended = MutableStateFlow<LiveSession?>(null)
+
+    private val keeping = MutableSharedFlow<LiveSession>(extraBufferCapacity = KEPT_BUFFER)
+
+    /** Every session [keep] stores, requests included: what an offer waits on for its answer. */
+    val kept: SharedFlow<LiveSession> = keeping
+
     /** [TogetherLive.available]. */
     val reachable = MutableStateFlow(false)
 
@@ -59,7 +75,7 @@ internal class TogetherSessions(
      * device's own echo is old news while a newer move waits, or when it is
      * not the edit on its way. One that is over, ended or stale, is over here
      * too, unless an own move is still to go: ending and deleting it is then
-     * the sender's.
+     * the sender's. One that ended is kept, as it ended, in [ended].
      */
     fun take(
         id: Int,
@@ -71,6 +87,7 @@ internal class TogetherSessions(
             val flying = sender.inFlight(id)
             if (flying != null && !same(flying, session)) return
         }
+        if (session.ended) ended.value = LiveSession(id, session)
         if (live || sender.pending(id)) keep(id, session) else forget(id)
     }
 
@@ -79,6 +96,7 @@ internal class TogetherSessions(
         session: Session,
     ) {
         known[id] = session
+        keeping.tryEmit(LiveSession(id, session))
         tell(id)
     }
 
@@ -98,13 +116,20 @@ internal class TogetherSessions(
      * Shows what this device holds session [id] to be; nothing once it is
      * over. Another session heard while a screen here is in the one shown
      * does not take its place, as it does not in a web tab: that screen
-     * follows its own until a read answers the newest.
+     * follows its own until a read answers the newest. A cast request is
+     * told to [requests] alone: the newest of its household wins, and it is
+     * cleared when its own id is over.
      */
     private fun tell(
         id: Int,
         lost: Boolean = false,
     ): Session? {
         val session = sender.view(id)?.takeUnless { it.ended }
+        if (session != null && isRequest(session)) {
+            hold(LiveSession(id, session, lost))
+            return session
+        }
+        drop(id)
         val current = shown.value
         shown.value =
             when {
@@ -117,4 +142,17 @@ internal class TogetherSessions(
     }
 
     private fun mine(session: Session): Boolean = session.members.any { it.screen in local }
+
+    /** [request] in place of its household's held one, unless that is newer: another household's never hides it. */
+    fun hold(request: LiveSession) {
+        val household = request.session.cast?.household
+        val held = requests.value
+        if (held.any { it.id > request.id && it.session.cast?.household == household }) return
+        requests.value = held.filter { it.id != request.id && it.session.cast?.household != household } + request
+    }
+
+    /** Request [id] is over, or no longer one. */
+    fun drop(id: Int) {
+        if (requests.value.any { it.id == id }) requests.value = requests.value.filter { it.id != id }
+    }
 }

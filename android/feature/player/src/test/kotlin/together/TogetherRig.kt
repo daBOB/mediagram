@@ -2,6 +2,7 @@ package player.together
 
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import data.ArmedCast
 import data.CoreTogetherChannel
 import data.DefaultTogetherLive
 import data.LibraryEvents
@@ -16,7 +17,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import model.together.Member
+import model.together.Playback
 import model.together.Session
+import model.together.offered
 import model.together.parseSession
 import model.together.writeSession
 import player.FakePlayerHandle
@@ -48,6 +51,8 @@ val TV_SESSION = Session("s-tv", EP1, playing = true, pos = 10.0, rate = 1.0, at
  */
 internal class TogetherRig(
     private val test: TestScope,
+    /** What this screen is called in a session. */
+    label: String = "Tablet",
     /** What the controller is handed in place of [live]: a test's stand-in for one answer. */
     wrap: (TogetherLive) -> TogetherLive = { it },
 ) {
@@ -91,7 +96,7 @@ internal class TogetherRig(
             handle,
             openTitle = { id, refused -> opened += id; if (refusing) refused() },
             titleOf = { sets[it] },
-            label = { "Tablet" },
+            label = { label },
             scope = CoroutineScope(test.backgroundScope.coroutineContext + UnconfinedTestDispatcher(test.testScheduler)),
             now = ::now,
         )
@@ -134,3 +139,27 @@ internal class TogetherRig(
         return this
     }
 }
+
+/** The remote that casts to the TV in these tests. */
+internal val TABLET = Member("tab-1", "Tablet")
+
+/** The tablet's offer of [EP1], playing two minutes in, for a kid's profile. */
+internal val CAST_OFFER = offered("s-cast", TABLET, Playback(EP1, playing = true, pos = 120.0, rate = 1.0), "kid", "home", NOW)
+
+/** [CAST_OFFER] as message 960, armed for the TV's player. */
+internal val CAST = ArmedCast(960, EP1, "kid", "Tablet", playing = true)
+
+/** The TV, holding [CAST_OFFER] as message 960, heard before its player opened. */
+internal suspend fun TestScope.tv(wrap: (TogetherLive) -> TogetherLive = { it }): TogetherRig {
+    val rig = TogetherRig(this, label = "TV", wrap = wrap)
+    rig.put(960, CAST_OFFER)
+    rig.live.refresh()
+    return rig
+}
+
+/** The TV opened with [CAST], its accept written. */
+internal suspend fun TestScope.casting(): TogetherRig =
+    tv().also {
+        it.controller.open(EP1, CAST)
+        runCurrent()
+    }

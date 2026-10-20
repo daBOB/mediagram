@@ -4,13 +4,46 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import player.CONTROLS_LINGER_MS
+import player.PlayerMarksState
 import player.PlayerUiState
+import player.PlayerViewModel
+import player.castOver
 import player.controlsShouldFade
+
+/**
+ * Leaves once the cast this TV plays is over ([castOver]). A notice still up
+ * then — today's time is up, say — is read to its end first: it is what
+ * says why the film stopped.
+ */
+@Composable
+internal fun TvCastOver(
+    viewModel: PlayerViewModel,
+    onCastOver: () -> Unit,
+) {
+    val over by viewModel.castOver.collectAsStateWithLifecycle()
+    val leave by rememberUpdatedState(onCastOver)
+    LaunchedEffect(over) {
+        if (!over) return@LaunchedEffect
+        viewModel.together.first { it.notice == null }
+        leave()
+    }
+}
+
+/** The marks to draw: none while a cast plays, which they would file under the TV's own profile rather than the caster's. */
+@Composable
+internal fun marksOutsideACast(viewModel: PlayerViewModel): PlayerMarksState? {
+    val marks by viewModel.marks.collectAsStateWithLifecycle()
+    val playingAs by viewModel.playingAs.collectAsStateWithLifecycle()
+    return marks.takeIf { playingAs == null }
+}
 
 /**
  * Takes the controls away after a while of playing, by the shared rule and

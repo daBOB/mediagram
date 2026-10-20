@@ -15,6 +15,8 @@ class PlayerSession(
     private val handle: PlayerHandle,
     private val recorder: ProgressRecorder,
     private val onTick: () -> Unit = {},
+    /** Whose progress [save] writes: a cast's caster, or null for the chosen profile. */
+    private val profileId: () -> String? = { null },
 ) {
     /** Which set [save] writes against; `null` between titles. */
     var openSetId: String? = null
@@ -61,7 +63,8 @@ class PlayerSession(
         val atMs = handle.positionMs() ?: return
         if (atMs < MIN_SAVE_MS) return
         val durationMs = handle.durationMs()
-        scope.launch { recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 }) }
+        val profileId = profileId()
+        scope.launch { recorder.save(setId, atMs / 1000.0, durationMs?.let { it / 1000.0 }, profileId) }
     }
 
     private fun startTicking() {

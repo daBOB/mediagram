@@ -265,6 +265,20 @@ class TogetherLiveTest {
         }
 
     @Test
+    fun aSessionHeardEndingIsKeptAsItEndedWhileLiveGoesNull() =
+        runTest {
+            val h = TogetherHarness(this)
+            h.watch()
+            h.push(950, TV_SESSION)
+            val over = TV_SESSION.copy(playing = false, ended = true)
+
+            h.push(950, over)
+
+            assertNull(h.live.live.value)
+            assertEquals(LiveSession(950, over), h.live.ended.value)
+        }
+
+    @Test
     fun aStaleSessionHeardByPushIsNotOffered() =
         runTest {
             val h = TogetherHarness(this)

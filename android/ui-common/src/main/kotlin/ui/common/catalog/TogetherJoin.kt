@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
 import catalog.Entry
 import catalog.TogetherOffer
+import catalog.playPause
 import catalog.playsIn
 import kotlinx.coroutines.flow.StateFlow
 
@@ -21,14 +22,16 @@ class TogetherJoin(
 /** Where Join comes from: the live [offers], and what joining one does. */
 class TogetherOffers(
     val offers: StateFlow<TogetherOffer?>,
+    /** The cast bar's play/pause, which moves the session without joining it. */
+    val playPause: (TogetherOffer) -> Unit = {},
     val join: (TogetherOffer) -> Unit,
 )
 
 /**
  * The library's [TogetherOffers], provided once at its root. Providing them
  * listens to nothing: only a screen that draws Join collects them
- * ([togetherJoin]), so the sessions are listened for while Home or a
- * title page is on screen, and not on a department tab or in the player.
+ * ([togetherJoin]) or the cast bar, so the sessions are listened for
+ * wherever one can show, and not in the player or the remote.
  */
 val LocalTogetherOffers = compositionLocalOf<TogetherOffers?> { null }
 
@@ -40,10 +43,14 @@ fun rememberTogetherOffers(
 ): TogetherOffers {
     val opens by rememberUpdatedState(open)
     return remember(catalog) {
-        TogetherOffers(catalog.together) { offer ->
-            catalog.join(offer)
-            opens(offer.set.setId)
-        }
+        TogetherOffers(
+            catalog.together,
+            join = { offer ->
+                catalog.join(offer)
+                opens(offer.set.setId)
+            },
+            playPause = catalog::playPause,
+        )
     }
 }
 

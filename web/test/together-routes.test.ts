@@ -2,41 +2,8 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { createRouter } from "../src/routes";
-import { TogetherHub } from "../src/together/hub";
 import type { EditOutcome } from "../src/together/channel";
-import type { PlayerRequest } from "../src/http/contracts";
-import { emptyIndex } from "./index-fixture";
-import { FakeChannel, deferred, settle } from "./together-fixture";
-
-function db() {
-  const index = emptyIndex();
-  index.run(
-    `INSERT INTO sets(set_id, kind, title, container, duration, total, part_count, status, created_at, spec_version)
-     VALUES ('film-1', 'movie', 'A Film', 'mp4', 2400, 10, 1, 'complete', 1700000000, 3)`,
-  );
-  index.run(`INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, status)
-     VALUES ('film-1', 0, 0, 10, -1001, 100, 'done')`);
-  return index;
-}
-
-const source = { stream: () => new ReadableStream<Uint8Array>({ start: (c) => c.close() }) };
-
-function harness(withHub = true) {
-  const channel = new FakeChannel();
-  const hub = new TogetherHub(channel, () => {});
-  const route = createRouter({ db: db(), source, together: withHub ? hub : undefined });
-  const call = async (method: string, body?: unknown) => {
-    const request: PlayerRequest = {
-      method, path: "/api/together", range: null,
-      ...(body === undefined ? {} : { body: JSON.stringify(body), contentType: "application/json" }),
-    };
-    const response = await route(request);
-    const text = response.body instanceof Uint8Array ? new TextDecoder().decode(response.body) : null;
-    return { status: response.status, json: text ? JSON.parse(text) : null };
-  };
-  return { channel, call };
-}
+import { deferred, harness, settle } from "./together-fixture";
 
 const start = { op: "start", screen: "tab-a", set: "film-1", playing: true, pos: 12.5, rate: 1 };
 
@@ -59,7 +26,7 @@ describe("/api/together", () => {
     const h = harness();
     const first = await h.call("POST", start);
     expect(first.status).toBe(200);
-    expect(first.json.session.members).toEqual([{ screen: "tab-a", label: "Browser" }]);
+    expect(first.json.session.members).toEqual([{ screen: "tab-a", label: "Browser", remote: false }]);
     expect(first.json.session).toMatchObject({ set: "film-1", playing: true, pos: 12.5, rate: 1 });
     const second = await h.call("POST", { ...start, screen: "tab-b" });
     expect(second.status).toBe(409);

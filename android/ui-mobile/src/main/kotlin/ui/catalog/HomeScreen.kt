@@ -108,7 +108,8 @@ internal fun HomeScreen(
             }
             // Under the cover, as the web's `home-view.js` sets it: the cover
             // bleeds up under the bar and would hide it.
-            together?.let { join ->
+            // A cast has its bar instead: the household's TV is not a room to join from Home.
+            together?.takeUnless { it.offer.cast }?.let { join ->
                 item(key = "together") {
                     TogetherJoinRow(join.offer.line, join.join, Modifier.padding(top = 12.dp, start = gutter, end = gutter))
                 }

@@ -14,6 +14,7 @@
  *   bun run preview                 → http://127.0.0.1:8795
  *   PREVIEW_PORT=9000 bun run preview
  *   PREVIEW_INDEX=/path/library.db bun run preview   (a different index)
+ *   PREVIEW_CAST=accept|busy|refuse|none bun run preview   (a pretend TV answers casts)
  *
  * Paths default to the ones the player itself uses (see `src/config.ts`).
  */
@@ -28,6 +29,8 @@ import { PosterStore } from "../src/catalog/posters";
 import { WatchState } from "../src/state/store";
 import { EXPECTED_SCHEMA, listPlayable } from "../src/catalog";
 import { wirePreviewSubtitles } from "./preview-subtitles";
+import { previewCast, type CastMode } from "./preview-cast";
+import { CatalogEvents } from "../src/catalog-events";
 import { createStatusRouter } from "../src/status/routes";
 import { readLiveFacts } from "../src/status/live-facts";
 import { startLoopLag } from "../src/status/loop-lag";
@@ -79,8 +82,12 @@ const facts: StartupFacts = {
 };
 const loopLag = startLoopLag();
 const playback = new PlaybackReports();
+const events = new CatalogEvents();
+const castMode = process.env.PREVIEW_CAST as CastMode | undefined;
 const server = await startServer({
   db,
+  events,
+  together: castMode ? previewCast(castMode, events) : undefined,
   // Media is the one thing a preview cannot serve without Telegram.
   source: { stream: () => new ReadableStream() } as never,
   posters: new PosterStore(posterDir),

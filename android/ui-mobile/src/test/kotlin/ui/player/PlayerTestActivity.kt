@@ -1,5 +1,6 @@
 package ui.player
 
+import android.app.PictureInPictureParams
 import android.os.Bundle
 import android.view.ContextThemeWrapper
 import androidx.activity.ComponentActivity
@@ -13,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModelProvider
+import player.CastSenderViewModel
 import player.PlayerViewModel
 
 /** Uses the Activity's real ViewModelStore and saved state across Robolectric recreation. */
@@ -20,9 +22,19 @@ class PlayerTestActivity : ComponentActivity() {
     lateinit var playerViewModel: PlayerViewModel
         private set
 
+    /** The picture-in-picture params the screen last set, for a test to read back. */
+    var pipParams: PictureInPictureParams? = null
+        private set
+
+    override fun setPictureInPictureParams(params: PictureInPictureParams) {
+        pipParams = params
+        super.setPictureInPictureParams(params)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         playerViewModel = ViewModelProvider(this, fixture.factory)[PlayerViewModel::class.java]
+        val castSender = ViewModelProvider(this, fixture.factory)[CastSenderViewModel::class.java]
         setContent {
             // Exercise the production ContextWrapper traversal as well as the lifecycle observer.
             CompositionLocalProvider(LocalContext provides ContextThemeWrapper(this, android.R.style.Theme_Material)) {
@@ -36,7 +48,13 @@ class PlayerTestActivity : ComponentActivity() {
                             handPicked = false,
                             onBack = { showingPlayer = false },
                             onSwitch = { id, _ -> switches += id },
+                            // The remote takes the player's frame, as the library's replaceWithRemote does.
+                            onCast = { id ->
+                                casts += id
+                                showingPlayer = false
+                            },
                             viewModel = playerViewModel,
+                            cast = castSender,
                         )
                     } else {
                         Text("Library")
@@ -54,5 +72,8 @@ class PlayerTestActivity : ComponentActivity() {
 
         /** Every title a switch asked to move to, in order. */
         internal val switches = mutableListOf<String>()
+
+        /** Every cast the TV took from this player, by its id. */
+        internal val casts = mutableListOf<Int>()
     }
 }

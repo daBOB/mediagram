@@ -28,6 +28,7 @@ import { inProgress, isWatched, progressOf } from "../watch-state.js";
 import { resumeAt } from "../resume-point.js";
 import { href } from "../address.js";
 import { joinOr } from "./together-join.js";
+import { castPill } from "../cast/play-on-tv.js";
 
 /**
  * The route: one show, with the season the URL names (if any) in view.
@@ -90,7 +91,7 @@ export function seriesPage(collection, { section, season, resume, play, openSeas
     title: collection.name,
     facts: factsLine(facts, null, first),
     art: first?.backdrop ?? first?.poster ?? null,
-    actions: [start, first ? listToggle(first.setId) : null, moreMenu([first ? pinControl(first.setId) : null])],
+    actions: [start, resume ? castPill(resume.set.setId, resume.at ?? 0) : null, first ? listToggle(first.setId) : null, moreMenu([first ? pinControl(first.setId) : null])],
   });
   page.append(hero);
 

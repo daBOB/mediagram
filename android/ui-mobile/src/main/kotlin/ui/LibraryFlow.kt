@@ -1,6 +1,12 @@
 package ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -10,9 +16,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.CatalogViewModel
+import catalog.TogetherOffer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import catalog.MenuScreen
 import catalog.fetchResultMessage
 import catalog.resolvableQueueRows
@@ -25,6 +35,8 @@ import stats.AchievementDotViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
 import ui.chrome.ProfileBarState
+import ui.chrome.railWidthShown
+import ui.common.FrameKind
 import ui.common.LibraryPositions
 import ui.common.MenuActions
 import ui.common.catalog.LocalTogetherOffers
@@ -48,6 +60,10 @@ import ui.profile.ProfileGate
 internal fun CatalogAndPlayer(onStartOver: () -> Unit, onSignedOut: () -> Unit) {
     ProfileGate { profileBar -> Library(profileBar, onStartOver, onSignedOut) }
 }
+
+private fun MenuScreen?.hasOwnIndex() = this != null && this != MenuScreen.TmdbKey
+
+private val NO_OFFER: StateFlow<TogetherOffer?> = MutableStateFlow(null)
 
 @Composable
 private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSignedOut: () -> Unit) {
@@ -96,12 +112,27 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
     // Watch together's Join, for Home and the title pages to read: each opens
     // the session's title as its own Play does.
     val togetherOffers = rememberTogetherOffers(catalogViewModel, at::openPlayer)
+    // Listened for wherever the bar can show; the full-window screens draw none, so they stop listening.
+    val barCanShow = at.top != FrameKind.PLAYER && at.top != FrameKind.REMOTE
+    val castOffer by (if (barCanShow) togetherOffers.offers else NO_OFFER).collectAsStateWithLifecycle()
+    val bar = castBarOffer(castOffer, at.top)
     Box(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
-            LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+        // The bar takes its own row, so the page's last row never hides behind it.
+        Column(Modifier.fillMaxSize()) {
+            // The bar pads the navigation bar itself, so the page above leaves that inset to it.
+            val inset = if (bar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier
+            Box(Modifier.weight(1f).then(inset)) {
+                CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
+                    LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+                }
+            }
+            CastBar(bar, // Settings, System and Storage draw their own index, not the library rail; the key screen draws it.
+                modifier = Modifier.padding(start = if (at.top == FrameKind.MENU && at.menuScreen.hasOwnIndex()) 0.dp else railWidthShown()), onOpen = { bar?.let { at.openRemote(it.id) } }, onPlayPause = { bar?.let(togetherOffers.playPause) })
         }
         // The pill watch together's notices use, over the page: the viewer stays where they were.
-        TogetherNoticePill(limitNotice, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Spacing.extraLarge * 2))
+        // Above the bar while it shows, which it would otherwise cover.
+        val lift = if (bar != null) CAST_BAR_HEIGHT else 0.dp
+        TogetherNoticePill(limitNotice, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = Spacing.extraLarge * 2 + lift))
     }
 
     // Every branch but the player, which is the one that fills the window

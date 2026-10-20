@@ -5,13 +5,14 @@
  * which follow it.
  */
 
-import { parseSession, writeSession } from "../../public/lib/together/session.js";
+import { isRequest, parseSession, writeSession } from "../../public/lib/together/session.js";
 import type { Member, Session } from "../../public/lib/together/session.js";
 import { acted, finished, joined, left, started } from "../../public/lib/together/moves.js";
 import type { Playback } from "../../public/lib/together/moves.js";
 import { isLive } from "../../public/lib/together/follow.js";
 import type { TogetherChannel } from "./channel";
 import { TogetherSender, type Move } from "./sender";
+import { CastDesk } from "./cast-desk";
 
 /** How often the sessions this server's tabs are in are read again, for a push missed while offline. */
 export const TOGETHER_RECHECK_MS = 30_000;
@@ -28,6 +29,9 @@ export class TogetherHub {
   private readonly local = new Set<string>();
   private readonly sender: TogetherSender;
   private starting: Promise<unknown> = Promise.resolve();
+  /** Told of every session kept here: the cast desk, waiting for a TV's answer. */
+  private readonly kept = new Set<(id: number, session: Session) => void>();
+  readonly cast: CastDesk;
 
   constructor(
     private readonly channel: TogetherChannel,
@@ -38,11 +42,10 @@ export class TogetherHub {
   ) {
     const lost = (id: number) => { if (this.known.has(id)) this.tell(id, true); };
     this.sender = new TogetherSender(channel, this.known, (id) => this.forget(id), lost, sleep);
+    this.cast = new CastDesk(this, now, sleep);
   }
 
-  available(): boolean {
-    return this.channel.available();
-  }
+  available(): boolean { return this.channel.available(); }
 
   /**
    * An edit heard from the channel. Another screen's is always kept: moves
@@ -87,7 +90,7 @@ export class TogetherHub {
         continue;
       }
       if (!pending) this.known.set(id, session);
-      if (!newest || id > newest.id) newest = { id, session };
+      if (!isRequest(session) && (!newest || id > newest.id)) newest = { id, session };
     }
     return newest;
   }
@@ -97,26 +100,35 @@ export class TogetherHub {
     const run = this.starting.then(async () => {
       const existing = await this.live(durationOf);
       if (existing) return { live: existing, conflict: true };
-      const session = started(crypto.randomUUID(), me, own, this.now());
-      const id = await this.channel.send(writeSession(session));
-      this.local.add(me.screen);
-      this.keep(id, session);
-      return { live: { id, session }, conflict: false };
+      return { live: await this.create(me.screen, started(crypto.randomUUID(), me, own, this.now())), conflict: false };
     });
     this.starting = run.catch(() => {});
     return run;
   }
 
+  /** A new session message, written by `screen`. An edit heard before the send returned is newer, and stays. */
+  async create(screen: string, session: Session): Promise<Live> {
+    const id = await this.channel.send(writeSession(session));
+    this.local.add(screen);
+    this.keep(id, this.known.get(id) ?? session);
+    return { id, session: this.known.get(id) ?? session };
+  }
+
+  /** What the channel holds now; `null` once the message is gone. */
+  async latest(id: number): Promise<Session | null> {
+    const text = await this.channel.read(id);
+    return text === null ? null : parseSession(text);
+  }
+
   async join(id: number, me: Member): Promise<Live | null> {
     if (!this.sender.pending(id)) {
       const before = this.known.get(id);
-      const text = await this.channel.read(id);
-      const read = text === null ? null : parseSession(text);
+      const read = await this.latest(id);
       if (!read || read.ended) return this.forget(id);
       // A move made meanwhile, or an edit heard, knows newer than this read.
       if (!this.sender.pending(id) && this.known.get(id) === before) this.known.set(id, read);
     }
-    const session = this.queue(id, me.screen, (s) => joined(s, me));
+    const session = this.move(id, me.screen, (s) => joined(s, me));
     return session && { id, session };
   }
 
@@ -124,18 +136,17 @@ export class TogetherHub {
     const current = this.sender.view(id);
     if (!current || current.ended) return null;
     const { set, playing, pos, rate, at, by } = acted(current, change, screen, this.now());
-    return this.queue(id, screen, (s) => ({ ...s, set, playing, pos, rate, at, by }));
+    return this.move(id, screen, (s) => ({ ...s, set, playing, pos, rate, at, by }));
   }
 
   /** Over for everyone only if nobody is left once it is sent; the sender then deletes the message. */
-  leave(id: number, screen: string): void {
-    this.queue(id, screen, (s) => left(s, screen));
-  }
+  leave(id: number, screen: string): void { this.move(id, screen, (s) => left(s, screen)); }
 
   /** The end of the last title: over for everyone, not just this screen. */
-  end(id: number, screen: string): void {
-    this.queue(id, screen, (s) => finished(s, screen));
-  }
+  end(id: number, screen: string): void { this.move(id, screen, (s) => finished(s, screen)); }
+
+  /** Deletes the message: over here, and every tab told. */
+  async withdraw(id: number): Promise<void> { await this.channel.remove(id); this.forget(id); }
 
   /**
    * Re-reads every session a local screen is in. A push missed while the
@@ -147,16 +158,16 @@ export class TogetherHub {
     if (!this.channel.available() || this.sender.busy) return;
     for (const [id, session] of [...this.known]) {
       if (this.sender.pending(id) || !session.members.some((m) => this.local.has(m.screen))) continue;
-      const text = await this.channel.read(id).catch(() => undefined);
-      if (text === undefined || this.sender.pending(id) || this.known.get(id) !== session) continue;
-      const read = text === null ? null : parseSession(text);
+      const read = await this.latest(id).catch(() => undefined);
+      if (read === undefined || this.sender.pending(id) || this.known.get(id) !== session) continue;
       // Compared as written here: Kotlin and JS print the same numbers differently.
       if (!read) this.forget(id);
       else if (!same(read, session)) this.heard(id, writeSession(read));
     }
   }
 
-  private queue(id: number, screen: string, move: Move): Session | null {
+  /** Queues a screen's move for the sender: the session as it now is here, `null` when unknown or over. */
+  move(id: number, screen: string, move: Move): Session | null {
     const current = this.sender.view(id);
     if (!current || current.ended) return null;
     this.local.add(screen);
@@ -164,16 +175,19 @@ export class TogetherHub {
     return this.tell(id);
   }
 
+  onKept(fn: (id: number, session: Session) => void): () => void { this.kept.add(fn); return () => this.kept.delete(fn); }
+
   private keep(id: number, session: Session): void {
     this.known.set(id, session);
     this.tell(id);
+    for (const fn of this.kept) fn(id, session);
   }
 
-  /** Tells every tab what this server holds the session to be; `null` once it is over. */
+  /** Tells every tab what this server holds the session to be: as it ended, so a remote tells finished from stopped. Answers `null` once it is over. */
   private tell(id: number, lost = false): Session | null {
     const session = this.sender.view(id);
     const shown = session && !session.ended ? session : null;
-    this.announce(id, shown, lost);
+    this.announce(id, session?.ended ? session : shown, lost);
     return shown;
   }
 

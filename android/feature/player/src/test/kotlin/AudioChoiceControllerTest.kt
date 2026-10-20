@@ -10,7 +10,6 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -88,17 +87,17 @@ class AudioChoiceControllerTest {
         return Tracks(listOf(group))
     }
 
-    /** A mocked [Player] that actually remembers whatever override was set on it, and hands back the [Player.Listener] this controller attached — the same style [DefaultPlayerHandleTest] uses for the other listener bridge. */
+    /** A mocked [Player] that actually remembers whatever override was set on it, and hands events to the [Player.Listener]s attached, this controller's among them — the same style [DefaultPlayerHandleTest] uses for the other listener bridge. */
     private class RecordingPlayer {
         val player: Player = mockk(relaxed = true)
-        private val listenerSlot = slot<Player.Listener>()
+        private val listeners = mutableListOf<Player.Listener>()
         private var current: TrackSelectionParameters = TrackSelectionParameters.DEFAULT_WITHOUT_CONTEXT
 
         /** Every parameters set on this player, in order — a test's way of seeing whether anything touched the transport at all. */
         val applied: MutableList<TrackSelectionParameters> = mutableListOf()
 
         init {
-            every { player.addListener(capture(listenerSlot)) } just Runs
+            every { player.addListener(capture(listeners)) } just Runs
             every { player.trackSelectionParameters } answers { current }
             every { player.trackSelectionParameters = any() } answers {
                 current = firstArg()
@@ -107,7 +106,7 @@ class AudioChoiceControllerTest {
         }
 
         fun emitTracks(tracks: Tracks) {
-            listenerSlot.captured.onTracksChanged(tracks)
+            listeners.forEach { it.onTracksChanged(tracks) }
         }
 
         /** The track index a group's override selects, or null if this group carries none. */

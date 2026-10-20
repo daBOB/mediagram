@@ -26,11 +26,15 @@ import model.Kind
 import model.MediaSet
 import model.Profile
 import model.TitleCredits
+import org.robolectric.RuntimeEnvironment
 import playback.CacheOccupancy
 import playback.InMemoryLanCacheSettings
 import playback.LanServer
 import player.LibraryPlayGate
 import player.PlayerViewModel
+import player.CastSenderViewModel
+import player.PresentationDisplays
+import player.PresentationViewModel
 import player.TitlePreloadViewModel
 import stats.AchievementDotViewModel
 import stats.InMemoryAchievementsSeen
@@ -169,6 +173,10 @@ internal class LibraryFlowFixture(
                 ManageProfilesViewModel::class.java to ManageProfilesViewModel(stored, ui.profile.homeAlone(), mockk<WatchSync>(relaxed = true)),
                 FetchViewModel::class.java to FetchViewModel(enrichment),
                 PlayerViewModel::class.java to player,
+                // Play on TV, which the title pages, the player and the library's answer to it all resolve.
+                CastSenderViewModel::class.java to playback.castSender(),
+                // Whether a TV screen is connected, which the same pages read beside it.
+                PresentationViewModel::class.java to PresentationViewModel(PresentationDisplays(RuntimeEnvironment.getApplication())),
                 // The library's daily-limit door, resolved beside the catalog on every draw.
                 LibraryPlayGate::class.java to LibraryPlayGate(stored, together),
                 SettingsViewModel::class.java to settings,

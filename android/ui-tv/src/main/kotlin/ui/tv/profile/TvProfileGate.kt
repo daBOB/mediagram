@@ -20,6 +20,9 @@ import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
 import ui.common.profile.ForgetManageWhenAway
 import ui.common.profile.manageActions
+import ui.common.rememberLibraryPositions
+import ui.tv.TvCastOverPicker
+import ui.tv.rememberCastOpens
 
 /**
  * Who is watching, as the masthead needs it: the name its last entry shows,
@@ -52,6 +55,11 @@ data class TvChosenProfile(
  * Once a viewer is chosen, [content] is handed it the way the phone's gate
  * hands its bar a `ProfileBarState`: the name, and [ProfileViewModel.reopen]
  * as what choosing it does.
+ *
+ * With no viewer chosen the TV still answers a cast, and plays it over the
+ * picker ([TvCastOverPicker]) until it is over; the library listens for
+ * itself once there is one. Not before Join a household, though: until then
+ * this device lists nobody for the cast to play as.
  */
 @Composable
 internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
@@ -89,6 +97,11 @@ internal fun TvProfileGate(content: @Composable (TvChosenProfile) -> Unit) {
     if (joining.needsJoin) {
         TvJoinHousehold(join)
         return
+    }
+    val cast = rememberLibraryPositions()
+    if (chosen == null || cast.top != null) {
+        val opened = rememberCastOpens(cast)
+        if (cast.top != null) return TvCastOverPicker(cast, opened)
     }
     if (chosen != null) {
         places.SaveableStateProvider(chosen.profile.id) {

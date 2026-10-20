@@ -38,11 +38,33 @@ class TogetherFixtureTest {
     fun writeSessionIsByteIdenticalToJsonStringify() {
         val s = Session("s1", "film-1", true, 0.0, 1.0, 1791500000000, "tv-1", listOf(Member("tv-1", "TV")), false)
         val expected =
-            "#mlib-together v=1\n" +
+            "#mlib-together v=2\n" +
                 """{"session":"s1","set":"film-1","playing":true,"pos":0,"rate":1,"at":1791500000000,"by":"tv-1",""" +
-                """"members":[{"screen":"tv-1","label":"TV"}],"ended":false}"""
+                """"members":[{"screen":"tv-1","label":"TV","remote":false}],"ended":false,"cast":null}"""
         assertEquals(expected, writeSession(s))
         assertTrue(writeSession(s.copy(pos = 12.5, rate = 1.5)).contains(""""pos":12.5,"rate":1.5"""))
+    }
+
+    @Test
+    fun writeSessionWithACastIsByteIdenticalToTheWeb() {
+        val session = cases("cast.json", "moves")[0].getValue("expect").jsonObject.toSession()
+        val expected =
+            "#mlib-together v=2\n" +
+                """{"session":"s1","set":"film-1","playing":true,"pos":100,"rate":1,"at":1000,"by":"tv-1",""" +
+                """"members":[{"screen":"ph-1","label":"Phone","remote":true}],"ended":false,""" +
+                """"cast":{"to":"TV","from":"Phone","profile":"p1","household":"home","state":"busy","tv":"","note":"Dune",""" +
+                """"tracks":{"audio":[],"text":[]},"audio":"","text":""}}"""
+        assertEquals(expected, writeSession(session))
+        assertEquals(session, parseSession(expected))
+    }
+
+    @Test
+    fun aV1MessageReadsWithoutRemoteOrCast() {
+        val v1 =
+            "#mlib-together v=1\n" +
+                """{"session":"s1","set":"film-1","playing":true,"pos":0,"rate":1,"at":1,"by":"tv-1",""" +
+                """"members":[{"screen":"tv-1","label":"TV","remote":true}],"ended":false,"cast":{"bogus":1}}"""
+        assertEquals(Session("s1", "film-1", true, 0.0, 1.0, 1, "tv-1", listOf(Member("tv-1", "TV")), false), parseSession(v1))
     }
 
     @Test
@@ -127,14 +149,18 @@ class TogetherFixtureTest {
 
 private const val TOLERANCE = 1e-6
 
-private fun cases(file: String): List<JsonObject> {
+internal fun cases(
+    file: String,
+    key: String? = null,
+): List<JsonObject> {
     val found = assertNotNull(locateFixture(file), "$file not found above ${System.getProperty("user.dir")}")
-    val all = Json.parseToJsonElement(found.readText()).jsonArray.map { it.jsonObject }
+    val root = Json.parseToJsonElement(found.readText())
+    val all = (if (key == null) root else root.jsonObject.getValue(key)).jsonArray.map { it.jsonObject }
     assertTrue(all.isNotEmpty(), "$file holds no cases")
     return all
 }
 
-private fun locateFixture(name: String): File? {
+internal fun locateFixture(name: String): File? {
     var dir: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
     while (dir != null) {
         File(dir, "web/test/fixtures/together/$name").takeIf { it.isFile }?.let { return it }
@@ -143,21 +169,23 @@ private fun locateFixture(name: String): File? {
     return null
 }
 
-private fun JsonObject.label() = "case: ${str("name")}"
+internal fun JsonObject.label() = "case: ${str("name")}"
 
-private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content
+internal fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content
 
-private fun JsonObject.num(key: String): Double? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.double
+internal fun JsonObject.num(key: String): Double? = (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.double
 
-private fun JsonObject.long(key: String): Long = getValue(key).jsonPrimitive.long
+internal fun JsonObject.long(key: String): Long = getValue(key).jsonPrimitive.long
 
-private fun JsonObject.session() = getValue("session").jsonObject.toSession()
+internal fun JsonObject.session() = getValue("session").jsonObject.toSession()
 
-private fun JsonObject.member(key: String) = getValue(key).jsonObject.toMember()
+internal fun JsonObject.member(key: String) = getValue(key).jsonObject.toMember()
 
-private fun JsonObject.toMember() = Member(str("screen")!!, str("label")!!)
+internal fun JsonObject.toMember() = Member(str("screen")!!, str("label")!!, this["remote"]?.jsonPrimitive?.boolean ?: false)
 
-private fun JsonObject.toSession() =
+internal fun JsonObject.toTracks(key: String) = getValue(key).jsonArray.map { Track(it.jsonObject.str("id")!!, it.jsonObject.str("label")!!) }
+
+internal fun JsonObject.toSession() =
     Session(
         session = str("session")!!,
         set = str("set")!!,
@@ -168,11 +196,12 @@ private fun JsonObject.toSession() =
         by = str("by")!!,
         members = getValue("members").jsonArray.map { it.jsonObject.toMember() },
         ended = getValue("ended").jsonPrimitive.boolean,
+        cast = this["cast"]?.takeIf { it !is JsonNull }?.jsonObject?.toCast(),
     )
 
-private fun JsonObject.toPlayback() = Playback(str("set")!!, getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
+internal fun JsonObject.toPlayback() = Playback(str("set")!!, getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
 
-private fun JsonObject.toChange() =
+internal fun JsonObject.toChange() =
     PlaybackChange(
         set = str("set"),
         playing = (this["playing"] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.boolean,
@@ -180,9 +209,9 @@ private fun JsonObject.toChange() =
         rate = num("rate"),
     )
 
-private fun JsonObject.toScreenState() = ScreenState(str("set"), getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
+internal fun JsonObject.toScreenState() = ScreenState(str("set"), getValue("playing").jsonPrimitive.boolean, num("pos")!!, num("rate")!!)
 
-private fun JsonObject.toStep(): Step =
+internal fun JsonObject.toStep(): Step =
     when (val kind = str("kind")) {
         "open" -> Step.Open(str("set")!!, num("pos")!!, getValue("playing").jsonPrimitive.boolean, num("rate")!!)
         "rate" -> Step.Rate(num("rate")!!)

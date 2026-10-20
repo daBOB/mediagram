@@ -1,0 +1,2167 @@
+{
+ "words": {
+  "object": {
+   "playOnTv": "Play on TV",
+   "asking": "Asking the TV…",
+   "replace": "Replace",
+   "cancel": "Cancel",
+   "noAnswer": "Mediagram isn't open on the TV. Open it there and try again.",
+   "leaveFirst": "Leave watch together first",
+   "playingOnTv": "Playing on TV",
+   "stop": "Stop",
+   "finished": "Finished",
+   "stopped": "Stopped on the TV",
+   "libraryMissing": "the TV's library doesn't have it yet",
+   "profileUnknown": "the TV doesn't know this profile yet",
+   "joinFirst": "Join a household first"
+  },
+  "lines": [
+   {
+    "name": "busy question",
+    "fn": "busyQuestion",
+    "arg": "Dune",
+    "expect": "The TV is playing Dune. Replace it?"
+   },
+   {
+    "name": "refused line",
+    "fn": "refusedLine",
+    "arg": "the TV's library doesn't have it yet",
+    "expect": "The TV won't play this: the TV's library doesn't have it yet"
+   },
+   {
+    "name": "cast from",
+    "fn": "castFrom",
+    "arg": "Phone",
+    "expect": "Cast from Phone"
+   },
+   {
+    "name": "bar line",
+    "fn": "barLine",
+    "arg": "Dune",
+    "expect": "Playing on TV · Dune"
+   },
+   {
+    "name": "age reason",
+    "fn": "ageReason",
+    "arg": "Mia",
+    "expect": "it's rated above Mia's age limit"
+   },
+   {
+    "name": "time reason",
+    "fn": "timeReason",
+    "arg": "Mia",
+    "expect": "Mia's time is up for today"
+   },
+   {
+    "name": "section reason",
+    "fn": "sectionReason",
+    "arg": "Ben",
+    "expect": "it's in a section hidden from Ben"
+   },
+   {
+    "name": "no answer from a TV in this household",
+    "fn": "noAnswerIn",
+    "arg": "Home",
+    "expect": "Mediagram isn't open on a TV in Home. Open it there and try again."
+   }
+  ]
+ },
+ "offered": [
+  {
+   "name": "an offer holds the caster as a remote and the request for a TV",
+   "args": {
+    "id": "s1",
+    "me": {
+     "screen": "ph-1",
+     "label": "Phone",
+     "remote": false
+    },
+    "own": {
+     "set": "film-1",
+     "playing": true,
+     "pos": 100.12345,
+     "rate": 1
+    },
+    "profile": "p1",
+    "household": "h2",
+    "now": 1000
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100.123,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "h2",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   }
+  }
+ ],
+ "answer": [
+  {
+   "name": "an idle TV accepts an offer",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "accept"
+   }
+  },
+  {
+   "name": "a busy TV answers an offer with what it is playing",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": "Dune",
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "busy",
+    "note": "Dune"
+   }
+  },
+  {
+   "name": "a replace is accepted though the TV is busy",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "replace",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": "Dune",
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "accept"
+   }
+  },
+  {
+   "name": "a refusal wins over busy",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": "Dune",
+    "refusal": "it's rated above Mia's age limit",
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "refuse",
+    "note": "it's rated above Mia's age limit"
+   }
+  },
+  {
+   "name": "a cast already on is ignored",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a busy answer is not answered again",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "busy",
+     "tv": "",
+     "note": "Dune",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a refused answer is not answered again",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "refused",
+     "tv": "",
+     "note": "x",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "an offer nobody answered for a minute is ignored",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 61000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "an ended session is ignored",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": true,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "plain watch together is ignored",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": null
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": "home"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV of another household ignores an offer, even one it would refuse or is busy for",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-2",
+    "busy": "Dune",
+    "refusal": "it's rated above Mia's age limit",
+    "household": "h2"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV that has joined no household ignores an offer",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-1",
+    "busy": null,
+    "refusal": null,
+    "household": null
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "ignore"
+   }
+  },
+  {
+   "name": "a TV of the caster's household accepts, whichever household that is",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "h2",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "tv": {
+    "screen": "tv-2",
+    "busy": null,
+    "refusal": null,
+    "household": "h2"
+   },
+   "now": 2000,
+   "expect": {
+    "kind": "accept"
+   }
+  }
+ ],
+ "castElsewhere": [
+  {
+   "name": "a cast of this household is not elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": "home",
+   "expect": false
+  },
+  {
+   "name": "a cast of another household is elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": "h2",
+   "expect": true
+  },
+  {
+   "name": "for a device in no household every cast is elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "household": null,
+   "expect": true
+  },
+  {
+   "name": "plain watch together is nobody's elsewhere",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": null
+   },
+   "household": "h2",
+   "expect": false
+  }
+ ],
+ "moves": [
+  {
+   "name": "busy keeps the offer's time and names the TV",
+   "move": "busied",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "tv": "tv-1",
+    "note": "Dune"
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "busy",
+     "tv": "",
+     "note": "Dune",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   }
+  },
+  {
+   "name": "refused keeps the offer's time and gives the reason",
+   "move": "refusedBy",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "tv": "tv-1",
+    "note": "it's rated above Mia's age limit"
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "refused",
+     "tv": "",
+     "note": "it's rated above Mia's age limit",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   }
+  },
+  {
+   "name": "replace sets the caster's own playback and clears the note",
+   "move": "replaced",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "busy",
+     "tv": "",
+     "note": "Dune",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "me": "ph-1",
+    "own": {
+     "set": "film-2",
+     "playing": true,
+     "pos": 5,
+     "rate": 1
+    },
+    "now": 3000
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-2",
+    "playing": true,
+    "pos": 5,
+    "rate": 1,
+    "at": 3000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "replace",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   }
+  },
+  {
+   "name": "accepting pauses at the expected position and adds the TV",
+   "move": "accepted",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": true,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "offer",
+     "tv": "",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "me": {
+     "screen": "tv-1",
+     "label": "TV",
+     "remote": false
+    },
+    "now": 3000
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 102,
+    "rate": 1,
+    "at": 3000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   }
+  },
+  {
+   "name": "a second TV cannot take a cast already taken",
+   "move": "accepted",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "me": {
+     "screen": "tv-2",
+     "label": "TV",
+     "remote": false
+    },
+    "now": 3000
+   },
+   "expect": null
+  },
+  {
+   "name": "tracks are cut to the limits and the labels to 32 characters",
+   "move": "tracked",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "tv": "tv-1",
+    "tracks": {
+     "audio": [
+      {
+       "id": "a1",
+       "label": "English"
+      }
+     ],
+     "text": [
+      {
+       "id": "t0",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t1",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t2",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t3",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t4",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t5",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t6",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t7",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t8",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t9",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t10",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t11",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t12",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t13",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t14",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t15",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t16",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t17",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t18",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t19",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t20",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t21",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t22",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t23",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t24",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t25",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t26",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t27",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t28",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      },
+      {
+       "id": "t29",
+       "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+      }
+     ]
+    },
+    "audio": "a1",
+    "text": "t0"
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [
+       {
+        "id": "a1",
+        "label": "English"
+       }
+      ],
+      "text": [
+       {
+        "id": "t0",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t1",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t2",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t3",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t4",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t5",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t6",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t7",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t8",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t9",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t10",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t11",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t12",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t13",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t14",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t15",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t16",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t17",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t18",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t19",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t20",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t21",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t22",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       },
+       {
+        "id": "t23",
+        "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+       }
+      ]
+     },
+     "audio": "a1",
+     "text": "t0"
+    }
+   }
+  },
+  {
+   "name": "quotes and non-ASCII letters in a label are kept as they are",
+   "move": "tracked",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "args": {
+    "tv": "tv-1",
+    "tracks": {
+     "audio": [
+      {
+       "id": "a1",
+       "label": "English"
+      }
+     ],
+     "text": [
+      {
+       "id": "t1",
+       "label": "Français \"forcé\""
+      }
+     ]
+    },
+    "audio": "a1",
+    "text": "t1"
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [
+       {
+        "id": "a1",
+        "label": "English"
+       }
+      ],
+      "text": [
+       {
+        "id": "t1",
+        "label": "Français \"forcé\""
+       }
+      ]
+     },
+     "audio": "a1",
+     "text": "t1"
+    }
+   }
+  },
+  {
+   "name": "choosing only subtitles leaves the audio alone",
+   "move": "chose",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "a1",
+     "text": ""
+    }
+   },
+   "args": {
+    "screen": "ph-1",
+    "choice": {
+     "text": "t2"
+    }
+   },
+   "expect": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "a1",
+     "text": "t2"
+    }
+   }
+  }
+ ],
+ "ending": [
+  {
+   "name": "your own stop is not news to you",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": true,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "me": "ph-1",
+   "expect": null
+  },
+  {
+   "name": "a session still going has no ending",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "me": "ph-1",
+   "expect": null
+  },
+  {
+   "name": "plain watch together has no ending",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": true,
+    "cast": null
+   },
+   "me": "ph-1",
+   "expect": null
+  },
+  {
+   "name": "the TV leaving is a stop",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     }
+    ],
+    "ended": true,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "me": "ph-1",
+   "expect": "stopped"
+  },
+  {
+   "name": "the TV reaching the end is a finish",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": true,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "me": "ph-1",
+   "expect": "finished"
+  },
+  {
+   "name": "another remote stopping is a stop",
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "ph-2",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     },
+     {
+      "screen": "ph-2",
+      "label": "Tablet",
+      "remote": true
+     }
+    ],
+    "ended": true,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "me": "ph-1",
+   "expect": "stopped"
+  }
+ ],
+ "remoteNotices": [
+  {
+   "name": "the TV pausing reads as on TV",
+   "noticed": {
+    "change": "paused",
+    "label": "TV"
+   },
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "expect": "Paused on TV"
+  },
+  {
+   "name": "the TV skipping reads as on TV",
+   "noticed": {
+    "change": "sought",
+    "label": "TV"
+   },
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "expect": "Skipped to 1:40 on TV"
+  },
+  {
+   "name": "a phone pausing keeps by",
+   "noticed": {
+    "change": "paused",
+    "label": "Phone"
+   },
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "expect": "Paused by Phone"
+  },
+  {
+   "name": "the TV joining says nothing",
+   "noticed": {
+    "change": "joined",
+    "label": "TV"
+   },
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "expect": null
+  },
+  {
+   "name": "the TV leaving says nothing",
+   "noticed": {
+    "change": "left",
+    "label": "TV"
+   },
+   "session": {
+    "session": "s1",
+    "set": "film-1",
+    "playing": false,
+    "pos": 100,
+    "rate": 1,
+    "at": 1000,
+    "by": "tv-1",
+    "members": [
+     {
+      "screen": "ph-1",
+      "label": "Phone",
+      "remote": true
+     },
+     {
+      "screen": "tv-1",
+      "label": "TV",
+      "remote": false
+     }
+    ],
+    "ended": false,
+    "cast": {
+     "to": "TV",
+     "from": "Phone",
+     "profile": "p1",
+     "household": "home",
+     "state": "on",
+     "tv": "tv-1",
+     "note": "",
+     "tracks": {
+      "audio": [],
+      "text": []
+     },
+     "audio": "",
+     "text": ""
+    }
+   },
+   "expect": null
+  }
+ ]
+}

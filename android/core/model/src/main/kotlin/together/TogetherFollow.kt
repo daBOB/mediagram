@@ -72,6 +72,7 @@ fun isLive(
 ): Boolean =
     when {
         s.ended -> false
+        isRequest(s) -> now - s.at < REQUEST_LIFETIME_MS
         !s.playing -> now - s.at < PAUSED_LIFETIME_MS
         durationSecs == null -> now - s.at < UNKNOWN_LENGTH_LIFETIME_MS
         else -> expectedPosition(s, now) <= durationSecs + PAST_END_GRACE_SECS

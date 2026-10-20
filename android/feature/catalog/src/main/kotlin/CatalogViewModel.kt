@@ -47,7 +47,7 @@ class CatalogViewModel
         private val heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
         filmPreloader: FilmPreloading = FilmPreloading.Noop,
-        private val togetherLive: TogetherLive,
+        internal val togetherLive: TogetherLive,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
@@ -116,9 +116,9 @@ class CatalogViewModel
          * exactly as it read before kids profiles existed, so a gap in
          * collection still means refresh-on-resubscribe. Not filtered: that
          * is [state]'s job, applied over this pipe's always-current [value][StateFlow.value]
-         * rather than baked into what this one caches.
+         * rather than baked into what this one caches. Read directly by a TV playing a cast, as the caster.
          */
-        private val unfiltered: StateFlow<CatalogUiState> =
+        val unfiltered: StateFlow<CatalogUiState> =
             channelFlow {
                 launch { refresh(LibraryUpdateKind.Read) }
                 launch {
@@ -179,11 +179,11 @@ class CatalogViewModel
         ): CatalogUiState = projected(shown, view, lastSets)
 
         /**
-         * Watch together's Join for Home and the title pages ([togetherOffers]); collected only while one
-         * shows it. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
+         * Watch together's Join for Home and the title pages, and the cast bar ([togetherOffers]); collected only while
+         * one shows. Nothing is kept once it stops, so a profile chosen meanwhile never sees the last one's.
          */
         val together: StateFlow<TogetherOffer?> =
-            togetherOffers(togetherLive, state)
+            togetherOffers(togetherLive, state, watchState.chosenProfile)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
 
         /** Join: the player that opens next joins [offer]'s session. The caller opens the title, as its Play would. */

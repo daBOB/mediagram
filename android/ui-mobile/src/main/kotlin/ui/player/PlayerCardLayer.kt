@@ -59,6 +59,8 @@ internal fun BoxScope.PlayerCardLayer(
     onEnterPip: (() -> Unit)?,
     onScrubbingChanged: (Boolean) -> Unit,
     together: TogetherUi,
+    castReason: String? = null,
+    onPlayOnTv: (() -> Unit)? = null,
 ) {
     if (LocalIsInPictureInPicture.current) return
     val clearance = if (card.sidebarOpen && !sidebarCoversScreen()) SIDEBAR_WIDTH else 0.dp
@@ -78,9 +80,9 @@ internal fun BoxScope.PlayerCardLayer(
                 view =
                     PlayerCardView(
                         choices, upNext, statsShown, hasEpisodes = hasEpisodes, catalogedDurationSecs = catalogedDurationSecs,
-                        openMenu = card.menu, sidebarOpen = card.sidebarOpen, together = together,
+                        openMenu = card.menu, sidebarOpen = card.sidebarOpen, together = together, castReason = castReason,
                     ),
-                actions = playerCardActions(viewModel, card, onToggleStats = onToggleStats, onEnterPip = onEnterPip),
+                actions = playerCardActions(viewModel, card, onToggleStats = onToggleStats, onEnterPip = onEnterPip, onPlayOnTv = onPlayOnTv),
                 onScrubbingChanged = onScrubbingChanged,
                 onBounds = { card.bounds = it },
                 modifier = Modifier.align(Alignment.BottomCenter),

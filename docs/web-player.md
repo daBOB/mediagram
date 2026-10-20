@@ -719,6 +719,43 @@ Screens in one household play a title in step; the format and the rules are in
   trails the session by the converter's start-up (1-3 s) after a seek. A title
   picked in a session starts at the session's place.
 
+## Cast to the TV
+
+Send what plays to the TV and steer it from the browser. The format and the
+rules are `docs/mlib-spec.md` §7b and `docs/system-architecture.md` (Cast to
+the TV); the words are `public/lib/together/cast-words.js`, which the Android
+surfaces copy.
+
+- **Play on TV.** On a title page, beside Play/Resume: it casts what
+  Play/Resume would start. In the player, beside Watch together: it moves
+  what is playing, at the same second. Greyed, with the reason as its title:
+  "Join a household first" while this device has joined none, "Telegram isn't
+  reachable", "Leave watch together first" inside a session. Kids see it; their
+  limits apply on the TV.
+- **Asking.** "Asking the TV..." for at most 5 s, then the remote, "The TV is
+  playing *X*. Replace it?" (Replace or Cancel), "The TV won't play this:
+  *reason*", or "Mediagram isn't open on the TV. Open it there and try again."
+  Only a TV of this device's household answers.
+- **The remote.** The player page with the title's backdrop, dimmed, where the
+  video would be, labelled **Playing on TV**: play/pause, the seek bar at the
+  TV's position, -10/+10 s, speed, Next episode, Subtitles & audio (the TV's
+  own list) and **Stop**. It plays nothing here; the volume stays on the TV
+  remote. "Paused on TV" and its siblings are the mirror of the TV's notices.
+  "Finished" and "Stopped on the TV" end it.
+- **The bar.** Backing out of the remote returns to browsing and the cast goes
+  on: **Playing on TV · *Title*** sits at the bottom of every page with
+  play/pause, and opens the remote. It replaces Home's "Watching together"
+  line for a cast, and shows only for a cast on this household's TV.
+- **API.** `POST /api/together` also takes `op` = `offer` or `replace` (with
+  `profile` and `household`), `cancel` and `tracks`; see
+  `src/together/cast-routes.ts`.
+- **`PREVIEW_CAST`.** `PREVIEW_CAST=accept|busy|refuse|none bun run preview`
+  makes the preview's pretend TV (answering as Home) accept, report busy,
+  refuse or say nothing, so the buttons, the remote and the bar can be seen
+  with no Telegram.
+- **AirPlay is deferred.** The browser casts only to the Mediagram box; Safari's
+  AirPlay button and the playlist handoff it needs are not built.
+
 ## Updates Telegram pushes
 
 Every session of the account hears about a message sent, edited or pinned in

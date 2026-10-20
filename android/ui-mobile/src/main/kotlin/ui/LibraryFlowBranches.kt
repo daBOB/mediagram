@@ -40,6 +40,8 @@ import ui.common.MenuActions
 import ui.common.catalog.DepartmentScrollStates
 import ui.common.catalog.rememberDepartmentScrollStates
 import ui.common.resolve
+import ui.catalog.CastAskHost
+import ui.player.CastRemoteScreen
 import ui.player.PlayerScreen
 
 /**
@@ -150,7 +152,7 @@ internal fun LibraryBranches(
             BackHandler(onBack = at::pop)
             PlayerScreen(
                 setId = setId, run = run, fsk = set?.fsk, handPicked = at.run != null,
-                onBack = at::pop, onSwitch = at::replacePlayer,
+                onBack = at::pop, onSwitch = at::replacePlayer, onCast = at::replaceWithRemote,
             )
         }
 
@@ -220,6 +222,12 @@ internal fun LibraryBranches(
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
         FrameKind.STATS -> StatsFrame(at, menuActions, profileBar, browse)
 
+        // The remote of a cast, over the window as the player is; Next episode follows the title's run as there.
+        FrameKind.REMOTE -> at.remoteId?.let { id ->
+            BackHandler(onBack = at::pop)
+            CastRemoteScreen(id = id, runOf = { runFor(it, catalogState) }, onBack = at::pop)
+        }
+
         // Nothing open: the shelves, under the rail/departments-bar chrome
         // rather than LibraryScaffold — see [ui.chrome.LibraryHome].
         null -> LibraryHome(
@@ -258,6 +266,8 @@ internal fun LibraryBranches(
     }
     }
     }
+    // Play on TV's answer from a title page; the player hears its own, to stop before the remote takes its place.
+    if (at.top != FrameKind.PLAYER) CastAskHost(onOn = at::openRemote)
 }
 
 private const val SHELVES_KEY = "shelves"

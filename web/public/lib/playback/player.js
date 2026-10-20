@@ -12,7 +12,7 @@ import { playbackFor } from "../link.js";
 import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
-import { clockTime, endsAt, episodeLabel } from "../format.js";
+import { clockTime, endsAt, titleLine } from "../format.js";
 import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
@@ -35,6 +35,7 @@ import { mountSubtitlePicker } from "./subtitle-picker.js";
 import { thumbStrip } from "./thumb-strip.js";
 import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.js";
 import { mountTogether } from "./together.js";
+import { mountPlayerCast } from "./player-cast.js";
 // One id per tab, for its playback reports as for watch together.
 import { screen as viewer } from "../together-now.js";
 
@@ -408,6 +409,7 @@ function mountPlayer() {
     note: document.getElementById("together-note"), filmTime, seekTo: seekFilmTo, converting: () => converting,
     setRate: (rate) => { video.playbackRate = rate; },
   });
+  mountPlayerCast({ button: document.getElementById("cast"), video, filmTime, setId: () => playing?.setId ?? null, close: () => dialog.close() });
   // Media keys and the picture-in-picture window, through the button's own path rather than straight to the element.
   for (const action of ["play", "pause"]) navigator.mediaSession?.setActionHandler(action, () => { if (video.paused === (action === "play")) transport.act({ do: "playPause" }); });
 
@@ -510,11 +512,6 @@ function mountPlayer() {
 
   function refreshUpNext({ ended = video.ended } = {}) {
     upNext.update({ runtime: runtimeSeconds(), at: filmTime(), ended });
-  }
-
-  /** How a title is named in the current-title HUD. */
-  function titleLine(set) {
-    return [set.show, episodeLabel(set), set.title].filter(Boolean).join(" · ");
   }
 
   /**

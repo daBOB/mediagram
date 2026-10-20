@@ -49,12 +49,13 @@ fun CollectionScreen(
     onSelectSeason: (String) -> Unit = {},
     state: LazyListState = rememberLazyListState(),
     episodePreload: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
+    playOnTv: PlayOnTv? = null,
 ) {
     if (collection.kind == CollectionKind.SHOW) {
         SeriesPage(
             collection, info, watch, heldIds, onOpenTitle, onOpenGenre, shelves, onOpenCollection,
             onOpenPerson, onPlay, editorsChoice, onToggleEditorsChoice, onToggleWatchlist,
-            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state, episodePreload,
+            titleCredits, fetchPortrait, portraits, season, onSelectSeason, state, episodePreload, playOnTv,
         )
         return
     }

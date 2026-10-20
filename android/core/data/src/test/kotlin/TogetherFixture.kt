@@ -48,6 +48,9 @@ class TogetherHarness(
     /** How many times listening fails before it is heard again, as a dropped connection does. */
     var listenFailures = 0
 
+    /** The clock the sessions read: [NOW] until a test moves it. */
+    var clock = NOW
+
     /** Holds every length lookup until completed. */
     var lengthGate: CompletableDeferred<Unit>? = null
 
@@ -71,7 +74,7 @@ class TogetherHarness(
                 lengthGate?.await()
                 if (it == FILM.set) 100.0 else null
             },
-            now = { NOW },
+            now = { clock },
         )
 
     /** Every session the channel was asked to hold, in order, whatever it answered. */

@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -53,11 +52,6 @@ import designsystem.StatusDot
 import designsystem.catalogueIndication
 import ui.common.RailItem
 
-/** The window width the rail itself narrows at — the web's `--rail-width` breakpoint, `shell.css:169`. */
-private val RailNarrowBreakpoint = 1180.dp
-private val RailWidthNarrow = 184.dp
-private val RailWidthWide = 224.dp
-
 /**
  * The left rail: wordmark, the viewer's own shelves and utilities, then the
  * library's own tally — `index.html`'s `aside.library-rail` (46-70), read
@@ -74,8 +68,7 @@ internal fun LibraryRail(
 ) {
     val rail = LocalRailData.current
     val tones = LocalCatalogueTones.current
-    val narrow = LocalConfiguration.current.screenWidthDp.dp <= RailNarrowBreakpoint
-    val width = if (narrow) RailWidthNarrow else RailWidthWide
+    val width = railWidth()
 
     Column(
         modifier =
@@ -97,7 +90,7 @@ internal fun LibraryRail(
             // `shell.css`'s own 1.7rem never does in a browser. The compact
             // header's own narrower tier (23sp) is reused here rather than
             // a third number invented just for this width.
-            fontSize = if (narrow) 23.sp else WordmarkSize,
+            fontSize = if (width == RailWidthNarrow) 23.sp else WordmarkSize,
             modifier =
                 Modifier
                     .padding(start = 10.dp, bottom = 36.dp)

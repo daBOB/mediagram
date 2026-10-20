@@ -11,6 +11,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import player.PlayerViewModel
 import player.open
+import player.pauseIfDisplayLostWhileAway
+import player.pauseIfPresenting
 import player.screenShown
 
 /**
@@ -26,6 +28,10 @@ import player.screenShown
  * is still there, primed to resume, which the dispose effect alone would
  * not catch. `ON_START` and `ON_STOP` also tell it whether its screen is
  * started: out of a watch-together session, it listens for one only then.
+ * `ON_STOP` pauses a title whose picture is on a wireless display, unless
+ * the activity is only being recreated: the screen that remote-controls it
+ * has gone. If that display is gone by the next `ON_START`, the title is
+ * paused again there.
  */
 @Composable
 fun PlayerLifecycle(viewModel: PlayerViewModel) {
@@ -41,11 +47,19 @@ fun PlayerLifecycle(viewModel: PlayerViewModel) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
+        var presentedAtStop = false
         val observer =
             LifecycleEventObserver { _, event ->
                 when (event) {
-                    Lifecycle.Event.ON_START -> viewModel.screenShown(true)
+                    Lifecycle.Event.ON_START -> {
+                        viewModel.pauseIfDisplayLostWhileAway(presentedAtStop)
+                        presentedAtStop = false
+                        viewModel.screenShown(true)
+                    }
                     Lifecycle.Event.ON_STOP -> {
+                        presentedAtStop = viewModel.presenting.value != null
+                        // A recreation for a configuration change (dark mode, font size) is not the viewer leaving.
+                        if (activity?.isChangingConfigurations != true) viewModel.pauseIfPresenting()
                         viewModel.save()
                         viewModel.screenShown(false)
                     }

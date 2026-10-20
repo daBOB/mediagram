@@ -10,6 +10,7 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.mediaSet
 import catalog.runFor
+import player.PlayerViewModel
 import stats.AchievementDotViewModel
 import ui.common.LibraryPositions
 import ui.common.MenuActions
@@ -21,6 +22,7 @@ import ui.tv.catalog.TvMoviesPageEntryKey
 import ui.tv.catalog.TvSearchEntryKey
 import ui.tv.catalog.TvStatsRailKey
 import ui.tv.chrome.LocalNewAchievement
+import ui.tv.player.TvCastOver
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
 
@@ -33,21 +35,28 @@ import ui.tv.profile.TvChosenProfile
  *
  * The player answers Back itself: the first press puts its controls away,
  * and only a press with them already gone leaves. It draws in mediagram's
- * look whatever the style ([TvMediagramPlayerTheme]).
+ * look whatever the style ([TvMediagramPlayerTheme]). [onCastOver] is where
+ * the TV goes once a cast it plays is over ([TvCastOver]), or is left by Back.
  */
 @Composable
 internal fun TvPlayerBranch(
     at: LibraryPositions,
-    catalogState: CatalogUiState,
+    catalog: CatalogViewModel,
     leave: () -> Unit,
+    onCastOver: () -> Unit,
 ) {
     val setId = at.setId ?: return
+    // A cast plays as the caster: its title and run come from every set, not this profile's shelves.
+    val catalogState by (if (at.casting) catalog.unfiltered else catalog.state).collectAsStateWithLifecycle()
     val set = catalogState.mediaSet(setId)
     val run = at.run ?: set?.let { runFor(it, catalogState) }.orEmpty()
+    val player: PlayerViewModel = hiltViewModel()
+    TvCastOver(player, onCastOver)
     TvMediagramPlayerTheme {
         TvPlayerScreen(
             setId = setId, set = set, run = run, handPicked = at.run != null,
-            onBack = leave, onSwitch = at::replacePlayer,
+            // Back out of a cast ends it, and goes where any end of one goes.
+            onBack = if (at.casting) onCastOver else leave, onSwitch = at::replacePlayer, viewModel = player,
         )
     }
 }
@@ -150,4 +159,4 @@ internal fun TvLibraryHomeFrame(
 }
 
 /** Where [TvCatalogScreen]'s own saved state — its tab, its wall's scroll — is held while something covers it. */
-private const val CatalogStateKey = "catalog"
+internal const val CatalogStateKey = "catalog"

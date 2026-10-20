@@ -94,11 +94,7 @@ class FakeCore(
     var peopleHits: List<PeopleHitRecord> = emptyList(),
     /** What [fetchPortrait] answers, keyed by the id asked. */
     var portraits: Map<Long, String> = emptyMap(),
-    /**
-     * Whether a login has completed. Most of this app's tests build a core
-     * that already is; feature/setup's own fixture defaults this `false`,
-     * since a device mid setup is what most of its tests are about.
-     */
+    /** Whether a login has completed: `true` for most tests, `false` in feature/setup's fixture, a device mid setup. */
     var authorized: Boolean = true,
     /** What [totalSize] answers for a known set; also what a [read] request is clamped against. */
     var totalSize: Long = 0L,
@@ -505,6 +501,9 @@ class FakeCore(
     /** What every together call but [togetherHeard] throws, or `null` — a Telegram that cannot be reached. */
     var togetherFailure: Throwable? = null
 
+    /** What [togetherRead] alone throws, or `null`: a read that fails while the other calls go through. */
+    var togetherReadFailure: Throwable? = null
+
     override suspend fun togetherRecent(handle: String): List<TogetherMessage> {
         togetherFailure?.let { throw it }
         return togetherMessages.entries
@@ -514,7 +513,7 @@ class FakeCore(
     }
 
     override suspend fun togetherRead(handle: String, messageId: Int): String? {
-        togetherFailure?.let { throw it }
+        (togetherFailure ?: togetherReadFailure)?.let { throw it }
         togetherReads += messageId
         val text = togetherMessages[messageId]
         togetherReadGate?.await()

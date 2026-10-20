@@ -9,6 +9,7 @@ import model.together.PlaybackChange
 import model.together.changeOf
 import model.together.follow
 import model.together.isLive
+import player.DAILY_LIMIT_NOTICE_MS
 
 /*
  * Following the session a screen is in, the twin of `together.js`'s
@@ -30,6 +31,11 @@ internal suspend fun TogetherController.onLive(heard: LiveSession?) {
     if (heard != null && heard.id != inside) return leave(ENDED)
     // Ended or gone, checked before what changed: this screen plays on alone.
     if (heard == null || heard.session.ended) return end(ENDED)
+    // Another TV holds the cast this one took: that TV keeps it, and this player closes.
+    // Checked before following, while `current` still names this TV, so `end` closes the cast.
+    if (current?.cast?.tv == screen && heard.session.cast?.tv != screen) {
+        return if (heard.session.members.any { it.screen == screen }) leave() else end(null)
+    }
     val before = current
     // A move given up on comes back as what the channel holds, which the screen that made it follows too.
     val followed = if (heard.lost) heard.session else follow(before, heard.session, screen)
@@ -72,8 +78,14 @@ private fun TogetherController.apply(drifting: Boolean = false) {
         val here = titleOf(set) != null
         if (asked != generation || expecting != set) return@launch
         if (!here) return@launch leave(LEFT_NOT_HERE)
-        // A move the daily limit refuses is where this screen leaves, as one above the age limit is.
-        openTitle(set) { if (asked == generation && expecting == set) leave(DailyLimitWords.OUT) }
+        // A move the daily limit refuses is where this screen leaves, as one above the age limit is,
+        // its words up as long as the player's own time's-up notice: a child reads them.
+        openTitle(set) {
+            if (asked == generation && expecting == set) {
+                leave()
+                tell(DailyLimitWords.OUT, DAILY_LIMIT_NOTICE_MS)
+            }
+        }
     }
 }
 
@@ -88,4 +100,31 @@ internal suspend fun TogetherController.draw() {
     val elsewhere = live.live.value?.takeIf { id == null }
     val here = elsewhere == null || titleOf(elsewhere.session.set) != null
     view.draw(current, elsewhere.takeIf { id == null }, here, live.available.value)
+}
+
+/**
+ * Follows [data.TogetherLive] while it is needed, collecting it being what
+ * holds the core's push stream open: in a session, or with the player
+ * open on a screen that is started. Taken up out of a session, it reads
+ * the channel first, since nothing was heard while it was let go.
+ */
+internal fun TogetherController.listen() {
+    if (setId == null || !(shown || id != null)) {
+        watching?.cancel()
+        watching = null
+        return
+    }
+    if (watching != null) return
+    watching =
+        scope.launch {
+            launch {
+                live.available.collect { up ->
+                    // A read or an edit just failed: a screen in a session plays on alone, and says why.
+                    if (!up && id != null) view.show(TOGETHER_UNREACHABLE)
+                    draw()
+                }
+            }
+            live.live.collect { onLive(it) }
+        }
+    if (id == null) scope.launch { live.refresh() }
 }

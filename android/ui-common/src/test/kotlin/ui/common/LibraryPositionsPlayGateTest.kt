@@ -54,6 +54,19 @@ class LibraryPositionsPlayGateTest {
     }
 
     @Test
+    fun aCastOpensWithoutBeingAskedInPlaceOfATitlePlaying() {
+        val gate = Gate(answer = CompletableDeferred(false))
+        val at = positions(gate)
+        at.openTitle("t1")
+        at.castPlayer("s1")
+        at.castPlayer("s2")
+        assertEquals("s2", at.setId)
+        assertEquals(0, gate.asked)
+        at.pop()
+        assertEquals(FrameKind.TITLE, at.top)
+    }
+
+    @Test
     fun someoneWithoutALimitOpensAtOnceWithoutBeingAsked() {
         val gate = Gate(applies = false, answer = CompletableDeferred(false))
         val at = positions(gate)

@@ -51,6 +51,7 @@ import { renderStats } from "./lib/catalog/stats-page.js";
 import { watchStatsDot } from "./lib/catalog/stats-dot.js";
 import { createLibrarySession } from "./lib/library-session.js";
 import { browserLibraryPort } from "./lib/library-session-port.js";
+import { mountCastBar } from "./lib/cast/cast-bar.js";
 import { hiddenSectionsOf } from "./lib/section-access.js";
 import { heardTogether, inTogether, onLeaveTogether, refreshTogether, setTogetherOpener, takeJoin } from "./lib/together-now.js";
 import { go, href, parse, sectionOf } from "./lib/address.js";
@@ -233,7 +234,7 @@ const deptContext = () => ({
 });
 
 // Join, from Home or a title page, opens a title in this profile's catalog the way its own Play would.
-setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null);
+setTogetherOpener((set) => play(set), (setId) => byId.get(setId) ?? null, (setId) => (byId.has(setId) ? playsNext(library, byId.get(setId), null).next?.setId ?? null : null));
 
 /** A film's card opens its page; the page's button plays it. */
 function openFilm(set) {
@@ -705,6 +706,7 @@ try {
   // here is reported when Play actually asks for it, not against a page the
   // viewer has not touched yet.
   void loadPlayer().catch(() => {});
+  mountCastBar();
   route();
 } catch (error) {
   main.textContent = "";

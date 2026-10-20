@@ -9,13 +9,14 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import model.together.CastTracks
 import model.together.Member
 import model.together.Playback
 import model.together.PlaybackChange
@@ -40,6 +41,8 @@ private fun Double.position(): Double? = takeIf { it.isFinite() && it >= 0 }
 
 private fun Double.speed(): Double? = takeIf { it.isFinite() && it > 0 }
 
+internal fun Playback.sane(): Playback = copy(pos = pos.position() ?: 0.0, rate = rate.speed() ?: 1.0)
+
 /** The act move: [moved]'s own playback fields laid over whatever session is newest when it goes. */
 private fun Session.playbackOf(moved: Session) =
     copy(set = moved.set, playing = moved.playing, pos = moved.pos, rate = moved.rate, at = moved.at, by = moved.by)
@@ -49,7 +52,7 @@ private fun Session.playbackOf(moved: Session) =
  * web server hub's part (`web/src/together/hub.ts`) as well as a tab's: the
  * screens' moves reach the channel through one [TogetherSender], each
  * re-applied to the newest session known when it goes, and every edit heard
- * is kept in [TogetherSessions] and shown in [live].
+ * is kept in [TogetherSessions] and shown in [live]. Casting is [TogetherCasting]'s.
  *
  * All of that state is touched on one serial dispatcher, so the hub's
  * reasoning, that state changes only where it suspends, carries over
@@ -71,16 +74,17 @@ class DefaultTogetherLive(
     private val reads = TogetherReads(channel, sessions, work, durationOf, now)
     private val starting = Mutex()
     private val joinNext = AtomicReference<Int?>(null)
-
+    private val casting = TogetherCasting(channel, sessions, reads, work, now)
     override val live: StateFlow<LiveSession?> = sessions.shown.asStateFlow()
+    override val requests: StateFlow<List<LiveSession>> = sessions.requests.asStateFlow()
     override val available: StateFlow<Boolean> = sessions.reachable.asStateFlow()
+    override val ended: StateFlow<LiveSession?> = sessions.ended.asStateFlow()
 
     init {
-        // Listening lasts exactly as long as someone collects [live] (`LibraryEvents`):
+        // Listening lasts exactly as long as someone collects [live] or [requests] (`LibraryEvents`):
         // no stream held open for a phone in a pocket.
         work.launch {
-            sessions.shown.subscriptionCount
-                .map { it > 0 }
+            combine(sessions.shown.subscriptionCount, sessions.requests.subscriptionCount) { a, b -> a > 0 || b > 0 }
                 .distinctUntilChanged()
                 .collectLatest { if (it) reads.listen() }
         }
@@ -105,8 +109,7 @@ class DefaultTogetherLive(
         withContext(serial) {
             starting.withLock {
                 look()?.let { return@withLock Started(it, conflict = true) }
-                val playback = own.copy(pos = own.pos.position() ?: 0.0, rate = own.rate.speed() ?: 1.0)
-                val session = started(UUID.randomUUID().toString(), me, playback, now())
+                val session = started(UUID.randomUUID().toString(), me, own.sane(), now())
                 // Once on its way, the message is this device's to keep, whatever becomes of the caller.
                 withContext(NonCancellable) {
                     val id = channel.send(writeSession(session))
@@ -163,6 +166,20 @@ class DefaultTogetherLive(
     override fun joinOnOpen(id: Int) = joinNext.set(id)
 
     override fun takeJoin(): Int? = joinNext.getAndSet(null)
+
+    override suspend fun offer(me: Member, own: Playback, profile: String, household: String) = casting.offer(me, own, profile, household)
+    override suspend fun replace(id: Int, me: Member, own: Playback, profile: String, household: String) =
+        casting.replace(id, me, own, profile, household)
+    override fun cancel(id: Int) = casting.cancel(id)
+    override fun refuse(id: Int, by: String, note: String) = casting.refuse(id, by, note)
+    override fun busy(id: Int, by: String, note: String) = casting.busy(id, by, note)
+    override suspend fun accept(id: Int, me: Member) = casting.accept(id, me)
+    override fun tracks(id: Int, screen: String, tracks: CastTracks, audio: String, text: String) =
+        casting.tracks(id, screen, tracks, audio, text)
+    override fun choose(id: Int, screen: String, audio: String?, text: String?) =
+        casting.choose(id, screen, audio, text)
+    override fun castOnOpen(cast: ArmedCast) = casting.castOnOpen(cast)
+    override fun takeCast() = casting.takeCast()
 
     /** [TogetherReads.discover], and what it says about reaching Telegram. */
     private suspend fun look(): LiveSession? {
