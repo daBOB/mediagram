@@ -27,6 +27,13 @@ import javax.inject.Inject
  * not been read.
  */
 data class JoinUiState(
+    /**
+     * The households have been read. Until they are, the picker shows the
+     * waiting line with Try again ([JoinHouseholdViewModel.reread]) where it
+     * would offer "Create the first profile", which the core refuses on an
+     * install that has grown-ups in another household.
+     */
+    val read: Boolean = false,
     /** The live households but this device's own, each one a PIN can open: its admin's, or the owner's. */
     val households: List<Household> = emptyList(),
     /** This device's household, which the This device row names. */
@@ -109,6 +116,7 @@ private fun joinState(
     val ownerOpens = view.owner?.hasPin == true
     val grownUps = view.everyone.filterNot { it.kids }
     return JoinUiState(
+        read = true,
         households = view.list.filter { one -> one.id != view.joined && (ownerOpens || view.everyone.any { it.id == one.adminId && it.hasPin }) },
         here = view.here,
         canSwitch = view.list.size > 1,

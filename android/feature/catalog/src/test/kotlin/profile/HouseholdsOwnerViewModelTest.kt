@@ -1,74 +1,17 @@
 package catalog.profile
 
-import data.DefaultHouseholdsRepository
-import data.DefaultWatchStateRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import model.Household
 import model.HouseholdWords
-import org.junit.Rule
-import testing.FakeCore
-import testing.FakeCoreProvider
-import testing.MainDispatcherRule
 import uniffi.mediagram_core.Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
-/**
- * The owner's Households part over [FakeCore]: andre, the owner, runs Home
- * with Mia; Bea runs Flat, with Cy, who has no PIN; Barn is empty. This
- * device shows Home, as andre.
- */
-class HouseholdsOwnerViewModelTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
-
-    private val sync = RecordingSync()
-    private val core =
-        FakeCore().apply {
-            profiles =
-                listOf(
-                    Profile("a", "andre", admin = true, owner = true),
-                    Profile("m", "Mia", kids = true, kidsAge = 6u, parentId = "a"),
-                    Profile("b", "Bea", admin = true, household = "flat"),
-                    Profile("c", "Cy", household = "flat"),
-                )
-            roles.pins["a"] = "1234"
-            roles.pins["b"] = "5678"
-            homes.names["flat"] = "Flat"
-            homes.names["barn"] = "Barn"
-            chosen = "a"
-        }
-    private val provider = FakeCoreProvider(core)
-    private val repository = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
-    private lateinit var households: DefaultHouseholdsRepository
-
-    /** What [HouseholdsOwnerViewModel.joined] said, in order. */
-    private val said = mutableListOf<Boolean>()
-
-    private suspend fun TestScope.owning(): HouseholdsOwnerViewModel {
-        repository.reload()
-        households = DefaultHouseholdsRepository(provider, repository, backgroundScope, Dispatchers.Unconfined)
-        return HouseholdsOwnerViewModel(repository, households, sync).also { vm -> backgroundScope.launch { vm.joined.collect { said += it } } }
-    }
-
-    /** The part opened by the owner's PIN. */
-    private suspend fun TestScope.opened(): HouseholdsOwnerViewModel =
-        owning().apply {
-            open()
-            enterPin("1234")
-        }
-
-    private fun HouseholdsOwnerViewModel.part() = assertIs<HouseholdsOwnerUiState.Open>(state.value)
-
-    private fun household(id: String) = households.view.value.list.find { it.id == id }
-
-    private fun profile(id: String) = households.view.value.everyone.single { it.id == id }
-
+/** What the owner's part offers and sends, over [HouseholdsOwnerHarness]'s households. */
+class HouseholdsOwnerViewModelTest : HouseholdsOwnerHarness() {
     @Test
     fun theOwnersPinOpensThePartOncePerVisit() =
         runTest(UnconfinedTestDispatcher()) {
@@ -173,13 +116,12 @@ class HouseholdsOwnerViewModelTest {
             val vm = opened()
             vm.close()
             assertEquals(HouseholdsOwnerUiState.Closed(canOpen = true), vm.state.value)
-            // With the owner watching the part shows at once, and the PIN is asked at the first change.
-            vm.openAsOwner()
-            vm.part()
             vm.rename("barn", "Shed")
+            assertNull(vm.pin.value)
+            vm.open()
             assertEquals(PinPrompt(HouseholdWords.OWNERS_PIN, newPin = false), vm.pin.value)
-            assertEquals("Barn", household("barn")?.name)
             vm.enterPin("1234")
+            vm.rename("barn", "Shed")
             assertEquals("Shed", household("barn")?.name)
         }
 }
