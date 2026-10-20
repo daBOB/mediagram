@@ -5,6 +5,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import catalog.profile.FIRST_PROFILE
+import catalog.profile.WAITING_FOR_HOUSEHOLD
+import model.HOME_HOUSEHOLD
 import model.HouseholdWords
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,6 +77,19 @@ class JoinHouseholdFlowTest : ProfileGateHarness() {
         inDialog("Wrong PIN.").assertExists()
         assertNull(household.core.homes.joined)
         compose.onNodeWithText(HouseholdWords.JOIN_A_HOUSEHOLD).assertExists()
+    }
+
+    /** No first profile before the households are read: with grown-ups in another household, the core would refuse it. */
+    @Test fun theFirstProfileWaitsUntilTheHouseholdsAreRead() {
+        // A core that names no household at all has not been read: Home is never deleted.
+        open { homes.names.clear() }
+        compose.onNodeWithText(WAITING_FOR_HOUSEHOLD).assertExists()
+        compose.onNodeWithText(FIRST_PROFILE).assertDoesNotExist()
+
+        household.core.homes.names[HOME_HOUSEHOLD] = "Home"
+        compose.onNodeWithText("Try again").performClick()
+        compose.onNodeWithText(FIRST_PROFILE).assertExists()
+        compose.onNodeWithText(WAITING_FOR_HOUSEHOLD).assertDoesNotExist()
     }
 
     /** As the web's `joinElsewhere`: the core makes no first profile while a grown-up is anywhere on the install. */

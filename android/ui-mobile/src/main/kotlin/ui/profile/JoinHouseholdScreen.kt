@@ -15,8 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.JoinHouseholdViewModel
+import catalog.profile.JoinUiState
+import catalog.profile.WAITING_FOR_HOUSEHOLD
 import designsystem.Spacing
 import model.HouseholdWords
+import ui.chrome.CatalogueTextButton
 import ui.settings.QuietPill
 
 /**
@@ -66,4 +69,25 @@ internal fun JoinHouseholdRoute(join: JoinHouseholdViewModel) {
         Text(HEADING, style = MaterialTheme.typography.headlineSmall)
         JoinHousehold(join, Modifier.padding(top = Spacing.medium))
     }
+}
+
+/**
+ * What stands where the picker's first profile would, or null for the form
+ * itself. Nothing is made before the households are read: with grown-ups
+ * elsewhere the core refuses a first profile, and the device is offered the
+ * other households to join instead, as the web's `joinElsewhere`.
+ */
+internal fun insteadOfFirstProfile(
+    join: JoinHouseholdViewModel,
+    state: JoinUiState,
+): (@Composable () -> Unit)? {
+    if (state.read && !state.joinsElsewhere) return null
+    return { if (state.read) JoinHousehold(join) else HouseholdsUnread(onRetry = join::reread) }
+}
+
+/** The households not read yet, so not whether there is anyone elsewhere: wait, or look again. */
+@Composable
+private fun HouseholdsUnread(onRetry: () -> Unit) {
+    Text(WAITING_FOR_HOUSEHOLD, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.medium))
+    CatalogueTextButton(onClick = onRetry) { Text("Try again") }
 }

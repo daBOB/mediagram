@@ -44,10 +44,11 @@ import ui.profile.ProfileRow
  * The one Profiles page — the web's (`settings-profiles.js`): You — who is
  * watching, the way to switch, their subtitle language — then everyone in the
  * household, then managing them, then, while there is more than one, the
- * household this device shows. A kid sees only You; with nobody [chosen],
- * which is how the picker's Manage profiles opens it, there is no You. Seeing
- * the list needs no PIN; changing anything asks who you are and that
- * grown-up's PIN, held only for the visit ([ui.common.settings.ProfilesVisit]).
+ * household this device shows, then the owner's Households. A kid sees only
+ * You; with nobody [chosen], which is how the picker's Manage profiles opens
+ * it, there is no You. Seeing the list needs no PIN; changing anything asks
+ * who you are and that grown-up's PIN, held only for the visit
+ * ([ui.common.settings.ProfilesVisit]).
  *
  * The web's System link is left out: System is a row of this same index here.
  */
@@ -95,7 +96,7 @@ private fun You(profile: Profile) {
     }
 }
 
-/** Everyone here, then Manage profiles inline, and the PIN it asks for over them, then This device. */
+/** Everyone here, then Manage profiles inline, and the PIN it asks for over them, then This device and Households. */
 @Composable
 private fun Household() {
     val manage: ManageProfilesViewModel = hiltViewModel()
@@ -120,6 +121,7 @@ private fun Household() {
     ManageProfilesScreen(state, actions)
     pin?.let { PinDialog(it, onPin = manage::enterPin, onDismiss = manage::cancelPin) }
     ThisDevice()
+    HouseholdsOwnerBlock()
 }
 
 /**
@@ -132,7 +134,8 @@ private fun ThisDevice() {
     val join: JoinHouseholdViewModel = hiltViewModel()
     val state by join.state.collectAsStateWithLifecycle()
     var switching by rememberSaveable { mutableStateOf(false) }
-    // A second household made on another device changes nobody here, so nothing else would read it.
+    // As the page opens: a household made or renamed on another device changes nobody here, so nothing
+    // else would read it. The owner's part below reads the same list.
     LaunchedEffect(join) { join.reread() }
     if (!state.canSwitch) return
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {

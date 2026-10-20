@@ -61,19 +61,20 @@ internal data class PickerActions(
  * admin. Manage profiles is offered once there is any grown-up who could
  * manage. A tile is pressed through [PickerActions.onPick]: a kid's opens at
  * once, a grown-up's asks its PIN ([ProfileGate] draws [PinDialog]). Renders
- * nothing for [ProfileUiState.Chosen]. [joinElsewhere], when given, stands
- * where the first profile would: no grown-up is left here, but one is elsewhere.
+ * nothing for [ProfileUiState.Chosen]. [insteadOfFirstProfile], when given,
+ * stands where the first profile would: the households are not read yet, or
+ * no grown-up is left here but one is elsewhere ([ProfileGate] decides).
  */
 @Composable
 internal fun ProfilePickerScreen(
     state: ProfileUiState,
     actions: PickerActions,
-    joinElsewhere: (@Composable () -> Unit)? = null,
+    insteadOfFirstProfile: (@Composable () -> Unit)? = null,
 ) {
     when (state) {
         // Between the setup check and the library on every cold start: the same block, so the wait never flashes.
         ProfileUiState.Loading -> LibraryLoading()
-        is ProfileUiState.Picking -> PickerBody(state, actions, joinElsewhere)
+        is ProfileUiState.Picking -> PickerBody(state, actions, insteadOfFirstProfile)
         is ProfileUiState.Chosen -> Unit
     }
 }
@@ -82,7 +83,7 @@ internal fun ProfilePickerScreen(
 private fun PickerBody(
     state: ProfileUiState.Picking,
     actions: PickerActions,
-    joinElsewhere: (@Composable () -> Unit)?,
+    insteadOfFirstProfile: (@Composable () -> Unit)?,
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.large)) {
         Text(HEADING, style = MaterialTheme.typography.headlineSmall)
@@ -105,8 +106,7 @@ private fun PickerBody(
         // A load that just failed is answered by trying again, not by starting a household.
         when {
             state.error != null -> Unit
-            // The core makes no first profile while a grown-up is anywhere on the install.
-            state.needsFirstProfile && joinElsewhere != null -> joinElsewhere()
+            state.needsFirstProfile && insteadOfFirstProfile != null -> insteadOfFirstProfile()
             state.needsFirstProfile -> FirstProfile(actions.onCreateFirst)
             state.needsAdmin -> HouseholdQuestion(state.grownUps, actions.onClaim)
         }

@@ -63,7 +63,7 @@ abstract class ProfilesSettingsHarness {
     lateinit var controller: ActivityController<ComponentActivity>
     lateinit var manage: ManageProfilesViewModel
 
-    /** Stands in for the owner's part, which the visit closes beside Manage. */
+    /** The owner's part, real, which the visit closes beside Manage. */
     lateinit var households: HouseholdsOwnerViewModel
     lateinit var household: WatchStateFixture
 
@@ -92,19 +92,19 @@ abstract class ProfilesSettingsHarness {
         }
     }
 
-    /** Settings at [initial] (the index when null), over [tom], [andre] and [bea] with [pins] and whatever [seed] adds, [chosen] watching. */
+    /** Settings at [initial] (the index when null), over [people] with [pins] and whatever [seed] adds, [chosen] watching. */
     fun open(
         chosen: Profile,
         pins: Map<String, String> = emptyMap(),
         initial: SettingsSection? = null,
+        people: List<Profile> = listOf(tom, andre, bea),
         seed: FakeCore.() -> Unit = {},
     ) {
         compose.runOnUiThread {
-            household = WatchStateFixture(listOf(tom, andre, bea), chosen.id, FakeCore().apply { roles.pins += pins }.apply(seed))
+            household = WatchStateFixture(people, chosen.id, FakeCore().apply { roles.pins += pins }.apply(seed))
             homes = DefaultHouseholdsRepository(household.provider, household.repository, scope, Dispatchers.Unconfined)
             val sync = mockk<WatchSync>(relaxed = true)
             manage = ManageProfilesViewModel(household.repository, sync)
-            households = mockk(relaxed = true)
             // Only the chosen profile matters here; every other model's state is read and left unread.
             val none = MutableStateFlow(null)
             val models =
@@ -118,8 +118,8 @@ abstract class ProfilesSettingsHarness {
                     AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
                     ProfileViewModel::class.java to ProfileViewModel(household.repository, sync),
                     ManageProfilesViewModel::class.java to manage,
-                    HouseholdsOwnerViewModel::class.java to households,
                 ) + householdViewModels(household.repository, homes)
+            households = models.getValue(HouseholdsOwnerViewModel::class.java) as HouseholdsOwnerViewModel
             val provider =
                 ViewModelProvider(
                     store,

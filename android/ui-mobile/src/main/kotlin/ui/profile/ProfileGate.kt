@@ -17,12 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import catalog.profile.DONE
+import catalog.profile.HouseholdsOwnerViewModel
 import catalog.profile.JoinHouseholdViewModel
 import catalog.profile.ManageProfilesViewModel
 import catalog.profile.ManageUiState
 import catalog.profile.ProfileUiState
 import catalog.profile.ProfileViewModel
 import designsystem.Spacing
+import kotlinx.coroutines.flow.merge
 import ui.chrome.ProfileBarState
 import ui.common.profile.ForgetManageWhenAway
 import ui.common.settings.SettingsSection
@@ -45,14 +47,16 @@ import ui.settings.QuietPill
  * PIN, when the library shows again or the app is left ([ForgetManageWhenAway]).
  *
  * Before all of it, a device that has joined no household is asked which
- * ([JoinHouseholdRoute]). Joining one — here, or by Switch household — asks
- * who is watching again once the profile chosen here is left behind.
+ * ([JoinHouseholdRoute]). Joining one — here, by Switch household, or by the
+ * owner's Use on this device — asks who is watching again once the profile
+ * chosen here is left behind.
  */
 @Composable
 internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val manage: ManageProfilesViewModel = hiltViewModel()
     val join: JoinHouseholdViewModel = hiltViewModel()
+    val owners: HouseholdsOwnerViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val managing by manage.state.collectAsStateWithLifecycle()
     val joining by join.state.collectAsStateWithLifecycle()
@@ -61,8 +65,8 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
     ForgetManageWhenAway(showsLibrary = chosen != null, picker = viewModel, manage = manage)
     // Here, not on the page that switched: that page leaves with the chosen profile
     // before the join has said so, and a chosen profile no longer here reads as loading.
-    LaunchedEffect(join) {
-        join.joined.collect { kept ->
+    LaunchedEffect(join, owners) {
+        merge(join.joined, owners.joined).collect { kept ->
             if (!kept) {
                 manage.close()
                 viewModel.reopen()
@@ -81,7 +85,7 @@ internal fun ProfileGate(content: @Composable (ProfileBarState) -> Unit) {
                 content(ProfileBarState(name = chosen.profile.name, onChoose = viewModel::reopen))
             }
         managing != ManageUiState.Closed -> ProfilesOverPicker(onDone = manage::close)
-        else -> PickerRoute(viewModel, state, onManage = manage::open, joinElsewhere = if (joining.joinsElsewhere) ({ JoinHousehold(join) }) else null)
+        else -> PickerRoute(viewModel, state, onManage = manage::open, insteadOfFirstProfile = insteadOfFirstProfile(join, joining))
     }
     // Over whatever shows, for the same reason: Switch household's page is gone before its join is read again.
     joinPin?.let { PinDialog(it, onPin = join::enterPin, onDismiss = join::cancelPin) }
@@ -92,7 +96,7 @@ private fun PickerRoute(
     viewModel: ProfileViewModel,
     state: ProfileUiState,
     onManage: () -> Unit,
-    joinElsewhere: (@Composable () -> Unit)?,
+    insteadOfFirstProfile: (@Composable () -> Unit)?,
 ) {
     val pin by viewModel.pin.collectAsStateWithLifecycle()
     val actions =
@@ -105,7 +109,7 @@ private fun PickerRoute(
     // nobody to return to, and Back there leaves as it always did. The PIN
     // dialog is a window of its own, so its Back cancels the PIN first.
     BackHandler(enabled = (state as? ProfileUiState.Picking)?.canStay == true, onBack = viewModel::stay)
-    ProfilePickerScreen(state, actions, joinElsewhere)
+    ProfilePickerScreen(state, actions, insteadOfFirstProfile)
     pin?.let { PinDialog(it, onPin = viewModel::enterPin, onDismiss = viewModel::cancelPin) }
 }
 
