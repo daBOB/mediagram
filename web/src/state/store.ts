@@ -27,6 +27,7 @@ import { cleanName, deleteProfileById, listProfiles, profileExists, type Profile
 import { findOrCreateProfile, insertProfile } from "./profiles-insert";
 import { listHouseholds, type Household as LiveHousehold } from "./households";
 import { exportRoles, importRoles } from "./roles-exchange";
+import { exportHouseholds, importHouseholds } from "./households-exchange";
 import { ProfileAccess } from "./profiles-access";
 import { PinWait } from "./profiles-wait";
 import { Household } from "./household-heard";
@@ -361,6 +362,7 @@ export class WatchState {
    */
   exportRecord(device: string): SyncRecord {
     const roles = exportRoles(this.db);
+    const households = exportHouseholds(this.db);
     const profiles = this.profiles().map((profile) => {
       const { watched, unwatched } = exportWatched(this.db, profile.id);
       return {
@@ -379,6 +381,7 @@ export class WatchState {
     return { format: SYNC_FORMAT, device, writtenAt: Date.now(), profiles,
       kids: exportTitleMarks(this.db, "kids"),
       editorsChoice: exportTitleMarks(this.db, "editors_choice"),
+      ...(households.length > 0 ? { households } : {}),
     };
   }
 
@@ -432,6 +435,7 @@ export class WatchState {
       // After the loop, not in it: a kid's parent may be a viewer this same
       // import has only just made.
       changed += importRoles(db, merged.profiles);
+      changed += importHouseholds(db, merged.households ?? []);
       return changed;
     })();
   }

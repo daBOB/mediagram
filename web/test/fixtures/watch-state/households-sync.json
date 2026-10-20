@@ -675,6 +675,209 @@
           }
         ]
       }
+    },
+    {
+      "name": "a profile in a household removed on another device keeps that household on the record",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "name": {
+                "text": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": [
+            {
+              "name": "Oma",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "b",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "removed": true
+            }
+          ],
+          "profiles": [
+            {
+              "name": "Oma",
+              "progress": [],
+              "watched": []
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "name": {
+              "text": "Oma",
+              "updatedAt": 1000
+            },
+            "removed": true
+          }
+        ],
+        "profiles": [
+          {
+            "name": "oma",
+            "household": {
+              "id": "b",
+              "updatedAt": 1000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a new admin at the same moment: the larger device id wins",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "admin": {
+                "name": "Oma",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "households": [
+            {
+              "id": "b",
+              "admin": {
+                "name": "Opa",
+                "updatedAt": 1000
+              }
+            }
+          ],
+          "profiles": []
+        }
+      ],
+      "expect": {
+        "households": [
+          {
+            "id": "b",
+            "admin": {
+              "name": "opa",
+              "updatedAt": 1000
+            }
+          }
+        ],
+        "profiles": []
+      }
+    },
+    {
+      "name": "a profile moved later on the smaller device id: the newer move wins, not the device",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "b",
+                "updatedAt": 2000
+              }
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": [],
+              "household": {
+                "id": "home",
+                "updatedAt": 1000
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [],
+        "profiles": [
+          {
+            "name": "mia",
+            "household": {
+              "id": "b",
+              "updatedAt": 2000
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "devices that say nothing about households merge to nothing about them",
+      "records": [
+        {
+          "format": 1,
+          "device": "laptop",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": []
+            }
+          ]
+        },
+        {
+          "format": 1,
+          "device": "tv",
+          "writtenAt": 0,
+          "profiles": [
+            {
+              "name": "Mia",
+              "progress": [],
+              "watched": []
+            },
+            {
+              "name": "Oma",
+              "progress": [],
+              "watched": []
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "households": [],
+        "profiles": []
+      }
     }
   ]
 }

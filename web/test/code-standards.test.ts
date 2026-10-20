@@ -90,6 +90,9 @@ const ROOT = join(import.meta.dir, "..");
  * Raised 2026-10-20 for `src/state/store.ts`, by 7, to list the households and to import
  * making a profile from `profiles-insert.ts`, which it left `profiles.ts` for; and
  * `src/state/profiles-manage.ts`, by 1, for that same import.
+ * Raised the same day for `src/state/store.ts`, by 4, to write and take in the
+ * households on the sync record, and `src/state/sync-record.ts`, by 4, to read
+ * them — each the import, the key and the line that fills it.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 705,
@@ -118,8 +121,8 @@ const CEILINGS: Record<string, number> = {
   "src/state/routes.ts": 209,
   "src/state/profiles-manage.ts": 213,
   "src/state/schema.ts": 245,
-  "src/state/store.ts": 736,
-  "src/state/sync-record.ts": 293,
+  "src/state/store.ts": 740,
+  "src/state/sync-record.ts": 297,
   "src/transcode/registry.ts": 338,
 };
 

@@ -15,6 +15,7 @@
  * 2^53 − 1 bound every synced row's do.
  */
 
+import { householdIdOf } from "./households-record";
 import { isStamp, numberFromScalar, objectRow, text_ } from "./record-scalars";
 
 /** The keys of a profile's entry that say who it is, not what it watched. */
@@ -46,6 +47,10 @@ export interface RoleKeys {
    * grown-up's too; an empty list is said, not absent, so it beats an older
    * one. Keys this build does not know are kept for a build that does. */
   hiddenSections?: { sections: string[]; updatedAt: number };
+  /** The household this profile is in, as its record says, and when it was
+   * last moved — any profile's. Never written undated: a profile nobody
+   * moved says nothing, and is in Home. */
+  household?: { id: string; updatedAt: number };
 }
 
 const HASH = /^[0-9a-f]{64}$/;
@@ -104,5 +109,10 @@ export function parseRoleKeys(row: Record<string, unknown>): RoleKeys {
   const sections = hiddenSectionsOf(hidden?.sections);
   const hiddenAt = numberFromScalar(hidden?.updatedAt);
   if (sections !== null && (hiddenAt === 0 || isStamp(hiddenAt))) keys.hiddenSections = { sections, updatedAt: hiddenAt };
+
+  const household = objectRow(row.household);
+  const householdId = householdIdOf(household?.id);
+  const householdAt = numberFromScalar(household?.updatedAt);
+  if (householdId !== null && isStamp(householdAt)) keys.household = { id: householdId, updatedAt: householdAt };
   return keys;
 }
