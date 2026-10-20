@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.128.2 — speech in 5.1 titles no longer sounds under water on tablet speakers
+
+**Fixed** (Android phone and tablet)
+
+- **5.1 AAC titles played with muffled dialogue** on a tablet's own speakers (seen on a Xiaomi Pad 5 Pro, MIUI 14): since Android 12L the player let the AAC decoder output all six channels for a spatializer, and with none present MIUI sent the six channels straight to the speakers, where the centre channel — the speech — came out wrong. Where the output cannot render surround itself (built-in speakers, headphones, Bluetooth), the decoder now downmixes to stereo; a TV keeps 5.1. Checked on the tablet: the track is stereo and the speech is clear.
+- Not yet covered: DTS and TrueHD titles, which FFmpeg decodes, still reach the output as six channels; a speaker downmix there is a follow-up. The choice is made when a title starts, so a route change mid-title takes effect from the next one.
+
 ## 0.128.1 — Profiles in TV Settings
 
 **Added** (Android TV)
