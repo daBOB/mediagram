@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import data.HouseholdsRepository
 import data.WatchStateRepository
 import data.orDefault
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -96,7 +97,7 @@ class JoinHouseholdViewModel
                 PinPrompt(joinPinTitle(admin), newPin = false),
                 send = { pin ->
                     repository.manage(JoinHousehold(id, pin)).also {
-                        if (it == ProfileOutcome.Done) kept = households.rereadAfterJoin(repository)
+                        if (it == ProfileOutcome.Done) kept = households.rereadAfterJoin(repository) { stillHere.tryEmit(false) }
                     }
                 },
                 done = { stillHere.tryEmit(kept) },
@@ -127,12 +128,23 @@ private fun joinState(
 
 /**
  * After a join that took: who is here, then the households, read again, and
- * whether the profile chosen here still is. A read that fails throws.
+ * whether the profile chosen here still is. A read that fails throws; once
+ * who is here was read, a chosen profile left behind is first told to
+ * [leftBehind], so the picker shows whether or not the households read.
  */
-internal suspend fun HouseholdsRepository.rereadAfterJoin(watchState: WatchStateRepository): Boolean {
+internal suspend fun HouseholdsRepository.rereadAfterJoin(
+    watchState: WatchStateRepository,
+    leftBehind: () -> Unit,
+): Boolean {
     watchState.reload()
-    reload()
-    return watchState.chosenProfileId.value != null
+    val kept = watchState.chosenProfileId.value != null
+    try {
+        reload()
+    } catch (e: Exception) {
+        if (!kept && e !is CancellationException) leftBehind()
+        throw e
+    }
+    return kept
 }
 
 /** The households read again; a read that fails keeps what is shown, as a change that took has nothing to undo. */
