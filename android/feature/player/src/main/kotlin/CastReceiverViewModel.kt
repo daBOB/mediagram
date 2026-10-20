@@ -21,12 +21,15 @@ import kotlinx.coroutines.launch
 import model.DailyLimitState
 import model.dailyLimitState
 import model.forKidsProfile
+import model.hiddenFrom
+import model.sectionKey
 import model.together.CastState
 import model.together.CastWords
 import model.together.TvAnswer
 import model.together.TvState
 import model.together.ageReason
 import model.together.answerOf
+import model.together.sectionReason
 import model.together.timeReason
 import java.util.UUID
 import javax.inject.Inject
@@ -106,6 +109,8 @@ class CastReceiverViewModel @Inject constructor(
         // The player plays as the caster only when it finds them in this same list.
         val profile = repository.profiles.value.find { it.id == profileId } ?: return CastWords.PROFILE_UNKNOWN
         val media = catalog.mediaSet(set) ?: return CastWords.LIBRARY_MISSING
+        // A stale tab or a hand-made request can ask for what the caster's own catalog hides.
+        if (media.sectionKey() in profile.hiddenFrom) return sectionReason(profile.name)
         if (!profile.kids) return null
         val marks = repository.snapshotOf(profileId)?.kidsMarks.orEmpty()
         if (forKidsProfile(listOf(media), marks, profile.kidsLimit).isEmpty()) return ageReason(profile.name)

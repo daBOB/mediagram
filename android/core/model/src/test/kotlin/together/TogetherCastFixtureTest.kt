@@ -53,6 +53,7 @@ class TogetherCastFixtureTest {
                 "barLine" to ::barLine,
                 "ageReason" to ::ageReason,
                 "timeReason" to ::timeReason,
+                "sectionReason" to ::sectionReason,
                 "noAnswerIn" to ::noAnswerIn,
             )
         for (case in words.getValue("lines").jsonArray.map { it.jsonObject }) {

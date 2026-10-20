@@ -29,6 +29,7 @@ export const castFrom = (from) => `Cast from ${from}`;
 export const barLine = (title) => `Playing on TV · ${title}`;
 export const ageReason = (name) => `it's rated above ${name}'s age limit`;
 export const timeReason = (name) => `${name}'s time is up for today`;
+export const sectionReason = (name) => `it's in a section hidden from ${name}`;
 
 /** The notice for a cast's edit: the TV did it "on TV", and its own joining and leaving is no news. */
 export function sayOnRemote(noticed, session) {

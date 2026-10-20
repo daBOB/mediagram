@@ -12,7 +12,7 @@ import {
   type TvAnswer,
 } from "../public/lib/together/cast.js";
 import {
-  ageReason, barLine, busyQuestion, CAST_WORDS, castFrom, noAnswerIn, refusedLine, sayOnRemote, timeReason,
+  ageReason, barLine, busyQuestion, CAST_WORDS, castFrom, noAnswerIn, refusedLine, sayOnRemote, sectionReason, timeReason,
 } from "../public/lib/together/cast-words.js";
 import { parseSession, writeSession, type Session } from "../public/lib/together/session.js";
 
@@ -26,7 +26,7 @@ const roundTrips = (s: Session | null) => {
 describe("cast words", () => {
   test("the words are the fixture's", () => expect(CAST_WORDS).toEqual(cast.words.object));
   const formats: Record<string, (arg: string) => string> = {
-    busyQuestion, refusedLine, castFrom, barLine, ageReason, timeReason, noAnswerIn,
+    busyQuestion, refusedLine, castFrom, barLine, ageReason, timeReason, sectionReason, noAnswerIn,
   };
   for (const one of cast.words.lines) {
     test(one.name, () => expect(formats[one.fn]!(one.arg)).toBe(one.expect));

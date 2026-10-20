@@ -53,6 +53,12 @@
     "expect": "Mia's time is up for today"
    },
    {
+    "name": "section reason",
+    "fn": "sectionReason",
+    "arg": "Ben",
+    "expect": "it's in a section hidden from Ben"
+   },
+   {
     "name": "no answer from a TV in this household",
     "fn": "noAnswerIn",
     "arg": "Home",

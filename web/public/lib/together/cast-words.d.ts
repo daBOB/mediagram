@@ -23,6 +23,7 @@ export function castFrom(from: string): string;
 export function barLine(title: string): string;
 export function ageReason(name: string): string;
 export function timeReason(name: string): string;
+export function sectionReason(name: string): string;
 
 /** `say` for a cast, or `null` for the TV's own joining and leaving. */
 export function sayOnRemote(noticed: { change: string; label: string | null }, session: Session): string | null;

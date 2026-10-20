@@ -35,3 +35,5 @@ fun barLine(title: String) = "Playing on TV · $title"
 fun ageReason(name: String) = "it's rated above $name's age limit"
 
 fun timeReason(name: String) = "$name's time is up for today"
+
+fun sectionReason(name: String) = "it's in a section hidden from $name"
