@@ -60,8 +60,8 @@ import ui.tv.profile.TvManageScreen
  * [entryFocusRequester] is the page's first stop — who is watching, or with
  * nobody chosen the list — drawn whatever has loaded, so the page always has
  * somewhere to be entered. [returningFrom] lands on the row that opened that
- * panel instead: back from it, or over the picker, whose own Manage profiles
- * button opened the page.
+ * panel instead — on Manage profiles where that row has gone meanwhile: back
+ * from it, or over the picker, whose own Manage profiles button opened the page.
  */
 @Composable
 internal fun TvProfilesPage(
@@ -75,14 +75,12 @@ internal fun TvProfilesPage(
     val list = remember { FocusRequester() }
     // Keyed on focusInContent alone, as Telegram's is: the hub forgets the
     // panel it came back from right after, which must not land a second time.
-    LaunchedEffect(focusInContent) {
-        val row = rows[returningFrom]
-        if (row != null) row.requestFocus() else if (focusInContent) entryFocusRequester.requestFocus()
-    }
+    // Back on one of Household's rows is Household's to land: it knows which are drawn.
+    LaunchedEffect(focusInContent) { if (returningFrom !in rows && focusInContent) entryFocusRequester.requestFocus() }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.large)) {
         chosen?.let { You(it, entryFocusRequester) }
         // A kid manages nothing, so is shown nobody else either.
-        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, chosen?.owner == true, rows, onOpen)
+        if (chosen?.kids != true) Household(if (chosen == null) entryFocusRequester else list, chosen?.owner == true, rows, returningFrom, onOpen)
     }
 }
 
@@ -141,6 +139,7 @@ private fun Household(
     list: FocusRequester,
     asOwner: Boolean,
     rows: Map<TvSettingsPanel, FocusRequester>,
+    returningFrom: TvSettingsPanel?,
     onOpen: (TvSettingsPanel) -> Unit,
 ) {
     val profiles by hiltViewModel<ManageProfilesViewModel>().profiles.collectAsStateWithLifecycle()
@@ -151,6 +150,8 @@ private fun Household(
     LaunchedEffect(households) { households.reread() }
     val ownerRow = asOwner || part is HouseholdsOwnerUiState.Open || (part as? HouseholdsOwnerUiState.Closed)?.canOpen == true
     val shown = setOfNotNull(TvSettingsPanel.Join.takeIf { join.canSwitch }, TvSettingsPanel.Households.takeIf { ownerRow })
+    // Once, as the page shows: This device, say, is gone once one household is left, so Manage profiles holds the remote instead.
+    LaunchedEffect(Unit) { if (returningFrom in rows) rows.getValue(returningFrom.takeIf { it in shown } ?: TvSettingsPanel.Profiles).requestFocus() }
     // Which of the rows that can go holds the remote. Its going hands the
     // remote to Manage profiles rather than nothing; a row only stops holding
     // it by focus moving on while it is still shown.

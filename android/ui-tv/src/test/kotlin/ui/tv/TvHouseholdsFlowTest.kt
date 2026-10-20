@@ -20,6 +20,19 @@ import testing.FakeCore
 import kotlin.test.assertEquals
 import uniffi.mediagram_core.Profile as CoreProfile
 
+/** andre, the owner, runs Home with Bo; Dan runs Flat and has no PIN; this box shows [joined]. */
+internal fun twoHouseholds(joined: String? = HOME_HOUSEHOLD): FakeCore.() -> Unit =
+    {
+        profiles =
+            listOf(
+                CoreProfile("a", "andre", admin = true, owner = true),
+                CoreProfile("b", "Bo"),
+                CoreProfile("d", "Dan", admin = true, household = "flat"),
+            )
+        homes.names["flat"] = "Flat"
+        homes.joined = joined
+    }
+
 /**
  * Joining and switching household, and the owner's Households, by remote alone ([TvProfilesHarness]):
  * andre, the owner, runs Home with Bo; Dan runs Flat and has no PIN, so the
@@ -28,18 +41,6 @@ import uniffi.mediagram_core.Profile as CoreProfile
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvHouseholdsFlowTest : TvProfilesHarness() {
-    private fun households(joined: String? = HOME_HOUSEHOLD): FakeCore.() -> Unit =
-        {
-            profiles =
-                listOf(
-                    CoreProfile("a", "andre", admin = true, owner = true),
-                    CoreProfile("b", "Bo"),
-                    CoreProfile("d", "Dan", admin = true, household = "flat"),
-                )
-            homes.names["flat"] = "Flat"
-            homes.joined = joined
-        }
-
     /** Who's watching, once the household joined has been read again. */
     private fun awaitPicker() = compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText("Who's watching?")).fetchSemanticsNodes().isNotEmpty() }
 
@@ -55,7 +56,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
     /** Nothing but Join a household until one is joined; then that household's picker. */
     @Test
     fun aBoxWithTwoHouseholdsAndNoneJoinedAsksWhichToJoin() {
-        launch(emptyList(), chosen = null, ready = HouseholdWords.JOIN_A_HOUSEHOLD, seed = households(joined = null))
+        launch(emptyList(), chosen = null, ready = HouseholdWords.JOIN_A_HOUSEHOLD, seed = twoHouseholds(joined = null))
         compose.onAllNodesWithText("Who's watching?").assertCountEquals(0)
         compose.onNode(rowOf("Flat")).assertIsFocused()
         press(Key.DirectionCenter)
@@ -100,7 +101,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
     /** This device leaves the profile chosen here behind: the picker shows the other household's profiles. */
     @Test
     fun switchingFromSettingsShowsTheOtherHouseholdsPicker() {
-        launch(emptyList(), chosen = "a", seed = households())
+        launch(emptyList(), chosen = "a", seed = twoHouseholds())
         switchFromSettings()
         compose.onNode(rowOf("Flat")).assertIsFocused()
         compose.onAllNodes(rowOf("Home")).assertCountEquals(0)
@@ -114,7 +115,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
 
     @Test
     fun backFromTheJoinPanelReturnsToTheRow() {
-        launch(emptyList(), chosen = "a", seed = households())
+        launch(emptyList(), chosen = "a", seed = twoHouseholds())
         switchFromSettings()
         back()
         compose.onNode(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertIsFocused()
@@ -123,7 +124,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
     /** The owner watching opens Households with no PIN; the first change asks it, and the remote is back on the household. */
     @Test
     fun theOwnerMovesAGrownUpWithTheRemote() {
-        launch(emptyList(), chosen = "a", seed = households())
+        launch(emptyList(), chosen = "a", seed = twoHouseholds())
         openSettingsAt(rowOf("Profiles"))
         press(Key.DirectionCenter)
         walkTo(rowOf(HouseholdWords.HOUSEHOLDS), Key.DirectionDown)
@@ -145,7 +146,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
     /** Leaving the owner's panel drops their PIN: the Owner row asks it again. */
     @Test
     fun leavingTheOwnersPanelForgetsThePin() {
-        launch(emptyList(), chosen = "b", seed = households())
+        launch(emptyList(), chosen = "b", seed = twoHouseholds())
         openSettingsAt(rowOf("Profiles"))
         press(Key.DirectionCenter)
         walkTo(rowOf(HouseholdWords.OWNER), Key.DirectionDown)
@@ -162,7 +163,7 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
     /** The This device row going — the other household deleted elsewhere — hands the remote to Manage profiles, not to nothing. */
     @Test
     fun aRowThatGoesHandsTheRemoteToManageProfiles() {
-        launch(emptyList(), chosen = "a", seed = households())
+        launch(emptyList(), chosen = "a", seed = twoHouseholds())
         openSettingsAt(rowOf("Profiles"))
         press(Key.DirectionCenter)
         walkTo(rowOf("${HouseholdWords.THIS_DEVICE} · Home"), Key.DirectionDown)
@@ -171,6 +172,21 @@ class TvHouseholdsFlowTest : TvProfilesHarness() {
             ViewModelProvider(fixture)[JoinHouseholdViewModel::class.java].reread()
         }
         compose.waitForIdle()
+        compose.onAllNodes(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertCountEquals(0)
+        compose.onNode(rowOf("Manage profiles")).assertIsFocused()
+    }
+
+    /** Back from Switch household once only one household is left: no This device row to land on, so Manage profiles. */
+    @Test
+    fun backToARowThatWentMeanwhileLandsOnManageProfiles() {
+        launch(emptyList(), chosen = "a", seed = twoHouseholds())
+        switchFromSettings()
+        compose.runOnUiThread {
+            fixture.core.homes.names.remove("flat")
+            ViewModelProvider(fixture)[JoinHouseholdViewModel::class.java].reread()
+        }
+        compose.waitForIdle()
+        back()
         compose.onAllNodes(rowOf("${HouseholdWords.THIS_DEVICE} · Home")).assertCountEquals(0)
         compose.onNode(rowOf("Manage profiles")).assertIsFocused()
     }
