@@ -40,7 +40,7 @@ internal class TogetherSessions(
     val shown = MutableStateFlow<LiveSession?>(null)
 
     /** [TogetherLive.requests]. */
-    val requests = MutableStateFlow<LiveSession?>(null)
+    val requests = MutableStateFlow<List<LiveSession>>(emptyList())
 
     /** [TogetherLive.ended]. */
     val ended = MutableStateFlow<LiveSession?>(null)
@@ -117,8 +117,8 @@ internal class TogetherSessions(
      * over. Another session heard while a screen here is in the one shown
      * does not take its place, as it does not in a web tab: that screen
      * follows its own until a read answers the newest. A cast request is
-     * told to [requests] alone: the newest one wins, and it is cleared when
-     * its own id is over.
+     * told to [requests] alone: the newest of its household wins, and it is
+     * cleared when its own id is over.
      */
     private fun tell(
         id: Int,
@@ -126,10 +126,10 @@ internal class TogetherSessions(
     ): Session? {
         val session = sender.view(id)?.takeUnless { it.ended }
         if (session != null && isRequest(session)) {
-            if (id >= (requests.value?.id ?: id)) requests.value = LiveSession(id, session, lost)
+            hold(LiveSession(id, session, lost))
             return session
         }
-        if (requests.value?.id == id) requests.value = null
+        drop(id)
         val current = shown.value
         shown.value =
             when {
@@ -142,4 +142,17 @@ internal class TogetherSessions(
     }
 
     private fun mine(session: Session): Boolean = session.members.any { it.screen in local }
+
+    /** [request] in place of its household's held one, unless that is newer: another household's never hides it. */
+    fun hold(request: LiveSession) {
+        val household = request.session.cast?.household
+        val held = requests.value
+        if (held.any { it.id > request.id && it.session.cast?.household == household }) return
+        requests.value = held.filter { it.id != request.id && it.session.cast?.household != household } + request
+    }
+
+    /** Request [id] is over, or no longer one. */
+    fun drop(id: Int) {
+        if (requests.value.any { it.id == id }) requests.value = requests.value.filter { it.id != id }
+    }
 }

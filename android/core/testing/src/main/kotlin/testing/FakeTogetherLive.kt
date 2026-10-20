@@ -29,7 +29,7 @@ class FakeTogetherLive(
     available: Boolean = true,
 ) : TogetherLive {
     override val live = MutableStateFlow(live)
-    override val requests = MutableStateFlow<LiveSession?>(null)
+    override val requests = MutableStateFlow<List<LiveSession>>(emptyList())
     override val available = MutableStateFlow(available)
 
     var refreshCount = 0

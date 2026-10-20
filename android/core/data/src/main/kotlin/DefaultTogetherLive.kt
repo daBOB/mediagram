@@ -76,7 +76,7 @@ class DefaultTogetherLive(
     private val joinNext = AtomicReference<Int?>(null)
     private val casting = TogetherCasting(channel, sessions, reads, work, now)
     override val live: StateFlow<LiveSession?> = sessions.shown.asStateFlow()
-    override val requests: StateFlow<LiveSession?> = sessions.requests.asStateFlow()
+    override val requests: StateFlow<List<LiveSession>> = sessions.requests.asStateFlow()
     override val available: StateFlow<Boolean> = sessions.reachable.asStateFlow()
     override val ended: StateFlow<LiveSession?> = sessions.ended.asStateFlow()
 

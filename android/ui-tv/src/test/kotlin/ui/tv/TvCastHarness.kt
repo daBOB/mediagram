@@ -85,7 +85,7 @@ abstract class TvCastHarness {
     ) {
         val offer = offered("s-$set", tablet, Playback(set, playing = false, pos = 0.0, rate = 1.0), profile, "home", System.currentTimeMillis())
         val asked = if (replace) offer.copy(cast = offer.cast?.copy(state = CastState.REPLACE)) else offer
-        compose.runOnUiThread { fixture.casts.fake.requests.value = LiveSession(requests++, asked) }
+        compose.runOnUiThread { fixture.casts.fake.requests.value = listOf(LiveSession(requests++, asked)) }
         compose.waitForIdle()
     }
 

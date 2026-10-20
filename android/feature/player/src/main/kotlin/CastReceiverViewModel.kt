@@ -59,7 +59,7 @@ class CastReceiverViewModel @Inject constructor(
     val opening: StateFlow<CastOpen?> =
         flow {
             coroutineScope {
-                launch { live.requests.collect { it?.let { request -> answer(request) } } }
+                launch { live.requests.collect { it.forEach { request -> answer(request) } } }
                 accepted.collect { emit(it) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

@@ -55,7 +55,7 @@ internal class TogetherReads(
         val sets = found.values.mapNotNull { it?.set } + known.keys.mapNotNull { sessions.view(it)?.set }
         val lengths = sets.toSet().associateWith { lengthOf(it) }
         var newest: LiveSession? = null
-        var newestRequest: LiveSession? = null
+        val requests = mutableListOf<LiveSession>()
         for (id in found.keys + known.keys.filter { known[it] !== before[it] }) {
             val pending = sessions.pending(id)
             val session =
@@ -75,13 +75,14 @@ internal class TogetherReads(
             }
             if (!pending) known[id] = session
             if (isRequest(session)) {
-                if (newestRequest == null || id > newestRequest.id) newestRequest = LiveSession(id, session)
+                requests += LiveSession(id, session)
             } else if (newest == null || id > newest.id) {
                 newest = LiveSession(id, session)
             }
         }
         // A held request that now reads as anything else (accepted) is no longer one.
-        sessions.requests.value = newestRequest ?: sessions.requests.value?.takeIf { sessions.view(it.id)?.let(::isRequest) == true }
+        sessions.requests.value.filter { sessions.view(it.id)?.let(::isRequest) != true }.forEach { sessions.drop(it.id) }
+        requests.forEach(sessions::hold)
         return newest
     }
 
@@ -126,7 +127,7 @@ internal class TogetherReads(
      */
     private suspend fun recheck() {
         if (sessions.sender.busy) return
-        dropStaleRequest()
+        dropStaleRequests()
         for ((id, session) in sessions.known.toList()) {
             if (sessions.pending(id) || session.members.none { it.screen in sessions.local }) continue
             val text =
@@ -147,8 +148,11 @@ internal class TogetherReads(
     }
 
     /** A request nobody answered goes a minute after it was made; whoever reads it deletes it. */
-    private suspend fun dropStaleRequest() {
-        val request = sessions.requests.value ?: return
+    private suspend fun dropStaleRequests() {
+        for (request in sessions.requests.value) dropStale(request)
+    }
+
+    private suspend fun dropStale(request: LiveSession) {
         if (isLive(request.session, null, now())) return
         // The copy held may predate an accept this device missed: only what the channel holds now is deleted.
         val read =
@@ -160,7 +164,7 @@ internal class TogetherReads(
                 return
             }
         val live = read != null && isLive(read, lengthOf(read.set), now())
-        if (sessions.requests.value !== request || sessions.pending(request.id)) return
+        if (sessions.requests.value.none { it === request } || sessions.pending(request.id)) return
         if (read == null) {
             sessions.forget(request.id)
         } else if (isRequest(read) && !live) {

@@ -53,12 +53,13 @@ interface TogetherLive : TogetherCasts {
     val live: StateFlow<LiveSession?>
 
     /**
-     * The newest live cast request (a session whose cast is not `ON`), or
-     * `null`. It sits beside [live] and never replaces or clears it, so an
-     * offer cannot push anyone out of a running session. Collecting it
-     * listens, as collecting [live] does.
+     * The newest live cast request (a session whose cast is not `ON`) of
+     * each household, so another household's offer never hides this one's.
+     * It sits beside [live] and never replaces or clears it, so an offer
+     * cannot push anyone out of a running session. Collecting it listens, as
+     * collecting [live] does.
      */
-    val requests: StateFlow<LiveSession?>
+    val requests: StateFlow<List<LiveSession>>
 
     /** False while Telegram can't be reached, nobody is signed in, or the last read or edit failed. */
     val available: StateFlow<Boolean>

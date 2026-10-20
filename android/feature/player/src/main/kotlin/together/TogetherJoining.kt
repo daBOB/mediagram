@@ -85,7 +85,7 @@ internal fun TogetherController.takeCast(cast: ArmedCast): Playback {
     castEnded.value = false // the session left for this one was not this cast
     playAtFrame = cast.playing
     framed = false
-    val offer = live.requests.value?.takeIf { it.id == cast.id }?.session
+    val offer = live.requests.value.find { it.id == cast.id }?.session
     scope.launch { accept(cast) }
     return Playback(cast.set, playing = false, pos = offer?.let { expectedPosition(it, now()) } ?: 0.0, rate = offer?.rate ?: 1.0)
 }

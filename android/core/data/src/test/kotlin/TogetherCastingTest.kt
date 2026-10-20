@@ -16,7 +16,6 @@ import model.together.busied
 import model.together.refusedBy
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The fake core's first message id: where an offer lands. */
@@ -117,7 +116,7 @@ class TogetherCastingTest {
 
             assertEquals(CastAnswer(Answer.NONE, null, ""), offer.await())
             assertEquals(listOf(OFFER), h.core.togetherDeletes)
-            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.live.requests.value)
         }
 
     @Test
@@ -130,7 +129,7 @@ class TogetherCastingTest {
 
             assertEquals(Answer.NONE, offer.await().answer)
             assertEquals(listOf(OFFER), h.core.togetherDeletes)
-            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.live.requests.value)
         }
 
     @Test
@@ -146,7 +145,7 @@ class TogetherCastingTest {
 
             assertTrue(offer.isCompleted, "heard while sending, not read at the deadline")
             assertEquals(Answer.ON, offer.await().answer)
-            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.live.requests.value)
             assertEquals(CastState.ON, h.live.act(OFFER, B.screen, PlaybackChange(playing = true))?.cast?.state)
         }
 
@@ -193,6 +192,6 @@ class TogetherCastingTest {
             runCurrent()
 
             assertEquals(listOf(OFFER), h.core.togetherDeletes)
-            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.live.requests.value)
         }
 }

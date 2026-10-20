@@ -59,7 +59,7 @@ class CastReceiverViewModelTest {
     ) = offered("s-cast", tablet, Playback(set, true, pos = 30.0, rate = 1.0), profile, HOME_HOUSEHOLD, System.currentTimeMillis())
 
     private fun hear(s: model.together.Session) {
-        live.requests.value = LiveSession(11, s)
+        live.requests.value = listOf(LiveSession(11, s))
     }
 
     @Test
@@ -137,7 +137,7 @@ class CastReceiverViewModelTest {
         val offer = request()
         hear(offer)
         hear(offer.copy())
-        live.requests.value = LiveSession(11, offer.copy())
+        live.requests.value = listOf(LiveSession(11, offer.copy()))
         assertEquals(1, live.casts.size)
     }
 

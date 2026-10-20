@@ -4,7 +4,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
 
 /** A cast move that can't reach Telegram throws, so the screen can say so, and leaves nothing behind. */
 class TogetherCastingUnreachableTest {
@@ -21,7 +20,7 @@ class TogetherCastingUnreachableTest {
             assertEquals(unreachable.message, thrown.message)
             assertEquals(emptyList(), h.core.togetherDeletes)
             assertEquals(emptyMap(), h.core.togetherMessages)
-            assertNull(h.live.requests.value)
+            assertEquals(emptyList(), h.live.requests.value)
         }
 
     @Test
