@@ -15,6 +15,7 @@ import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
@@ -311,17 +312,70 @@ class TvProfilesFlowTest {
         compose.onNodeWithText("Who's watching?").assertExists()
     }
 
+    /** Settings › Profiles for a grown-up: its index row says how many are here, its page lists them all before anyone says who they are. */
+    @Test
+    fun aGrownUpSeesProfilesInTvSettings() {
+        launch(listOf(andre, bo, cy), chosen = "b")
+        openSettingsAt(rowOf("Profiles"))
+        compose.onNodeWithText("3 profiles").assertExists()
+        compose.onNodeWithText("Everyone here").assertExists()
+        compose.onNodeWithText("Admin · PIN set").assertExists()
+        compose.onNodeWithText("Grown-up · PIN set").assertExists()
+        compose.onNodeWithText("Kid · Bo · FSK 6").assertExists()
+    }
+
+    @Test
+    fun aKidSeesNoProfilesSection() {
+        launch(listOf(andre, bo, cy), chosen = "c", ready = "Nothing rated FSK 6 or under yet.")
+        openSettingsAt(rowOf("Profile"))
+        compose.onAllNodes(rowOf("Profiles")).assertCountEquals(0)
+        press(Key.DirectionDown)
+        compose.onNode(rowOf("System")).assertIsFocused()
+    }
+
+    @Test
+    fun theRemoteReachesManageFromTheSection() {
+        launch(listOf(andre, bo, cy), chosen = "b")
+        manageFromSettingsAsBo()
+        compose.onNode(rowOf("Cy · FSK 6 · No limit")).assertIsFocused()
+    }
+
+    /** Back out of Manage is the end of the visit: the remote is on the row that opened it, and the PIN given is gone. */
+    @Test
+    fun leavingManageForSettingsForgetsThePin() {
+        launch(listOf(andre, bo, cy), chosen = "b")
+        manageFromSettingsAsBo()
+
+        back()
+        compose.onNode(rowOf("Manage profiles")).assertIsFocused()
+        compose.runOnUiThread { fixture.manage.setKidsAge("c", 12) }
+        compose.waitForIdle()
+        assertEquals(6, fixture.core.profiles.single { it.id == "c" }.kidsAge?.toInt(), "a change went through on a PIN nobody gave again")
+    }
+
+    /** The app left with Manage open in Settings: back in it, the panel asks who you are again rather than keeping Bo's PIN. */
+    @Test
+    fun comingBackToTheAppAsksWhoYouAreAgainInSettings() {
+        launch(listOf(andre, bo, cy), chosen = "b")
+        manageFromSettingsAsBo()
+
+        leaveAndReturn()
+        compose.onNodeWithText("Who are you?").assertExists()
+        compose.onNode(rowOf("andre")).assertIsFocused()
+        compose.onAllNodesWithText("As Bo").assertCountEquals(0)
+    }
+
     private fun launch(
         profiles: List<Profile>,
         chosen: String?,
         pins: Map<String, String> = this.pins,
+        ready: String = if (chosen == null) "Who's watching?" else "Film 0",
     ) {
         compose.runOnUiThread {
-            fixture = TvAppFixture(TvSetupStage.READY, profiles, chosen, films(1), pins = pins)
+            fixture = TvAppFixture(TvSetupStage.READY, profiles, chosen, films(1), pins = pins, settingsSeeTheViewer = true)
             TvAppTestActivity.fixture = fixture
             controller = Robolectric.buildActivity(TvAppTestActivity::class.java).setup().visible()
         }
-        val ready = if (chosen == null) "Who's watching?" else "Film 0"
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(ready)).fetchSemanticsNodes().isNotEmpty() }
     }
 
@@ -344,6 +398,26 @@ class TvProfilesFlowTest {
     }
 
     private fun rowOf(text: String) = hasText(text) and hasClickAction()
+
+    /** Settings from the rail, then the remote down its index to [row] — the section beside it shown, not yet entered. */
+    private fun openSettingsAt(row: SemanticsMatcher) {
+        compose.onNodeWithContentDescription("Settings").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+        walkTo(row, Key.DirectionDown)
+    }
+
+    /** Settings › Profiles, entered on its Manage profiles row → who you are → Bo → Bo's PIN, by remote alone. */
+    private fun manageFromSettingsAsBo() {
+        openSettingsAt(rowOf("Profiles"))
+        press(Key.DirectionCenter)
+        compose.onNode(rowOf("Manage profiles")).assertIsFocused()
+        press(Key.DirectionCenter)
+        compose.onNodeWithText("Who are you?").assertExists()
+        walkTo(rowOf("Bo"), Key.DirectionDown)
+        press(Key.DirectionCenter)
+        pin("5678")
+        compose.onNodeWithText("As Bo").assertExists()
+    }
 
     /** The masthead's avatar, then its menu's "Switch profile", as selecting them does. */
     private fun reopenPicker() {

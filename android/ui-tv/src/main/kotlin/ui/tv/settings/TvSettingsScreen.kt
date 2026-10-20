@@ -21,16 +21,16 @@ import system.storageStatus
 import system.systemStatus
 import ui.common.settings.IndexStatus
 import ui.common.settings.SettingsSection
+import ui.common.settings.profilesStatus
 import ui.tv.setup.TvConfirmDialog
 import ui.tv.system.TvSystemSection
 
 /**
  * Settings and System, one hub, television-side: an index (a one-line status
- * per section) beside the section it is showing — the approved round-2 mockups' own EXPANDED
- * layout, at ten-foot sizes; [TvMenuBranches] opens this on [initial],
- * `TELEGRAM` for the Settings menu row, `SYSTEM` for the System shortcut.
- * Every ViewModel underneath is the one Settings and System always used;
- * only the layout is new.
+ * per section) beside the section it is showing — the approved round-2
+ * mockups' own EXPANDED layout, at ten-foot sizes; [TvMenuBranches] opens
+ * this on [initial], `TELEGRAM` for the Settings menu row, `SYSTEM` for the
+ * System shortcut.
  *
  * [section] and [focusInContent] are hoisted here rather than kept inside
  * [TvSettingsPanes]: a library-choice or an address panel takes the whole
@@ -94,21 +94,21 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
         lastPanel = which
     }
 
-    // A local val, not the `panel` property itself: only a true local can
-    // be smart-cast to the non-null enum the panel screen takes, once this
-    // branch is the one running.
+    // A local val, not the `panel` property: only a local can be smart-cast
+    // to the non-null enum the panel screen takes.
     val openPanel = panel
     if (openPanel != null) {
         TvSettingsPanelScreen(panel = openPanel, state = state, settingsViewModel = settingsViewModel, onClose = { panel = null })
     } else {
         val statuses =
-            mapOf(
+            listOfNotNull(
                 SettingsSection.TELEGRAM to IndexStatus(telegramStatus(state)),
                 SettingsSection.STORAGE to storageStatus(cacheState, lanState).let { (text, held) -> IndexStatus(text, held) },
                 SettingsSection.APPEARANCE to IndexStatus("${appearance.style.label} · ${appearance.accent.label} · ${appearance.backdrop.label}"),
                 SettingsSection.PROFILE to IndexStatus(profileStatus(profile)),
+                profilesStatus(profile)?.let { SettingsSection.PROFILES to it },
                 SettingsSection.SYSTEM to IndexStatus(systemStatus(systemState, systemFailure)),
-            )
+            ).toMap()
         TvSettingsPanes(
             section = section,
             statuses = statuses,
@@ -171,7 +171,7 @@ internal fun TvSettingsScreen(initial: SettingsSection) {
                         entryFocusRequester = entryRequester,
                         onRetry = systemViewModel::retry,
                     )
-                SettingsSection.PROFILES -> Unit // never shown: the television's index does not offer it yet
+                SettingsSection.PROFILES -> TvProfilesSection(entered, entryRequester, onManage = { open(TvSettingsPanel.Profiles) })
             }
         }
     }

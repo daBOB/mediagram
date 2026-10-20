@@ -27,7 +27,9 @@ import system.SystemViewModel
 import system.storageStatus
 import system.systemStatus
 import ui.common.settings.IndexStatus
+import ui.common.settings.ProfilesVisit
 import ui.common.settings.SettingsSection
+import ui.common.settings.profilesStatus
 import ui.setup.LibraryScreen
 import ui.setup.TelegramApplicationScreen
 

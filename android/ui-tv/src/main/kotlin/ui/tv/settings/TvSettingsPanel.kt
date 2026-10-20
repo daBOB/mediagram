@@ -8,10 +8,10 @@ import ui.tv.setup.TvApplicationScreen
 import ui.tv.setup.TvLibraryChoiceScreen
 
 /** A part of Settings that takes the whole screen while it is open. */
-internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken }
+internal enum class TvSettingsPanel { Library, Application, LanAddress, LanToken, Profiles }
 
 /**
- * One of [TvSettingsPanel]'s four full-screen questions — [TvSettingsScreen]
+ * One of [TvSettingsPanel]'s full-screen questions — [TvSettingsScreen]
  * composes this in place of [TvSettingsPanes] whenever a panel is open, and
  * [onClose] is what actually clears its own `panel` state back to `null`.
  */
@@ -46,5 +46,7 @@ internal fun TvSettingsPanelScreen(
 
         TvSettingsPanel.LanAddress, TvSettingsPanel.LanToken ->
             TvLanCachePanel(panel = panel, onDone = onClose)
+
+        TvSettingsPanel.Profiles -> TvProfilesPanel(onDone = onClose)
     }
 }

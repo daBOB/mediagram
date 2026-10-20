@@ -103,7 +103,9 @@ internal enum class TvSetupStage { APPLICATION, SIGN_IN, LIBRARY, READY }
  * for the core's ranking with a plain match on each set's title. [watch]
  * is where the viewer already stands — writes made through the repository
  * before the app opens, stamped by the core — and [heldIds] the titles this device
- * is taken to hold in full.
+ * is taken to hold in full. [settingsSeeTheViewer] lets Settings read the chosen
+ * profile, as the app's does; left off, Settings sees nobody, which the menu's
+ * own tests were written against.
  */
 internal class TvAppFixture(
     stage: TvSetupStage,
@@ -114,6 +116,7 @@ internal class TvAppFixture(
     heldIds: Set<String> = emptySet(),
     achievements: Achievements = NO_ACHIEVEMENTS,
     pins: Map<String, String> = emptyMap(),
+    settingsSeeTheViewer: Boolean = false,
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
     val setup: SetupViewModel
@@ -318,7 +321,7 @@ internal class TvAppFixture(
                 // every other entry in this map exists (see the comment above
                 // login/profile/etc.).
                 AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
-                ProfileSettingsViewModel::class.java to profileSettingsModel(),
+                ProfileSettingsViewModel::class.java to profileSettingsModel(if (settingsSeeTheViewer) viewer.repository.chosenProfile else MutableStateFlow(null)),
                 // TvLibrary resolves BrowseViewModel through hiltViewModel()
                 // for the same reason every entry above exists — see that
                 // comment.
