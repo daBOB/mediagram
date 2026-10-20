@@ -11,7 +11,7 @@ mod device;
 mod error;
 mod first_round;
 pub use device::device_id;
-pub(crate) use first_round::{follow_library, mark_round_imported, round_imported};
+pub(crate) use first_round::{follow_library, followed_library, mark_round_imported, round_imported};
 use error::SyncError;
 
 use super::StateDb;

@@ -205,7 +205,30 @@ class CatalogViewModel
         }
 
         private suspend fun refresh(kind: LibraryUpdateKind) {
-            updates.update(kind, ::readCatalog, ::regrouped)
+            val coldStart = kind == LibraryUpdateKind.Read && lastReady == null
+            updates.update(kind, ::readCatalog, ::regrouped, showInstalled = if (coldStart) ::showInstalled else null)
+        }
+
+        /**
+         * The catalog already on this device, shown while a cold start's refresh
+         * is still out. Quiet when there is none or it cannot be read: the read
+         * after the refresh is the one that reports.
+         */
+        private suspend fun showInstalled() {
+            try {
+                val sets = repository.sets()
+                val shelves = shelvesOf(sets)
+                if (!shelves.hasContent()) return
+                val ready = CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves))
+                lastSets = sets
+                show(ready)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception,
+            ) {
+                return
+            }
         }
 
         private suspend fun readCatalog(refreshed: Result<Int>) {
@@ -214,12 +237,25 @@ class CatalogViewModel
                     val failure = refreshed.exceptionOrNull()
                     failure?.let { Log.w("Catalog", "could not refresh the library", it) }
                     val sets = repository.sets()
-                    lastSets = sets
-                    val shelves = shelvesOf(sets)
-                    when {
-                        shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
-                        failure != null -> CatalogUiState.Failed(failure.refreshSentence())
-                        else -> CatalogUiState.Empty
+                    val kept = lastReady
+                    if (failure == null && kept != null && sets == lastSets) {
+                        // Nothing new — the usual refresh, now that an unchanged index is
+                        // not downloaded again: the shelves up stand, rather than being
+                        // regrouped on the main thread under a viewer's thumb. What the
+                        // cache holds is still asked: eviction changes it without an event.
+                        kept.copy(notice = null, heldIds = heldIdsOf(kept.shelves))
+                    } else {
+                        val shelves = shelvesOf(sets)
+                        val answer =
+                            when {
+                                shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
+                                failure != null -> CatalogUiState.Failed(failure.refreshSentence())
+                                else -> CatalogUiState.Empty
+                            }
+                        // Only once nothing above can still fail: an unchanged later read
+                        // keeps the shelves on screen on the strength of this.
+                        lastSets = sets
+                        answer
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -239,8 +275,9 @@ class CatalogViewModel
                 val shelves = shelvesOf(sets)
                 val kept = lastReady ?: return
                 if (shelves.hasContent()) {
+                    val regrouped = kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves))
                     lastSets = sets
-                    show(kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves)))
+                    show(regrouped)
                 }
             } catch (e: CancellationException) {
                 throw e

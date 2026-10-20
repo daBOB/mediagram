@@ -102,6 +102,27 @@ fn count_posters(version_dir: &Path, artwork_dir: &Path) -> u64 {
     keys.len() as u64
 }
 
+/// When the installed version was pushed. `current` is the symlink; reading
+/// it (not resolving it) turns its target's name, `v-<pushed_at>`, back into
+/// the timestamp it was named for.
+fn current_pushed_at(current: &Path) -> Option<i64> {
+    let target = std::fs::read_link(current).ok()?;
+    pushed_at_of(&target.file_name()?.to_string_lossy())
+}
+
+/// How many playable sets the installed catalog holds, when it already is
+/// the channel snapshot pushed at `pushed_at` — `None` when it is another
+/// one, came from a package, or cannot be read, any of which means the
+/// snapshot has to be downloaded.
+pub(super) fn installed_from_channel(core: &Core, pushed_at: i64) -> Option<u64> {
+    let dir = current_dir(core);
+    let from_channel = matches!(read_identity(&dir), Ok(None));
+    if !from_channel || current_pushed_at(&dir)? != pushed_at {
+        return None;
+    }
+    count_playable(&dir).ok()
+}
+
 /// What the installed catalog is, for the System screen. Every count is
 /// collapsed to zero on any failure — opening the database, reading the
 /// posters directory — because this is read to draw a screen, and a screen
@@ -121,18 +142,7 @@ pub(super) fn facts(core: &Core) -> dto::CatalogFacts {
     }
     .to_string();
 
-    // `current` is the symlink; reading it (not resolving it) turns its
-    // target's name, `v-<pushed_at>`, back into the timestamp it was named
-    // for.
-    let published_at = std::fs::read_link(&dir)
-        .ok()
-        .and_then(|target| {
-            target
-                .file_name()
-                .map(|name| name.to_string_lossy().into_owned())
-        })
-        .as_deref()
-        .and_then(pushed_at_of);
+    let published_at = current_pushed_at(&dir);
 
     dto::CatalogFacts {
         origin,

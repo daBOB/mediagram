@@ -27,6 +27,7 @@ import model.ProfileRequest
 import model.WatchSnapshot
 import org.junit.After
 import playback.FilmPreloading
+import playback.HeldSetsQuery
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.FakeFilmPreloading
@@ -39,6 +40,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private fun catalogViewModel(
@@ -46,6 +48,7 @@ private fun catalogViewModel(
     watchState: WatchStateRepository,
     enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings()),
     filmPreloader: FilmPreloading = FilmPreloading.Noop,
+    heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
     // Last so existing trailing-lambda call sites (`catalogViewModel(a, b) { pushed }`,
     // LibraryEvents being a fun interface) keep binding to this one.
     events: LibraryEvents = LibraryEvents.None,
@@ -56,6 +59,7 @@ private fun catalogViewModel(
         LibraryUpdateCoordinator(repository, enrichment),
         events,
         filmPreloader = filmPreloader,
+        heldSets = heldSets,
         togetherLive = FakeTogetherLive(),
     )
 
@@ -73,6 +77,28 @@ private const val EDITORS_CHOICE_NOTICE = "Could not confirm the editor's choice
  * never observed.
  */
 class CatalogViewModelTest {
+    /**
+     * A cold start shows the catalog already on the device while the channel
+     * is asked, not "Loading your library…": a refresh can be a download of
+     * the whole index, which kept the shelves away for seconds every launch.
+     */
+    @Test
+    fun aColdStartShowsTheInstalledCatalogWhileTheChannelIsAsked() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val gate = CompletableDeferred<Unit>()
+            val repository = FakeCatalogRepository(movies = 1).apply { refreshGate = gate }
+            val vm = catalogViewModel(repository, WatchStateFixture().repository)
+            vm.state.test {
+                assertEquals(CatalogUiState.Loading, awaitItem())
+                val during = awaitItem() as CatalogUiState.Ready
+                assertTrue(during.refreshing)
+                assertTrue(during.shelves.isNotEmpty())
+                gate.complete(Unit)
+                assertFalse((awaitItem() as CatalogUiState.Ready).refreshing)
+            }
+        }
+
     @Test
     fun aLocalReadFailureKeepsPriorShelvesAndSaysWhatFailed() =
         runTest {
@@ -464,6 +490,42 @@ class CatalogViewModelTest {
 
                 assertEquals(2, repository.refreshes)
                 cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    /**
+     * A refresh that brings nothing new leaves the shelves up exactly as they
+     * are — regrouping a whole catalog runs on the main thread, and the read
+     * after a cold start's refresh lands while a viewer is already scrolling —
+     * but still asks the cache what it holds, since eviction changes that
+     * without an event.
+     */
+    @Test
+    fun aRefreshThatBringsNothingNewKeepsTheShelvesAndRereadsWhatIsHeld() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val repository = FakeCatalogRepository(movies = 1)
+            val held = mutableSetOf("movie-0")
+            val cache =
+                object : HeldSetsQuery by HeldSetsQuery.Noop {
+                    override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> =
+                        sets.map { it.first }.filterTo(mutableSetOf()) { it in held }
+                }
+            val vm = catalogViewModel(repository, WatchStateFixture().repository, heldSets = cache)
+            vm.state.test {
+                awaitItem()
+                val before = awaitItem() as CatalogUiState.Ready
+                assertEquals(setOf("movie-0"), before.heldIds)
+                held.clear()
+                val gate = CompletableDeferred<Unit>()
+                repository.refreshGate = gate
+                vm.reload()
+                assertTrue((awaitItem() as CatalogUiState.Ready).refreshing)
+                gate.complete(Unit)
+                val after = awaitItem() as CatalogUiState.Ready
+                assertFalse(after.refreshing)
+                assertEquals(emptySet(), after.heldIds)
+                assertSame(before.shelves, after.shelves, "the shelves up were kept, not regrouped")
             }
         }
 
