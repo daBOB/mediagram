@@ -4,9 +4,12 @@ import { descendants } from "./support/browser-application";
 import { closeRemote, openRemote, remoteOpen } from "../public/lib/cast/cast-remote.js";
 import { CAST_WORDS } from "../public/lib/together/cast-words.js";
 import { heardTogether, refreshTogether, screen, setTogetherOpener, togetherNow, type Live } from "../public/lib/together-now.js";
-import type { Session } from "../public/lib/together/session.js";
+import { writeSession, type Session } from "../public/lib/together/session.js";
+import { TogetherHub } from "../src/together/hub";
+import { FakeChannel } from "./together-fixture";
 
 let env: ReturnType<typeof browserEnvironment>;
+let hub: TogetherHub;
 const TV = { screen: "tv", label: "TV", remote: false };
 const ME = { screen, label: "Browser", remote: true };
 const cast = {
@@ -21,7 +24,8 @@ const node = (id: string) => env.document.getElementById(id) as unknown as Node;
 const posts = () => env.requests.filter((r) => r.options?.method === "POST").map((r) => JSON.parse(String(r.options!.body)));
 const tick = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
 const items = () => descendants(node("cast-remote-menu")).filter((n) => n.tagName === "BUTTON");
-const heard = (s: Session | null) => heardTogether({ id: 7, session: s, serverNow: Date.now() });
+/** The TV's edit, heard by the server and announced to this tab as its event stream would carry it. */
+const heard = (s: Session) => hub.heard(7, writeSession(s));
 
 async function opened(over: Partial<Session> = {}, next: string | null = null) {
   setTogetherOpener(() => {}, (id) => ({ setId: id, title: "Dune", duration: 7200, backdrop: "dune-b" }) as never, () => next);
@@ -30,7 +34,10 @@ async function opened(over: Partial<Session> = {}, next: string | null = null) {
   await tick();
 }
 
-beforeEach(() => { env = browserEnvironment(); });
+beforeEach(() => {
+  env = browserEnvironment();
+  hub = new TogetherHub(new FakeChannel(), (id, session, lost) => heardTogether({ id, session, serverNow: Date.now(), lost }));
+});
 afterEach(() => { closeRemote(); env.restore(); });
 
 test("opening joins as a remote", async () => {

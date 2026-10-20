@@ -183,11 +183,11 @@ export class TogetherHub {
     for (const fn of this.kept) fn(id, session);
   }
 
-  /** Tells every tab what this server holds the session to be; `null` once it is over. */
+  /** Tells every tab what this server holds the session to be: as it ended, so a remote tells finished from stopped. Answers `null` once it is over. */
   private tell(id: number, lost = false): Session | null {
     const session = this.sender.view(id);
     const shown = session && !session.ended ? session : null;
-    this.announce(id, shown, lost);
+    this.announce(id, session?.ended ? session : shown, lost);
     return shown;
   }
 

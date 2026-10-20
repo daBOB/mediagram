@@ -254,7 +254,8 @@ describe("TogetherHub", () => {
     h.channel.outcomes.push({ wait: 5 });
     h.hub.leave(id, A.screen);
     await settle();
-    expect(h.announced.at(-1)).toEqual([id, null]);
+    // Over for the tabs: announced as it ended, which a tab's view turns into none.
+    expect(h.announced.at(-1)).toEqual([id, expect.objectContaining({ members: [], ended: true })]);
     const tvJoin = joined(parseSession(h.channel.messages.get(id)!)!, TV);
     h.hub.heard(id, writeSession(tvJoin));
     wait.resolve();
@@ -292,7 +293,7 @@ describe("TogetherHub", () => {
     const first = h.hub.act(id, A.screen, { playing: false })!;
     h.hub.act(id, A.screen, { pos: 30 });
     h.hub.heard(id, writeSession({ ...first, by: TV.screen, ended: true }));
-    expect(h.announced.at(-1)).toEqual([id, null]);
+    expect(h.announced.at(-1)).toEqual([id, { ...first, by: TV.screen, ended: true }]);
     held.resolve("ok");
     await settle();
     expect(h.channel.edits).toHaveLength(1);
