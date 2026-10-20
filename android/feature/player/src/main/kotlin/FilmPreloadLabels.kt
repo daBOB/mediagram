@@ -64,14 +64,16 @@ private fun needsSpaceLabel(neededBytes: Long, budgetBytes: Long?): String =
  * not in it at all (already settled elsewhere by the time this is read).
  * The running title is ellipsized the same reason [FilmPreloadState.Failed]'s
  * reason already is: a long real title would otherwise wrap this pill onto
- * a second line at a phone's own width.
+ * a second line at a phone's own width. [withShare] `false` drops its
+ * percentage: on an episode row a figure always means that row's own share.
  */
-fun queuedAheadLabel(rows: List<FilmPreloadRow>, setId: String): String? {
+fun queuedAheadLabel(rows: List<FilmPreloadRow>, setId: String, withShare: Boolean = true): String? {
     val index = rows.indexOfFirst { it.setId == setId }
     if (index <= 0) return null
     val running = rows.firstOrNull() as? FilmPreloadRow.Running
     return if (index == 1 && running != null) {
-        "Queued · after ${ellipsize(running.title, QUEUED_AHEAD_TITLE_MAX_LENGTH)}, ${heldPercentLabel(running.heldBytes, running.totalBytes)}"
+        val after = "Queued · after ${ellipsizeKeepingLastPart(running.title, QUEUED_AHEAD_TITLE_MAX_LENGTH)}"
+        if (withShare) "$after, ${heldPercentLabel(running.heldBytes, running.totalBytes)}" else after
     } else {
         "Queued · $index ahead"
     }
@@ -125,9 +127,6 @@ fun preloadIsAffirmative(state: FilmPreloadState): Boolean =
         is FilmPreloadState.Idle, is FilmPreloadState.Failed, is FilmPreloadState.NeedsSpace -> true
         else -> false
     }
-
-/** Whether [state] reads as held in full — Done, or an Idle the cache already holds whole. */
-fun preloadIsHeldInFull(state: FilmPreloadState): Boolean = normalized(state) == FilmPreloadState.Done
 
 /** Whether the control still takes a press — false only for Done, which is read-only until "Remove preload" is asked for beside it. */
 fun preloadIsEnabled(state: FilmPreloadState): Boolean = preloadTapAction(state) != PreloadTapAction.NONE
@@ -193,5 +192,5 @@ private const val FAILED_REASON_MAX_LENGTH = 28
 /** As [FAILED_REASON_MAX_LENGTH], for the running title [queuedAheadLabel] names — shorter, since it shares the line with a percentage. */
 private const val QUEUED_AHEAD_TITLE_MAX_LENGTH = 20
 
-private fun ellipsize(text: String, maxLength: Int): String =
+internal fun ellipsize(text: String, maxLength: Int): String =
     if (text.length <= maxLength) text else text.take(maxLength - 1).trimEnd() + "…"

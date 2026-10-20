@@ -26,7 +26,6 @@ import designsystem.Spacing
 import model.Kind
 import model.MediaSet
 import model.Progress
-import player.preloadIsHeldInFull
 import ui.common.catalog.TitlePreloadUi
 
 /**
@@ -125,7 +124,7 @@ private fun ItemRow(
                     )
                     .padding(top = Spacing.small, bottom = if (document) 0.dp else Spacing.small),
             )
-            if (preload != null) EpisodePreload(preload)
+            if (preload != null) EpisodePreload(preload, row.set.totalBytes, Modifier.padding(start = Spacing.small))
         }
         if (document) {
             Text(
@@ -135,9 +134,9 @@ private fun ItemRow(
                 modifier = Modifier.padding(bottom = Spacing.small),
             )
         }
-        // The row's held figure at 100%: the catalogue's held set, or a
-        // preload that finished before that set has heard of it.
-        val heldInFull = held || preload != null && preloadIsHeldInFull(preload.state)
+        // The row's held figure at 100%: the catalogue's held set, or the
+        // row's own count, which may hear of a finished preload first.
+        val heldInFull = held || preload?.heldBytes?.let { it >= row.set.totalBytes } == true
         if (heldInFull) OfflineBadge(modifier = Modifier.padding(bottom = Spacing.small))
         watchedFractionOf(progress)?.let { fraction ->
             LinearProgressIndicator(

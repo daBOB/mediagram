@@ -46,15 +46,16 @@ internal fun PreloadPill(
     modifier: Modifier = Modifier,
     queuedAheadLabel: String? = null,
     needsSpaceBudgetBytes: Long? = null,
+    small: Boolean = false,
 ) {
     val label = preloadLabel(state, queuedAheadLabel, needsSpaceBudgetBytes)
     val hint = preloadAccessibilityHint(state)
     val enabled = preloadIsEnabled(state)
     val description = if (hint != null) "$label. $hint" else null
     if (preloadIsAffirmative(state)) {
-        LinePill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier)
+        LinePill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier, small = small)
     } else {
-        QuietPill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier)
+        QuietPill(text = label, onClick = onClick, enabled = enabled, contentDescription = description, modifier = modifier, small = small)
     }
 }
 
@@ -87,7 +88,12 @@ internal fun showsPreloadBar(state: FilmPreloadState): Boolean = state is FilmPr
  */
 @Composable
 internal fun PreloadProgressBar(state: FilmPreloadState, onCancel: () -> Unit, modifier: Modifier = Modifier) {
-    val (held, total) = preloadBarBytes(state) ?: return
+    val (held, total) =
+        when (state) {
+            is FilmPreloadState.Running -> state.heldBytes to state.totalBytes
+            is FilmPreloadState.Paused -> state.heldBytes to state.totalBytes
+            else -> return
+        }
     val fraction = if (total <= 0L) 0f else (held.toFloat() / total.toFloat()).coerceIn(0f, 1f)
     val label = preloadBarLabel(held, total)
     val hint = preloadAccessibilityHint(state)
@@ -107,14 +113,6 @@ internal fun PreloadProgressBar(state: FilmPreloadState, onCancel: () -> Unit, m
         Text(label, style = MaterialTheme.typography.bodySmall)
     }
 }
-
-/** The held and total bytes a bar reads — `null` for every state [showsPreloadBar] answers false for. */
-internal fun preloadBarBytes(state: FilmPreloadState): Pair<Long, Long>? =
-    when (state) {
-        is FilmPreloadState.Running -> state.heldBytes to state.totalBytes
-        is FilmPreloadState.Paused -> state.heldBytes to state.totalBytes
-        else -> null
-    }
 
 /** NeedsSpace's own second control, beside its own retry pill — opens Settings › Storage. */
 @Composable
