@@ -607,6 +607,16 @@ Android has a system screen and a playback-stats overlay
   frames — covered on the device doing the playing. The web's version exists
   because the web *can* be asked about a device it is not running on; Android
   cannot watch itself from across the room.
+- **A warm-up holds back different starts.** Android opens every title
+  paused and starts it once its buffer is full, saying "Warming up · 0:12 of
+  0:50" under the leader. The web never starts a title opened by hand — the
+  viewer presses play, and the seek bar's buffered band and ⓘ say how full it
+  is — so it warms up only the starts it makes itself (an unattended next
+  episode, against 60 s). Chrome playing a file directly holds only 20–30 s,
+  so the 60 s gate on every start would make each one wait out its 45 s.
+- **ⓘ's network row is the server's.** Android's counts the device's own
+  fetches; the web's counts every part download the server makes, so two
+  viewers streaming at once each see the sum.
 - **Conversion is a deliberate difference**, already recorded as "No
   Conversion block" in
   `docs/superpowers/specs/2026-09-20-android-system-menu-and-playback-stats-design.md`

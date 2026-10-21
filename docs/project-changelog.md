@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.138.0 — playback before preload, warm-up and download facts
+
+**Fixed** (Android phone, tablet and TV)
+
+- **An episode no longer starves while the next one preloads.** The next-episode preload fetched beside playback at full speed: on the TV box, Immer wieder Jim S1E1 (15 Mbit/s) got 9.9 Mbit/s while S1E2 downloaded at 11.6, and stalled over and over. A preload fetch now waits while any playback fetch is running, as the web server's preload already did.
+
+**Added**
+
+- **Warming up** (Android). Every title opened starts paused and plays once its buffer is full (about 50 s, or after 45 s at most), with the leader and "Warming up · 0:12 of 0:50" on the stage. Pressing play starts at once. Not in watch together. The web says the same while an unattended next episode waits for its buffer.
+- **The seek bar shows the buffer** (Android phone and TV), a dimmer band from the playhead to where the buffer reaches, as the web's bar already did.
+- **ⓘ says what is downloading** (web player, Android phone, tablet and TV): `network` (the rate playback is arriving at and fetches in flight, or idle), `on disk` (how much of the title is held) and `next` (the episode preloading, how far, and "waiting for playback" while it holds off).
+
 ## 0.137.0 — cast to the TV
 
 **Added** (web player, Android phone, tablet and TV)
