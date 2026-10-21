@@ -40,6 +40,9 @@ class UpNextController(
     fun switchAcknowledged() = switcher.acknowledged()
     fun playWhenReadyFor(setId: String): Boolean = switcher.playWhenReadyFor(setId)
 
+    /** Holds an opened title's start until its buffer is full; see [UpNextSwitcher.warmUp]. */
+    fun warmUp(setId: String) = switcher.warmUp(setId)
+
     private var run: List<String> = emptyList()
     private val cancelledIds = mutableSetOf<String>()
     private var ended = false

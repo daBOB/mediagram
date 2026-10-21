@@ -56,6 +56,7 @@ internal const val TvSeekBarTag = "tv-seek-bar"
 internal fun TvSeekBar(
     positionMs: Long,
     durationMs: Long,
+    bufferedMs: Long,
     focusRequester: FocusRequester,
     down: FocusRequester,
     onFocusChanged: (Boolean) -> Unit,
@@ -64,6 +65,8 @@ internal fun TvSeekBar(
 ) {
     var focused by remember { mutableStateOf(false) }
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    val buffered = if (durationMs > 0) (bufferedMs.toFloat() / durationMs).coerceIn(fraction, 1f) else fraction
+    val bufferedColor = MaterialTheme.colorScheme.onSurfaceVariant
     val track = if (focused) FocusedTrack else Track
     val fill = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     val trackColor = MaterialTheme.colorScheme.border
@@ -90,6 +93,8 @@ internal fun TvSeekBar(
                     val thickness = track.toPx()
                     val top = (size.height - thickness) / 2
                     drawRect(color = trackColor, topLeft = Offset(0f, top), size = Size(size.width, thickness))
+                    // How far the buffer reaches, as the web's bar shows it: a dimmer band from the playhead on.
+                    drawRect(color = bufferedColor, topLeft = Offset(0f, top), size = Size(size.width * buffered, thickness))
                     drawRect(color = fill, topLeft = Offset(0f, top), size = Size(size.width * fraction, thickness))
                     if (focused) {
                         drawCircle(color = fill, radius = Thumb.toPx(), center = Offset(size.width * fraction, size.height / 2))
@@ -115,6 +120,7 @@ private val Thumb = 12.dp
 internal fun TvSeekRow(
     positionMs: Long,
     durationMs: Long,
+    bufferedMs: Long,
     ends: String,
     focusRequester: FocusRequester,
     down: FocusRequester,
@@ -126,6 +132,7 @@ internal fun TvSeekRow(
         TvSeekBar(
             positionMs = positionMs,
             durationMs = durationMs,
+            bufferedMs = bufferedMs,
             focusRequester = focusRequester,
             down = down,
             up = up,

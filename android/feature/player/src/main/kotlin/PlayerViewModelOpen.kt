@@ -60,8 +60,13 @@ fun PlayerViewModel.open(setId: String, run: List<String> = emptyList(), fsk: St
     // so an up-next switch never takes it a second time.
     val together = if (sameTitle && cast == null) null else togetherController.open(setId, cast)
     val startAtMs = ((together?.pos ?: resumeSeconds ?: 0.0) * 1000).toLong()
-    // False only for the one title a gated up-next switch is headed to
-    // — asked before `startTitle`, which consumes the same pending gate.
+    // Every new title warms up before it plays — a full buffer first, so
+    // a film on a slow link does not start at once and then stall. Not in
+    // a watch-together session: its play state is the session's, and a
+    // player holding back on its own would fall out of step with it.
+    if (!sameTitle && together == null) upNextController.warmUp(setId)
+    // False for a title warming up — asked before `startTitle`, which
+    // consumes the same pending gate.
     handle.open(setId, startAtMs, upNextController.playWhenReadyFor(setId) && together?.playing != false)
     // Alongside the handle, not gated on `sameTitle`: a rotation's own
     // reopen must find the service already running exactly as often as it

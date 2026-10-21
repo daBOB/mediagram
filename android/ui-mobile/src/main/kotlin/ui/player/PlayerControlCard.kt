@@ -163,6 +163,7 @@ internal fun PlayerControlCard(
         PlayerScrubber(
             positionMs = positionMs,
             durationMs = durationMs,
+            bufferedMs = progress.bufferedPositionMs,
             endsLabel = endsLabel,
             scrubbingTo = scrubbingTo,
             onScrubbingToChange = { scrubbingTo = it },

@@ -34,6 +34,7 @@ import playback.SeriesPreloading
 import playback.SubtitleTrackSource
 import playback.SummarySource
 import player.DefaultPlayerHandle
+import player.FULL_BUFFER_MS
 import player.PlaybackServiceController
 import player.PlayerViewModel
 import player.ProgressRecorder
@@ -75,6 +76,10 @@ internal class TvPlayerFixture(
     private var playbackState = Player.STATE_IDLE
     private var playWhenReady = true
     var positionMs = 42_000L
+
+    /** A full buffer and a loader that has stopped, as a ready title has once it warmed up; a test lowers it to hold a start back. */
+    var bufferedAheadMs = FULL_BUFFER_MS
+    var loading = false
     val durationMs = 600_000L
 
     init {
@@ -94,6 +99,8 @@ internal class TvPlayerFixture(
         every { media.isPlaying } answers { playbackState == Player.STATE_READY && playWhenReady }
         every { media.currentPosition } answers { positionMs }
         every { media.contentPosition } answers { positionMs }
+        every { media.bufferedPosition } answers { positionMs + bufferedAheadMs }
+        every { media.isLoading } answers { loading }
         every { media.duration } returns durationMs
         every { media.contentDuration } returns durationMs
         every { media.addListener(any()) } answers { listeners.add(firstArg()) }

@@ -8,9 +8,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import ui.chrome.CatalogueTextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
 import model.ReportWords
 import player.PlayerUiState
@@ -53,10 +55,12 @@ internal fun PlayerFailure(message: String, onRetry: () -> Unit, onReport: () ->
  */
 @Composable
 internal fun PlayerStageNote(state: PlayerUiState, report: ReportUi, viewModel: PlayerViewModel) {
+    val upNext by viewModel.upNext.collectAsStateWithLifecycle()
+    val warmUp = viewModel.bufferedAheadMs.takeIf { upNext.awaitingStart }
     when (state) {
-        PlayerUiState.Preparing -> PreparingNote()
+        PlayerUiState.Preparing -> PreparingNote(warmUp)
         is PlayerUiState.Failed -> PlayerFailure(state.message, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
-        PlayerUiState.Playing, PlayerUiState.Paused -> Unit
+        PlayerUiState.Playing, PlayerUiState.Paused -> if (warmUp != null) PreparingNote(warmUp)
     }
     if (report.open) ReportDialog(report, onSend = viewModel::sendReport, onDismiss = viewModel::closeReport)
 }

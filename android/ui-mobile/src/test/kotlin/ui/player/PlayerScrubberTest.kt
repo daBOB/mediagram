@@ -51,6 +51,7 @@ class PlayerScrubberTest {
                             PlayerScrubber(
                                 positionMs = 3_724_000L,
                                 durationMs = 7_110_000L,
+                                bufferedMs = 3_774_000L,
                                 endsLabel = "ends 23:41",
                                 scrubbingTo = null,
                                 onScrubbingToChange = {},

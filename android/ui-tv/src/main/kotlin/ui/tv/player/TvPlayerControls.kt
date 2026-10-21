@@ -132,6 +132,7 @@ internal fun TvPlayerControls(
                     player = player,
                     totals = extras.totals,
                     held = extras.held,
+                    download = extras.download,
                     modifier = Modifier.padding(start = Overscan.horizontal, top = Spacing.medium),
                 )
             }
@@ -158,6 +159,7 @@ internal fun TvPlayerControls(
             TvSeekRow(
                 positionMs = positionMs,
                 durationMs = durationMs,
+                bufferedMs = progress.bufferedPositionMs,
                 ends = endsLine(set?.durationSecs, positionMs, durationMs, player.playbackParameters.speed, System.currentTimeMillis()),
                 focusRequester = focus.seekBar,
                 down = focus.cc,
