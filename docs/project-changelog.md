@@ -5,7 +5,7 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## 0.138.0 — playback before preload, warm-up and download facts
+## 0.138.1 — playback before preload, warm-up and download facts
 
 **Fixed** (Android phone, tablet and TV)
 

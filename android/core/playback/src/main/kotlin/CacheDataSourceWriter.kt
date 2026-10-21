@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import uniffi.mediagram_core.CoreInterface
 import java.util.concurrent.Executors
 
@@ -115,7 +116,9 @@ class CacheDataSourceWriter internal constructor(
                 onProgress(bytesCached)
             }
         coroutineScope {
-            val job = launch(writeDispatcher) { writer.cache() }
+            // Interruptible, so a write held off for playback ([UpstreamTraffic])
+            // stops when cancelled rather than once the player next goes quiet.
+            val job = launch(writeDispatcher) { runInterruptible { writer.cache() } }
             try {
                 job.join()
             } catch (e: CancellationException) {

@@ -3,7 +3,9 @@ package playback
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,6 +39,9 @@ interface SeriesPreloading {
 
     /** The episode being written into the cache right now, or `null` — for the player's statistics. */
     val downloading: StateFlow<PreloadItem?> get() = NotDownloading
+
+    /** [setId] has opened in the player, which takes it into the cache itself; see [SeriesPreloader.opened]. */
+    fun opened(setId: String) = Unit
 
     companion object {
         /** Takes nothing and reports nothing held — a constructor default for a caller that does not care. */
@@ -85,6 +90,14 @@ class SeriesPreloader(
     @Volatile
     private var currentPlayingBytes: Long = 0L
 
+    /** The title open in the player, never preloaded while it is. */
+    @Volatile
+    private var playingId: String? = null
+
+    /** The write of [currentId], while one runs. */
+    @Volatile
+    private var writing: Job? = null
+
     private val _heldEvents = MutableSharedFlow<String>(extraBufferCapacity = HELD_EVENTS_BUFFER)
 
     override val heldEvents: SharedFlow<String> = _heldEvents.asSharedFlow()
@@ -107,6 +120,17 @@ class SeriesPreloader(
     override fun want(items: List<PreloadItem>, currentPlayingBytes: Long) {
         this.currentPlayingBytes = currentPlayingBytes
         wanted.trySend(items.filter { it.setId != currentId })
+    }
+
+    /**
+     * Stops the write of [setId] if that is the one running, and skips it
+     * if it comes up later. Letting it finish, as for any other title, would
+     * hold media3's lock on the rest of the file: the player would stream
+     * past it uncached, and the preload would fetch the same bytes again.
+     */
+    override fun opened(setId: String) {
+        playingId = setId
+        if (currentId == setId) writing?.cancel()
     }
 
     private suspend fun runWorker() {
@@ -132,18 +156,29 @@ class SeriesPreloader(
     @Suppress("TooGenericExceptionCaught") // a preload that fails costs nothing but the wait it was meant to save
     private suspend fun runItem(item: PreloadItem) {
         try {
-            if (isHeld(item)) return
+            if (item.setId == playingId || isHeld(item)) return
             if (!fits(item.totalBytes, currentPlayingBytes)) {
                 log("preload: ${item.title} skipped (budget or network)", null)
                 return
             }
-            lane.withLane {
-                _downloading.value = item
-                try {
-                    writer.write(item)
-                } finally {
-                    _downloading.value = null
+            val finished =
+                lane.withLane {
+                    _downloading.value = item
+                    try {
+                        coroutineScope {
+                            val job = launch { writer.write(item) }
+                            writing = job
+                            job.join()
+                            !job.isCancelled
+                        }
+                    } finally {
+                        writing = null
+                        _downloading.value = null
+                    }
                 }
+            if (!finished) {
+                log("preload: ${item.title} stopped, it opened to play", null)
+                return
             }
             _heldEvents.emit(item.setId)
             log("preload: ${item.title} held", null)

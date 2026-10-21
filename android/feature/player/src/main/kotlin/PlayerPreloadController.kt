@@ -28,6 +28,8 @@ class PlayerPreloadController(
      * itself an episode played through its show rather than a [handPicked] run.
      */
     fun startTitle(setId: String, run: List<String>, handPicked: Boolean) {
+        // Whatever the run: the title now playing is the player's to cache.
+        seriesPreloader.opened(setId)
         if (handPicked) return
         scope.launch {
             val opened = catalogRepository.mediaSet(setId) ?: return@launch

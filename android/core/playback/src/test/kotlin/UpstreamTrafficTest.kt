@@ -3,6 +3,8 @@ package playback
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -36,7 +38,7 @@ class UpstreamTrafficTest {
     @Test
     fun `a preload fetch waits while the player is fetching and starts once it is done`() =
         runTest {
-            val traffic = UpstreamTraffic()
+            val traffic = UpstreamTraffic(clock = { currentTime })
             val playing = HeldUpstream()
             val player = async { traffic.foreground(playing).chunk("film", 0, SET_BYTES) }
             runCurrent()
@@ -56,16 +58,46 @@ class UpstreamTrafficTest {
 
             playing.release.complete(Unit)
             player.await()
+            runCurrent()
+            assertEquals(emptyList(), preloadAsked, "not until the player has been quiet for a second")
+            advanceTimeBy(QUIET_MS + 1)
             preload.await()
             assertEquals(listOf(0L), preloadAsked)
             assertFalse(traffic.snapshot().backgroundWaiting)
             assertEquals(0, traffic.snapshot().foregroundInFlight)
         }
 
+    /** A player reading one chunk at a time has nothing in flight between two fetches; that gap is not a pause. */
+    @Test
+    fun `a preload does not slip in between two player fetches`() =
+        runTest {
+            val traffic = UpstreamTraffic(clock = { currentTime })
+            val player = traffic.foreground(instant)
+            player.chunk("film", 0, SET_BYTES)
+
+            val preloadAsked = mutableListOf<Long>()
+            val preload =
+                async {
+                    traffic.background { setId, index, total ->
+                        preloadAsked += index
+                        instant.chunk(setId, index, total)
+                    }.chunk("next", 0, SET_BYTES)
+                }
+            repeat(5) {
+                advanceTimeBy(QUIET_MS / 2)
+                player.chunk("film", 1, SET_BYTES)
+            }
+            assertEquals(emptyList(), preloadAsked)
+
+            advanceTimeBy(QUIET_MS + 1)
+            preload.await()
+            assertEquals(listOf(0L), preloadAsked)
+        }
+
     @Test
     fun `the player never waits for a preload fetch already running`() =
         runTest {
-            val traffic = UpstreamTraffic()
+            val traffic = UpstreamTraffic(clock = { currentTime })
             val preloading = HeldUpstream()
             launch { traffic.background(preloading).chunk("next", 0, SET_BYTES) }
             runCurrent()
@@ -79,7 +111,7 @@ class UpstreamTrafficTest {
     @Test
     fun `a failed player fetch still lets the preload go`() =
         runTest {
-            val traffic = UpstreamTraffic()
+            val traffic = UpstreamTraffic(clock = { currentTime })
             val failing = SetChunkSource { _, _, _ -> throw IOException("dropped") }
             runCatching { traffic.foreground(failing).chunk("film", 0, SET_BYTES) }
             assertEquals(0, traffic.snapshot().foregroundInFlight)

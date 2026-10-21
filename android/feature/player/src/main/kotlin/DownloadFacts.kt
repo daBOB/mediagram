@@ -37,7 +37,8 @@ fun downloadFacts(
 ): suspend () -> DownloadFacts =
     {
         val open = openSet.value
-        val next = seriesPreloader.downloading.value
+        // The title open is the player's own download, not the next one.
+        val next = seriesPreloader.downloading.value?.takeIf { it.setId != open?.setId }
         DownloadFacts(
             traffic = traffic.snapshot(),
             onDiskBytes = open?.let { heldSets.heldBytes(it.setId, it.totalBytes) } ?: 0,

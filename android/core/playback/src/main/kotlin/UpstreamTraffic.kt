@@ -1,5 +1,6 @@
 package playback
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -18,17 +19,22 @@ data class TrafficSnapshot(
  * Who goes first on the way upstream, and how fast each side is arriving.
  *
  * The player's chunk fetches go through [foreground] and never wait. A
- * preload's go through [background], and each one starts only while no
- * foreground fetch is running — the rule the web server's download gate
- * already keeps (`web/src/telegram/download-gate.ts`), so a preload lives
- * on the gaps a full buffer leaves and never on a buffer that is filling.
- * Without it the series preload took 11.6 Mbit/s of a TV box's ~20 the
- * moment an episode opened, and the episode, which needed 15, got 9.9.
+ * preload's go through [background], and each one starts only once no
+ * foreground fetch has run for [QUIET_MS] — the web server's download gate
+ * keeps the same priority (`web/src/telegram/download-gate.ts`), so a
+ * preload lives on the gaps a full buffer leaves, not on a buffer that is
+ * filling. Without it the series preload took 11.6 Mbit/s of a TV box's ~20
+ * the moment an episode opened, and the episode, which needed 15, got 9.9.
+ *
+ * A quiet second rather than "nothing in flight": a player reading one
+ * chunk at a time has nothing in flight between two of its fetches, while
+ * it hands the last one over, and a preload let in at every such gap is
+ * very nearly the preload this exists to hold back.
  *
  * A background fetch already running when playback asks is let finish:
  * one round trip, and cancelling it would waste the bytes already on
- * their way. One that is waiting holds its preload's thread until
- * playback pauses fetching, so a cancelled preload stops after that fetch.
+ * their way. One that is waiting holds its preload's thread; the preload
+ * writer interrupts that thread when it is cancelled.
  *
  * Both wrap the upstream beneath a factory's [ChunkMemo], so only real
  * fetches — LAN or Telegram — are counted or held back, never memo hits.
@@ -40,6 +46,10 @@ class UpstreamTraffic(
     private val clock: () -> Long = { System.nanoTime() / 1_000_000 },
 ) {
     private val playing = MutableStateFlow(0)
+
+    /** When the last foreground fetch ended; null before the first. */
+    @Volatile
+    private var lastPlayedAt: Long? = null
     private val waiting = AtomicInteger()
     private val foregroundRate = RateWindow()
     private val backgroundRate = RateWindow()
@@ -50,22 +60,34 @@ class UpstreamTraffic(
             try {
                 upstream.chunk(setId, index, totalSize).also { foregroundRate.add(it.size, clock()) }
             } finally {
+                lastPlayedAt = clock()
                 playing.update { it - 1 }
             }
         }
 
     fun background(upstream: SetChunkSource): SetChunkSource =
         SetChunkSource { setId, index, totalSize ->
-            if (playing.value > 0) {
-                waiting.incrementAndGet()
-                try {
-                    playing.first { it == 0 }
-                } finally {
-                    waiting.decrementAndGet()
-                }
-            }
+            holdOffForPlayback()
             upstream.chunk(setId, index, totalSize).also { backgroundRate.add(it.size, clock()) }
         }
+
+    /** Returns once no foreground fetch is running and none has for [QUIET_MS]. */
+    private suspend fun holdOffForPlayback() {
+        if (playing.value == 0 && quietMs() >= QUIET_MS) return
+        waiting.incrementAndGet()
+        try {
+            while (true) {
+                playing.first { it == 0 }
+                val quiet = quietMs()
+                if (quiet >= QUIET_MS) return
+                delay(QUIET_MS - quiet)
+            }
+        } finally {
+            waiting.decrementAndGet()
+        }
+    }
+
+    private fun quietMs(): Long = lastPlayedAt?.let { clock() - it } ?: Long.MAX_VALUE
 
     fun snapshot(): TrafficSnapshot {
         val now = clock()
@@ -77,6 +99,9 @@ class UpstreamTraffic(
         )
     }
 }
+
+/** How long the player must have fetched nothing before a preload fetch may start. */
+internal const val QUIET_MS = 1_000L
 
 /** Seconds a rate is averaged over, plus the one still filling. */
 private const val BUCKETS = 5

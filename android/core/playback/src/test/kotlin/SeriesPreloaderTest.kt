@@ -89,6 +89,36 @@ class SeriesPreloaderTest {
         assertEquals(null, preloader.downloading.value)
     }
 
+    /** Left to finish, the write would hold media3's lock on the rest of the file the player is now reading. */
+    @Test
+    fun openingTheEpisodeBeingPreloadedStopsItsWriteAndCountsNothingHeld() = runTest {
+        val writer = FakeWriter()
+        writer.gate = CompletableDeferred()
+        val preloader = preloader(writer, backgroundScope)
+        val held = mutableListOf<String>()
+        backgroundScope.launch { preloader.heldEvents.collect { held += it } }
+        preloader.want(listOf(ep("s2"), ep("s3")), currentPlayingBytes = 0)
+        assertEquals(listOf("s2"), writer.started)
+
+        preloader.opened("s2")
+        runCurrent()
+
+        assertEquals(listOf("s2", "s3"), writer.started, "the next one in the list is taken instead")
+        assertTrue("s2" !in writer.written)
+        assertTrue("s2" !in held)
+    }
+
+    @Test
+    fun aTitleOpenInThePlayerIsNeverPreloaded() = runTest {
+        val writer = FakeWriter()
+        val preloader = preloader(writer, backgroundScope)
+        preloader.opened("s2")
+
+        preloader.want(listOf(ep("s2"), ep("s3")), currentPlayingBytes = 0)
+
+        assertEquals(listOf("s3"), writer.written)
+    }
+
     @Test
     fun anItemAlreadyDownloadingIsNotDuplicatedByAWantNamingItAgain() = runTest {
         val writer = FakeWriter()

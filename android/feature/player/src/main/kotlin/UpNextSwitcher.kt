@@ -30,7 +30,7 @@ internal class UpNextSwitcher(private val scope: CoroutineScope, private val han
     var awaitingStart: Boolean = false
         private set
 
-    /** Whether [setId] should start paused — true only for the one title a gated switch is headed to. Read before `handle.open`, which must happen before [startedTitle] consumes the same pending gate. */
+    /** Whether [setId] may start at once — false for the title a gate is pending for, a gated switch's or a warm-up's. Read before `handle.open`, which must happen before [startedTitle] consumes the same pending gate. */
     fun playWhenReadyFor(setId: String): Boolean = pendingGate?.setId != setId
 
     /**
