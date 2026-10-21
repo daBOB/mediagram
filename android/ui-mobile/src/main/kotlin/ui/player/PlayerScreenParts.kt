@@ -5,14 +5,18 @@
 
 package ui.player
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.Player
@@ -22,10 +26,12 @@ import designsystem.LocalCountdownStart
 import designsystem.Spacing
 import model.MediaSet
 import playback.PlaybackTotals
+import player.DownloadFacts
 import player.ReportStage
 import player.ReportUi
 import player.titleLine
 import player.together.TogetherUi
+import ui.common.player.warmUpText
 
 /**
  * The pieces `PlayerScreen` draws, apart from the screen that arranges
@@ -41,15 +47,28 @@ import player.together.TogetherUi
  * is the stage's fixed coral (`--stage-accent`, `theme.css:97`;
  * `film-leader.css:34`), whatever the page's accent, because the stage is
  * always black. The leader says nothing, so TalkBack hears "Loading" here.
+ *
+ * While the title warms up ([warmUp] is how far its buffer reaches) the
+ * leader stays, over the first frame once there is one, with the line
+ * saying how full the buffer is.
  */
 @Composable
-internal fun PreparingNote() {
-    Box(
-        modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
-        contentAlignment = Alignment.Center,
+internal fun PreparingNote(warmUp: (() -> Long)? = null) {
+    Column(
+        modifier = Modifier.fillMaxSize().then(if (warmUp == null) Modifier.semantics { contentDescription = "Loading" } else Modifier),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // A wait of its own, so its count starts at 3, not where the cold start's had got to.
         CompositionLocalProvider(LocalCountdownStart provides null) { CountdownLeader(accent = Accent.CORAL.dark) }
+        if (warmUp != null) {
+            Text(
+                text = warmUpText(warmUp),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = Spacing.medium),
+            )
+        }
     }
 }
 
@@ -74,6 +93,7 @@ internal fun PlayerTopChrome(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     held: Boolean = false,
+    download: suspend () -> DownloadFacts = { DownloadFacts() },
     onNotes: (() -> Unit)? = null,
     onReport: (() -> Unit)? = null,
     report: ReportUi = ReportUi(),
@@ -107,7 +127,13 @@ internal fun PlayerTopChrome(
         // itself away, and keeps them while the film is paused.
         if (statsShown && barShown) {
             player?.let { current ->
-                PlaybackStatsOverlay(player = current, totals = totals, held = held, modifier = Modifier.padding(start = Spacing.medium))
+                PlaybackStatsOverlay(
+                    player = current,
+                    totals = totals,
+                    held = held,
+                    download = download,
+                    modifier = Modifier.padding(start = Spacing.medium),
+                )
             }
         }
     }

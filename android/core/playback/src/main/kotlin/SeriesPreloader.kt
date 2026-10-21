@@ -5,8 +5,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** One episode to take into the cache, with what [fitsInPreloadBudget] needs to judge it. */
@@ -31,6 +34,9 @@ interface SeriesPreloading {
 
     /** One id per set this preloader has just finished taking into the cache — for a badge to follow without a rescan. */
     val heldEvents: SharedFlow<String>
+
+    /** The episode being written into the cache right now, or `null` — for the player's statistics. */
+    val downloading: StateFlow<PreloadItem?> get() = NotDownloading
 
     companion object {
         /** Takes nothing and reports nothing held — a constructor default for a caller that does not care. */
@@ -83,6 +89,10 @@ class SeriesPreloader(
 
     override val heldEvents: SharedFlow<String> = _heldEvents.asSharedFlow()
 
+    private val _downloading = MutableStateFlow<PreloadItem?>(null)
+
+    override val downloading: StateFlow<PreloadItem?> = _downloading.asStateFlow()
+
     init {
         scope.launch(dispatcher) { runWorker() }
     }
@@ -127,7 +137,14 @@ class SeriesPreloader(
                 log("preload: ${item.title} skipped (budget or network)", null)
                 return
             }
-            lane.withLane { writer.write(item) }
+            lane.withLane {
+                _downloading.value = item
+                try {
+                    writer.write(item)
+                } finally {
+                    _downloading.value = null
+                }
+            }
             _heldEvents.emit(item.setId)
             log("preload: ${item.title} held", null)
         } catch (e: CancellationException) {
@@ -139,3 +156,5 @@ class SeriesPreloader(
 }
 
 private const val HELD_EVENTS_BUFFER = 8
+
+private val NotDownloading: StateFlow<PreloadItem?> = MutableStateFlow(null)

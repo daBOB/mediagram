@@ -75,6 +75,21 @@ class SeriesPreloaderTest {
     }
 
     @Test
+    fun saysWhichEpisodeItIsWritingAndNothingOnceItIsDone() = runTest {
+        val writer = FakeWriter()
+        val gate = CompletableDeferred<Unit>()
+        writer.gate = gate
+        val preloader = preloader(writer, backgroundScope)
+        assertEquals(null, preloader.downloading.value)
+
+        preloader.want(listOf(ep("s2")), currentPlayingBytes = 0)
+        assertEquals("s2", preloader.downloading.value?.setId)
+
+        gate.complete(Unit)
+        assertEquals(null, preloader.downloading.value)
+    }
+
+    @Test
     fun anItemAlreadyDownloadingIsNotDuplicatedByAWantNamingItAgain() = runTest {
         val writer = FakeWriter()
         val gate = CompletableDeferred<Unit>()

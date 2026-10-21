@@ -6,16 +6,23 @@
 package ui.common.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
+import kotlinx.coroutines.delay
 import playback.PlaybackTotals
+import player.DownloadFacts
 import player.READOUT_TICK_MS
 import player.audioStatLine
 import player.bufferStatLine
 import player.cacheStatLine
 import player.droppedStatLine
+import player.networkStatLine
+import player.nextStatLine
+import player.onDiskStatLine
 import player.readsStatLine
 import player.videoStatLine
 
@@ -43,13 +50,25 @@ data class PlaybackStat(
  *
  * [held] is whether this device holds the title in full, which turns the
  * buffer row into "cached" — see [bufferStatLine].
+ *
+ * [download] is asked once a second, and only while the overlay is on
+ * screen: two of its answers are disk-cache lookups, which have no place in
+ * every recomposition and no reason to run while nobody is reading them.
  */
 @Composable
 fun playbackStats(
     player: Player,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
+    download: suspend () -> DownloadFacts = { DownloadFacts() },
 ): List<PlaybackStat> {
+    val facts by produceState(DownloadFacts(), download) {
+        while (true) {
+            value = download()
+            delay(DOWNLOAD_TICK_MS)
+        }
+    }
+
     // The transport bar's own tick, shared rather than started again. These
     // two positions are the only snapshot state read here, and so the only
     // thing that recomposes the caller: every other figure below is a plain
@@ -94,8 +113,14 @@ fun playbackStats(
             PlaybackStat(label = "audio", value = audioStatLine(codec, audio.channelCount, audio.language.orEmpty()))
         },
         PlaybackStat(label = "buffer", value = bufferStatLine(aheadMs, held)),
+        PlaybackStat(label = "network", value = networkStatLine(facts.traffic)),
+        onDiskStatLine(facts.onDiskBytes, facts.totalBytes)?.let { PlaybackStat(label = "on disk", value = it) },
+        nextStatLine(facts.next, facts.traffic)?.let { PlaybackStat(label = "next", value = it) },
         PlaybackStat(label = "cache", value = cacheStatLine(counted)),
         PlaybackStat(label = "reads", value = readsStatLine(counted)),
         droppedStatLine(dropped)?.let { PlaybackStat(label = "dropped", value = it) },
     )
 }
+
+/** How often the download rows are read again: often enough to watch a rate move, rarely enough to cost nothing. */
+private const val DOWNLOAD_TICK_MS = 1_000L

@@ -197,6 +197,7 @@ fun PlayerScreen(
                 onBack = onBack,
                 modifier = Modifier.align(Alignment.TopStart),
                 held = held,
+                download = viewModel.downloadFacts,
                 together = together,
                 sidebarBeside = card.sidebarOpen,
                 onNotes = viewModel::toggleNotes.takeIf { notes != null },

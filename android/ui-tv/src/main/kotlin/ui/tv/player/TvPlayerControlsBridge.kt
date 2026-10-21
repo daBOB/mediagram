@@ -127,6 +127,7 @@ internal fun TvPlayerControlsForViewModel(
                 onToggleStats = actions.onToggleStats,
                 totals = viewModel.totals,
                 held = view.held,
+                download = viewModel.downloadFacts,
                 choices = view.choices,
                 onToggleSubtitles = viewModel::toggleSubtitles,
                 onOpenMenu = actions.onOpenMenu,

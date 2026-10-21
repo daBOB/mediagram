@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import designsystem.Spacing
 import playback.PlaybackTotals
+import player.DownloadFacts
 import ui.common.player.SCRIM_ALPHA
 import ui.common.player.playbackStats
 
@@ -42,6 +43,7 @@ fun PlaybackStatsOverlay(
     player: Player,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
+    download: suspend () -> DownloadFacts = { DownloadFacts() },
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -51,7 +53,7 @@ fun PlaybackStatsOverlay(
                 .padding(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        playbackStats(player, totals, held).forEach { StatRow(label = it.label, value = it.value) }
+        playbackStats(player, totals, held, download).forEach { StatRow(label = it.label, value = it.value) }
     }
 }
 
