@@ -26,6 +26,7 @@ import { mountPlayerMenus } from "./player-menus.js";
 import { mountPlayerStats } from "./player-stats.js";
 import { mountPlayerNextTitle } from "./player-next-title.js";
 import { autoplayReady } from "./autoplay.js";
+import { hideWarmUp, showWarmUp } from "./stage-warmup.js";
 import * as state from "../watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "../resume-point.js";
 import { scopeOf } from "./preference-scope.js";
@@ -569,6 +570,7 @@ function mountPlayer() {
     if (waitingToStart === null) return;
     clearInterval(waitingToStart.timer);
     waitingToStart = null;
+    hideWarmUp(video);
     refreshPreload();
   }
 
@@ -584,9 +586,10 @@ function mountPlayer() {
     const began = Date.now();
 
     const look = () => {
-      if (!playing || waitingToStart === null) return stopWaitingToStart();
+      if (!playing || waitingToStart === null || video.error) return stopWaitingToStart();
 
       const ahead = bufferedAhead(video.buffered, video.currentTime);
+      if (mode === "buffered") showWarmUp(ahead);
       const runtime = runtimeSeconds();
       const ready =
         mode === "asap"

@@ -30,8 +30,21 @@ internal class UpNextSwitcher(private val scope: CoroutineScope, private val han
     var awaitingStart: Boolean = false
         private set
 
-    /** Whether [setId] should start paused — true only for the one title a gated switch is headed to. Read before `handle.open`, which must happen before [startedTitle] consumes the same pending gate. */
+    /** Whether [setId] may start at once — false for the title a gate is pending for, a gated switch's or a warm-up's. Read before `handle.open`, which must happen before [startedTitle] consumes the same pending gate. */
     fun playWhenReadyFor(setId: String): Boolean = pendingGate?.setId != setId
+
+    /**
+     * Holds the start of [setId], a title the viewer opened, on the same
+     * gate an unattended switch waits on, so the picture starts with a full
+     * buffer rather than at once and then stalls. Without a runtime: a
+     * buffer full, a loader that stopped, or patience run out ends it.
+     * A gate already pending for [setId] is kept, runtime and all.
+     */
+    fun warmUp(setId: String) {
+        if (pendingGate?.setId == setId) return
+        gateJob?.cancel(); gateJob = null
+        pendingGate = PendingGate(setId, null)
+    }
 
     /** Asks the UI layer to move to [id]; [gate] says whether the switch should wait on the buffer once it lands, rather than start right away. */
     fun request(id: String, run: List<String>, gate: Boolean, runtimeForGate: Double?) {

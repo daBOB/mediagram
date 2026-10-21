@@ -23,8 +23,13 @@
     status.textContent = on ? "Loading…" : "";
   };
   const video = document.getElementById("video");
+  // A warm-up keeps the leader past the first frame; the player takes it down.
+  const warmUp = document.getElementById("stage-warmup");
   video.addEventListener("loadstart", () => show(true));
-  for (const event of ["loadeddata", "emptied", "error"]) {
+  video.addEventListener("loadeddata", () => {
+    if (warmUp.hidden) show(false);
+  });
+  for (const event of ["emptied", "error"]) {
     video.addEventListener(event, () => show(false));
   }
 })();

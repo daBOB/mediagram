@@ -19,6 +19,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import designsystem.Spacing
 import playback.PlaybackTotals
+import player.DownloadFacts
 import ui.common.player.SCRIM_ALPHA
 import ui.common.player.playbackStats
 
@@ -37,6 +38,7 @@ internal fun TvStatsOverlay(
     player: Player,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
+    download: suspend () -> DownloadFacts = { DownloadFacts() },
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -47,7 +49,7 @@ internal fun TvStatsOverlay(
                 .testTag(TvStatsOverlayTag),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        playbackStats(player, totals, held).forEach { stat ->
+        playbackStats(player, totals, held, download).forEach { stat ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 Text(
                     text = stat.label,

@@ -1,12 +1,11 @@
 package player
 
 /**
- * When a title that started itself may actually begin — a port of
- * `autoplay.js`. A viewer who pressed play is watching the screen and wants
- * the picture; one whose episode ended thirty seconds ago is not, and would
- * rather the next one arrive whole than arrive immediately and stop again
- * ten seconds in. So an unattended start waits for a buffer, and an
- * asked-for one does not.
+ * When a title held back for its buffer may actually begin — a port of
+ * `autoplay.js`. On the web only an unattended start waits; here every
+ * title opened warms up first (`UpNextSwitcher.warmUp`), because a viewer
+ * chose a picture that arrives whole over one that arrives at once and
+ * then stalls. Pressing play still starts at once.
  */
 
 /** The buffer an unattended start waits for. */
@@ -41,3 +40,15 @@ fun autoplayReady(at: AutoplayAt): Boolean {
     // Out of patience. Whatever is held is what it starts with.
     return at.waitedMs >= PATIENCE_MS
 }
+
+/**
+ * How far media3's default load control ever buffers ahead
+ * (`DefaultLoadControl.DEFAULT_MAX_BUFFER_MS`): the point at which its
+ * loader stops, which is what a warm-up on this platform waits for — the
+ * web's 60 s [READY_SECONDS] is never reached here.
+ */
+const val FULL_BUFFER_MS = 50_000L
+
+/** What the stage says while a title warms up: `Warming up · 0:12 of 0:50`. */
+fun warmUpLine(aheadMs: Long): String =
+    "Warming up · ${clockTime(aheadMs.coerceAtMost(FULL_BUFFER_MS))} of ${clockTime(FULL_BUFFER_MS)}"

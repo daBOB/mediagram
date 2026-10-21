@@ -15,9 +15,9 @@
  * be certain would cost more than the answer is worth.
  */
 
-import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { Database } from "bun:sqlite";
+import { countChunks, heldBytesOf } from "./held-chunks";
 import { CACHE_CHUNK } from "./key";
 
 /** How long a reading is trusted before another scan is started. */
@@ -117,6 +117,11 @@ export class HeldSets {
     return this.isHeld(join(this.root, String(CACHE_CHUNK)), setId, want);
   }
 
+  /** How many bytes of this set's `parts` are on disk, looked at now. */
+  heldBytes(setId: string, parts: { idx: number; len: number }[]): Promise<number> {
+    return heldBytesOf(join(this.root, String(CACHE_CHUNK)), setId, parts);
+  }
+
   /** How many are held, for anything that wants to say so. */
   get count(): number {
     return this.held.size;
@@ -181,27 +186,9 @@ export class HeldSets {
 
   /** Whether every chunk of one set is on disk. */
   private async isHeld(root: string, setId: string, want: number): Promise<boolean> {
-    let have = 0;
-    try {
-      for (const part of await readdir(join(root, setId), { withFileTypes: true })) {
-        if (!part.isDirectory()) continue;
-        for (const chunk of await readdir(join(root, setId, part.name))) {
-          // `.tmp` is a chunk being written, which `ChunkCache` renames into
-          // place only once it is whole. Counting one would claim a title
-          // plays offline while a piece of it was still arriving.
-          if (!chunk.endsWith(".tmp")) have += 1;
-        }
-        // Everything needed is here; the rest of the parts cannot change that,
-        // and a held film is thirteen thousand filenames per scan.
-        if (have >= want) return true;
-      }
-    } catch {
-      // Nothing cached for this set (the ordinary case), or nothing readable.
-      return false;
-    }
     // `>=` rather than `===`: a chunk left over from a part layout that has
     // since changed would make the count exceed what is needed, and every
     // chunk that is needed is still there.
-    return have >= want;
+    return (await countChunks(root, setId, want)) >= want;
   }
 }

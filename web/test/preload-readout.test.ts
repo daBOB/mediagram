@@ -124,12 +124,12 @@ describe("a call with nothing in it", () => {
 describe("a title waiting to start itself", () => {
   test("says so, rather than reading ready while nothing happens", () => {
     expect(preloadReadout({ readyState: 4, ahead: 23, awaitingStart: true })).toBe(
-      "getting ready · 0:23 ahead",
+      "warming up · 0:23 ahead",
     );
   });
 
   test("says so even before there is a frame, which is where the wait begins", () => {
-    expect(preloadReadout({ readyState: 0, ahead: 0, awaitingStart: true })).toBe("getting ready");
+    expect(preloadReadout({ readyState: 0, ahead: 0, awaitingStart: true })).toBe("warming up");
   });
 
   test("goes back to the ordinary states once it is no longer waiting", () => {

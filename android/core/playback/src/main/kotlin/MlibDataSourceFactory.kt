@@ -46,14 +46,20 @@ import uniffi.mediagram_core.CoreInterface
  * [ReadAhead] for how many). Only the player asks for it: a preload has no
  * viewer waiting on it, and a whole film fetched four chunks at a time is
  * a long stretch of parallel requests for Telegram to push back on.
+ *
+ * [gate] puts the player's fetches ahead of a preload's: the player's
+ * factory passes [UpstreamTraffic.foreground], the preload writer's
+ * [UpstreamTraffic.background].
  */
 class MlibDataSourceFactory(
     private val counters: PlaybackCounters,
     private val lan: LanCacheRuntime? = null,
     readAhead: Boolean = false,
+    /** Which side of [UpstreamTraffic] this factory's fetches are on; none by default. */
+    gate: (SetChunkSource) -> SetChunkSource = { it },
     private val currentCore: () -> CoreInterface?,
 ) : DataSource.Factory {
-    private val chunks: SetChunkSource = ChunkMemo(upstream = buildUpstream())
+    private val chunks: SetChunkSource = ChunkMemo(upstream = gate(buildUpstream()))
 
     // A set's duration never changes under its id, so the core is asked
     // once per set — whichever core is current then, like every fetch. No

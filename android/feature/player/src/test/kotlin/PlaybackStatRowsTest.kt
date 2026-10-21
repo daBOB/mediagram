@@ -1,6 +1,7 @@
 package player
 
 import playback.PlaybackTotals
+import playback.TrafficSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -100,5 +101,36 @@ class PlaybackStatRowsTest {
     fun noDroppedFramesIsNoRow() {
         assertNull(droppedStatLine(0))
         assertEquals("12 frames", droppedStatLine(12))
+    }
+
+    @Test
+    fun theNetworkRowIsTheRateAndWhatIsInFlight() {
+        assertEquals("14 Mbps · 2 in flight", networkStatLine(TrafficSnapshot(foregroundBitsPerSecond = 14_200_000, foregroundInFlight = 2)))
+        assertEquals("9.4 Mbps", networkStatLine(TrafficSnapshot(foregroundBitsPerSecond = 9_400_000)))
+    }
+
+    /** A full buffer with nothing to fetch is the healthy case, and says so in a word. */
+    @Test
+    fun nothingArrivingAndNothingInFlightIsIdle() {
+        assertEquals("idle", networkStatLine(TrafficSnapshot()))
+    }
+
+    @Test
+    fun onDiskIsHeldAgainstTheWholeRoundedDown() {
+        assertEquals("512 MB of 1.0 GB · 50%", onDiskStatLine(heldBytes = 512L shl 20, totalBytes = 1L shl 30))
+        assertEquals("99%", onDiskStatLine(heldBytes = (1L shl 30) - 1, totalBytes = 1L shl 30)?.substringAfterLast(" "))
+        assertNull(onDiskStatLine(heldBytes = 0, totalBytes = 0))
+    }
+
+    @Test
+    fun theNextRowSaysWhenThePreloadIsWaitingForPlayback() {
+        val next = NextDownload(title = "Der Sexmarathon", heldBytes = 34, totalBytes = 100)
+        assertEquals(
+            "Der Sexmarathon · 34% · waiting for playback",
+            nextStatLine(next, TrafficSnapshot(backgroundWaiting = true, backgroundBitsPerSecond = 3_000_000)),
+        )
+        assertEquals("Der Sexmarathon · 34% · 12 Mbps", nextStatLine(next, TrafficSnapshot(backgroundBitsPerSecond = 11_600_000)))
+        assertEquals("Der Sexmarathon · 34%", nextStatLine(next, TrafficSnapshot()))
+        assertNull(nextStatLine(null, TrafficSnapshot()))
     }
 }

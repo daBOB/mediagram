@@ -1,6 +1,7 @@
 package ui.tv.player
 
 import playback.PlaybackTotals
+import player.DownloadFacts
 import player.PlayerChoices
 import player.PlayerMarksState
 import player.ReportUi
@@ -16,6 +17,8 @@ internal class TvPlayerExtras(
     val totals: () -> PlaybackTotals,
     /** Whether this device holds the title in full, which the statistics' buffer row reports as "cached". */
     val held: Boolean = false,
+    /** The statistics' download rows, read only while they are shown. */
+    val download: suspend () -> DownloadFacts = { DownloadFacts() },
     /** What the tools read and change: subtitles, speed, audio and framing. */
     val choices: PlayerChoices = PlayerChoices.Default,
     val onToggleSubtitles: () -> Unit = {},

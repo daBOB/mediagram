@@ -38,6 +38,7 @@ import playback.PlaybackCounters
 import playback.SeriesPreloader
 import playback.SeriesPreloading
 import playback.SystemUnmeteredNetworkCheck
+import playback.UpstreamTraffic
 import playback.fitsFilmPreloadBudget
 import playback.fitsInPreloadBudget
 import playback.setUri
@@ -80,7 +81,8 @@ object PreloadModule {
         @ApplicationContext context: Context,
         coreProvider: CoreProvider,
         lan: LanCacheRuntime,
-    ): CacheDataSourceWriter = CacheDataSourceWriter(context, PlaybackCounters(), lan) { coreProvider.core.value }
+        traffic: UpstreamTraffic,
+    ): CacheDataSourceWriter = CacheDataSourceWriter(context, PlaybackCounters(), lan, traffic) { coreProvider.core.value }
 
     /**
      * Built here rather than constructor-injected into [SeriesPreloader]

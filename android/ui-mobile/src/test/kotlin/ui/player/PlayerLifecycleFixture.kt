@@ -22,6 +22,7 @@ import kotlinx.coroutines.cancel
 import playback.PlaybackCounters
 import player.CastSenderViewModel
 import player.DefaultPlayerHandle
+import player.FULL_BUFFER_MS
 import player.PlayerViewModel
 import player.ProgressRecorder
 import data.CatalogRepository
@@ -66,6 +67,9 @@ internal class PlayerLifecycleFixture(
         every { media.playbackState } answers { playbackState }
         every { media.isPlaying } answers { playbackState == Player.STATE_READY }
         every { media.currentPosition } answers { positionMs }
+        // A full buffer and a loader that has stopped, as a ready title has once it warmed up.
+        every { media.bufferedPosition } answers { positionMs + FULL_BUFFER_MS }
+        every { media.isLoading } returns false
         every { media.duration } returns 600_000L
         every { media.addListener(any()) } answers { listeners.add(firstArg()) }
         every { media.removeListener(any()) } answers { listeners.remove(firstArg()) }

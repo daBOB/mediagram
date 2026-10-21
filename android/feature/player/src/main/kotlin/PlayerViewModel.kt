@@ -30,6 +30,7 @@ import playback.SeriesPreloading
 import playback.SubtitleTrackSource
 import playback.SummarySource
 import playback.TimedCue
+import playback.UpstreamTraffic
 import player.together.TogetherUi
 import player.together.ViewerRelay
 import player.together.outOfTime
@@ -56,6 +57,7 @@ class PlayerViewModel @Inject constructor(
     reportChannel: ReportChannel = NoReportChannel,
     /** Null in a view model built by hand, as a test's: no picture ever goes to another screen. */
     displays: PresentationDisplays? = null,
+    traffic: UpstreamTraffic = UpstreamTraffic(),
 ) : ViewModel(), PlayerHandle.Listener {
 
     internal val _state = MutableStateFlow<PlayerUiState>(PlayerUiState.Preparing)
@@ -106,6 +108,12 @@ class PlayerViewModel @Inject constructor(
 
     /** The resolved set behind the open id, for the title line — null before it resolves, or with nothing open. */
     val openSet: StateFlow<MediaSet?> = choicesController.openSet
+
+    /** How far the buffer reaches past the playhead now, for the warm-up line. */
+    val bufferedAheadMs: () -> Long = { ((handle.bufferedPositionMs() ?: 0L) - (handle.positionMs() ?: 0L)).coerceAtLeast(0L) }
+
+    /** What the statistics overlay says about downloading, asked for only while it is open. */
+    val downloadFacts: suspend () -> DownloadFacts = downloadFacts(openSet, seriesPreloader, heldSets, traffic)
 
     /** What this viewer has chosen for the open title — speed, audio and subtitle style; framing joins it later. */
     val choices: StateFlow<PlayerChoices> = choicesController.choices

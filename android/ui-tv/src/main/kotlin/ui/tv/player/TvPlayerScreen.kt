@@ -194,7 +194,14 @@ fun TvPlayerScreen(
                 onGone = viewModel::dismissActionNotice,
                 modifier = Modifier.align(Alignment.TopEnd).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
             )
-            TvPlayerStatus(state, focus.retry, onRetry = viewModel::retry, onReport = { viewModel.openReport(fromFailure = true) }, report = report)
+            TvPlayerStatus(
+                state,
+                focus.retry,
+                onRetry = viewModel::retry,
+                onReport = { viewModel.openReport(fromFailure = true) },
+                report = report,
+                warmUp = viewModel.bufferedAheadMs.takeIf { upNext.awaitingStart },
+            )
         }
     }
 }

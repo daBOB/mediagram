@@ -56,3 +56,9 @@
 /* Centred over the stage while a title opens, under the controls, and never
    taking a click from the picture. */
 .stage-leader { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+/* Under the leader, not beside it in the grid: two grid children would push
+   the leader up out of the centre it holds everywhere else. */
+.stage-warmup {
+  position: absolute; left: 0; right: 0; top: calc(50% + 5rem); margin: 0;
+  text-align: center; color: var(--on-image); font-variant-numeric: tabular-nums;
+}

@@ -57,9 +57,10 @@ internal fun playbackDataSourceFactory(
     cache: Cache,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
+    traffic: UpstreamTraffic = UpstreamTraffic(),
     currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
-    cacheDataSourceFactory(cache, counters, lan, readAhead = true, currentCore = currentCore)
+    cacheDataSourceFactory(cache, counters, lan, readAhead = true, gate = traffic::foreground, currentCore = currentCore)
         // setFlags replaces rather than adds; the base factory sets none.
         .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
@@ -68,12 +69,13 @@ internal fun cacheDataSourceFactory(
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
     readAhead: Boolean = false,
+    gate: (SetChunkSource) -> SetChunkSource = { it },
     currentCore: () -> CoreInterface?,
 ): CacheDataSource.Factory =
     CacheDataSource
         .Factory()
         .setCache(cache)
-        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, readAhead, currentCore))
+        .setUpstreamDataSourceFactory(MlibDataSourceFactory(counters, lan, readAhead, gate, currentCore))
         // media3 offers this and nothing has ever attached one. Without it there
         // is no way to tell a cache that is carrying playback from one that is
         // being bypassed, which is the first thing worth knowing about a read.
@@ -116,13 +118,14 @@ suspend fun buildPlayer(
     context: Context,
     counters: PlaybackCounters,
     lan: LanCacheRuntime? = null,
+    traffic: UpstreamTraffic = UpstreamTraffic(),
     currentCore: () -> CoreInterface?,
 ): ExoPlayer =
     ExoPlayer
         .Builder(context, renderersFactory(context))
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context)
-                .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, lan, currentCore)),
+                .setDataSourceFactory(playbackDataSourceFactory(CacheProvider.get(context), counters, lan, traffic, currentCore)),
         )
         // Set in both directions because media3's defaults are not
         // symmetrical — five seconds back, fifteen forward. A control that

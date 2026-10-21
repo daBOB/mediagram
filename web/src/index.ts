@@ -28,7 +28,7 @@ import { startBudget } from "./cache/budget";
 import { HeldSets, expectedChunks } from "./cache/held";
 import { AudioTrackReader } from "./catalog/audio-tracks";
 import { SubtitleBundles, heldSubtitlesDir } from "./catalog/subtitle-bundles";
-import { backgroundFetcher, connectionFetcher } from "./telegram/part-fetch";
+import { backgroundFetcher, connectionFetcher, downloadTraffic } from "./telegram/part-fetch";
 import { WatchState } from "./state/store";
 import { PosterStore } from "./catalog/posters";
 import type { RefreshOptions } from "./package/refresh";
@@ -387,6 +387,7 @@ export async function startPlayer(config: Config = load(), overrides: Partial<St
       catalog: { origin: catalog.origin, publishedAt: catalog.publishedAt },
       held,
       preload,
+      download: { held, preload, traffic: downloadTraffic },
       status: statusRouter,
       settings: (request) => settingsBox.route?.(request) ?? Promise.resolve(null),
       together,

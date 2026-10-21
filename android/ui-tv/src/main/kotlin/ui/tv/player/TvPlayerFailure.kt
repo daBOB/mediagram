@@ -26,6 +26,7 @@ import model.ReportWords
 import player.PlayerUiState
 import player.ReportStage
 import player.ReportUi
+import ui.common.player.warmUpText
 import ui.tv.TvLeaderSize
 
 /** What the stage says while there is no film to show: the film leader while it prepares, the failure once it has failed. */
@@ -36,11 +37,13 @@ internal fun TvPlayerStatus(
     onRetry: () -> Unit,
     onReport: () -> Unit,
     report: ReportUi,
+    /** How far the buffer reaches while the title warms up; null once it plays. */
+    warmUp: (() -> Long)? = null,
 ) {
     when (state) {
-        PlayerUiState.Preparing -> TvPreparingLeader()
+        PlayerUiState.Preparing -> TvPreparingLeader(warmUp)
         is PlayerUiState.Failed -> TvPlayerFailure(state.message, retry, onRetry, onReport, report)
-        PlayerUiState.Playing, PlayerUiState.Paused -> Unit
+        PlayerUiState.Playing, PlayerUiState.Paused -> if (warmUp != null) TvPreparingLeader(warmUp)
     }
 }
 
@@ -50,15 +53,28 @@ internal fun TvPlayerStatus(
  * is the stage's fixed coral (`--stage-accent`, `theme.css:97`;
  * `film-leader.css:34`), whatever the viewer's accent, because the stage is
  * always black. The leader says nothing, so TalkBack hears "Loading" here.
+ *
+ * While the title warms up ([warmUp] is how far its buffer reaches) the
+ * leader stays, over the first frame once there is one, with the line
+ * saying how full the buffer is — the phone's `PreparingNote`.
  */
 @Composable
-private fun TvPreparingLeader() {
-    Box(
-        modifier = Modifier.fillMaxSize().semantics { contentDescription = "Loading" },
-        contentAlignment = Alignment.Center,
+private fun TvPreparingLeader(warmUp: (() -> Long)? = null) {
+    Column(
+        modifier = Modifier.fillMaxSize().then(if (warmUp == null) Modifier.semantics { contentDescription = "Loading" } else Modifier),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // A wait of its own, so its count starts at 3, not where the cold start's had got to.
         CompositionLocalProvider(LocalCountdownStart provides null) { CountdownLeader(size = TvLeaderSize, accent = Accent.CORAL.dark) }
+        if (warmUp != null) {
+            Text(
+                text = warmUpText(warmUp),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = Spacing.medium),
+            )
+        }
     }
 }
 

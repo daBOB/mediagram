@@ -20,6 +20,7 @@ import playback.LanCacheRuntime
 import playback.PlaybackCounters
 import playback.SubtitleTrackSource
 import playback.SummarySource
+import playback.UpstreamTraffic
 import playback.buildPlayer
 import player.AndroidPlaybackServiceController
 import player.DefaultPlayerHandle
@@ -66,6 +67,7 @@ object PlaybackModule {
         coreProvider: CoreProvider,
         counters: PlaybackCounters,
         lan: LanCacheRuntime,
+        traffic: UpstreamTraffic,
         @MainThreadScope scope: CoroutineScope,
     ): @JvmSuppressWildcards Deferred<ExoPlayer> =
         scope.async {
@@ -73,7 +75,7 @@ object PlaybackModule {
             // been set up, then read per data source rather than captured: the
             // player outlives a start-over, the core it reads through does not.
             coreProvider.awaitCore()
-            buildPlayer(context, counters, lan) { coreProvider.core.value }
+            buildPlayer(context, counters, lan, traffic) { coreProvider.core.value }
         }
 
     @Provides

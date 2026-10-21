@@ -75,4 +75,14 @@ export class DownloadGate {
   inFlight(): number {
     return this.running;
   }
+
+  /** Foreground downloads holding a slot now, for the player's statistics. */
+  foregroundInFlight(): number {
+    return this.foregroundActive;
+  }
+
+  /** Whether a background download is queued behind foreground ones. */
+  backgroundQueued(): boolean {
+    return this.backgroundWaiting.length > 0;
+  }
 }

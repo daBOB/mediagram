@@ -13,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import player.FULL_BUFFER_MS
 import testing.WatchStateFixture
 import java.time.Duration
 import kotlin.test.assertEquals
@@ -126,12 +127,18 @@ class TvPlayerRunOverlaysTest : TvPlayerScreenHarness() {
     @Test
     fun previousWhileTheNextTitleWaitsToStartGoesBackAndPlays() {
         nearTheEnd()
+        // The next title's buffer is still filling, so its start is held.
+        fixture.bufferedAheadMs = 0L
+        fixture.loading = true
         compose.runOnUiThread { controller.get().playerViewModel.onEnded() }
         idleFor(Duration.ofSeconds(11))
         assertEquals(listOf("set-two"), TvPlayerTestActivity.switches)
         assertTrue(controller.get().playerViewModel.upNext.value.awaitingStart)
         assertFalse(fixture.isPlaying)
 
+        // The title gone back to is in hand, so its own warm-up ends at once.
+        fixture.bufferedAheadMs = FULL_BUFFER_MS
+        fixture.loading = false
         keyDown(android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS, repeat = 0)
         keyUp(android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS)
 

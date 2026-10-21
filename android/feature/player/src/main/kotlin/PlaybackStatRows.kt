@@ -2,6 +2,7 @@ package player
 
 import model.humanSize
 import playback.PlaybackTotals
+import playback.TrafficSnapshot
 import java.util.Locale
 
 /*
@@ -34,7 +35,7 @@ private fun codecLabel(mime: String): String {
 }
 
 /** A bitrate in bits per second, as `9.4 Mbps`. */
-private fun mbpsLabel(bitrate: Int): String {
+private fun mbpsLabel(bitrate: Long): String {
     val mbps = bitrate / 1_000_000.0
     val rounded = if (mbps < 10) String.format(Locale.ROOT, "%.1f", mbps) else Math.round(mbps).toString()
     return "$rounded Mbps"
@@ -63,7 +64,7 @@ fun videoStatLine(
 ): String {
     if (width == null || height == null || codec == null) return "not yet known"
     val base = "$width×$height ${codecLabel(codec)}"
-    return if (bitrate != null && bitrate > 0) "$base ${mbpsLabel(bitrate)}" else base
+    return if (bitrate != null && bitrate > 0) "$base ${mbpsLabel(bitrate.toLong())}" else base
 }
 
 /** What the audio decoder is doing: `EAC3 5.1 German`. */
@@ -117,3 +118,52 @@ fun readsStatLine(totals: PlaybackTotals): String {
  * it matters.
  */
 fun droppedStatLine(dropped: Int): String? = if (dropped > 0) "$dropped frames" else null
+
+/**
+ * What is arriving for playback right now: `14.2 Mbps · 2 in flight`.
+ *
+ * `idle` once the buffer is full and nothing is being fetched — the
+ * ordinary state of a title that is keeping up, said in a word rather than
+ * as a zero rate, which reads like a stall.
+ */
+fun networkStatLine(traffic: TrafficSnapshot): String {
+    val parts =
+        listOfNotNull(
+            traffic.foregroundBitsPerSecond.takeIf { it > 0 }?.let(::mbpsLabel),
+            traffic.foregroundInFlight.takeIf { it > 0 }?.let { "$it in flight" },
+        )
+    return if (parts.isEmpty()) "idle" else parts.joinToString(" · ")
+}
+
+/**
+ * How much of the open title is on this device: `883 MB of 2.2 GB · 39%`.
+ * Rounded down, so a title missing its last few chunks never reads 100%.
+ * Null with no size to measure against.
+ */
+fun onDiskStatLine(
+    heldBytes: Long,
+    totalBytes: Long,
+): String? {
+    if (totalBytes <= 0) return null
+    return "${humanSize(heldBytes)} of ${humanSize(totalBytes)} · ${heldBytes * 100 / totalBytes}%"
+}
+
+/**
+ * The episode the series preload is taking in behind this one:
+ * `Der Sexmarathon · 34% · waiting for playback` while it holds off for the
+ * player, or its own rate while it fetches. Null when nothing is preloading.
+ */
+fun nextStatLine(
+    next: NextDownload?,
+    traffic: TrafficSnapshot,
+): String? {
+    next ?: return null
+    val percent = if (next.totalBytes > 0) next.heldBytes * 100 / next.totalBytes else 0
+    val state =
+        when {
+            traffic.backgroundWaiting -> "waiting for playback"
+            traffic.backgroundBitsPerSecond > 0 -> mbpsLabel(traffic.backgroundBitsPerSecond)
+            else -> null
+        }
+    return listOfNotNull(next.title, "$percent%", state).joinToString(" · ")
+}
