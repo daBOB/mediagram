@@ -14,6 +14,7 @@ import type { Telegram } from "./client";
 import type { TelegramConnection } from "./connection";
 import { requestSizeFor } from "../range";
 import { DownloadGate } from "./download-gate";
+import { RateWindow, type TrafficSnapshot } from "./fetch-traffic";
 
 /** Whether a Telegram request failed because the file reference it used expired. */
 export function isFileReferenceExpired(error: unknown): boolean {
@@ -26,6 +27,24 @@ export function isFileReferenceExpired(error: unknown): boolean {
  * every reader of every title shares it.
  */
 const downloads = new DownloadGate();
+const foregroundRate = new RateWindow();
+const backgroundRate = new RateWindow();
+
+/** What the gate's two lanes are moving now, for the player's statistics. */
+export function downloadTraffic(): TrafficSnapshot {
+  return {
+    foregroundBitsPerSecond: foregroundRate.bitsPerSecond(),
+    foregroundInFlight: downloads.foregroundInFlight(),
+    backgroundBitsPerSecond: backgroundRate.bitsPerSecond(),
+    backgroundWaiting: downloads.backgroundQueued(),
+  };
+}
+
+/** Counts what a fetch brought in, and hands it on unchanged. */
+function metered(rate: RateWindow, bytes: Uint8Array): Uint8Array {
+  rate.add(bytes.length);
+  return bytes;
+}
 
 /**
  * Handed to the cache as its way of filling a miss, so the cache knows
@@ -36,7 +55,7 @@ const downloads = new DownloadGate();
  */
 export function connectionFetcher(connection: TelegramConnection, messageId: number) {
   return (offset: number, length: number): Promise<Uint8Array> =>
-    downloads.run(() => fetchPartViaConnection(connection, messageId, offset, length));
+    downloads.run(() => fetchPartViaConnection(connection, messageId, offset, length)).then((bytes) => metered(foregroundRate, bytes));
 }
 
 /**
@@ -46,7 +65,9 @@ export function connectionFetcher(connection: TelegramConnection, messageId: num
  */
 export function backgroundFetcher(connection: TelegramConnection, messageId: number) {
   return (offset: number, length: number): Promise<Uint8Array> =>
-    downloads.run(() => fetchPartViaConnection(connection, messageId, offset, length), { background: true });
+    downloads
+      .run(() => fetchPartViaConnection(connection, messageId, offset, length), { background: true })
+      .then((bytes) => metered(backgroundRate, bytes));
 }
 
 async function fetchPartViaConnection(

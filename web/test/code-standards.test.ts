@@ -109,6 +109,9 @@ const ROOT = join(import.meta.dir, "..");
  * and the line that fills them.
  * Raised the same day for `src/state/store.ts`, by 3, to write a profile's renames and take one in
  * by renaming the row — the import, the names read once, and the line that spreads them.
+ * Raised 2026-10-22 for `src/index.ts`, by 1, to hand the router the sources of the player
+ * statistics' download rows; `src/cache/held.ts` fell under the limit the same day, once counting
+ * a set's chunks moved to `held-chunks.ts`.
  */
 const CEILINGS: Record<string, number> = {
   "public/app.js": 714,
@@ -128,11 +131,10 @@ const CEILINGS: Record<string, number> = {
   "public/styles/playback.css": 637,
   "public/styles/shell.css": 257,
   "public/styles/theme.css": 209,
-  "src/cache/held.ts": 207,
   "src/cache/reader.ts": 293,
   "src/cache/store.ts": 313,
   "src/config.ts": 265,
-  "src/index.ts": 453,
+  "src/index.ts": 454,
   "src/package/refresh.ts": 272,
   "src/server.ts": 269,
   "src/state/routes.ts": 209,

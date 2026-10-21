@@ -61,7 +61,7 @@ export interface SeriesPreloadOptions {
 
 export class SeriesPreload {
   private waiting: PreloadItem[] = [];
-  private current: string | null = null;
+  private current: PreloadItem | null = null;
   private worker: Promise<void> | null = null;
   private running = false;
   private stopped = false;
@@ -81,10 +81,15 @@ export class SeriesPreload {
    */
   want(items: PreloadItem[]): void {
     if (this.stopped) return;
-    this.waiting = items.filter((item) => item.setId !== this.current);
+    this.waiting = items.filter((item) => item.setId !== this.current?.setId);
     if (this.running) return;
     this.running = true;
     this.worker = this.drain();
+  }
+
+  /** The episode being taken into the cache right now, or null — for the player's statistics. */
+  downloading(): PreloadItem | null {
+    return this.current;
   }
 
   /** Resolves once nothing is waiting or downloading. For tests. */
@@ -101,7 +106,7 @@ export class SeriesPreload {
 
   private async drain(): Promise<void> {
     for (let item = this.waiting.shift(); item; item = this.waiting.shift()) {
-      this.current = item.setId;
+      this.current = item;
       try {
         if (await this.options.isHeld(item.setId)) continue;
         for (const location of item.locations) {

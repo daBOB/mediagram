@@ -5,6 +5,7 @@
 import { EXPECTED_SCHEMA, playableSet } from "./catalog";
 import { createCatalogRouter, type CatalogRouterOptions } from "./catalog/routes";
 import type { CatalogEvents } from "./catalog-events";
+import { downloadFactsResponse, type DownloadFactsSources } from "./cache/download-facts";
 import { preloadResponse } from "./cache/preload-route";
 import type { SeriesPreload } from "./cache/series-preload";
 import { isLocalAddress } from "./client-reach";
@@ -28,6 +29,7 @@ import type { ReportSender } from "./telegram/report-sender";
 
 const STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/stream$/;
 const CACHED_STREAM_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/cached-stream$/;
+const DOWNLOAD_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/download$/;
 const TRANSCODE_PATH = /^\/api\/sets\/([A-Za-z0-9]{1,64})\/transcode$/;
 // Both captures reach a filesystem path, so constrain their complete shape.
 const HLS_PATH = /^\/hls\/([a-f0-9]{16})\/([A-Za-z0-9_-]{1,64}\.(?:m3u8|ts|m4s|mp4))$/;
@@ -52,6 +54,8 @@ export interface RouterOptions extends CatalogRouterOptions {
   settings?: (request: PlayerRequest) => Promise<PlayerResponse | null>;
   hls?: HlsServer;
   preload?: SeriesPreload;
+  /** `/api/sets/:id/download`, the player statistics' download rows; absent answers 404. */
+  download?: DownloadFactsSources;
   events?: CatalogEvents;
   state?: WatchState;
   /** `/api/together`, read and written: watch together (`docs/mlib-spec.md` §7b). */
@@ -175,6 +179,8 @@ export function createRouter(options: RouterOptions) {
     }
     const streaming = STREAM_PATH.exec(request.path);
     if (streaming) return streamSet(db, source, request, streaming[1]!);
+    const download = DOWNLOAD_PATH.exec(request.path);
+    if (download) return options.download ? downloadFactsResponse(db, options.download, download[1]!, headOnly) : bodiless(404);
     const cached = CACHED_STREAM_PATH.exec(request.path);
     if (cached) return options.cacheSource
       ? streamSet(db, options.cacheSource, request, cached[1]!) : bodiless(404);

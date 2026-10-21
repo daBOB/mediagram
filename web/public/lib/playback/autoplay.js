@@ -10,6 +10,8 @@
  * why there are three ways out rather than one.
  */
 
+import { clockTime } from "../format.js";
+
 /** The buffer an unattended start waits for. */
 export const READY_SECONDS = 60;
 
@@ -20,6 +22,12 @@ export const READY_SECONDS = 60;
  * the wait still plays, it just plays with less in hand.
  */
 export const PATIENCE_MS = 45_000;
+
+/** What the stage says while a title warms up: `Warming up · 0:12 of 1:00`. */
+export function warmUpLine(ahead) {
+  const held = Number.isFinite(ahead) ? Math.min(Math.max(ahead, 0), READY_SECONDS) : 0;
+  return `Warming up · ${clockTime(held)} of ${clockTime(READY_SECONDS)}`;
+}
 
 /**
  * @param {{ahead: number, remaining: number|null, waitedMs: number}} at

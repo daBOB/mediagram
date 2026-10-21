@@ -12,7 +12,8 @@ function boot() {
   const status = { textContent: "" };
   const library = { prepend: () => placed.push("library") };
   const drawing = { content: { firstElementChild: { cloneNode: () => ({}) } } };
-  const nodes: Record<string, unknown> = { "film-leader": drawing, "stage-leader": stage, "stage-status": status, video };
+  const warmUp = { hidden: true };
+  const nodes: Record<string, unknown> = { "film-leader": drawing, "stage-leader": stage, "stage-status": status, "stage-warmup": warmUp, video };
   const document = {
     getElementById: (id: string) => nodes[id] ?? null,
     querySelector: (selector: string) => (selector === ".loading-state" ? library : null),
@@ -21,7 +22,7 @@ function boot() {
   const fire = (type: string) => video.dispatchEvent(new Event(type));
   /** The drawing's visibility and the words a screen reader is given, together. */
   const shown = () => [!stage.hidden, status.textContent];
-  return { placed, fire, shown };
+  return { placed, fire, shown, warmUp };
 }
 
 const UP = [true, "Loading…"];
@@ -91,4 +92,14 @@ test("still, the leader shows the 3 with the 2 and the 1 at opacity 0", () => {
   expect(css).toContain(".leader-count + .leader-count { opacity: 0; }");
   const base = css.match(/\.leader-count \{([^}]*)\}/)![1]!;
   expect(base).not.toContain("opacity");
+});
+
+test("a title warming up keeps the leader past its first frame; the player takes it down", () => {
+  const { fire, shown, warmUp } = boot();
+  fire("loadstart");
+  warmUp.hidden = false;
+  fire("loadeddata");
+  expect(shown()).toEqual(UP);
+  fire("emptied");
+  expect(shown()).toEqual(DOWN);
 });

@@ -151,6 +151,18 @@ describe("SeriesPreload", () => {
     expect(run.became).toEqual(["E2", "E3"]);
   });
 
+  test("says which episode it is taking in, and nothing once it is done", async () => {
+    const run = preloadWith();
+    run.hold();
+    expect(run.preload.downloading()).toBeNull();
+    run.preload.want([item("E2")]);
+    await Promise.resolve();
+    expect(run.preload.downloading()?.setId).toBe("E2");
+    run.open();
+    await run.preload.settle();
+    expect(run.preload.downloading()).toBeNull();
+  });
+
   test("skips a set already on disk", async () => {
     const run = preloadWith(new Set(["E2"]));
     run.preload.want([item("E2"), item("E3")]);

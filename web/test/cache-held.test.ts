@@ -116,6 +116,14 @@ describe("which sets are held", () => {
     expect(held.has(partial)).toBe(false);
   });
 
+  test("counts the bytes of a set partly there, and never past its size", async () => {
+    const held = new HeldSets(root, expectedChunks(db));
+    expect(await held.heldBytes(HALF, CACHE_CHUNK * 4)).toBe(CACHE_CHUNK * 2);
+    // Its short last chunks count whole, so the count is capped at the size.
+    expect(await held.heldBytes(WHOLE, CACHE_CHUNK * 3 + 9)).toBe(CACHE_CHUNK * 3 + 9);
+    expect(await held.heldBytes(NONE, CACHE_CHUNK)).toBe(0);
+  });
+
   test("answers false before the first scan rather than throwing", () => {
     const held = new HeldSets(root, expectedChunks(db));
     expect(held.has(WHOLE)).toBe(false);

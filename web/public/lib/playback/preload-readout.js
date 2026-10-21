@@ -36,7 +36,7 @@ export function bufferedAhead(buffered, currentTime) {
 
 /** Which of the four words describes the player right now. */
 function stateOf(at, ready) {
-  if (at.awaitingStart === true) return "getting ready";
+  if (at.awaitingStart === true) return "warming up";
   // Nothing to show yet is its own state: not starved, just not started.
   if (ready < 1) return "opening";
   return at.starved === true ? "buffering" : "ready";
