@@ -23,6 +23,7 @@ import playback.LanWriteQueue
 import playback.PlainLanCacheSettings
 import playback.PlaybackCounters
 import playback.SystemUnmeteredNetworkCheck
+import playback.UpstreamTraffic
 import java.util.concurrent.Executors
 import javax.inject.Singleton
 
@@ -41,6 +42,11 @@ object SharedPlaybackModule {
     @Provides
     @Singleton
     fun playbackCounters(): PlaybackCounters = PlaybackCounters()
+
+    /** One for the player and the preloaders together: it is what puts the player's fetches first. */
+    @Provides
+    @Singleton
+    fun upstreamTraffic(): UpstreamTraffic = UpstreamTraffic()
 
     @Provides
     @Singleton

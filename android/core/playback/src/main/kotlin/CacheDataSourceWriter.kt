@@ -31,6 +31,9 @@ import java.util.concurrent.Executors
  * screen's own numbers should not move just because a series is preloading
  * quietly in the background.
  *
+ * Its fetches are [traffic]'s background ones, so a preload waits while the
+ * player is fetching and fills the cache only in the gaps playback leaves.
+ *
  * The factory is built once, lazily, on the first [write] rather than at
  * construction — building it opens the shared disk cache, and a preloader
  * that is never asked to take anything should never have done that. Both
@@ -52,6 +55,7 @@ class CacheDataSourceWriter internal constructor(
     private val counters: PlaybackCounters,
     private val currentCore: () -> CoreInterface?,
     private val lan: LanCacheRuntime? = null,
+    private val traffic: UpstreamTraffic = UpstreamTraffic(),
     private val writeDispatcher: CoroutineDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher(),
     private val openCache: suspend () -> Cache,
 ) : PreloadWriter, FilmPreloadWriter {
@@ -63,8 +67,9 @@ class CacheDataSourceWriter internal constructor(
         context: Context,
         counters: PlaybackCounters,
         lan: LanCacheRuntime? = null,
+        traffic: UpstreamTraffic = UpstreamTraffic(),
         currentCore: () -> CoreInterface?,
-    ) : this(counters, currentCore, lan, openCache = { CacheProvider.get(context) })
+    ) : this(counters, currentCore, lan, traffic, openCache = { CacheProvider.get(context) })
 
     private var factory: CacheDataSource.Factory? = null
 
@@ -104,7 +109,7 @@ class CacheDataSourceWriter internal constructor(
         // title has no route to, or none at all, must not fail the byte
         // preload this call otherwise exists for.
         orDefault(Unit, "hold subtitles") { currentCore()?.holdSubtitles(item.setId) }
-        val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, currentCore = currentCore).also { factory = it }
+        val built = factory ?: cacheDataSourceFactory(openCache(), counters, lan, gate = traffic::background, currentCore = currentCore).also { factory = it }
         val writer =
             CacheWriter(built.createDataSource(), DataSpec(setUri(item.setId)), null) { _, bytesCached, _ ->
                 onProgress(bytesCached)
