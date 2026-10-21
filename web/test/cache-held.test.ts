@@ -116,12 +116,20 @@ describe("which sets are held", () => {
     expect(held.has(partial)).toBe(false);
   });
 
-  test("counts the bytes of a set partly there, and never past its size", async () => {
+  test("counts the bytes of a set part by part, a short last chunk exactly", async () => {
     const held = new HeldSets(root, expectedChunks(db));
-    expect(await held.heldBytes(HALF, CACHE_CHUNK * 4)).toBe(CACHE_CHUNK * 2);
-    // Its short last chunks count whole, so the count is capped at the size.
-    expect(await held.heldBytes(WHOLE, CACHE_CHUNK * 3 + 9)).toBe(CACHE_CHUNK * 3 + 9);
-    expect(await held.heldBytes(NONE, CACHE_CHUNK)).toBe(0);
+    expect(await held.heldBytes(HALF, [{ idx: 0, len: CACHE_CHUNK * 4 }])).toBe(CACHE_CHUNK * 2);
+    const whole = [{ idx: 0, len: CACHE_CHUNK * 2 + 10 }, { idx: 1, len: CACHE_CHUNK - 1 }];
+    expect(await held.heldBytes(WHOLE, whole)).toBe(CACHE_CHUNK * 3 + 9);
+    expect(await held.heldBytes(NONE, [{ idx: 0, len: CACHE_CHUNK }])).toBe(0);
+  });
+
+  test("a part missing only its short last chunk still reads short of whole", async () => {
+    const gap = "01SETGAP0000000000000006";
+    await chunks(gap, 0, 2);
+    await chunks(gap, 1, 1);
+    const parts = [{ idx: 0, len: CACHE_CHUNK + 5 }, { idx: 1, len: CACHE_CHUNK + 5 }];
+    expect(await new HeldSets(root, expectedChunks(db)).heldBytes(gap, parts)).toBe(CACHE_CHUNK * 2 + 5);
   });
 
   test("answers false before the first scan rather than throwing", () => {

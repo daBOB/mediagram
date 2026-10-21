@@ -586,7 +586,7 @@ function mountPlayer() {
     const began = Date.now();
 
     const look = () => {
-      if (!playing || waitingToStart === null) return stopWaitingToStart();
+      if (!playing || waitingToStart === null || video.error) return stopWaitingToStart();
 
       const ahead = bufferedAhead(video.buffered, video.currentTime);
       if (mode === "buffered") showWarmUp(ahead);

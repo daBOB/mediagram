@@ -6,12 +6,12 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { playableSet } from "../catalog";
+import { partLocations, playableSet } from "../catalog";
 import type { PlayerResponse } from "../http/contracts";
 import { bodiless, withBody } from "../response";
 import type { TrafficSnapshot } from "../telegram/fetch-traffic";
 import type { HeldSets } from "./held";
-import type { SeriesPreload } from "./series-preload";
+import type { PreloadItem, SeriesPreload } from "./series-preload";
 
 export interface DownloadFactsSources {
   /** Absent without a cache: nothing is ever on disk. */
@@ -27,6 +27,17 @@ export interface DownloadFactsSources {
  * shortcut: the rates are the whole server's, so two viewers streaming at
  * once each see the sum; per-set rates if a household ever does that often.
  */
+/**
+ * The preload worth naming to a viewer of `set`: an episode of the same show,
+ * which they can see already. The preloader is the whole server's, and the
+ * episode it takes in may be another household's, or one a profile's hidden
+ * sections keep off its shelves; nor is the title open its own "next".
+ */
+function nextFor(db: Database, set: { setId: string; show: string | null }, next: PreloadItem | null): PreloadItem | null {
+  if (!next || next.setId === set.setId || set.show === null) return null;
+  return playableSet(db, next.setId)?.show === set.show ? next : null;
+}
+
 export async function downloadFactsResponse(
   db: Database,
   sources: DownloadFactsSources,
@@ -35,16 +46,16 @@ export async function downloadFactsResponse(
 ): Promise<PlayerResponse> {
   const set = playableSet(db, setId);
   if (!set) return bodiless(404);
-  const next = sources.preload?.downloading() ?? null;
-  const nextTotal = next ? next.locations.reduce((sum, location) => sum + location.span.len, 0) : 0;
+  const next = nextFor(db, set, sources.preload?.downloading() ?? null);
+  const nextParts = next?.locations.map((location) => location.span) ?? [];
   const body = {
-    onDiskBytes: (await sources.held?.heldBytes(setId, set.total)) ?? 0,
+    onDiskBytes: (await sources.held?.heldBytes(setId, partLocations(db, setId).map((location) => location.span))) ?? 0,
     totalBytes: set.total,
     traffic: sources.traffic(),
     next: next && {
       title: next.title,
-      heldBytes: (await sources.held?.heldBytes(next.setId, nextTotal)) ?? 0,
-      totalBytes: nextTotal,
+      heldBytes: (await sources.held?.heldBytes(next.setId, nextParts)) ?? 0,
+      totalBytes: nextParts.reduce((sum, part) => sum + part.len, 0),
     },
   };
   return withBody(JSON.stringify(body), "application/json", { headOnly, headers: { "cache-control": "no-store" } });

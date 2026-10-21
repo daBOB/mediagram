@@ -17,7 +17,7 @@
 
 import { join } from "node:path";
 import type { Database } from "bun:sqlite";
-import { countChunks } from "./held-chunks";
+import { countChunks, heldBytesOf } from "./held-chunks";
 import { CACHE_CHUNK } from "./key";
 
 /** How long a reading is trusted before another scan is started. */
@@ -117,14 +117,9 @@ export class HeldSets {
     return this.isHeld(join(this.root, String(CACHE_CHUNK)), setId, want);
   }
 
-  /**
-   * How many bytes of this set are on disk, looked at now: its chunks counted
-   * and taken at full size, so a part's short last chunk counts whole — at
-   * most a chunk over per part, and never past [totalBytes].
-   */
-  async heldBytes(setId: string, totalBytes: number): Promise<number> {
-    const chunks = await countChunks(join(this.root, String(CACHE_CHUNK)), setId);
-    return Math.min(chunks * CACHE_CHUNK, totalBytes);
+  /** How many bytes of this set's `parts` are on disk, looked at now. */
+  heldBytes(setId: string, parts: { idx: number; len: number }[]): Promise<number> {
+    return heldBytesOf(join(this.root, String(CACHE_CHUNK)), setId, parts);
   }
 
   /** How many are held, for anything that wants to say so. */

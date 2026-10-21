@@ -18,15 +18,16 @@ import { emptyIndex } from "./index-fixture";
 
 const OPEN = "01SETOPEN000000000000001";
 const NEXT = "01SETNEXT000000000000002";
+const OTHER = "01SETOTHER00000000000003";
 
 let root: string;
 let db: ReturnType<typeof emptyIndex>;
 
-function addSet(setId: string, len: number) {
+function addSet(setId: string, len: number, show = "A Show") {
   db.run(
-    `INSERT INTO sets(set_id, kind, container, total, part_count, status, created_at, spec_version)
-     VALUES (?, 'ep', 'mp4', ?, 1, 'complete', 1, 3)`,
-    [setId, len],
+    `INSERT INTO sets(set_id, kind, show, container, total, part_count, status, created_at, spec_version)
+     VALUES (?, 'ep', ?, 'mp4', ?, 1, 'complete', 1, 3)`,
+    [setId, show, len],
   );
   db.run(
     `INSERT INTO parts(set_id, idx, byte_offset, byte_length, chat_id, message_id, doc_id, sha256, status)
@@ -48,6 +49,7 @@ beforeAll(async () => {
   db = emptyIndex();
   addSet(OPEN, CACHE_CHUNK * 10);
   addSet(NEXT, CACHE_CHUNK * 4);
+  addSet(OTHER, CACHE_CHUNK, "Another Show");
   await chunks(OPEN, 4);
   await chunks(NEXT, 1);
 });
@@ -86,6 +88,15 @@ describe("GET /api/sets/:id/download", () => {
       traffic,
       next: { title: "Pilot", heldBytes: CACHE_CHUNK, totalBytes: CACHE_CHUNK * 4 },
     });
+  });
+
+  test("names no preload of another show, nor the title open itself", async () => {
+    const item = (setId: string): PreloadItem => ({ setId, title: "x", locations: [{ span: { idx: 0, off: 0, len: CACHE_CHUNK }, chatId: -1001, messageId: 900 }] });
+    for (const preloading of [OTHER, OPEN]) {
+      const sources = { held: held(), preload: { downloading: () => item(preloading) }, traffic: () => idle };
+      const body = JSON.parse(new TextDecoder().decode((await downloadFactsResponse(db, sources, OPEN, false)).body as Uint8Array));
+      expect(body.next).toBeNull();
+    }
   });
 
   test("says nothing is preloading when nothing is, and 404s an unknown title", async () => {
