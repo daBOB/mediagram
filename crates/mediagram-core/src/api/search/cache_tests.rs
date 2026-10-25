@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::*;
 
 fn set(id: &str) -> SearchableSet {
-    SearchableSet { set_id: id.into(), title: None, show: None, chap: None, path: None, summary: None }
+    SearchableSet { set_id: id.into(), title: None, show: None, chap: None, path: None, summary: None, original_title: None }
 }
 
 #[test]

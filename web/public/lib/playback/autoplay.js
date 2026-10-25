@@ -45,3 +45,18 @@ export function autoplayReady(at) {
   // Out of patience. Whatever is held is what it starts with.
   return Number(at.waitedMs) >= PATIENCE_MS;
 }
+
+/**
+ * Whether the browser has stopped fetching with something held. A paused
+ * video played directly loads a few seconds and stops (`suspend`), so the
+ * minute never comes and waiting longer gains nothing: what it holds then is
+ * all the start will get. Android's `loaderStopped`, the same rule. Only a
+ * file played directly passes `idle`: a conversion's hls.js keeps loading
+ * while paused, up to the minute, so it still waits for it.
+ * @param {{ahead: number, idle: boolean}} at
+ * @returns {boolean}
+ */
+export function loaderStopped(at) {
+  const ahead = Number(at.ahead);
+  return at.idle === true && Number.isFinite(ahead) && ahead > 0;
+}

@@ -14,12 +14,10 @@ import ui.tv.hasRail
 
 /**
  * What a page under the chrome is padded by, read instead of [Overscan]
- * directly by every composable [TvCatalogBody] can show — [TvWall],
- * [TvHome], a kept wall, the Collections and Movies department pages.
- * Provided only by [TvLibraryChrome]; every pushed frame (a title, Latest,
- * Search…) never sits under it, so those composables read the default
- * here instead — plain [Overscan] on every side, the inset they always
- * used — without any of them needing to ask which is true.
+ * directly by every page the library shows — the catalogue's own and every
+ * page opened over it, which [ui.tv.TvFrameChrome] puts under the same
+ * [TvLibraryChrome]. The default, plain [Overscan] on every side, is only
+ * for a page drawn outside it: a preview, a test.
  */
 internal data class TvPagePadding(val start: Dp, val top: Dp, val end: Dp, val bottom: Dp)
 

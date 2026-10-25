@@ -4,6 +4,7 @@ import catalog.BrowseViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
 import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.franchiseHref
@@ -35,11 +36,13 @@ internal fun TvSearchBranch(
     watch: WatchSnapshot,
     restore: TvRestoreKeys,
     browse: BrowseViewModel,
+    field: FocusRequester,
     leave: () -> Unit,
 ) {
     val here = at.depth
     BackHandler(onBack = leave)
     TvSearch(
+        field = field,
         query = at.search.orEmpty(),
         catalogState = catalogState,
         watch = watch,

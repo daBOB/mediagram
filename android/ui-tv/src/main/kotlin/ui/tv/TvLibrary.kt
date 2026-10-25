@@ -1,5 +1,8 @@
 package ui.tv
 
+import designsystem.TvStyle
+import ui.common.ambient.LocalAmbientTint
+import ui.common.ambient.AmbientTint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -14,8 +17,10 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import catalog.CatalogTab
 import catalog.CatalogUiState
 import catalog.BrowseViewModel
 import catalog.CatalogViewModel
@@ -39,8 +44,10 @@ import ui.common.settings.SettingsOutcomes
 import designsystem.LocalTvStyle
 import ui.common.RailItem
 import ui.tv.catalog.TvFetchResultDialog
-import ui.tv.catalog.TvMenuEntryKey
+import ui.tv.catalog.TvPillEntryKey
 import ui.tv.catalog.TvProfileEntryKey
+import ui.tv.chrome.LocalTvMenu
+import ui.tv.chrome.TvMenuSlot
 import ui.tv.player.TvTogetherNotice
 import ui.tv.profile.TvChosenProfile
 import ui.tv.system.TvMenuPage
@@ -118,6 +125,10 @@ internal fun TvLibrary(
     // A rail row chosen from the menu in a style with no rail, for the
     // catalogue to run the way the rail would have once it is composed again.
     var pendingRail by remember { mutableStateOf<RailItem?>(null) }
+    // A pill pressed over a page, for the catalogue to open on once it is composed again.
+    var pendingTab by remember { mutableStateOf<String?>(null) }
+    // The search page's field, for the bar's Search to put the remote back in rather than open a second search.
+    val searchField = remember { FocusRequester() }
     val hasRail = LocalTvStyle.current.hasRail
     val top = at.top
     val here = at.depth
@@ -146,80 +157,138 @@ internal fun TvLibrary(
             if (top == null) restore.opened(here, setId) else restore.forget(here)
             at.openPlayer(setId)
         }
+    // Ambient's colour of the moment, kept across pages so a title glows on from the wall that opened it.
+    val ambientTint = remember { AmbientTint() }.takeIf { LocalTvStyle.current == TvStyle.AMBIENT }
+
+    // A rail row that moves the catalogue — My List, Continue, Latest, Genres, Stats — chosen
+    // over a page or from the avatar's menu: back to the catalogue, which runs it as its own rail would.
+    val runRail = { item: RailItem ->
+        menuOpen = false
+        restore.forget(0)
+        pendingRail = item
+        at.toCatalog()
+    }
+    // A pill pressed over a page: the catalogue opens on that tab with the remote kept on the pill.
+    val runPill = { tab: CatalogTab ->
+        restore.opened(0, TvPillEntryKey)
+        pendingTab = tab.key
+        at.toCatalog()
+    }
+
+    // The avatar's menu, drawn by whichever chrome is on screen over the page it was opened
+    // from. A screen it opens (TMDB key…, Settings, System) closes it first: the page under it
+    // would otherwise take the remote back from it on the way back.
+    val menuSlot =
+        TvMenuSlot(
+            open = menuOpen,
+            onDismiss = { menuOpen = false },
+            panel = { dismiss, modifier ->
+                TvMenuPage(
+                    menu = menu.copy(
+                        onTmdbKey = { menuOpen = false; menu.onTmdbKey() },
+                        onSettings = { menuOpen = false; menu.onSettings() },
+                        onSystem = { menuOpen = false; menu.onSystem() },
+                    ),
+                    restoreKey = restore.of(here),
+                    watchingAs = profile.name,
+                    // The picker replaces the library; noting the avatar first is
+                    // what lets "Stay as I am" hand the remote back to it.
+                    onSwitchProfile = {
+                        menuOpen = false
+                        restore.opened(here, TvProfileEntryKey)
+                        profile.onChoose()
+                    },
+                    modifier = modifier,
+                    railItems = if (hasRail) emptyList() else RailItem.entries,
+                    onRailItem = { item ->
+                        when (item) {
+                            RailItem.SETTINGS -> { menuOpen = false; menu.onSettings() }
+                            RailItem.SYSTEM -> { menuOpen = false; menu.onSystem() }
+                            else -> runRail(item)
+                        }
+                    },
+                    onBack = dismiss,
+                )
+            },
+        )
+
     Box(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
-            when (top) {
-                FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogViewModel, leave, onCastOver = home) }
+        CompositionLocalProvider(LocalTogetherOffers provides togetherOffers, LocalTvMenu provides menuSlot, LocalAmbientTint provides ambientTint) {
+            when {
+                top == FrameKind.PLAYER -> key(casts) { TvPlayerBranch(at, catalogViewModel, leave, onCastOver = home) }
 
-                FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
-
-                FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, leave)
-
-                FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
-
-                FrameKind.TITLE ->
-                    TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
-
-                FrameKind.COLLECTION ->
-                    TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
-
-                FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
-
-                FrameKind.PERSON ->
-                    TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
-
-                FrameKind.FRANCHISE ->
-                    TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
-
-                FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
-
-                FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
-
-                FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
-
-                FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
-
-                FrameKind.STATS -> TvStatsFrame(leave)
+                top == FrameKind.MENU -> TvMenuScreenBranch(at, fetchState, fetchViewModel, leave)
 
                 // The TV is what a remote drives; it never opens one.
-                FrameKind.REMOTE -> Unit
-
-                // Nothing open, the trimmed menu page opened from the bar's avatar:
-                // Back from it puts the remote back on that button.
-                null if menuOpen ->
-                    TvMenuPage(
-                        menu = menu,
-                        restoreKey = restore.of(here),
-                        watchingAs = profile.name,
-                        // The picker replaces the library; noting the avatar first is
-                        // what lets "Stay as I am" hand the remote back to it.
-                        onSwitchProfile = {
-                            menuOpen = false
-                            restore.opened(here, TvProfileEntryKey)
-                            profile.onChoose()
-                        },
-                        railItems = if (hasRail) emptyList() else RailItem.entries,
-                        onRailItem = { item ->
-                            when (item) {
-                                // Opened over this page, so Back comes back to it, as from the rail.
-                                RailItem.SETTINGS -> menu.onSettings()
-                                RailItem.SYSTEM -> menu.onSystem()
-                                else -> {
-                                    menuOpen = false
-                                    // Drops the key Settings or System left, which would read as Back from them.
-                                    restore.forget(here)
-                                    pendingRail = item
-                                }
-                            }
-                        },
-                    ) {
-                        menuOpen = false
-                        restore.opened(here, TvMenuEntryKey)
-                    }
+                top == FrameKind.REMOTE -> Unit
 
                 // Nothing open: the shelves.
-                null ->
-                    TvLibraryHomeFrame(saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu, pendingRail, { pendingRail = null }) { menuOpen = true }
+                top == null ->
+                    TvLibraryHomeFrame(
+                        saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu,
+                        pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null },
+                    ) { menuOpen = true }
+
+                // Every other page sits in the catalogue's own rail and bar, as every web page sits in its shell.
+                else ->
+                    TvFrameChrome(
+                        ready = ready,
+                        lit = tvFrameSection(top, resolved.collection, shelves),
+                        profile = profile,
+                        onPill = runPill,
+                        onRail = { item ->
+                            when (item) {
+                                RailItem.SETTINGS -> menu.onSettings()
+                                RailItem.SYSTEM -> menu.onSystem()
+                                else -> runRail(item)
+                            }
+                        },
+                        // shortcut: Back from search or the menu opened here lands on the page's own first stop, not
+                        // the bar's button, and the menu, which replaces the page, drops its tab and filter — the
+                        // catalogue's sentinel keys and saved state mean nothing to a page; teach the pages if missed.
+                        onSearch = {
+                            if (top == FrameKind.SEARCH) {
+                                searchField.requestFocus()
+                            } else {
+                                restore.forget(here)
+                                at.openSearch()
+                            }
+                        },
+                        onMenu = { menuOpen = true },
+                    ) {
+                        when (top) {
+                            FrameKind.SEARCH -> TvSearchBranch(at, catalogState, watch, restore, browse, searchField, leave)
+
+                            FrameKind.GENRE -> TvGenreBranch(at, catalogState, watch, restore, leave)
+
+                            FrameKind.TITLE ->
+                                TvTitleFrame(at, catalogState, resolved.title, watch, watchedIds, allFilms, restore, here, browse, catalogViewModel, kidsProfile, leave)
+
+                            FrameKind.COLLECTION ->
+                                TvCollectionFrame(at, catalogState, resolved.collection, watch, watchedIds, allShows, heldIds, restore, here, browse, catalogViewModel, kidsProfile, leave)
+
+                            FrameKind.LIST -> TvListBranch(at, resolved.list, catalogState, catalogViewModel, restore, leave)
+
+                            FrameKind.PERSON ->
+                                TvPersonFrame(at, catalogState, at.personId, watch, heldIds, shelves, restore, here, browse, leave)
+
+                            FrameKind.FRANCHISE ->
+                                TvFranchiseFrame(at, catalogState, at.franchiseId, watch, heldIds, allFilms, restore, here, browse, leave)
+
+                            FrameKind.GENRES -> TvGenresFrame(at, shelves, restore, here, leave)
+
+                            FrameKind.LATEST -> TvLatestFrame(at, shelves, watch, heldIds, restore, here, leave)
+
+                            FrameKind.MOVIES_PAGE -> TvMoviesPageFrame(at, movieFilms, watch, heldIds, restore, here, leave)
+
+                            FrameKind.PRELOADS -> TvPreloadsFrame(at, catalogState, restore, here, leave)
+
+                            FrameKind.STATS -> TvStatsFrame(leave)
+
+                            // Drawn outside the chrome, above.
+                            FrameKind.PLAYER, FrameKind.MENU, FrameKind.REMOTE -> Unit
+                        }
+                    }
             }
         }
         // The pill watch together's notices use, over the page: words to read, no focus, so the remote stays where it was.

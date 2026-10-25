@@ -38,6 +38,8 @@ struct SetInput {
     path: Option<String>,
     #[serde(default)]
     summary: Option<String>,
+    #[serde(default, rename = "originalTitle")]
+    original_title: Option<String>,
 }
 
 impl From<SetInput> for SearchableSet {
@@ -49,6 +51,7 @@ impl From<SetInput> for SearchableSet {
             chap: input.chap,
             path: input.path,
             summary: input.summary,
+            original_title: input.original_title,
         }
     }
 }

@@ -82,6 +82,9 @@ internal fun TvHomeCover(
     // own subtree to search — the bar's own selected pill, the same stop
     // Back already reaches from anywhere in the page.
     upExit: FocusRequester,
+    // Where Down from the action row leads instead of the nearest stop
+    // below — the live watch-together plate, when there is one.
+    downExit: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     if (films.isEmpty()) return
@@ -130,6 +133,7 @@ internal fun TvHomeCover(
             onFocusDot = { index -> currentId = films[index].setId },
             watchNowFocus = arrivalFocus,
             upExit = upExit,
+            downExit = downExit,
             // Inside Google TV's card, at its words' own inset.
             modifier = Modifier.align(Alignment.BottomStart).then(if (inset) Modifier.padding(start = InsetCardPadding, bottom = InsetCardMargin) else Modifier),
         )

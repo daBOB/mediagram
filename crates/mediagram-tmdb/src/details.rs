@@ -63,6 +63,9 @@ pub struct TitleDetailsRow {
     /// TMDB's ISO 639-1 code for the title's original language (`ja`, `en`,
     /// …). What decides, together with genre, whether a title is anime.
     pub original_language: Option<String>,
+    /// The title as it was released, in its own language — what a viewer
+    /// who knows the film as `Point Break` searches for in a German library.
+    pub original_title: Option<String>,
 }
 
 /// Reads a details payload into a row, keeping only what a viewer would read.
@@ -110,6 +113,11 @@ pub fn from_details(kind: Kind, lang: &str, details: &DetailsResponse) -> TitleD
         original_language: details
             .original_language
             .clone()
+            .filter(|t| !t.trim().is_empty()),
+        original_title: details
+            .original_title
+            .clone()
+            .or_else(|| details.original_name.clone())
             .filter(|t| !t.trim().is_empty()),
     }
 }

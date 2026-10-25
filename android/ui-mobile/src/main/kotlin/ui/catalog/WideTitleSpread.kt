@@ -34,6 +34,8 @@ import designsystem.PageTitle
 import ui.catalog.home.OnImage
 import ui.catalog.home.fluid
 import ui.catalog.home.gutterFor
+import ui.common.ambient.LocalAmbientTint
+import ui.common.ambient.keepsGlowAway
 import ui.common.catalog.HeroArtwork
 import ui.pageGround
 
@@ -93,7 +95,7 @@ internal fun WideTitleSpread(
                 val strip = Modifier.fillMaxHeight().fillMaxWidth(fraction).align(Alignment.CenterEnd)
                 // `.spread-art img` alone settles in (`title-page.css:63`), clipped by its
                 // block (`:62`); the scrims below are the still `::after` and never move.
-                HeroArtwork(path = art, modifier = strip.clipToBounds().artIn(reveals.of(HERO_ART)))
+                HeroArtwork(path = art, modifier = strip.keepsGlowAway(LocalAmbientTint.current).clipToBounds().artIn(reveals.of(HERO_ART)))
                 // `.spread-art::after`, back to front: CSS paints its first
                 // layer on top, so the left fade into the page is drawn last.
                 Box(strip.background(Brush.verticalGradient(0f to paper.copy(alpha = 0.55f), 0.22f to Color.Transparent, 1f to Color.Transparent)))

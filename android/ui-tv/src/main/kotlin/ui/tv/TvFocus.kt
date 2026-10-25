@@ -1,5 +1,6 @@
 package ui.tv
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,7 +86,7 @@ object TvFocus {
     val featureCardShape: Shape
         @Composable
         @ReadOnlyComposable
-        get() = if (LocalTvStyle.current == TvStyle.MEDIAGRAM) FeatureCardShape else currentTvLook.cardShape
+        get() = if (LocalTvStyle.current.isMediagram) FeatureCardShape else currentTvLook.cardShape
 
     @Composable
     fun cardShape(shape: Shape = Shape): CardShape = CardDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape)
@@ -99,9 +100,12 @@ object TvFocus {
      * tv-material's own corner.
      */
     @Composable
-    fun cardBorder(shape: Shape = Shape): CardBorder =
+    fun cardBorder(
+        shape: Shape = Shape,
+        color: Color = MaterialTheme.colorScheme.primary,
+    ): CardBorder =
         CardDefaults.border(
-            focusedBorder = focusedCardBorderOf(currentTvLook, MaterialTheme.colorScheme.primary, shape),
+            focusedBorder = focusedCardBorderOf(currentTvLook, color, shape),
         )
 
     /** Explicit, not just the tv-material default: no style's card glows ([focusedCardGlowOf]). */

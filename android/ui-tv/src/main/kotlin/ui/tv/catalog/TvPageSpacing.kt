@@ -33,19 +33,31 @@ internal val StripPlateFloor = 136.tvDp
 /**
  * A plate's width in a row of posters [rowWidth] wide: `.grid.plates.strip`'s
  * `minmax(8.5rem, calc((100% - 7 * 14px) / 8))` (`catalog.css:35`), an eighth
- * of the row less its gaps, never under the floor. The web's columns are a
- * share of their own row, so each row measures itself and asks this rather
- * than taking one fixed width; a row with no bound (inside a sideways scroll)
- * takes the floor.
+ * of the row less its gaps — and where the floor wins, as many whole plates
+ * as fit at it, each widened to fill the row. The web leaves a part of the
+ * next poster at the row's end for a pointer to scroll to; on a television,
+ * where the user asked for it, a row ends on a whole poster instead. Each
+ * row measures itself and asks this; a row with no bound (inside a sideways
+ * scroll) takes the floor.
  */
-internal fun stripPlateWidth(rowWidth: Dp): Dp = if (rowWidth.isFinite) maxOf(StripPlateFloor, (rowWidth - StripGap * 7) / 8) else StripPlateFloor
+internal fun stripPlateWidth(rowWidth: Dp): Dp = wholePlates(rowWidth, StripPlateFloor, columns = 8)
 
 /** A row of stills' floor: half again the poster floor, 204 web px, so five still fit the box's row. */
 internal val LandscapeStripPlateFloor = StripPlateFloor * 1.5f
 
-/** A still's width in a row [rowWidth] wide: a fifth of the row less its gaps, never under [LandscapeStripPlateFloor]; an unbounded row takes the floor. */
-internal fun landscapeStripPlateWidth(rowWidth: Dp): Dp =
-    if (rowWidth.isFinite) maxOf(LandscapeStripPlateFloor, (rowWidth - StripGap * 4) / 5) else LandscapeStripPlateFloor
+/** A still's width in a row [rowWidth] wide: a fifth of the row less its gaps, or as many whole stills as fit at [LandscapeStripPlateFloor]; an unbounded row takes the floor. */
+internal fun landscapeStripPlateWidth(rowWidth: Dp): Dp = wholePlates(rowWidth, LandscapeStripPlateFloor, columns = 5)
+
+/** [columns] plates across [rowWidth] less their gaps, or as many whole ones as fit at [floor], widened to fill it. */
+private fun wholePlates(
+    rowWidth: Dp,
+    floor: Dp,
+    columns: Int,
+): Dp {
+    if (!rowWidth.isFinite) return floor
+    val fit = ((rowWidth + StripGap) / (floor + StripGap)).toInt().coerceIn(1, columns)
+    return (rowWidth - StripGap * (fit - 1)) / fit
+}
 
 /** `.resume-strip`'s gap (`home.css:218`): Continue's cards. */
 internal val ResumeGap = 16.tvDp
@@ -64,3 +76,22 @@ internal val ShelfHeadBelow = 36.tvDp
 /** `.shelf-sub`'s margins (`catalog.css:98`): a wall's section heading ("Movies", "Series", "Films"). */
 internal val ShelfSubAbove = 40.tvDp
 internal val ShelfSubBelow = 20.tvDp
+
+/** `.spread`'s padding, 48 under the bar and 56 under its words (`title-page.css:58`): a film's or a show's opening spread. */
+internal val SpreadWordsTop = 48.tvDp
+internal val SpreadBelow = 56.tvDp
+
+/** `.spread-title` 18, `.spread-facts` 16 and `.spread-overview` 28 below each (`title-page.css:88,94,98`). */
+internal val SpreadTitleBelow = 18.tvDp
+internal val SpreadFactsBelow = 16.tvDp
+internal val SpreadOverviewBelow = 28.tvDp
+
+/** `.tabs`' `margin-top` 8 and `.tab-panel`'s `padding-top` 36 (`title-page.css:119,133`): spread to tab row, tab row to its panel. */
+internal val TabsTop = 8.tvDp
+internal val TabPanelTop = 36.tvDp
+
+/** `.season-pick select`'s `margin-bottom` (`title-page.css:146`): a show's season picker to its episodes. */
+internal val SeasonPickBelow = 20.tvDp
+
+/** `.season h2`'s `margin-bottom` (`catalog.css:71`): a season's or a course part's heading to its first row. */
+internal val SeasonHeadBelow = 12.tvDp

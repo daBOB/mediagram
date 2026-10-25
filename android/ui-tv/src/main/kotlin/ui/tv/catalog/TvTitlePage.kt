@@ -23,7 +23,6 @@ import catalog.franchisesIn
 import data.PortraitRequestLog
 import data.ProgressPoint
 import data.ResumePoint
-import designsystem.Overscan
 import designsystem.Spacing
 import model.MediaSet
 import model.Progress
@@ -33,6 +32,7 @@ import model.clockTime
 import playback.FilmPreloadState
 import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.togetherJoinOf
+import ui.tv.chrome.LocalTvPagePadding
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -125,9 +125,10 @@ internal fun TvTitlePage(
     LaunchedEffect(initialTab) { if (restoreKey != null && initialTab > 0) selected = initialTab }
     if (selected >= tabs.size) selected = 0
     val scroll = rememberScrollState()
+    val page = LocalTvPagePadding.current
 
     TvPage {
-        Column(modifier = Modifier.fillMaxSize().testTag(TvTitlePageBodyTag).verticalScroll(scroll).padding(bottom = Overscan.vertical)) {
+        Column(modifier = Modifier.fillMaxSize().testTag(TvTitlePageBodyTag).verticalScroll(scroll).padding(bottom = page.bottom)) {
             TvTitleSpread(
                 backdropPath = set.backdropPath ?: set.posterPath,
                 title = set.title,
@@ -168,9 +169,9 @@ internal fun TvTitlePage(
                 titles = tabs,
                 selected = selected,
                 onSelect = { selected = it },
-                modifier = Modifier.padding(horizontal = Overscan.horizontal).revealsPageBelow { scroll.viewportSize },
+                modifier = Modifier.padding(start = page.start, end = page.end, top = TabsTop).revealsPageBelow(page.top) { scroll.viewportSize },
             )
-            Box(modifier = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.medium)) {
+            Box(modifier = Modifier.padding(start = page.start, end = page.end, top = TabPanelTop)) {
                 when (tabs[selected]) {
                     "Cast" -> TvCastRow(credits, onOpenPerson, portraits, fetchPortrait, restoreKey)
                     "Similar" -> TvSimilarFilms(similar, onOpenTitle, restoreKey)

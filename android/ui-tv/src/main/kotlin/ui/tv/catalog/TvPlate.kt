@@ -1,5 +1,6 @@
 package ui.tv.catalog
 
+import ui.tv.ambient.rememberCardGlow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
@@ -60,8 +61,15 @@ import ui.tv.TvFocus
  * — a finished title has its position cleared rather than parked at a
  * whole, so without the tick a plate watched to the end would look
  * untouched. A caller computes both exactly as the phone's callers do.
- * [held] puts [TvOfflineBadge] under the lines, where the phone's plate
- * puts its own.
+ * [held] puts [TvOfflineBadge] on the art's top corner, across from the tick.
+ *
+ * Every plate stands as tall as its neighbours, wherever it sits: the name
+ * keeps room for two lines and the caption's line is kept when there is no
+ * caption, and [reserveMeta] keeps the meta's line on a wall where some
+ * plates carry one (Continue's films beside its episodes). The badge rides on
+ * the art for the same reason, where the web and the phone set it under the
+ * lines: their plates have no box, and a line more under one of these made
+ * that card taller than the rest of its row, its "Mark finished" lower.
  *
  * [inRow] says the plate sits in a row of titles rather than on a wall: in a
  * style whose rows are stills ([rowCardsAreLandscape]) it then shows
@@ -86,14 +94,16 @@ fun TvPlate(
     held: Boolean = false,
     backdropPath: File? = null,
     inRow: Boolean = false,
+    reserveMeta: Boolean = false,
 ) {
     val landscape = inRow && rowCardsAreLandscape
+    val glow = rememberCardGlow(rowArtOf(landscape, posterPath, backdropPath))
     Card(
         onClick = onOpen,
-        modifier = modifier.semantics(mergeDescendants = true) {},
+        modifier = modifier.semantics(mergeDescendants = true) {}.then(glow.modifier),
         shape = TvFocus.cardShape(),
         scale = TvFocus.cardScale(),
-        border = TvFocus.cardBorder(),
+        border = TvFocus.cardBorder(color = glow.border ?: MaterialTheme.colorScheme.primary),
         glow = TvFocus.cardGlow(),
         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
@@ -103,32 +113,37 @@ fun TvPlate(
                 title = title,
                 progress = progress,
                 watched = watched,
+                held = held,
                 ratio = if (landscape) StillAspectRatio else PosterAspectRatio,
             )
             Text(
                 text = title,
                 style = PlateName,
+                minLines = 2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = Spacing.small, start = Spacing.small, end = Spacing.small),
             )
-            meta?.let { PlateLine(it) }
-            caption?.let { PlateLine(it) }
-            if (held) TvOfflineBadge(modifier = Modifier.padding(start = Spacing.small, top = Spacing.extraSmall, bottom = Spacing.small))
+            if (meta != null || reserveMeta) PlateLine(meta.orEmpty())
+            PlateLine(caption.orEmpty(), Modifier.padding(bottom = Spacing.small))
         }
     }
 }
 
-/** One quieter line under the name — [TvPlate]'s [meta][TvPlate] or caption. */
+/** One quieter line under the name — [TvPlate]'s [meta][TvPlate] or caption; a line's height even when empty. */
 @Composable
-private fun PlateLine(text: String) {
+private fun PlateLine(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text = text,
         style = PlateMeta,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        minLines = 1,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(horizontal = Spacing.small),
+        modifier = modifier.padding(horizontal = Spacing.small),
     )
 }
 
@@ -144,6 +159,7 @@ internal fun TvPlateArt(
     progress: Float?,
     watched: Boolean,
     modifier: Modifier = Modifier,
+    held: Boolean = false,
     ratio: Float = PosterAspectRatio,
 ) {
     Box(
@@ -181,6 +197,9 @@ internal fun TvPlateArt(
         }
         if (watched) {
             TvWatchedTick(modifier = Modifier.align(Alignment.TopEnd))
+        }
+        if (held) {
+            TvOfflineBadge(modifier = Modifier.align(Alignment.TopStart).padding(Spacing.small))
         }
     }
 }

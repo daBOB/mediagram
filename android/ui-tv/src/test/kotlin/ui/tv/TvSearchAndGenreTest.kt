@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -160,7 +161,7 @@ class TvSearchAndGenreTest {
     fun anEpisodeRowPlaysAndBackFromThePlayerLandsOnThatRow() {
         press(compose.onNodeWithContentDescription("Search"))
         type("pilot")
-        compose.onNodeWithText("Series").assertExists()
+        heading("Series").assertExists()
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         plate("A Show").assertIsFocused()
         key(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -245,10 +246,12 @@ class TvSearchAndGenreTest {
         press(plate("Film 1"))
         press(compose.onNodeWithText("Drama"))
 
-        compose.onNodeWithText("Movies").assertExists()
-        compose.onNodeWithText("Series").assertExists()
+        heading("Movies").assertExists()
+        heading("Series").assertExists()
         plate("Film 1").assertIsFocused()
 
+        // Below the fold: brought on screen first, as the box's look-ahead composes it.
+        compose.onNode(androidx.compose.ui.test.hasScrollToNodeAction()).performScrollToNode(hasText("A Show"))
         press(plate("A Show"))
         back()
         plate("A Show").assertIsFocused()
@@ -354,6 +357,9 @@ class TvSearchAndGenreTest {
     private fun plate(name: String) = compose.onNode(hasText(name) and hasClickAction())
 
     /** Typed, then waited out past the search's own pause for the answer. */
+    /** A section's heading, not the bar's pill of the same name. */
+    private fun heading(text: String) = compose.onNode(hasText(text) and !hasClickAction())
+
     private fun type(text: String) {
         field().performTextInput(text)
         settle()

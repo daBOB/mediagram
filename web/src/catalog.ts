@@ -21,7 +21,7 @@ import type { PartSpan } from "./range";
  * `crates/mediagram/tests/shared_playable_sql.rs`, which fails if the two
  * drift — the player reads the uploader's database and cannot migrate it.
  */
-export const EXPECTED_SCHEMA = 13;
+export const EXPECTED_SCHEMA = 14;
 
 /**
  * The oldest layout this build still reads.
@@ -30,8 +30,9 @@ export const EXPECTED_SCHEMA = 13;
  * `shows.collection_id`/`collection_name`/`series_type` plus the wholly new
  * `credits` and `franchises` tables, v10 only the wholly new `artwork` table,
  * v11 only `shows.original_language` plus the wholly new `anime_overrides`
- * table, v12 only the wholly new `categories` table, and v13 only the wholly
- * new `subtitle_files` and `subtitle_tracks` tables — every one of which
+ * table, v12 only the wholly new `categories` table, v13 only the wholly
+ * new `subtitle_files` and `subtitle_tracks` tables, and v14 only
+ * `shows.original_title` — every one of which
  * every reader treats as optional. Keeping v6 readable is what lets the
  * player follow a channel whose uploader has not been upgraded yet: refusing
  * its snapshots would freeze the shelf until someone upgraded another
@@ -131,15 +132,22 @@ const COLUMNS = `set_id AS setId, kind, title, show, chap, path, season, episode
  * Built per catalog: the search index this feeds is folded once for it, and
  * rebuilt with the router when a swap replaces it (`server.ts` replaceCatalog).
  */
-export function listSearchable(db: Database): Array<PlayableSet & { summary: string | null }> {
+export function listSearchable(db: Database): Array<PlayableSet & { summary: string | null; originalTitle: string | null }> {
+  // v14's `shows.original_title`, for the title or show the set is filed under.
+  const hasOriginal = db.query("SELECT 1 FROM pragma_table_info('shows') WHERE name = 'original_title'").get() !== null;
+  const original = hasOriginal
+    ? `(SELECT h.original_title FROM shows h WHERE h.source = 'tmdb' AND h.id = s.tmdb
+          AND h.kind = CASE s.kind WHEN 'movie' THEN 'movie' ELSE 'tv' END)`
+    : "NULL";
   return db
     .query(
       `SELECT ${COLUMNS},
               (SELECT body FROM assets a
-                WHERE a.set_id = s.set_id AND a.kind = 'summary' AND a.lang = '') AS summary
+                WHERE a.set_id = s.set_id AND a.kind = 'summary' AND a.lang = '') AS summary,
+              ${original} AS originalTitle
          FROM sets s WHERE ${PLAYABLE_SQL}`,
     )
-    .all() as Array<PlayableSet & { summary: string | null }>;
+    .all() as Array<PlayableSet & { summary: string | null; originalTitle: string | null }>;
 }
 
 export function listPlayable(db: Database): PlayableSet[] {

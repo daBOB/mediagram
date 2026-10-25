@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.tv.material3.Text
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import model.MediaSet
@@ -26,6 +25,8 @@ import ui.common.catalog.preloadName
 import player.preloadLabel
 import player.preloadRowState
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.asPaddingValues
 
 /**
  * What is preloading, queued, or already fully on this device — the
@@ -65,7 +66,7 @@ internal fun TvPreloadsPage(
     val focus = rememberQueueFocus(rowIds, restoreKey)
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(LocalTvPagePadding.current.asPaddingValues()),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         Text(text = "Preloads", style = TvType.headlineSmall)

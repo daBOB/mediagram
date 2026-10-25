@@ -106,5 +106,7 @@ internal fun TvSetPlate(
         progress = card.progress,
         watched = card.watched,
         held = card.held,
+        // A film beside episodes on Continue or My List keeps their meta line's room.
+        reserveMeta = true,
     )
 }

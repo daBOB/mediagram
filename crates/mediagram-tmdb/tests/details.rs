@@ -136,3 +136,23 @@ fn a_blank_original_language_is_recorded_as_none() {
         None
     );
 }
+
+/// A series' original title is its `original_name`; a film's, `original_title`.
+#[test]
+fn a_payload_records_the_original_title_of_a_series_or_a_film() {
+    let mut series = details();
+    series.original_name = Some("Murder, She Wrote".into());
+    assert_eq!(
+        from_details(Kind::Ep, "de-DE", &series).original_title.as_deref(),
+        Some("Murder, She Wrote")
+    );
+
+    let film: DetailsResponse = serde_json::from_value(serde_json::json!({
+        "id": 1089, "title": "Gefährliche Brandung", "original_title": "Point Break"
+    }))
+    .unwrap();
+    assert_eq!(
+        from_details(Kind::Movie, "de-DE", &film).original_title.as_deref(),
+        Some("Point Break")
+    );
+}

@@ -8,15 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import designsystem.Spacing
-import model.heldOfBudget
-import model.humanSize
 import system.CacheBudgetViewModel
 import system.cacheBudgetChoices
 import ui.tv.TvTextRow
@@ -24,9 +18,10 @@ import ui.tv.catalog.TvQuietLine
 
 /**
  * The cache block of Settings, the phone's on a television: what is held
- * against the allowance, then the allowance as a choice, one row for each
- * size with the chosen one marked. Choosing a smaller one frees the
- * difference at once, and the Held row says so on the next read.
+ * against the allowance as a gauge ([TvBudgetGauge]), then the allowance as
+ * one stepper ([TvBudgetStepper]) rather than a row per size. Choosing a
+ * smaller one frees the difference at once, and the gauge says so on the
+ * next read.
  *
  * The "Cache" heading is [entryFocusRequester]'s own target — it draws
  * whether the read has finished or not, so [TvStorageSection] always has a
@@ -60,7 +55,7 @@ internal fun TvCacheBudgetBlock(
         // finishing rather than being left on a node that just got replaced.
         TvInfoBlock(
             heading = "Cache",
-            rows = current?.let { listOf("Held" to heldOfBudget(it.heldBytes, it.budgetBytes)) }.orEmpty(),
+            rows = emptyList(),
             modifier = Modifier.focusRequester(entryFocusRequester),
             focusable = true,
         )
@@ -71,18 +66,12 @@ internal fun TvCacheBudgetBlock(
         }
         if (current == null) return@Column
         if (current.fellBack) TvQuietLine("Could not use the chosen location; using ${current.volumeLabel} instead.")
-        for (bytes in cacheBudgetChoices(current.capBytes)) {
-            val chosen = bytes == current.budgetBytes
-            TvTextRow(
-                text = "${if (chosen) CHOSEN else NOT_CHOSEN}  ${humanSize(bytes)}",
-                onClick = { viewModel.choose(bytes) },
-                modifier =
-                    Modifier.semantics {
-                        selected = chosen
-                        role = Role.RadioButton
-                    },
-            )
-        }
+        TvBudgetGauge(held = current.heldBytes, budget = current.budgetBytes)
+        TvBudgetStepper(
+            budget = current.budgetBytes,
+            choices = cacheBudgetChoices(current.capBytes),
+            onChoose = viewModel::choose,
+        )
     }
 }
 

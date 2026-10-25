@@ -1,6 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import catalog.CollectionRow
 import catalog.Entry
 import catalog.SeriesResumePick
@@ -28,13 +28,13 @@ import catalog.seriesFactsLine
 import catalog.summarize
 import catalog.walk
 import data.PortraitRequestLog
-import designsystem.Overscan
-import designsystem.Spacing
+import java.io.File
 import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
 import ui.common.catalog.TitlePreloadUi
 import ui.common.catalog.togetherJoinIn
+import ui.tv.chrome.LocalTvPagePadding
 import uniffi.mediagram_core.TitleInfo
 
 /**
@@ -120,14 +120,16 @@ internal fun TvSeriesPage(
     val rowFocus = remember { FocusRequester() }
     val picker = collection.divisions.size > 1
     val restoredRow = remember(rows, restoreKey) { rows.indexOfFirst { it is CollectionRow.Item && it.set.setId == restoreKey }.takeIf { it >= 0 } }
-    val inset = with(LocalDensity.current) { Overscan.vertical.roundToPx() }
+    val page = LocalTvPagePadding.current
+    val inset = with(LocalDensity.current) { page.top.roundToPx() }
+    // What a season's card shows when the library holds no cover of its own: the show's poster.
+    val seasonArt = remember(collection) { (collection.posterPath ?: first?.posterPath)?.let(::File) }
 
     TvPage {
         LazyColumn(
             state = list,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = Overscan.vertical),
-            verticalArrangement = Arrangement.spacedBy(Spacing.small),
+            contentPadding = PaddingValues(bottom = page.bottom),
         ) {
             item(key = "spread") {
                 TvTitleSpread(
@@ -148,18 +150,24 @@ internal fun TvSeriesPage(
                     titles = tabs,
                     selected = selected,
                     onSelect = { selected = it },
-                    modifier = Modifier.padding(horizontal = Overscan.horizontal).revealsPageBelow { list.layoutInfo.viewportSize.height },
+                    modifier = Modifier.padding(start = page.start, end = page.end, top = TabsTop).revealsPageBelow(page.top) { list.layoutInfo.viewportSize.height },
                 )
             }
-            val panel = Modifier.padding(horizontal = Overscan.horizontal).padding(top = Spacing.small)
+            val panel = Modifier.padding(start = page.start, end = page.end, top = TabPanelTop)
             when (tabs[selected]) {
                 "About" -> item(key = "about") { TvFactSheet(seriesAboutFacts(facts, info, genres), panel, onOpenGenre = onOpenGenre, restoreKey = restoreKey) }
                 "Cast" -> item(key = "cast") { Box(panel) { TvCastRow(credits, onOpenPerson, portraits, fetchPortrait, restoreKey) } }
                 "Similar" -> item(key = "similar") { Box(panel) { TvSimilarShows(similar, onOpenCollection, restoreKey) } }
                 else -> {
-                    if (picker) item(key = "season-picker") { TvSeasonPicker(collection.divisions, shown, onSelectSeason, panel) }
+                    if (picker) {
+                        item(key = "season-picker") {
+                            TvSeasonPicker(collection.divisions, shown, onSelectSeason, panel.padding(bottom = SeasonPickBelow), seasonArt, marks.watchedIds)
+                        }
+                    }
                     itemsIndexed(rows, key = { index, row -> rowKeyOf(row, index) }) { index, row ->
-                        TvCollectionRow(row, marks, heldIds, onPlay, rowFocus.takeIf { index == restoredRow }, Modifier.padding(horizontal = Overscan.horizontal), episodePreload)
+                        // The first row takes the panel's own top when no picker sits above it.
+                        val top = if (index == 0 && !picker) TabPanelTop else rowTopOf(row, index)
+                        TvCollectionRow(row, marks, heldIds, onPlay, rowFocus.takeIf { index == restoredRow }, Modifier.padding(start = page.start, end = page.end, top = top), episodePreload)
                     }
                 }
             }

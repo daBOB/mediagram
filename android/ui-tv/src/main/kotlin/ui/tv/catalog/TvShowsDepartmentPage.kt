@@ -1,6 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -13,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.Department
 import catalog.Entry
@@ -21,10 +19,7 @@ import catalog.ShowsDepartment
 import catalog.firstItemOf
 import catalog.resumeCardsOf
 import catalog.showsLineOf
-import designsystem.Spacing
 import model.WatchSnapshot
-import ui.tv.catalog.home.TvBandHeading
-import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The Series or Tutorials department's own front page — `renderShowsDept`'s
@@ -74,23 +69,21 @@ internal fun TvShowsDepartmentPage(
                 restoreKey = restoreKey,
                 onOpen = { entry -> onOpenCollection(entry.key) },
                 gridState = gridState,
+                // `deptRow("All shows")` on the web (`department-pages.js:178`): a row head over the wall, not a shelf's.
+                headings = mapOf(0 to if (department == Department.SERIES) "All shows" else "All courses"),
+                headingStyle = RowHead,
                 header = {
+                    // Inside the wall's own padding, as every row below it: the hero bleeds out of it itself.
                     Column {
-                        Box(modifier = Modifier.padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end)) {
-                            TvDepartmentHero(
-                                title = department.label,
-                                line = showsLineOf(dept, department),
-                                lead = cover,
-                                // The show's own name, not whichever episode
-                                // happened to lead — the web's own `lead?.show`.
-                                leadName = lead?.let { firstItemOf(it.divisions) }?.show,
-                            )
-                        }
-                        Column(
-                            modifier =
-                                Modifier
-                                    .padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end, bottom = Spacing.medium),
-                        ) {
+                        TvDepartmentHero(
+                            title = department.label,
+                            line = showsLineOf(dept, department),
+                            lead = cover,
+                            // The show's own name, not whichever episode
+                            // happened to lead — the web's own `lead?.show`.
+                            leadName = lead?.let { firstItemOf(it.divisions) }?.show,
+                        )
+                        Column {
                             DeptResumeRow(
                                 if (department == Department.SERIES) "Continue your series" else "Continue your courses",
                                 resumeCards,
@@ -141,9 +134,6 @@ internal fun TvShowsDepartmentPage(
                                 takesFocus = takesFocus,
                                 onSectionFocused = { lastSection = NewEpisodesSection },
                             )
-                        }
-                        Box(modifier = Modifier.padding(start = LocalTvPagePadding.current.start, end = LocalTvPagePadding.current.end)) {
-                            TvBandHeading(title = "Every show", count = dept.all.size)
                         }
                     }
                 },

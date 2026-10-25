@@ -1,5 +1,7 @@
 package ui.tv
 
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasScrollToNodeAction
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -83,7 +85,7 @@ class TvLibraryTest {
         // The show's own Play takes the remote, its first season listed under the picker.
         compose.onNodeWithText("▶ Play S1 E1").assertIsFocused()
         // An episode row plays, as on the phone and the web; no title page between.
-        press(compose.onNodeWithText("1. Pilot"))
+        press(episode("1. Pilot"))
         compose.onNodeWithTag(TvPlayerScreenTag).assertExists()
 
         back() // the controls
@@ -99,7 +101,7 @@ class TvLibraryTest {
         press(plate("A Show"))
         compose.onNodeWithText("Season 2 · one episode").performSemanticsAction(SemanticsActions.RequestFocus)
         press(compose.onNodeWithText("Season 2 · one episode"))
-        compose.onNodeWithText("1. Return").assertExists()
+        episode("1. Return").assertExists()
 
         compose.runOnUiThread { fixture.catalog.reload() }
         compose.waitForIdle()
@@ -137,7 +139,7 @@ class TvLibraryTest {
     @Test
     fun anEpisodePlaysIntoItsShowAndNextMovesOnInPlace() {
         press(plate("A Show"))
-        press(compose.onNodeWithText("1. Pilot"))
+        press(episode("1. Pilot"))
         compose.onNodeWithText("Pilot", substring = true).assertExists()
 
         compose.runOnUiThread { controller.get().dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT)) }
@@ -195,6 +197,12 @@ class TvLibraryTest {
             val dispatcher = controller.get().onBackPressedDispatcher
             kotlin.test.assertFalse(dispatcher.hasEnabledCallbacks(), "a third Back is left to close the app")
         }
+    }
+
+    /** An episode row, scrolled on screen first: the season cards above leave the list below a 540dp screen's fold. */
+    private fun episode(name: String): SemanticsNodeInteraction {
+        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(name))
+        return compose.onNodeWithText(name)
     }
 
     private fun plate(name: String) = compose.onNode(hasText(name) and hasClickAction())

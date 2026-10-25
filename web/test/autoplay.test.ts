@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PATIENCE_MS, READY_SECONDS, autoplayReady } from "../public/lib/playback/autoplay.js";
+import { PATIENCE_MS, READY_SECONDS, autoplayReady, loaderStopped } from "../public/lib/playback/autoplay.js";
 
 const at = (over: Record<string, unknown> = {}) => ({
   ahead: 0,
@@ -37,5 +37,17 @@ describe("an unattended start", () => {
     // `remaining` is 0 at the very end of the previous title's clock; it must
     // not read as "everything left is buffered" when nothing is.
     expect(autoplayReady(at({ ahead: 0, remaining: 0 }))).toBe(false);
+  });
+});
+
+describe("a browser that stopped loading", () => {
+  test("starts with what it holds, since a paused video never fetches the minute", () => {
+    expect(loaderStopped({ ahead: 15, idle: true })).toBe(true);
+    expect(loaderStopped({ ahead: 15, idle: false })).toBe(false);
+  });
+
+  test("does not start on nothing", () => {
+    expect(loaderStopped({ ahead: 0, idle: true })).toBe(false);
+    expect(loaderStopped({ ahead: Number.NaN, idle: true })).toBe(false);
   });
 });

@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import catalog.initialsOf
 import coil3.compose.AsyncImage
+import designsystem.Backdrop
+import designsystem.LocalBackdrop
+import designsystem.Radius
 import designsystem.Spacing
 import java.io.File
 
@@ -71,9 +77,12 @@ internal fun PosterArt(
     progress: Float? = null,
     watched: Boolean = false,
 ) {
+    // Square, as the web's plate is; in Ambient the cards are rounded (the viewer's choice), as television's are.
+    val shape = if (LocalBackdrop.current == Backdrop.AMBIENT) RoundedCornerShape(Radius.card) else RectangleShape
     BoxWithConstraints(
         modifier = modifier
             .aspectRatio(2f / 3f)
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
@@ -102,7 +111,7 @@ internal fun PosterArt(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .border(HAIRLINE, MaterialTheme.colorScheme.outlineVariant),
+                .border(HAIRLINE, MaterialTheme.colorScheme.outlineVariant, shape),
         )
         if (progress != null) {
             LinearProgressIndicator(

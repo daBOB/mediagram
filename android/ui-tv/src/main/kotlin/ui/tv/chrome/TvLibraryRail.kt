@@ -52,8 +52,8 @@ import ui.tv.TvIndexRow
  * moves no icon. Held to the 48dp overscan margin, the icons stood 56dp in: more than the web's.
  */
 private val RailSide = 18.tvDp
-private val RailRowPadding = PaddingValues(horizontal = 12.tvDp, vertical = 10.tvDp)
-private val RailIcon = 21.tvDp
+internal val RailRowPadding = PaddingValues(horizontal = 12.tvDp, vertical = 10.tvDp)
+internal val RailIcon = 21.tvDp
 internal val RailCollapsedWidth = RailSide + 12.tvDp + RailIcon + 12.tvDp + RailSide
 internal val RailOpenWidth = 224.tvDp
 

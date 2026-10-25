@@ -25,7 +25,7 @@ import { mountPlayerHud } from "./player-hud.js";
 import { mountPlayerMenus } from "./player-menus.js";
 import { mountPlayerStats } from "./player-stats.js";
 import { mountPlayerNextTitle } from "./player-next-title.js";
-import { autoplayReady } from "./autoplay.js";
+import { autoplayReady, loaderStopped } from "./autoplay.js";
 import { hideWarmUp, showWarmUp } from "./stage-warmup.js";
 import * as state from "../watch-state.js";
 import { isFinished, resumeAt, trustedRuntime } from "../resume-point.js";
@@ -598,7 +598,7 @@ function mountPlayer() {
               ahead,
               remaining: runtime > 0 ? runtime - filmTime() : null,
               waitedMs: Date.now() - began,
-            });
+            }) || loaderStopped({ ahead, idle: !converting && video.networkState === video.NETWORK_IDLE });
       if (!ready) return;
 
       stopWaitingToStart();

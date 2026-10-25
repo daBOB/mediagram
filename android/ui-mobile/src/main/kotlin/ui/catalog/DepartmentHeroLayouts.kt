@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import ui.catalog.home.gutterFor
+import ui.common.ambient.LocalAmbientTint
+import ui.common.ambient.keepsGlowAway
 import ui.common.catalog.HeroArtwork
 import ui.pageGround
 
@@ -65,7 +67,7 @@ internal fun BoxScope.WideDeptHero(
             val artModifier = Modifier.fillMaxHeight().fillMaxWidth(artFraction).align(Alignment.CenterEnd)
             // `.dept-art img` alone settles in, clipped by `.dept-art` (`departments.css:16-17`);
             // the scrims below are its still `::after`. One flag for both widths: the page's.
-            HeroArtwork(path = art, modifier = artModifier.clipToBounds().artIn(reveals.of(HERO_ART)))
+            HeroArtwork(path = art, modifier = artModifier.keepsGlowAway(LocalAmbientTint.current).clipToBounds().artIn(reveals.of(HERO_ART)))
             // CSS paints the *first*-declared background layer on top (the
             // same rule `CoverSlide`'s own scrim already carries) — built
             // back-to-front here to land in `.dept-art::after`'s own order
@@ -159,7 +161,7 @@ internal fun CompactDeptHero(
             // layout's own scrim above.
             val paper = MaterialTheme.colorScheme.pageGround
             Box(Modifier.fillMaxWidth().height(artHeight)) {
-                HeroArtwork(path = art, modifier = Modifier.matchParentSize().clipToBounds().artIn(reveals.of(HERO_ART)))
+                HeroArtwork(path = art, modifier = Modifier.matchParentSize().keepsGlowAway(LocalAmbientTint.current).clipToBounds().artIn(reveals.of(HERO_ART)))
                 Box(
                     Modifier.matchParentSize().background(
                         Brush.verticalGradient(0f to Color.Transparent, 0.2f to Color.Transparent, 0.55f to paper.copy(alpha = 0.4f), 1f to paper),

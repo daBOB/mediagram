@@ -1,11 +1,15 @@
 package ui.tv.chrome
 
+import ui.common.ambient.AmbientBackdrop
+import ui.common.ambient.LocalAmbientTint
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,10 +21,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import catalog.ChromeCounts
 import designsystem.LocalTvStyle
 import designsystem.Overscan
+import designsystem.Spacing
 import designsystem.TvStyle
 import designsystem.tvDp
 import ui.common.RailItem
@@ -28,6 +34,24 @@ import ui.common.chrome.frostSource
 import ui.common.chrome.rememberFrost
 import ui.tv.hasRail
 import ui.tv.profile.TvChosenProfile
+
+/**
+ * The avatar's menu, as the library provides it to whichever chrome is on
+ * screen: [open] while it shows, [onDismiss] to close it, and [panel] to draw
+ * it, handed the close the chrome wraps (the remote back to the avatar first)
+ * and where to stand. Read here rather than threaded through the catalogue
+ * screen and every page, which have nothing else to do with it.
+ */
+internal class TvMenuSlot(
+    val open: Boolean,
+    val onDismiss: () -> Unit,
+    val panel: @Composable (dismiss: () -> Unit, modifier: Modifier) -> Unit,
+)
+
+internal val LocalTvMenu = compositionLocalOf<TvMenuSlot?> { null }
+
+/** Over the page while the menu is open: the page stays, set back behind it. */
+private val MenuScrim = Color.Black.copy(alpha = 0.55f)
 
 /** The bar's own row height, before its top inset: the web's `--masthead-height` (`theme.css:114`). */
 internal val TvDepartmentsBarHeight = 76.tvDp
@@ -61,7 +85,8 @@ internal val TvContentStart = RailCollapsedWidth
  * starts at the screen's overscan, Left at its start goes nowhere, and
  * [TvChromeFocus.railTarget] stands in for every rail row — the avatar,
  * whose menu lists them, or Google TV's gear for Settings. Back from the bar
- * then closes the app, as Back from the rail does here.
+ * then closes the app, as Back from the rail does here — on the catalogue;
+ * over a page ([backChain] off) it closes the page.
  *
  * [focus] is built by the caller so a restore key it already knows about
  * (`masthead:search`, `rail:latest`…) can drive the very requesters this
@@ -71,6 +96,10 @@ internal val TvContentStart = RailCollapsedWidth
  * is a sibling overlay in this [Box], so opening it never remeasures the page.
  * [blend] is the bar's opacity: `1f` for every tab without a hero to bleed
  * under; Home, over its own magazine cover, passes less.
+ *
+ * [backChain] off is a page opened over the catalogue: its own `BackHandler`
+ * closes it from the page, the bar and the rail alike, as the web's Back
+ * does from anywhere in its shell, so none of the chain above is registered.
  */
 @Composable
 internal fun TvLibraryChrome(
@@ -87,6 +116,7 @@ internal fun TvLibraryChrome(
     focus: TvChromeFocus,
     modifier: Modifier = Modifier,
     blend: Float = 1f,
+    backChain: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     var barHasFocus by remember { mutableStateOf(false) }
@@ -112,20 +142,20 @@ internal fun TvLibraryChrome(
     fun upTarget(): FocusRequester = focus.selectedPillFocus
 
     // Enabled only while the remote is actually inside content.
-    BackHandler(enabled = contentHasFocus) { pageExitTarget().requestFocus() }
+    BackHandler(enabled = backChain && contentHasFocus) { pageExitTarget().requestFocus() }
     // "bar (pill, search, avatar) -> rail" — the rail's own active row,
     // or My List with nothing kept showing.
-    BackHandler(enabled = barHasFocus && hasRail) {
+    BackHandler(enabled = backChain && barHasFocus && hasRail) {
         railArrivalTarget().requestFocus()
     }
     // The mount gap the class doc names: nothing has focus yet, which looks
     // like resting on the rail. Absorbed, not redirected — arrival focus
     // settles it a frame later.
-    BackHandler(enabled = !contentHasFocus && !barHasFocus && !railHasFocus) {}
+    BackHandler(enabled = backChain && !contentHasFocus && !barHasFocus && !railHasFocus) {}
 
     // Only the mediagram style's bar is frosted, as the tablet's and the web's are; the
     // Apple and Google styles keep their own grounds, so their pages are not recorded for a blur.
-    val frost = rememberFrost().takeIf { LocalTvStyle.current == TvStyle.MEDIAGRAM }
+    val frost = rememberFrost().takeIf { LocalTvStyle.current.isMediagram }
 
     // `top` is the bar's rendered height: it draws over this same region, so
     // a page's first stop needs that much clearance to sit below it; rows
@@ -142,6 +172,8 @@ internal fun TvLibraryChrome(
         }
 
     Box(modifier = modifier.fillMaxSize()) {
+        // Ambient's glow, under everything the chrome frames.
+        LocalAmbientTint.current?.let { AmbientBackdrop(it, Modifier.matchParentSize()) }
         Box(
             modifier =
                 Modifier
@@ -207,6 +239,20 @@ internal fun TvLibraryChrome(
                 onHasFocusChanged = { railHasFocus = it },
                 modifier = Modifier.align(Alignment.CenterStart),
             )
+        }
+
+        // Over rail, bar and page alike, under the avatar it was opened from. The remote is put
+        // back on the avatar before the panel goes, so it is never left on nothing.
+        LocalTvMenu.current?.takeIf { it.open }?.let { menu ->
+            Box(Modifier.fillMaxSize().background(MenuScrim)) {
+                menu.panel(
+                    {
+                        focus.avatarFocus.requestFocus()
+                        menu.onDismiss()
+                    },
+                    Modifier.align(Alignment.TopEnd).padding(top = padding.top - Spacing.small, end = padding.end, bottom = Overscan.vertical),
+                )
+            }
         }
     }
 }

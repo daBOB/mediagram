@@ -1,7 +1,6 @@
 package ui.tv.catalog
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,14 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.unit.dp
 import catalog.Entry
 import catalog.FranchisePage
 import catalog.franchiseLineOf
 import model.MediaSet
 import model.WatchSnapshot
-import ui.tv.chrome.LocalTvPagePadding
-import ui.tv.chrome.TvPagePadding
 import ui.tv.rememberStableRequester
 
 /**
@@ -41,9 +37,9 @@ import ui.tv.rememberStableRequester
  * wall does; with no introduction the first film takes the remote and the
  * hero's words, at its foot, stay in view.
  *
- * The hero sits inside the wall's own page margins, its words flush with
- * the plates below rather than inset a second time — a pushed frame has no
- * bar for its art to bleed under.
+ * The hero sits inside the wall's own page margins and bleeds out of them,
+ * as every department hero does: its art to the page's edges and up under
+ * the bar, its words flush with the plates below.
  */
 @Composable
 internal fun TvFranchisePage(
@@ -71,29 +67,27 @@ internal fun TvFranchisePage(
             restoreKey = restoreKey,
             onOpen = { set -> onOpenTitle(set.setId) },
             header = {
-                CompositionLocalProvider(LocalTvPagePadding provides NoInset) {
-                    TvDepartmentHero(
-                        title = franchise.name,
-                        line = line,
-                        lead = franchise.films.find { it.backdropPath != null },
-                        // The introduction taking the remote asks for the hero from its own top,
-                        // name and years included, not for the paragraph alone.
-                        modifier = Modifier.revealsFromTop(),
-                        franchiseTitle = true,
-                        overview =
-                            overview?.let { text ->
-                                {
-                                    TvReadableParagraph(text, modifier = Modifier.focusRequester(overviewFocus).focusProperties { down = firstFilm })
-                                    if (readsFirst) {
-                                        LaunchedEffect(Unit) {
-                                            overviewFocus.requestFocus()
-                                            arrived = true
-                                        }
+                TvDepartmentHero(
+                    title = franchise.name,
+                    line = line,
+                    lead = franchise.films.find { it.backdropPath != null },
+                    // The introduction taking the remote asks for the hero from its own top,
+                    // name and years included, not for the paragraph alone.
+                    modifier = Modifier.revealsFromTop(),
+                    franchiseTitle = true,
+                    overview =
+                        overview?.let { text ->
+                            {
+                                TvReadableParagraph(text, modifier = Modifier.focusRequester(overviewFocus).focusProperties { down = firstFilm })
+                                if (readsFirst) {
+                                    LaunchedEffect(Unit) {
+                                        overviewFocus.requestFocus()
+                                        arrived = true
                                     }
                                 }
-                            },
-                    )
-                }
+                            }
+                        },
+                )
             },
             // `deptRow`'s `.row-head h2` on the web (`collections-page.js:115`), not a shelf's `.shelf-sub`.
             headings = mapOf(0 to "In release order"),
@@ -106,4 +100,3 @@ internal fun TvFranchisePage(
     }
 }
 
-private val NoInset = TvPagePadding(0.dp, 0.dp, 0.dp, 0.dp)

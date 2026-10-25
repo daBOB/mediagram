@@ -23,6 +23,9 @@ internal const val TvMenuEntryKey = "masthead:menu"
 /** The catalogue's restore key for "Who's watching was opened from the avatar's menu" — "Stay as I am" hands the remote back to the avatar. */
 internal const val TvProfileEntryKey = "masthead:profile"
 
+/** The catalogue's restore key for "a pill was pressed over a page": the catalogue opens on that tab with the remote on its pill, as a pill press here leaves it. */
+internal const val TvPillEntryKey = "masthead:pill"
+
 /** The catalogue's restore key for ""All N films" was opened from the Movies department" — no plate of its own to remember instead. */
 internal const val TvMoviesPageEntryKey = "movies:all"
 
@@ -37,11 +40,11 @@ internal const val TvStatsRailKey = "rail:stats"
 
 /**
  * Where the departments bar's own pills and the restore-key sentinels
- * ([TvSearchEntryKey], [TvMenuEntryKey], [TvLatestRailKey], [TvGenresRailKey],
+ * ([TvSearchEntryKey], [TvMenuEntryKey], [TvPillEntryKey], [TvLatestRailKey], [TvGenresRailKey],
  * [TvStatsRailKey], and Settings'/System's own `menu:*` keys once either is
  * left) leave the remote once [TvCatalogScreen] knows what is selected —
  * split out of it so that composable reads as "what shows below the bar",
- * not also "which pill that is and where Back from seven different
+ * not also "which pill that is and where Back from eight different
  * sentinels sends the remote".
  */
 internal class TvCatalogRestore(
@@ -89,8 +92,10 @@ internal fun rememberTvCatalogRestore(
     }
 
     val backFromSearch = restoreKey == TvSearchEntryKey
-    val backFromMenu = restoreKey == TvMenuEntryKey
+    // The key screen opens from the avatar's menu, which closes for it: Back from it lands on the avatar.
+    val backFromMenu = restoreKey == TvMenuEntryKey || restoreKey == menuRestoreKey(MenuScreen.TmdbKey)
     val backFromProfile = restoreKey == TvProfileEntryKey
+    val fromPill = restoreKey == TvPillEntryKey
     // The rail row a page opened from the rail hands the remote back to.
     val railTarget =
         when (restoreKey) {
@@ -101,7 +106,7 @@ internal fun rememberTvCatalogRestore(
             menuRestoreKey(MenuScreen.System) -> RailItem.SYSTEM
             else -> null
         }
-    val redirectsFocus = backFromSearch || backFromMenu || backFromProfile || railTarget != null
+    val redirectsFocus = backFromSearch || backFromMenu || backFromProfile || fromPill || railTarget != null
     val wallKey = restoreKey.takeUnless { redirectsFocus }
     // Content never takes arrival focus while a sentinel is sending the
     // remote to one specific bar or rail control instead (`wallKey` is
@@ -133,6 +138,14 @@ internal fun rememberTvCatalogRestore(
     LaunchedEffect(backFromProfile, ready) {
         if (backFromProfile && ready) {
             chromeFocus.avatarFocus.requestFocus()
+            onEntryRestored()
+        }
+    }
+    LaunchedEffect(fromPill, ready) {
+        if (fromPill && ready) {
+            // A press like one made here: once the key is forgotten, the page below must still not take the remote.
+            pillPressed = true
+            chromeFocus.selectedPillFocus.requestFocus()
             onEntryRestored()
         }
     }

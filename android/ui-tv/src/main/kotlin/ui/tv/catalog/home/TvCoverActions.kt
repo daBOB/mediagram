@@ -58,6 +58,10 @@ import ui.tv.chrome.LocalTvPagePadding
  * not the selected one, once a viewer has scrolled the bar sideways — the
  * bar's own contract (proven for Back already) is that leaving content
  * upward always lands on the *selected* pill, wherever it now sits.
+ *
+ * [downExit], when given, is where Down leads from every stop: the live
+ * watch-together plate. A geometric search scores a third-width feature
+ * card straight below a button above the full-width plate between them.
  */
 @Composable
 internal fun TvCoverActions(
@@ -71,9 +75,14 @@ internal fun TvCoverActions(
     onFocusDot: (Int) -> Unit,
     watchNowFocus: FocusRequester,
     upExit: FocusRequester,
+    downExit: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
-    val up = Modifier.focusProperties { up = upExit }
+    val exits =
+        Modifier.focusProperties {
+            up = upExit
+            if (downExit != null) down = downExit
+        }
     Row(
         // On the page's start edge, where the bar's first pill and the bands below start.
         modifier = modifier.padding(start = LocalTvPagePadding.current.start, bottom = Spacing.extraLarge),
@@ -86,20 +95,20 @@ internal fun TvCoverActions(
             description = "Watch now: $title",
             filled = true,
             onClick = onPlay,
-            modifier = up.focusRequester(watchNowFocus),
+            modifier = exits.focusRequester(watchNowFocus),
         )
         TvCoverPill(
             text = if (watchlisted) "✓ My List" else "+ My List",
             description = if (watchlisted) "Remove from My List" else "Add to My List",
             filled = false,
             onClick = { onToggleWatchlist(!watchlisted) },
-            modifier = up,
+            modifier = exits,
         )
-        TvTextRow(text = "Details", onClick = onDetails, modifier = up, style = TvType.bodyMedium.copy(fontSize = 14.tvSp))
+        TvTextRow(text = "Details", onClick = onDetails, modifier = exits, style = TvType.bodyMedium.copy(fontSize = 14.tvSp))
         if (dotCount > 1) {
             Row(modifier = Modifier.padding(start = Spacing.small), horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 for (index in 0 until dotCount) {
-                    TvCoverDot(selected = index == current, index = index, count = dotCount, onFocused = { onFocusDot(index) }, modifier = up)
+                    TvCoverDot(selected = index == current, index = index, count = dotCount, onFocused = { onFocusDot(index) }, modifier = exits)
                 }
             }
         }

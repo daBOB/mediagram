@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import designsystem.Spacing
 import designsystem.hoverMotion
+import ui.ambient.readingLineCard
 
 /**
  * A plate, named underneath rather than across its face.
@@ -59,6 +60,7 @@ internal fun PosterCard(
     val source = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
+            .readingLineCard(posterPath)
             .clickable(interactionSource = source, indication = LocalIndication.current, role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) {},
     ) {

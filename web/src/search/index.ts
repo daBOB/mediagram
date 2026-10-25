@@ -26,6 +26,8 @@ export interface Searchable {
   chap: string | null;
   path: string | null;
   summary: string | null;
+  /** The provider's original title of what the set is filed under (`Point Break`), v14. */
+  originalTitle?: string | null;
 }
 
 /** Which field earned a hit. Ordered: earlier is a stronger match. */
@@ -67,10 +69,13 @@ export class SearchIndex<T extends Searchable = Searchable> {
   private readonly entries: Entry<T>[];
 
   constructor(sets: T[]) {
-    this.entries = sets.map((set) => ({
-      set,
-      forms: FIELDS.map((field) => variants(set[field])),
-    }));
+    this.entries = sets.map((set) => {
+      const forms = FIELDS.map((field) => variants(set[field]));
+      // The name it was released under reads as the name it is filed under:
+      // a film's own title, an episode's show.
+      if (set.originalTitle) forms[set.show === null ? 0 : 1]?.push(...variants(set.originalTitle));
+      return { set, forms };
+    });
   }
 
   /**

@@ -97,7 +97,7 @@ export function createCatalogRouter(options: CatalogRouterOptions) {
     const json = (value: unknown) => negotiatedResponse(request, JSON.stringify(value), "application/json", { headOnly });
     if (request.path === "/api/search") {
       const hits = index.search(request.query ?? "")
-        .map(({ summary: _summary, matched, excerpt, ...set }) => ({
+        .map(({ summary: _summary, originalTitle: _originalTitle, matched, excerpt, ...set }) => ({
           ...forBrowser(set), matched, excerpt,
         }));
       return json({ query: request.query ?? "", hits, people: people(request.query ?? "") });

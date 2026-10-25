@@ -99,6 +99,8 @@ fun TvCatalogScreen(
     onToggleWatchlist: (setId: String, listed: Boolean) -> Unit = { _, _ -> },
     pendingRail: RailItem? = null,
     onPendingRailHandled: () -> Unit = {},
+    pendingTab: String? = null,
+    onPendingTabHandled: () -> Unit = {},
 ) {
     val ready = (state as? CatalogUiState.Ready)?.takeIf { it.shelves.hasContent() }
     val shelves = ready?.shelves.orEmpty()
@@ -116,7 +118,14 @@ fun TvCatalogScreen(
     // on whichever tab now sits there. A department the refresh dropped
     // opens Home.
     var chosenKey by rememberSaveable { mutableStateOf(CatalogTab.Home.key) }
-    val selected = catalogTabOf(chosenKey, shelves)
+    // A pill pressed over a page opens here already on its tab, not a frame later: the bar's
+    // selected pill, where [TvPillEntryKey] puts the remote, is that tab's from the first frame.
+    val selected = catalogTabOf(pendingTab ?: chosenKey, shelves)
+    LaunchedEffect(pendingTab) {
+        pendingTab ?: return@LaunchedEffect
+        chosenKey = pendingTab
+        onPendingTabHandled()
+    }
     val choose = { tab: CatalogTab ->
         if (tab != selected) {
             chosenKey = tab.key

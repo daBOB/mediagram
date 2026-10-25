@@ -5,6 +5,82 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.141.1 — The next episode starts on the web without the long wait
+
+**Fixed** (web player)
+
+- **The countdown's next episode starts in seconds, not 45**: it waited for a minute of buffer, which a paused video played directly never gets — Chrome loads a few seconds and stops — so "Warming up · 0:15 of 1:00" sat still until the 45 s patience ran out. The wait now also ends once the browser has stopped loading with something held, the rule Android's warm-up already had. A conversion still waits for its minute.
+
+## 0.141.0 — Search finds a title by its original name
+
+**Fixed** (web player, Android tablet, phone and TV)
+
+- **"point" finds Point Break**: the library knows a title by its German name only, so a film or a show was not found by the name it was released under ("point" found Match Point but not Gefährliche Brandung; "murder" missed Mord ist ihr Hobby). Search now also matches TMDB's original title, a film's as its title and an episode's show's as its show.
+
+**Changed** (index schema v14, uploader)
+
+- `shows.original_title` holds TMDB's `original_title` / `original_name`, filled from the cached details payload on the next `metadata` run (no TMDB requests) and merged between machines like every other `shows` column. An uploader older than 0.141.0 refuses to pull a v14 channel index, so the other uploading machine must be reinstalled before its next upload publishes. Players on older builds read the v14 index and ignore the new column.
+
+## 0.140.2 — Episodes keep their own numbers
+
+**Fixed** (Android, tablet, phone and TV)
+
+- **A missing episode no longer renumbers the rest**: a season's episode list counted its rows, so a season without E02 called E03 "2". Each row now shows the set's own number (`4-5` for a double episode), as the web player's `episodeLabel` does; only a set with no number at all falls back to its place in the list.
+
+## 0.140.1 — Ambient keeps its glow off the backdrops
+
+**Fixed** (Android, Ambient)
+
+- **No dark box around a backdrop**: on title pages and department headers (tablet, phone and TV) the glow used to run right up to the art's faded edge and stop there in a hard line. The glow is now cut away around each backdrop and fades back in over 96dp, so it never meets the art at an edge and never shows over the picture. The art itself is unchanged; every other style is untouched.
+
+## 0.140.0 — Ambient on the tablet, season covers on TV
+
+**Added**
+
+- **Ambient on the tablet and phone** (Settings → Appearance → Artwork → Ambient): rounded cards and the drifting glow, in a title's or a show's own colour on its page, and on Home and the shelves in the colour of the row scrolled to (its first poster on screen). The glow and the colour pick are one shared engine with the TV's. Television keeps Ambient as a style and leaves it out of its Artwork list.
+
+**Fixed** (Android TV)
+
+- **A title opened from another's page glows in its own colour** (Ambient), not the first title's: the colour was kept with the page rather than with its picture.
+- **Season cards show each season's own cover** (the TMDB season poster the library already carried), at a poster's proportions. A season without one shows the show's poster with its number over it.
+
+## 0.139.1 — Ambient glows in colour
+
+**Changed** (Android TV, Ambient style)
+
+- **The glow takes the poster's strongest colour**, not its average: the average of a poster in red and blue came out grey and read as a pale patch on the box. A black-and-white poster still glows grey.
+- **Four smaller blobs with soft edges** drift a little livelier and merge as they pass, instead of one large round glow; fainter overall.
+
+## 0.139.0 — TV menu panel, season cards, a storage page, even cards
+
+**Added** (Android TV, each chosen by the user from mockups; the web has none of these)
+
+- **The avatar opens a menu panel** under it, over the page it was opened from (dimmed behind it), in the rail's look: who is watching with Switch profile, then Update library (with why it waits), TMDB key…, Preloads with its count, and Start over apart at the foot, each with a line icon. Back closes it and puts the remote back on the avatar; the page keeps its place. Back from the TMDB key screen lands on the avatar too.
+- **Season cards on a show's page** in place of the season chips: the show's art with the season's number over it, its watched share as a rule along the foot, "Season 2 · eight episodes" and how many are watched under it; the season showing is underlined.
+- **Settings → Storage** shows how much is held as a gauge, the budget as one stepper (Left/Right), and each place as a card with its free space, instead of radio lists.
+- **Ambient, a fourth TV style** (Settings → Appearance), to try beside mediagram: mediagram's layout and type with rounded cards, a focus border in the focused poster's own colour, and soft blobs drifting behind the page like a lava lamp's in that colour, easing to the next poster's as the remote moves. The colour is the poster's strongest (its most vivid family of hue, from a few dozen pixels), lifted so dark posters still glow, and kept; a black-and-white poster glows grey. Four small blobs with soft edges, merging as they pass. A fragment shader on Android 13 and later (the box runs 14), one still glow before that; drawn in its own layer, so it never redraws the page.
+
+**Fixed** (Android TV)
+
+- **Every card in a row or wall stands as tall as the rest**: the name keeps room for two lines, the info line stays when empty, and the offline badge sits on the poster's corner across from the watched tick (the web sets it under the text, where its boxless plates hide the difference). "Mark finished" lines up again under Continue.
+- **Rows of posters end on a whole poster** rather than half of the next one at the right edge.
+
+## 0.138.3 — one frame for every TV page
+
+**Fixed** (Android TV)
+
+- **The rail and the departments bar stay on every page**, as the web player's shell frames every page. Before, only Home, the departments and My List/Continue had them; a title, a show, a person, a genre, Latest, search and the rest dropped both, and their content jumped 44dp left and 57dp up. On those pages Up reaches the bar, Left reaches the rail, and Back closes the page from any of the three. A show lights its department's pill, a franchise or a list Collections, and Latest, Genres and Stats their rail row, as the web's do. A pill or a My List, Continue, Latest, Genres or Stats row goes back to the catalogue and opens there, with the remote on that pill; Back then walks the catalogue's own way (pill, rail), not back to the page, where the web's Back would return to it. The bar's Search on the search page puts the remote back in its field instead of opening a second search. Settings and the player keep the whole screen.
+- **A title's or a show's page spaces itself as the web's does**: the art runs under the bar, and the gaps from spread to tabs, tabs to panel and season picker to episodes are the web's. Episodes and lessons are ruled rows, at least 56px of the web's tall, with no gap between them; their words start on the page's edge (the web's are 8px in), so Left from one still reaches the rail. Moving down to the tab row stops it just under the bar.
+- **The department pages start their words once, at the page's edge.** The hero's words stood two gutters in on Movies, Documentaries and Collections and three on Shows and Anime, with the rows below at two. The art now runs edge to edge and up under the bar, as on Home. The Continue rows there take the web's row gaps. Shows' last wall is "All shows" ("All courses"), with the web's gaps.
+- Both kinds of shelf heading draw the same 1dp rule.
+
+## 0.138.2 — the TV home's features in the web's three columns
+
+**Fixed** (Android TV)
+
+- **Home's three feature cards sit side by side**, as the web player sets them at the TV's width, instead of one full-width card over a pair (the tablet's layout below 1180px). The titles take the web's sizes, a short rule sits under each title, the art is cropped where the web crops it, and long titles and taglines are no longer cut off.
+- **Down from the cover reaches a live watch-together invite** again: with the narrower cards, Down from Watch landed on the first card instead.
+
 ## 0.138.1 — playback before preload, warm-up and download facts
 
 **Fixed** (Android phone, tablet and TV)

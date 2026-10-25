@@ -88,3 +88,16 @@ takes the whole file down at first use. Rule: in Android code, write character c
 (`[\s\x0B\p{Z}﻿]` is exactly JavaScript's `\s`) and avoid embedded flags other than
 `(?i)`/`(?m)`/`(?s)`; JVM unit tests do not exercise Android's regex engine, so a device walk
 is the check for any new pattern.
+
+## 2026-10-23 — A look the user approved is not mine to extend
+
+In Ambient the glow stopped at a dark box around each backdrop. I offered to make the art's
+fade see-through so the glow ran under it; the user said yes, then saw blobs drifting over
+the pictures: "the blobs should be over the backdrops? i dont think so". A softer variant
+(glow only in the faded edge) still put glow inside the art, and the user chose "Never
+inside the art" — and on seeing the box back: "now looks the same shit as before ?". Both
+complaints stood together: no glow over the picture *and* no box; I had offered them as a
+trade-off. Rule: an effect the user designed (the glow sits *behind* the page) keeps its
+layering; when two of the user's complaints seem to conflict, look for the fix that meets
+both (here: cut the glow away around the art) before asking them to pick one, and show it on
+the device before calling it done.

@@ -61,7 +61,8 @@ internal fun TvAppearanceSection(
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.small)) {
             Text(text = "Artwork", style = SectionHead)
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.medium)) {
-                for (entry in Backdrop.entries) {
+                // Ambient is a style here, not a way of drawing artwork: the tablet's backdrop choice is left out.
+                for (entry in Backdrop.entries.filter { it != Backdrop.AMBIENT }) {
                     // Shares the row rather than a fixed card width: the content
                     // pane beside the index is narrower than four fixed cards,
                     // and the last ones were squeezed to a sliver.

@@ -25,10 +25,10 @@ import catalog.everyFilm
 import catalog.franchisesIn
 import catalog.searchGroupsOf
 import data.PortraitRequestLog
-import designsystem.Overscan
 import model.WatchSnapshot
 import ui.common.catalog.searchVisitState
 import ui.tv.TvTextField
+import ui.tv.chrome.LocalTvPagePadding
 
 /** The search field's own tag — it carries no text of its own to be found by until something is typed. */
 internal const val TvSearchFieldTag = "tv-search-field"
@@ -53,10 +53,12 @@ internal fun TvSearch(
     onOpenList: (id: String) -> Unit = {},
     portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
+    field: FocusRequester = remember { FocusRequester() },
 ) {
     val viewModel: SearchViewModel = hiltViewModel()
     TvSearchScreen(
         query = query,
+        field = field,
         state = searchVisitState(viewModel, query),
         catalogState = catalogState,
         watch = watch,
@@ -94,7 +96,8 @@ internal fun TvSearch(
  * line goes back to the field.
  *
  * [query] seeds the field from the saved position; every keystroke after
- * that is [onQueryChange]'s to save.
+ * that is [onQueryChange]'s to save. [field] is the field's requester, for
+ * the bar's own Search to put the remote back in it.
  */
 @Composable
 internal fun TvSearchScreen(
@@ -112,9 +115,9 @@ internal fun TvSearchScreen(
     onOpenList: (id: String) -> Unit = {},
     portraits: PortraitRequestLog = PortraitRequestLog(),
     fetchPortrait: suspend (Long) -> String? = { null },
+    field: FocusRequester = remember { FocusRequester() },
 ) {
     var text by rememberSaveable { mutableStateOf(query) }
-    val field = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
     val catalogReady = catalogState is CatalogUiState.Ready
     val movies = remember(catalogState) { everyFilm((catalogState as? CatalogUiState.Ready)?.shelves.orEmpty()) }
@@ -158,7 +161,8 @@ internal fun TvSearchScreen(
         if (franchiseId != null) onOpenFranchise(franchiseId) else onOpenList(destination.href)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical)) {
+    val page = LocalTvPagePadding.current
+    Column(modifier = Modifier.fillMaxSize().padding(start = page.start, end = page.end, top = page.top)) {
         TvTextField(
             value = text,
             onValue = { new ->

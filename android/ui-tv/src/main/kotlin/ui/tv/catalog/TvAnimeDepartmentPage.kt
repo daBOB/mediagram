@@ -1,6 +1,5 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -13,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.AnimeDepartment
 import catalog.Department
@@ -21,9 +19,7 @@ import catalog.Entry
 import catalog.animeLineOf
 import catalog.keyOf
 import catalog.resumeCardsOf
-import designsystem.Spacing
 import model.WatchSnapshot
-import ui.tv.chrome.LocalTvPagePadding
 
 /**
  * The Anime department's own front page — `anime-department.js`'s own
@@ -66,7 +62,6 @@ internal fun TvAnimeDepartmentPage(
                 if (dept.films.isNotEmpty()) put(dept.shows.size, "Films")
             }
         }
-    val pagePadding = LocalTvPagePadding.current
 
     TvPage(takesArrivalFocus = takesFocus) {
         CompositionLocalProvider(LocalTakesArrivalFocus provides (takesFocus && target == null)) {
@@ -81,11 +76,10 @@ internal fun TvAnimeDepartmentPage(
                 headings = headings,
                 headingStyle = RowHead,
                 header = {
+                    // Inside the wall's own padding, as every row below it: the hero bleeds out of it itself.
                     Column {
-                        Box(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end)) {
-                            TvDepartmentHero(title = Department.ANIME.label, line = animeLineOf(dept), lead = dept.lead)
-                        }
-                        Column(modifier = Modifier.padding(start = pagePadding.start, end = pagePadding.end, bottom = Spacing.medium)) {
+                        TvDepartmentHero(title = Department.ANIME.label, line = animeLineOf(dept), lead = dept.lead)
+                        Column {
                             DeptResumeRow(
                                 "Continue watching",
                                 resumeCards,

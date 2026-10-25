@@ -17,7 +17,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import catalog.SetCard
-import designsystem.Spacing
 import ui.common.catalog.rememberRowState
 import ui.tv.catalog.home.TvBandHeading
 import ui.tv.catalog.home.TvResumeCard
@@ -45,7 +44,7 @@ internal fun DeptResumeRow(
     onSectionFocused: (() -> Unit)? = null,
 ) {
     if (cards.isEmpty()) return
-    Box(Modifier.padding(top = Spacing.large)) { TvBandHeading(title = title, count = null) }
+    Box(Modifier.padding(top = DeptRowTop)) { TvBandHeading(title = title, count = null) }
     val inRow = remember { mutableStateOf(false) }
     val state = rememberRowState(cards.map { it.set.setId }, rememberLazyListState(cacheWindow = remember { LazyLayoutCacheWindow(ahead = ResumeCacheAhead, behind = ResumeCacheAhead) }), inUse = { inRow.value })
     LaunchedEffect(focusAt, takesFocus) { scrollThenFocus(state, focusAt, focus, takesFocus) }
@@ -53,12 +52,12 @@ internal fun DeptResumeRow(
         state = state,
         modifier =
             Modifier
-                .padding(top = Spacing.small)
+                .padding(top = RowHeadBelow)
                 .onFocusChanged { s ->
                     inRow.value = s.hasFocus
                     if (s.hasFocus) onSectionFocused?.invoke()
                 },
-        horizontalArrangement = Arrangement.spacedBy(Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(ResumeGap),
     ) {
         itemsIndexed(cards, key = { _, card -> card.set.setId }) { index, card ->
             TvResumeCard(

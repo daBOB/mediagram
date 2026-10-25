@@ -263,6 +263,7 @@ internal fun TvHome(
                             onToggleWatchlist = onToggleWatchlist,
                             arrivalFocus = coverFocus,
                             upExit = upExit,
+                            downExit = entryFocus.getValue(TvHomeSection.TOGETHER).takeIf { together != null },
                         )
                     }
                 }

@@ -81,10 +81,11 @@ internal fun TvLibraryHomeFrame(
     menu: MenuActions,
     pendingRail: RailItem?,
     onPendingRailHandled: () -> Unit,
+    pendingTab: String?,
+    onPendingTabHandled: () -> Unit,
     onOpenMenu: () -> Unit,
 ) {
-    // Only this frame draws the rail, so only here is the dot worked out: nothing reads while a
-    // title plays.
+    // Worked out where the rail is drawn — here and [TvFrameChrome] — so nothing reads while a title plays.
     val achievementDot: AchievementDotViewModel = hiltViewModel()
     val newAchievement by achievementDot.newAchievement.collectAsStateWithLifecycle()
     CompositionLocalProvider(LocalNewAchievement provides newAchievement) {
@@ -97,6 +98,8 @@ internal fun TvLibraryHomeFrame(
                 menu = menu,
                 pendingRail = pendingRail,
                 onPendingRailHandled = onPendingRailHandled,
+                pendingTab = pendingTab,
+                onPendingTabHandled = onPendingTabHandled,
                 onOpenTitle = { setId ->
                     restore.opened(here, setId)
                     at.openTitle(setId)
@@ -115,10 +118,8 @@ internal fun TvLibraryHomeFrame(
                     restore.opened(here, TvSearchEntryKey)
                     at.openSearch()
                 },
-                onOpenMenu = {
-                    restore.forget(here)
-                    onOpenMenu()
-                },
+                // Over the shelves, which stay as they are: nothing to forget.
+                onOpenMenu = onOpenMenu,
                 onOpenLatest = {
                     restore.opened(here, TvLatestRailKey)
                     at.openLatest()
