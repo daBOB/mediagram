@@ -612,8 +612,11 @@ Android has a system screen and a playback-stats overlay
   0:50" under the leader. The web never starts a title opened by hand — the
   viewer presses play, and the seek bar's buffered band and ⓘ say how full it
   is — so it warms up only the starts it makes itself (an unattended next
-  episode, against 60 s). Chrome playing a file directly holds only 20–30 s,
-  so the 60 s gate on every start would make each one wait out its 45 s.
+  episode, against 60 s). A file played directly never reaches that minute:
+  paused, Chrome loads a few seconds (3–15 s) and stops (`suspend`), so the
+  wait also ends once the browser has stopped loading with anything held —
+  Android's `loaderStopped`, the same rule. A conversion's hls.js keeps
+  loading while paused, up to 60 s, and still waits for the minute.
 - **ⓘ's network row is the server's.** Android's counts the device's own
   fetches; the web's counts every part download the server makes, so two
   viewers streaming at once each see the sum.
