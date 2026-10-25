@@ -1,5 +1,6 @@
 package ui.tv
 
+import designsystem.Radius
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -58,6 +59,9 @@ internal val MediagramLook =
         landscapeRows = false,
     )
 
+/** mediagram with rounded cards — the rest of Ambient is the glow behind the page ([ui.common.ambient.AmbientBackdrop]). */
+internal val AmbientLook = MediagramLook.copy(cardShape = RoundedCornerShape(Radius.card))
+
 /** Apple's dark system greys (gray 6, 5, 4 and the secondary label) on black. */
 internal val AppleLook =
     TvLook(
@@ -102,6 +106,7 @@ internal val TvStyle.look: TvLook
     get() =
         when (this) {
             TvStyle.MEDIAGRAM -> MediagramLook
+            TvStyle.AMBIENT -> AmbientLook
             TvStyle.APPLE -> AppleLook
             TvStyle.GOOGLE -> GoogleLook
         }
@@ -114,10 +119,10 @@ internal val TvStyle.look: TvLook
  * text, such as a count under a heading — in their readable figures grey.
  */
 internal val TvStyle.catalogueTones: CatalogueTones
-    get() = if (this == TvStyle.MEDIAGRAM) DarkTones else with(look.neutrals) { CatalogueTones(sidebar = page, ruleSoft = rule, quiet = figures) }
+    get() = if (isMediagram) DarkTones else with(look.neutrals) { CatalogueTones(sidebar = page, ruleSoft = rule, quiet = figures) }
 
 /** Only mediagram keeps the library rail; the other two styles put its rows behind the avatar. */
-internal val TvStyle.hasRail: Boolean get() = this == TvStyle.MEDIAGRAM
+internal val TvStyle.hasRail: Boolean get() = isMediagram
 
 /** The look every composable under [TvTheme] draws in. */
 internal val currentTvLook: TvLook

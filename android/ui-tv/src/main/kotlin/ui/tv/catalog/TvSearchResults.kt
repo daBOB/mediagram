@@ -26,7 +26,6 @@ import catalog.SearchDestination
 import catalog.SearchFilter
 import catalog.SearchUiState
 import data.PortraitRequestLog
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.tvSp
@@ -37,6 +36,7 @@ import ui.common.catalog.searchResultsView
 import ui.tv.TvLeaderGap
 import ui.tv.TvPageLeader
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.rememberStableRequester
 
 /**
@@ -127,7 +127,7 @@ internal fun TvSearchResults(
                                 if (requestedFocusDirection == FocusDirection.Down && shown) first.requestFocus()
                             }
                         }.focusGroup(),
-                contentPadding = PaddingValues(bottom = Overscan.vertical),
+                contentPadding = PaddingValues(bottom = LocalTvPagePadding.current.bottom),
                 verticalArrangement = Arrangement.spacedBy(Spacing.medium),
             ) {
                 items(

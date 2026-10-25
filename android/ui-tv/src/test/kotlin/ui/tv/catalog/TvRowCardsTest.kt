@@ -13,8 +13,9 @@ class TvRowCardsTest {
     }
 
     @Test
-    fun aNarrowOrUnboundedRowTakesTheFloor() {
-        assertEquals(LandscapeStripPlateFloor, landscapeStripPlateWidth(500.dp))
+    fun aNarrowRowEndsOnAWholeStillAndAnUnboundedOneTakesTheFloor() {
+        // 500dp holds three stills at the floor, widened to fill it.
+        assertEquals((500.dp - StripGap * 2) / 3, landscapeStripPlateWidth(500.dp))
         assertEquals(LandscapeStripPlateFloor, landscapeStripPlateWidth(Dp.Infinity))
         assertEquals(StripPlateFloor * 1.5f, LandscapeStripPlateFloor)
     }

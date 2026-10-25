@@ -76,7 +76,7 @@ internal fun TvCoverSlide(
         CoverScrim(compact = false, paper = MaterialTheme.colorScheme.background, modifier = Modifier.matchParentSize())
 
         val long = set.title.length > LONG_TITLE
-        val capitals = LocalTvStyle.current == TvStyle.MEDIAGRAM
+        val capitals = LocalTvStyle.current.isMediagram
         TvCoverWords(
             set = set,
             title = if (capitals) set.title.uppercase() else set.title,

@@ -1,5 +1,6 @@
 package ui.settings
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -170,6 +171,7 @@ private fun artworkSwatchBrush(backdrop: Backdrop): Brush {
         Backdrop.BLURRED -> Brush.radialGradient(listOf(accent.copy(alpha = 0.55f), Palette.Sunk))
         Backdrop.ARTWORK -> Brush.linearGradient(listOf(accent.copy(alpha = 0.7f), Palette.Sunk))
         Backdrop.SOLID -> Brush.linearGradient(listOf(Palette.Sunk, Palette.Sunk))
+        Backdrop.AMBIENT -> Brush.radialGradient(listOf(accent.copy(alpha = 0.4f), Palette.Sunk), center = Offset(160f, 40f))
     }
 }
 

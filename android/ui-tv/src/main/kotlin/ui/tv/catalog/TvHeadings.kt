@@ -115,7 +115,7 @@ internal fun TvCountedHeading(
                 Modifier
                     .padding(top = ShelfHeadRuleTop)
                     .fillMaxWidth()
-                    .height(0.5.dp)
+                    .height(1.dp)
                     .background(MaterialTheme.colorScheme.borderVariant),
         )
     }

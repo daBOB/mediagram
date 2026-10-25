@@ -19,12 +19,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import catalog.SetCard
 import catalog.spelledCountOf
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import model.ListOfSets
 import model.MediaSet
 import ui.tv.TvTextRow
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.asPaddingValues
 import ui.tv.setup.TvConfirmDialog
 
 /**
@@ -124,7 +125,7 @@ fun TvList(
     // wall must be let to put the remote on its neighbour.
     TvPage(takesArrivalFocus = !backFromPlayAll || afterRemoval != null) {
         if (sets.isEmpty()) {
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = Overscan.horizontal, vertical = Overscan.vertical)) {
+            Column(modifier = Modifier.fillMaxSize().padding(LocalTvPagePadding.current.asPaddingValues())) {
                 header()
                 TvQuietLine("Nothing on this list yet. Add titles from the player.", Modifier.padding(top = Spacing.large), style = TvType.bodyLarge)
             }

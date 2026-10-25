@@ -12,8 +12,13 @@ package model
  * borrow a formatting function would be backwards.
  */
 fun episodeLabel(set: MediaSet): String {
-    val first = set.episodeFirst ?: return ""
-    val last = set.episodeLast
-    val number = if (last != null && last != first) "$first-$last" else "$first"
+    val number = episodeNumberOf(set) ?: return ""
     return if (set.kind == Kind.EPISODE && set.season != null) "S${set.season}E$number" else number
+}
+
+/** `4`, or `4-5` for a set spanning two; `null` when unnumbered — the web's `episodeNumber`. */
+fun episodeNumberOf(set: MediaSet): String? {
+    val first = set.episodeFirst ?: return null
+    val last = set.episodeLast
+    return if (last != null && last != first) "$first-$last" else "$first"
 }

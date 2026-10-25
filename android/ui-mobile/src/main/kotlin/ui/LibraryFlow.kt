@@ -34,6 +34,7 @@ import player.TitlePreloadViewModel
 import stats.AchievementDotViewModel
 import system.FetchViewModel
 import ui.catalog.FetchResultDialog
+import ui.ambient.AmbientLibrary
 import ui.chrome.ProfileBarState
 import ui.chrome.railWidthShown
 import ui.common.FrameKind
@@ -123,7 +124,10 @@ private fun Library(profileBar: ProfileBarState, onStartOver: () -> Unit, onSign
             val inset = if (bar != null) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)) else Modifier
             Box(Modifier.weight(1f).then(inset)) {
                 CompositionLocalProvider(LocalTogetherOffers provides togetherOffers) {
-                    LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+                    // Ambient's glow lies under every page here, pushed frames included; the player paints its own.
+                    AmbientLibrary(drawn = barCanShow) {
+                        LibraryBranches(at, catalogState, catalogViewModel, fetchState, fetchViewModel, menuActions, profileBar, newAchievement)
+                    }
                 }
             }
             CastBar(bar, // Settings, System and Storage draw their own index, not the library rail; the key screen draws it.

@@ -1,9 +1,13 @@
 package ui.tv.catalog
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,13 +21,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import catalog.CollectionRow
 import catalog.watchedFractionOf
+import designsystem.LocalCatalogueTones
 import designsystem.Spacing
 import designsystem.TvType
+import designsystem.tvDp
 import model.Kind
 import model.MediaSet
 import ui.common.catalog.TitlePreloadUi
@@ -50,7 +57,8 @@ internal fun TvCollectionRow(
     preloadOf: (@Composable (MediaSet) -> TitlePreloadUi?)? = null,
 ) {
     when (row) {
-        is CollectionRow.Heading -> TvSectionHeading(row.title, modifier.padding(start = indentOf(row.depth)), if (row.depth == 0) TopSeasonHeading else SeasonHeading)
+        is CollectionRow.Heading ->
+            TvSectionHeading(row.title, modifier.padding(start = indentOf(row.depth), bottom = SeasonHeadBelow), if (row.depth == 0) TopSeasonHeading else SeasonHeading)
         is CollectionRow.Item ->
             ItemRow(
                 row = row,
@@ -66,10 +74,15 @@ internal fun TvCollectionRow(
 }
 
 /**
- * One lesson or episode to play, or one document, as the phone's own row:
- * the tick before the title so a column of them reads at a glance, and a
- * progress rule along its foot, and the offline badge under that for an
- * episode or lesson this device holds.
+ * One lesson or episode to play, or one document, as the web's `.row`
+ * (`catalog.css:76`): at least 56 tall, 16 above and below its words, a
+ * hairline under it and none between it and the next. Its words start on
+ * the page's edge rather than `.row`'s 8 in: a focus search reads anything
+ * starting further left as lying to the left, and Left from an episode then
+ * went to the season picker above instead of the rail — the tick before the
+ * title so a column of them reads at a glance, and a progress rule along
+ * its foot, and the offline badge under that for an episode or lesson this
+ * device holds.
  *
  * A document is shown and not opened — nothing here can display a handout,
  * so the row says what it is rather than offering a press that could only
@@ -88,18 +101,21 @@ private fun ItemRow(
     modifier: Modifier = Modifier,
     preload: TitlePreloadUi?,
 ) {
-    val text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}"
+    val text = "${row.number}. ${if (watched) "✓ " else ""}${row.set.title}"
     Column(modifier = modifier.fillMaxWidth().padding(start = indentOf(row.depth))) {
-        if (row.set.kind == Kind.DOCUMENT) {
-            DocumentRow(text, focus)
-        } else {
-            // The title keeps one chain whether or not a control sits beside it: the remote may be on it as one arrives.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TvTextRow(text = text, onClick = { onPlay(row.set.setId) }, modifier = Modifier.weight(1f), focusRequester = focus)
-                preload?.let { TvEpisodePreload(it, row.set.totalBytes, Modifier.padding(start = Spacing.medium)) }
+        Column(modifier = Modifier.fillMaxWidth().heightIn(min = RowMinHeight).padding(vertical = RowPaddingVertical)) {
+            if (row.set.kind == Kind.DOCUMENT) {
+                DocumentRow(text, focus)
+            } else {
+                // The title keeps one chain whether or not a control sits beside it: the remote may be on it as one arrives.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TvTextRow(text = text, onClick = { onPlay(row.set.setId) }, modifier = Modifier.weight(1f), focusRequester = focus)
+                    preload?.let { TvEpisodePreload(it, row.set.totalBytes, Modifier.padding(start = Spacing.medium)) }
+                }
+                TvItemMarks(progress, heldInFull(held, preload, row.set.totalBytes))
             }
-            TvItemMarks(progress, heldInFull(held, preload, row.set.totalBytes))
         }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(LocalCatalogueTones.current.ruleSoft))
     }
 }
 
@@ -143,5 +159,20 @@ internal fun rowKeyOf(
     }
 
 private fun indentOf(depth: Int) = (depth * IndentStep).dp
+
+/** `.row`'s `min-height` and the top and bottom of its `padding: 16px 8px` (`catalog.css:76`). */
+private val RowMinHeight = 56.tvDp
+private val RowPaddingVertical = 16.tvDp
+
+/**
+ * Space over a heading in a list of rows that sit flush: `.season`'s 32
+ * (`catalog.css:70`), 24 for a nested one (`:74`), less the heading's own
+ * small top — none over a list's first row, where the gap above the list
+ * already stands, as the web's margins collapse into it.
+ */
+internal fun rowTopOf(
+    row: CollectionRow,
+    index: Int,
+): Dp = if (row is CollectionRow.Heading && index > 0) (if (row.depth == 0) 32.tvDp else 24.tvDp) - Spacing.small else 0.dp
 
 private const val IndentStep = 24

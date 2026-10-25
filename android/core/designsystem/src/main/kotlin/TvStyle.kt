@@ -13,7 +13,11 @@ enum class TvStyle(val storageKey: String, val label: String, val note: String) 
     MEDIAGRAM("mediagram", "mediagram", "Serif covers, posters, the rail"),
     APPLE("apple", "Apple TV style", "Black, bold titles, wide cards"),
     GOOGLE("google", "Google TV style", "Grey, rounded cards, a ring on focus"),
+    AMBIENT("ambient", "Ambient", "mediagram, glowing in the poster's colour"),
     ;
+
+    /** mediagram's own layout, type and tones: mediagram itself, and Ambient, which only adds the glow and rounded cards. */
+    val isMediagram: Boolean get() = this == MEDIAGRAM || this == AMBIENT
 
     companion object {
         val Default = MEDIAGRAM

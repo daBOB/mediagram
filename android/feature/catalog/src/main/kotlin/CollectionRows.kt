@@ -2,6 +2,7 @@ package catalog
 
 import model.Kind
 import model.MediaSet
+import model.episodeNumberOf
 
 /**
  * One line of what is inside a show or a course: a heading for a division,
@@ -19,10 +20,11 @@ sealed interface CollectionRow {
         val title: String,
     ) : CollectionRow
 
+    /** [number] is the set's own (a season missing E02 goes 1, 3), or its place in the list when it has none. */
     data class Item(
         override val depth: Int,
         val set: MediaSet,
-        val position: Int,
+        val number: String,
     ) : CollectionRow
 }
 
@@ -41,7 +43,7 @@ fun rowsOf(
     divisions.flatMap { division ->
         buildList {
             add(CollectionRow.Heading(depth, division.title))
-            division.items.forEachIndexed { index, set -> add(CollectionRow.Item(depth, set, index + 1)) }
+            division.items.forEachIndexed { index, set -> add(CollectionRow.Item(depth, set, episodeNumberOf(set) ?: "${index + 1}")) }
             addAll(rowsOf(division.children, depth + 1))
         }
     }

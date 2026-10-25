@@ -122,7 +122,7 @@ class TvThemeTest {
             var tones: CatalogueTones? = null
             show(style = style) { tones = LocalCatalogueTones.current }
             val n = style.look.neutrals
-            val want = if (style == TvStyle.MEDIAGRAM) CatalogueTones(Palette.Sidebar, Palette.RuleSoft, Palette.RuleStrong) else CatalogueTones(n.page, n.rule, n.figures)
+            val want = if (style.isMediagram) CatalogueTones(Palette.Sidebar, Palette.RuleSoft, Palette.RuleStrong) else CatalogueTones(n.page, n.rule, n.figures)
             assertEquals(want, tones, "$style")
             close()
         }

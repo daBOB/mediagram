@@ -17,10 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
@@ -38,8 +40,11 @@ import designsystem.TvTypeScale
 import designsystem.tvDp
 import designsystem.tvSp
 import model.MediaSet
+import ui.common.ambient.LocalAmbientTint
+import ui.common.ambient.keepsGlowAway
 import ui.common.catalog.HeroArtwork
 import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.TvPagePadding
 
 /**
  * A department's opening page on television — the couch twin of the
@@ -62,6 +67,12 @@ import ui.tv.chrome.LocalTvPagePadding
  * remote happened to be. [leadName] is the quote's own credit; defaults to
  * [lead]'s title, the same fallback the tablet's hero uses for a show or a
  * course crediting its own name instead of whichever episode led.
+ *
+ * Set inside the page's padding, it bleeds out of it to the page's edges and
+ * up under the bar, as `.dept-hero`'s negative margins take it out of `main`'s
+ * (`departments.css:11`): the art runs edge to edge, the words start where the
+ * rows below them do, and [TvDepartmentHeroHeight] is measured from the top of
+ * the screen, as the bar's blend over it reads it.
  *
  * A franchise's page opens with this hero too (`renderFranchise`'s
  * `.franchise-hero`). [franchiseTitle] sets its name the way the web does
@@ -92,11 +103,11 @@ internal fun TvDepartmentHero(
     val paper = MaterialTheme.colorScheme.background
 
     val tallest = if (overview == null) TvDepartmentHeroHeight else Dp.Unspecified
-    Box(modifier = modifier.testTag(TvDepartmentHeroTestTag).fillMaxWidth().heightIn(min = TvDepartmentHeroHeight, max = tallest)) {
+    Box(modifier = modifier.bleeds(pagePadding).testTag(TvDepartmentHeroTestTag).fillMaxWidth().heightIn(min = TvDepartmentHeroHeight, max = tallest)) {
         if (art != null) {
             Box(Modifier.matchParentSize()) {
                 val artModifier = Modifier.fillMaxHeight().fillMaxWidth(artFraction).align(Alignment.CenterEnd)
-                HeroArtwork(path = art, modifier = artModifier)
+                HeroArtwork(path = art, modifier = artModifier.keepsGlowAway(LocalAmbientTint.current))
                 // The tablet's own three-layer scrim (`WideDeptHero`, drawn
                 // back-to-front the same way): top fade, bottom fade, then
                 // the left-into-the-page fade last, frontmost. Its own fourth,
@@ -228,3 +239,25 @@ internal const val TvDepartmentHeroTitleTestTag = "tv-department-hero-title"
 
 /** For a test to measure the quote's own bounds against the title's, at the fixed 960dp width — see [HeroCopyMaxWidth]'s own doc. */
 internal const val TvDepartmentHeroQuoteTestTag = "tv-department-hero-quote"
+
+/**
+ * CSS's negative margins: draws this block past its own slot by [page]'s start,
+ * top and end, while it takes only the slot's own room — what follows it starts
+ * where the block's drawn foot is. Inside a lazy list, whose content padding
+ * sits within its bounds, nothing it draws is clipped.
+ */
+private fun Modifier.bleeds(page: TvPagePadding): Modifier =
+    layout { measurable, constraints ->
+        val start = page.start.roundToPx()
+        val top = page.top.roundToPx()
+        val end = page.end.roundToPx()
+        val placeable =
+            if (constraints.hasBoundedWidth) {
+                val width = constraints.maxWidth + start + end
+                measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+            } else {
+                measurable.measure(constraints)
+            }
+        val height = (placeable.height - top).coerceIn(constraints.minHeight, constraints.maxHeight)
+        layout(constraints.constrainWidth(placeable.width - start - end), height) { placeable.placeRelative(-start, -top) }
+    }

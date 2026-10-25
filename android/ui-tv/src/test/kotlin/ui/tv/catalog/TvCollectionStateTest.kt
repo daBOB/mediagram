@@ -1,5 +1,10 @@
 package ui.tv.catalog
 
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
@@ -51,7 +56,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
 
         compose.onNodeWithText("A Show").assertExists()
         compose.onNodeWithTag(TvSeasonPickerTag).assertExists()
-        compose.onNodeWithText("1. Pilot").assertExists()
+        episodeRow("1. Pilot").assertExists()
         compose.onNodeWithText("1. Return").assertDoesNotExist()
 
         // The web's own option words, counted as `countOf` counts.
@@ -59,7 +64,7 @@ class TvCollectionStateTest : TvScreenStateTest() {
         compose.onNodeWithText("Season 2 · two episodes").performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals("Season 2", season.value)
-        compose.onNodeWithText("1. Return").assertExists()
+        episodeRow("1. Return").assertExists()
         compose.onNodeWithText("1. Pilot").assertDoesNotExist()
         // The pill just pressed keeps the remote while the list under it changes.
         compose.onNodeWithText("Season 2 · two episodes").assertIsFocused()
@@ -168,7 +173,8 @@ class TvCollectionStateTest : TvScreenStateTest() {
         val fifth = seasons[4].items.single()
         val fifthPill = seasonOptionOf(seasons[4])
         showCollection(show(*seasons.toTypedArray()), resume = SeriesResumePick(fifth, at = null, verb = ResumeVerb.CONTINUE))
-        compose.onNodeWithText("1. Opener 5").assertExists()
+        episodeRow("1. Opener 5").assertExists()
+        compose.onNode(hasScrollToNodeAction()).performScrollToIndex(0)
 
         // Real type, so eight pills run past the screen's edge as a long show's do on the box.
         val last = compose.onNodeWithText(seasonOptionOf(seasons.last())).getUnclippedBoundsInRoot()
@@ -238,4 +244,10 @@ class TvCollectionStateTest : TvScreenStateTest() {
         id: String,
         title: String,
     ) = set(id, Kind.TUTORIAL, title, show = "A Course", addedAt = 0)
+
+    /** An episode row, scrolled on screen first: the season cards above it leave the list under a 540dp screen's fold. */
+    private fun episodeRow(name: String): SemanticsNodeInteraction {
+        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(name))
+        return compose.onNodeWithText(name)
+    }
 }

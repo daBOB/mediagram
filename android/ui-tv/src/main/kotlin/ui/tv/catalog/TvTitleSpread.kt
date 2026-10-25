@@ -1,5 +1,10 @@
 package ui.tv.catalog
 
+import androidx.compose.runtime.LaunchedEffect
+import java.io.File
+import ui.common.ambient.keepsGlowAway
+import ui.common.ambient.rememberPosterColor
+import ui.common.ambient.LocalAmbientTint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,14 +33,13 @@ import androidx.tv.material3.Text
 import designsystem.inTvStyle
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
-import designsystem.Overscan
 import designsystem.PageTitle
 import designsystem.PageTitleCompact
-import designsystem.Spacing
 import designsystem.TvType
 import designsystem.TvTypeScale
 import designsystem.tvSp
 import ui.common.catalog.HeroArtwork
+import ui.tv.chrome.LocalTvPagePadding
 import ui.tv.catalog.home.OnImage
 
 /**
@@ -67,6 +71,13 @@ internal fun TvTitleSpread(
     actions: @Composable () -> Unit,
 ) {
     val art = backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
+    // In Ambient, the page glows in its own picture's colour from the moment it opens.
+    LocalAmbientTint.current?.let { tint ->
+        val colour = rememberPosterColor(backdropPath?.let(::File))
+        LaunchedEffect(colour) { colour?.let { tint.target = it } }
+    }
+    // The page's own inset, the chrome's: the art runs under the bar, the words start where the page's do.
+    val page = LocalTvPagePadding.current
     val paper = MaterialTheme.colorScheme.background
     Box(
         modifier =
@@ -81,7 +92,7 @@ internal fun TvTitleSpread(
             Box(Modifier.matchParentSize()) {
                 val fraction = if (LocalBackdrop.current == Backdrop.ARTWORK) 1f else ArtWidthFraction
                 val strip = Modifier.fillMaxHeight().fillMaxWidth(fraction).align(Alignment.CenterEnd)
-                HeroArtwork(path = art, modifier = strip)
+                HeroArtwork(path = art, modifier = strip.keepsGlowAway(LocalAmbientTint.current))
                 // `.spread-art::after`, back to front: CSS paints its first
                 // layer on top, so the left fade into the page is drawn last.
                 Box(strip.background(Brush.verticalGradient(0f to paper.copy(alpha = 0.55f), 0.22f to Color.Transparent, 1f to Color.Transparent)))
@@ -93,7 +104,7 @@ internal fun TvTitleSpread(
             modifier =
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = Overscan.horizontal, end = Overscan.horizontal, top = Overscan.vertical, bottom = Spacing.large)
+                    .padding(start = page.start, end = page.end, top = page.top + SpreadWordsTop, bottom = SpreadBelow)
                     .widthIn(max = SpreadCopyMaxWidth),
         ) {
             val long = title.length > LongTitle
@@ -109,14 +120,14 @@ internal fun TvTitleSpread(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { heading() }.padding(bottom = Spacing.medium),
+                modifier = Modifier.semantics { heading() }.padding(bottom = SpreadTitleBelow),
             )
             facts?.takeIf(String::isNotEmpty)?.let {
                 Text(
                     text = it,
                     style = TvType.bodyMedium.copy(fontSize = 14.tvSp, fontFeatureSettings = "tnum"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = Spacing.medium),
+                    modifier = Modifier.padding(bottom = SpreadFactsBelow),
                 )
             }
             overview?.takeIf(String::isNotBlank)?.let {
@@ -128,7 +139,7 @@ internal fun TvTitleSpread(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(bottom = Spacing.large),
+                    modifier = Modifier.padding(bottom = SpreadOverviewBelow),
                 )
             }
             // Inside the copy's own width, as `.spread-actions` sits in `.spread-copy`:
@@ -154,7 +165,7 @@ internal fun TvTitleSpread(
                         Modifier
                             .testTag(TvTitleSpreadQuoteTag)
                             .align(Alignment.BottomEnd)
-                            .padding(end = Overscan.horizontal, bottom = maxHeight * 0.22f)
+                            .padding(end = page.end, bottom = maxHeight * 0.22f)
                             .widthIn(max = SpreadQuoteMaxWidth),
                 )
             }
@@ -170,8 +181,9 @@ private const val ArtWidthFraction = 0.72f
 
 /**
  * `.spread-copy{max-width:34rem}`. Beside a 17rem quote it leaves a real gap
- * on the 960dp screen — 48 + 544 against 960 − 48 − 272 — so the two never
- * meet, unlike the department hero's wider quote.
+ * on the 960dp screen — the copy ends 575dp in and the quote starts at 596
+ * beside the rail, 592 against 640 without one — so the two never meet,
+ * unlike the department hero's wider quote.
  */
 private val SpreadCopyMaxWidth = 544.dp
 

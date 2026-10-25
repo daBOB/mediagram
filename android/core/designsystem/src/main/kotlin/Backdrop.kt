@@ -13,6 +13,13 @@ enum class Backdrop(val storageKey: String, val label: String, val note: String)
     BLURRED("blurred", "Blurred", "Colour and light, softened"),
     ARTWORK("artwork", "Artwork", "The picture behind the words"),
     SOLID("solid", "Solid", "Plain pages, no artwork"),
+
+    /**
+     * The tablet's Ambient: artwork as Default draws it, rounded cards, and the
+     * page's own colour drifting behind it. Television offers Ambient as a style
+     * instead ([TvStyle.AMBIENT]) and leaves this out of its own list.
+     */
+    AMBIENT("ambient", "Ambient", "The poster's colour, drifting behind the page"),
     ;
 
     companion object {

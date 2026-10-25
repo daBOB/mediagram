@@ -12,7 +12,6 @@ import catalog.SeriesResumePick
 import catalog.courseExtentOf
 import catalog.rowsOf
 import data.PortraitRequestLog
-import designsystem.Spacing
 import model.MediaSet
 import model.TitleCredits
 import model.WatchSnapshot
@@ -110,8 +109,8 @@ private fun TvCoursePage(
             onPlay = onPlay,
             restoreKey = restoreKey,
             header = {
-                // `.shelf-head`'s margin under the head, and before the rows, less the gap the rows keep themselves.
-                Column(modifier = Modifier.padding(bottom = ShelfHeadBelow - Spacing.small), verticalArrangement = Arrangement.spacedBy(ShelfHeadBelow)) {
+                // `.shelf-head`'s margin under the head, and before the rows.
+                Column(modifier = Modifier.padding(bottom = ShelfHeadBelow), verticalArrangement = Arrangement.spacedBy(ShelfHeadBelow)) {
                     TvShelfHead(collection.name, extent)
                     SeriesResumeRow(resume, onResume, join)
                 }

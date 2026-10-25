@@ -145,6 +145,7 @@ internal fun artworkSwatchColor(backdrop: Backdrop): Color {
         Backdrop.BLURRED -> accent.copy(alpha = 0.55f)
         Backdrop.ARTWORK -> accent.copy(alpha = 0.7f)
         Backdrop.SOLID -> MaterialTheme.colorScheme.surface
+        Backdrop.AMBIENT -> accent.copy(alpha = 0.4f)
     }
 }
 

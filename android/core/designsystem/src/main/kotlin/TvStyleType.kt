@@ -34,7 +34,7 @@ internal val GoogleTvFamily =
 /** The one face [style] sets every TV word in, or null where each role keeps its own (mediagram's three). */
 private fun familyOf(style: TvStyle): FontFamily? =
     when (style) {
-        TvStyle.MEDIAGRAM -> null
+        TvStyle.MEDIAGRAM, TvStyle.AMBIENT -> null
         TvStyle.APPLE -> AppleTvFamily
         TvStyle.GOOGLE -> GoogleTvFamily
     }

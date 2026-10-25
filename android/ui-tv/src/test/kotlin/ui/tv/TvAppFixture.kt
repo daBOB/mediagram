@@ -25,6 +25,7 @@ import data.WatchSync
 import data.settings.InMemoryLibrarySettings
 import data.settings.InMemoryTelegramSettings
 import data.settings.InMemoryTmdbSettings
+import designsystem.Appearance
 import designsystem.InMemoryAppearanceSettings
 import io.mockk.coEvery
 import io.mockk.every
@@ -122,6 +123,7 @@ internal class TvAppFixture(
     achievements: Achievements = NO_ACHIEVEMENTS,
     pins: Map<String, String> = emptyMap(),
     settingsSeeTheViewer: Boolean = false,
+    appearance: Appearance = Appearance(),
     seed: FakeCore.() -> Unit = {},
 ) : ViewModelStoreOwner, AutoCloseable {
     override val viewModelStore = ViewModelStore()
@@ -327,7 +329,7 @@ internal class TvAppFixture(
                 LanCacheViewModel::class.java to lanCache,
                 // TvApp's TvTheme and TvSettingsScreen each resolve an AppearanceViewModel through hiltViewModel(), the
                 // same reason every other entry in this map exists (see the comment above login/profile/etc.).
-                AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings()),
+                AppearanceViewModel::class.java to AppearanceViewModel(InMemoryAppearanceSettings(appearance)),
                 ProfileSettingsViewModel::class.java to profileSettingsModel(if (settingsSeeTheViewer) viewer.repository.chosenProfile else MutableStateFlow(null)),
                 // TvLibrary resolves BrowseViewModel through hiltViewModel(), for the same reason as every entry above.
                 BrowseViewModel::class.java to BrowseViewModel(repository, PortraitRequestLog()),

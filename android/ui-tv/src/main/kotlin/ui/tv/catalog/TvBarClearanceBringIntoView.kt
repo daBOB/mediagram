@@ -46,7 +46,9 @@ internal class TvBarClearanceBringIntoViewSpec(
 @Composable
 internal fun rememberTvBarClearanceBringIntoView(clearance: Dp = TvBarClearance): BringIntoViewSpec {
     val density = LocalDensity.current
-    val fallback = LocalBringIntoViewSpec.current
+    // Inside a [TvPage], whose own band already starts under the bar: the bar is cleared here instead, once.
+    val ambient = LocalBringIntoViewSpec.current
+    val fallback = remember(ambient) { (ambient as? StaysPutWhenOnScreen)?.clearedOfTheBar() ?: ambient }
     return remember(density, fallback, clearance) {
         val clearancePx = with(density) { clearance.toPx() }
         TvBarClearanceBringIntoViewSpec(clearancePx, fallback)

@@ -1,5 +1,7 @@
 package ui.tv
 
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.assertIsSelected
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -82,7 +84,8 @@ class TvMenuTest {
         openMenu()
 
         compose.onNodeWithText("Switch profile").assertIsFocused()
-        compose.onNodeWithText("Watching as Ada").assertExists()
+        compose.onNodeWithText("WATCHING AS").assertExists()
+        compose.onNodeWithText("Ada").assertExists()
         val order = listOf("Switch profile", "Update library", "TMDB key…", "Start over")
         val tops = order.map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertEquals(tops.sorted(), tops, "the profile switch first, then the rows in the phone's order")
@@ -264,15 +267,17 @@ class TvMenuTest {
     }
 
     @Test
-    fun theKeyScreenPutsTheRemoteInItsFieldAndBackLandsOnTheKeyItem() {
+    fun theKeyScreenPutsTheRemoteInItsFieldAndBackLandsOnTheAvatar() {
         openMenu()
         press(compose.onNodeWithText("TMDB key…"))
 
         compose.onNodeWithTag(TvTextQuestionFieldTag).assertIsFocused()
         compose.onNodeWithText("No key is stored.", substring = true).assertExists()
 
+        // The menu closed for the screen it opened; Back lands where it was opened from.
         back()
-        compose.onNodeWithText("TMDB key…").assertIsFocused()
+        compose.onNodeWithText("TMDB key…").assertDoesNotExist()
+        compose.onNodeWithContentDescription(AVATAR).assertIsFocused()
     }
 
     @Test
@@ -311,11 +316,11 @@ class TvMenuTest {
         openMenu()
         compose.onNodeWithText("Switch profile").assertIsFocused()
 
-        // Switch profile, Update library, TMDB key…, Start over, then Preloads — four rows down.
-        repeat(4) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
-        compose.onNodeWithText("Preloads · 1").assertIsFocused()
+        // Switch profile, Update library, TMDB key…, then Preloads — three rows down; its count beside it.
+        repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        compose.onNode(hasText("Preloads") and hasText("1")).assertIsFocused()
 
-        press(compose.onNodeWithText("Preloads · 1"))
+        press(compose.onNode(hasText("Preloads") and hasText("1")))
         compose.onNodeWithText("Film 0").assertExists()
         compose.onNodeWithText("2.0 of 5.0 GB · 40%").assertExists()
 
@@ -332,8 +337,8 @@ class TvMenuTest {
         press(compose.onNodeWithContentDescription("Settings"))
         press(compose.onNodeWithText("Storage"))
         compose.onNodeWithText("Where").assertExists()
-        compose.onNodeWithText("●  Internal storage", substring = true).assertExists()
-        press(compose.onNodeWithText("○  USB drive", substring = true))
+        compose.onNode(hasContentDescription("Internal storage", substring = true)).assertIsSelected()
+        press(compose.onNode(hasContentDescription("USB drive", substring = true)))
         verify { fixture.cacheBudget.chooseVolume("6BBF-D2D8") }
     }
 

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import designsystem.TvScale
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import model.Kind
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -169,7 +170,9 @@ class TvPageSpacingTest : TvScreenStateTest() {
     @Test
     fun aStripPlateIsAnEighthOfItsRowAndNeverUnderTheFloor() {
         assertEquals(136 * TvScale, StripPlateFloor.value, "8.5rem")
-        assertEquals(StripPlateFloor, stripPlateWidth(800.dp), "an 800dp row's eighth is under the floor")
+        // 800dp fits seven whole plates at the floor, gaps and all; each is widened to fill the row.
+        assertEquals((800 - 6 * 14 * TvScale) / 7, stripPlateWidth(800.dp).value, 0.001f, "a row narrower than eight ends on a whole plate")
+        assertTrue(stripPlateWidth(800.dp) >= StripPlateFloor, "never under the floor")
         assertEquals((1000 - 7 * 14 * TvScale) / 8, stripPlateWidth(1000.dp).value, 0.001f, "a wide row's eighth, less seven gaps")
         assertEquals(StripPlateFloor, stripPlateWidth(Dp.Infinity), "a row with no bound")
     }

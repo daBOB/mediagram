@@ -1,5 +1,6 @@
 package ui.tv.catalog.home
 
+import ui.tv.ambient.rememberCardGlow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.foundation.background
@@ -80,6 +81,7 @@ internal fun TvResumeCard(
     val episode = set.kind != Kind.MOVIE && set.show != null
     val name = if (episode) requireNotNull(set.show) else set.title
     val art = set.backdropPath ?: set.posterPath
+    val glow = rememberCardGlow(art?.let(::File))
     Card(
         onClick = onOpen,
         modifier =
@@ -87,10 +89,11 @@ internal fun TvResumeCard(
                 .width(ResumeCardWidth)
                 .testTag(TvResumeCardTag)
                 .semantics(mergeDescendants = true) {}
-                .focusRequester(rememberStableRequester(focusRequester)),
+                .focusRequester(rememberStableRequester(focusRequester))
+                .then(glow.modifier),
         shape = TvFocus.cardShape(),
         scale = TvFocus.cardScale(),
-        border = TvFocus.cardBorder(),
+        border = TvFocus.cardBorder(color = glow.border ?: MaterialTheme.colorScheme.primary),
         glow = TvFocus.cardGlow(),
         colors = CardDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {

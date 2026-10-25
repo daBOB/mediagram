@@ -6,7 +6,6 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import designsystem.Overscan
 import designsystem.Spacing
 import designsystem.TvType
 import designsystem.tvSp
@@ -36,6 +34,8 @@ import stats.STATS_HEADING
 import stats.StatsUiState
 import ui.common.StatsBars
 import ui.tv.TvFocus
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.asPaddingValues
 
 private val ChartHeight = 120.dp
 
@@ -55,7 +55,7 @@ internal fun TvStatsPage(state: StatsUiState) {
     val quiet = MaterialTheme.colorScheme.onSurfaceVariant
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
+        contentPadding = LocalTvPagePadding.current.asPaddingValues(),
         verticalArrangement = Arrangement.spacedBy(Spacing.medium),
     ) {
         item(key = "heading") { Text(text = STATS_HEADING, style = ShelfHeadTitle) }

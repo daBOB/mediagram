@@ -76,6 +76,9 @@ internal fun TvSectionTabs(
             modifier
                 .fillMaxWidth()
                 .wrapContentWidth(Alignment.Start)
+                // Not pulled back by the labels' own side padding to start them on the page's edge, as
+                // `.tab`'s does with none (`title-page.css:123`): a tab starting left of the rows below
+                // reads as lying to their left, and Left from an episode went to it instead of the rail.
                 .focusProperties {
                     onEnter = {
                         if (requestedFocusDirection == FocusDirection.Up || requestedFocusDirection == FocusDirection.Down) {

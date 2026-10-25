@@ -105,7 +105,7 @@ private fun ItemRow(
     Column(modifier = Modifier.padding(start = indentOf(row.depth))) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             HoverTitle(
-                text = "${row.position}. ${if (watched) "✓ " else ""}${row.set.title}",
+                text = "${row.number}. ${if (watched) "✓ " else ""}${row.set.title}",
                 style = MaterialTheme.typography.bodyLarge,
                 source = source,
                 // A `.row` (`course-view.js:48`): its title snaps to accent (`catalog.css:78`); the

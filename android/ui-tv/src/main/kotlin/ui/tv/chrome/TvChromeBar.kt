@@ -24,7 +24,7 @@ internal fun TvChromeBar(
     frost: HazeState?,
 ) {
     when (LocalTvStyle.current) {
-        TvStyle.MEDIAGRAM ->
+        TvStyle.MEDIAGRAM, TvStyle.AMBIENT ->
             TvDepartmentsBar(
                 pills = pills,
                 selected = selected,

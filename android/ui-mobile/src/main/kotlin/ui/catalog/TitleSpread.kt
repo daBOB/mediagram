@@ -28,6 +28,9 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import designsystem.Backdrop
 import designsystem.LocalBackdrop
 import designsystem.Spacing
+import ui.ambient.AmbientFromArt
+import ui.common.ambient.LocalAmbientTint
+import ui.common.ambient.keepsGlowAway
 import ui.common.catalog.HeroArtwork
 
 private val HERO_HEIGHT = 260.dp
@@ -81,6 +84,7 @@ internal fun TitleSpread(
     // the same "plain pages, no artwork" the web's own
     // `[data-backdrop="solid"]` rule leaves behind.
     val art = backdropPath?.takeIf { LocalBackdrop.current != Backdrop.SOLID }
+    AmbientFromArt(art)
     // Held, not saved, so Back is a new visit that plays the art-in again, as
     // on the web; and above the width branch, so turning a tablet across it
     // redraws the spread without playing it again.
@@ -98,7 +102,7 @@ internal fun TitleSpread(
                 if (art != null) {
                     // Clipped as `.spread-art` is (`title-page.css:62`), so the
                     // picture settling from 1.04 never spills past its block.
-                    HeroArtwork(path = art, modifier = Modifier.matchParentSize().clipToBounds().artIn(page.of(HERO_ART)))
+                    HeroArtwork(path = art, modifier = Modifier.matchParentSize().keepsGlowAway(LocalAmbientTint.current).clipToBounds().artIn(page.of(HERO_ART)))
                     // Fades the artwork into the page along its foot, the same
                     // job the web's own CSS fade does over its own axis.
                     Box(

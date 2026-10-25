@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import ui.Destination
 import ui.backLabelFor
 import ui.barTitleFor
 import ui.common.MenuActions
+import ui.common.ambient.LocalAmbientTint
 import ui.pageGround
 import ui.setup.StartOverConfirmation
 import ui.showsSearchAction
@@ -94,6 +96,8 @@ fun LibraryScaffold(
     val backLabel = backLabelFor(destination)
     val expanded = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
     val rail = LocalRailData.current
+    // In Ambient the glow is drawn under the page, so the page's own ground steps aside for it.
+    val ground: (Color) -> Color = if (LocalAmbientTint.current != null) { _ -> Color.Transparent } else { c -> c }
 
     Row(Modifier.fillMaxSize()) {
         if (expanded) {
@@ -109,7 +113,7 @@ fun LibraryScaffold(
                         // sheet it sits over inverts the one relation the palette
                         // names.
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background,
+                            containerColor = ground(MaterialTheme.colorScheme.background),
                             titleContentColor = MaterialTheme.colorScheme.onSurface,
                             navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                             actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -154,7 +158,7 @@ fun LibraryScaffold(
                 // The page, not a plate on it — [pageGround], matching
                 // `MobileApp`'s own root `Surface` and every hero's own
                 // scrim, which all fade into this same ground.
-                containerColor = MaterialTheme.colorScheme.pageGround,
+                containerColor = ground(MaterialTheme.colorScheme.pageGround),
             ) { innerPadding ->
                 // The page turns under the bar, never the bar or the rail, as
                 // the web's turn moves `main` and leaves the masthead put.

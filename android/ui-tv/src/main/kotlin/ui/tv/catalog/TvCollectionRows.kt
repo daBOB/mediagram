@@ -1,8 +1,7 @@
 package ui.tv.catalog
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,11 +12,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import catalog.CollectionRow
-import designsystem.Overscan
-import designsystem.Spacing
 import kotlinx.coroutines.flow.first
 import model.Kind
 import model.WatchSnapshot
+import ui.tv.chrome.LocalTvPagePadding
+import ui.tv.chrome.asPaddingValues
 
 /**
  * What is inside a show or a course, as the phone lists it: each folder's
@@ -77,12 +76,11 @@ internal fun TvCollectionRows(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = Overscan.horizontal, vertical = Overscan.vertical),
-        verticalArrangement = Arrangement.spacedBy(Spacing.small),
+        contentPadding = LocalTvPagePadding.current.asPaddingValues(),
     ) {
         if (header != null) item(key = "header") { header() }
         itemsIndexed(rows, key = { index, row -> rowKeyOf(row, index) }) { index, row ->
-            TvCollectionRow(row, marks, heldIds, onPlay, focus.takeIf { index == focusIndex })
+            TvCollectionRow(row, marks, heldIds, onPlay, focus.takeIf { index == focusIndex }, Modifier.padding(top = rowTopOf(row, index)))
         }
     }
 }
