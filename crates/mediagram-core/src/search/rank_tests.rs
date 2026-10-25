@@ -6,7 +6,7 @@
 use super::*;
 
 fn set(set_id: &str, title: Option<&str>) -> SearchableSet {
-    SearchableSet { set_id: set_id.to_string(), title: title.map(str::to_string), show: None, chap: None, path: None, summary: None }
+    SearchableSet { set_id: set_id.to_string(), title: title.map(str::to_string), show: None, chap: None, path: None, summary: None, original_title: None }
 }
 
 /// Builds the corpus and a collator fresh, the ceremony `Core::search`
@@ -46,6 +46,7 @@ fn a_summary_found_by_a_spelled_out_umlaut_still_shows_its_excerpt() {
         chap: None,
         path: None,
         summary: Some("Die Volatilität steigt im Chart.".into()),
+        original_title: None,
     }];
     let hits = search_all(&sets, "volatilitaet");
     assert_eq!(hits[0].matched, Field::Summary);
@@ -61,8 +62,8 @@ fn part_of_a_word_not_only_the_start_of_one() {
 #[test]
 fn every_term_has_to_match_somewhere_not_just_one_of_them() {
     let sets = vec![
-        SearchableSet { set_id: "1".into(), title: Some("Kontoeröffnung".into()), show: None, chap: None, path: Some("Basislektionen/5. Broker".into()), summary: None },
-        SearchableSet { set_id: "2".into(), title: Some("Broker Vergleich".into()), show: None, chap: None, path: Some("Basislektionen/1. Start".into()), summary: None },
+        SearchableSet { set_id: "1".into(), title: Some("Kontoeröffnung".into()), show: None, chap: None, path: Some("Basislektionen/5. Broker".into()), summary: None, original_title: None },
+        SearchableSet { set_id: "2".into(), title: Some("Broker Vergleich".into()), show: None, chap: None, path: Some("Basislektionen/1. Start".into()), summary: None, original_title: None },
     ];
     let hits = search_all(&sets, "broker kontoeroffnung");
     assert_eq!(matched_titles(&hits, &sets), vec![Some("Kontoeröffnung".to_string())]);

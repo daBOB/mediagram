@@ -50,6 +50,7 @@ fn a_fully_populated_row() -> TitleDetailsRow {
         collection_name: Some("A Franchise".into()),
         series_type: Some("Scripted".into()),
         original_language: Some("ja".into()),
+        original_title: Some("Sen to Chihiro no Kamikakushi".into()),
     }
 }
 

@@ -73,15 +73,20 @@ impl Corpus {
         Corpus {
             entries: sets
                 .iter()
-                .map(|set| CorpusEntry {
-                    set: set.clone(),
-                    forms: [
+                .map(|set| {
+                    let mut forms = [
                         variants(set.title.as_deref()),
                         variants(set.show.as_deref()),
                         variants(set.chap.as_deref()),
                         variants(set.path.as_deref()),
                         variants(set.summary.as_deref()),
-                    ],
+                    ];
+                    // The name it was released under reads as the name it is
+                    // filed under: a film's own title, an episode's show.
+                    if let Some(original) = set.original_title.as_deref().filter(|t| !t.is_empty()) {
+                        forms[usize::from(set.show.is_some())].extend(variants(Some(original)));
+                    }
+                    CorpusEntry { set: set.clone(), forms }
                 })
                 .collect(),
         }

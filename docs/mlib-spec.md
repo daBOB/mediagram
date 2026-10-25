@@ -430,6 +430,22 @@ names a newer schema than the build understands, and a pull that finds the
 tables missing while the local index still holds rows republishes to restore
 them.
 
+### Schema v14 additions
+
+Version 14 adds a title's original title:
+
+```sql
+ALTER TABLE shows ADD COLUMN original_title TEXT;  -- e.g. 'Point Break' for 'Gefährliche Brandung'
+```
+
+TMDB's `original_title` for a film and `original_name` for a series, read
+back from the same cached details payload as every other `shows` column, so
+backfilling it costs no request. It is not language text: a merge fills it
+whatever the row's `lang`. Search matches it beside the library's own name —
+a film's as its title, an episode's show's as its show — so a German library
+finds `Gefährliche Brandung` for "point". A reader on v13 or older never sees
+the column; every reader treats it as optional.
+
 ### The `#mlib-subs` bundle document
 
 A set's subtitle bundle travels as its own small channel document, never

@@ -41,8 +41,9 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
         "INSERT INTO shows(source, kind, id, lang, overview, tagline, genres, rating,
                            network, status, first_air, last_air,
                            total_seasons, total_episodes, certification, popularity,
-                           collection_id, collection_name, series_type, original_language)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+                           collection_id, collection_name, series_type, original_language,
+                           original_title)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)
          ON CONFLICT(source, kind, id) DO UPDATE SET
              lang = excluded.lang, overview = excluded.overview,
              tagline = excluded.tagline, genres = excluded.genres,
@@ -55,7 +56,8 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
              collection_id = excluded.collection_id,
              collection_name = excluded.collection_name,
              series_type = excluded.series_type,
-             original_language = excluded.original_language",
+             original_language = excluded.original_language,
+             original_title = excluded.original_title",
         params![
             SOURCE,
             kind_key(row.kind),
@@ -77,6 +79,7 @@ pub fn upsert(conn: &Connection, row: &TitleDetailsRow) -> rusqlite::Result<()> 
             row.collection_name,
             row.series_type,
             row.original_language,
+            row.original_title,
         ],
     )?;
     Ok(())
@@ -91,11 +94,13 @@ pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<Ti
     let collection_name = optional_column(conn, "collection_name")?;
     let series_type = optional_column(conn, "series_type")?;
     let original_language = optional_column(conn, "original_language")?;
+    let original_title = optional_column(conn, "original_title")?;
     conn.query_row(
         &format!(
             "SELECT lang, overview, tagline, genres, rating, network, status, first_air, last_air,
                     total_seasons, total_episodes, {certification}, {popularity},
-                    {collection_id}, {collection_name}, {series_type}, {original_language}
+                    {collection_id}, {collection_name}, {series_type}, {original_language},
+                    {original_title}
                FROM shows WHERE source = ?1 AND kind = ?2 AND id = ?3"
         ),
         params![SOURCE, kind_key(kind), id],
@@ -120,6 +125,7 @@ pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<Ti
                 collection_name: row.get(14)?,
                 series_type: row.get(15)?,
                 original_language: row.get(16)?,
+                original_title: row.get(17)?,
             })
         },
     )
@@ -154,7 +160,7 @@ pub fn certifications(conn: &Connection) -> rusqlite::Result<HashMap<String, Str
 
 /// `column`, or `NULL` where the table predates it — `certification` came in
 /// v7, `popularity` in v8, `collection_id`/`collection_name`/`series_type`
-/// in v9, `original_language` in v11.
+/// in v9, `original_language` in v11, `original_title` in v14.
 ///
 /// A snapshot is written by whichever machine uploads, and that machine may
 /// still be on an older schema (see `mlib_spec::schema::OLDEST_READABLE_SCHEMA`).

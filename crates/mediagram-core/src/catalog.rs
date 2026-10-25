@@ -11,6 +11,8 @@ use rusqlite::Connection;
 
 use super::range::PartSpan;
 
+pub use crate::catalog_search::{SearchableSet, list_searchable};
+
 /// One title the player can offer. The codec fields are what let the web app
 /// decide between direct play and a transcode without opening the file.
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
@@ -126,48 +128,6 @@ pub fn playable_set(conn: &Connection, set_id: &str) -> Result<Option<PlayableSe
     rows.next()
         .transpose()
         .with_context(|| format!("reading the row for {set_id}"))
-}
-
-/// One set as the search index reads it: its text, and nothing else. A port
-/// of `web/src/search/index.ts`'s `Searchable`, restricted to the columns
-/// ranking touches — [`PlayableSet`] also carries codec and size fields no
-/// search field reads.
-#[derive(Debug, Clone, PartialEq)]
-pub struct SearchableSet {
-    pub set_id: String,
-    pub title: Option<String>,
-    pub show: Option<String>,
-    pub chap: Option<String>,
-    pub path: Option<String>,
-    pub summary: Option<String>,
-}
-
-/// Every playable set with the text a search reads, summary included — a
-/// port of `web/src/catalog.ts`'s `listSearchable`. One query rather than
-/// [`list_playable`] plus a summary lookup per row: the subquery costs one
-/// pass over `assets`, not one round trip per set.
-pub fn list_searchable(conn: &Connection) -> Result<Vec<SearchableSet>> {
-    let sql = format!(
-        "SELECT set_id, title, show, chap, path,
-                (SELECT body FROM assets a
-                  WHERE a.set_id = s.set_id AND a.kind = ?1 AND a.lang = '') AS summary
-           FROM sets s WHERE {}",
-        mlib_spec::schema::PLAYABLE_SQL
-    );
-    let mut stmt = conn.prepare(&sql).context("preparing the search query")?;
-    let rows = stmt
-        .query_map([mlib_spec::schema::ASSET_SUMMARY], |row| {
-            Ok(SearchableSet {
-                set_id: row.get("set_id")?,
-                title: row.get("title")?,
-                show: row.get("show")?,
-                chap: row.get("chap")?,
-                path: row.get("path")?,
-                summary: row.get("summary")?,
-            })
-        })
-        .context("listing searchable sets")?;
-    rows.collect::<rusqlite::Result<Vec<_>>>().context("reading a searchable row")
 }
 
 /// A set's parts in order, with the message each one lives in. Only `done`

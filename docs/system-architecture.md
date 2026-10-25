@@ -1481,7 +1481,9 @@ The canonical index (`library.db`, in `mlib-spec` schema) carries:
   movies). Gains in v11: `original_language`, TMDB's ISO 639-1 code for the
   title (`ja`, `en`, …) — read back from the same cached details payload as
   every other `shows` column, so backfilling an existing library costs no
-  request.
+  request. Gains in v14: `original_title` (`Point Break` for `Gefährliche
+  Brandung`), from the same payload, which search on web and Android matches
+  beside the library's own title.
 - **credits** table (new in v9): cast, crew, creators. Rows: `(source, kind, id,
   ord, person_id, name, role, dept, profile)` — `ord` is display order within
   a title (cast by billing, then directors, then creators); `dept` is 'cast' or

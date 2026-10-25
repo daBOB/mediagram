@@ -77,6 +77,12 @@ pub struct DetailsResponse {
     pub title: Option<String>,
     #[serde(default)]
     pub name: Option<String>,
+    /// The title as it was released (`Point Break` for `Gefährliche
+    /// Brandung`): a film's `original_title`, a series' `original_name`.
+    #[serde(default)]
+    pub original_title: Option<String>,
+    #[serde(default)]
+    pub original_name: Option<String>,
     #[serde(default)]
     pub release_date: Option<String>,
     #[serde(default)]

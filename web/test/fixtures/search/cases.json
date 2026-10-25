@@ -1138,6 +1138,52 @@
           "excerpt": null
         }
       ]
+    },
+    {
+      "name": "a film is found by the title it was released under",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Gefährliche Brandung",
+          "originalTitle": "Point Break"
+        },
+        {
+          "setId": "s2",
+          "title": "Match Point"
+        }
+      ],
+      "query": "point",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "title",
+          "excerpt": null
+        },
+        {
+          "setId": "s2",
+          "matched": "title",
+          "excerpt": null
+        }
+      ]
+    },
+    {
+      "name": "an episode is found by its show's original title, as a show match",
+      "sets": [
+        {
+          "setId": "s1",
+          "title": "Tod im Studio",
+          "show": "Mord ist ihr Hobby",
+          "originalTitle": "Murder, She Wrote"
+        }
+      ],
+      "query": "murder",
+      "expect": [
+        {
+          "setId": "s1",
+          "matched": "show",
+          "excerpt": null
+        }
+      ]
     }
   ]
 }

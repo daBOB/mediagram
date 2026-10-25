@@ -4,7 +4,7 @@
 mod versions;
 use versions::{V1, V2, V3, V4, V5, V6, V7, V8, V9};
 
-pub const SCHEMA_VERSION: i64 = 13;
+pub const SCHEMA_VERSION: i64 = 14;
 
 /// The oldest index a *reader* of someone else's snapshot still accepts.
 ///
@@ -15,9 +15,9 @@ pub const SCHEMA_VERSION: i64 = 13;
 /// `series_type` plus the wholly new `credits` and `franchises` tables, v10
 /// only the wholly new `artwork` table, v11 only `shows.original_language`
 /// plus the wholly new `anime_overrides` table, v12 only the wholly new
-/// `categories` table, and v13 only the wholly new `subtitle_files` and
-/// `subtitle_tracks` tables — every one of which every reader treats as
-/// optional. The web player's `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`)
+/// `categories` table, v13 only the wholly new `subtitle_files` and
+/// `subtitle_tracks` tables, and v14 only `shows.original_title` — every one
+/// of which every reader treats as optional. The web player's `OLDEST_READABLE_SCHEMA` (`web/src/catalog.ts`)
 /// is the same number. The uploader's own index is still held to
 /// [`SCHEMA_VERSION`]: that one it can migrate.
 pub const OLDEST_READABLE_SCHEMA: i64 = 6;
@@ -34,7 +34,7 @@ pub const INDEX_FILE: &str = "library.db";
 /// what lets a migration do something other than `CREATE ... IF NOT EXISTS`.
 /// SQLite has no `ADD COLUMN IF NOT EXISTS`, so an idempotent-by-wording list
 /// could never gain a column.
-pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13];
+pub const GROUPS: &[&[&str]] = &[V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14];
 
 /// Every statement needed to reach `version` from an empty database. Used by
 /// tests and by anyone reconstructing an older layout.
@@ -144,6 +144,13 @@ const V13: &[&str] = &[
         PRIMARY KEY(set_id, track)
     )",
 ];
+
+/// v13 → v14: a title's original title (`Point Break` for `Gefährliche
+/// Brandung`), so a search finds a film or a series by the name it was
+/// released under as well as by the library's own. From the cached details
+/// payload like `original_language`, so backfilling it costs no request;
+/// never language text, so a merge fills it whatever the row's `lang`.
+const V14: &[&str] = &["ALTER TABLE shows ADD COLUMN original_title TEXT"];
 
 /// How `sets.status` and `parts.status` spell each state. Written once here,
 /// beside the one SQL fragment that has to spell them inline; every other

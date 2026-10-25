@@ -100,6 +100,33 @@ fn search_reads_a_sets_summary_and_not_its_subtitles() {
     assert_eq!(summary_of("01SUBTITLED0000000000000001"), None);
 }
 
+/// Search reads a set's original title from `shows` — a film's own, an
+/// episode's show's — and an index from before v14 still lists.
+#[test]
+fn search_reads_the_original_title_of_a_film_and_of_an_episodes_show() {
+    let dir = tempfile::tempdir().unwrap();
+    let conn = index_at(dir.path(), mlib_spec::schema::SCHEMA_VERSION);
+    add_set(&conn, "01FILM0000000000000000000A", "movie", Some(1089));
+    add_set(&conn, "01EPISODE00000000000000001", "ep", Some(484));
+    conn.execute_batch(
+        "INSERT INTO shows(source, kind, id, original_title) VALUES ('tmdb', 'movie', 1089, 'Point Break');
+         INSERT INTO shows(source, kind, id, original_title) VALUES ('tmdb', 'tv', 484, 'Murder, She Wrote');
+         INSERT INTO shows(source, kind, id, original_title) VALUES ('tmdb', 'tv', 1089, 'Not a film');",
+    )
+    .unwrap();
+
+    let sets = mediagram_core::catalog::list_searchable(&conn).unwrap();
+    let original_of = |id: &str| sets.iter().find(|s| s.set_id == id).expect("listed").original_title.clone();
+    assert_eq!(original_of("01FILM0000000000000000000A").as_deref(), Some("Point Break"));
+    assert_eq!(original_of("01EPISODE00000000000000001").as_deref(), Some("Murder, She Wrote"));
+
+    let old = tempfile::tempdir().unwrap();
+    let conn = index_at(old.path(), 13);
+    add_set(&conn, "01FILM0000000000000000000A", "movie", Some(1089));
+    let sets = mediagram_core::catalog::list_searchable(&conn).unwrap();
+    assert_eq!(sets[0].original_title, None);
+}
+
 #[tokio::test]
 async fn genres_are_read_from_the_index_by_poster_key() {
     let dir = tempfile::tempdir().unwrap();
