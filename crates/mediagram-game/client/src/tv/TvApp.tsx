@@ -26,6 +26,8 @@ export function TvApp() {
         <p className="tv-wait">Verbinde mit dem Spieltisch …</p>
       ) : view.scene.kind === "lobby" ? (
         <TvLobby view={view} scene={view.scene} conn={conn} />
+      ) : view.scene.kind === "poster" ? (
+        <p className="tv-wait">Poster-Raten</p>
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

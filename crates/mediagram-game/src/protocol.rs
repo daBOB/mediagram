@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 pub use crate::protocol_choice::{AnswerColor, ChoiceOption, Tone};
+pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_settings::{GameKind, LobbySettings, QuizMode};
 
@@ -178,4 +179,5 @@ pub enum TvScene {
         blocked: Option<String>,
     },
     Quiz { scene: QuizScene },
+    Poster { scene: PosterScene },
 }

@@ -7,16 +7,24 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::game::{Game, GameFactory};
+use crate::poster::PosterGame;
+use crate::poster_config::PosterConfig;
+use crate::protocol::GameKind;
 use crate::quiz::Quiz;
 use crate::quiz_config::{Question, QuizConfig};
 use crate::quiz_mix::quiz_questions;
 use crate::titles::TitlePool;
 
-/// Every game kind builds the quiz for now: the lobby blocks starting any
-/// other, so no other arm can be reached.
+/// The lobby blocks starting a game its pool cannot supply, so neither arm
+/// is built without enough titles.
 pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>) -> GameFactory {
     let mut used = HashSet::new();
     Box::new(move |ctx, settings| {
+        if settings.game == GameKind::Poster {
+            let eligible = pool.eligible(settings.kids_only);
+            let cfg = PosterConfig::default();
+            return Box::new(PosterGame::new(cfg, &pool, &eligible, &mut used, ctx.now)) as Box<dyn Game>;
+        }
         let cfg = QuizConfig::default();
         let mut rng = StdRng::from_os_rng();
         let mut questions =

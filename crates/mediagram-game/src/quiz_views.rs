@@ -10,7 +10,7 @@ use crate::quiz_config::Stage;
 use crate::room_seats::Player;
 
 /// Competition ranking: equal scores share a place.
-fn rank_of(players: &[Player], id: PlayerId) -> (u8, i32) {
+pub(crate) fn rank_of(players: &[Player], id: PlayerId) -> (u8, i32) {
     let score = players.iter().find(|p| p.id == id).map_or(0, |p| p.score);
     let better = players.iter().filter(|p| p.score > score).count();
     (better as u8 + 1, score)

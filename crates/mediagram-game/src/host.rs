@@ -14,6 +14,7 @@ use crate::game::GameFactory;
 use crate::general::general_pack;
 use crate::lan::lan_ip;
 use crate::room::{ConnId, Room, RoomConfig};
+use crate::poster_config::poster_ready;
 use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
 use crate::titles::{GameTitle, TitlePool};
@@ -60,8 +61,10 @@ pub async fn start_game_night(titles: Vec<GameTitle>, kids_locked: bool, preferr
     let cfg = HostConfig {
         preferred_port,
         kids_locked,
-        // No poster game is built yet, so none can be started.
-        readiness: Readiness { poster: false, poster_kids: false },
+        readiness: Readiness {
+            poster: poster_ready(&pool, &pool.eligible(false)),
+            poster_kids: poster_ready(&pool, &pool.eligible(true)),
+        },
         pool: pool.clone(),
         ..HostConfig::default()
     };
