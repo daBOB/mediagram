@@ -47,6 +47,10 @@ await sleep(500);
 console.log("phones:", a.last?.view?.screen?.kind, b.last?.view?.screen?.kind, "leader:", a.last?.view?.me?.leader);
 b.send({ t: "action", action: { t: "start_game" } }); // not leader → error
 await sleep(200);
+a.send({ t: "action", action: { t: "configure", game: "quiz", quiz_mode: "general", kids_only: false } });
+await sleep(200);
+const settings = tv.last.view.scene.settings;
+console.log("tv badge:", settings.game, settings.quiz_mode, "kids_only:", settings.kids_only);
 a.send({ t: "action", action: { t: "start_game" } });
 
 const deadline = Date.now() + 120_000;

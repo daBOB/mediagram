@@ -5,6 +5,7 @@ import type { QuizScene } from "../protocol/QuizScene";
 import type { TvView } from "../protocol/TvView";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
+import { TvLobby } from "./TvLobby";
 
 /**
  * Browser version of the TV screen. The Godot host will render the same
@@ -24,51 +25,12 @@ export function TvApp() {
       {!view ? (
         <p className="tv-wait">Verbinde mit dem Spieltisch …</p>
       ) : view.scene.kind === "lobby" ? (
-        <Lobby view={view} minPlayers={view.scene.min_players} conn={conn} />
+        <TvLobby view={view} scene={view.scene} conn={conn} />
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}
       {status !== "open" && view && <p className="banner">Verbindung unterbrochen, verbinde neu …</p>}
     </main>
-  );
-}
-
-function Lobby({ view, minPlayers, conn }: { view: TvView; minPlayers: number; conn: Connection }) {
-  const seated = view.players.filter((p) => p.connected);
-  const canStart = seated.length >= minPlayers;
-  return (
-    <section className="tv-lobby">
-      <div className="tv-lobby-intro">
-        <h1 className="wordmark wordmark-tv">Spieltisch</h1>
-        <p className="tv-lead">Handy-Kamera auf den Code richten und mitspielen.</p>
-        <p className="tv-url">{view.join_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
-      </div>
-      <figure className="qr-card">
-        <img src="/qr.svg" alt={`QR-Code für ${view.join_url}`} />
-      </figure>
-      <div className="tv-seats">
-        {view.players.length === 0 ? (
-          <p className="tv-empty">Noch niemand am Tisch.</p>
-        ) : (
-          <ul className="seat-list">
-            {view.players.map((p) => (
-              <li key={p.id} className="seat">
-                <Token player={p} />
-                <span className="seat-name">{p.name}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <button
-          className="cta cta-tv"
-          autoFocus
-          disabled={!canStart}
-          onClick={() => conn.send({ t: "action", action: { t: "start_game" } })}
-        >
-          {canStart ? "Quiz starten" : `Wartet auf ${minPlayers - seated.length} Spieler`}
-        </button>
-      </div>
-    </section>
   );
 }
 

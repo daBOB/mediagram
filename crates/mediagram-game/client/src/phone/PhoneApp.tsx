@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useConnection, useServerNow, type Connection } from "../net";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
 import { ANSWER_MARKS } from "../ui/answers";
-import { Token } from "../ui/Token";
+import { PhoneLobby } from "./PhoneLobby";
 import { keepAwake } from "../wake";
 
 const NAME_KEY = "spieltisch.name";
@@ -137,26 +137,7 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
 
   switch (screen.kind) {
     case "lobby":
-      return (
-        <section className="screen lobby" style={{ "--player": me.color } as CSSProperties}>
-          <Token player={me} size="lg" />
-          <h1 className="screen-title">{me.name}</h1>
-          <p className="screen-text">
-            {screen.players === 1 ? "Du bist allein am Tisch." : `Ihr seid zu ${screen.players}.`}
-          </p>
-          {screen.can_start ? (
-            <button className="cta" onClick={() => act({ t: "action", action: { t: "start_game" } })}>
-              Spiel starten
-            </button>
-          ) : (
-            <p className="hint">
-              {me.leader
-                ? `Ab ${screen.min_players} Spielern kannst du starten.`
-                : "Sobald alle da sind, startet die Spielleitung."}
-            </p>
-          )}
-        </section>
-      );
+      return <PhoneLobby me={me} screen={screen} conn={conn} />;
     case "wait":
       return <Centered title={screen.title} text={screen.text} />;
     case "choice":

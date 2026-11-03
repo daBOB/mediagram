@@ -1,0 +1,61 @@
+import type { Connection } from "../net";
+import type { TvScene } from "../protocol/TvScene";
+import type { TvView } from "../protocol/TvView";
+import { gameBadge } from "../ui/lobby";
+import { Token } from "../ui/Token";
+
+type Lobby = Extract<TvScene, { kind: "lobby" }>;
+
+export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
+  const seated = view.players.filter((p) => p.connected);
+  const canStart = seated.length >= scene.min_players;
+  return (
+    <section className="tv-lobby">
+      <div className="tv-lobby-intro">
+        <p className="kicker kicker-tv">Spieleabend</p>
+        <h1 className="tv-headline">Handy-Kamera auf den Code</h1>
+        <p className="tv-url">{view.join_url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+        <p className="badges">
+          <span className="badge">{gameBadge(scene.settings)}</span>
+          {scene.settings.kids_only && <span className="badge badge-on">Nur für Kinder</span>}
+        </p>
+      </div>
+      <figure className="qr-card">
+        <img src="/qr.svg" alt={`QR-Code für ${view.join_url}`} />
+      </figure>
+      <div className="tv-seats">
+        <div className="tv-seats-main">
+          {view.players.length === 0 ? (
+            <p className="tv-empty">Noch niemand am Tisch.</p>
+          ) : (
+            <ul className="seat-list">
+              {view.players.map((p) => (
+                <li key={p.id} className="seat">
+                  <Token player={p} />
+                  <span className="seat-name">
+                    {p.name}
+                    {p.leader && " ★"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {seated.length > 0 && (
+            <p className="tv-footnote">
+              {seated.length} am Tisch
+              {scene.leader_name && ` · ${scene.leader_name} startet, oder OK auf der Fernbedienung`}
+            </p>
+          )}
+        </div>
+        <button
+          className="cta cta-tv"
+          autoFocus
+          disabled={!canStart}
+          onClick={() => conn.send({ t: "action", action: { t: "start_game" } })}
+        >
+          {canStart ? "Los geht's" : `Wartet auf ${scene.min_players - seated.length} Spieler`}
+        </button>
+      </div>
+    </section>
+  );
+}
