@@ -4,6 +4,22 @@ use serde::Deserialize;
 
 use crate::quiz_config::Question;
 
+/// The categories every pack entry belongs to.
+pub const CATEGORIES: [&str; 12] = [
+    "Geografie",
+    "Natur & Tiere",
+    "Geschichte",
+    "Wissenschaft & Technik",
+    "Sport",
+    "Musik",
+    "Kunst & Literatur",
+    "Essen & Trinken",
+    "Sprache",
+    "Film & Fernsehen",
+    "Kinderwissen",
+    "Alltag",
+];
+
 /// One pack entry as written in `questions/allgemein.json`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct GeneralEntry {
