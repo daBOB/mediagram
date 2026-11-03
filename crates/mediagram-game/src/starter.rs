@@ -1,6 +1,6 @@
 //! Built-in starter questions, used until a real pack is loaded.
 
-use crate::quiz::Question;
+use crate::quiz_config::Question;
 
 fn q(category: &str, text: &str, correct: &str, wrong: [&str; 3]) -> Question {
     Question {

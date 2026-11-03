@@ -35,3 +35,7 @@ android/**/jniLibs/
 
 # desloppify local state
 .desloppify/
+
+# game night web client
+crates/mediagram-game/client/node_modules/
+crates/mediagram-game/client/dist/

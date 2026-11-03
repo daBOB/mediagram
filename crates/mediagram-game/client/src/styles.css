@@ -1,0 +1,736 @@
+/*
+ * Spieltisch: a card table in the living room. Felt green surface, cream
+ * card stock for anything you read, and four chunky keycap colours that are
+ * the one loud thing. Atkinson Hyperlegible keeps text readable from the
+ * sofa; Bricolage Grotesque carries the personality in headlines.
+ */
+
+:root {
+  --felt: #0f5a43;
+  --felt-deep: #0a4433;
+  --felt-line: #1c7258;
+  --ink: #0c2a22;
+  --card: #fbf8f1;
+  --card-edge: #ddd3bd;
+  --muted: #a9cdbf;
+
+  --blue: #2c6bed;
+  --blue-edge: #1b4cb3;
+  --orange: #f2862e;
+  --orange-edge: #b95f17;
+  --yellow: #f6c731;
+  --yellow-edge: #b98f0d;
+  --pink: #e5487f;
+  --pink-edge: #a92d5a;
+
+  --display: "Bricolage Grotesque", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--felt);
+  color: var(--card);
+  font-family: var(--body);
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+:focus-visible {
+  outline: 4px solid var(--yellow);
+  outline-offset: 4px;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------ shared */
+
+.wordmark {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 13vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--card);
+}
+
+.cta {
+  display: block;
+  width: 100%;
+  padding: 1.05rem 1.25rem;
+  border-radius: 18px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.35rem;
+  box-shadow: 0 6px 0 var(--yellow-edge);
+  transition: transform 70ms ease-out, box-shadow 70ms ease-out;
+}
+
+.cta:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: 0 1px 0 var(--yellow-edge);
+}
+
+.cta:disabled {
+  background: var(--felt-line);
+  color: var(--muted);
+  box-shadow: 0 6px 0 var(--felt-deep);
+  cursor: default;
+}
+
+.token {
+  --player: #888;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--player);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  box-shadow: inset 0 -4px 0 rgba(12, 42, 34, 0.28);
+}
+
+.token-sm {
+  width: 1.7rem;
+  height: 1.7rem;
+  font-size: 0.85rem;
+  box-shadow: inset 0 -2px 0 rgba(12, 42, 34, 0.28);
+}
+
+.token-lg {
+  width: 6.5rem;
+  height: 6.5rem;
+  font-size: 3rem;
+  box-shadow: inset 0 -8px 0 rgba(12, 42, 34, 0.28);
+}
+
+.token-away {
+  opacity: 0.35;
+}
+
+.banner,
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(92vw, 34rem);
+  padding: 0.7rem 1.1rem;
+  border-radius: 14px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 10;
+}
+
+.banner {
+  top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.toast {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  background: var(--pink);
+  color: var(--ink);
+}
+
+/* Keycaps: the four answer colours, shared by phone buttons and TV answers. */
+.key-blue { --c: var(--blue); --c-edge: var(--blue-edge); }
+.key-orange { --c: var(--orange); --c-edge: var(--orange-edge); }
+.key-yellow { --c: var(--yellow); --c-edge: var(--yellow-edge); }
+.key-pink { --c: var(--pink); --c-edge: var(--pink-edge); }
+
+.key-mark {
+  font-size: 1.1em;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.meter {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--felt-deep);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--yellow);
+  transform-origin: left center;
+}
+
+/* ------------------------------------------------------------ phone */
+
+.phone {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 1.25rem) 1.25rem
+    calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+}
+
+.join {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.25rem;
+  max-width: 26rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.field {
+  display: grid;
+  gap: 0.6rem;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.field input {
+  width: 100%;
+  padding: 1rem 1.1rem;
+  border: 3px solid transparent;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.4rem;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--yellow);
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  max-width: 26rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.screen-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 11vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.screen-text {
+  font-size: 1.2rem;
+  max-width: 22rem;
+}
+
+.hint {
+  color: var(--muted);
+  max-width: 20rem;
+}
+
+.lobby .cta {
+  margin-top: 1.5rem;
+}
+
+/* Choice: four keycaps fill the phone. */
+.choice {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.75rem;
+  max-width: 32rem;
+}
+
+.choice-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.choice-clock {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.keys {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1rem 0.85rem;
+  padding: 0.5rem 0 0.6rem;
+  min-height: 18rem;
+}
+
+.key {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.9rem;
+  border-radius: 22px;
+  background: var(--c);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 9px 0 var(--c-edge);
+  transition: transform 60ms ease-out, box-shadow 60ms ease-out, opacity 150ms, filter 200ms;
+}
+
+.key-label {
+  font-weight: 700;
+  font-size: clamp(1.3rem, 6.5vw, 2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* Before the buttons go live they are unlit outlines; at opens_at every
+ * phone lights up at the same host time. That is the one big moment. */
+.keys:not(.keys-open) .key {
+  background: var(--felt-deep);
+  color: var(--c);
+  box-shadow: inset 0 0 0 3px var(--c), 0 9px 0 #073326;
+}
+
+.keys-open .key:not(.key-dim):not(.key-picked) {
+  animation: key-light 180ms ease-out;
+}
+
+@keyframes key-light {
+  from { transform: scale(0.96); }
+  to { transform: scale(1); }
+}
+
+.key-picked {
+  transform: translateY(7px);
+  box-shadow: 0 2px 0 var(--c-edge);
+}
+
+.key-picked::after {
+  content: "✓";
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.6rem;
+}
+
+.key-dim {
+  background: var(--felt-deep);
+  color: var(--muted);
+  box-shadow: 0 9px 0 #073326;
+}
+
+.outcome {
+  border-radius: 28px;
+  padding: 2rem 1.25rem;
+}
+
+.tone-good { background: var(--yellow); color: var(--ink); }
+.tone-bad { background: var(--pink); color: var(--ink); }
+.tone-neutral { background: var(--card); color: var(--ink); }
+.outcome .hint { color: inherit; opacity: 0.7; }
+
+.points {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 4.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 9rem;
+  line-height: 0.85;
+  color: var(--yellow);
+}
+
+.final .cta {
+  margin-top: 1.5rem;
+}
+
+/* ------------------------------------------------------------ TV */
+
+html[data-surface="tv"] {
+  font-size: clamp(14px, 1.15vw, 34px);
+}
+
+.tv {
+  height: 100%;
+  overflow: hidden;
+  padding: 3.5vh 4vw;
+}
+
+.tv-wait {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+}
+
+.cta-tv {
+  width: auto;
+  padding: 1rem 2.2rem;
+  font-size: 1.6rem;
+}
+
+/* Lobby: wordmark left, QR card right, seats along the bottom. */
+.tv-lobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: 1fr auto;
+  gap: 2rem 4rem;
+}
+
+.tv-lobby-intro {
+  align-self: center;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.wordmark-tv {
+  font-size: 9rem;
+}
+
+.tv-lead {
+  font-size: 2rem;
+  max-width: 22ch;
+  line-height: 1.25;
+}
+
+.tv-url {
+  font-size: 1.5rem;
+  color: var(--muted);
+}
+
+.qr-card {
+  align-self: center;
+  margin: 0;
+  padding: 1.6rem;
+  border-radius: 24px;
+  background: var(--card);
+  box-shadow: 0 10px 0 var(--card-edge);
+}
+
+.qr-card img {
+  display: block;
+  width: min(30vw, 46vh);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.tv-seats {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--felt-line);
+}
+
+.tv-empty {
+  font-size: 1.4rem;
+  color: var(--muted);
+}
+
+.seat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Quiz */
+.tv-quiz {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 1.6rem;
+}
+
+.tv-quiz-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tv-round {
+  color: var(--muted);
+}
+
+.qcard {
+  padding: 2.2rem 2.6rem 1.6rem;
+  border-radius: 26px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 10px 0 var(--card-edge);
+}
+
+.qimg {
+  display: block;
+  max-width: 100%;
+  max-height: 24vh;
+  margin-bottom: 1.2rem;
+  border-radius: 14px;
+  object-fit: contain;
+}
+
+.qtext {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 3.4rem;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  max-width: 30ch;
+  text-wrap: balance;
+}
+
+.qcard-foot {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.6rem;
+}
+
+.meter-card {
+  flex: 1;
+  height: 12px;
+  background: var(--card-edge);
+}
+
+.meter-card .meter-fill {
+  background: var(--ink);
+}
+
+.qclock {
+  min-width: 4ch;
+  text-align: right;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-intro .qclock {
+  min-width: auto;
+  font-size: 1.4rem;
+}
+
+.tv-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem 1.6rem;
+  margin: 0;
+  padding: 0 0 10px;
+  list-style: none;
+  align-content: center;
+}
+
+.tv-answer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.4rem;
+  padding: 1rem 1.5rem;
+  border-radius: 20px;
+  background: var(--c);
+  color: var(--ink);
+  box-shadow: 0 8px 0 var(--c-edge);
+  font-size: 2rem;
+  font-weight: 700;
+  transition: opacity 300ms, transform 300ms;
+}
+
+.tv-answer-label {
+  flex: 1;
+}
+
+.tv-pickers {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.stage-intro .tv-answer {
+  background: var(--felt-deep);
+  color: var(--c);
+  box-shadow: inset 0 0 0 3px var(--c), 0 8px 0 #073326;
+}
+
+.tv-answer.is-wrong {
+  background: var(--felt-deep);
+  color: var(--muted);
+  box-shadow: 0 8px 0 #073326;
+}
+
+.tv-answer.is-correct {
+  transform: scale(1.03);
+  outline: 5px solid var(--card);
+  outline-offset: 5px;
+}
+
+.tv-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.4rem;
+  padding-top: 1.2rem;
+  border-top: 2px solid var(--felt-line);
+}
+
+.tv-seat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.35rem;
+  transition: transform 150ms ease-out;
+}
+
+.tv-seat-name {
+  font-weight: 700;
+}
+
+.tv-seat-score {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A pawn hops up when its player has locked in. */
+.tv-seat.is-locked {
+  transform: translateY(-0.45rem);
+}
+
+.tv-seat.is-locked .tv-seat-name::after {
+  content: " ✓";
+  color: var(--yellow);
+}
+
+.stage-reveal .tv-seat-score {
+  color: var(--yellow);
+  font-weight: 700;
+}
+
+/* Final */
+.tv-final {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: start;
+  gap: 2rem;
+}
+
+.tv-final-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 6rem;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.podium {
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+  width: min(100%, 52rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.podium-row {
+  display: grid;
+  grid-template-columns: 3.5ch auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.podium-rank,
+.podium-score {
+  font-family: var(--display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-1 {
+  font-size: 2.6rem;
+  color: var(--yellow);
+}
+
+.rank-1 .token {
+  width: 3.6rem;
+  height: 3.6rem;
+  font-size: 1.7rem;
+}
+
+.rank-4 {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

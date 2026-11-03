@@ -34,6 +34,13 @@ else
   echo "skipping: web dependencies are not installed (run 'cd web && bun install')"
 fi
 
+step "game client typecheck"
+if [ -d crates/mediagram-game/client/node_modules ]; then
+  (cd crates/mediagram-game/client && bun run typecheck)
+else
+  echo "skipping: game client dependencies are not installed (run 'cd crates/mediagram-game/client && bun install')"
+fi
+
 step "gradle test and lint"
 # Skipped rather than failed when there is no Android SDK: the uploader and
 # the player are usable without one, and an absent SDK is a setup state, not

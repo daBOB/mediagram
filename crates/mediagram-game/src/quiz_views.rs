@@ -5,7 +5,8 @@ use crate::protocol::{
     AnswerColor, ChoiceOption, PhoneScreen, PlayerId, QuizQuestionView, QuizResult, QuizScene,
     QuizStage, Tone, TvScene,
 };
-use crate::quiz::{Quiz, Stage};
+use crate::quiz::Quiz;
+use crate::quiz_config::Stage;
 use crate::room_seats::Player;
 
 /// Competition ranking: equal scores share a place.
