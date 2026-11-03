@@ -88,7 +88,8 @@ pub fn film_questions(
         .collect();
     let key = |&(i, _, n): &(usize, Kind, &str)| format!("{n}:{}", pool.get(i).key);
     if candidates.iter().filter(|c| !used.contains(&key(c))).count() < count {
-        used.clear();
+        // Only film keys: the general pack's history shares this set.
+        used.retain(|k| !KINDS.iter().any(|(_, n)| k.strip_prefix(n).is_some_and(|r| r.starts_with(':'))));
     }
     candidates.shuffle(rng);
     let mut out = Vec::new();

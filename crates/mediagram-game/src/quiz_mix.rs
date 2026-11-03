@@ -13,7 +13,8 @@ use crate::titles::TitlePool;
 /// Unasked general questions first; once too few remain the night starts over.
 fn general_questions(general: &[Question], rng: &mut StdRng, count: usize, used: &mut HashSet<String>) -> Vec<Question> {
     if general.iter().filter(|q| !used.contains(&q.text)).count() < count {
-        used.clear();
+        // Only general keys: film history shares this set.
+        used.retain(|k| !general.iter().any(|q| q.text == *k));
     }
     let mut fresh: Vec<&Question> = general.iter().filter(|q| !used.contains(&q.text)).collect();
     fresh.shuffle(rng);

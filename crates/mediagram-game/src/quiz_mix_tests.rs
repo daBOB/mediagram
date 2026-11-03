@@ -61,3 +61,31 @@ fn an_exhausted_pack_starts_over_instead_of_running_dry() {
         assert_eq!(qs.len(), 8);
     }
 }
+
+fn general_texts(qs: &[Question]) -> HashSet<String> {
+    qs.iter().filter(|q| q.category == "Allgemein").map(|q| q.text.clone()).collect()
+}
+
+#[test]
+fn a_tiny_library_does_not_reset_general_history() {
+    for pool in [films(0), films(2)] {
+        let mut used = HashSet::new();
+        let first = general_texts(&mix(QuizMode::Mixed, &pool, 8, &mut used));
+        let second = general_texts(&mix(QuizMode::Mixed, &pool, 8, &mut used));
+        assert!(first.len() >= 6 && second.len() >= 6);
+        assert!(first.is_disjoint(&second));
+    }
+}
+
+#[test]
+fn a_general_reset_keeps_film_history() {
+    let pool = films(20);
+    let mut used = HashSet::new();
+    let qs = quiz_questions(QuizMode::Mixed, &pool, false, &general(5), &mut StdRng::seed_from_u64(3), 8, &mut used);
+    assert_eq!(qs.len(), 8);
+    // 4 general of 5 used; the next night's 4 forces a general reset.
+    let film_keys: HashSet<_> = used.iter().filter(|k| k.contains(':')).cloned().collect();
+    assert_eq!(film_keys.len(), 4);
+    quiz_questions(QuizMode::General, &pool, false, &general(5), &mut StdRng::seed_from_u64(4), 4, &mut used);
+    assert!(film_keys.is_subset(&used));
+}
