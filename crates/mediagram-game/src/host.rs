@@ -14,6 +14,7 @@ use crate::lan::lan_ip;
 use crate::room::{ConnId, Room, RoomConfig};
 use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
+use crate::titles::TitlePool;
 
 const TICK: Duration = Duration::from_millis(50);
 
@@ -24,6 +25,8 @@ pub struct HostConfig {
     pub max_players: u8,
     pub kids_locked: bool,
     pub readiness: Readiness,
+    /// Images are served from it to the box itself.
+    pub pool: Arc<TitlePool>,
 }
 
 impl Default for HostConfig {
@@ -35,6 +38,7 @@ impl Default for HostConfig {
             kids_locked: false,
             // No poster game is built yet, so none can be started.
             readiness: Readiness { poster: false, poster_kids: false },
+            pool: Arc::default(),
         }
     }
 }
@@ -85,6 +89,7 @@ impl Host {
             events: events.clone(),
             next_conn: Arc::new(AtomicU64::new(1)),
             join_url: join_url.as_str().into(),
+            pool: cfg.pool,
         };
         let (shutdown, stopped) = oneshot::channel::<()>();
         let app = router(state).into_make_service_with_connect_info::<SocketAddr>();

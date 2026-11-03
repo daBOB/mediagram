@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use axum::Router;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{ConnectInfo, State};
+use axum::extract::{ConnectInfo, Path, State};
 use axum::http::{StatusCode, Uri, header};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
@@ -15,6 +15,7 @@ use rust_embed::RustEmbed;
 use tokio::sync::mpsc;
 
 use crate::host::Event;
+use crate::titles::{ImageKind, TitlePool};
 
 const MAX_FRAME_BYTES: usize = 16 * 1024;
 
@@ -28,12 +29,14 @@ pub(crate) struct AppState {
     pub(crate) events: mpsc::UnboundedSender<Event>,
     pub(crate) next_conn: Arc<AtomicU64>,
     pub(crate) join_url: Arc<str>,
+    pub(crate) pool: Arc<TitlePool>,
 }
 
 pub(crate) fn router(state: AppState) -> Router {
     Router::new()
         .route("/ws", get(ws_handler))
         .route("/qr.svg", get(qr_svg))
+        .route("/img/{i}/{which}", get(image))
         .fallback(static_handler)
         .with_state(state)
 }
@@ -105,6 +108,38 @@ async fn qr_svg(State(state): State<AppState>) -> Response {
         image,
     )
         .into_response()
+}
+
+/// Phones never get artwork: only the box itself may fetch it.
+pub(crate) async fn image(
+    State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path((i, which)): Path<(usize, String)>,
+) -> Response {
+    if !peer.ip().is_loopback() {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    let kind = match which.as_str() {
+        "poster" => ImageKind::Poster,
+        "still" => ImageKind::Still,
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    let Some(path) = state.pool.image_path(i, kind) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let content_type = match path.extension().and_then(|e| e.to_str()) {
+        Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("webp") => "image/webp",
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    match tokio::fs::read(path).await {
+        Ok(bytes) => {
+            ([(header::CONTENT_TYPE, content_type), (header::CACHE_CONTROL, "no-store")], bytes)
+                .into_response()
+        }
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
 async fn static_handler(uri: Uri) -> Response {

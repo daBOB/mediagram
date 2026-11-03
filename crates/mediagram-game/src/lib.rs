@@ -19,6 +19,7 @@ mod room_settings;
 mod room_views;
 mod server;
 pub mod starter;
+mod titles;
 
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
 pub use host::{Host, HostConfig};
@@ -27,3 +28,4 @@ pub use quiz_config::{Question, QuizConfig};
 pub use room::{ConnId, Outbox, Room, RoomConfig};
 pub use room_seats::Player;
 pub use room_settings::Readiness;
+pub use titles::{GameTitle, ImageKind, TitleKind, TitlePool, image_url};

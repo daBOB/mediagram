@@ -44,3 +44,45 @@ async fn qr_svg_is_served() {
     assert!(body.contains("<svg"));
     host.stop().await;
 }
+
+#[tokio::test]
+async fn images_are_only_served_to_the_box() {
+    use std::net::SocketAddr;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicU64;
+
+    use axum::extract::{ConnectInfo, Path, State};
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
+
+    use crate::server::{AppState, image};
+    use crate::titles::TitlePool;
+    use crate::titles::tests::title;
+
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("p.png");
+    std::fs::write(&file, b"png-bytes").unwrap();
+    let mut t = title("a", true);
+    t.poster = Some(file);
+    let (events, _rx) = tokio::sync::mpsc::unbounded_channel();
+    let state = AppState {
+        events,
+        next_conn: Arc::new(AtomicU64::new(1)),
+        join_url: "http://x/".into(),
+        pool: Arc::new(TitlePool::new(vec![t], false)),
+    };
+    let get = |peer: &str, i: usize, which: &str| {
+        let peer: SocketAddr = peer.parse().unwrap();
+        image(State(state.clone()), ConnectInfo(peer), Path((i, which.into())))
+    };
+
+    assert_eq!(get("192.168.0.5:5000", 0, "poster").await.status(), StatusCode::FORBIDDEN);
+    let ok = get("127.0.0.1:5000", 0, "poster").await.into_response();
+    assert_eq!(ok.status(), StatusCode::OK);
+    assert_eq!(ok.headers()["content-type"], "image/png");
+    let body = axum::body::to_bytes(ok.into_body(), 1024).await.unwrap();
+    assert_eq!(&body[..], b"png-bytes");
+    assert_eq!(get("127.0.0.1:5000", 99, "poster").await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(get("127.0.0.1:5000", 0, "still").await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(get("127.0.0.1:5000", 0, "other").await.status(), StatusCode::NOT_FOUND);
+}
