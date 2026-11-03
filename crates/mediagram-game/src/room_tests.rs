@@ -130,3 +130,15 @@ fn back_to_lobby_reports_whether_a_game_ran() {
     assert!(r.back_to_lobby());
     assert!(!r.in_game());
 }
+
+#[test]
+fn unreadable_frame_gets_a_german_error_without_parser_detail() {
+    let mut r = room(8);
+    r.connect(1, false);
+    let out = r.handle(1, "{not json", 0.0);
+    let ServerMsg::Error { code: ErrorCode::BadMessage, message } = decode(&out[0].1) else {
+        panic!("expected BadMessage")
+    };
+    assert_eq!(message, "Nachricht nicht lesbar.");
+    assert!(!message.contains("expected"), "no serde wording");
+}

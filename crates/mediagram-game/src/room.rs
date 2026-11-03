@@ -84,7 +84,7 @@ impl Room {
     pub fn handle(&mut self, conn: ConnId, text: &str, now: ServerTime) -> Outbox {
         let reply = match serde_json::from_str::<ClientMsg>(text) {
             Ok(msg) => self.handle_msg(conn, msg, now),
-            Err(e) => Some(error(ErrorCode::BadMessage, format!("Unreadable message: {e}"))),
+            Err(_) => Some(error(ErrorCode::BadMessage, "Nachricht nicht lesbar.".into())),
         };
         reply.map(|m| vec![(conn, encode(&m))]).unwrap_or_default()
     }
