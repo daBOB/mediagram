@@ -1,11 +1,9 @@
 //! Hosts the buzzer quiz on the LAN for development, without the app.
-//! `GAME_PORT` and `GAME_MIN_PLAYERS` override the defaults; `--kids-locked`
+//! `GAME_PORT` overrides the port; `--kids-locked`
 //! starts the night as a kids profile would. `--titles <file>` loads the
 //! title list (image paths relative to the workspace root).
 
-use mediagram_game::protocol::LobbySettings;
-use mediagram_game::starter::starter_questions;
-use mediagram_game::{Game, GameCtx, GameTitle, Host, HostConfig, Quiz, QuizConfig, TitlePool};
+use mediagram_game::{GameTitle, start_game_night};
 use qrcode::QrCode;
 use qrcode::render::unicode;
 
@@ -39,19 +37,7 @@ async fn main() -> std::io::Result<()> {
         Some(path) => load_titles(path)?,
         None => Vec::new(),
     };
-    let defaults = HostConfig::default();
-    let cfg = HostConfig {
-        preferred_port: env_or("GAME_PORT", defaults.preferred_port),
-        min_players: env_or("GAME_MIN_PLAYERS", defaults.min_players),
-        max_players: defaults.max_players,
-        kids_locked,
-        readiness: defaults.readiness,
-        pool: std::sync::Arc::new(TitlePool::new(titles, kids_locked)),
-    };
-    let factory = Box::new(|ctx: &mut GameCtx, _: &LobbySettings| {
-        Box::new(Quiz::new(QuizConfig::default(), starter_questions(), ctx.now)) as Box<dyn Game>
-    });
-    let host = Host::start(cfg, factory).await?;
+    let host = start_game_night(titles, kids_locked, env_or("GAME_PORT", 8080)).await?;
 
     println!();
     if let Ok(code) = QrCode::new(host.join_url().as_bytes()) {

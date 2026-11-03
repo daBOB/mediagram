@@ -1,0 +1,16 @@
+[
+  {"category": "Erdkunde", "text": "Welcher Fluss fließt durch Dresden?", "correct": "Elbe", "wrong": ["Spree", "Donau", "Main"], "source": ""},
+  {"category": "Erdkunde", "text": "Was ist die Hauptstadt von Australien?", "correct": "Canberra", "wrong": ["Sydney", "Melbourne", "Perth"], "source": ""},
+  {"category": "Erdkunde", "text": "Wie viele Bundesländer hat Deutschland?", "correct": "16", "wrong": ["15", "14", "17"], "source": ""},
+  {"category": "Wissenschaft", "text": "Welches Element hat das chemische Symbol Fe?", "correct": "Eisen", "wrong": ["Fluor", "Phosphor", "Blei"], "source": ""},
+  {"category": "Wissenschaft", "text": "Welcher Planet ist der Sonne am nächsten?", "correct": "Merkur", "wrong": ["Venus", "Mars", "Erde"], "source": ""},
+  {"category": "Natur", "text": "Wie viele Beine hat eine Spinne?", "correct": "8", "wrong": ["6", "10", "12"], "source": ""},
+  {"category": "Natur", "text": "Welches ist das größte Tier der Erde?", "correct": "Blauwal", "wrong": ["Afrikanischer Elefant", "Pottwal", "Walhai"], "source": ""},
+  {"category": "Geschichte", "text": "In welchem Jahr fiel die Berliner Mauer?", "correct": "1989", "wrong": ["1987", "1990", "1991"], "source": ""},
+  {"category": "Sport", "text": "Wie viele Spieler einer Fußballmannschaft stehen auf dem Feld?", "correct": "11", "wrong": ["10", "12", "9"], "source": ""},
+  {"category": "Musik", "text": "Wie viele Tasten hat ein modernes Klavier?", "correct": "88", "wrong": ["76", "92", "64"], "source": ""},
+  {"category": "Mathe", "text": "Wie viel ist 7 × 8?", "correct": "56", "wrong": ["54", "58", "64"], "source": ""},
+  {"category": "Sprache", "text": "Wie viele Buchstaben hat das Alphabet ohne Ä, Ö, Ü und ß?", "correct": "26", "wrong": ["24", "28", "30"], "source": ""},
+  {"category": "Technik", "text": "Wofür steht das „L“ in WLAN?", "correct": "Local", "wrong": ["Line", "Link", "Long"], "source": ""},
+  {"category": "Essen", "text": "Aus welcher Stadt stammt die Pizza Margherita?", "correct": "Neapel", "wrong": ["Rom", "Mailand", "Venedig"], "source": ""}
+]

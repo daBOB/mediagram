@@ -1,11 +1,11 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use crate::starter::starter_questions;
+use crate::general::general_pack;
 use crate::{GameFactory, Host, HostConfig, Quiz, QuizConfig};
 
 fn factory() -> GameFactory {
-    Box::new(|ctx, _| Box::new(Quiz::new(QuizConfig::default(), starter_questions(), ctx.now)))
+    Box::new(|ctx, _| Box::new(Quiz::new(QuizConfig::default(), general_pack(), ctx.now)))
 }
 
 async fn start(preferred_port: u16) -> Host {

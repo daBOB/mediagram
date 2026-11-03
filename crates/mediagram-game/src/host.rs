@@ -9,12 +9,14 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 
+use crate::factory::game_factory;
 use crate::game::GameFactory;
+use crate::general::general_pack;
 use crate::lan::lan_ip;
 use crate::room::{ConnId, Room, RoomConfig};
 use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
-use crate::titles::TitlePool;
+use crate::titles::{GameTitle, TitlePool};
 
 const TICK: Duration = Duration::from_millis(50);
 
@@ -49,6 +51,21 @@ pub(crate) enum Event {
     Disconnect(ConnId),
     Back(oneshot::Sender<bool>),
     Stop,
+}
+
+/// Hosts the quiz over `titles`. The one `kids_locked` decides both which
+/// titles exist and whether the toggle is locked, so the two cannot disagree.
+pub async fn start_game_night(titles: Vec<GameTitle>, kids_locked: bool, preferred_port: u16) -> std::io::Result<Host> {
+    let pool = Arc::new(TitlePool::new(titles, kids_locked));
+    let cfg = HostConfig {
+        preferred_port,
+        kids_locked,
+        // No poster game is built yet, so none can be started.
+        readiness: Readiness { poster: false, poster_kids: false },
+        pool: pool.clone(),
+        ..HostConfig::default()
+    };
+    Host::start(cfg, game_factory(pool, Arc::new(general_pack()))).await
 }
 
 /// A running game-night server: HTTP pages, the join QR and the room socket.

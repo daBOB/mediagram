@@ -1,6 +1,6 @@
 use super::*;
 use crate::room_seats::Player;
-use crate::starter::starter_questions;
+use crate::general::general_pack;
 
 fn cfg(rounds: usize) -> QuizConfig {
     QuizConfig { rounds, seed: Some(7), ..QuizConfig::default() }
@@ -17,7 +17,7 @@ fn tick(quiz: &mut Quiz, players: &mut [Player], now: f64) {
 
 #[test]
 fn question_order_is_kept() {
-    let qs = starter_questions();
+    let qs = general_pack();
     let quiz = Quiz::new(QuizConfig { rounds: 3, seed: Some(1), ..Default::default() }, qs.clone(), 0.0);
     let texts: Vec<_> = quiz.round_texts();
     assert_eq!(texts, qs.iter().take(3).map(|q| q.text.clone()).collect::<Vec<_>>());
@@ -26,7 +26,7 @@ fn question_order_is_kept() {
 #[test]
 fn fast_correct_answer_scores_near_max() {
     let mut players = vec![Player::for_test(0, "Ana", true), Player::for_test(1, "Ben", true)];
-    let mut quiz = Quiz::new(cfg(1), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(1), general_pack(), 0.0);
     let correct = quiz.round().correct;
     let wrong = (correct + 1) % 4;
     tick(&mut quiz, &mut players, 3500.0);
@@ -41,7 +41,7 @@ fn fast_correct_answer_scores_near_max() {
 #[test]
 fn claimed_time_is_bounded_by_lag() {
     let mut players = vec![Player::for_test(0, "Ana", true)];
-    let mut quiz = Quiz::new(cfg(1), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(1), general_pack(), 0.0);
     let correct = quiz.round().correct;
     tick(&mut quiz, &mut players, 3500.0);
     // Claims to have tapped at the very start, arrives 6 s later.
@@ -52,7 +52,7 @@ fn claimed_time_is_bounded_by_lag() {
 #[test]
 fn taps_before_open_are_ignored_beyond_tolerance() {
     let mut players = vec![Player::for_test(0, "Ana", true)];
-    let mut quiz = Quiz::new(cfg(1), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(1), general_pack(), 0.0);
     choose(&mut quiz, &mut players, 3000.0, 0, 0, 3000.0);
     assert!(quiz.answers.is_empty());
     choose(&mut quiz, &mut players, 3400.0, 0, 0, 3400.0);
@@ -62,7 +62,7 @@ fn taps_before_open_are_ignored_beyond_tolerance() {
 #[test]
 fn second_tap_does_not_change_answer() {
     let mut players = vec![Player::for_test(0, "Ana", true), Player::for_test(1, "Ben", true)];
-    let mut quiz = Quiz::new(cfg(1), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(1), general_pack(), 0.0);
     tick(&mut quiz, &mut players, 3500.0);
     choose(&mut quiz, &mut players, 4000.0, 0, 1, 4000.0);
     choose(&mut quiz, &mut players, 4100.0, 0, 2, 4100.0);
@@ -72,7 +72,7 @@ fn second_tap_does_not_change_answer() {
 #[test]
 fn disconnected_players_do_not_block_early_close() {
     let mut players = vec![Player::for_test(0, "Ana", true), Player::for_test(1, "Ben", false)];
-    let mut quiz = Quiz::new(cfg(1), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(1), general_pack(), 0.0);
     tick(&mut quiz, &mut players, 3500.0);
     choose(&mut quiz, &mut players, 4000.0, 0, 0, 4000.0);
     tick(&mut quiz, &mut players, 4050.0);
@@ -82,7 +82,7 @@ fn disconnected_players_do_not_block_early_close() {
 #[test]
 fn runs_through_all_rounds_to_final() {
     let mut players = vec![Player::for_test(0, "Ana", true)];
-    let mut quiz = Quiz::new(cfg(3), starter_questions(), 0.0);
+    let mut quiz = Quiz::new(cfg(3), general_pack(), 0.0);
     let mut now = 0.0;
     while !quiz.is_finished() && now < 120_000.0 {
         now += 50.0;
@@ -99,7 +99,7 @@ fn runs_through_all_rounds_to_final() {
 
 #[test]
 fn options_contain_the_correct_answer_once() {
-    let pack = starter_questions();
+    let pack = general_pack();
     let quiz = Quiz::new(cfg(100), pack.clone(), 0.0);
     assert_eq!(quiz.rounds.len(), pack.len());
     for r in &quiz.rounds {
