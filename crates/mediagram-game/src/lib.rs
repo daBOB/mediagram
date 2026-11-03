@@ -4,6 +4,8 @@
 //! Transport agnostic and synchronous; a server wraps it in sockets.
 
 pub mod game;
+pub mod host;
+pub mod lan;
 pub mod protocol;
 pub mod room;
 pub mod starter;
@@ -12,8 +14,10 @@ mod quiz;
 mod quiz_views;
 mod room_seats;
 mod room_views;
+mod server;
 
 pub use game::{ActionError, Game, GameCtx, GameFactory, ViewCtx};
+pub use host::{Host, HostConfig};
 pub use room::{ConnId, Outbox, Room, RoomConfig};
 pub use room_seats::Player;
 pub use quiz::{Question, Quiz, QuizConfig};

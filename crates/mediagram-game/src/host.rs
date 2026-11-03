@@ -1,0 +1,162 @@
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
+use std::time::{Duration, Instant};
+
+use tokio::net::TcpListener;
+use tokio::sync::{mpsc, oneshot};
+use tokio::task::JoinHandle;
+use tokio::time::MissedTickBehavior;
+
+use crate::game::GameFactory;
+use crate::lan::lan_ip;
+use crate::room::{ConnId, Room, RoomConfig};
+use crate::server::{AppState, router};
+
+const TICK: Duration = Duration::from_millis(50);
+
+#[derive(Debug, Clone)]
+pub struct HostConfig {
+    pub preferred_port: u16,
+    pub min_players: u8,
+    pub max_players: u8,
+}
+
+impl Default for HostConfig {
+    fn default() -> Self {
+        Self { preferred_port: 8080, min_players: 1, max_players: 8 }
+    }
+}
+
+pub(crate) enum Event {
+    Connect(ConnId, bool, mpsc::UnboundedSender<String>),
+    Text(ConnId, String),
+    Disconnect(ConnId),
+    Back(oneshot::Sender<bool>),
+    Stop,
+}
+
+/// A running game-night server: HTTP pages, the join QR and the room socket.
+pub struct Host {
+    port: u16,
+    join_url: String,
+    events: mpsc::UnboundedSender<Event>,
+    shutdown: oneshot::Sender<()>,
+    server: JoinHandle<()>,
+    room: JoinHandle<()>,
+}
+
+impl Host {
+    /// Binds the preferred port, or any free one when it is taken.
+    pub async fn start(cfg: HostConfig, factory: GameFactory) -> std::io::Result<Host> {
+        let listener = match TcpListener::bind(("0.0.0.0", cfg.preferred_port)).await {
+            Ok(l) => l,
+            Err(_) => TcpListener::bind(("0.0.0.0", 0)).await?,
+        };
+        let port = listener.local_addr()?.port();
+        let ip = lan_ip().map_or_else(|| "127.0.0.1".to_string(), |ip| ip.to_string());
+        let join_url = format!("http://{ip}:{port}/");
+
+        let room = Room::new(
+            RoomConfig {
+                join_url: join_url.clone(),
+                min_players: cfg.min_players,
+                max_players: cfg.max_players,
+            },
+            factory,
+        );
+        let (events, rx) = mpsc::unbounded_channel();
+        let room = tokio::spawn(room_loop(room, rx));
+
+        let state = AppState {
+            events: events.clone(),
+            next_conn: Arc::new(AtomicU64::new(1)),
+            join_url: join_url.as_str().into(),
+        };
+        let (shutdown, stopped) = oneshot::channel::<()>();
+        let app = router(state).into_make_service_with_connect_info::<SocketAddr>();
+        let server = tokio::spawn(async move {
+            let served = axum::serve(listener, app)
+                .with_graceful_shutdown(async {
+                    let _ = stopped.await;
+                })
+                .await;
+            if let Err(e) = served {
+                tracing::error!("game server stopped: {e}");
+            }
+        });
+        Ok(Host { port, join_url, events, shutdown, server, room })
+    }
+
+    pub fn join_url(&self) -> String {
+        self.join_url.clone()
+    }
+
+    pub fn tv_url(&self) -> String {
+        format!("http://127.0.0.1:{}/tv", self.port)
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    /// Ends the running game. `true` if one was running.
+    pub async fn back(&self) -> bool {
+        let (tx, rx) = oneshot::channel();
+        if self.events.send(Event::Back(tx)).is_err() {
+            return false;
+        }
+        rx.await.unwrap_or(false)
+    }
+
+    /// Returns once the listener is closed and the room task has ended.
+    pub async fn stop(self) {
+        let _ = self.events.send(Event::Stop);
+        let _ = self.shutdown.send(());
+        let _ = self.server.await;
+        let _ = self.room.await;
+    }
+}
+
+/// All room state lives here; sockets only forward frames, so there is no
+/// locking and the room stays deterministic.
+async fn room_loop(mut room: Room, mut rx: mpsc::UnboundedReceiver<Event>) {
+    let start = Instant::now();
+    let now = || start.elapsed().as_secs_f64() * 1000.0;
+    let mut senders: HashMap<ConnId, mpsc::UnboundedSender<String>> = HashMap::new();
+    let mut ticker = tokio::time::interval(TICK);
+    ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+    loop {
+        let replies = tokio::select! {
+            ev = rx.recv() => match ev {
+                None | Some(Event::Stop) => return,
+                Some(Event::Connect(id, local, tx)) => {
+                    senders.insert(id, tx);
+                    room.connect(id, local);
+                    Vec::new()
+                }
+                Some(Event::Text(id, text)) => room.handle(id, &text, now()),
+                Some(Event::Disconnect(id)) => {
+                    senders.remove(&id);
+                    room.disconnect(id, now());
+                    Vec::new()
+                }
+                Some(Event::Back(reply)) => {
+                    let _ = reply.send(room.back_to_lobby());
+                    Vec::new()
+                }
+            },
+            _ = ticker.tick() => {
+                room.tick(now());
+                Vec::new()
+            }
+        };
+        for (id, json) in replies.into_iter().chain(room.flush(now())) {
+            if let Some(tx) = senders.get(&id) {
+                let _ = tx.send(json);
+            }
+        }
+    }
+}
