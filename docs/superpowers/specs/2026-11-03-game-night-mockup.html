@@ -1,0 +1,137 @@
+<style>
+  .tv { background:#0e0f12; color:#f2efe8; border-radius:10px; aspect-ratio:16/9; padding:22px 26px; box-sizing:border-box; font-family:system-ui,sans-serif; position:relative; overflow:hidden; }
+  .phone { background:#16171b; color:#f2efe8; border-radius:22px; width:220px; min-height:400px; padding:18px 14px; box-sizing:border-box; font-family:system-ui,sans-serif; border:3px solid #2a2b30; }
+  .row { display:flex; gap:22px; align-items:flex-start; flex-wrap:wrap; }
+  .tv-wrap { flex:1 1 520px; min-width:320px; }
+  .kick { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#9a968c; }
+  .big { font-size:30px; font-weight:800; margin:4px 0 6px; }
+  .qr { width:120px; height:120px; background:repeating-conic-gradient(#f2efe8 0 25%, #0e0f12 0 50%) 0 0/16px 16px; border:8px solid #f2efe8; border-radius:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .chip { padding:5px 11px; border-radius:99px; font-size:13px; font-weight:600; color:#111; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:6px; background:#2b2c31; font-size:12px; margin-right:6px; }
+  .badge.on { background:#ffd166; color:#111; font-weight:700; }
+  .game { background:#222328; border-radius:12px; padding:10px 12px; margin-bottom:8px; font-size:14px; }
+  .game.sel { outline:2px solid #ffd166; }
+  .seg { display:flex; gap:4px; margin-top:8px; }
+  .seg span { flex:1; text-align:center; font-size:11px; padding:5px 0; border-radius:6px; background:#2e2f35; }
+  .seg span.sel { background:#ffd166; color:#111; font-weight:700; }
+  .toggle { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin:12px 2px; }
+  .sw { width:38px; height:22px; border-radius:99px; background:#06d6a0; position:relative; }
+  .sw::after { content:""; position:absolute; right:3px; top:3px; width:16px; height:16px; border-radius:50%; background:#fff; }
+  .start { background:#ef476f; color:#fff; text-align:center; font-weight:800; padding:12px; border-radius:12px; margin-top:6px; }
+  .note { font-size:13px; color:var(--text-secondary); margin:8px 0 0; max-width:900px; }
+  .ans { padding:13px 10px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:8px; color:#111; }
+  .locked { opacity:.35; }
+  .meter { display:flex; gap:4px; margin-top:8px; }
+  .meter i { width:22px; height:6px; border-radius:3px; background:#2e2f35; }
+  .meter i.on { background:#ffd166; }
+  canvas { border-radius:6px; display:block; }
+  .reveal { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(14,15,18,.82); font-size:28px; font-weight:800; }
+</style>
+
+<h2>Two screens from the first game night</h2>
+<p class="subtitle">Game text in German (my guess), notes in English. Everything here is up for correction.</p>
+
+<div class="section">
+  <h3>1 · Lobby: people join, the starter picks the game</h3>
+  <div class="row">
+    <div class="tv-wrap"><div class="tv">
+      <div style="display:flex; gap:28px;">
+        <div class="qr"></div>
+        <div>
+          <div class="kick">Spieleabend</div>
+          <div class="big">Handy-Kamera auf den Code</div>
+          <div style="color:#9a968c;font-size:14px;">192.168.0.21:8080</div>
+          <div style="margin-top:12px;">
+            <span class="badge">Buzzer-Quiz · Gemischt</span><span class="badge on">Nur für Kinder</span>
+          </div>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip" style="background:#ef476f">Ana ★</span>
+        <span class="chip" style="background:#06d6a0">Ben</span>
+        <span class="chip" style="background:#118ab2;color:#fff">Mia</span>
+        <span class="chip" style="background:#ffd166">Opa</span>
+        <span class="chip" style="background:#9b5de5;color:#fff">Lea</span>
+      </div>
+      <div style="position:absolute;bottom:18px;left:26px;color:#9a968c;font-size:13px;">5 am Tisch · Ana startet, oder OK auf der Fernbedienung</div>
+    </div></div>
+    <div class="phone">
+      <div class="kick">Du startest</div>
+      <div style="font-weight:800;font-size:18px;margin:4px 0 12px;">Was spielen wir?</div>
+      <div class="game sel">Buzzer-Quiz
+        <div class="seg"><span>Filme</span><span>Allgemein</span><span class="sel">Gemischt</span></div>
+      </div>
+      <div class="game">Poster-Raten</div>
+      <div class="toggle">Nur für Kinder <div class="sw"></div></div>
+      <div class="start">Los geht's</div>
+    </div>
+  </div>
+  <p class="note">★ = the first to join, who starts the game. <b>Nur für Kinder</b> limits film questions and posters to titles a kids profile may watch, using the same rule as kids profiles. Everyone else's phone shows "Ana wählt das Spiel …".</p>
+</div>
+
+<div class="section">
+  <h3>2 · Poster round: sharper every 2 seconds (live)</h3>
+  <div class="row">
+    <div class="tv-wrap"><div class="tv" style="display:flex;gap:26px;align-items:center;">
+      <div style="position:relative;"><canvas id="pc" width="200" height="300"></canvas><div class="reveal" id="rv">Wallstreet Story</div></div>
+      <div>
+        <div class="kick">Poster-Raten · Runde 3 von 10</div>
+        <div class="big" id="pts">1000 Punkte</div>
+        <div style="color:#9a968c;font-size:14px;" id="lvl">Schärfe 1 von 8</div>
+        <div class="meter" id="mt"></div>
+        <div class="chips" style="margin-top:22px;">
+          <span class="chip" style="background:#ef476f">Ana</span>
+          <span class="chip" style="background:#06d6a0">Ben</span>
+          <span class="chip locked" style="background:#118ab2;color:#fff">Mia ✕</span>
+          <span class="chip" style="background:#ffd166">Opa</span>
+          <span class="chip" style="background:#9b5de5;color:#fff">Lea</span>
+        </div>
+      </div>
+    </div></div>
+    <div class="phone">
+      <div class="kick">Welcher Film?</div>
+      <div style="height:10px"></div>
+      <div class="ans" style="background:#4d8dff">Der große Crash</div>
+      <div class="ans" style="background:#ff9f43">Wallstreet Story</div>
+      <div class="ans" style="background:#ffd166">The Big Short</div>
+      <div class="ans" style="background:#ff6fae">Geldhochschule</div>
+      <div style="font-size:12px;color:#9a968c;text-align:center;margin-top:10px;">Mia's phone after a wrong tap:<br><b style="color:#f2efe8">Falsch – diesmal bist du raus.</b></div>
+    </div>
+  </div>
+  <p class="note">The first right answer ends the round, and earlier is worth more. A wrong tap puts you out for that poster (Mia ✕). Once the poster is fully sharp, there are 3 more seconds before the answer is shown. Phones never receive the image, so nobody can cheat by zooming. Watch the title text: it becomes readable a few steps before the end, so I'd use a poster without text when TMDB has one.</p>
+</div>
+
+<div class="section">
+  <h3>Your call: what age does "Nur für Kinder" mean?</h3>
+  <div class="options">
+    <div class="option" data-choice="fsk6" onclick="toggleSelect(this)"><div class="letter">6</div><div class="content"><h3>Up to FSK 6</h3><p>Safe with small children; fewer titles to draw from.</p></div></div>
+    <div class="option" data-choice="fsk12" onclick="toggleSelect(this)"><div class="letter">12</div><div class="content"><h3>Up to FSK 12</h3><p>Family blockbusters included; my default.</p></div></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const c = document.getElementById('pc'), x = c.getContext('2d');
+  const blocks = [40, 28, 20, 14, 9, 6, 3, 1];
+  const mt = document.getElementById('mt');
+  blocks.forEach(() => mt.appendChild(document.createElement('i')));
+  const img = new Image(); img.src = '../../../wallstreet story.poster.png';
+  const off = document.createElement('canvas'), ox = off.getContext('2d');
+  let step = 0;
+  function draw() {
+    const b = blocks[step], w = Math.max(1, Math.ceil(c.width / b)), h = Math.max(1, Math.ceil(c.height / b));
+    off.width = w; off.height = h; ox.imageSmoothingEnabled = true; ox.drawImage(img, 0, 0, w, h);
+    x.imageSmoothingEnabled = false; x.clearRect(0, 0, c.width, c.height); x.drawImage(off, 0, 0, w, h, 0, 0, c.width, c.height);
+    document.getElementById('lvl').textContent = 'Schärfe ' + (step + 1) + ' von ' + blocks.length;
+    document.getElementById('pts').textContent = Math.round(1000 - step * (500 / (blocks.length - 1))) + ' Punkte';
+    [...mt.children].forEach((m, i) => m.className = i <= step ? 'on' : '');
+  }
+  function tick() {
+    const rv = document.getElementById('rv');
+    if (step < blocks.length - 1) { step++; draw(); setTimeout(tick, 2000); }
+    else { setTimeout(() => { rv.style.display = 'flex'; setTimeout(() => { rv.style.display = 'none'; step = 0; draw(); setTimeout(tick, 2000); }, 3000); }, 3000); }
+  }
+  img.onload = () => { draw(); setTimeout(tick, 2000); };
+})();
+</script>
