@@ -18,6 +18,7 @@ impl Game for Idle {
             min_players: 0,
             settings: crate::room_settings::initial_settings(false),
             leader_name: None,
+            blocked: None,
         }
     }
     fn is_finished(&self) -> bool {

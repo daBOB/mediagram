@@ -1,4 +1,4 @@
-use crate::protocol::{Action, GameKind, LobbySettings, PhoneScreen, QuizMode, ServerMsg};
+use crate::protocol::{Action, GameKind, LobbySettings, PhoneScreen, QuizMode, ServerMsg, TvScene, TvView};
 use crate::room::tests::{Idle, action, cfg, decode, hello, room, room_with};
 use crate::room::{ConnId, Outbox, Room, RoomConfig};
 use crate::room_settings::Readiness;
@@ -36,6 +36,24 @@ fn poster_game_needs_posters() {
     assert!(!r.in_game());
     configure(&mut r, 1, GameKind::Poster, QuizMode::Mixed, false);
     assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+}
+
+#[test]
+fn tv_lobby_carries_the_same_blocked_text() {
+    let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
+    hello(&mut r, 1, "Ana", None);
+    let tv_blocked = |r: &Room| match r.view_for(9, 0.0) {
+        Some(ServerMsg::Tv { view: TvView { scene: TvScene::Lobby { blocked, .. }, .. } }) => blocked,
+        other => panic!("expected a TV lobby, got {other:?}"),
+    };
+    configure(&mut r, 1, GameKind::Poster, QuizMode::Mixed, true);
+    let PhoneScreen::Lobby { blocked: phone_blocked, .. } = lobby_of(&mut r, 1) else { panic!() };
+    assert!(phone_blocked.is_some());
+    assert_eq!(tv_blocked(&r), phone_blocked);
+    configure(&mut r, 1, GameKind::Poster, QuizMode::Mixed, false);
+    assert_eq!(tv_blocked(&r), None);
 }
 
 #[test]

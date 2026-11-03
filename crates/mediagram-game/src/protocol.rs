@@ -170,6 +170,12 @@ pub struct TvView {
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[ts(export)]
 pub enum TvScene {
-    Lobby { min_players: u8, settings: LobbySettings, leader_name: Option<String> },
+    Lobby {
+        min_players: u8,
+        settings: LobbySettings,
+        leader_name: Option<String>,
+        /// Why the chosen game cannot start yet.
+        blocked: Option<String>,
+    },
     Quiz { scene: QuizScene },
 }

@@ -38,6 +38,7 @@ impl Room {
                             min_players: self.cfg.min_players,
                             settings: self.settings.clone(),
                             leader_name: self.leader_name(),
+                            blocked: self.blocked().map(String::from),
                         },
                     },
                 },

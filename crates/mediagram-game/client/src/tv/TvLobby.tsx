@@ -8,7 +8,7 @@ type Lobby = Extract<TvScene, { kind: "lobby" }>;
 
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
   const seated = view.players.filter((p) => p.connected);
-  const canStart = seated.length >= scene.min_players;
+  const canStart = seated.length >= scene.min_players && !scene.blocked;
   return (
     <section className="tv-lobby">
       <div className="tv-lobby-intro">
@@ -40,6 +40,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
               ))}
             </ul>
           )}
+          {scene.blocked && <p className="lobby-blocked lobby-blocked-tv">{scene.blocked}</p>}
           {seated.length > 0 && (
             <p className="tv-footnote">
               {seated.length} am Tisch
@@ -53,7 +54,7 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
           disabled={!canStart}
           onClick={() => conn.send({ t: "action", action: { t: "start_game" } })}
         >
-          {canStart ? "Los geht's" : `Wartet auf ${scene.min_players - seated.length} Spieler`}
+          {seated.length < scene.min_players ? `Wartet auf ${scene.min_players - seated.length} Spieler` : "Los geht's"}
         </button>
       </div>
     </section>

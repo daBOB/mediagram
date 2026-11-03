@@ -123,6 +123,10 @@
   font-size: 0.95rem;
 }
 
+.lobby-blocked-tv {
+  font-size: 1.3rem;
+}
+
 .tv-headline {
   font-family: var(--display);
   font-weight: 800;
