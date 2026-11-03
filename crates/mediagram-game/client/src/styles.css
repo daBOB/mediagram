@@ -97,12 +97,13 @@ p {
   transition: transform 70ms ease-out, box-shadow 70ms ease-out;
 }
 
-.cta:active:not(:disabled) {
+.cta:active:not(:disabled):not([aria-disabled="true"]) {
   transform: translateY(5px);
   box-shadow: 0 1px 0 var(--yellow-edge);
 }
 
-.cta:disabled {
+.cta:disabled,
+.cta[aria-disabled="true"] {
   background: var(--felt-line);
   color: var(--muted);
   box-shadow: 0 6px 0 var(--felt-deep);

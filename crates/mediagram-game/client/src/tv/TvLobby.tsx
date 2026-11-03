@@ -51,8 +51,8 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
         <button
           className="cta cta-tv"
           autoFocus
-          disabled={!canStart}
-          onClick={() => conn.send({ t: "action", action: { t: "start_game" } })}
+          aria-disabled={!canStart}
+          onClick={() => canStart && conn.send({ t: "action", action: { t: "start_game" } })}
         >
           {seated.length < scene.min_players ? `Wartet auf ${scene.min_players - seated.length} Spieler` : "Los geht's"}
         </button>
