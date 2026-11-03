@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache"]
+members = ["crates/mlib-spec", "crates/mediagram", "crates/mediagram-tmdb", "crates/mediagram-core", "crates/mediagram-cache", "crates/mediagram-game"]
 
 [workspace.package]
 version = "0.141.1"
@@ -55,3 +55,9 @@ tar = "0.4.46"
 tempfile = "3.27.0"
 tokio = "1.53.1"
 tracing = "0.1.44"
+rand = "0.9"
+# The game-night wire types export TypeScript for the TV and phone pages.
+ts-rs = "11"
+# Used by the game-night host server (embedded pages, join QR).
+rust-embed = "8"
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
