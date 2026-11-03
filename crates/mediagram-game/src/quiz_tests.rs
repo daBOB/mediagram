@@ -100,7 +100,7 @@ fn runs_through_all_rounds_to_final() {
 #[test]
 fn options_contain_the_correct_answer_once() {
     let pack = general_pack();
-    let quiz = Quiz::new(cfg(100), pack.clone(), 0.0);
+    let quiz = Quiz::new(cfg(pack.len()), pack.clone(), 0.0);
     assert_eq!(quiz.rounds.len(), pack.len());
     for r in &quiz.rounds {
         let q = pack.iter().find(|q| q.text == r.text).unwrap();
