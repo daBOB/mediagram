@@ -5,7 +5,9 @@ import type { QuizScene } from "../protocol/QuizScene";
 import type { TvView } from "../protocol/TvView";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
+import { TvFinal } from "./TvFinal";
 import { TvLobby } from "./TvLobby";
+import { TvPoster } from "./TvPoster";
 
 /**
  * Browser version of the TV screen. The Godot host will render the same
@@ -27,7 +29,7 @@ export function TvApp() {
       ) : view.scene.kind === "lobby" ? (
         <TvLobby view={view} scene={view.scene} conn={conn} />
       ) : view.scene.kind === "poster" ? (
-        <p className="tv-wait">Poster-Raten</p>
+        <TvPoster scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}
@@ -40,7 +42,7 @@ function Quiz({ scene, players, conn }: { scene: QuizScene; players: PlayerInfo[
   const now = useServerNow(conn);
   const { stage } = scene;
 
-  if (stage.stage === "final") return <Final players={players} conn={conn} />;
+  if (stage.stage === "final") return <TvFinal players={players} conn={conn} />;
 
   const q = stage.question;
   const reveal = stage.stage === "reveal" ? stage : null;
@@ -117,31 +119,6 @@ function Quiz({ scene, players, conn }: { scene: QuizScene; players: PlayerInfo[
           );
         })}
       </footer>
-    </section>
-  );
-}
-
-function Final({ players, conn }: { players: PlayerInfo[]; conn: Connection }) {
-  const ranked = [...players].sort((a, b) => b.score - a.score);
-  const rankOf = (p: PlayerInfo) => ranked.filter((o) => o.score > p.score).length + 1;
-  return (
-    <section className="tv-final">
-      <h1 className="tv-final-title">
-        {ranked.length > 0 ? `${ranked[0].name} gewinnt` : "Spiel beendet"}
-      </h1>
-      <ol className="podium">
-        {ranked.map((p) => (
-          <li key={p.id} className={`podium-row rank-${Math.min(rankOf(p), 4)}`}>
-            <span className="podium-rank">{rankOf(p)}.</span>
-            <Token player={p} />
-            <span className="podium-name">{p.name}</span>
-            <span className="podium-score">{p.score}</span>
-          </li>
-        ))}
-      </ol>
-      <button className="cta cta-tv" autoFocus onClick={() => conn.send({ t: "action", action: { t: "back_to_lobby" } })}>
-        Zurück zur Lobby
-      </button>
     </section>
   );
 }

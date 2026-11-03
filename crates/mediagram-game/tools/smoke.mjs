@@ -1,6 +1,9 @@
 // End-to-end smoke test against a running host: one TV, two bots.
-// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws]
-const url = process.argv[2] ?? "ws://localhost:8080/ws";
+// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster]
+const args = process.argv.slice(2);
+const gi = args.indexOf("--game");
+const game = gi >= 0 ? args.splice(gi, 2)[1] : "quiz";
+const url = args[0] ?? "ws://localhost:8080/ws";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function client(hello, onMsg) {
@@ -21,7 +24,7 @@ const log = [];
 const tv = client({ t: "hello", role: "tv", name: null, token: null }, (_, m) => {
   if (m.t !== "tv") return;
   const s = m.view.scene;
-  const key = s.kind === "lobby" ? `lobby(${m.view.players.length})` : `quiz r${s.scene.round} ${s.scene.stage.stage}`;
+  const key = s.kind === "lobby" ? `lobby(${m.view.players.length})` : `${s.kind} r${s.scene.round} ${s.scene.stage.stage}`;
   if (log.at(-1) !== key) { log.push(key); console.log("tv:", key); }
 });
 
@@ -47,17 +50,17 @@ await sleep(500);
 console.log("phones:", a.last?.view?.screen?.kind, b.last?.view?.screen?.kind, "leader:", a.last?.view?.me?.leader);
 b.send({ t: "action", action: { t: "start_game" } }); // not leader → error
 await sleep(200);
-a.send({ t: "action", action: { t: "configure", game: "quiz", quiz_mode: "general", kids_only: false } });
+a.send({ t: "action", action: { t: "configure", game, quiz_mode: "general", kids_only: false } });
 await sleep(200);
 const settings = tv.last.view.scene.settings;
 console.log("tv badge:", settings.game, settings.quiz_mode, "kids_only:", settings.kids_only);
 a.send({ t: "action", action: { t: "start_game" } });
 
-const deadline = Date.now() + 120_000;
+const deadline = Date.now() + 300_000;
 while (Date.now() < deadline) {
   await sleep(250);
   const s = tv.last?.view?.scene;
-  if (s?.kind === "quiz" && s.scene.stage.stage === "final") break;
+  if (s?.kind === game && s.scene.stage.stage === "final") break;
 }
 console.log("final scores:", tv.last.view.players.map((p) => `${p.name}=${p.score}`).join(", "));
 console.log("phone A:", JSON.stringify(a.last.view.screen));
