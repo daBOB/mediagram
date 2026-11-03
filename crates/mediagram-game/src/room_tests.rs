@@ -2,8 +2,9 @@ use super::*;
 use crate::game::ViewCtx;
 use crate::protocol::{PhoneScreen, TvScene};
 use crate::room_seats::{LOBBY_GRACE_MS, MAX_NAME_CHARS, clean_name};
+use crate::room_settings::Readiness;
 
-struct Idle;
+pub(crate) struct Idle;
 impl Game for Idle {
     fn on_action(&mut self, _: &mut GameCtx, _: PlayerId, _: &Action) -> Result<(), ActionError> {
         Ok(())
@@ -13,36 +14,47 @@ impl Game for Idle {
         PhoneScreen::Wait { title: "idle".into(), text: None }
     }
     fn tv_scene(&self, _: &ViewCtx) -> TvScene {
-        TvScene::Lobby { min_players: 0 }
+        TvScene::Lobby {
+            min_players: 0,
+            settings: crate::room_settings::initial_settings(false),
+            leader_name: None,
+        }
     }
     fn is_finished(&self) -> bool {
         false
     }
 }
 
-fn room(max: u8) -> Room {
-    Room::new(
-        RoomConfig { join_url: "http://x/".into(), min_players: 1, max_players: max },
-        Box::new(|_| Box::new(Idle)),
-    )
+pub(crate) fn cfg(max: u8) -> RoomConfig {
+    RoomConfig {
+        join_url: "http://x/".into(),
+        min_players: 1,
+        max_players: max,
+        kids_locked: false,
+        readiness: Readiness::default(),
+    }
 }
 
-fn decode(json: &str) -> ServerMsg {
+pub(crate) fn room_with(cfg: RoomConfig) -> Room {
+    Room::new(cfg, Box::new(|_, _| Box::new(Idle)))
+}
+
+pub(crate) fn room(max: u8) -> Room {
+    room_with(cfg(max))
+}
+
+pub(crate) fn decode(json: &str) -> ServerMsg {
     serde_json::from_str(json).unwrap()
 }
 
-fn hello(room: &mut Room, conn: ConnId, name: &str, token: Option<&str>) -> ServerMsg {
+pub(crate) fn hello(room: &mut Room, conn: ConnId, name: &str, token: Option<&str>) -> ServerMsg {
     room.connect(conn, false);
-    let msg = ClientMsg::Hello {
-        role: Role::Phone,
-        name: Some(name.into()),
-        token: token.map(Into::into),
-    };
+    let msg = ClientMsg::Hello { role: Role::Phone, name: Some(name.into()), token: token.map(Into::into) };
     let out = room.handle(conn, &serde_json::to_string(&msg).unwrap(), 0.0);
     decode(&out[0].1)
 }
 
-fn action(room: &mut Room, conn: ConnId, action: Action) -> Outbox {
+pub(crate) fn action(room: &mut Room, conn: ConnId, action: Action) -> Outbox {
     let msg = ClientMsg::Action { action };
     room.handle(conn, &serde_json::to_string(&msg).unwrap(), 0.0)
 }

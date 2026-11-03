@@ -12,6 +12,7 @@ use tokio::time::MissedTickBehavior;
 use crate::game::GameFactory;
 use crate::lan::lan_ip;
 use crate::room::{ConnId, Room, RoomConfig};
+use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
 
 const TICK: Duration = Duration::from_millis(50);
@@ -21,11 +22,20 @@ pub struct HostConfig {
     pub preferred_port: u16,
     pub min_players: u8,
     pub max_players: u8,
+    pub kids_locked: bool,
+    pub readiness: Readiness,
 }
 
 impl Default for HostConfig {
     fn default() -> Self {
-        Self { preferred_port: 8080, min_players: 1, max_players: 8 }
+        Self {
+            preferred_port: 8080,
+            min_players: 1,
+            max_players: 8,
+            kids_locked: false,
+            // No poster game is built yet, so none can be started.
+            readiness: Readiness { poster: false, poster_kids: false },
+        }
     }
 }
 
@@ -63,6 +73,8 @@ impl Host {
                 join_url: join_url.clone(),
                 min_players: cfg.min_players,
                 max_players: cfg.max_players,
+                kids_locked: cfg.kids_locked,
+                readiness: cfg.readiness,
             },
             factory,
         );

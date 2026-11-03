@@ -1,6 +1,8 @@
 //! Hosts the buzzer quiz on the LAN for development, without the app.
-//! `GAME_PORT` and `GAME_MIN_PLAYERS` override the defaults.
+//! `GAME_PORT` and `GAME_MIN_PLAYERS` override the defaults; `--kids-locked`
+//! starts the night as a kids profile would.
 
+use mediagram_game::protocol::LobbySettings;
 use mediagram_game::starter::starter_questions;
 use mediagram_game::{Game, GameCtx, Host, HostConfig, Quiz, QuizConfig};
 use qrcode::QrCode;
@@ -23,8 +25,10 @@ async fn main() -> std::io::Result<()> {
         preferred_port: env_or("GAME_PORT", defaults.preferred_port),
         min_players: env_or("GAME_MIN_PLAYERS", defaults.min_players),
         max_players: defaults.max_players,
+        kids_locked: std::env::args().any(|a| a == "--kids-locked"),
+        readiness: defaults.readiness,
     };
-    let factory = Box::new(|ctx: &mut GameCtx| {
+    let factory = Box::new(|ctx: &mut GameCtx, _: &LobbySettings| {
         Box::new(Quiz::new(QuizConfig::default(), starter_questions(), ctx.now)) as Box<dyn Game>
     });
     let host = Host::start(cfg, factory).await?;

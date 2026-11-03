@@ -5,7 +5,7 @@ use crate::starter::starter_questions;
 use crate::{GameFactory, Host, HostConfig, Quiz, QuizConfig};
 
 fn factory() -> GameFactory {
-    Box::new(|ctx| Box::new(Quiz::new(QuizConfig::default(), starter_questions(), ctx.now)))
+    Box::new(|ctx, _| Box::new(Quiz::new(QuizConfig::default(), starter_questions(), ctx.now)))
 }
 
 async fn start(preferred_port: u16) -> Host {

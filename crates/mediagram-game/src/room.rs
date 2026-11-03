@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use crate::game::{ActionError, Game, GameCtx, GameFactory};
-use crate::protocol::{Action, ClientMsg, ErrorCode, PlayerId, Role, ServerMsg, ServerTime};
+use crate::protocol::{Action, ClientMsg, ErrorCode, LobbySettings, PlayerId, Role, ServerMsg, ServerTime};
 use crate::room_seats::{LOBBY_GRACE_MS, Player};
+use crate::room_settings::{Readiness, initial_settings};
 
 pub type ConnId = u64;
 
@@ -15,6 +16,9 @@ pub struct RoomConfig {
     pub join_url: String,
     pub min_players: u8,
     pub max_players: u8,
+    /// Set when a kids profile started the night: the toggle stays on.
+    pub kids_locked: bool,
+    pub readiness: Readiness,
 }
 
 #[derive(Default)]
@@ -35,12 +39,14 @@ pub struct Room {
     pub(crate) conns: BTreeMap<ConnId, Conn>,
     pub(crate) game: Option<Box<dyn Game>>,
     factory: GameFactory,
+    pub(crate) settings: LobbySettings,
     pub(crate) next_player_id: PlayerId,
 }
 
 impl Room {
     pub fn new(cfg: RoomConfig, factory: GameFactory) -> Self {
         Self {
+            settings: initial_settings(cfg.kids_locked),
             cfg,
             players: Vec::new(),
             conns: BTreeMap::new(),
@@ -69,7 +75,9 @@ impl Room {
     }
 
     pub fn disconnect(&mut self, conn: ConnId, now: ServerTime) {
-        let Some(c) = self.conns.remove(&conn) else { return };
+        let Some(c) = self.conns.remove(&conn) else {
+            return;
+        };
         if let Some(p) = c.player.and_then(|id| self.player_mut(id)) {
             // A reconnect may already have moved the player to a new socket.
             if p.conn == Some(conn) {
@@ -94,8 +102,7 @@ impl Room {
             let mut ctx = GameCtx { now, players: &mut self.players };
             game.on_tick(&mut ctx);
         } else {
-            self.players
-                .retain(|p| p.connected() || p.left_at.is_some_and(|t| now - t < LOBBY_GRACE_MS));
+            self.players.retain(|p| p.connected() || p.left_at.is_some_and(|t| now - t < LOBBY_GRACE_MS));
         }
     }
 
@@ -133,11 +140,16 @@ impl Room {
         let is_tv = c.role == Some(Role::Tv);
         let player = c.player;
         let is_leader = player.is_some() && player == self.leader();
-
         match action {
+            Action::Configure { game, quiz_mode, kids_only } => {
+                self.configure(is_leader, game, quiz_mode, kids_only).then_some(()).ok_or_else(not_allowed)
+            }
             Action::StartGame => {
                 if !(is_tv || is_leader) || self.game.is_some() {
                     return Err(not_allowed());
+                }
+                if let Some(why) = self.blocked() {
+                    return Err(error(ErrorCode::NotAllowed, why.into()));
                 }
                 if self.connected_count() < self.cfg.min_players {
                     return Err(error(ErrorCode::NotAllowed, "Noch zu wenige Spieler.".into()));
@@ -147,7 +159,7 @@ impl Room {
                     p.score = 0;
                 }
                 let mut ctx = GameCtx { now, players: &mut self.players };
-                self.game = Some((self.factory)(&mut ctx));
+                self.game = Some((self.factory)(&mut ctx, &self.settings));
                 Ok(())
             }
             Action::BackToLobby => {
@@ -185,4 +197,4 @@ pub(crate) fn encode(msg: &ServerMsg) -> String {
 
 #[cfg(test)]
 #[path = "room_tests.rs"]
-mod tests;
+pub(crate) mod tests;

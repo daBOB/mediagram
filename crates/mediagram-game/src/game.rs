@@ -1,4 +1,4 @@
-use crate::protocol::{Action, PhoneScreen, PlayerId, ServerTime, TvScene};
+use crate::protocol::{Action, LobbySettings, PhoneScreen, PlayerId, ServerTime, TvScene};
 
 use crate::room_seats::Player;
 
@@ -31,12 +31,7 @@ pub enum ActionError {
 /// `on_tick`, and describe what each screen shows through the view methods.
 /// Views must be pure, because they are recomputed and diffed on every event.
 pub trait Game: Send {
-    fn on_action(
-        &mut self,
-        ctx: &mut GameCtx,
-        player: PlayerId,
-        action: &Action,
-    ) -> Result<(), ActionError>;
+    fn on_action(&mut self, ctx: &mut GameCtx, player: PlayerId, action: &Action) -> Result<(), ActionError>;
 
     /// Called roughly every 50 ms. Drive timers from `ctx.now`, never from a
     /// wall clock, so games stay deterministic and testable.
@@ -50,6 +45,6 @@ pub trait Game: Send {
     fn is_finished(&self) -> bool;
 }
 
-/// Builds a fresh game when the leader presses start. Scores are already
-/// reset when this runs.
-pub type GameFactory = Box<dyn FnMut(&mut GameCtx) -> Box<dyn Game> + Send>;
+/// Builds a fresh game when the leader presses start, from the lobby
+/// settings in force. Scores are already reset when this runs.
+pub type GameFactory = Box<dyn FnMut(&mut GameCtx, &LobbySettings) -> Box<dyn Game> + Send>;

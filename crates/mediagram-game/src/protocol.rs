@@ -10,7 +10,9 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+pub use crate::protocol_choice::{AnswerColor, ChoiceOption, Tone};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
+pub use crate::protocol_settings::{GameKind, LobbySettings, QuizMode};
 
 pub type PlayerId = u8;
 pub type ServerTime = f64;
@@ -37,19 +39,32 @@ pub enum ClientMsg {
         token: Option<String>,
     },
     /// Clock sync. `t0` is the client's local time; it is echoed back.
-    Ping { t0: f64 },
-    Action { action: Action },
+    Ping {
+        t0: f64,
+    },
+    Action {
+        action: Action,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "t", rename_all = "snake_case")]
 #[ts(export)]
 pub enum Action {
+    /// Leader only, lobby only.
+    Configure {
+        game: GameKind,
+        quiz_mode: QuizMode,
+        kids_only: bool,
+    },
     StartGame,
     BackToLobby,
     /// Pick an option of a `PhoneScreen::Choice`. `at` is the client's estimate
     /// of server time at the moment of the tap.
-    Choose { index: u8, at: ServerTime },
+    Choose {
+        index: u8,
+        at: ServerTime,
+    },
 }
 
 // ---------------------------------------------------------------- host → client
@@ -58,11 +73,7 @@ pub enum Action {
 #[serde(tag = "t", rename_all = "snake_case")]
 #[ts(export)]
 pub enum ServerMsg {
-    Welcome {
-        player: Option<PlayerId>,
-        token: Option<String>,
-        now: ServerTime,
-    },
+    Welcome { player: Option<PlayerId>, token: Option<String>, now: ServerTime },
     Pong { t0: f64, now: ServerTime },
     Phone { view: PhoneView },
     Tv { view: TvView },
@@ -111,6 +122,11 @@ pub enum PhoneScreen {
         players: u8,
         min_players: u8,
         can_start: bool,
+        is_leader: bool,
+        leader_name: Option<String>,
+        settings: LobbySettings,
+        /// Why the chosen game cannot start yet.
+        blocked: Option<String>,
     },
     Wait {
         title: String,
@@ -138,36 +154,6 @@ pub enum PhoneScreen {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct ChoiceOption {
-    pub label: String,
-    pub color: AnswerColor,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "snake_case")]
-#[ts(export)]
-pub enum AnswerColor {
-    Blue,
-    Orange,
-    Yellow,
-    Pink,
-}
-
-impl AnswerColor {
-    pub const ALL: [AnswerColor; 4] = [Self::Blue, Self::Orange, Self::Yellow, Self::Pink];
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "snake_case")]
-#[ts(export)]
-pub enum Tone {
-    Good,
-    Bad,
-    Neutral,
-}
-
 // ---------------------------------------------------------------- TV views
 //
 // The TV is allowed to be game specific: each game adds a scene variant.
@@ -184,6 +170,6 @@ pub struct TvView {
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[ts(export)]
 pub enum TvScene {
-    Lobby { min_players: u8 },
+    Lobby { min_players: u8, settings: LobbySettings, leader_name: Option<String> },
     Quiz { scene: QuizScene },
 }
