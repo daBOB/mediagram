@@ -107,3 +107,19 @@ fn kids_locked_keeps_only_kids_titles() {
     assert_eq!(pool.eligible(false).len(), 1);
     assert_eq!(pool.get(0).key, "B");
 }
+
+#[test]
+fn poster_keys_follow_title_keys() {
+    let mut bare = set("B", "movie", Some("Bare"), None, 1990);
+    bare.poster_key = None;
+    let sets = [
+        set("A", "movie", Some("Alien"), None, 1979),
+        set("E1", "ep", None, Some("Lost"), 2004),
+        set("E2", "ep", None, Some("Lost"), 2004),
+        bare,
+    ];
+    let keys = poster_keys(&sets);
+    assert_eq!(keys.len(), 2);
+    assert_eq!(keys["A"], "tmdb-movie-7");
+    assert_eq!(keys["show:Lost"], "tmdb-tv-7");
+}

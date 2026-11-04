@@ -28,3 +28,4 @@ path = "src/bin/game-night-dev.rs"
 
 [dev-dependencies]
 tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util"] }

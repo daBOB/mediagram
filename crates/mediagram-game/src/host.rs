@@ -1,27 +1,24 @@
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
-use std::time::{Duration, Instant};
 
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
-use tokio::time::MissedTickBehavior;
 
 use crate::factory::game_factory;
 use crate::game::GameFactory;
 use crate::general::general_pack;
 use crate::lan::lan_ip;
-use crate::room::{ConnId, Room, RoomConfig};
 use crate::poster_config::poster_ready;
+use crate::poster_lookup::PosterLookup;
+use crate::room::{Room, RoomConfig};
+use crate::room_loop::{Event, room_loop};
 use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
 use crate::titles::{GameTitle, TitlePool};
 
-const TICK: Duration = Duration::from_millis(50);
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct HostConfig {
     pub preferred_port: u16,
     pub min_players: u8,
@@ -30,6 +27,8 @@ pub struct HostConfig {
     pub readiness: Readiness,
     /// Images are served from it to the box itself.
     pub pool: Arc<TitlePool>,
+    /// Textless poster files, asked for by title key; `None` serves the pool's own.
+    pub textless: Option<PosterLookup>,
 }
 
 impl Default for HostConfig {
@@ -42,21 +41,19 @@ impl Default for HostConfig {
             // No poster game is built yet, so none can be started.
             readiness: Readiness { poster: false, poster_kids: false },
             pool: Arc::default(),
+            textless: None,
         }
     }
 }
 
-pub(crate) enum Event {
-    Connect(ConnId, bool, mpsc::UnboundedSender<String>),
-    Text(ConnId, String),
-    Disconnect(ConnId),
-    Back(oneshot::Sender<bool>),
-    Stop,
-}
-
-/// Hosts the quiz over `titles`. The one `kids_locked` decides both which
+/// Hosts the games over `titles`. The one `kids_locked` decides both which
 /// titles exist and whether the toggle is locked, so the two cannot disagree.
-pub async fn start_game_night(titles: Vec<GameTitle>, kids_locked: bool, preferred_port: u16) -> std::io::Result<Host> {
+pub async fn start_game_night(
+    titles: Vec<GameTitle>,
+    kids_locked: bool,
+    preferred_port: u16,
+    textless: Option<PosterLookup>,
+) -> std::io::Result<Host> {
     let pool = Arc::new(TitlePool::new(titles, kids_locked));
     let cfg = HostConfig {
         preferred_port,
@@ -66,9 +63,10 @@ pub async fn start_game_night(titles: Vec<GameTitle>, kids_locked: bool, preferr
             poster_kids: poster_ready(&pool, &pool.eligible(true)),
         },
         pool: pool.clone(),
+        textless: textless.clone(),
         ..HostConfig::default()
     };
-    Host::start(cfg, game_factory(pool, Arc::new(general_pack()))).await
+    Host::start(cfg, game_factory(pool, Arc::new(general_pack()), textless)).await
 }
 
 /// A running game-night server: HTTP pages, the join QR and the room socket.
@@ -110,6 +108,7 @@ impl Host {
             next_conn: Arc::new(AtomicU64::new(1)),
             join_url: join_url.as_str().into(),
             pool: cfg.pool,
+            textless: cfg.textless,
         };
         let (shutdown, stopped) = oneshot::channel::<()>();
         let app = router(state).into_make_service_with_connect_info::<SocketAddr>();
@@ -153,47 +152,5 @@ impl Host {
         let _ = self.shutdown.send(());
         let _ = self.server.await;
         let _ = self.room.await;
-    }
-}
-
-/// All room state lives here; sockets only forward frames, so there is no
-/// locking and the room stays deterministic.
-async fn room_loop(mut room: Room, mut rx: mpsc::UnboundedReceiver<Event>) {
-    let start = Instant::now();
-    let now = || start.elapsed().as_secs_f64() * 1000.0;
-    let mut senders: HashMap<ConnId, mpsc::UnboundedSender<String>> = HashMap::new();
-    let mut ticker = tokio::time::interval(TICK);
-    ticker.set_missed_tick_behavior(MissedTickBehavior::Skip);
-
-    loop {
-        let replies = tokio::select! {
-            ev = rx.recv() => match ev {
-                None | Some(Event::Stop) => return,
-                Some(Event::Connect(id, local, tx)) => {
-                    senders.insert(id, tx);
-                    room.connect(id, local);
-                    Vec::new()
-                }
-                Some(Event::Text(id, text)) => room.handle(id, &text, now()),
-                Some(Event::Disconnect(id)) => {
-                    senders.remove(&id);
-                    room.disconnect(id, now());
-                    Vec::new()
-                }
-                Some(Event::Back(reply)) => {
-                    let _ = reply.send(room.back_to_lobby());
-                    Vec::new()
-                }
-            },
-            _ = ticker.tick() => {
-                room.tick(now());
-                Vec::new()
-            }
-        };
-        for (id, json) in replies.into_iter().chain(room.flush(now())) {
-            if let Some(tx) = senders.get(&id) {
-                let _ = tx.send(json);
-            }
-        }
     }
 }

@@ -18,6 +18,7 @@ pub mod credits;
 pub mod dto;
 mod error;
 pub mod franchises;
+pub mod game_posters;
 pub mod game_titles;
 pub mod http;
 pub mod package;

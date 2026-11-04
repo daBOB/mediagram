@@ -14,7 +14,8 @@ use qrcode::render::svg;
 use rust_embed::RustEmbed;
 use tokio::sync::mpsc;
 
-use crate::host::Event;
+use crate::poster_lookup::{PosterLookup, textless_file};
+use crate::room_loop::Event;
 use crate::titles::{ImageKind, TitlePool};
 
 const MAX_FRAME_BYTES: usize = 16 * 1024;
@@ -30,6 +31,7 @@ pub(crate) struct AppState {
     pub(crate) next_conn: Arc<AtomicU64>,
     pub(crate) join_url: Arc<str>,
     pub(crate) pool: Arc<TitlePool>,
+    pub(crate) textless: Option<PosterLookup>,
 }
 
 pub(crate) fn router(state: AppState) -> Router {
@@ -124,7 +126,11 @@ pub(crate) async fn image(
         "still" => ImageKind::Still,
         _ => return StatusCode::NOT_FOUND.into_response(),
     };
-    let Some(path) = state.pool.image_path(i, kind) else {
+    let textless = match (&state.textless, kind, state.pool.key_of(i)) {
+        (Some(lookup), ImageKind::Poster, Some(key)) => textless_file(lookup, key).await,
+        _ => None,
+    };
+    let Some(path) = textless.as_deref().or_else(|| state.pool.image_path(i, kind)) else {
         return StatusCode::NOT_FOUND.into_response();
     };
     let content_type = match path.extension().and_then(|e| e.to_str()) {

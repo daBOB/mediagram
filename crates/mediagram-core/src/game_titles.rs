@@ -15,6 +15,10 @@ fn names(people: &[Credited]) -> Vec<String> {
     people.iter().map(|p| p.name.clone()).collect()
 }
 
+fn show_key(show: &str) -> String {
+    format!("show:{show}")
+}
+
 fn film(set: &SetSummary, credits: Credits, kids: &HashSet<String>) -> Option<GameTitle> {
     let credited = set.poster_key.as_deref().and_then(credits).unwrap_or_default();
     Some(GameTitle {
@@ -37,7 +41,7 @@ fn series(show: &str, eps: &[&SetSummary], credits: Credits, kids: &HashSet<Stri
     // as good as any.
     let credited = eps.iter().find_map(|e| e.poster_key.as_deref()).and_then(credits).unwrap_or_default();
     GameTitle {
-        key: format!("show:{show}"),
+        key: show_key(show),
         kind: TitleKind::Series,
         title: show.to_string(),
         year: eps.iter().filter_map(|e| e.year).min().and_then(|y| u16::try_from(y).ok()),
@@ -73,6 +77,25 @@ pub fn game_titles(sets: &[SetSummary], credits: Credits, kids_set_ids: &HashSet
     }
     out.extend(shows.into_iter().map(|s| series(s, &episodes[s], credits, kids_set_ids)));
     out
+}
+
+/// Each title's key against its poster key, for the titles that have one.
+pub fn poster_keys(sets: &[SetSummary]) -> HashMap<String, String> {
+    let mut keys = HashMap::new();
+    for set in sets {
+        let Some(poster_key) = &set.poster_key else { continue };
+        match (set.kind.as_str(), set.show.as_deref()) {
+            ("movie", _) => {
+                keys.insert(set.set_id.clone(), poster_key.clone());
+            }
+            ("ep", Some(show)) => {
+                // Episodes of one show share a poster key.
+                keys.entry(show_key(show)).or_insert_with(|| poster_key.clone());
+            }
+            _ => {}
+        }
+    }
+    keys
 }
 
 #[cfg(test)]

@@ -70,6 +70,7 @@ async fn images_are_only_served_to_the_box() {
         next_conn: Arc::new(AtomicU64::new(1)),
         join_url: "http://x/".into(),
         pool: Arc::new(TitlePool::new(vec![t], false)),
+        textless: None,
     };
     let get = |peer: &str, i: usize, which: &str| {
         let peer: SocketAddr = peer.parse().unwrap();
@@ -85,4 +86,72 @@ async fn images_are_only_served_to_the_box() {
     assert_eq!(get("127.0.0.1:5000", 99, "poster").await.status(), StatusCode::NOT_FOUND);
     assert_eq!(get("127.0.0.1:5000", 0, "still").await.status(), StatusCode::NOT_FOUND);
     assert_eq!(get("127.0.0.1:5000", 0, "other").await.status(), StatusCode::NOT_FOUND);
+}
+
+async fn poster_with(lookup: crate::PosterLookup) -> (axum::http::StatusCode, Vec<u8>) {
+    use std::sync::atomic::AtomicU64;
+
+    use axum::extract::{ConnectInfo, Path, State};
+    use axum::response::IntoResponse;
+
+    use crate::server::{AppState, image};
+    use crate::titles::TitlePool;
+    use crate::titles::tests::title;
+
+    let dir = tempfile::tempdir().unwrap();
+    let normal = dir.path().join("normal.png");
+    std::fs::write(&normal, b"normal").unwrap();
+    let mut t = title("film", true);
+    t.poster = Some(normal);
+    let (events, _rx) = tokio::sync::mpsc::unbounded_channel();
+    let state = AppState {
+        events,
+        next_conn: std::sync::Arc::new(AtomicU64::new(1)),
+        join_url: "http://x/".into(),
+        pool: std::sync::Arc::new(TitlePool::new(vec![t], false)),
+        textless: Some(lookup),
+    };
+    let peer = "127.0.0.1:5000".parse().unwrap();
+    let res = image(State(state), ConnectInfo(peer), Path((0, "poster".into()))).await.into_response();
+    let status = res.status();
+    (status, axum::body::to_bytes(res.into_body(), 1024).await.unwrap().to_vec())
+}
+
+fn lookup_of(file: Option<std::path::PathBuf>, delay: std::time::Duration) -> crate::PosterLookup {
+    std::sync::Arc::new(move |key| {
+        let file = file.clone();
+        Box::pin(async move {
+            assert_eq!(key, "film");
+            tokio::time::sleep(delay).await;
+            file
+        })
+    })
+}
+
+#[tokio::test]
+async fn lookup_poster_is_preferred() {
+    let dir = tempfile::tempdir().unwrap();
+    let textless = dir.path().join("textless.jpg");
+    std::fs::write(&textless, b"textless").unwrap();
+    let (status, body) = poster_with(lookup_of(Some(textless), std::time::Duration::ZERO)).await;
+    assert_eq!(status, axum::http::StatusCode::OK);
+    assert_eq!(body, b"textless");
+}
+
+#[tokio::test]
+async fn no_textless_poster_falls_back_to_the_normal_one() {
+    let (_, body) = poster_with(lookup_of(None, std::time::Duration::ZERO)).await;
+    assert_eq!(body, b"normal");
+}
+
+#[tokio::test(start_paused = true)]
+async fn slow_lookup_falls_back_after_3_seconds() {
+    let dir = tempfile::tempdir().unwrap();
+    let textless = dir.path().join("textless.jpg");
+    std::fs::write(&textless, b"textless").unwrap();
+    let slow = std::time::Duration::from_secs(10);
+    let began = tokio::time::Instant::now();
+    let (_, body) = poster_with(lookup_of(Some(textless), slow)).await;
+    assert_eq!(body, b"normal");
+    assert_eq!(began.elapsed(), std::time::Duration::from_secs(3));
 }

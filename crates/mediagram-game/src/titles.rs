@@ -51,6 +51,10 @@ impl TitlePool {
         (0..self.titles.len()).filter(|&i| !kids_only || self.titles[i].kids_ok).collect()
     }
 
+    pub(crate) fn key_of(&self, i: usize) -> Option<&str> {
+        self.titles.get(i).map(|t| t.key.as_str())
+    }
+
     pub fn get(&self, i: usize) -> &GameTitle {
         &self.titles[i]
     }

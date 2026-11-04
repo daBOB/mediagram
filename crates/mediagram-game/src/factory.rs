@@ -9,6 +9,7 @@ use rand::rngs::StdRng;
 use crate::game::{Game, GameFactory};
 use crate::poster::PosterGame;
 use crate::poster_config::PosterConfig;
+use crate::poster_lookup::PosterLookup;
 use crate::protocol::GameKind;
 use crate::quiz::Quiz;
 use crate::quiz_config::{Question, QuizConfig};
@@ -17,13 +18,20 @@ use crate::titles::TitlePool;
 
 /// The lobby blocks starting a game its pool cannot supply, so neither arm
 /// is built without enough titles.
-pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>) -> GameFactory {
+pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless: Option<PosterLookup>) -> GameFactory {
     let mut used = HashSet::new();
     Box::new(move |ctx, settings| {
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);
             let cfg = PosterConfig::default();
-            return Box::new(PosterGame::new(cfg, &pool, &eligible, &mut used, ctx.now)) as Box<dyn Game>;
+            let game = PosterGame::new(cfg, &pool, &eligible, &mut used, ctx.now);
+            if let Some(lookup) = &textless {
+                // Fetched ahead, so a round's poster is cached before it is shown.
+                for round in &game.rounds {
+                    tokio::spawn(lookup(pool.get(round.title).key.clone()));
+                }
+            }
+            return Box::new(game) as Box<dyn Game>;
         }
         let cfg = QuizConfig::default();
         let mut rng = StdRng::from_os_rng();
