@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use mediagram_game::PosterLookup;
 use mediagram_tmdb::poster_files::download_into;
@@ -25,13 +25,30 @@ pub fn poster_lookup(tmdb_key: String, cache_dir: PathBuf, poster_keys: HashMap<
     let api = Arc::new(TmdbClient::new(http.clone(), tmdb_key));
     let keys = Arc::new(poster_keys);
     let cache_dir = Arc::new(cache_dir);
-    Some(Arc::new(move |title_key: String| {
+    Some(one_at_a_time(Arc::new(move |title_key: String| {
         let (api, http, keys, dir) = (api.clone(), http.clone(), keys.clone(), cache_dir.clone());
         Box::pin(async move {
             let poster_key = keys.get(&title_key)?;
             textless_poster(api.as_ref(), &http, &dir, poster_key).await
         })
-    }))
+    })))
+}
+
+/// Runs `inner` for one title key at a time. The prefetch and the image
+/// route usually ask for the same poster together; unserialised they would
+/// both download it into one temporary file, and a truncated image could be
+/// renamed into the cache for good. The second caller waits, then finds the
+/// first one's file (or miss marker) in the cache.
+fn one_at_a_time(inner: PosterLookup) -> PosterLookup {
+    let locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> = Arc::default();
+    Arc::new(move |key: String| {
+        let (inner, locks) = (inner.clone(), locks.clone());
+        Box::pin(async move {
+            let lock = locks.lock().unwrap_or_else(|e| e.into_inner()).entry(key.clone()).or_default().clone();
+            let _held = lock.lock().await;
+            inner(key).await
+        })
+    })
 }
 
 /// The cached textless poster for `poster_key`, fetching it on a first ask.

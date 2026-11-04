@@ -35,6 +35,35 @@ async fn a_key_without_a_provider_title_makes_no_request() {
     assert_eq!(textless_poster(&NoRequests, &http, dir.path(), "local-poster").await, None);
 }
 
+#[tokio::test]
+async fn concurrent_lookups_for_one_title_fetch_once() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let dir = tempfile::tempdir().unwrap();
+    let fetches = Arc::new(AtomicUsize::new(0));
+    // Behaves like `textless_poster`: cache first, then a slow fetch.
+    let fake: PosterLookup = {
+        let (dir, fetches) = (dir.path().to_path_buf(), fetches.clone());
+        Arc::new(move |key| {
+            let (dir, fetches) = (dir.clone(), fetches.clone());
+            Box::pin(async move {
+                let file = dir.join(format!("{key}.jpg"));
+                if !file.exists() {
+                    fetches.fetch_add(1, Ordering::SeqCst);
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    std::fs::write(&file, b"jpg").unwrap();
+                }
+                Some(file)
+            })
+        })
+    };
+    let lookup = one_at_a_time(fake);
+    let (a, b) = tokio::join!(lookup("film".into()), lookup("film".into()));
+    assert_eq!(fetches.load(Ordering::SeqCst), 1);
+    assert_eq!(a, b);
+    assert!(a.is_some());
+}
+
 #[test]
 fn first_poster_without_a_language_is_chosen() {
     let images = serde_json::json!({"posters": [
