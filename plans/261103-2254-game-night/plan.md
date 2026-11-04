@@ -14,14 +14,14 @@
 
 | # | Phase | Status |
 |---|---|---|
-| 01 | [Port the draft into `crates/mediagram-game`](phase-01-port-draft-into-game-crate.md) | todo |
-| 02 | [Lobby settings: game choice and *Nur für Kinder*](phase-02-lobby-settings-and-kids-toggle.md) | todo |
-| 03 | [Title pool, film questions, images](phase-03-title-pool-and-film-questions.md) | todo |
-| 04 | [Poster game](phase-04-poster-game.md) | todo |
-| 05 | [General-knowledge question pack](phase-05-general-question-pack.md) | todo |
-| 06 | [Core binding: start, back, stop from Kotlin; textless posters](phase-06-core-binding.md) | todo |
-| 07 | [TV app: Games entry and screen](phase-07-tv-games-screen.md) | todo |
-| 08 | [Docs, version, box walk](phase-08-docs-version-box-walk.md) | todo |
+| 01 | [Port the draft into `crates/mediagram-game`](phase-01-port-draft-into-game-crate.md) | done |
+| 02 | [Lobby settings: game choice and *Nur für Kinder*](phase-02-lobby-settings-and-kids-toggle.md) | done |
+| 03 | [Title pool, film questions, images](phase-03-title-pool-and-film-questions.md) | done |
+| 04 | [Poster game](phase-04-poster-game.md) | done |
+| 05 | [General-knowledge question pack](phase-05-general-question-pack.md) | done |
+| 06 | [Core binding: start, back, stop from Kotlin; textless posters](phase-06-core-binding.md) | done |
+| 07 | [TV app: Games entry and screen](phase-07-tv-games-screen.md) | done |
+| 08 | [Docs, version, box walk](phase-08-docs-version-box-walk.md) | done (kids-profile check skipped by the user) |
 
 Order: 01 → 02 → 03 → 04 → 06 → 07 → 08. Phase 05 is content work that can run any time after 03.
 
