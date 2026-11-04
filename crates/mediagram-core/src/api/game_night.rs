@@ -23,9 +23,10 @@ impl Core {
     /// Stops a night already running, then hosts a new one over the titles
     /// the catalog holds.
     pub async fn start_game_night(self: Arc<Self>, config: GameNightConfig) -> Result<GameNightUrls, CoreError> {
-        let GameNightConfig { kids_set_ids, kids_locked, tmdb_key } = config;
+        let GameNightConfig { kids_set_ids, visible_set_ids, kids_locked, tmdb_key } = config;
         let kids: HashSet<String> = kids_set_ids.into_iter().collect();
-        let (titles, poster_keys) = self.blocking(move |core| titles(core, &kids)).await?;
+        let visible: HashSet<String> = visible_set_ids.into_iter().collect();
+        let (titles, poster_keys) = self.blocking(move |core| titles(core, &kids, &visible)).await?;
         // Without a key the poster game simply shows the normal posters.
         let textless = tmdb_key
             .filter(|key| !key.trim().is_empty())
@@ -46,7 +47,11 @@ impl Core {
 }
 
 /// The titles, and each one's poster key for the textless lookup.
-fn titles(core: &Core, kids: &HashSet<String>) -> Result<(Vec<GameTitle>, HashMap<String, String>), CoreError> {
+fn titles(
+    core: &Core,
+    kids: &HashSet<String>,
+    visible: &HashSet<String>,
+) -> Result<(Vec<GameTitle>, HashMap<String, String>), CoreError> {
     let sets = store::list_sets(core)?;
     let conn = store::open_installed(core, "a game night's credits");
     let credits = |poster_key: &str| {
@@ -55,7 +60,7 @@ fn titles(core: &Core, kids: &HashSet<String>) -> Result<(Vec<GameTitle>, HashMa
             .inspect_err(|err| tracing::warn!(error = %err, "a title's credits could not be read"))
             .ok()
     };
-    Ok((crate::game_titles::game_titles(&sets, &credits, kids), poster_keys(&sets)))
+    Ok((crate::game_titles::game_titles(&sets, &credits, kids, visible), poster_keys(&sets)))
 }
 
 /// Hosts a night in `slot`, ending the one it held first so the port is free.

@@ -54,6 +54,20 @@ class GameNightViewModelTest {
             val config = core.gameNightStarts.single()
             assertEquals(listOf("f0"), config.kidsSetIds)
             assertEquals("key", config.tmdbKey)
+            assertEquals(listOf("f0", "f16"), config.visibleSetIds)
+        }
+
+    @Test
+    fun setsInAHiddenSectionAreNotPassed() =
+        runTest {
+            core.profiles = listOf(uniffi.mediagram_core.Profile("a", "Ada", hiddenSections = listOf("movies")))
+            watch.reload()
+            val model = model(backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertEquals(emptyList(), core.gameNightStarts.single().visibleSetIds)
         }
 
     @Test

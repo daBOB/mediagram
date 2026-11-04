@@ -57,15 +57,22 @@ fn series(show: &str, eps: &[&SetSummary], credits: Credits, kids: &HashSet<Stri
 }
 
 /// Films one per set, series one per show; courses and documentaries are not
-/// something a party guesses at. `kids_set_ids` is decided by the caller, so
-/// the kids rule lives in one place.
-pub fn game_titles(sets: &[SetSummary], credits: Credits, kids_set_ids: &HashSet<String>) -> Vec<GameTitle> {
+/// something a party guesses at. `kids_set_ids` and `visible_set_ids` are
+/// decided by the caller, so the kids and section rules each live in one
+/// place. A show is visible when any of its episodes is, as the library
+/// builds its shows from the visible sets.
+pub fn game_titles(
+    sets: &[SetSummary],
+    credits: Credits,
+    kids_set_ids: &HashSet<String>,
+    visible_set_ids: &HashSet<String>,
+) -> Vec<GameTitle> {
     let mut out = Vec::new();
     let mut shows: Vec<&str> = Vec::new();
     let mut episodes: HashMap<&str, Vec<&SetSummary>> = HashMap::new();
     for set in sets {
         match (set.kind.as_str(), set.show.as_deref()) {
-            ("movie", _) => out.extend(film(set, credits, kids_set_ids)),
+            ("movie", _) if visible_set_ids.contains(&set.set_id) => out.extend(film(set, credits, kids_set_ids)),
             ("ep", Some(show)) => {
                 if !episodes.contains_key(show) {
                     shows.push(show);
@@ -75,7 +82,12 @@ pub fn game_titles(sets: &[SetSummary], credits: Credits, kids_set_ids: &HashSet
             _ => {}
         }
     }
-    out.extend(shows.into_iter().map(|s| series(s, &episodes[s], credits, kids_set_ids)));
+    out.extend(
+        shows
+            .into_iter()
+            .filter(|s| episodes[s].iter().any(|e| visible_set_ids.contains(&e.set_id)))
+            .map(|s| series(s, &episodes[s], credits, kids_set_ids)),
+    );
     out
 }
 

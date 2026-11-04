@@ -5368,6 +5368,12 @@ data class GameNightConfig (
      */
     var `kidsSetIds`: List<kotlin.String>
     ,
+    /**
+     * Sets in the sections the profile sees; the rest of the catalog is
+     * hidden from it, so no game shows them either.
+     */
+    var `visibleSetIds`: List<kotlin.String>
+    ,
     var `kidsLocked`: kotlin.Boolean
     ,
     var `tmdbKey`: kotlin.String?
@@ -5388,6 +5394,7 @@ public object FfiConverterTypeGameNightConfig: FfiConverterRustBuffer<GameNightC
     override fun read(buf: ByteBuffer): GameNightConfig {
         return GameNightConfig(
             FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterOptionalString.read(buf),
         )
@@ -5395,12 +5402,14 @@ public object FfiConverterTypeGameNightConfig: FfiConverterRustBuffer<GameNightC
 
     override fun allocationSize(value: GameNightConfig) = (
             FfiConverterSequenceString.allocationSize(value.`kidsSetIds`) +
+            FfiConverterSequenceString.allocationSize(value.`visibleSetIds`) +
             FfiConverterBoolean.allocationSize(value.`kidsLocked`) +
             FfiConverterOptionalString.allocationSize(value.`tmdbKey`)
     )
 
     override fun write(value: GameNightConfig, buf: ByteBuffer) {
             FfiConverterSequenceString.write(value.`kidsSetIds`, buf)
+            FfiConverterSequenceString.write(value.`visibleSetIds`, buf)
             FfiConverterBoolean.write(value.`kidsLocked`, buf)
             FfiConverterOptionalString.write(value.`tmdbKey`, buf)
     }

@@ -51,4 +51,15 @@ class GameNightConfigTest {
         assertEquals(listOf("f0", "f6", "f12", "marked"), config.kidsSetIds)
         assertFalse(config.kidsLocked)
     }
+
+    @Test
+    fun setsInHiddenSectionsAreNotPassed() {
+        val episode = film("e1", "0").copy(kind = Kind.EPISODE, show = "Dark")
+        val anime = film("a1", "0").copy(anime = true)
+        val grownUp = Profile("g", "Gus", hiddenSections = listOf("series", "anime"))
+
+        val config = gameNightConfig(listOf(film("f0", "0"), episode, anime), grownUp, emptyMap())
+
+        assertEquals(listOf("f0"), config.visibleSetIds)
+    }
 }

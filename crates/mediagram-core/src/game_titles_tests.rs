@@ -39,9 +39,34 @@ fn credits(_key: &str) -> Option<TitleCredits> {
     Some(TitleCredits { cast: vec![person("Anna"), person("Ben")], crew: vec![person("Cora")] })
 }
 
+fn ids(of: &[&str]) -> HashSet<String> {
+    of.iter().map(|s| s.to_string()).collect()
+}
+
 fn build(sets: &[SetSummary], kids: &[&str]) -> Vec<GameTitle> {
-    let kids = kids.iter().map(|s| s.to_string()).collect();
-    game_titles(sets, &credits, &kids)
+    let all: HashSet<String> = sets.iter().map(|s| s.set_id.clone()).collect();
+    game_titles(sets, &credits, &ids(kids), &all)
+}
+
+#[test]
+fn sets_in_hidden_sections_are_left_out() {
+    let sets = [
+        set("A", "movie", Some("Alien"), None, 1979),
+        set("B", "movie", Some("Bambi"), None, 1942),
+        set("E1", "ep", None, Some("Dark"), 2017),
+        set("E2", "ep", None, Some("Lost"), 2004),
+    ];
+    let titles = game_titles(&sets, &credits, &ids(&[]), &ids(&["B", "E2"]));
+    let keys: Vec<&str> = titles.iter().map(|t| t.key.as_str()).collect();
+    assert_eq!(keys, ["B", "show:Lost"]);
+}
+
+#[test]
+fn a_show_is_visible_when_any_episode_is() {
+    let sets = [set("E1", "ep", None, Some("Dark"), 2017), set("E2", "ep", None, Some("Dark"), 2018)];
+    let titles = game_titles(&sets, &credits, &ids(&["E1", "E2"]), &ids(&["E2"]));
+    assert_eq!(titles.len(), 1);
+    assert!(titles[0].kids_ok, "the kids rule still reads every episode");
 }
 
 #[test]
