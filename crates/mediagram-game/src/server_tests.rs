@@ -145,7 +145,7 @@ async fn no_textless_poster_falls_back_to_the_normal_one() {
 }
 
 #[tokio::test(start_paused = true)]
-async fn slow_lookup_falls_back_after_3_seconds() {
+async fn slow_lookup_falls_back_after_300_ms() {
     let dir = tempfile::tempdir().unwrap();
     let textless = dir.path().join("textless.jpg");
     std::fs::write(&textless, b"textless").unwrap();
@@ -153,5 +153,5 @@ async fn slow_lookup_falls_back_after_3_seconds() {
     let began = tokio::time::Instant::now();
     let (_, body) = poster_with(lookup_of(Some(textless), slow)).await;
     assert_eq!(body, b"normal");
-    assert_eq!(began.elapsed(), std::time::Duration::from_secs(3));
+    assert_eq!(began.elapsed(), std::time::Duration::from_millis(300));
 }

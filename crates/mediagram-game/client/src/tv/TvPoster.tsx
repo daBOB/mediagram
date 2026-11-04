@@ -20,6 +20,10 @@ function useImage(src: string): HTMLImageElement | null {
     const el = new Image();
     el.onload = () => setImg(el);
     el.src = src;
+    // A superseded image that loads late must not paint over the new one.
+    return () => {
+      el.onload = null;
+    };
   }, [src]);
   return img;
 }
@@ -52,7 +56,8 @@ export function TvPoster({ scene, players, conn }: { scene: PosterScene; players
   return (
     <section className="tv-poster">
       <div className="poster-frame">
-        <Poster src={stage.image} block={reveal ? 1 : blockWidth(step, W)} />
+        {/* A fresh canvas per round: the last round's poster never shows while the next one loads. */}
+        <Poster key={scene.round} src={stage.image} block={reveal ? 1 : blockWidth(step, W)} />
         {reveal && <div className="poster-title">{reveal.title}</div>}
       </div>
       <div className="poster-side">
