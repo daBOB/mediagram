@@ -46,7 +46,14 @@ internal fun TvGamesFrame(leave: () -> Unit) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latestLeave by rememberUpdatedState(leave)
     DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) latestLeave() }
+        // Stopped here, not only on dispose: Compose pauses its frames once the app is stopped, so the dispose may run only on return.
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP) {
+                    model.stop()
+                    latestLeave()
+                }
+            }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }

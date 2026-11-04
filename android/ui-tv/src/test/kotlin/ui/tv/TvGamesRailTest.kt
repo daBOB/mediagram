@@ -86,6 +86,8 @@ class TvGamesRailTest {
         shownUrl()
 
         compose.runOnUiThread { controller.pause().stop() }
+        // Ended by the stop itself, before any frame: a stopped app draws none, so the dispose may wait for the return.
+        assertEquals(1, fixture.gameCore.gameNightStops)
         compose.waitForIdle()
         compose.runOnUiThread { controller.start().resume() }
 
