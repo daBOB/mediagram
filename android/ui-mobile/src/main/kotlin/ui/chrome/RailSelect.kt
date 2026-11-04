@@ -25,6 +25,7 @@ internal fun railSelect(
         RailItem.LATEST -> browse.onLatest()
         RailItem.GENRES -> browse.onGenres()
         RailItem.STATS -> browse.onStats()
+        RailItem.GAMES -> Unit // tvOnly: the phone never lists it
         RailItem.SETTINGS -> menu.onSettings()
         RailItem.SYSTEM -> menu.onSystem()
     }

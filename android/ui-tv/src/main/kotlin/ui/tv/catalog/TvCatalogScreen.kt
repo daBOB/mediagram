@@ -90,6 +90,7 @@ fun TvCatalogScreen(
     onOpenLatest: () -> Unit = {},
     onOpenGenresIndex: () -> Unit = {},
     onOpenStats: () -> Unit = {},
+    onOpenGames: () -> Unit = {},
     onEntryRestored: () -> Unit = {},
     onFinish: (setId: String) -> Unit = {},
     onOpenGenre: (name: String) -> Unit = {},
@@ -154,6 +155,7 @@ fun TvCatalogScreen(
             RailItem.LATEST -> onOpenLatest()
             RailItem.GENRES -> onOpenGenresIndex()
             RailItem.STATS -> onOpenStats()
+            RailItem.GAMES -> onOpenGames()
             RailItem.SETTINGS -> menu.onSettings()
             RailItem.SYSTEM -> menu.onSystem()
         }

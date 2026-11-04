@@ -58,7 +58,7 @@ internal val RailCollapsedWidth = RailSide + 12.tvDp + RailIcon + 12.tvDp + Rail
 internal val RailOpenWidth = 224.tvDp
 
 /** The rows drawn before System's own gap — [RailItem.SYSTEM] is added apart, after this list. */
-private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.SETTINGS)
+private val RailRowsBeforeSystem = listOf(RailItem.MY_LIST, RailItem.CONTINUE_WATCHING, RailItem.LATEST, RailItem.GENRES, RailItem.STATS, RailItem.GAMES, RailItem.SETTINGS)
 
 /** The web's `.brand`: Fraunces 600 at 1.7rem, tracked in (`shell.css:29-37`) — the tablet's own `Wordmark`. */
 private val TvWordmark: TextStyle @Composable @ReadOnlyComposable get() = TvType.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 27.2.tvSp, letterSpacing = (-0.02).em)

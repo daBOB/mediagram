@@ -44,6 +44,7 @@ import ui.common.settings.SettingsOutcomes
 import designsystem.LocalTvStyle
 import ui.common.RailItem
 import ui.tv.catalog.TvFetchResultDialog
+import ui.tv.games.TvGamesFrame
 import ui.tv.catalog.TvPillEntryKey
 import ui.tv.catalog.TvProfileEntryKey
 import ui.tv.chrome.LocalTvMenu
@@ -222,6 +223,9 @@ internal fun TvLibrary(
                 // The TV is what a remote drives; it never opens one.
                 top == FrameKind.REMOTE -> Unit
 
+                // Full-screen like the player: the page is the game's own, not a catalogue page.
+                top == FrameKind.GAMES -> TvGamesFrame(leave)
+
                 // Nothing open: the shelves.
                 top == null ->
                     TvLibraryHomeFrame(
@@ -286,7 +290,7 @@ internal fun TvLibrary(
                             FrameKind.STATS -> TvStatsFrame(leave)
 
                             // Drawn outside the chrome, above.
-                            FrameKind.PLAYER, FrameKind.MENU, FrameKind.REMOTE -> Unit
+                            FrameKind.PLAYER, FrameKind.MENU, FrameKind.REMOTE, FrameKind.GAMES -> Unit
                         }
                     }
             }

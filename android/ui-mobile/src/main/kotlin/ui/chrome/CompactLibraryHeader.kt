@@ -102,7 +102,7 @@ internal fun CompactLibraryHeader(
                         .fadeTrailingEdge(edgeFade),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                for (item in RailItem.entries) {
+                for (item in RailItem.entries.filterNot { it.tvOnly }) {
                     RailIconButton(item, selected = item == activeRailItem, ink = ink, onClick = { onRailSelect(item) }, dot = rail.dotFor(item))
                 }
             }

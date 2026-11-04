@@ -25,7 +25,7 @@ import java.util.UUID
  * season itself, decodes to nothing, and a stack saved with one over its show
  * comes back on the show's page.
  */
-enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS, REMOTE }
+enum class FrameKind { PLAYER, MENU, SEARCH, GENRE, TITLE, COLLECTION, LIST, PERSON, FRANCHISE, GENRES, LATEST, MOVIES_PAGE, PRELOADS, STATS, GAMES, REMOTE }
 
 /**
  * One screen on [LibraryPositions]'s stack: which kind it is, and the one
@@ -288,6 +288,8 @@ class LibraryPositions(
     fun openPreloads() = push(FrameKind.PRELOADS, "")
     /** The chosen profile's Stats page — the rail's Stats row. */
     fun openStats() = push(FrameKind.STATS, "")
+    /** Game night, the television's full-screen page; the phone never opens it. */
+    fun openGames() = push(FrameKind.GAMES, "")
 
     /**
      * Moves between menu screens rather than stacking them — asking for the

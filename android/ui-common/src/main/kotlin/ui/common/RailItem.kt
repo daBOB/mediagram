@@ -11,12 +11,14 @@ import com.mediagram.android.core.designsystem.R
  * rail cannot list the seven rows in a different order or point them at
  * different icons without both call sites changing together.
  */
-enum class RailItem(val label: String, val icon: Int) {
+enum class RailItem(val label: String, val icon: Int, val tvOnly: Boolean = false) {
     MY_LIST("My List", R.drawable.core_designsystem_ic_rail_my_list),
     CONTINUE_WATCHING("Continue", R.drawable.core_designsystem_ic_rail_continue),
     LATEST("Latest", R.drawable.core_designsystem_ic_rail_latest),
     GENRES("Genres", R.drawable.core_designsystem_ic_rail_genres),
     STATS("Stats", R.drawable.core_designsystem_ic_rail_stats),
+    // Game night is hosted by the TV box for phones to join; the phone has no page for it.
+    GAMES("Games", R.drawable.core_designsystem_ic_rail_games, tvOnly = true),
     SETTINGS("Settings", R.drawable.core_designsystem_ic_rail_settings),
     SYSTEM("System", R.drawable.core_designsystem_ic_settings_system),
 }
