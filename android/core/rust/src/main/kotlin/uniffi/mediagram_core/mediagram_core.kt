@@ -1232,7 +1232,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 41951) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_mediagram_core_checksum_method_core_game_night_back() and 0xFFFF) != 56157) {
+    if ((lib.uniffi_mediagram_core_checksum_method_core_game_night_back() and 0xFFFF) != 2958) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_start_game_night() and 0xFFFF) != 28563) {
@@ -2146,7 +2146,8 @@ public interface CoreInterface {
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
 
     /**
-     * Ends the running game and returns to the lobby; `false` when no night runs.
+     * Ends the running game and returns to the lobby. `false` when there is
+     * nothing to end: no night runs, or one runs with no game in progress.
      */
     suspend fun `gameNightBack`(): kotlin.Boolean
 
@@ -3258,7 +3259,8 @@ open class Core: Disposable, AutoCloseable, CoreInterface
 
 
     /**
-     * Ends the running game and returns to the lobby; `false` when no night runs.
+     * Ends the running game and returns to the lobby. `false` when there is
+     * nothing to end: no night runs, or one runs with no game in progress.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `gameNightBack`() : kotlin.Boolean {
