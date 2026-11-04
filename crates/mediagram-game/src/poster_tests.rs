@@ -214,3 +214,11 @@ fn readiness_reflects_the_pool() {
     let split = pool_of(3, 3);
     assert!(!poster_ready(&split, &split.eligible(false)), "kinds are not mixed");
 }
+
+#[test]
+fn readiness_counts_distinct_names() {
+    let mut films: Vec<GameTitle> = (0..4).map(|n| with_poster(&format!("film{n}"), TitleKind::Film)).collect();
+    films[3].title = films[0].title.clone();
+    let pool = TitlePool::new(films, false);
+    assert!(!poster_ready(&pool, &pool.eligible(false)), "four films with three names cannot fill four options");
+}

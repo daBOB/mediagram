@@ -1,7 +1,7 @@
 //! Poster game inputs (timing, scoring), the per-game state types and which
 //! titles can make a round.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -88,12 +88,19 @@ fn distractors(pool: &TitlePool, eligible: &[usize], t: &GameTitle) -> Vec<Strin
     names
 }
 
-/// Titles that can anchor a round: a poster and three distinct same-kind rivals.
+/// Titles that can anchor a round: a poster and three distinct same-kind
+/// rivals, i.e. their kind has four distinct poster-bearing names. One pass,
+/// since a library holds hundreds of titles and the box is slow.
 fn playable(pool: &TitlePool, eligible: &[usize]) -> Vec<usize> {
+    let mut names: HashMap<TitleKind, HashSet<&str>> = HashMap::new();
+    for t in eligible.iter().map(|&i| pool.get(i)).filter(|t| t.poster.is_some()) {
+        names.entry(t.kind).or_default().insert(&t.title);
+    }
+    let enough = |kind| names.get(&kind).is_some_and(|n| n.len() >= 4);
     eligible
         .iter()
         .copied()
-        .filter(|&i| pool.get(i).poster.is_some() && distractors(pool, eligible, pool.get(i)).len() >= 3)
+        .filter(|&i| pool.get(i).poster.is_some() && enough(pool.get(i).kind))
         .collect()
 }
 
