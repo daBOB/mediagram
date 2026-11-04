@@ -30,3 +30,8 @@ fn pack_entries_are_sourced_and_well_formed() {
         );
     }
 }
+
+#[test]
+fn pack_has_300_questions() {
+    assert!(general_pack_entries().len() >= 300);
+}
