@@ -1811,6 +1811,7 @@ dependencies = [
  "icu_collator",
  "icu_locale_core",
  "icu_normalizer",
+ "mediagram-game",
  "mediagram-tmdb",
  "mlib-spec",
  "regex",
