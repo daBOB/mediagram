@@ -960,11 +960,20 @@ axum server with the React phone and TV pages embedded in the binary) that
 any free port when that is taken, and returns the TV page's address
 (`http://127.0.0.1:<port>/tv`) and the join address with the box's current LAN
 IP, since DHCP moves it. A second start stops the first, so the port is free.
+A stop gives open requests 2 s and then cuts them off (`host.rs`): axum sets
+no header-read timeout, and one connection stalled mid-request would otherwise
+hold the stop, and with it every later night, which waits on the same slot.
 Nothing runs in the background: the Games screen opening starts the host,
 leaving it, or the app going to the background, stops it
 (`android/ui-tv/.../games/TvGamesFrame.kt`, a full-screen WebView of the
-loopback TV page that keeps the screen on). Back first steps a running game to
-the lobby and leaves only when there was nothing to step back from.
+loopback TV page that keeps the screen on). The background stop is called from
+the lifecycle's ON_STOP itself, since Compose draws no frame while the app is
+stopped and the screen's dispose may only run on return. `GameNightViewModel`
+runs the start off the main thread (UniFFI runs it on the calling thread, and
+it reads the whole catalog), and a start waits out any stop still under way,
+so leaving and coming straight back never has the old night's stop end the new
+one or show its page. Back first steps a running game to the lobby and leaves
+only when there was nothing to step back from.
 
 **Phones join by browser; the TV page is the box's alone.** The lobby's QR code
 (`/qr.svg`) points at the join address; a phone types a name and gets a seat
@@ -989,8 +998,12 @@ no PIN and an open toggle would be a way past it; a grown-up gets limit 12 with
 the toggle free and off to start. A profile that is missing after a reload is
 treated as locked at 12. Core receives the set ids that pass and a locked flag,
 and with the toggle on every title used (answers, wrong options, images) is
-one of them. A game night writes nothing to profile state: no positions,
-history, stats or daily-limit time.
+one of them. Sections the profile hides stay hidden here too: Kotlin passes
+the set ids in the sections it sees (`sectionKey()` against `hiddenFrom`, as
+the library, Cast and Watch together filter), and a series is kept when any of
+its episodes is, as the library builds its shows from the visible sets. A game
+night writes nothing to profile state: no positions, history, stats or
+daily-limit time.
 
 **Buzzer quiz.** 8 questions; the question shows 3.5 s, then all four answer
 buttons go live at once for 12 s; a right answer scores 1000 down to 500 by
@@ -1009,7 +1022,19 @@ Titles with a poster only. A title readable on the artwork would give itself
 away before the last step, so `game_posters.rs` fetches TMDB's textless poster
 into `{data_dir}/game-posters/` (one fetch per title at a time, so the
 prefetch and the image route never write one file together), and the normal
-poster is used when there is none or no TMDB key.
+poster is used when there is none, no TMDB key, or the textless one is not on
+disk within 300 ms (`poster_lookup.rs`): a cached file answers at once, and a
+fetch still under way would otherwise leave the round's first steps blank. A
+title counts as playable when its kind has four distinct poster-bearing names,
+counted in one pass, since the box runs the check on every start. The TV page
+draws each round on a fresh canvas, so the last poster never shows while the
+next loads.
+
+**The TV page scales with the screen.** The box's WebView lays the page out at
+960x540 CSS pixels (density 2), so the TV root font size follows the viewport
+alone (`styles.css`) and every scene is the 1920x1080 layout at half scale. A
+quiz still sits beside its question rather than above it; stacked, a still,
+two lines of question and eight seats are taller than a 16:9 screen.
 
 **Tools.** `crates/mediagram-game/tools/smoke.mjs` plays a night with bot
 phones against the dev binary `game-night-dev`.
