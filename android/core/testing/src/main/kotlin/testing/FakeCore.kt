@@ -241,8 +241,12 @@ class FakeCore(
 
     override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
 
+    /** When set, [stopGameNight] suspends on it after counting: a stop still under way. */
+    var gameNightStopGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     override suspend fun stopGameNight() {
         gameNightStops++
+        gameNightStopGate?.await()
     }
 
     /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */

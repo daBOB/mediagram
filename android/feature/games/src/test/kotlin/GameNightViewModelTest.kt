@@ -3,14 +3,18 @@ package games
 import data.DefaultWatchStateRepository
 import data.CatalogRepository
 import data.settings.InMemoryTmdbSettings
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import model.MediaSet
 import org.junit.Rule
 import testing.FakeCore
 import testing.FakeCoreProvider
 import testing.MainDispatcherRule
+import uniffi.mediagram_core.GameNightUrls
 import uniffi.mediagram_core.SearchHit
 import uniffi.mediagram_core.TitleInfo
 import kotlin.test.Test
@@ -39,7 +43,7 @@ class GameNightViewModelTest {
     private val tmdb = InMemoryTmdbSettings()
 
     private fun model(scope: kotlinx.coroutines.CoroutineScope) =
-        GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f16", "16"))), tmdb, scope)
+        GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f16", "16"))), tmdb, Dispatchers.Unconfined, scope)
 
     @Test
     fun startPassesTheConfigAndShowsTheTvPage() =
@@ -91,7 +95,7 @@ class GameNightViewModelTest {
             core.profiles = listOf(kid)
             core.chosen = "k"
             watch.reload()
-            val model = GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f12", "12"))), tmdb, backgroundScope)
+            val model = GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f12", "12"))), tmdb, Dispatchers.Unconfined, backgroundScope)
 
             model.start()
             model.state.first { it !is GameNightUi.Starting }
@@ -157,5 +161,44 @@ class GameNightViewModelTest {
             // The interrupted start is cancelled rather than finishing after the stop, so no host is left up.
             assertEquals(GameNightUi.Starting, model.state.value)
             assertEquals(1, core.gameNightStops)
+        }
+
+    @Test
+    fun aSecondStopHasNothingLeftToEnd() =
+        runTest {
+            val model = model(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined))
+
+            model.stop()
+            model.stop()
+
+            assertEquals(1, core.gameNightStops)
+        }
+
+    @Test
+    fun aStartRightAfterAStopWaitsForItAndNeverShowsTheEndedPage() =
+        runTest {
+            watch.reload()
+            // The stop runs at once on its scope, as the app scope does, rather than as background work the scheduler skips.
+            val model = model(kotlinx.coroutines.CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+            model.start()
+            val ended = GameNightUi.Ready("http://127.0.0.1:8080/tv")
+            assertEquals(ended, model.state.first { it !is GameNightUi.Starting })
+            val shown = mutableListOf<GameNightUi>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect { shown += it } }
+            val stopping = CompletableDeferred<Unit>()
+            core.gameNightStopGate = stopping
+            core.gameNightUrls = GameNightUrls("http://127.0.0.1:8081/tv", "http://192.168.0.2:8081/")
+
+            model.stop()
+            model.start()
+            testScheduler.advanceUntilIdle()
+            assertEquals(1, core.gameNightStops)
+            assertEquals(1, core.gameNightStarts.size, "the new night waits for the old one to end")
+
+            stopping.complete(Unit)
+            val next = GameNightUi.Ready("http://127.0.0.1:8081/tv")
+            assertEquals(next, model.state.first { it !is GameNightUi.Starting })
+            assertEquals(2, core.gameNightStarts.size)
+            assertEquals(listOf(ended, GameNightUi.Starting, next), shown)
         }
 }

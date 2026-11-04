@@ -342,7 +342,7 @@ internal class TvAppFixture(
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
                 // TvGamesFrame resolves it through hiltViewModel(); a core of its own, so a test can steer Back.
-                GameNightViewModel::class.java to GameNightViewModel(FakeCoreProvider(gameCore), viewer.repository, repository, InMemoryTmdbSettings(), CoroutineScope(Dispatchers.Unconfined)),
+                GameNightViewModel::class.java to GameNightViewModel(FakeCoreProvider(gameCore), viewer.repository, repository, InMemoryTmdbSettings(), Dispatchers.Unconfined, CoroutineScope(Dispatchers.Unconfined)),
                 // The library's daily-limit door, resolved beside the catalog on every draw.
                 LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.

@@ -10,6 +10,7 @@ import data.coreSentence
 import data.di.AppScope
 import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import model.Profile
 import javax.inject.Inject
 
@@ -41,24 +43,35 @@ class GameNightViewModel
         private val watchState: WatchStateRepository,
         private val catalog: CatalogRepository,
         private val tmdb: TmdbSettings,
+        private val dispatcher: CoroutineDispatcher,
         @AppScope private val appScope: CoroutineScope,
     ) : ViewModel() {
         private val _state = MutableStateFlow<GameNightUi>(GameNightUi.Starting)
         val state: StateFlow<GameNightUi> = _state.asStateFlow()
 
         private var startJob: Job? = null
+        private var stopJob: Job? = null
 
         fun start() {
             _state.value = GameNightUi.Starting
+            val earlier = startJob
+            val stopping = stopJob
             startJob = viewModelScope.launch {
+                // One night at a time: a stop still under way would otherwise end the night this one starts.
+                earlier?.cancelAndJoin()
+                stopping?.join()
                 _state.value =
                     try {
                         // The choice lands only after a reload; asking before it does must not read as a grown-up.
                         if (watchState.chosenProfile.value == null) watchState.reload()
                         // Still no profile: held to the 12 limit with the toggle locked, never unlocked.
                         val profile = watchState.chosenProfile.value ?: Profile(id = "", name = "", kids = true, kidsAge = GAME_NIGHT_KIDS_LIMIT)
-                        val config = gameNightConfig(catalog.sets(), profile, watchState.snapshot.value.kidsMarks)
-                        val urls = coreProvider.awaitCore().startGameNight(config.copy(tmdbKey = tmdb.read()))
+                        // The core runs the start on the calling thread, and it scans the whole library.
+                        val urls =
+                            withContext(dispatcher) {
+                                val config = gameNightConfig(catalog.sets(), profile, watchState.snapshot.value.kidsMarks)
+                                coreProvider.awaitCore().startGameNight(config.copy(tmdbKey = tmdb.read()))
+                            }
                         GameNightUi.Ready(urls.tvUrl)
                     } catch (e: CancellationException) {
                         throw e
@@ -74,12 +87,18 @@ class GameNightViewModel
         /**
          * On the app's scope: leaving the screen clears this view model, which must not cancel the stop.
          * It waits out an in-flight start first, so a host that was still coming up is stopped, not orphaned.
+         * The state goes back to [GameNightUi.Starting], so coming back never shows the ended night's page.
          */
         fun stop() {
+            _state.value = GameNightUi.Starting
+            // Going to the background and leaving the screen both stop; the second has nothing left to end.
+            if (startJob == null && stopJob != null) return
             val starting = startJob
-            appScope.launch {
-                starting?.cancelAndJoin()
-                coreProvider.awaitCore().stopGameNight()
-            }
+            startJob = null
+            stopJob =
+                appScope.launch {
+                    starting?.cancelAndJoin()
+                    coreProvider.awaitCore().stopGameNight()
+                }
         }
     }
