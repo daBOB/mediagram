@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.143.0 — Game night on the TV box
+
+**Added** (Android TV, new `mediagram-game` crate)
+
+- **Party games on the TV box**: a *Games* entry on the television rail starts a game night. Phones on the same Wi-Fi scan the QR code, type a name and join, up to 8, with nothing to install. The first to join starts and picks the game; a phone that sleeps rejoins its seat.
+- **Buzzer-Quiz**: 8 questions, four answers on every phone at once, 1000 down to 500 points by speed. *Filme* asks about the library (a still, the year, the director, the cast), *Allgemein* draws on 311 German questions with their sources, *Gemischt* alternates.
+- **Poster-Raten**: 10 posters, pixelated and sharper every 2 s; the first right tap wins 1000 down to 500, a wrong tap only sits that player out. Posters use TMDB's textless artwork when it has one.
+- **Nur für Kinder**: on a kids profile it is on at that profile's own limit and locked; on a grown-up profile it starts off and means FSK 12. Every answer, wrong option and image is then a kid-safe title; a series counts only when all its episodes are.
+- A game night writes nothing to any profile: no history, positions, stats or daily limit. Leaving the screen, or the app going to the background, ends the night.
+
+**Changed**
+
+- Television only by design; the web player does not host a night (`docs/system-architecture.md`, "Game night").
+
 ## 0.141.1 — The next episode starts on the web without the long wait
 
 **Fixed** (web player)

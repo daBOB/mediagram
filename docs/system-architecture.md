@@ -2,7 +2,7 @@
 
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
-it. It is split into five crates so the wire format, the TMDB client and the
+it. It is split into six crates so the wire format, the TMDB client and the
 byte path can be reused by other clients — the Android app among them (see
 [§9](#9-backend-portability)).
 
@@ -19,6 +19,9 @@ crates/
 │                     app calls, the catalog store, the range-planned byte
 │                     path over Telegram, and the one HTTP client both
 │                     programs build (ring + webpki roots)
+├── mediagram-game/   game night: the party-game host (rooms, the buzzer quiz,
+│                     the poster game, the phone and TV pages); depends on
+│                     nothing else in the workspace
 ├── mediagram/        the CLI: media inspection, upload pipeline, local
 │                     index, verify, and `serve`
 └── mediagram-cache/  the LAN chunk store (§12); depends on none of the
@@ -26,7 +29,8 @@ crates/
 ```
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
-→ `mlib-spec`, with `mediagram` also using the two below directly; nothing
+→ `mlib-spec`, with `mediagram` also using the two below directly (and
+`mediagram-core` using `mediagram-game`); nothing
 depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
@@ -942,6 +946,74 @@ dropping brings the video back to the device, paused.
 an AirPlay TV is deferred until it can be probed on an Apple device; there is no
 AirPlay code.
 
+### Game night
+
+The TV box hosts party games for phones on the same network: a buzzer quiz and
+a poster-guessing game. It is a feature of the TV app only, and it is the one
+place the app serves something rather than only fetching.
+
+**The host lives in the core.** `mediagram-game` is a self-contained crate (an
+axum server with the React phone and TV pages embedded in the binary) that
+`mediagram-core` links; Kotlin starts and stops it through
+`Core::start_game_night`, `game_night_back` and `stop_game_night`
+(`crates/mediagram-core/src/api/game_night.rs`). Starting binds port 8080, or
+any free port when that is taken, and returns the TV page's address
+(`http://127.0.0.1:<port>/tv`) and the join address with the box's current LAN
+IP, since DHCP moves it. A second start stops the first, so the port is free.
+Nothing runs in the background: the Games screen opening starts the host,
+leaving it, or the app going to the background, stops it
+(`android/ui-tv/.../games/TvGamesFrame.kt`, a full-screen WebView of the
+loopback TV page that keeps the screen on). Back first steps a running game to
+the lobby and leaves only when there was nothing to step back from.
+
+**Phones join by browser; the TV page is the box's alone.** The lobby's QR code
+(`/qr.svg`) points at the join address; a phone types a name and gets a seat
+and colour, up to 8. A reconnect token in the phone's storage returns a phone
+that slept to its seat until the game ends. The first to join is the starter
+and picks the game and settings; the TV remote's OK can start as well. The
+`tv` role on the WebSocket (`/ws`) and the images (`/img/{i}/{which}`) are
+served to loopback connections only (`room.rs`, `server.rs`): a phone that
+claimed to be the TV would otherwise see every answer, and phones are never
+sent an image, so nobody can zoom into a poster. Everything the players see is
+German.
+
+**Which titles, and the kids rule.** `crates/mediagram-core/src/game_titles.rs`
+maps the catalog to titles: a film is one title per set, a series one title per
+show (episodes grouped by `show`, as the web player groups them), and courses
+and documents are left out. A series counts as kid-safe only when every one of
+its episode sets is, because a question shows the show and cannot show only its
+safe half. *Nur für Kinder* is decided in Kotlin, never in Rust
+(`android/feature/games/.../GameNightConfig.kt`, using `forKidsProfile`): a kids
+profile gets its own limit with the toggle locked on, since kids profiles have
+no PIN and an open toggle would be a way past it; a grown-up gets limit 12 with
+the toggle free and off to start. A profile that is missing after a reload is
+treated as locked at 12. Core receives the set ids that pass and a locked flag,
+and with the toggle on every title used (answers, wrong options, images) is
+one of them. A game night writes nothing to profile state: no positions,
+history, stats or daily-limit time.
+
+**Buzzer quiz.** 8 questions; the question shows 3.5 s, then all four answer
+buttons go live at once for 12 s; a right answer scores 1000 down to 500 by
+speed. Taps carry the phone's estimate of host time, trusted at most 400 ms
+before arrival. Film questions (`film_questions.rs`) are built from the library
+on the box: a still, the year, the director, the cast; wrong options come from
+the same kind of title. The general pack (`questions/allgemein.json`, 311
+German questions, each with the source it was checked against) is embedded in
+the binary. *Filme*, *Allgemein* and *Gemischt* choose the mix (`quiz_mix.rs`).
+
+**Poster game.** 10 rounds. The poster is pixelated in 8 sharpness steps, one
+every 2 s, then stays sharp for 3 s grace; a right tap scores 1000 at the first
+step down to 500 at the last, and a wrong tap only locks that player out of the
+round. The earliest claimed right tap wins, within the same 400 ms claim lag.
+Titles with a poster only. A title readable on the artwork would give itself
+away before the last step, so `game_posters.rs` fetches TMDB's textless poster
+into `{data_dir}/game-posters/` (one fetch per title at a time, so the
+prefetch and the image route never write one file together), and the normal
+poster is used when there is none or no TMDB key.
+
+**Tools.** `crates/mediagram-game/tools/smoke.mjs` plays a night with bot
+phones against the dev binary `game-night-dev`.
+
 ### Reporting a broken video
 
 Every player has a Report button (the top bar everywhere, and beside Retry on
@@ -1388,6 +1460,10 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   benchmark build already returns to Home with 0 `Davey!`/`Choreographer … Skipped` frames
   without it, which was the phase's own real goal. Full account in
   `plans/260929-0215-tv-web-look-chrome-home-departments/phase-04-tv-home-kept-alive-measure-docs.md`.
+- **Game night is television only.** The box hosts it, phones join through a browser
+  page, and the web player never hosts one: it is not the table in the living room. The
+  Games entry sits on the television rail; the `Games` label is English like the rest of
+  the app, and everything inside a game is German.
 
 ## 9. Backend portability
 
