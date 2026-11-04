@@ -70,6 +70,20 @@ class TvGamesRailTest {
     }
 
     @Test
+    fun goingToTheBackgroundEndsTheNightAndReturnsToTheLibrary() {
+        press(compose.onNodeWithContentDescription("Games"))
+        shownUrl()
+
+        compose.runOnUiThread { controller.pause().stop() }
+        compose.waitForIdle()
+        compose.runOnUiThread { controller.start().resume() }
+
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText("Film 1")).fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(null, webView())
+        assertEquals(1, fixture.gameCore.gameNightStops)
+    }
+
+    @Test
     fun backInTheLobbyLeavesAndStopsTheHost() {
         fixture.gameCore.gameNightBackAnswer = false
         press(compose.onNodeWithContentDescription("Games"))

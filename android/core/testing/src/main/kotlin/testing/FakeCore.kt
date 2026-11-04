@@ -229,8 +229,12 @@ class FakeCore(
     var gameNightStops: Int = 0
         private set
 
+    /** When set, [startGameNight] suspends on it after recording the config: a start still in flight. */
+    var gameNightStartGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     override suspend fun startGameNight(config: GameNightConfig): GameNightUrls {
         gameNightStarts += config
+        gameNightStartGate?.await()
         gameNightStartFailure?.let { throw it }
         return gameNightUrls
     }

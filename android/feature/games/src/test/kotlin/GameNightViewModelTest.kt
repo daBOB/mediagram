@@ -124,4 +124,24 @@ class GameNightViewModelTest {
 
             assertEquals(1, core.gameNightStops)
         }
+
+    @Test
+    fun stopWhileStartIsInFlightLeavesNoHostRunning() =
+        runTest {
+            watch.reload()
+            val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            core.gameNightStartGate = gate
+            val model = model(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined))
+
+            model.start()
+            testScheduler.advanceUntilIdle()
+            assertEquals(1, core.gameNightStarts.size)
+            model.stop()
+            gate.complete(Unit)
+            testScheduler.advanceUntilIdle()
+
+            // The interrupted start is cancelled rather than finishing after the stop, so no host is left up.
+            assertEquals(GameNightUi.Starting, model.state.value)
+            assertEquals(1, core.gameNightStops)
+        }
 }

@@ -11,6 +11,8 @@ import data.di.AppScope
 import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,9 +46,11 @@ class GameNightViewModel
         private val _state = MutableStateFlow<GameNightUi>(GameNightUi.Starting)
         val state: StateFlow<GameNightUi> = _state.asStateFlow()
 
+        private var startJob: Job? = null
+
         fun start() {
             _state.value = GameNightUi.Starting
-            viewModelScope.launch {
+            startJob = viewModelScope.launch {
                 _state.value =
                     try {
                         // The choice lands only after a reload; asking before it does must not read as a grown-up.
@@ -67,8 +71,15 @@ class GameNightViewModel
         /** True when a game was running and the room is back in the lobby; false when there was nothing to go back from. */
         suspend fun back(): Boolean = coreProvider.awaitCore().gameNightBack()
 
-        /** On the app's scope: leaving the screen clears this view model, which must not cancel the stop. */
+        /**
+         * On the app's scope: leaving the screen clears this view model, which must not cancel the stop.
+         * It waits out an in-flight start first, so a host that was still coming up is stopped, not orphaned.
+         */
         fun stop() {
-            appScope.launch { coreProvider.awaitCore().stopGameNight() }
+            val starting = startJob
+            appScope.launch {
+                starting?.cancelAndJoin()
+                coreProvider.awaitCore().stopGameNight()
+            }
         }
     }

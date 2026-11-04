@@ -11,10 +11,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Text
 import designsystem.TvType
@@ -37,6 +41,14 @@ internal fun TvGamesFrame(leave: () -> Unit) {
     LaunchedEffect(Unit) { model.start() }
     DisposableEffect(Unit) { onDispose { model.stop() } }
     KeepScreenOnWhile(isPlaying = true)
+    // Nothing of a game night runs in the background: going away ends it, as Back from the lobby does.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val latestLeave by rememberUpdatedState(leave)
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) latestLeave() }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     BackHandler { scope.launch { if (!model.back()) leave() } }
 
     when (val ui = state) {
@@ -64,10 +76,12 @@ private fun GamePage(url: String) {
                 settings.domStorageEnabled = true
                 // The remote's D-pad and OK reach the page only while this view holds focus.
                 isFocusable = true
-                requestFocus()
+                isFocusableInTouchMode = true
                 loadUrl(url)
             }
         },
+        // After attach: asking from the factory runs before the view is in a window and does nothing.
+        update = { view -> view.post { view.requestFocus() } },
         onRelease = { it.destroy() },
     )
 }
