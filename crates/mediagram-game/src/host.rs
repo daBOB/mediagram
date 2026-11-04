@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::time::Duration;
 
 use tokio::net::TcpListener;
 use tokio::sync::{mpsc, oneshot};
@@ -17,6 +18,8 @@ use crate::room_loop::{Event, room_loop};
 use crate::room_settings::Readiness;
 use crate::server::{AppState, router};
 use crate::titles::{GameTitle, TitlePool};
+
+const STOP_WAIT: Duration = Duration::from_secs(2);
 
 #[derive(Clone)]
 pub struct HostConfig {
@@ -147,10 +150,21 @@ impl Host {
     }
 
     /// Returns once the listener is closed and the room task has ended.
+    /// Open requests get [`STOP_WAIT`] to finish; axum sets no header-read
+    /// timeout, so a connection stalled mid-request would otherwise hold the
+    /// stop, and every later night waits on this one.
     pub async fn stop(self) {
         let _ = self.events.send(Event::Stop);
         let _ = self.shutdown.send(());
-        let _ = self.server.await;
+        let mut server = self.server;
+        if tokio::time::timeout(STOP_WAIT, &mut server).await.is_err() {
+            // The listener is already closed; only the stalled connections remain.
+            server.abort();
+        }
         let _ = self.room.await;
     }
 }
+
+#[cfg(test)]
+#[path = "host_tests.rs"]
+mod tests;
