@@ -41,7 +41,7 @@ impl Default for HostConfig {
             min_players: 1,
             max_players: 8,
             kids_locked: false,
-            // No poster game is built yet, so none can be started.
+            // The default pool holds no titles, so no poster game can be started.
             readiness: Readiness { poster: false, poster_kids: false },
             pool: Arc::default(),
             textless: None,

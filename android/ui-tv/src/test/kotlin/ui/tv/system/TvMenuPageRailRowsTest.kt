@@ -14,7 +14,7 @@ import ui.common.MenuActions
 import ui.common.RailItem
 import ui.tv.catalog.TvScreenStateTest
 
-/** With no rail on screen the menu lists the rail's seven rows; with the rail it lists none of them, as before. */
+/** With no rail on screen the menu lists the rail's rows; with the rail it lists none of them, as before. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvMenuPageRailRowsTest : TvScreenStateTest() {

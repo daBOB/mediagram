@@ -17,7 +17,7 @@ import java.util.UUID
 /**
  * Which kind of screen a [Frame] stands for.
  *
- * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS], [STATS] and [REMOTE]
+ * [PERSON], [FRANCHISE], [GENRES], [LATEST], [MOVIES_PAGE], [PRELOADS], [STATS], [GAMES] and [REMOTE]
  * are additive: every existing branch keeps its own value, so a stack
  * encoded by an older build still decodes the same frames it always did —
  * see [encode]/[decode]. A frame is saved by name, never by position, so a

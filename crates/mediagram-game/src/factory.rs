@@ -1,4 +1,5 @@
-//! Builds a quiz from the lobby settings, remembering what was asked tonight.
+//! Builds the chosen game, a quiz or a poster game, from the lobby settings,
+//! remembering what was asked and shown tonight.
 
 use std::collections::HashSet;
 use std::sync::Arc;

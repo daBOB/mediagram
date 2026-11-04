@@ -10,8 +10,8 @@ import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
 
 /**
- * Browser version of the TV screen. The Godot host will render the same
- * `TvView` natively; this one is for development and for TVs with a browser.
+ * The TV screen: the box shows it full-screen in a WebView of its loopback
+ * `/tv` page, drawing whatever `TvView` the host sends.
  */
 export function TvApp() {
   const [view, setView] = useState<TvView | null>(null);

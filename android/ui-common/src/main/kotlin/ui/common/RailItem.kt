@@ -8,7 +8,7 @@ import com.mediagram.android.core.designsystem.R
  * One row the rail draws — the web's `rail-nav`, System held apart the way
  * `.apart` sits a little away from the rest. Shared by the tablet's own
  * [ui.chrome.LibraryRail] and the television's rail, so the two surfaces'
- * rail cannot list the seven rows in a different order or point them at
+ * rail cannot list its rows in a different order or point them at
  * different icons without both call sites changing together.
  */
 enum class RailItem(val label: String, val icon: Int, val tvOnly: Boolean = false) {
