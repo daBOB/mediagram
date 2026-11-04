@@ -5,8 +5,10 @@
 //! boundary two plain numbers instead.
 
 mod credits;
+mod game_night;
 mod subtitle;
 mod summary;
+pub use game_night::{GameNightConfig, GameNightUrls};
 pub use credits::{CreditRecord, FranchiseRecord, PeopleHitRecord, PersonRecord, TitleCreditsRecord};
 pub use subtitle::SubtitleTrack;
 pub use summary::{SetSummary, summary_from};

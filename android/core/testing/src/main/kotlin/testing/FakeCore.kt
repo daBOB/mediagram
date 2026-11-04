@@ -13,6 +13,8 @@ import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FranchiseRecord
+import uniffi.mediagram_core.GameNightConfig
+import uniffi.mediagram_core.GameNightUrls
 import uniffi.mediagram_core.LibraryChoice
 import uniffi.mediagram_core.LibraryEvent
 import uniffi.mediagram_core.ListRow
@@ -210,6 +212,30 @@ class FakeCore(
 
     /** Every id [mediaSet] was asked for, in order. */
     val mediaSetCalls: MutableList<String> = mutableListOf()
+
+    /** What [startGameNight] answers. */
+    var gameNightUrls: GameNightUrls = GameNightUrls("http://127.0.0.1:8080/tv", "http://192.168.0.2:8080/")
+
+    /** Every config [startGameNight] was started with, in order. */
+    val gameNightStarts: MutableList<GameNightConfig> = mutableListOf()
+
+    /** What [gameNightBack] answers: whether a game was running. */
+    var gameNightBackAnswer: Boolean = false
+
+    /** How many times [stopGameNight] ran. */
+    var gameNightStops: Int = 0
+        private set
+
+    override suspend fun startGameNight(config: GameNightConfig): GameNightUrls {
+        gameNightStarts += config
+        return gameNightUrls
+    }
+
+    override suspend fun gameNightBack(): Boolean = gameNightBackAnswer
+
+    override suspend fun stopGameNight() {
+        gameNightStops++
+    }
 
     /** Every offset [read] was actually asked for, in order — what a chunk-alignment test checks against. */
     val requestedOffsets: MutableList<Long> = mutableListOf()

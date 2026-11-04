@@ -730,6 +730,12 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_game_night_back(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_start_game_night(
+    ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_stop_game_night(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_preferences(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_set_preference(
@@ -915,6 +921,12 @@ internal object UniffiLib {
     external fun uniffi_mediagram_core_fn_method_core_title_credits(`ptr`: Long,`key`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_game_night_back(`ptr`: Long,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_start_game_night(`ptr`: Long,`config`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_mediagram_core_fn_method_core_stop_game_night(`ptr`: Long,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_preferences(`ptr`: Long,`profileId`: RustBuffer.ByValue,
     ): Long
@@ -1218,6 +1230,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 41951) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_game_night_back() and 0xFFFF) != 56157) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_start_game_night() and 0xFFFF) != 28563) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_stop_game_night() and 0xFFFF) != 54038) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_preferences() and 0xFFFF) != 41509) {
@@ -2123,6 +2144,22 @@ public interface CoreInterface {
      * the wait; an error means listening stopped — back off and call again.
      */
     suspend fun `nextLibraryEvent`(`handle`: kotlin.String, `ownDevice`: kotlin.String): LibraryEvent
+
+    /**
+     * Ends the running game and returns to the lobby; `false` when no night runs.
+     */
+    suspend fun `gameNightBack`(): kotlin.Boolean
+
+    /**
+     * Stops a night already running, then hosts a new one over the titles
+     * the catalog holds.
+     */
+    suspend fun `startGameNight`(`config`: GameNightConfig): GameNightUrls
+
+    /**
+     * Ends the night; nothing to do when none runs.
+     */
+    suspend fun `stopGameNight`()
 
     /**
      * Every choice this profile has made, in one round trip: there are a
@@ -3216,6 +3253,79 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         { FfiConverterTypeLibraryEvent.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Ends the running game and returns to the lobby; `false` when no night runs.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `gameNightBack`() : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_game_night_back(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+
+    /**
+     * Stops a night already running, then hosts a new one over the titles
+     * the catalog holds.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `startGameNight`(`config`: GameNightConfig) : GameNightUrls {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_start_game_night(
+                uniffiHandle,
+
+        FfiConverterTypeGameNightConfig.lower(`config`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeGameNightUrls.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+
+    /**
+     * Ends the night; nothing to do when none runs.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `stopGameNight`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_mediagram_core_fn_method_core_stop_game_night(
+                uniffiHandle,
+
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_mediagram_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_mediagram_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_mediagram_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -5241,6 +5351,97 @@ public object FfiConverterTypeFranchiseRecord: FfiConverterRustBuffer<FranchiseR
             FfiConverterULong.write(value.`id`, buf)
             FfiConverterString.write(value.`name`, buf)
             FfiConverterOptionalString.write(value.`overview`, buf)
+    }
+}
+
+
+
+/**
+ * How a game night is set up; Kotlin decides the kids rule and the core
+ * only applies it.
+ */
+data class GameNightConfig (
+    /**
+     * Sets whose rating is kid-safe for the profile starting the night.
+     */
+    var `kidsSetIds`: List<kotlin.String>
+    ,
+    var `kidsLocked`: kotlin.Boolean
+    ,
+    var `tmdbKey`: kotlin.String?
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeGameNightConfig: FfiConverterRustBuffer<GameNightConfig> {
+    override fun read(buf: ByteBuffer): GameNightConfig {
+        return GameNightConfig(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: GameNightConfig) = (
+            FfiConverterSequenceString.allocationSize(value.`kidsSetIds`) +
+            FfiConverterBoolean.allocationSize(value.`kidsLocked`) +
+            FfiConverterOptionalString.allocationSize(value.`tmdbKey`)
+    )
+
+    override fun write(value: GameNightConfig, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`kidsSetIds`, buf)
+            FfiConverterBoolean.write(value.`kidsLocked`, buf)
+            FfiConverterOptionalString.write(value.`tmdbKey`, buf)
+    }
+}
+
+
+
+/**
+ * Where the box shows the game and where phones join it.
+ */
+data class GameNightUrls (
+    var `tvUrl`: kotlin.String
+    ,
+    var `joinUrl`: kotlin.String
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeGameNightUrls: FfiConverterRustBuffer<GameNightUrls> {
+    override fun read(buf: ByteBuffer): GameNightUrls {
+        return GameNightUrls(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: GameNightUrls) = (
+            FfiConverterString.allocationSize(value.`tvUrl`) +
+            FfiConverterString.allocationSize(value.`joinUrl`)
+    )
+
+    override fun write(value: GameNightUrls, buf: ByteBuffer) {
+            FfiConverterString.write(value.`tvUrl`, buf)
+            FfiConverterString.write(value.`joinUrl`, buf)
     }
 }
 
