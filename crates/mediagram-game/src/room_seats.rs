@@ -104,6 +104,19 @@ impl Room {
         Ok(id)
     }
 
+    /// Frees the seat `conn` holds, if any; the player stays seated as absent,
+    /// so a socket that says hello again never leaves a ghost behind.
+    pub(crate) fn release(&mut self, conn: ConnId, now: ServerTime) {
+        let held = self.conns.get_mut(&conn).and_then(|c| c.player.take());
+        if let Some(p) = held.and_then(|id| self.player_mut(id)) {
+            // A reconnect may already have moved the player to a new socket.
+            if p.conn == Some(conn) {
+                p.conn = None;
+                p.left_at = Some(now);
+            }
+        }
+    }
+
     /// The earliest-joined connected player.
     pub fn leader(&self) -> Option<PlayerId> {
         self.players.iter().find(|p| p.connected()).map(|p| p.id)

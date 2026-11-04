@@ -75,16 +75,8 @@ impl Room {
     }
 
     pub fn disconnect(&mut self, conn: ConnId, now: ServerTime) {
-        let Some(c) = self.conns.remove(&conn) else {
-            return;
-        };
-        if let Some(p) = c.player.and_then(|id| self.player_mut(id)) {
-            // A reconnect may already have moved the player to a new socket.
-            if p.conn == Some(conn) {
-                p.conn = None;
-                p.left_at = Some(now);
-            }
-        }
+        self.release(conn, now);
+        self.conns.remove(&conn);
     }
 
     /// Handles one raw text frame. Returns direct replies (welcome, pong,
@@ -118,10 +110,11 @@ impl Room {
                     ));
                 }
                 c.role = Some(Role::Tv);
-                c.player = None;
+                self.release(conn, now);
                 Some(ServerMsg::Welcome { player: None, token: None, now })
             }
             ClientMsg::Hello { role: Role::Phone, name, token } => {
+                self.release(conn, now);
                 Some(match self.seat_phone(conn, name, token) {
                     Ok(id) => {
                         let token = self.player(id).map(|p| p.token.clone());

@@ -155,3 +155,30 @@ fn unreadable_frame_gets_a_german_error_without_parser_detail() {
     assert_eq!(message, "Nachricht nicht lesbar.");
     assert!(!message.contains("expected"), "no serde wording");
 }
+
+fn hello_again(room: &mut Room, conn: ConnId, role: &str, name: &str) {
+    let msg = format!(r#"{{"t":"hello","role":"{role}","name":"{name}","token":null}}"#);
+    room.handle(conn, &msg, 0.0);
+}
+
+#[test]
+fn a_second_hello_on_one_socket_frees_the_first_seat() {
+    let mut r = room(8);
+    r.connect(1, false);
+    hello_again(&mut r, 1, "phone", "Ana");
+    hello_again(&mut r, 1, "phone", "Ben");
+    let ana = r.players().iter().find(|p| p.name == "Ana").unwrap();
+    assert!(!ana.connected(), "the socket Ben took no longer holds Ana's seat");
+    let ben = r.players().iter().find(|p| p.name == "Ben").unwrap().id;
+    assert_eq!(r.leader(), Some(ben));
+}
+
+#[test]
+fn a_tv_hello_on_a_seated_socket_frees_the_seat() {
+    let mut r = room(8);
+    r.connect(1, true);
+    hello_again(&mut r, 1, "phone", "Ana");
+    hello_again(&mut r, 1, "tv", "");
+    assert!(!r.players()[0].connected());
+    assert_eq!(r.leader(), None);
+}
