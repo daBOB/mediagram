@@ -1,6 +1,7 @@
 package ui.tv.games
 
 import android.annotation.SuppressLint
+import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -72,6 +73,8 @@ private fun GamePage(url: String) {
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
+                // AndroidView's default is WRAP_CONTENT, and a WebView then lays the page out at zero height.
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 // The remote's D-pad and OK reach the page only while this view holds focus.

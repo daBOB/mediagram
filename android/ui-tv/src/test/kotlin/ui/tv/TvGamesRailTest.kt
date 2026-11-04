@@ -1,5 +1,6 @@
 package ui.tv
 
+import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -67,6 +68,16 @@ class TvGamesRailTest {
         press(compose.onNodeWithContentDescription("Games"))
 
         assertEquals("http://127.0.0.1:8080/tv", shownUrl())
+    }
+
+    // A WebView whose layout height is WRAP_CONTENT lays the page out at zero height: 100% and vh are 0.
+    @Test
+    fun theGamePageIsLaidOutAtTheFrameHeight() {
+        press(compose.onNodeWithContentDescription("Games"))
+        shownUrl()
+
+        val params = assertNotNull(webView()?.layoutParams)
+        assertEquals(ViewGroup.LayoutParams.MATCH_PARENT, params.height)
     }
 
     @Test
