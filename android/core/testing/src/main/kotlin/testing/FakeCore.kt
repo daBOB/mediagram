@@ -216,6 +216,9 @@ class FakeCore(
     /** What [startGameNight] answers. */
     var gameNightUrls: GameNightUrls = GameNightUrls("http://127.0.0.1:8080/tv", "http://192.168.0.2:8080/")
 
+    /** Raised by [startGameNight] instead of answering, or `null` to answer [gameNightUrls]. */
+    var gameNightStartFailure: Throwable? = null
+
     /** Every config [startGameNight] was started with, in order. */
     val gameNightStarts: MutableList<GameNightConfig> = mutableListOf()
 
@@ -228,6 +231,7 @@ class FakeCore(
 
     override suspend fun startGameNight(config: GameNightConfig): GameNightUrls {
         gameNightStarts += config
+        gameNightStartFailure?.let { throw it }
         return gameNightUrls
     }
 

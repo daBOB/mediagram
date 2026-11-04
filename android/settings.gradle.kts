@@ -54,6 +54,7 @@ include(":feature:player")
 include(":feature:setup")
 include(":feature:system")
 include(":feature:stats")
+include(":feature:games")
 
 // Core modules - shared library code, direction is feature/ui -> core:data -> core:rust
 include(":core:designsystem")
