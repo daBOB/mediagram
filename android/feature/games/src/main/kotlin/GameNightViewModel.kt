@@ -49,8 +49,10 @@ class GameNightViewModel
             viewModelScope.launch {
                 _state.value =
                     try {
-                        // No chosen profile reads as a grown-up: the 12 limit, the toggle free.
-                        val profile = watchState.chosenProfile.value ?: Profile(id = "", name = "")
+                        // The choice lands only after a reload; asking before it does must not read as a grown-up.
+                        if (watchState.chosenProfile.value == null) watchState.reload()
+                        // Still no profile: held to the 12 limit with the toggle locked, never unlocked.
+                        val profile = watchState.chosenProfile.value ?: Profile(id = "", name = "", kids = true, kidsAge = GAME_NIGHT_KIDS_LIMIT)
                         val config = gameNightConfig(catalog.sets(), profile, watchState.snapshot.value.kidsMarks)
                         val urls = coreProvider.awaitCore().startGameNight(config.copy(tmdbKey = tmdb.read()))
                         GameNightUi.Ready(urls.tvUrl)

@@ -69,6 +69,52 @@ class GameNightViewModelTest {
             assertTrue("port taken" in failed.message)
         }
 
+    private val kid = uniffi.mediagram_core.Profile("k", "Kim", kids = true, kidsAge = 6u)
+
+    @Test
+    fun aChosenKidsProfileStartsLockedWithOnlyKidSafeTitles() =
+        runTest {
+            core.profiles = listOf(kid)
+            core.chosen = "k"
+            watch.reload()
+            val model = GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f12", "12"))), tmdb, backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            val config = core.gameNightStarts.single()
+            assertTrue(config.kidsLocked)
+            assertEquals(listOf("f0"), config.kidsSetIds)
+        }
+
+    @Test
+    fun aKidsProfileNotYetLoadedIsWaitedForAndStartsLocked() =
+        runTest {
+            core.profiles = listOf(kid)
+            core.chosen = "k"
+            val model = model(backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertTrue(core.gameNightStarts.single().kidsLocked)
+        }
+
+    @Test
+    fun noProfileEvenAfterReloadStartsLocked() =
+        runTest {
+            core.profiles = emptyList()
+            core.chosen = null
+            val model = model(backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            val config = core.gameNightStarts.single()
+            assertTrue(config.kidsLocked)
+            assertEquals(listOf("f0"), config.kidsSetIds)
+        }
+
     @Test
     fun stopReachesTheCore() =
         runTest {
