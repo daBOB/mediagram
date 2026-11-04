@@ -398,8 +398,11 @@ p {
 
 /* ------------------------------------------------------------ TV */
 
+/* Scales with the screen alone, so every size is the same layout: the box's
+   WebView is 960x540 CSS pixels at density 2, where a pixel floor made the
+   type relatively larger than at 1920x1080 and pushed scenes off the bottom. */
 html[data-surface="tv"] {
-  font-size: clamp(14px, 1.15vw, 34px);
+  font-size: min(1.15vw, 2.04vh);
 }
 
 .tv {
@@ -500,10 +503,12 @@ html[data-surface="tv"] {
 }
 
 /* Quiz */
+/* The question card gives way first: should it ever be taller than the room
+   left, it is cut, never the answers or the seats below it. */
 .tv-quiz {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto minmax(0, auto) 1fr auto;
   gap: 1.6rem;
 }
 
@@ -520,6 +525,8 @@ html[data-surface="tv"] {
 }
 
 .qcard {
+  min-height: 0;
+  overflow: hidden;
   padding: 2.2rem 2.6rem 1.6rem;
   border-radius: 26px;
   background: var(--card);
@@ -527,13 +534,26 @@ html[data-surface="tv"] {
   box-shadow: 0 10px 0 var(--card-edge);
 }
 
+/* A still sits beside the question: stacked above it, a still, the question
+   and a full table are taller than a 16:9 screen. */
+.qcard.has-image {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 2.4rem;
+}
+
 .qimg {
   display: block;
-  max-width: 100%;
-  max-height: 24vh;
-  margin-bottom: 1.2rem;
+  grid-row: 1 / -1;
+  height: 24vh;
+  max-width: 42vw;
   border-radius: 14px;
   object-fit: contain;
+}
+
+.has-image .qtext {
+  align-self: center;
 }
 
 .qtext {

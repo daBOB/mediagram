@@ -70,7 +70,7 @@ function Quiz({ scene, players, conn }: { scene: QuizScene; players: PlayerInfo[
         </span>
       </header>
 
-      <article className="qcard">
+      <article className={q.image ? "qcard has-image" : "qcard"}>
         {q.image && <img className="qimg" src={q.image} alt="Bild zur Frage" />}
         <p className="qtext">{q.text}</p>
         <div className="qcard-foot">
