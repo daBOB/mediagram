@@ -4,3 +4,4 @@
 pub mod artwork;
 pub mod details;
 pub mod fetch;
+pub mod progress;

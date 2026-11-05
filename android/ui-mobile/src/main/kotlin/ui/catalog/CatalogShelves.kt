@@ -43,6 +43,7 @@ internal fun Shelves(
     state: CatalogUiState.Ready,
     fetching: Boolean,
     chosenTab: CatalogTab,
+    fetchFraction: Float? = null,
     onTabChange: (CatalogTab) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -74,7 +75,10 @@ internal fun Shelves(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (state.refreshing || fetching) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = topChrome))
+            val bar = Modifier.fillMaxWidth().padding(top = topChrome)
+            // A channel read has no count; only a fetch's own step fills.
+            val fraction = fetchFraction?.takeIf { !state.refreshing }
+            if (fraction != null) LinearProgressIndicator(progress = { fraction }, modifier = bar) else LinearProgressIndicator(modifier = bar)
         }
         state.notice?.let { notice ->
             Text(

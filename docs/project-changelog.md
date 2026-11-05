@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.143.0 — The artwork fetch says how far it has got
+
+**Added** (Android TV, tablet and phone)
+
+- **"Downloading artwork · 480 of 1290 · about 4 min left"**: a first fetch on a new device takes minutes, and the TV said only "Fetching details and artwork…" the whole time, so a viewer could not tell whether it was working or how long it would take. The core now counts its three walks — looking up each title, downloading each image, saving each description — and the TV names the step, its count and the time its own pace leaves, with a bar under the line that fills. The phone and tablet's bar above the shelves fills the same way, and their Update item gives the same sentence. The estimate waits until a step has done a few items and run a few seconds, because the first requests carry the connection's setup. The web player fetches its artwork on the server, where no viewer waits on it, so it has nothing to match.
+
 ## 0.141.1 — The next episode starts on the web without the long wait
 
 **Fixed** (web player)

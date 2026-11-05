@@ -21,12 +21,13 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import catalog.CatalogUiState
 import catalog.MenuScreen
-import designsystem.TvStyle
-import ui.common.RailItem
 import catalog.factsLine
 import catalog.resumeLine
 import catalog.shelvesOf
 import designsystem.COUNTDOWN_LEADER_TEST_TAG
+import designsystem.TvStyle
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import model.Kind
 import model.MediaSet
 import model.Progress
@@ -40,11 +41,12 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import ui.common.RailItem
 import ui.tv.TvTheme
-import ui.tv.system.menuRestoreKey
 import ui.tv.profile.TvChosenProfile
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import ui.tv.system.menuRestoreKey
+import uniffi.mediagram_core.FetchProgress
+import uniffi.mediagram_core.FetchStep
 
 /**
  * What Robolectric can check about [TvCatalogScreen] without a real window
@@ -183,6 +185,14 @@ class TvCatalogScreenStateTest {
         show(ready(films(1)))
         compose.onNodeWithText("Fetching details and artwork…").assertDoesNotExist()
         compose.onNodeWithText("Reading the channel…").assertDoesNotExist()
+    }
+
+    /** A run under way says which step it is on, how far, and how long is left — not only that it runs. */
+    @Test
+    fun aFetchUnderWayCountsItsStepAboveTheShelves() {
+        show(ready(films(1)), fetching = true, fetchProgress = FetchProgress(FetchStep.DOWNLOADING, 300u, 900u, 60_000uL))
+        compose.onNodeWithText("Downloading artwork · 300 of 900 · about 2 min left").assertExists()
+        compose.onNodeWithTag(TvPlateProgressFillTag, useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -563,6 +573,7 @@ class TvCatalogScreenStateTest {
         onOpenTitle: (String) -> Unit = {},
         onOpenCollection: (String) -> Unit = {},
         fetching: Boolean = false,
+        fetchProgress: FetchProgress? = null,
         restoreKey: String? = null,
         style: TvStyle = TvStyle.Default,
         pendingRail: RailItem? = null,
@@ -583,6 +594,7 @@ class TvCatalogScreenStateTest {
                         onOpenList = {},
                         onCreateList = {},
                         fetching = fetching,
+                        fetchProgress = fetchProgress,
                         restoreKey = restoreKey,
                         pendingRail = pendingRail,
                         onPendingRailHandled = onPendingRailHandled,

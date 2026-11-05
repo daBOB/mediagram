@@ -52,7 +52,7 @@ internal fun tvMenuActions(
         },
         onTmdbKey = { open(MenuScreen.TmdbKey) },
         onStartOver = onStartOver,
-        updateDisabledReason = updateDisabledReason(catalogState, fetchState.running),
+        updateDisabledReason = updateDisabledReason(catalogState, fetchState.running, fetchState.progress),
         updateNote = if (fetchState.hasKey) null else "Artwork and descriptions need a TMDB key",
         onPreloads =
             if (catalogState.showsPreloads(preloadCount)) {
