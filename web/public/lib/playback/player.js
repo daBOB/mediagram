@@ -12,7 +12,7 @@ import { playbackFor } from "../link.js";
 import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
-import { clockTime, endsAt, titleLine } from "../format.js";
+import { clockTime, endsAt, hdrLabel, titleLine } from "../format.js";
 import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
@@ -38,7 +38,7 @@ import { playbackFields, playbackMeta, reportPlayback } from "./playback-report.
 import { mountTogether } from "./together.js";
 import { mountPlayerCast } from "./player-cast.js";
 // One id per tab, for its playback reports as for watch together.
-import { screen as viewer } from "../together-now.js";
+import { inTogether, screen as viewer } from "../together-now.js";
 
 let mounted = null;
 
@@ -559,10 +559,10 @@ function mountPlayer() {
   /**
    * A title that is going to start itself, and the wait before it does.
    *
-   * `null` while nothing is waiting. Unattended starts hold for a buffer — a
-   * viewer whose episode ended a minute ago would rather the next one arrive
-   * whole than arrive at once and stop again — and an asked-for start goes as
-   * soon as the browser can, because somebody is looking at the screen.
+   * `null` while nothing is waiting. A title opened, or handed on to when an
+   * episode ends, holds for a buffer — it would rather arrive whole than
+   * arrive at once and stop again — and a pressed ⏭ or Play goes as soon as
+   * the browser can, because somebody is looking at the screen.
    */
   let waitingToStart = null;
 
@@ -656,7 +656,7 @@ function mountPlayer() {
     attachSubtitles(set);
     placeSubtitles();
     transport.recallSpeed();
-    transport.recallFraming();
+    transport.recallFraming({ hdr: hdrLabel(set) !== null });
     transport.refresh();
     void thumbs.open(set, signal);
     void notes.open(set);
@@ -683,8 +683,10 @@ function mountPlayer() {
     // silently, because a film that opens 34 minutes in looks broken.
     const resume = sessionAt ?? resumeAt(state.progressOf(set.setId)) ?? 0;
     // Armed before the source is attached, so nothing can become ready in the
-    // gap between setting it and starting to watch for it.
-    const autoplay = options.autoplay ?? null;
+    // gap between setting it and starting to watch for it. A title opened by
+    // hand warms up and starts itself, as on Android; a watch-together session
+    // starts and stops the picture itself, so it is left to do so.
+    const autoplay = options.autoplay ?? (sessionAt === null && !inTogether() ? "buffered" : null);
 
     if (warning === null) {
       const operation = {
@@ -742,9 +744,6 @@ function mountPlayer() {
         }
       });
 
-      // No `play()` unless this title started itself: `preload="auto"` fills
-      // the buffer and the viewer starts it, which is the whole behaviour for
-      // anything opened by hand.
       if (autoplay) startWhenReady(autoplay);
       refreshEnds();
       return;

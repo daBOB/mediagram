@@ -41,6 +41,7 @@ private const val LABEL_ALPHA = 0.7f
 @Composable
 fun PlaybackStatsOverlay(
     player: Player,
+    title: String,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
     download: suspend () -> DownloadFacts = { DownloadFacts() },
@@ -53,7 +54,7 @@ fun PlaybackStatsOverlay(
                 .padding(Spacing.medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        playbackStats(player, totals, held, download).forEach { StatRow(label = it.label, value = it.value) }
+        playbackStats(player, title, totals, held, download).forEach { StatRow(label = it.label, value = it.value) }
     }
 }
 

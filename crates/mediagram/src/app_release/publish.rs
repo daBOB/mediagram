@@ -53,7 +53,11 @@ pub async fn publish(
         Some(dm) => {
             let name = format!("mediagram-{}.dm", badging.version_name);
             let message = remote.send_document(dm, &name, PROFILE_MIME, "").await?;
-            Some(AppProfile { message: i64::from(message), bytes: dm.len() as u64, sha256: hex::encode(Sha256::digest(dm)) })
+            Some(AppProfile {
+                message: i64::from(message),
+                bytes: dm.len() as u64,
+                sha256: hex::encode(Sha256::digest(dm)),
+            })
         }
         None => None,
     };
@@ -66,12 +70,17 @@ pub async fn publish(
         profile,
     };
     let name = format!("mediagram-{}.apk", release.version);
-    let id = remote.send_document(apk, &name, APK_MIME, &app_caption::render(&release)).await?;
+    let id = remote
+        .send_document(apk, &name, APK_MIME, &app_caption::render(&release))
+        .await?;
     remote.pin(id).await?;
 
     // A replaced release left pinned is harmless — readers take the highest
     // versionCode — so a refused unpin is reported, not fatal.
-    for old in candidates.iter().filter(|c| c.id != id && app_caption::parse(&c.caption).is_some()) {
+    for old in candidates
+        .iter()
+        .filter(|c| c.id != id && app_caption::parse(&c.caption).is_some())
+    {
         if let Err(err) = remote.unpin(old.id).await {
             tracing::warn!(old_id = old.id, error = %format_args!("{err:#}"), "could not unpin a replaced app release");
         }

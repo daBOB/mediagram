@@ -3,10 +3,14 @@ package data
 import android.util.Log
 import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale
 import javax.inject.Inject
@@ -16,6 +20,8 @@ import javax.inject.Singleton
 data class CatalogEnrichmentState(
     val hasKey: Boolean = false,
     val running: Boolean = false,
+    /** How far the run under way has got, once its first step has begun; `null` otherwise. */
+    val progress: FetchProgress? = null,
     val report: FetchReport? = null,
     val error: String? = null,
 )
@@ -99,7 +105,24 @@ class CatalogEnrichmentFetcher
                     return null
                 }
                 current.update { if (quiet) it.copy(hasKey = true) else it.copy(hasKey = true, report = null, error = null) }
-                val report = coreProvider.awaitCore().fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt())
+                val core = coreProvider.awaitCore()
+                val report =
+                    coroutineScope {
+                        // The core counts as it walks; a run is minutes long on a
+                        // first fetch, and "running" alone cannot say how many.
+                        val watching =
+                            launch {
+                                while (true) {
+                                    current.update { it.copy(progress = core.fetchProgress()) }
+                                    delay(PROGRESS_POLL_MS)
+                                }
+                            }
+                        try {
+                            core.fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt())
+                        } finally {
+                            watching.cancel()
+                        }
+                    }
                 if (!quiet) current.update { it.copy(report = report) }
                 return report
             } catch (e: CancellationException) {
@@ -111,7 +134,7 @@ class CatalogEnrichmentFetcher
                 if (!quiet) current.update { it.copy(error = e.coreSentence() ?: "The fetch failed.") }
                 return null
             } finally {
-                current.update { it.copy(running = false) }
+                current.update { it.copy(running = false, progress = null) }
                 fetching.unlock()
             }
         }
@@ -126,6 +149,8 @@ class CatalogEnrichmentFetcher
             // and a fetch's transport error repeats the request URL, which
             // carries the TMDB key as a query parameter.
             const val TAG = "enrichment"
+
+            const val PROGRESS_POLL_MS = 500L
 
             // Storage exceptions can contain credentials or private paths; never render their message.
             const val KEY_READ_ERROR = "Could not read the saved TMDB key. Save it again on the TMDB key screen."

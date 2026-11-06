@@ -124,7 +124,7 @@ impl<'a, R: ChannelRemote> Session<'a, R> {
         println!("published the index as message {id}");
         for old in std::mem::take(&mut self.replaced) {
             if let Err(err) = self.remote.delete_message(old).await {
-                eprintln!("warning: the replaced bundle message {old} stays in the channel: {err:#}");
+                eprintln!("warning: replaced bundle message {old} stays in the channel: {err:#}");
             }
         }
         Ok(())

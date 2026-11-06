@@ -190,5 +190,10 @@ async fn dry_runs_of_every_mode_write_nothing() {
 fn more_than_one_upload_slot_is_refused() {
     use mediagram::commands::subtitles::session::ensure_single_slot;
     assert!(ensure_single_slot(1).is_ok());
-    assert!(ensure_single_slot(2).unwrap_err().to_string().contains("upload_slots is 2"));
+    assert!(
+        ensure_single_slot(2)
+            .unwrap_err()
+            .to_string()
+            .contains("upload_slots is 2")
+    );
 }

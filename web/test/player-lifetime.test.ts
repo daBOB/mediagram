@@ -550,3 +550,14 @@ test("page exit cancels pending playback and warming even without a dialog close
   env.advance(1000);
   expect(env.video.paused).toBe(true);
 });
+
+test("a title opened by hand warms up and starts itself once it holds a minute", async () => {
+  openPlayer(set("by-hand"));
+  // Still loading, so only the minute can end the wait.
+  Object.assign(env.video, { readyState: 4, networkState: 2, NETWORK_IDLE: 1, bufferEnd: 30 });
+  env.advance(1000);
+  expect(env.video.paused).toBe(true);
+  env.video.bufferEnd = 60;
+  env.advance(500);
+  expect(env.video.paused).toBe(false);
+});

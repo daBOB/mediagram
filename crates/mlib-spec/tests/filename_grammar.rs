@@ -167,3 +167,15 @@ fn a_parenthesised_provider_id_is_not_recognized() {
     assert!(g.ids.is_empty());
     assert_eq!(g.title, "Film (imdb-tt15239678)");
 }
+
+#[test]
+fn an_episode_code_joined_to_the_name_by_hyphens_parses() {
+    let g = parse_filename("tvr-marco-polo-s02e07-1080p.mp4").unwrap();
+    assert_eq!(
+        (g.title.as_str(), g.season, g.episode),
+        ("tvr-marco-polo", Some(2), Some(7))
+    );
+
+    let g = parse_filename("tmsf-superhappymagicforest-s01e33-1080p.mp4").unwrap();
+    assert_eq!((g.season, g.episode), (Some(1), Some(33)));
+}

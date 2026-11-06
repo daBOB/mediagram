@@ -5,70 +5,79 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
-## 0.146.2 — Players switch off their phone's screen lock themselves
+## 0.149.0 — Game night: party games on the TV box, Heimlauf, avatars and an awards ceremony
 
-**Changed**
+Built on the game-night branch as 0.143.0–0.146.2 and only ever sideloaded to the TV box; numbered 0.149.0 when main's 0.147.0 and 0.148.0 were merged in. The branch's entries follow as they were.
+
+### Awards ceremony after every game
+
+- When a game ends, the top three stand on a podium as their animated 3D avatars (the winner celebrates, second cheers, third shrugs), with confetti and the winner jingle, and everyone's points run in a strip below. Until a 3D avatar has loaded its flat figure stands in.
+- The 22 ceremony avatars (five animations each, meshopt-compressed, 26 MB) ship once inside the app; the TV app's WebView hands them to the game page.
+
+### Players switch off their phone's screen lock themselves (branch 0.146.2)
+
+*Changed*
 
 - The hidden keep-awake clip from 0.146.1 did not keep phones on in practice, so it is gone again. The phone lobby now says it plainly: switch off the automatic screen lock for the game night, or the phone goes dark mid-game.
 
-## 0.146.1 — Phones stay awake and go fullscreen during game night
+### Phones stay awake and go fullscreen during game night (branch 0.146.1)
 
-**Added**
+*Added*
 
 - The phone goes fullscreen on the join tap (no address bar, no status bar); a phone that left fullscreen is back on its next tap, and one that rejoined its seat by itself on its first. iPhones cannot put a web page fullscreen, so nothing changes there.
 
-**Fixed**
+*Fixed*
 
 - Phones went dark in the middle of a game. The page is plain LAN HTTP, so the Wake Lock API is missing, and the NoSleep library's fallback video was never part of the page, which Chrome on Android needs before it keeps the screen on. The phone page now loops its own tiny silent clip full-screen behind its content (in the page colour, nearly transparent), and also when a phone rejoins its seat by itself, not only after typing the name. NoSleep is gone.
 
-## 0.146.0 — Avatars for every player, and TV settings for sound and figures
+### Avatars for every player, and TV settings for sound and figures (branch 0.146.0)
 
-**Added** (Android TV game night)
+*Added* (Android TV game night)
 
 - **Pick an avatar on your phone** in the lobby: 22 characters (fox, panda, witch, yeti, granny, …), first come, first served. Whoever does not pick gets a free one, and the phone remembers yours for the next game night.
 - **The avatar's head replaces the initial** everywhere a player is shown: the TV lobby, the board's name tags, the scoreboards, the ranking and the phone.
 - **Settings on the TV, with the remote**: *Ton* on/off, *Musik* and *Effekte* each in 10 steps, and *Spielfiguren* — the wooden pawns or each player's avatar standing on the board. In the lobby through *Einstellungen* next to the start button; during Heimlauf OK opens them over the board and the game runs on. Back closes the panel first. The TV keeps them for the next game night.
 
-## 0.145.3 — The Wilhelm scream for a thrown-out piece
+### The Wilhelm scream for a thrown-out piece (branch 0.145.3)
 
-**Changed**
+*Changed*
 
 - When a piece is thrown out, the classic Wilhelm scream plays while it flies home, after the wooden thunk, instead of the falling pizzicato.
 
-## 0.145.2 — Heimlauf's hop knocks land with the pawn, the first one too
+### Heimlauf's hop knocks land with the pawn, the first one too (branch 0.145.2)
 
-**Fixed**
+*Fixed*
 
 - The knocks were still behind on the TV box: its WebView takes ~370 ms (±50) from starting a sound to the speaker, longer than the first hop takes, so the first knock of a move could only come late or be dropped. A move now starts 200 ms after it is decided, which gives the TV time to start every knock early enough, and the TV smooths the speaker delay over frames instead of trusting one jittery reading.
 
-## 0.145.1 — Heimlauf's hop knocks land with the pawn
+### Heimlauf's hop knocks land with the pawn (branch 0.145.1)
 
-**Fixed**
+*Fixed*
 
 - The knock for each pawn hop came late on the TV box: its audio output buffers about 128 ms. Sounds are now timed by the speaker's own clock, so they are heard as the pawn lands.
 
-## 0.145.0 — Heimlauf sounds like a game evening
+### Heimlauf sounds like a game evening (branch 0.145.0)
 
-**Added** (Android TV game night)
+*Added* (Android TV game night)
 
 - **Sound on the Heimlauf board**, from the TV: quiet cozy background music (two tracks taking turns), the die clattering as it lands, a wooden knock for every step a pawn hops, a thunk and a falling pizzicato when someone is thrown out, a rising one when a piece reaches its goal, and a saxophone jingle for the winner while the music fades. Phones stay silent.
 - All sounds are CC0: Kenney's Casino Audio, Impact Sounds and Music Jingles; the music is "Apple Cider" (Zane Little Music) and "Cozy Puzzle In-Game 2" (MintoDog) from OpenGameArt.
 
-## 0.144.0 — Heimlauf: a race board game for game night
+### Heimlauf: a race board game for game night (branch 0.144.0)
 
-**Added** (Android TV game night)
+*Added* (Android TV game night)
 
 - **Heimlauf**, the third game in the lobby: the classic cross-and-circle race for 2–4 players, four pieces each. The TV shows a wooden board on a table in 3D; on your turn your phone shows *Würfeln*, the die rolls across the table, and when more than one move is possible your phone offers them as coloured buttons while the TV rings the matching pieces in the same colours and shapes.
 - Classic rules: a 6 brings a piece out and rolls again, the start field must be cleared, landing on an opponent sends it home, the goal needs an exact count, three tries for a 6 when nothing can move. The first with all four home wins.
 - A phone that drops out does not stall the table: its turns play themselves.
 
-**Changed**
+*Changed*
 
 - A choice on the phone can be untimed: no clock, no countdown bar (the race game's buttons wait for you). A single button or a pair now fill the button area instead of leaving empty cells.
 
-## 0.143.0 — Game night on the TV box
+### Game night on the TV box (branch 0.143.0)
 
-**Added** (Android TV, new `mediagram-game` crate)
+*Added* (Android TV, new `mediagram-game` crate)
 
 - **Party games on the TV box**: a *Games* entry on the television rail starts a game night. Phones on the same Wi-Fi scan the QR code, type a name and join, up to 8, with nothing to install. The first to join starts and picks the game; a phone that sleeps rejoins its seat.
 - **Buzzer-Quiz**: 8 questions, four answers on every phone at once, 1000 down to 500 points by speed. *Filme* asks about the library (a still, the year, the director, the cast), *Allgemein* draws on 311 German questions with their sources, *Gemischt* alternates.
@@ -76,9 +85,61 @@ to `main`. Full phase-by-phase detail lives in
 - **Nur für Kinder**: on a kids profile it is on at that profile's own limit and locked; on a grown-up profile it starts off and means FSK 12. Every answer, wrong option and image is then a kid-safe title; a series counts only when all its episodes are.
 - A game night writes nothing to any profile: no history, positions, stats or daily limit. Leaving the screen, or the app going to the background, ends the night.
 
-**Changed**
+*Changed*
 
 - Television only by design; the web player does not host a night (`docs/system-architecture.md`, "Game night").
+
+## 0.148.0 — A Deinterlace switch for combed old TV shows
+
+**Added** (web player, Android TV, tablet and phone)
+
+- **Framing → Deinterlace**:
+  - **Why:** some DVD rips are field-interlaced video flagged progressive. Roseanne S02–S09 is one: a German PAL release. No player ever deinterlaces such a file. The box's Realtek decoder logs `nEnableDeInterlace:0 interlace:0`, browsers never do it, and every movement shows comb lines.
+  - **The switch:** the Framing menu on every surface now ends in an on/off "Deinterlace" row. It is remembered per show under the shared `deinterlace` preference, so turning it on on the TV turns it on for the web as well.
+  - **The filter:** a single-frame comb filter on the GPU, with the same maths in WebGL and in a media3 GL effect. Where a line sticks out from both neighbours the same way, it becomes their average; elsewhere it is left alone. Still areas keep their full sharpness and the frame rate is unchanged.
+  - **Limits:** it is not as good as re-encoding with bwdif, which is what was done for Roseanne itself. It is not offered for HDR titles.
+- **Android plays a filtered title through its own video renderer.** media3 builds an effects graph in a renderer the first time it is enabled with effects and never drops it. A second renderer that only effects titles may claim is what keeps every other title, 4K and HDR included, on the direct path after a filtered one. Turning the switch on mid-title re-buffers at the current position. The debug sharpening property (`debug.mediagram.videofilter`) uses the same renderer. Known limit: media3's GL output draws darker than the direct path. The sharpening spike measured 3.6% on the box, and the emulator's software GPU about 8%. Only a title with the switch on pays it. Checked on the Google TV emulator with Roseanne S3E5: the route switched, the shader compiled and drew, and comb lines on a moving head were gone.
+- **Web subtitles while the filter is on**: the canvas covers the video's native cues. A layer above it shows the active cues instead, styled by the same size and backing rule as `::cue`.
+
+## 0.147.0 — The artwork fetch says how far it has got
+
+**Added** (Android TV, tablet and phone)
+
+- **"Downloading artwork · 480 of 1290 · about 4 min left"**: a first fetch on a new device takes minutes, and the TV said only "Fetching details and artwork…" the whole time, so a viewer could not tell whether it was working or how long it would take. The core now counts its three walks — looking up each title, downloading each image, saving each description — and the TV names the step, its count and the time its own pace leaves, with a bar under the line that fills. The phone and tablet's bar above the shelves fills the same way, and their Update item gives the same sentence. The estimate waits until a step has done a few items and run a few seconds, because the first requests carry the connection's setup. The web player fetches its artwork on the server, where no viewer waits on it, so it has nothing to match.
+
+## 0.142.2 — Measuring a file's end reads only its last frames
+
+**Fixed** (uploader)
+
+- **The end-of-file read from 0.142.1 starts at the container's end**, not a minute before it: ffprobe seeks back to the last keyframe on its own, so only the final frames are read, which matters for a file probed over the network. If that read fails, the container's duration stands instead of the whole probe failing.
+
+## 0.142.1 — A file whose tracks carry no length is measured, not guessed
+
+**Fixed** (uploader)
+
+- **Where no video or audio track declares a length, `prepare` reads the last frames** instead of falling back to the container's duration, which also counts subtitles left running past the end. The Expanse S05E03's picture and sound end at 3117.1 s, but its subtitles, and so its container, at 3118.5 s; a faithful MP4 looked 1.4 s short and was rejected. ffprobe reads the last minute's packets (0.1 s on that file), only for files that need it.
+
+## 0.142.0 — The ⓘ overlay names what is playing
+
+**Added** (web player, phone, tablet, TV)
+
+- **A `title` row heads the playback statistics**: show · episode · title, as the top bar names it (`titleLine`), so a screenshot of the numbers says whose they are. Android's rows come from the one `playbackStats` list, so phone, tablet and TV gain it together; on the web the overlay now wraps a long title instead of stretching across the picture.
+
+**Fixed** (web player)
+
+- **A title opened by hand starts itself once it holds a minute**, as on Android: it warms up under the leader ("Warming up · 0:42 of 1:00") and plays once the minute is held, the browser stops loading, or 45 s pass. Before, only the next episode did; anything opened from a shelf sat paused at a full buffer until the viewer pressed play. Pressing play still skips the wait, and a watch-together session still starts the picture itself.
+
+**Fixed** (phone, tablet, TV)
+
+- **The cold start's countdown no longer freezes while the library loads**: grouping and sorting twenty thousand sets into shelves ran on the main thread and held every frame for most of a second. `CatalogViewModel` builds the shelves, and every profile's projection of them, on a background dispatcher (`shelving`); tests pass their own main so they still advance it.
+
+**Fixed** (uploader)
+
+- **A removed set stays removed when the channel index is merged**: Telegram answers a deleted channel message with `messageEmpty`, which grammers returns as a message of the channel asked about, so `fetch_messages` counted it as present. `pull-index` and every publish then took the removed set back from the channel, and `verify` saw a part with no document instead of a missing one. Deleted messages are now dropped where they are fetched. Found when TNG S6E8's out-of-sync copy, removed and replaced, came back in the 20:09 channel index.
+- **`prepare --mp4 --replace` names the result `.mp4`**: it wrote MP4 bytes back under the source's `.mkv` name, and since the container is read from the extension, the upload would have captioned and served the file as Matroska. The replacement now lands beside the source as `.mp4` and the `.mkv` goes once it has passed every check; an `.mp4` already there, perhaps another version of the same title, is left alone along with its `.mkv`. Found preparing the bytefortress staging folder, which used `--out <same folder> --delete-source` instead.
+- **`add-show` reads an episode code joined to the name by hyphens** (`tvr-marco-polo-s02e07-1080p.mp4`): the file-name grammar took only a space, a dot or ` - ` before `sNNeNN`, so whole seasons were reported as "no episodes" — and that report exits 0. Found on Marco Polo and Super Happy Magic Forest (73 files).
+- **`prepare` measures how long the picture and sound run**, not the container: Matroska's duration also counts a subtitle cue left running past the last frame, so a faithful MP4 of The Capture S01E05 looked 3 s short and was rejected. Each video and audio track's own length is read (MP4's stream duration, Matroska's `DURATION` tag), the container's only where none says.
+- **`prepare --mp4` converts Dolby Atmos audio**: it decodes as 5.1.2 (or 7.1.4), which ffmpeg's AAC encoder refuses outright instead of converting, so a film whose German track was Atmos could not be prepared at all. The encoder is now offered the layouts it takes, and ffmpeg folds the height channels into 5.1 or 7.1. Stereo, 5.1 and 7.1 come out as before; a 5.1 with side surrounds is now labelled back surrounds, which AAC cannot tell apart anyway. Found on One Battle After Another.
 
 ## 0.141.1 — The next episode starts on the web without the long wait
 

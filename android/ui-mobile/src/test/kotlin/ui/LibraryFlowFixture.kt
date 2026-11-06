@@ -21,6 +21,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import model.Kind
 import model.MediaSet
@@ -126,7 +127,7 @@ internal class LibraryFlowFixture(
         coEvery { repository.titleCredits(any()) } returns TitleCredits.Empty
         coEvery { repository.fetchPortrait(any()) } returns null
         val enrichment = CatalogEnrichmentFetcher(mockk<CoreProvider>(), InMemoryTmdbSettings())
-        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, heldSets = FakeHeldSets(heldIds))
+        catalog = CatalogViewModel(repository, stored, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, heldSets = FakeHeldSets(heldIds), shelving = Dispatchers.Main.immediate)
         player = playback.factory.create(PlayerViewModel::class.java)
         if (settingsModel == null) {
             every { settings.state } returns MutableStateFlow(SettingsUiState(account = "Viewer", library = "Library"))

@@ -26,6 +26,7 @@ import ui.tv.chrome.LocalNewAchievement
 import ui.tv.player.TvCastOver
 import ui.tv.player.TvPlayerScreen
 import ui.tv.profile.TvChosenProfile
+import uniffi.mediagram_core.FetchProgress
 
 /**
  * The player, over the run its title belongs to — the phone's own rule:
@@ -75,6 +76,7 @@ internal fun TvLibraryHomeFrame(
     catalogState: CatalogUiState,
     profile: TvChosenProfile,
     fetching: Boolean,
+    fetchProgress: FetchProgress?,
     restore: TvRestoreKeys,
     here: Int,
     at: LibraryPositions,
@@ -95,6 +97,7 @@ internal fun TvLibraryHomeFrame(
                 state = catalogState,
                 profile = profile,
                 fetching = fetching,
+                fetchProgress = fetchProgress,
                 restoreKey = restore.of(here),
                 menu = menu,
                 pendingRail = pendingRail,

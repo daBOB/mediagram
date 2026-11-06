@@ -106,13 +106,18 @@ pub fn adopt_folder(conn: &Connection, dir: &Path, key: &str) -> Result<usize> {
 /// usually curated by hand, and `Poster.JPG` is as much "the poster" as
 /// `poster.jpg` is.
 fn find_named(dir: &Path, stem: &str) -> Option<PathBuf> {
-    std::fs::read_dir(dir).ok()?.filter_map(Result::ok).find_map(|entry| {
-        let path = entry.path();
-        let name = path.file_stem()?.to_str()?;
-        let ext = path.extension()?.to_str()?.to_ascii_lowercase();
-        (name.eq_ignore_ascii_case(stem) && IMAGE_EXTENSIONS.contains(&ext.as_str()) && path.is_file())
+    std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(Result::ok)
+        .find_map(|entry| {
+            let path = entry.path();
+            let name = path.file_stem()?.to_str()?;
+            let ext = path.extension()?.to_str()?.to_ascii_lowercase();
+            (name.eq_ignore_ascii_case(stem)
+                && IMAGE_EXTENSIONS.contains(&ext.as_str())
+                && path.is_file())
             .then_some(path)
-    })
+        })
 }
 
 #[cfg(test)]

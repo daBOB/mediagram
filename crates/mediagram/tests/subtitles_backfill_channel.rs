@@ -60,7 +60,14 @@ fn candidates_are_mp4_first_and_skip_what_has_subtitles_or_none() {
     db::set_meta(&conn, "subs-none:f-none", "1").unwrap();
     // Still inline: move-inline's to do, not a read from the channel.
     add(&conn, "h-inline", "tut", "mp4", r#"["de"]"#, 10);
-    mediagram::index::assets::put(&conn, "h-inline", mediagram::index::assets::Kind::Subtitle, "deu", "WEBVTT\n").unwrap();
+    mediagram::index::assets::put(
+        &conn,
+        "h-inline",
+        mediagram::index::assets::Kind::Subtitle,
+        "deu",
+        "WEBVTT\n",
+    )
+    .unwrap();
 
     let without_mkv = candidates(&conn, false, &[]).unwrap();
     assert_eq!(ids(&without_mkv), [("b-mp4", false), ("g-mp4", false)]);
@@ -208,7 +215,9 @@ impl ByteSource for CutAt {
             let to = from + step.take as usize;
             if to > self.limit {
                 let kept = self.limit.saturating_sub(from);
-                items.push(Ok(axum::body::Bytes::copy_from_slice(&self.file[from..from + kept])));
+                items.push(Ok(axum::body::Bytes::copy_from_slice(
+                    &self.file[from..from + kept],
+                )));
                 items.push(Err(std::io::Error::other("the channel stopped answering")));
                 break;
             }
@@ -221,7 +230,13 @@ impl ByteSource for CutAt {
 #[tokio::test]
 async fn a_read_cut_short_is_a_failure_never_a_bundle_or_a_none_mark() {
     let (media, state) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
-    let german = Sub { srt: HALLO, codec: "subrip", lang: "ger", title: None, forced: false };
+    let german = Sub {
+        srt: HALLO,
+        codec: "subrip",
+        lang: "ger",
+        title: None,
+        forced: false,
+    };
     let Some(video) = make_mkv(media.path(), "cut.mkv", &[german]) else {
         return;
     };
@@ -232,7 +247,10 @@ async fn a_read_cut_short_is_a_failure_never_a_bundle_or_a_none_mark() {
         conn.execute("DELETE FROM sets", []).unwrap();
         add(&conn, "cut", "movie", "mkv", r#"["de"]"#, file.len() as u64);
         let read_only = db::open_read_only(state.path(), "test").unwrap();
-        let source = CutAt { file: file.clone(), limit };
+        let source = CutAt {
+            file: file.clone(),
+            limit,
+        };
         let server = Loopback::start(read_only, Arc::new(source)).await.unwrap();
         let channel = FakeChannel::new();
         let mut run = session(&conn, &channel, &state);
@@ -241,7 +259,11 @@ async fn a_read_cut_short_is_a_failure_never_a_bundle_or_a_none_mark() {
         let tally = read_and_send(&mut run, |id| server.stream_url(id), found, None).await;
         server.shutdown().await;
 
-        assert_eq!((tally.failed, tally.bundled, tally.nothing), (1, 0, 0), "cut at {limit}");
+        assert_eq!(
+            (tally.failed, tally.bundled, tally.nothing),
+            (1, 0, 0),
+            "cut at {limit}"
+        );
         assert_eq!(subtitles::bundle_message(&conn, "cut").unwrap(), None);
         assert_eq!(db::get_meta(&conn, "subs-none:cut").unwrap(), None);
         assert_eq!(channel.with(|c| c.sends), 0);

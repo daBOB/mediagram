@@ -37,6 +37,7 @@ async fn a_rejected_key_is_still_rejected_after_a_successful_run() {
     verify_then_fetch(&core, good, &http, &plan, 780)
         .await
         .expect("a key the provider accepts fetches");
+    assert_eq!(core.fetch_progress(), None, "a finished run leaves no progress behind");
 
     // The same device afterwards, with a key the provider will not take.
     let err = verify_then_fetch(&core, RejectingApi, &http, &plan, 780)

@@ -21,7 +21,11 @@ pub fn read(apk: &Path) -> Result<Badging> {
         .output()
         .context("running aapt2 (put the Android SDK's build-tools on PATH)")?;
     if !output.status.success() {
-        bail!("aapt2 could not read {}: {}", apk.display(), String::from_utf8_lossy(&output.stderr));
+        bail!(
+            "aapt2 could not read {}: {}",
+            apk.display(),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     parse(&String::from_utf8_lossy(&output.stdout))
 }
@@ -36,13 +40,20 @@ pub fn parse(output: &str) -> Result<Badging> {
         .context("aapt2 printed no package line")?;
     let field = |key: &str| -> Result<String> {
         let marker = format!(" {key}='");
-        let start = line.find(&marker).with_context(|| format!("no {key} in: {line}"))? + marker.len();
-        let end = line[start..].find('\'').with_context(|| format!("unterminated {key} in: {line}"))?;
+        let start = line
+            .find(&marker)
+            .with_context(|| format!("no {key} in: {line}"))?
+            + marker.len();
+        let end = line[start..]
+            .find('\'')
+            .with_context(|| format!("unterminated {key} in: {line}"))?;
         Ok(line[start..start + end].to_string())
     };
     Ok(Badging {
         package: field("name")?,
-        version_code: field("versionCode")?.parse().context("versionCode is not a number")?,
+        version_code: field("versionCode")?
+            .parse()
+            .context("versionCode is not a number")?,
         version_name: field("versionName")?,
     })
 }

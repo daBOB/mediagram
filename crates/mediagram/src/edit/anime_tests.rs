@@ -108,7 +108,11 @@ fn a_tutorial_is_refused() {
 
     let error = run(&conn, &row, AnimeChoice::Yes, false).unwrap_err();
 
-    assert!(error.to_string().contains("only films and series can be anime"));
+    assert!(
+        error
+            .to_string()
+            .contains("only films and series can be anime")
+    );
 }
 
 #[test]

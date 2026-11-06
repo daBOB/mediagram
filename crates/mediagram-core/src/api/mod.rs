@@ -76,6 +76,8 @@ pub struct Core {
     /// The game night this device hosts, if one runs; apart from `state` so
     /// a night never blocks a read.
     game_night: AsyncMutex<Option<mediagram_game::Host>>,
+    /// How far the fetch under way has got — see `Core::fetch_progress`.
+    fetch_meter: enrich::progress::FetchMeter,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -96,6 +98,7 @@ impl Core {
             search_cache: std::sync::Mutex::new(search::cache::SearchCache::default()),
             together_heard: std::sync::Mutex::new(None),
             game_night: AsyncMutex::new(None),
+            fetch_meter: enrich::progress::FetchMeter::default(),
         })
     }
 

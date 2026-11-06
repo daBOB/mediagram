@@ -136,7 +136,10 @@ fn dry_run_writes_nothing() {
 
     run(&conn, &row, Some("Trading"), true).unwrap();
 
-    assert_eq!(categories::get(&conn, "tutorials", "title-rust-course").unwrap(), None);
+    assert_eq!(
+        categories::get(&conn, "tutorials", "title-rust-course").unwrap(),
+        None
+    );
 }
 
 /// Clearing keeps the row (a merge needs a timestamp to carry the clear),
@@ -149,7 +152,10 @@ fn clearing_keeps_the_row_and_clearing_nothing_is_a_no_op() {
 
     run(&conn, &row, None, false).unwrap();
 
-    assert_eq!(categories::get(&conn, "tutorials", "title-rust-course").unwrap(), None);
+    assert_eq!(
+        categories::get(&conn, "tutorials", "title-rust-course").unwrap(),
+        None
+    );
     let rows: i64 = conn
         .query_row("SELECT COUNT(*) FROM categories", [], |r| r.get(0))
         .unwrap();
@@ -166,7 +172,11 @@ fn a_film_is_refused() {
 
     let error = run(&conn, &row, Some("Anything"), false).unwrap_err();
 
-    assert!(error.to_string().contains("categories are for courses and documentaries"));
+    assert!(
+        error
+            .to_string()
+            .contains("categories are for courses and documentaries")
+    );
 }
 
 #[test]
@@ -199,7 +209,14 @@ fn planned_keys_a_course_by_its_title() {
 #[test]
 fn write_adopts_a_spelling_planned_alone_could_not_see() {
     let conn = db();
-    categories::set(&conn, "tutorials", "title-geldhochschule", Some("Trading"), 1_700_000_000).unwrap();
+    categories::set(
+        &conn,
+        "tutorials",
+        "title-geldhochschule",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
 
     let planned = planned(Kind::Tut, Some("Rust Course"), "trading").unwrap();
     write(&conn, &planned).unwrap();

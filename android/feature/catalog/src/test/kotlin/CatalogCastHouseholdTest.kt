@@ -44,7 +44,7 @@ class CatalogCastHouseholdTest {
         val repository = FakeCatalogRepository(given = listOf(film))
         val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
         val watch = WatchStateFixture(listOf(Profile("a", "Ana"))).repository
-        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together)
+        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
     }
 
     @After

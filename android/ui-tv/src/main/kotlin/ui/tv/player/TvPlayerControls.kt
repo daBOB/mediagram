@@ -32,6 +32,7 @@ import model.MediaSet
 import player.READOUT_TICK_MS
 import player.UpNextPhase
 import player.endsLine
+import player.titleLine
 import ui.common.player.SCRIM_ALPHA
 import ui.common.player.playerCard
 
@@ -130,6 +131,7 @@ internal fun TvPlayerControls(
             if (extras.statsShown && !extras.sidebarOpen) {
                 TvStatsOverlay(
                     player = player,
+                    title = titleLine(set),
                     totals = extras.totals,
                     held = extras.held,
                     download = extras.download,

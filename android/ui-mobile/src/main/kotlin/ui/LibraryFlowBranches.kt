@@ -17,6 +17,8 @@ import catalog.CatalogUiState
 import catalog.CatalogViewModel
 import catalog.KeptKind
 import catalog.catalogTabOf
+import catalog.chromeCountsOf
+import catalog.fetchFraction
 import catalog.libraryTallyLines
 import catalog.mastheadTabsOf
 import catalog.mediaSet
@@ -24,12 +26,12 @@ import catalog.runFor
 import data.CatalogEnrichmentState
 import model.WatchSnapshot
 import system.FetchViewModel
+import ui.catalog.CastAskHost
 import ui.catalog.CatalogScreen
 import ui.catalog.GenreBranch
 import ui.catalog.ListScreen
 import ui.catalog.SearchBranch
 import ui.catalog.posterColumnsFor
-import catalog.chromeCountsOf
 import ui.chrome.BrowseActions
 import ui.chrome.LibraryHome
 import ui.chrome.LocalRailData
@@ -41,7 +43,6 @@ import ui.common.MenuActions
 import ui.common.catalog.DepartmentScrollStates
 import ui.common.catalog.rememberDepartmentScrollStates
 import ui.common.resolve
-import ui.catalog.CastAskHost
 import ui.player.CastRemoteScreen
 import ui.player.PlayerScreen
 
@@ -247,6 +248,7 @@ internal fun LibraryBranches(
             shelvesState.SaveableStateProvider(SHELVES_KEY) { CatalogScreen(
                 state = catalogState,
                 fetching = fetchState.running,
+                fetchFraction = fetchState.progress?.let(::fetchFraction),
                 chosenTab = chosenTab,
                 onTabChange = chooseTab,
                 onOpenTitle = at::openTitle,

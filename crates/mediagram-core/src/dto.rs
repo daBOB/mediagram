@@ -106,6 +106,28 @@ pub struct FetchReport {
     pub failed: u32,
 }
 
+/// The walks a fetch run makes, in order; see `enrich::fetch::fetch_into`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum FetchStep {
+    /// One provider request per title, for its poster and backdrop paths.
+    LookingUp,
+    /// One download per poster or backdrop not already on this device.
+    Downloading,
+    /// One description per title, answered from the lookups' disk cache.
+    Describing,
+}
+
+/// How far a fetch run has got: `done` of `total` items of `step`, which
+/// began `step_elapsed_ms` ago — enough for the caller to estimate the rest
+/// from the step's own pace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
+pub struct FetchProgress {
+    pub step: FetchStep,
+    pub done: u32,
+    pub total: u32,
+    pub step_elapsed_ms: u64,
+}
+
 /// One library the signed-in account could choose, as the caller sees it.
 ///
 /// A title to render and a handle to send back, and nothing else. The handle

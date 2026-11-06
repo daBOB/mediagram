@@ -14,6 +14,8 @@ import data.coreSentence
 import data.orDefault
 import data.refreshSentence
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -23,9 +25,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import model.MediaSet
 import model.TitleCredits
 import playback.FilmPreloading
@@ -48,13 +52,17 @@ class CatalogViewModel
         seriesPreloader: SeriesPreloading = SeriesPreloading.Noop,
         filmPreloader: FilmPreloading = FilmPreloading.Noop,
         internal val togetherLive: TogetherLive,
+        // Where the shelves are built: grouping and sorting the whole library,
+        // which on main froze the cold start's countdown. Hilt hands over the
+        // app's one background dispatcher; tests pass their own main.
+        private val shelving: CoroutineDispatcher = Dispatchers.Default,
     ) : ViewModel() {
         private val catalog = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
         private var lastReady: CatalogUiState.Ready? = null
         private var manualUpdate: Job? = null
 
-        /** The sets behind the last Ready state, before any profile's filter. */
-        private var lastSets: List<MediaSet> = emptyList()
+        /** The sets behind the last Ready state, before any profile's filter; the projection reads them on [shelving]. */
+        @Volatile private var lastSets: List<MediaSet> = emptyList()
 
         /**
          * The chosen profile's [ProfileView]. Distinct, so
@@ -166,8 +174,10 @@ class CatalogViewModel
                     get() = listOf(value)
 
                 override suspend fun collect(collector: FlowCollector<CatalogUiState>): Nothing {
+                    // A kids or hidden-section profile's projection builds shelves too.
                     combine(unfiltered, kidsFilter) { shown, view -> project(shown, view) }
                         .distinctUntilChanged()
+                        .flowOn(shelving)
                         .collect(collector)
                     error("unreachable: a StateFlow-backed combine never completes")
                 }
@@ -217,7 +227,7 @@ class CatalogViewModel
         private suspend fun showInstalled() {
             try {
                 val sets = repository.sets()
-                val shelves = shelvesOf(sets)
+                val shelves = withContext(shelving) { shelvesOf(sets) }
                 if (!shelves.hasContent()) return
                 val ready = CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves))
                 lastSets = sets
@@ -245,7 +255,7 @@ class CatalogViewModel
                         // cache holds is still asked: eviction changes it without an event.
                         kept.copy(notice = null, heldIds = heldIdsOf(kept.shelves))
                     } else {
-                        val shelves = shelvesOf(sets)
+                        val shelves = withContext(shelving) { shelvesOf(sets) }
                         val answer =
                             when {
                                 shelves.hasContent() -> CatalogUiState.Ready(shelves, heldIds = heldIdsOf(shelves), notice = failure?.refreshSentence())
@@ -272,7 +282,7 @@ class CatalogViewModel
         private suspend fun regrouped() {
             try {
                 val sets = repository.sets()
-                val shelves = shelvesOf(sets)
+                val shelves = withContext(shelving) { shelvesOf(sets) }
                 val kept = lastReady ?: return
                 if (shelves.hasContent()) {
                     val regrouped = kept.copy(shelves = shelves, heldIds = heldIdsOf(shelves))

@@ -11,7 +11,7 @@ use super::report::truncate;
 use crate::commands::args::PrepareArgs;
 use crate::media::ffmpeg_progress;
 use crate::media::prepare::check::{Measured, check_prepared};
-use crate::media::prepare::paths::{mirrored, working_path};
+use crate::media::prepare::paths::{mirrored, replaced, working_path};
 use crate::media::prepare::plan::PreparePlan;
 use crate::media::streams;
 use crate::paths::file_name;
@@ -37,26 +37,23 @@ pub(super) async fn rewrite_all(
     ) in todo.iter().enumerate()
     {
         let dest = match &args.out {
-            Some(root) => Some(mirrored(file, &args.path, root, args.mp4)?),
-            None => None,
+            Some(root) => Ok(mirrored(file, &args.path, root, args.mp4)?),
+            None => replaced(file, args.mp4),
         };
-        match rewrite(
-            file,
-            *size,
-            plan,
-            keep_audio,
-            dest.as_deref(),
-            args.mp4,
-            ffmpeg_progress::Job {
+        let outcome = async {
+            let dest = dest?;
+            let job = ffmpeg_progress::Job {
                 index,
                 total: todo.len(),
                 name: truncate(&file_name(file), 44),
                 duration: *duration,
-            },
-        )
-        .await
-        {
-            Ok(new_size) => {
+            };
+            let new_size = rewrite(file, *size, plan, keep_audio, &dest, args.mp4, job).await?;
+            Ok::<_, anyhow::Error>((dest, new_size))
+        }
+        .await;
+        match outcome {
+            Ok((dest, new_size)) => {
                 rewritten += 1;
                 println!(
                     "{}: {:.2} GB -> {:.2} GB",
@@ -67,9 +64,13 @@ pub(super) async fn rewrite_all(
                 // Only here: `rewrite` returns `Ok` after the replacement
                 // has passed every check and been renamed into place, so
                 // there is something to delete the original in favour of.
-                if args.delete_source {
+                // A `--replace` that renamed `.mkv` to `.mp4` left the
+                // original beside it, and replacing means it goes too.
+                let renamed = args.replace && dest != *file;
+                if args.delete_source || renamed {
                     match std::fs::remove_file(file) {
-                        Ok(()) => freed += *size,
+                        Ok(()) if args.delete_source => freed += *size,
+                        Ok(()) => {}
                         Err(err) => println!("  {} kept: {err}", file_name(file)),
                     }
                 }
@@ -95,21 +96,26 @@ pub(super) async fn rewrite_all(
     Ok(())
 }
 
-/// Writes the pruned copy, checks it, and only then puts it where it belongs.
+/// Channel layouts ffmpeg's AAC encoder takes. It refuses others outright, and
+/// Dolby Atmos decodes as one (5.1.2, 7.1.4); offered this list, ffmpeg folds
+/// the height channels into 5.1 or 7.1 and leaves the listed ones as they are.
+/// Long-standing names only, so an older ffmpeg parses the list too.
+const AAC_LAYOUTS: &str = "aformat=channel_layouts=mono|stereo|2.1|3.0|3.0(back)|4.0|quad|3.1|5.0|4.1|5.1|6.0|hexagonal|6.1|6.1(back)|7.0|7.1|7.1(wide)|octagonal";
+
+/// Writes the pruned copy, checks it, and only then renames it to
+/// `final_path`, which may be the source itself.
 ///
-/// `dest` of `None` means replacing the source, which is why the working file
-/// always sits beside the source: the rename that finishes the job is only
-/// atomic within one filesystem.
+/// The working file sits beside `final_path` because the rename that
+/// finishes the job is only atomic within one filesystem.
 async fn rewrite(
     source: &Path,
     source_size: u64,
     plan: &PreparePlan,
     keep_audio: &[String],
-    dest: Option<&Path>,
+    final_path: &Path,
     to_mp4: bool,
     job: ffmpeg_progress::Job,
 ) -> Result<u64> {
-    let final_path = dest.unwrap_or(source);
     let working = working_path(final_path);
     if let Some(parent) = working.parent() {
         std::fs::create_dir_all(parent)
@@ -141,7 +147,7 @@ async fn rewrite(
         // `.prepared`, which tells ffmpeg nothing about the format wanted.
         command.args(["-c:v", "copy"]);
         if plan.audio_needs_encoding() {
-            command.args(["-c:a", "aac", "-b:a", "384k"]);
+            command.args(["-c:a", "aac", "-b:a", "384k", "-af", AAC_LAYOUTS]);
         } else {
             command.args(["-c:a", "copy"]);
         }

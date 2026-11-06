@@ -36,6 +36,7 @@ internal const val TvStatsOverlayTag = "tv-stats-overlay"
 @Composable
 internal fun TvStatsOverlay(
     player: Player,
+    title: String,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
     download: suspend () -> DownloadFacts = { DownloadFacts() },
@@ -49,7 +50,7 @@ internal fun TvStatsOverlay(
                 .testTag(TvStatsOverlayTag),
         verticalArrangement = Arrangement.spacedBy(Spacing.extraSmall),
     ) {
-        playbackStats(player, totals, held, download).forEach { stat ->
+        playbackStats(player, title, totals, held, download).forEach { stat ->
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.small)) {
                 Text(
                     text = stat.label,

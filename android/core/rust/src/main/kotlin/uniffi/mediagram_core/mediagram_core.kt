@@ -728,6 +728,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_title_credits(
     ): Int
+    external fun uniffi_mediagram_core_checksum_method_core_fetch_progress(
+    ): Int
     external fun uniffi_mediagram_core_checksum_method_core_next_library_event(
     ): Int
     external fun uniffi_mediagram_core_checksum_method_core_game_night_back(
@@ -920,6 +922,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_title_credits(`ptr`: Long,`key`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_mediagram_core_fn_method_core_fetch_progress(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
     external fun uniffi_mediagram_core_fn_method_core_next_library_event(`ptr`: Long,`handle`: RustBuffer.ByValue,`ownDevice`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_mediagram_core_fn_method_core_game_night_back(`ptr`: Long,
@@ -1227,6 +1231,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_title_credits() and 0xFFFF) != 3782) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_mediagram_core_checksum_method_core_fetch_progress() and 0xFFFF) != 14170) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_mediagram_core_checksum_method_core_next_library_event() and 0xFFFF) != 41951) {
@@ -2131,6 +2138,11 @@ public interface CoreInterface {
      * (v8 and older, or none installed yet) — neither is an error.
      */
     suspend fun `titleCredits`(`key`: kotlin.String): TitleCreditsRecord
+
+    /**
+     * How far the fetch under way has got, or `None` while none runs.
+     */
+    fun `fetchProgress`(): FetchProgress?
 
     /**
      * Waits until the library `handle` names changes in a way worth a
@@ -3222,6 +3234,22 @@ open class Core: Disposable, AutoCloseable, CoreInterface
         UniffiNullRustCallStatusErrorHandler,
     )
     }
+
+
+    /**
+     * How far the fetch under way has got, or `None` while none runs.
+     */override fun `fetchProgress`(): FetchProgress? {
+            return FfiConverterOptionalTypeFetchProgress.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_mediagram_core_fn_method_core_fetch_progress(
+        it,
+        _status)
+}
+    }
+    )
+    }
+
 
 
     /**
@@ -5212,6 +5240,59 @@ public object FfiConverterTypeEarnedAchievement: FfiConverterRustBuffer<EarnedAc
     override fun write(value: EarnedAchievement, buf: ByteBuffer) {
             FfiConverterString.write(value.`id`, buf)
             FfiConverterLong.write(value.`earnedAt`, buf)
+    }
+}
+
+
+
+/**
+ * How far a fetch run has got: `done` of `total` items of `step`, which
+ * began `step_elapsed_ms` ago — enough for the caller to estimate the rest
+ * from the step's own pace.
+ */
+data class FetchProgress (
+    var `step`: FetchStep
+    ,
+    var `done`: kotlin.UInt
+    ,
+    var `total`: kotlin.UInt
+    ,
+    var `stepElapsedMs`: kotlin.ULong
+
+){
+
+
+
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFetchProgress: FfiConverterRustBuffer<FetchProgress> {
+    override fun read(buf: ByteBuffer): FetchProgress {
+        return FetchProgress(
+            FfiConverterTypeFetchStep.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FetchProgress) = (
+            FfiConverterTypeFetchStep.allocationSize(value.`step`) +
+            FfiConverterUInt.allocationSize(value.`done`) +
+            FfiConverterUInt.allocationSize(value.`total`) +
+            FfiConverterULong.allocationSize(value.`stepElapsedMs`)
+    )
+
+    override fun write(value: FetchProgress, buf: ByteBuffer) {
+            FfiConverterTypeFetchStep.write(value.`step`, buf)
+            FfiConverterUInt.write(value.`done`, buf)
+            FfiConverterUInt.write(value.`total`, buf)
+            FfiConverterULong.write(value.`stepElapsedMs`, buf)
     }
 }
 
@@ -7214,6 +7295,53 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
 
 
 /**
+ * The walks a fetch run makes, in order; see `enrich::fetch::fetch_into`.
+ */
+
+enum class FetchStep {
+
+    /**
+     * One provider request per title, for its poster and backdrop paths.
+     */
+    LOOKING_UP,
+    /**
+     * One download per poster or backdrop not already on this device.
+     */
+    DOWNLOADING,
+    /**
+     * One description per title, answered from the lookups' disk cache.
+     */
+    DESCRIBING;
+
+
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFetchStep: FfiConverterRustBuffer<FetchStep> {
+    override fun read(buf: ByteBuffer) = try {
+        FetchStep.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FetchStep) = 4UL
+
+    override fun write(value: FetchStep, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * First played, watched to the end, or started over after that.
  */
 
@@ -7996,6 +8124,38 @@ public object FfiConverterOptionalTypeAppRelease: FfiConverterRustBuffer<AppRele
         } else {
             buf.put(1)
             FfiConverterTypeAppRelease.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFetchProgress: FfiConverterRustBuffer<FetchProgress?> {
+    override fun read(buf: ByteBuffer): FetchProgress? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFetchProgress.read(buf)
+    }
+
+    override fun allocationSize(value: FetchProgress?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFetchProgress.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FetchProgress?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFetchProgress.write(value, buf)
         }
     }
 }

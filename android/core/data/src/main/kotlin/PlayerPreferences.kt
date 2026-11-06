@@ -14,6 +14,11 @@ const val SUBTITLE_PREFERENCE = "subtitle"
 const val AUDIO_PREFERENCE = "audio"
 const val SPEED_PREFERENCE = "speed"
 const val FRAMING_PREFERENCE = "framing"
+
+/** Stored as [DEINTERLACE_ON] when the viewer switched it on for a show; off is no row at all. */
+const val DEINTERLACE_PREFERENCE = "deinterlace"
+const val DEINTERLACE_ON = "on"
+
 const val CUE_SIZE_PREFERENCE = "cue-size"
 const val CUE_BACKING_PREFERENCE = "cue-backing"
 const val CUE_OFFSET_PREFERENCE = "cue-offset"

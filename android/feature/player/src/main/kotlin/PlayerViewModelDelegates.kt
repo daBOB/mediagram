@@ -51,6 +51,8 @@ fun PlayerViewModel.nudgeSubtitleOffset(steps: Int) = choicesController.nudgeSub
 fun PlayerViewModel.resetSubtitleOffset() = choicesController.resetSubtitleOffset()
 fun PlayerViewModel.chooseFraming(next: Framing) = choicesController.chooseFraming(next)
 
+fun PlayerViewModel.chooseDeinterlace(on: Boolean) = choicesController.chooseDeinterlace(on)
+
 fun PlayerViewModel.toggleWatchlist() = marksController.toggleWatchlist()
 fun PlayerViewModel.setKidsMark(age: Int?) = marksController.setKidsMark(age)
 fun PlayerViewModel.setInList(listId: String, included: Boolean) = marksController.setInList(listId, included)

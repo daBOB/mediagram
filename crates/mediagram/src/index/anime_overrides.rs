@@ -32,7 +32,13 @@ pub fn get(conn: &Connection, kind: Kind, id: u64) -> rusqlite::Result<Option<bo
 /// it back to automatic but keeps the row, stamped with `at` — a Unix
 /// timestamp — so a merge can tell a clear apart from nothing having
 /// happened yet.
-pub fn set(conn: &Connection, kind: Kind, id: u64, anime: Option<bool>, at: i64) -> rusqlite::Result<()> {
+pub fn set(
+    conn: &Connection,
+    kind: Kind,
+    id: u64,
+    anime: Option<bool>,
+    at: i64,
+) -> rusqlite::Result<()> {
     conn.execute(
         "INSERT INTO anime_overrides(source, kind, id, anime, set_at)
          VALUES (?1, ?2, ?3, ?4, ?5)

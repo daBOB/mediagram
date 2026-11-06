@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="/styles/appearance.css" />
     <link rel="stylesheet" href="/styles/library-controls.css" />
     <link rel="stylesheet" href="/styles/playback.css" />
+    <link rel="stylesheet" href="/styles/deinterlace.css" />
     <link rel="stylesheet" href="/styles/player-card.css" />
     <link rel="stylesheet" href="/styles/together.css" />
     <link rel="stylesheet" href="/styles/episode-sidebar.css" />
@@ -138,6 +139,11 @@
            timer. `preload="auto"` with no autoplay anywhere — opening a title
            fills the buffer and then waits for the viewer. -->
       <video id="video" preload="auto" crossorigin="anonymous"></video>
+      <!-- The deinterlaced picture, drawn over the video while that switch is on
+           (lib/playback/deinterlace.js); the cues are drawn above it for the
+           same reason, since the browser's own sit inside the video. -->
+      <canvas id="deinterlace" class="deinterlace" hidden></canvas>
+      <p id="deinterlace-cues" class="deinterlace-cues" hidden></p>
 
       <!-- While a title opens, until its first frame: the film leader, and the
            words for a screen reader. The status region is always there and

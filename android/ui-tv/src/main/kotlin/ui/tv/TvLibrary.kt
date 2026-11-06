@@ -229,7 +229,7 @@ internal fun TvLibrary(
                 // Nothing open: the shelves.
                 top == null ->
                     TvLibraryHomeFrame(
-                        saved, catalogState, profile, fetchState.running, restore, here, at, catalogViewModel, menu,
+                        saved, catalogState, profile, fetchState.running, fetchState.progress, restore, here, at, catalogViewModel, menu,
                         pendingRail, { pendingRail = null }, pendingTab, { pendingTab = null },
                     ) { menuOpen = true }
 

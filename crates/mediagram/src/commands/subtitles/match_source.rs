@@ -72,7 +72,9 @@ pub fn match_sources(files: &[SourceFile], sets: &[SetRow]) -> Vec<Match> {
 
     for (i, file) in files.iter().enumerate() {
         let verdict = match by_size.get(&file.size) {
-            Some(candidates) if candidates.len() == 1 => Verdict::Matched(candidates[0].set_id.clone()),
+            Some(candidates) if candidates.len() == 1 => {
+                Verdict::Matched(candidates[0].set_id.clone())
+            }
             Some(_) => Verdict::Ambiguous,
             None if file.is_mp4 => fallback_candidate(file, sets)
                 .map(Verdict::Fallback)
@@ -131,11 +133,18 @@ fn name_matches(guess: &Guess, set: &SetRow) -> bool {
         (Some(season), Some(episode)) => {
             set.season == Some(season)
                 && episode_matches(set.episode, episode)
-                && set.show.as_deref().is_some_and(|show| same_name(show, &guess.title))
+                && set
+                    .show
+                    .as_deref()
+                    .is_some_and(|show| same_name(show, &guess.title))
         }
-        _ => guess
-            .year
-            .is_some_and(|year| set.year == Some(year) && set.title.as_deref().is_some_and(|t| same_name(t, &guess.title))),
+        _ => guess.year.is_some_and(|year| {
+            set.year == Some(year)
+                && set
+                    .title
+                    .as_deref()
+                    .is_some_and(|t| same_name(t, &guess.title))
+        }),
     }
 }
 

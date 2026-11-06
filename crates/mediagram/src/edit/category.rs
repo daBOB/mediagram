@@ -52,7 +52,8 @@ pub fn normalise(raw: &str, in_use: &[String]) -> Result<(String, Option<String>
 /// `add-course`/`add-docu` before any upload starts, so an invalid
 /// `--category` fails the same way whether or not `--dry-run` was given.
 pub fn planned(kind: Kind, name: Option<&str>, raw: &str) -> Result<Planned> {
-    let (department, item_key) = mlib_spec::category_key::category_key(kind.as_str(), name, None).ok_or_else(|| {
+    let (department, item_key) = mlib_spec::category_key::category_key(kind.as_str(), name, None)
+        .ok_or_else(|| {
         anyhow::anyhow!(
             "{:?} has no letters or digits a category can be filed under",
             name.unwrap_or("")
@@ -102,8 +103,12 @@ fn key_for(row: &SetRow) -> Result<(&'static str, String)> {
         );
     }
     let name = row.show.as_deref().or(row.title.as_deref());
-    mlib_spec::category_key::category_key(row.kind.as_str(), name, None)
-        .ok_or_else(|| anyhow::anyhow!("set {} has no name a category can be filed under", row.set_id))
+    mlib_spec::category_key::category_key(row.kind.as_str(), name, None).ok_or_else(|| {
+        anyhow::anyhow!(
+            "set {} has no name a category can be filed under",
+            row.set_id
+        )
+    })
 }
 
 /// "(the course: every lesson and document in it)", "(the collection: every
@@ -139,7 +144,11 @@ pub fn run(conn: &Connection, row: &SetRow, requested: Option<&str>, dry_run: bo
         }
     };
 
-    let name = row.show.as_deref().or(row.title.as_deref()).unwrap_or(&row.set_id);
+    let name = row
+        .show
+        .as_deref()
+        .or(row.title.as_deref())
+        .unwrap_or(&row.set_id);
     println!(
         "set {} — {name} ({})",
         row.set_id,

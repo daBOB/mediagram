@@ -232,6 +232,31 @@ pub fn make_mkv(dir: &Path, name: &str, subs: &[Sub]) -> Option<PathBuf> {
     Some(out)
 }
 
+/// A tiny Matroska file whose German audio is silent FLAC in `layout`, which
+/// `prepare --mp4` has to re-encode. FLAC because Matroska keeps its channel
+/// layout; PCM would read back as whatever the channel count implies.
+pub fn make_mkv_with_audio_layout(dir: &Path, name: &str, layout: &str) -> Option<PathBuf> {
+    if !ffmpeg_required(name) {
+        return None;
+    }
+    let out = dir.join(name);
+    let status = Command::new("ffmpeg")
+        .args(["-v", "error", "-y"])
+        .args(["-f", "lavfi", "-i", "testsrc=duration=3:size=64x64:rate=10"])
+        .args(["-f", "lavfi", "-i"])
+        .arg(format!(
+            "anullsrc=channel_layout={layout}:sample_rate=48000"
+        ))
+        .args(["-t", "3", "-map", "0:v", "-map", "1:a"])
+        .args(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "flac"])
+        .args(["-metadata:s:a:0", "language=ger"])
+        .arg(&out)
+        .status()
+        .expect("spawning ffmpeg");
+    assert!(status.success(), "ffmpeg could not build {name}");
+    Some(out)
+}
+
 /// Every file name in `dir`, sorted.
 pub fn listing(dir: &Path) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(dir)

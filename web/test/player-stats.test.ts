@@ -17,10 +17,11 @@ const noSize = { width: 0, height: 0 };
 const named = (rows: { name: string; value: string }[]) => Object.fromEntries(rows.map((row) => [row.name, row.value]));
 
 describe("the rows", () => {
-  test("video, audio, buffer and cache, in Android's order and words, with no dropped row while none are", () => {
+  test("title, video, audio, buffer and cache, in Android's order and words, with no dropped row while none are", () => {
     const rows = statsRows({ fields: fields(), set: film, audio: null, size: { width: 1920, height: 800 } });
-    expect(rows.map((row) => row.name)).toEqual(["video", "audio", "buffer", "cache"]);
+    expect(rows.map((row) => row.name)).toEqual(["title", "video", "audio", "buffer", "cache"]);
     expect(named(rows)).toEqual({
+      title: "A Title",
       video: "1920×800 hevc HDR10 12 Mbps",
       audio: "eac3",
       buffer: "0:52 ahead",
@@ -35,6 +36,11 @@ describe("the rows", () => {
     expect(rows.video).toBe("1080p hevc HDR10 12 Mbps");
   });
 
+  test("an episode is named show · episode · title, as the top bar names it", () => {
+    const episode = catalogSet({ kind: "ep", show: "Final Space", season: 1, episode: "3", title: "Chapter Three" });
+    expect(named(statsRows({ fields: fields(), set: episode, audio: null, size: noSize })).title).toBe("Final Space · S1E3 · Chapter Three");
+  });
+
   test("a title held in full says cached, and dropped frames appear once there are some", () => {
     const rows = named(statsRows({ fields: fields({ held: true, dropped: 7 }), set: film, audio: null, size: noSize }));
     expect(rows.buffer).toBe("cached");
@@ -44,7 +50,7 @@ describe("the rows", () => {
   });
 
   test("a row with nothing known is absent, never blank", () => {
-    const bare = catalogSet({ quality: null, hdr: null, vcodec: null, acodec: null, total: 0, duration: null });
+    const bare = catalogSet({ title: null, quality: null, hdr: null, vcodec: null, acodec: null, total: 0, duration: null });
     const rows = statsRows({ fields: fields(), set: bare, audio: null, size: noSize });
     expect(rows.map((row) => row.name)).toEqual(["buffer", "cache"]);
     expect(statsRows({ fields: fields(), set: null, audio: null, size: noSize }).map((row) => row.name)).toEqual(["buffer", "cache"]);
@@ -68,7 +74,7 @@ describe("the overlay", () => {
     expect(panel.hidden).toBe(false);
     expect(env.node("stats-toggle").getAttribute("aria-pressed")).toBe("true");
     expect(panel.children.map((node) => node.textContent)).toEqual([
-      "video", "1080p hevc HDR10 12 Mbps", "audio", "eac3", "buffer", "0:52 ahead", "cache", "ready · 0:52 ahead",
+      "title", "A Title", "video", "1080p hevc HDR10 12 Mbps", "audio", "eac3", "buffer", "0:52 ahead", "cache", "ready · 0:52 ahead",
     ]);
     env.node("stats-toggle").fire("click");
     expect(panel.hidden).toBe(true);

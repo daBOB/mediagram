@@ -142,7 +142,10 @@ fn a_database_at_v11_gains_the_categories_table_on_upgrade() {
             [],
         )
         .unwrap();
-        assert!(!has_table(&conn, "categories"), "v11 has no categories table");
+        assert!(
+            !has_table(&conn, "categories"),
+            "v11 has no categories table"
+        );
     }
 
     let upgraded = db::open(dir.path()).unwrap();
@@ -182,14 +185,26 @@ fn a_database_at_v12_gains_the_subtitle_tables_on_upgrade() {
             [],
         )
         .unwrap();
-        assert!(!has_table(&conn, "subtitle_files"), "v12 has no subtitle_files table");
-        assert!(!has_table(&conn, "subtitle_tracks"), "v12 has no subtitle_tracks table");
+        assert!(
+            !has_table(&conn, "subtitle_files"),
+            "v12 has no subtitle_files table"
+        );
+        assert!(
+            !has_table(&conn, "subtitle_tracks"),
+            "v12 has no subtitle_tracks table"
+        );
     }
 
     let upgraded = db::open(dir.path()).unwrap();
 
-    assert!(has_table(&upgraded, "subtitle_files"), "upgrade adds subtitle_files");
-    assert!(has_table(&upgraded, "subtitle_tracks"), "upgrade adds subtitle_tracks");
+    assert!(
+        has_table(&upgraded, "subtitle_files"),
+        "upgrade adds subtitle_files"
+    );
+    assert!(
+        has_table(&upgraded, "subtitle_tracks"),
+        "upgrade adds subtitle_tracks"
+    );
     assert_eq!(schema_version(&upgraded), mlib_spec::schema::SCHEMA_VERSION);
     let kept: i64 = upgraded
         .query_row("SELECT COUNT(*) FROM sets", [], |r| r.get(0))

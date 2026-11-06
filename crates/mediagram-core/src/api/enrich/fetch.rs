@@ -4,14 +4,14 @@
 //! a parameter so a test can drive it with a stub.
 
 use mediagram_tmdb::details::{details, from_details};
-use mediagram_tmdb::poster_files::{already_held, download_into};
+use mediagram_tmdb::poster_files::{already_held, download_each};
 use mediagram_tmdb::posters::{poster_key, resolve_backdrops, resolve_posters};
 use mediagram_tmdb::tmdb_client::TmdbApi;
 use mlib_spec::Kind;
 use rusqlite::Connection;
 
 use super::artwork::FetchPlan;
-use crate::dto::FetchReport;
+use crate::dto::{FetchReport, FetchStep};
 
 use super::details as store;
 use crate::api::Core;
@@ -42,12 +42,24 @@ pub async fn fetch_into(
         language,
         custom_keys,
     } = plan;
+    let meter = &core.fetch_meter;
+    let _run = meter.run();
+    // One title at a time, so the meter can count titles; `titles` holds each
+    // once, which is all the resolvers' own de-duplication was for. The
+    // backdrop lookup reads the payload the poster lookup just cached.
+    meter.start(FetchStep::LookingUp, titles.len());
+    let mut posters = Vec::new();
+    let mut backdrops = Vec::new();
+    for (done, title) in titles.iter().enumerate() {
+        meter.set_done(done);
+        let one = std::slice::from_ref(title);
+        posters.extend(resolve_posters(api, one).await);
+        backdrops.extend(resolve_backdrops(api, one, backdrop_width).await);
+    }
     // An image the library's own `artwork` table holds was chosen by hand and
     // is what every surface shows for its key; a downloaded one would be
     // written over the copy materialised from the table.
-    let mut posters = resolve_posters(api, titles).await;
     posters.retain(|poster| !custom_keys.contains(&poster.key));
-    let mut backdrops = resolve_backdrops(api, titles, backdrop_width).await;
     backdrops.retain(|poster| !custom_keys.contains(&poster.key));
     let posters_held = already_held(&posters, artwork_dir) as u32;
     let backdrops_held = already_held(&backdrops, artwork_dir) as u32;
@@ -60,7 +72,8 @@ pub async fn fetch_into(
     // A hard failure here (the artwork directory could not even be created)
     // leaves every resolved ref undownloaded rather than panicking — the
     // catalog is the product, the artwork a convenience.
-    let written = download_into(http, &refs, artwork_dir)
+    meter.start(FetchStep::Downloading, refs.len());
+    let written = download_each(http, &refs, artwork_dir, |done| meter.set_done(done))
         .await
         .unwrap_or_else(|err| {
             tracing::warn!(error = %format_args!("{err:#}"), "the artwork directory is unavailable");
@@ -68,7 +81,7 @@ pub async fn fetch_into(
         });
     // What the run added is what is held now beyond what was held before: a
     // wider image that failed to download leaves the old one in place, which
-    // `download_into` still reports as landed but nothing was fetched.
+    // `download_each` still reports as landed but nothing was fetched.
     let posters_fetched = (already_held(&refs[..posters_len], artwork_dir) as u32)
         .saturating_sub(posters_held);
     let backdrops_fetched = (already_held(&refs[posters_len..], artwork_dir) as u32)
@@ -129,7 +142,9 @@ async fn record_descriptions(
 ) -> Described {
     let mut described = Described::default();
     let mut opened: Option<Connection> = None;
-    for (kind, id) in titles {
+    core.fetch_meter.start(FetchStep::Describing, titles.len());
+    for (done, (kind, id)) in titles.iter().enumerate() {
+        core.fetch_meter.set_done(done);
         let key = poster_key(*kind, *id);
         if store::title_info(core, key.clone()).is_some() {
             described.already_known += 1;

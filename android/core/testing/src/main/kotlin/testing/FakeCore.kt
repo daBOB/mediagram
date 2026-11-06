@@ -11,6 +11,7 @@ import uniffi.mediagram_core.AuthOutcome
 import uniffi.mediagram_core.CatalogFacts
 import uniffi.mediagram_core.CoreException
 import uniffi.mediagram_core.CoreInterface
+import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import uniffi.mediagram_core.FranchiseRecord
 import uniffi.mediagram_core.GameNightConfig
@@ -127,6 +128,8 @@ class FakeCore(
     var failure: Throwable? = null,
     /** Holds [fetchMissing] suspended until completed — the only way to prove a second call while one is in flight is refused. */
     var gate: CompletableDeferred<Unit>? = null,
+    /** What [fetchProgress] answers, as a run's own walk would set it. */
+    var progress: FetchProgress? = null,
     /** What [close] throws instead of succeeding, or `null` — the provider's close fence retries on failure. */
     var closeFailure: Throwable? = null,
     /** What [retireLocalState] throws instead of succeeding, or `null` — the provider's close fence retries on failure. */
@@ -433,6 +436,8 @@ class FakeCore(
         val clampedLen = minOf(len.toLong(), totalSize - offsetAsLong).toInt()
         return bytesOf(offsetAsLong, clampedLen)
     }
+
+    override fun fetchProgress(): FetchProgress? = progress
 
     override suspend fun fetchMissing(tmdbKey: String, language: String, backdropWidth: UInt): FetchReport {
         fetchCalls++

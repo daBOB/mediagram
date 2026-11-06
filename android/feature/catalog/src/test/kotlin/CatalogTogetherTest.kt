@@ -65,7 +65,7 @@ class CatalogTogetherTest {
     ): CatalogViewModel {
         val repository = FakeCatalogRepository(given = listOf(family, grown, episode))
         val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together)
+        return CatalogViewModel(repository, watch, LibraryUpdateCoordinator(repository, enrichment), togetherLive = together, shelving = Dispatchers.Main.immediate)
     }
 
     @After

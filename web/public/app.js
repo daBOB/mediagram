@@ -318,8 +318,8 @@ async function openTitle(set, queue, options, request) {
   if (request !== pendingOpen || !mayOpen) return mayOpen;
 
   // `autoplay` is set only by the player handing over to what follows, and
-  // says which kind of start that is. Opening a title from a shelf never
-  // carries one, so it loads and waits for the viewer as it always has.
+  // says which kind of start that is. Opening a title from a shelf carries
+  // none, and the player warms it up and starts it once it holds enough.
   const autoplay = options.autoplay ?? null;
   const { freshResume } = options;
 

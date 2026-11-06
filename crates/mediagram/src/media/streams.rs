@@ -53,14 +53,42 @@ pub fn parse_probe(json: &str) -> Result<Probed> {
 
 /// Probes a file on disk.
 pub async fn probe(path: &Path) -> Result<Probed> {
-    from_report(probe::run(path).await?)
+    let report = probe::run(path).await?;
+    let declared = media_duration(&report).is_some();
+    let mut probed = from_report(report)?;
+    if !declared
+        && probed.duration > 0.0
+        // Without it the container's duration stands, as it did before.
+        && let Some(end) = probe::media_end(path, probed.duration)
+            .await
+            .unwrap_or_else(|err| {
+                tracing::warn!("probe: last frames of {} not read: {err:#}", path.display());
+                None
+            })
+    {
+        probed.duration = end;
+    }
+    Ok(probed)
+}
+
+/// How long the picture and sound run, where their streams declare it. The
+/// container's own duration also counts a subtitle cue left running past the
+/// last frame, which would make a faithful copy look truncated.
+fn media_duration(report: &Report) -> Option<f64> {
+    report
+        .streams
+        .iter()
+        .filter(|s| matches!(s.codec_type.as_deref(), Some("video" | "audio")))
+        .filter_map(probe::RawStream::duration)
+        .reduce(f64::max)
 }
 
 fn from_report(report: Report) -> Result<Probed> {
     if report.streams.is_empty() {
         bail!("ffprobe reported no streams");
     }
-    let (duration, size) = (report.duration().unwrap_or(0.0), report.size());
+    let duration = media_duration(&report).or(report.duration()).unwrap_or(0.0);
+    let size = report.size();
     let streams = report
         .streams
         .into_iter()
