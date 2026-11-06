@@ -129,9 +129,9 @@ export function mountTransport({ video, menus, onPlay, onPause, onSeekTo, filmTi
    * one into the next episode would trap a viewer in a stretch of a film they
    * have not started.
    */
-  function recallFraming() {
+  function recallFraming(options) {
     loop = { ...NO_LOOP };
-    frame.recall();
+    frame.recall(options);
   }
 
   /**

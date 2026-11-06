@@ -44,7 +44,14 @@ data class PlayerChoices(
     val subtitleOffsetMs: Long = 0L,
     /** How the picture sits in the window — the sheet's own row, or a pinch. */
     val framing: Framing = Framing.Default,
+    /** Whether the viewer switched the deinterlacing filter on for this show — never on unless [deinterlaceOffered]. */
+    val deinterlace: Boolean = false,
+    /** Whether the open title can be deinterlaced: not HDR, which the filter's video graph would tone-map. */
+    val deinterlaceOffered: Boolean = false,
 ) {
+    /** The Framing menu's Deinterlace row: its state, or null when the title is not offered it. */
+    val deinterlaceRow: Boolean? get() = deinterlace.takeIf { deinterlaceOffered }
+
     /** Whether the CC control has a regular track to act on. */
     val ccVisible: Boolean get() = subtitleOptions.isNotEmpty()
 

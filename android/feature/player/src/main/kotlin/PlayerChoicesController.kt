@@ -1,6 +1,7 @@
 package player
 
 import data.AUDIO_PREFERENCE
+import data.DEINTERLACE_PREFERENCE
 import data.FRAMING_PREFERENCE
 import data.PROFILE_SCOPE
 import data.SPEED_PREFERENCE
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import model.Kind
 import model.MediaSet
+import model.hdrLabel
 import playback.AudioOption
 import playback.Framing
 import playback.SubtitleTrackSource
@@ -77,6 +79,13 @@ class PlayerChoicesController(
         _choices.value = _choices.value.copy(framing = framing)
     }
 
+    private val deinterlaceChoice = DeinterlaceController(launchScope, preferences) { on ->
+        // HDR is never filtered, whatever is remembered for the show.
+        val effective = on && _choices.value.deinterlaceOffered
+        _choices.value = _choices.value.copy(deinterlace = effective)
+        handle.setDeinterlace(effective)
+    }
+
     /** Where [setSpeed] remembers a choice; null before the open title's set resolves. */
     private var openScope: String? = null
 
@@ -98,6 +107,7 @@ class PlayerChoicesController(
         subtitleChoice.reset()
         subtitleStyle.reset()
         framingChoice.reset()
+        deinterlaceChoice.reset()
     }
 
     /** Detaches the audio listener this controller's [audioChoice] holds on the player. */
@@ -127,6 +137,7 @@ class PlayerChoicesController(
         val set = orDefault(null) { catalogRepository.mediaSet(setId) }
         if (session.openSetId != setId) return
         _openSet.value = set
+        _choices.value = _choices.value.copy(deinterlaceOffered = hdrLabel(set?.hdr) == null)
         val scope = scopeOf(set) ?: "set:$setId"
         openScope = scope
         // Ahead of the preference round trip below: a title's own tracks
@@ -160,6 +171,7 @@ class PlayerChoicesController(
         subtitleChoice.onPreferencesLoaded(scope, profileId, loaded[SUBTITLE_PREFERENCE], profileSubtitle)
         subtitleStyle.onPreferencesLoaded(scope, profileId, loaded)
         framingChoice.onPreferencesLoaded(scope, profileId, loaded[FRAMING_PREFERENCE])
+        deinterlaceChoice.onPreferencesLoaded(scope, profileId, loaded[DEINTERLACE_PREFERENCE])
     }
 
     /** Applies a chosen speed and remembers it for this show; a no-op write with no profile chosen. */
@@ -188,6 +200,9 @@ class PlayerChoicesController(
 
     /** The viewer picked a framing by hand — the sheet's own row, or a pinch. */
     fun chooseFraming(next: Framing) = framingChoice.choose(next)
+
+    /** The viewer flipped the Framing menu's Deinterlace row. */
+    fun chooseDeinterlace(on: Boolean) = deinterlaceChoice.choose(on)
 
     /** Fire-and-forget: a core round trip failing to remember a speed is not a reason to crash the player. */
     private fun rememberSpeed(scope: String, rate: Float) {

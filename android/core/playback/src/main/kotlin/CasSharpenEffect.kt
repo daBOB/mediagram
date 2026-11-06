@@ -40,7 +40,7 @@ class CasSharpenEffect(private val sharpness: Float) : GlEffect {
 private class CasShaderProgram(private val peak: Float, useHdr: Boolean) :
     BaseGlShaderProgram(/* useHighPrecisionColorComponents = */ useHdr, /* texturePoolCapacity = */ 1) {
     private val program = try {
-        GlProgram(VERTEX, FRAGMENT).apply {
+        GlProgram(FULLSCREEN_VERTEX, FRAGMENT).apply {
             setBufferAttribute("aFramePosition", GlUtil.getNormalizedCoordinateBounds(), GlUtil.HOMOGENEOUS_COORDINATE_VECTOR_SIZE)
         }
     } catch (e: GlUtil.GlException) {
@@ -79,7 +79,7 @@ private class CasShaderProgram(private val peak: Float, useHdr: Boolean) :
     }
 }
 
-private const val VERTEX = """
+internal const val FULLSCREEN_VERTEX = """
 attribute vec4 aFramePosition;
 varying vec2 vUv;
 void main() {

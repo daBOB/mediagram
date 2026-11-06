@@ -115,7 +115,7 @@ internal fun CastRemote(
                     onSpeed = player::setPlaybackSpeed,
                     onAudio = { onAudio(ui.tracks.audio[it.trackIndex].id) },
                     onSubtitle = { onText(if (it == SUBTITLES_OFF) "" else it) },
-                    onSize = {}, onBacking = {}, onNudge = {}, onResetOffset = {}, onFraming = {},
+                    onSize = {}, onBacking = {}, onNudge = {}, onResetOffset = {}, onFraming = {}, onDeinterlace = {},
                 ),
             )
         }

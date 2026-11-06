@@ -1,0 +1,32 @@
+/* Over the video, with the same layout; framing-control copies its inline styles across. */
+.deinterlace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.deinterlace[hidden], .deinterlace-cues[hidden] { display: none; }
+.deinterlace-cues {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 6%;
+  margin: 0;
+  text-align: center;
+  white-space: pre-line;
+  font-size: clamp(1rem, 2.4vw, 2rem);
+  line-height: 1.4;
+  color: #fff;
+  pointer-events: none;
+}
+/* Size, backing and shadow come from subtitle-style's rule for these spans. */
+.deinterlace-cues > span { padding: 0 0.25em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+dialog.with-notes .deinterlace,
+dialog.with-notes .deinterlace-cues { right: var(--notes-width); }
+@media (max-width: 767px) {
+  dialog.with-notes .deinterlace,
+  dialog.with-notes .deinterlace-cues { right: 0; }
+}

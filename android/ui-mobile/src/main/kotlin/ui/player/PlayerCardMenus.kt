@@ -60,6 +60,7 @@ internal class CardMenuActions(
     val onNudge: (Int) -> Unit,
     val onResetOffset: () -> Unit,
     val onFraming: (Framing) -> Unit,
+    val onDeinterlace: (Boolean) -> Unit,
 )
 
 /**
@@ -100,7 +101,13 @@ internal fun CardMenuPanel(
             when (menu) {
                 CardMenu.Speed -> SpeedSection(speed = choices.speed, onChosen = { actions.onSpeed(it); onDone() })
                 CardMenu.Audio -> AudioSection(options = choices.audioOptions, onChosen = { actions.onAudio(it); onDone() })
-                CardMenu.Framing -> FramingSection(framing = choices.framing, onChosen = { actions.onFraming(it); onDone() })
+                CardMenu.Framing ->
+                    FramingSection(
+                        framing = choices.framing,
+                        onChosen = { actions.onFraming(it); onDone() },
+                        deinterlace = choices.deinterlaceRow,
+                        onDeinterlace = { actions.onDeinterlace(it); onDone() },
+                    )
                 CardMenu.Subtitles -> {
                     if (choices.subtitleOptions.isNotEmpty()) {
                         SubtitleSection(options = choices.subtitleOptions, onChosen = { actions.onSubtitle(it); onDone() })

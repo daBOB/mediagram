@@ -72,6 +72,8 @@ pub struct Core {
     /// The newest watch-together message the listener heard, apart from
     /// `events` so reading it never waits on a listen.
     together_heard: std::sync::Mutex<Option<together::TogetherMessage>>,
+    /// How far the fetch under way has got — see `Core::fetch_progress`.
+    fetch_meter: enrich::progress::FetchMeter,
 }
 
 #[uniffi::export(async_runtime = "tokio")]
@@ -91,6 +93,7 @@ impl Core {
             sync_memo: AsyncMutex::new(crate::state::sync::SyncMemo::default()),
             search_cache: std::sync::Mutex::new(search::cache::SearchCache::default()),
             together_heard: std::sync::Mutex::new(None),
+            fetch_meter: enrich::progress::FetchMeter::default(),
         })
     }
 

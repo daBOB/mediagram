@@ -29,8 +29,14 @@ describe("the rule a size and a backing produce", () => {
   test("a shadow is two shadows", () => {
     // A soft drop for depth and a tight one to hold the letterform together
     // against a bright shot, which a single blur does not do.
-    const rule = cueStyle({ backing: "shadow" });
-    expect(rule.match(/rgba\(0, 0, 0, 0\.9/g)).toHaveLength(2);
+    const [native] = cueStyle({ backing: "shadow" }).split(" .deinterlace-cues");
+    expect(native?.match(/rgba\(0, 0, 0, 0\.9/g)).toHaveLength(2);
+  });
+
+  test("the deinterlace filter's own cue layer gets the same rule as the native cues", () => {
+    const rule = cueStyle({ size: 140, backing: "box" });
+    const body = rule.slice(rule.indexOf("{"), rule.indexOf("}") + 1);
+    expect(rule).toBe(`video::cue ${body} .deinterlace-cues > span ${body}`);
   });
 
   test("and a box has no shadow competing with it", () => {

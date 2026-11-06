@@ -28,6 +28,8 @@ internal fun CatalogScreen(
     state: CatalogUiState,
     fetching: Boolean,
     chosenTab: CatalogTab,
+    /** How far the fetch under way is, for a bar that fills; `null` draws one that only moves. */
+    fetchFraction: Float? = null,
     onTabChange: (CatalogTab) -> Unit,
     onOpenTitle: (setId: String) -> Unit,
     onOpenCollection: (key: String) -> Unit,
@@ -68,7 +70,7 @@ internal fun CatalogScreen(
         is CatalogUiState.KidsEmpty -> CenteredMessage(state.message)
         is CatalogUiState.Failed -> CenteredMessage(state.message)
         is CatalogUiState.Ready -> Shelves(
-            state = state, fetching = fetching, chosenTab = chosenTab, onTabChange = onTabChange,
+            state = state, fetching = fetching, fetchFraction = fetchFraction, chosenTab = chosenTab, onTabChange = onTabChange,
             onOpenTitle = onOpenTitle, onOpenCollection = onOpenCollection, onOpenList = onOpenList,
             onCreateList = onCreateList, onOpenGenre = onOpenGenre, onOpenGenresIndex = onOpenGenresIndex,
             onOpenLatest = onOpenLatest, onOpenMoviesPage = onOpenMoviesPage, onOpenFranchise = onOpenFranchise,

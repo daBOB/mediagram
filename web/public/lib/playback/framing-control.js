@@ -8,14 +8,22 @@
  * `framing.js`'s; this is the element and the button.
  */
 
+import { mountDeinterlace } from "./deinterlace.js";
 import { DEFAULT_FRAMING, framingBox, framingLabel, framingStyle, framings, nextFraming } from "./framing.js";
+
+/** The menu row's value; no framing is called this. */
+const DEINTERLACE = "deinterlace";
 
 /**
  * @param {{video: HTMLVideoElement, button: HTMLElement,
  *   menus: ReturnType<typeof import("./player-menus.js").mountPlayerMenus>,
- *   recall?: (name: string) => string|null, remember?: (name: string, value: string) => void}} deps
+ *   recall?: (name: string) => string|null, remember?: (name: string, value: string) => void,
+ *   deinterlace?: ReturnType<typeof import("./deinterlace.js").mountDeinterlace>}} deps
  */
-export function mountFramingControl({ video, button, menus, recall, remember }) {
+export function mountFramingControl({ video, button, menus, recall, remember,
+  deinterlace = mountDeinterlace({ video, canvas: document.getElementById("deinterlace"), cues: document.getElementById("deinterlace-cues") }) }) {
+  /** Whether this title may be deinterlaced at all: needs WebGL, and not an HDR picture. */
+  let deinterlaceOffered = false;
   /** How the picture sits in the window. Per title, not per player. */
   let framing = DEFAULT_FRAMING;
 
@@ -38,6 +46,14 @@ export function mountFramingControl({ video, button, menus, recall, remember }) 
     video.style.width = box ? `${box.width}px` : "";
     video.style.height = box ? `${box.height}px` : "";
     button.textContent = framingLabel(framing);
+    // The canvas over the video takes its layout from the video.
+    deinterlace?.mirror();
+  }
+
+  /** Remembered as `on`; off is forgotten, which is the default. */
+  function chooseDeinterlace(on) {
+    deinterlace.set(on);
+    remember?.("deinterlace", on ? "on" : "");
   }
 
   function choose(name) {
@@ -47,8 +63,13 @@ export function mountFramingControl({ video, button, menus, recall, remember }) 
   }
 
   menus.list(button, {
-    items: () => framings().map((one) => ({ value: one.name, label: one.label, current: one.name === framing })),
-    pick: choose,
+    items: () => [
+      ...framings().map((one) => ({ value: one.name, label: one.label, current: one.name === framing })),
+      ...(deinterlaceOffered
+        ? [{ value: DEINTERLACE, label: `Deinterlace: ${deinterlace.on ? "On" : "Off"}`, current: deinterlace.on }]
+        : []),
+    ],
+    pick: (value) => (value === DEINTERLACE ? chooseDeinterlace(!deinterlace.on) : choose(value)),
   });
   // A named ratio's window is computed against the stage's own pixels, which
   // a window resize (or entering/leaving fullscreen, which resizes it too)
@@ -62,9 +83,13 @@ export function mountFramingControl({ video, button, menus, recall, remember }) 
      * was mastered, so it is remembered; one this player does not offer is
      * the default rather than a menu with nothing marked.
      */
-    recall() {
+    recall({ hdr = false } = {}) {
       const asked = recall?.("framing");
       framing = framings().some((one) => one.name === asked) ? asked : DEFAULT_FRAMING;
+      // The filter is tuned for SDR; an HDR title is neither offered it nor filtered,
+      // and the remembered choice is left alone for the show's other episodes.
+      deinterlaceOffered = deinterlace?.supported === true && !hdr;
+      deinterlace?.set(deinterlaceOffered && recall?.("deinterlace") === "on");
       apply();
     },
     /** `z`: the next framing round the cycle. */

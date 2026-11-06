@@ -33,7 +33,8 @@ internal const val TvPlateWatchedTickTag = "tv-plate-watched-tick"
 internal const val TvOfflineBadgeTag = "tv-offline-badge"
 
 /**
- * The progress rule along the foot of a plate. Not tv-material's own — it
+ * The progress rule along the foot of a plate, and under the line a fetch
+ * run counts on above the shelves. Not tv-material's own — it
  * ships no progress indicator — so this is the plain fractional-width box
  * that stands in for one, drawn in the catalogue's one accent. [modifier]
  * carries the `align` the caller's `BoxWithConstraints` scope alone can

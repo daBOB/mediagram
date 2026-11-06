@@ -118,7 +118,9 @@ class CatalogViewModelTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val shelving = StandardTestDispatcher(TestCoroutineScheduler())
             val vm = catalogViewModel(FakeCatalogRepository(movies = 1), WatchStateFixture().repository, shelving = shelving)
-            vm.state.test {
+            // unfiltered, not state: state's projection also runs on shelving, so with it held state shows
+            // nothing at all, and a timed-out wait can never finish cancelling.
+            vm.unfiltered.test {
                 assertEquals(CatalogUiState.Loading, awaitItem())
                 advanceUntilIdle()
                 expectNoEvents()

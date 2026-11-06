@@ -4,11 +4,14 @@ import data.CatalogEnrichmentFetcher
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import testing.FakeCore
 import testing.FakeCoreProvider
+import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
+import uniffi.mediagram_core.FetchStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -49,5 +52,24 @@ class CatalogEnrichmentFetcherTest {
             assertEquals(displayed, enrichment.state.value.report)
             assertNull(enrichment.state.value.error)
             assertFalse(enrichment.state.value.running)
+        }
+
+    @Test
+    fun aRunUnderWayShowsHowFarTheCoreHasGotAndClearsItWhenDone() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val core = FakeCore(gate = gate)
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            val run = async { enrichment.fetch() }
+            runCurrent()
+
+            val looking = FetchProgress(FetchStep.LOOKING_UP, 12u, 640u, 4_000uL)
+            core.progress = looking
+            advanceTimeBy(1_000)
+            assertEquals(looking, enrichment.state.value.progress)
+
+            gate.complete(Unit)
+            run.await()
+            assertNull(enrichment.state.value.progress)
         }
 }

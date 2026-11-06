@@ -32,8 +32,10 @@ import catalog.hasContent
 import catalog.libraryTallyLines
 import catalog.magazineHomeOf
 import catalog.mastheadTabsOf
+import catalog.fetchFraction
 import catalog.updateDisabledReason
 import designsystem.Spacing
+import uniffi.mediagram_core.FetchProgress
 import designsystem.TvType
 import ui.common.MenuActions
 import ui.common.RailItem
@@ -83,6 +85,7 @@ fun TvCatalogScreen(
     onCreateList: (name: String) -> Unit,
     menu: MenuActions = NoopMenuActions,
     fetching: Boolean = false,
+    fetchProgress: FetchProgress? = null,
     restoreKey: String? = null,
     onTabChanged: () -> Unit = {},
     onOpenSearch: () -> Unit = {},
@@ -224,8 +227,11 @@ fun TvCatalogScreen(
             // Update item gives as the reason it is waiting, so what is
             // happening reads the same wherever a viewer meets it.
             if (ready != null) {
-                updateDisabledReason(ready, fetching)?.let {
+                updateDisabledReason(ready, fetching, fetchProgress)?.let {
                     TvQuietLine(it, Modifier.padding(start = gutter.start, end = gutter.end))
+                }
+                fetchProgress?.takeIf { fetching }?.let(::fetchFraction)?.let { fraction ->
+                    TvProgressRule(fraction, Modifier.padding(start = gutter.start, end = gutter.end, top = Spacing.small))
                 }
             }
             // Above the shelf, not instead of it: the library below is the
