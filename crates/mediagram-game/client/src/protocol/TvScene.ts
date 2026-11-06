@@ -2,9 +2,10 @@
 import type { LobbySettings } from "./LobbySettings";
 import type { PosterScene } from "./PosterScene";
 import type { QuizScene } from "./QuizScene";
+import type { RaceScene } from "./RaceScene";
 
 export type TvScene = { "kind": "lobby", min_players: number, settings: LobbySettings, leader_name: string | null, 
 /**
  * Why the chosen game cannot start yet.
  */
-blocked: string | null, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, };
+blocked: string | null, } | { "kind": "quiz", scene: QuizScene, } | { "kind": "poster", scene: PosterScene, } | { "kind": "race", scene: RaceScene, };

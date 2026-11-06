@@ -5,7 +5,8 @@ import type { PhoneView } from "../protocol/PhoneView";
 import type { ServerMsg } from "../protocol/ServerMsg";
 import { ANSWER_MARKS } from "../ui/answers";
 import { PhoneLobby } from "./PhoneLobby";
-import { keepAwake } from "../wake";
+import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
+import { goFullscreen } from "./phone-fullscreen";
 
 const NAME_KEY = "spieltisch.name";
 const TOKEN_KEY = "spieltisch.token";
@@ -36,6 +37,10 @@ export function PhoneApp() {
   const [toast, setToast] = useState<string | null>(null);
   const joinedRef = useRef(joined);
   joinedRef.current = joined;
+  // a phone rejoining its seat by itself goes fullscreen too: without a tap this only arms it, the first tap enters
+  useEffect(() => {
+    if (joined) goFullscreen();
+  }, [joined]);
 
   const onMessage = (msg: ServerMsg) => {
     switch (msg.t) {
@@ -43,6 +48,8 @@ export function PhoneApp() {
         if (msg.token) store.set(TOKEN_KEY, msg.token);
         break;
       case "phone":
+        // the first avatar a phone gets is its choice until its player picks one themselves
+        if (msg.view.me.avatar) rememberAvatar(msg.view.me.avatar, true);
         setView(msg.view);
         break;
       case "error":
@@ -59,7 +66,13 @@ export function PhoneApp() {
   const { conn, status } = useConnection(
     () =>
       joinedRef.current
-        ? { t: "hello", role: "phone", name: store.get(NAME_KEY), token: store.get(TOKEN_KEY) }
+        ? {
+            t: "hello",
+            role: "phone",
+            name: store.get(NAME_KEY),
+            token: store.get(TOKEN_KEY),
+            avatar: rememberedAvatar(),
+          }
         : null,
     onMessage,
   );
@@ -77,7 +90,7 @@ export function PhoneApp() {
       setToast("Bitte gib einen Namen ein.");
       return;
     }
-    keepAwake();
+    goFullscreen();
     store.set(NAME_KEY, clean);
     joinedRef.current = true;
     setJoined(true);
@@ -179,13 +192,19 @@ function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connection }) {
   const [localPick, setLocalPick] = useState<number | null>(null);
   const picked = screen.picked ?? localPick;
   const open = now >= screen.opens_at;
-  const closed = now >= screen.closes_at;
+  // Without a closing time the choice waits for the player: no clock, no meter.
+  const timed = screen.closes_at !== null;
+  const closes = screen.closes_at ?? Infinity;
+  const closed = now >= closes;
   const live = open && !closed && picked === null;
 
   const pick = (index: number) => {
     if (!live) return;
     const at = conn.serverNow();
-    setLocalPick(index);
+    // An untimed choice never locks on the tap alone: a tap lost in a reconnect
+    // would leave the button dead with no clock to end the wait. The host
+    // ignores a repeat, and its next screen replaces this one.
+    if (timed) setLocalPick(index);
     navigator.vibrate?.(25);
     conn.send({ t: "action", action: { t: "choose", index, at } });
   };
@@ -197,20 +216,24 @@ function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connection }) {
     }
   };
 
-  const left = Math.max(0, screen.closes_at - now);
-  const total = screen.closes_at - screen.opens_at;
+  const left = Math.max(0, closes - now);
+  const total = closes - screen.opens_at;
 
   return (
     <section className="screen choice">
       <header className="choice-head">
         <span>{screen.prompt}</span>
-        <span className="choice-clock" aria-live="polite">
-          {!open ? `Gleich … ${Math.ceil((screen.opens_at - now) / 1000)}` : picked !== null ? "Eingeloggt" : `${Math.ceil(left / 1000)} s`}
-        </span>
+        {timed && (
+          <span className="choice-clock" aria-live="polite">
+            {!open ? `Gleich … ${Math.ceil((screen.opens_at - now) / 1000)}` : picked !== null ? "Eingeloggt" : `${Math.ceil(left / 1000)} s`}
+          </span>
+        )}
       </header>
-      <div className="meter" aria-hidden="true">
-        <div className="meter-fill" style={{ transform: `scaleX(${open ? left / total : 1})` }} />
-      </div>
+      {timed && (
+        <div className="meter" aria-hidden="true">
+          <div className="meter-fill" style={{ transform: `scaleX(${open ? left / total : 1})` }} />
+        </div>
+      )}
       <div className={`keys${open ? " keys-open" : ""}`}>
         {screen.options.map((o, i) => (
           <button

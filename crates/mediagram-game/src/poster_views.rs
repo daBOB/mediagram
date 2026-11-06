@@ -32,7 +32,7 @@ impl PosterGame {
                     .map(|(label, color)| ChoiceOption { label: label.clone(), color })
                     .collect(),
                 opens_at: started_at,
-                closes_at,
+                closes_at: Some(closes_at),
                 picked: self.claims.contains_key(&player).then_some(round.correct),
             },
             Stage::Reveal { .. } => match self.winner {

@@ -9,6 +9,8 @@ use ts_rs::TS;
 pub enum GameKind {
     Quiz,
     Poster,
+    /// Heimlauf, the race board game.
+    Race,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

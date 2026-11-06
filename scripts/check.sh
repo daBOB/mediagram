@@ -42,9 +42,9 @@ else
   echo "skipping: web dependencies are not installed (run 'cd web && bun install')"
 fi
 
-step "game client typecheck"
+step "game client typecheck and tests"
 if [ -d crates/mediagram-game/client/node_modules ]; then
-  (cd crates/mediagram-game/client && bun run typecheck)
+  (cd crates/mediagram-game/client && bun run typecheck && bun test)
 else
   echo "skipping: game client dependencies are not installed (run 'cd crates/mediagram-game/client && bun install')"
 fi

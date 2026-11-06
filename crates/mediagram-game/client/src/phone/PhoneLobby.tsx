@@ -3,6 +3,7 @@ import type { Connection } from "../net";
 import type { LobbySettings } from "../protocol/LobbySettings";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
+import { AvatarPicker } from "./AvatarPicker";
 import { QUIZ_MODES } from "../ui/lobby";
 import { Token } from "../ui/Token";
 
@@ -11,6 +12,14 @@ type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
 export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby; conn: Connection }) {
   const { settings } = screen;
   const style = { "--player": me.color } as CSSProperties;
+  // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
+  // hidden looping video), so the player turns the phone's screen timeout off themselves.
+  const picker = (
+    <>
+      <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
+      <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
+    </>
+  );
 
   if (!screen.is_leader) {
     return (
@@ -23,6 +32,7 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
         <p className="hint">
           {screen.players === 1 ? "Du bist allein am Tisch." : `Ihr seid zu ${screen.players}.`}
         </p>
+        {picker}
       </section>
     );
   }
@@ -63,11 +73,13 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           </div>
         )}
       </div>
-      <div className={`game${quiz ? "" : " is-selected"}`}>
-        <button className="game-pick" aria-pressed={!quiz} onClick={() => configure({ game: "poster" })}>
-          Poster-Raten
-        </button>
-      </div>
+      {(["poster", "race"] as const).map((game) => (
+        <div key={game} className={`game${settings.game === game ? " is-selected" : ""}`}>
+          <button className="game-pick" aria-pressed={settings.game === game} onClick={() => configure({ game })}>
+            {game === "poster" ? "Poster-Raten" : "Heimlauf"}
+          </button>
+        </div>
+      ))}
 
       <div className="toggle-row">
         <div>
@@ -83,6 +95,8 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           onClick={() => configure({ kids_only: !settings.kids_only })}
         />
       </div>
+
+      {picker}
 
       {screen.blocked && <p className="lobby-blocked">{screen.blocked}</p>}
       <button

@@ -1,5 +1,5 @@
-//! Builds the chosen game, a quiz or a poster game, from the lobby settings,
-//! remembering what was asked and shown tonight.
+//! Builds the chosen game, a quiz, a poster game or the race board game, from
+//! the lobby settings, remembering what was asked and shown tonight.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -15,6 +15,7 @@ use crate::protocol::GameKind;
 use crate::quiz::Quiz;
 use crate::quiz_config::{Question, QuizConfig};
 use crate::quiz_mix::quiz_questions;
+use crate::race::{RaceConfig, RaceGame};
 use crate::titles::TitlePool;
 
 /// The lobby blocks starting a game its pool cannot supply, so neither arm
@@ -22,6 +23,9 @@ use crate::titles::TitlePool;
 pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless: Option<PosterLookup>) -> GameFactory {
     let mut used = HashSet::new();
     Box::new(move |ctx, settings| {
+        if settings.game == GameKind::Race {
+            return Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
+        }
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);
             let cfg = PosterConfig::default();

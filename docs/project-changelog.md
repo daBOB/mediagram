@@ -5,6 +5,67 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.146.2 — Players switch off their phone's screen lock themselves
+
+**Changed**
+
+- The hidden keep-awake clip from 0.146.1 did not keep phones on in practice, so it is gone again. The phone lobby now says it plainly: switch off the automatic screen lock for the game night, or the phone goes dark mid-game.
+
+## 0.146.1 — Phones stay awake and go fullscreen during game night
+
+**Added**
+
+- The phone goes fullscreen on the join tap (no address bar, no status bar); a phone that left fullscreen is back on its next tap, and one that rejoined its seat by itself on its first. iPhones cannot put a web page fullscreen, so nothing changes there.
+
+**Fixed**
+
+- Phones went dark in the middle of a game. The page is plain LAN HTTP, so the Wake Lock API is missing, and the NoSleep library's fallback video was never part of the page, which Chrome on Android needs before it keeps the screen on. The phone page now loops its own tiny silent clip full-screen behind its content (in the page colour, nearly transparent), and also when a phone rejoins its seat by itself, not only after typing the name. NoSleep is gone.
+
+## 0.146.0 — Avatars for every player, and TV settings for sound and figures
+
+**Added** (Android TV game night)
+
+- **Pick an avatar on your phone** in the lobby: 22 characters (fox, panda, witch, yeti, granny, …), first come, first served. Whoever does not pick gets a free one, and the phone remembers yours for the next game night.
+- **The avatar's head replaces the initial** everywhere a player is shown: the TV lobby, the board's name tags, the scoreboards, the ranking and the phone.
+- **Settings on the TV, with the remote**: *Ton* on/off, *Musik* and *Effekte* each in 10 steps, and *Spielfiguren* — the wooden pawns or each player's avatar standing on the board. In the lobby through *Einstellungen* next to the start button; during Heimlauf OK opens them over the board and the game runs on. Back closes the panel first. The TV keeps them for the next game night.
+
+## 0.145.3 — The Wilhelm scream for a thrown-out piece
+
+**Changed**
+
+- When a piece is thrown out, the classic Wilhelm scream plays while it flies home, after the wooden thunk, instead of the falling pizzicato.
+
+## 0.145.2 — Heimlauf's hop knocks land with the pawn, the first one too
+
+**Fixed**
+
+- The knocks were still behind on the TV box: its WebView takes ~370 ms (±50) from starting a sound to the speaker, longer than the first hop takes, so the first knock of a move could only come late or be dropped. A move now starts 200 ms after it is decided, which gives the TV time to start every knock early enough, and the TV smooths the speaker delay over frames instead of trusting one jittery reading.
+
+## 0.145.1 — Heimlauf's hop knocks land with the pawn
+
+**Fixed**
+
+- The knock for each pawn hop came late on the TV box: its audio output buffers about 128 ms. Sounds are now timed by the speaker's own clock, so they are heard as the pawn lands.
+
+## 0.145.0 — Heimlauf sounds like a game evening
+
+**Added** (Android TV game night)
+
+- **Sound on the Heimlauf board**, from the TV: quiet cozy background music (two tracks taking turns), the die clattering as it lands, a wooden knock for every step a pawn hops, a thunk and a falling pizzicato when someone is thrown out, a rising one when a piece reaches its goal, and a saxophone jingle for the winner while the music fades. Phones stay silent.
+- All sounds are CC0: Kenney's Casino Audio, Impact Sounds and Music Jingles; the music is "Apple Cider" (Zane Little Music) and "Cozy Puzzle In-Game 2" (MintoDog) from OpenGameArt.
+
+## 0.144.0 — Heimlauf: a race board game for game night
+
+**Added** (Android TV game night)
+
+- **Heimlauf**, the third game in the lobby: the classic cross-and-circle race for 2–4 players, four pieces each. The TV shows a wooden board on a table in 3D; on your turn your phone shows *Würfeln*, the die rolls across the table, and when more than one move is possible your phone offers them as coloured buttons while the TV rings the matching pieces in the same colours and shapes.
+- Classic rules: a 6 brings a piece out and rolls again, the start field must be cleared, landing on an opponent sends it home, the goal needs an exact count, three tries for a 6 when nothing can move. The first with all four home wins.
+- A phone that drops out does not stall the table: its turns play themselves.
+
+**Changed**
+
+- A choice on the phone can be untimed: no clock, no countdown bar (the race game's buttons wait for you). A single button or a pair now fill the button area instead of leaving empty cells.
+
 ## 0.143.0 — Game night on the TV box
 
 **Added** (Android TV, new `mediagram-game` crate)

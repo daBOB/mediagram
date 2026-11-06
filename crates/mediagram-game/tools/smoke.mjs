@@ -1,5 +1,6 @@
 // End-to-end smoke test against a running host: one TV, two bots.
-// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster]
+// Usage: bun crates/mediagram-game/tools/smoke.mjs [ws://localhost:8080/ws] [--game quiz|poster|race]
+// A race game runs longer than the 5-minute deadline; it still exercises the turn flow.
 const args = process.argv.slice(2);
 const gi = args.indexOf("--game");
 const game = gi >= 0 ? args.splice(gi, 2)[1] : "quiz";
@@ -24,7 +25,8 @@ const log = [];
 const tv = client({ t: "hello", role: "tv", name: null, token: null }, (_, m) => {
   if (m.t !== "tv") return;
   const s = m.view.scene;
-  const key = s.kind === "lobby" ? `lobby(${m.view.players.length})` : `${s.kind} r${s.scene.round} ${s.scene.stage.stage}`;
+  const round = s.scene?.round ? ` r${s.scene.round}` : "";
+  const key = s.kind === "lobby" ? `lobby(${m.view.players.length})` : `${s.kind}${round} ${s.scene.stage.stage}`;
   if (log.at(-1) !== key) { log.push(key); console.log("tv:", key); }
 });
 
@@ -38,7 +40,7 @@ const bot = (name, delay) =>
       c.pending = true;
       const wait = Math.max(0, s.opens_at - (performance.now() + c.offset)) + delay;
       setTimeout(() => {
-        c.send({ t: "action", action: { t: "choose", index: Math.floor(Math.random() * 4), at: performance.now() + c.offset } });
+        c.send({ t: "action", action: { t: "choose", index: Math.floor(Math.random() * s.options.length), at: performance.now() + c.offset } });
         c.pending = false;
       }, wait);
     }

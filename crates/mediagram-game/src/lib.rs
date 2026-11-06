@@ -3,6 +3,7 @@
 //!
 //! Transport agnostic and synchronous; a server wraps it in sockets.
 
+pub mod avatars;
 mod factory;
 mod film_questions;
 pub mod game;
@@ -13,6 +14,7 @@ pub mod protocol;
 mod protocol_choice;
 mod protocol_poster;
 mod protocol_quiz;
+mod protocol_race;
 mod protocol_settings;
 mod poster;
 mod poster_config;
@@ -22,6 +24,9 @@ mod quiz;
 mod quiz_config;
 mod quiz_mix;
 mod quiz_views;
+mod race;
+mod race_rules;
+mod race_views;
 pub mod room;
 mod room_loop;
 mod room_seats;

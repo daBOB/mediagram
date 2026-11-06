@@ -50,7 +50,7 @@ pub(crate) fn decode(json: &str) -> ServerMsg {
 
 pub(crate) fn hello(room: &mut Room, conn: ConnId, name: &str, token: Option<&str>) -> ServerMsg {
     room.connect(conn, false);
-    let msg = ClientMsg::Hello { role: Role::Phone, name: Some(name.into()), token: token.map(Into::into) };
+    let msg = ClientMsg::Hello { role: Role::Phone, name: Some(name.into()), token: token.map(Into::into), avatar: None };
     let out = room.handle(conn, &serde_json::to_string(&msg).unwrap(), 0.0);
     decode(&out[0].1)
 }

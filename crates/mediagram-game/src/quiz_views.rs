@@ -40,7 +40,7 @@ impl Quiz {
                         .map(|(label, color)| ChoiceOption { label: label.clone(), color })
                         .collect(),
                     opens_at,
-                    closes_at,
+                    closes_at: Some(closes_at),
                     picked: self.answers.get(&player).map(|a| a.choice),
                 }
             }

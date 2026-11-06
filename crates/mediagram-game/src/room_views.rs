@@ -59,6 +59,7 @@ impl Room {
                             leader_name: self.leader_name(),
                             settings: self.settings.clone(),
                             blocked: blocked.map(String::from),
+                            avatars: crate::avatars::slots_for(&self.players, p.id),
                         }
                     }
                 };
@@ -79,6 +80,7 @@ impl Room {
             score: p.score,
             connected: p.connected(),
             leader: self.leader() == Some(p.id),
+            avatar: p.avatar.map(String::from),
         }
     }
 }

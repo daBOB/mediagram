@@ -1,8 +1,12 @@
 package ui.tv.games
 
 import android.annotation.SuppressLint
+import android.content.res.AssetManager
 import android.view.ViewGroup
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +15,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -25,8 +32,11 @@ import androidx.tv.material3.Text
 import designsystem.TvType
 import games.GameNightUi
 import games.GameNightViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ui.common.player.KeepScreenOnWhile
+import java.io.ByteArrayInputStream
+import java.io.IOException
 
 /**
  * Game night as one full-screen frame, drawn outside the catalogue's chrome
@@ -57,12 +67,35 @@ internal fun TvGamesFrame(leave: () -> Unit) {
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    BackHandler { scope.launch { if (!model.back()) leave() } }
+    var page by remember { mutableStateOf<WebView?>(null) }
+    // The page's settings panel closes on Back before anything else happens, so ask it first:
+    // it answers "true" when it had a panel open and took the key. A page too busy to answer
+    // (the board still building on the box) must not swallow Back, so after 400 ms it counts as "no".
+    BackHandler {
+        val stepBack = { scope.launch { if (!model.back()) leave() }; Unit }
+        val web = page
+        if (web == null) {
+            stepBack()
+            return@BackHandler
+        }
+        var answered = false
+        val giveUp = scope.launch {
+            delay(400)
+            answered = true
+            stepBack()
+        }
+        web.evaluateJavascript("window.tvBack ? String(window.tvBack()) : 'false'") { answer ->
+            if (answered) return@evaluateJavascript
+            answered = true
+            giveUp.cancel()
+            if (answer?.trim('"') != "true") stepBack()
+        }
+    }
 
     when (val ui = state) {
         GameNightUi.Starting -> Centred("Starting game night…")
         is GameNightUi.Failed -> Centred("${ui.message}\n\nPress Back to return")
-        is GameNightUi.Ready -> GamePage(ui.tvUrl)
+        is GameNightUi.Ready -> GamePage(ui.tvUrl) { page = it }
     }
 }
 
@@ -73,9 +106,33 @@ private fun Centred(text: String) {
     }
 }
 
+private const val AVATAR_PREFIX = "/game-avatars/"
+
+/**
+ * Answers the ceremony's avatar models from the APK's assets, so the 22 files (~26 MB) exist once in
+ * the APK instead of once per ABI inside the Rust core with the web client. The assets folder is a
+ * generated build output (make-ceremony-avatars.mjs); without it every request is a plain 404.
+ * Everything else goes to the game host as before.
+ */
+private class AvatarAssetClient(private val assets: AssetManager) : WebViewClient() {
+    override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+        val path = request.url.path ?: return null
+        if (request.method != "GET" || !path.startsWith(AVATAR_PREFIX) || !path.endsWith(".glb")) return null
+        val file = path.removePrefix(AVATAR_PREFIX)
+        if (file.contains("/") || file.contains("..")) return notFound()
+        return try {
+            WebResourceResponse("model/gltf-binary", null, assets.open("game-avatars/$file"))
+        } catch (_: IOException) {
+            notFound()
+        }
+    }
+
+    private fun notFound() = WebResourceResponse("text/plain", "utf-8", 404, "Not Found", emptyMap(), ByteArrayInputStream(ByteArray(0)))
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun GamePage(url: String) {
+private fun GamePage(url: String, onPage: (WebView?) -> Unit) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
@@ -84,14 +141,21 @@ private fun GamePage(url: String) {
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
+                // Nobody taps a TV: without this the board's music and sounds would wait for a gesture forever.
+                settings.mediaPlaybackRequiresUserGesture = false
+                webViewClient = AvatarAssetClient(context.applicationContext.assets)
                 // The remote's D-pad and OK reach the page only while this view holds focus.
                 isFocusable = true
                 isFocusableInTouchMode = true
                 loadUrl(url)
+                onPage(this)
             }
         },
         // After attach: asking from the factory runs before the view is in a window and does nothing.
         update = { view -> view.post { view.requestFocus() } },
-        onRelease = { it.destroy() },
+        onRelease = {
+            onPage(null)
+            it.destroy()
+        },
     )
 }

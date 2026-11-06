@@ -8,6 +8,7 @@ import { Token } from "../ui/Token";
 import { TvFinal } from "./TvFinal";
 import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
+import { TvRace } from "./TvRace";
 
 /**
  * The TV screen: the box shows it full-screen in a WebView of its loopback
@@ -30,6 +31,9 @@ export function TvApp() {
         <TvLobby view={view} scene={view.scene} conn={conn} />
       ) : view.scene.kind === "poster" ? (
         <TvPoster scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "race" ? (
+        // a new table of players is a new game: build the board afresh
+        <TvRace key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

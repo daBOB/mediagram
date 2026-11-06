@@ -19,6 +19,7 @@ pub struct Player {
     pub name: String,
     pub color: &'static str,
     pub score: i32,
+    pub avatar: Option<&'static str>,
     pub(crate) token: String,
     pub(crate) conn: Option<ConnId>,
     pub(crate) left_at: Option<ServerTime>,
@@ -37,6 +38,7 @@ impl Player {
             name: name.into(),
             color: PLAYER_COLORS[id as usize % PLAYER_COLORS.len()],
             score: 0,
+            avatar: crate::avatars::AVATARS.get(id as usize).copied(),
             token: String::new(),
             conn: connected.then_some(u64::from(id)),
             left_at: None,
@@ -52,6 +54,7 @@ impl Room {
         conn: ConnId,
         name: Option<String>,
         token: Option<String>,
+        avatar: Option<String>,
     ) -> Result<PlayerId, ServerMsg> {
         let name = name.map(|n| clean_name(&n)).filter(|n| !n.is_empty());
 
@@ -84,6 +87,7 @@ impl Room {
                 .copied()
                 .find(|c| !self.players.iter().any(|p| p.color == *c))
                 .unwrap_or(PLAYER_COLORS[0]);
+            let avatar = crate::avatars::assign(&self.players, avatar.as_deref());
             let id = self.next_player_id;
             self.next_player_id = self.next_player_id.wrapping_add(1);
             self.players.push(Player {
@@ -91,6 +95,7 @@ impl Room {
                 name,
                 color,
                 score: 0,
+                avatar,
                 token: new_token(),
                 conn: Some(conn),
                 left_at: None,

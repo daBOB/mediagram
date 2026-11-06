@@ -113,9 +113,9 @@ impl Room {
                 self.release(conn, now);
                 Some(ServerMsg::Welcome { player: None, token: None, now })
             }
-            ClientMsg::Hello { role: Role::Phone, name, token } => {
+            ClientMsg::Hello { role: Role::Phone, name, token, avatar } => {
                 self.release(conn, now);
-                Some(match self.seat_phone(conn, name, token) {
+                Some(match self.seat_phone(conn, name, token, avatar) {
                     Ok(id) => {
                         let token = self.player(id).map(|p| p.token.clone());
                         ServerMsg::Welcome { player: Some(id), token, now }
@@ -155,6 +155,10 @@ impl Room {
                 self.game = Some((self.factory)(&mut ctx, &self.settings));
                 Ok(())
             }
+            Action::PickAvatar { id } => {
+                let ok = self.game.is_none() && player.is_some_and(|p| crate::avatars::pick(&mut self.players, p, &id));
+                ok.then_some(()).ok_or_else(not_allowed)
+            }
             Action::BackToLobby => {
                 if !(is_tv || is_leader) {
                     return Err(not_allowed());
@@ -191,3 +195,7 @@ pub(crate) fn encode(msg: &ServerMsg) -> String {
 #[cfg(test)]
 #[path = "room_tests.rs"]
 pub(crate) mod tests;
+
+#[cfg(test)]
+#[path = "room_avatar_tests.rs"]
+mod avatar_tests;

@@ -10,9 +10,11 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+pub use crate::avatars::AvatarSlot;
 pub use crate::protocol_choice::{AnswerColor, ChoiceOption, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
+pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
 pub use crate::protocol_settings::{GameKind, LobbySettings, QuizMode};
 
 pub type PlayerId = u8;
@@ -38,6 +40,10 @@ pub enum ClientMsg {
         role: Role,
         name: Option<String>,
         token: Option<String>,
+        /// Avatar the phone had last time; used if it is free.
+        #[serde(default)]
+        #[ts(optional)]
+        avatar: Option<String>,
     },
     /// Clock sync. `t0` is the client's local time; it is echoed back.
     Ping {
@@ -60,6 +66,10 @@ pub enum Action {
     },
     StartGame,
     BackToLobby,
+    /// Take a free avatar. Lobby only; refused if unknown or taken.
+    PickAvatar {
+        id: String,
+    },
     /// Pick an option of a `PhoneScreen::Choice`. `at` is the client's estimate
     /// of server time at the moment of the tap.
     Choose {
@@ -101,6 +111,8 @@ pub struct PlayerInfo {
     pub score: i32,
     pub connected: bool,
     pub leader: bool,
+    /// Catalogue id, see `avatars::AVATARS`.
+    pub avatar: Option<String>,
 }
 
 // ---------------------------------------------------------------- phone views
@@ -128,17 +140,20 @@ pub enum PhoneScreen {
         settings: LobbySettings,
         /// Why the chosen game cannot start yet.
         blocked: Option<String>,
+        /// The whole catalogue; `taken` = owned by another player.
+        avatars: Vec<AvatarSlot>,
     },
     Wait {
         title: String,
         text: Option<String>,
     },
     /// Buttons become active at `opens_at` (server time) on every phone at once.
+    /// Without `closes_at` the choice waits as long as it takes (no clock).
     Choice {
         prompt: Option<String>,
         options: Vec<ChoiceOption>,
         opens_at: ServerTime,
-        closes_at: ServerTime,
+        closes_at: Option<ServerTime>,
         picked: Option<u8>,
     },
     Outcome {
@@ -180,4 +195,5 @@ pub enum TvScene {
     },
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },
+    Race { scene: RaceScene },
 }

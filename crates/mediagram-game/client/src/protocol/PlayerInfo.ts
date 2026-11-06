@@ -4,4 +4,8 @@ export type PlayerInfo = { id: number, name: string,
 /**
  * Hex colour, e.g. `#2f6fde`.
  */
-color: string, score: number, connected: boolean, leader: boolean, };
+color: string, score: number, connected: boolean, leader: boolean, 
+/**
+ * Catalogue id, see `avatars::AVATARS`.
+ */
+avatar: string | null, };

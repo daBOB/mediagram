@@ -20,7 +20,8 @@ crates/
 │                     path over Telegram, and the one HTTP client both
 │                     programs build (ring + webpki roots)
 ├── mediagram-game/   game night: the party-game host (rooms, the buzzer quiz,
-│                     the poster game, the phone and TV pages); depends on
+│                     the poster game, the race board game, the phone and TV
+│                     pages); depends on
 │                     nothing else in the workspace
 ├── mediagram/        the CLI: media inspection, upload pipeline, local
 │                     index, verify, and `serve`
@@ -948,8 +949,8 @@ AirPlay code.
 
 ### Game night
 
-The TV box hosts party games for phones on the same network: a buzzer quiz and
-a poster-guessing game. It is a feature of the TV app only, and it is the one
+The TV box hosts party games for phones on the same network: a buzzer quiz, a
+poster-guessing game and a race board game. It is a feature of the TV app only, and it is the one
 place the app serves something rather than only fetching.
 
 **The host lives in the core.** `mediagram-game` is a self-contained crate (an
@@ -1029,6 +1030,99 @@ title counts as playable when its kind has four distinct poster-bearing names,
 counted in one pass, since the box runs the check on every start. The TV page
 draws each round on a fresh canvas, so the last poster never shows while the
 next loads.
+
+**Race board game (Heimlauf).** 2–4 players (the lobby blocks other counts),
+four pieces each, the classic cross-and-circle race rules in `race_rules.rs`:
+a 6 must bring a piece out while the own start field is free, a piece on the
+start field must clear it while others wait at home, no landing on an own
+piece, landing on an opponent sends it home (not forced), the goal needs an
+exact count with no jumping over own pieces, a 6 rolls again, and with nothing
+movable a player gets three tries for a 6. The first with all four in the goal
+wins and the game ends there; the rest rank by pieces in the goal, then by
+fields walked. A turn (`race.rs`) is an untimed "Würfeln" button, the die's
+flight on the TV (1.15 s), then the player picks a move; a single legal move
+plays itself and none passes. Pieces are told apart by marker, not number: the
+TV rings each movable piece and its target in the colour and shape of the
+matching phone button. An absent player's turns play themselves after 1.5 s,
+so a sleeping phone never stalls the table. `PhoneScreen::Choice` gained an
+optional `closes_at` for this: without it the phone shows no clock.
+
+**The race board is three.js in the same WebView.** The TV page loads
+`tv/race/` as its own chunk (three.js stays out of the other pages) and draws
+the wooden board from the look test measured on the box (`plans/reports/`
+benchmark 261105-1611): the 2048² board print, a lacquered table, a turned
+pawn per piece in the player colour, the die rolling on the table beside the
+board so it never passes through a piece, and the tags and banner as quads
+inside the canvas. The box rules from that test hold: no HTML over the canvas
+during play, every tag and banner state drawn and uploaded at load, the big
+flat surfaces unlit with their light baked in, no alpha-tested cut-outs, no
+blur filters or per-dot noise on big canvases. Everything moving is derived
+from the scene and the host clock, so a TV that reconnects mid-turn picks up
+the throw or hop where it is. Measured on the box: 59.9 fps at 1080p with
+MSAA, the board up 3.4 s after the start. The wood textures are Poly Haven's
+(CC0), shrunk to 1024 px in `client/public/race/`. The game end shows the
+winner's banner on the board for 4 s, then the shared final ranking.
+
+**The race board has sound, on the TV only.** `race-sound-cues.ts` turns each
+stage into timed cues from the host's times alone (the die's clatter at its
+first touch of the table, a knock per hop, thunk and jingle at a capture, a
+jingle into the goal, the winner's jingle); `race-sound.ts` schedules them
+once per stage on the Web Audio clock and skips any already past, so a TV
+that reconnects never replays a backlog. Each sound starts early by the
+speaker delay, read every frame from `getOutputTimestamp()` and smoothed: the
+box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
+a hop, so the host starts a move `lead_ms` (200) after deciding it; without
+that lead the first knock of every move could only come late. The background music is an `<audio>`
+element fed blob URLs, two tracks in turn: decoded into Web Audio, three
+minutes of music would hold ~77 MB on the box. Sound loads beside the board
+and never holds it back; if it fails the board plays silent. The TV app's
+WebView sets `mediaPlaybackRequiresUserGesture = false`, since nobody taps a
+TV; a desktop browser acting as the TV starts sound at its first key or click.
+The files are in `client/public/race/sound/`: Kenney's Casino Audio, Impact
+Sounds and Music Jingles; the Wilhelm scream for a capture (Wikimedia
+Commons, from the SSE library on the Internet Archive); "Apple Cider" by Zane
+Little Music and "Cozy Puzzle In-Game 2" by MintoDog from OpenGameArt. Game
+night is a personal project, so a sound is picked by fit, not licence; its
+source is still written here. The music is normalised to
+-18 LUFS and Opus 56 kbps (2.6 MB in all, embedded with the client in each
+ABI's core library).
+
+**Every player has an avatar.** The host owns the catalogue of 22
+(`avatars.rs`; ids are the folder names under `assets/game-night/avatars/`)
+and keeps them unique: a hello may carry the phone's remembered avatar, which
+it gets if free, else a random free one; `Action::PickAvatar` swaps in the
+lobby only; a reconnect keeps it and leaving the room frees it.
+`PlayerInfo.avatar` names it and `PhoneScreen::Lobby.avatars` lists all 22
+with who-else-has-it, for the phone's picker grid. Every player marker is the
+one `Token` component, so the head replaced the initial everywhere at once;
+the race board draws it into its canvas tags. The pictures are rendered once,
+offline, from the TV copies of the 3D models
+(`tools/render-avatar-images.mjs`, matte, `Idle` pose): a 256² head and a
+256x384 standing figure per avatar, WebP, 458 KB in all, in
+`client/public/avatars/`.
+
+**The phone page cannot keep the screen on; players switch the lock off.**
+The page is plain LAN HTTP, so the Wake Lock API is missing. The NoSleep
+library's fallback video was never attached to the page and kept nothing on;
+our own looping clip in the page (0.146.1, full-screen behind the content)
+did not hold the screen on the user's phones either, so it was removed in
+0.146.2. The phone lobby asks players to switch off the automatic screen
+lock instead. Only HTTPS (a real Wake Lock) would change this. The phone page
+goes fullscreen (`phone/phone-fullscreen.ts`): browsers allow it only from a
+gesture, so the join tap enters it and a later tap re-enters it after a swipe
+out; iPhones have no page fullscreen.
+
+**TV settings live on the TV.** `tv/settings/tv-settings.ts` holds *Ton*,
+*Musik*, *Effekte* (0–10) and *Spielfiguren* (pawns or avatars) in the TV
+page's localStorage, with a small subscribe store; the defaults reproduce the
+mix the sound was tuned with (music 4, effects 8). The panel opens from the
+lobby's *Einstellungen* button or with OK on the race board, and it catches
+the remote's keys in the capture phase while open. The TV app's Back asks the
+page first (`window.tvBack()`), so Back closes an open panel instead of
+leaving the game. The race board builds both figure styles up front (a pawn
+and an avatar sprite on a colour disc per piece), loads every picture and
+compiles both before the first frame, and switches them with visibility only:
+nothing is created mid-game.
 
 **The TV page scales with the screen.** The box's WebView lays the page out at
 960x540 CSS pixels (density 2), so the TV root font size follows the viewport

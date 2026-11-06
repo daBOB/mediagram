@@ -1,14 +1,28 @@
+import { useRef, useState } from "react";
 import type { Connection } from "../net";
 import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
 import { gameBadge } from "../ui/lobby";
 import { Token } from "../ui/Token";
+import { TvSettingsPanel } from "./settings/TvSettingsPanel";
 
 type Lobby = Extract<TvScene, { kind: "lobby" }>;
 
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
   const seated = view.players.filter((p) => p.connected);
   const canStart = seated.length >= scene.min_players && !scene.blocked;
+  const [settings, setSettings] = useState(false);
+  const settingsBtn = useRef<HTMLButtonElement>(null);
+  const startBtn = useRef<HTMLButtonElement>(null);
+  const closeSettings = () => {
+    setSettings(false);
+    settingsBtn.current?.focus();
+  };
+  // Left/Right on the remote moves between the two buttons
+  const hop = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") settingsBtn.current?.focus();
+    else if (e.key === "ArrowRight") startBtn.current?.focus();
+  };
   return (
     <section className="tv-lobby">
       <div className="tv-lobby-intro">
@@ -48,15 +62,22 @@ export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; con
             </p>
           )}
         </div>
-        <button
-          className="cta cta-tv"
-          autoFocus
-          aria-disabled={!canStart}
-          onClick={() => canStart && conn.send({ t: "action", action: { t: "start_game" } })}
-        >
-          {seated.length < scene.min_players ? `Wartet auf ${scene.min_players - seated.length} Spieler` : "Los geht's"}
-        </button>
+        <div className="tv-seats-buttons" onKeyDown={hop}>
+          <button ref={settingsBtn} className="cta cta-tv cta-tv-quiet" onClick={() => setSettings(true)}>
+            Einstellungen
+          </button>
+          <button
+            ref={startBtn}
+            className="cta cta-tv"
+            autoFocus
+            aria-disabled={!canStart}
+            onClick={() => canStart && conn.send({ t: "action", action: { t: "start_game" } })}
+          >
+            {seated.length < scene.min_players ? `Wartet auf ${scene.min_players - seated.length} Spieler` : "Los geht's"}
+          </button>
+        </div>
       </div>
+      {settings && <TvSettingsPanel onClose={closeSettings} />}
     </section>
   );
 }

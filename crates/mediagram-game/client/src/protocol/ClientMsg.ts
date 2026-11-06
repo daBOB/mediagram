@@ -2,4 +2,8 @@
 import type { Action } from "./Action";
 import type { Role } from "./Role";
 
-export type ClientMsg = { "t": "hello", role: Role, name: string | null, token: string | null, } | { "t": "ping", t0: number, } | { "t": "action", action: Action, };
+export type ClientMsg = { "t": "hello", role: Role, name: string | null, token: string | null, 
+/**
+ * Avatar the phone had last time; used if it is free.
+ */
+avatar?: string, } | { "t": "ping", t0: number, } | { "t": "action", action: Action, };
