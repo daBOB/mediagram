@@ -19,6 +19,8 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.video.MediaCodecVideoRenderer
+import androidx.media3.exoplayer.video.VideoRendererEventListener
 import data.isTelevision
 import uniffi.mediagram_core.CoreInterface
 
@@ -166,6 +168,7 @@ internal fun renderersFactory(context: Context): DefaultRenderersFactory =
 /**
  * [DefaultRenderersFactory] whose audio sink refuses DTS and TrueHD passthrough — see [NoLosslessPassthroughSink] —
  * and whose platform audio renderer downmixes surround for outputs that can't play it — see [StereoDownmixAudioRenderer].
+ * It builds two video renderers, one that takes effects and one that does not — see [routeVideo].
  */
 internal class PlaybackRenderersFactory(
     context: Context,
@@ -185,6 +188,33 @@ internal class PlaybackRenderersFactory(
         // same arguments, same slot ahead of FFmpeg.
         out[out.indexOfFirst { it is MediaCodecAudioRenderer }] =
             StereoDownmixAudioRenderer(context, codecAdapterFactory, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, audioSink)
+    }
+
+    override fun buildVideoRenderers(
+        context: Context,
+        extensionRendererMode: Int,
+        mediaCodecSelector: MediaCodecSelector,
+        enableDecoderFallback: Boolean,
+        eventHandler: Handler,
+        eventListener: VideoRendererEventListener,
+        allowedVideoJoiningTimeMs: Long,
+        out: ArrayList<Renderer>,
+    ) {
+        super.buildVideoRenderers(context, extensionRendererMode, mediaCodecSelector, enableDecoderFallback, eventHandler, eventListener, allowedVideoJoiningTimeMs, out)
+        // Like the audio renderer, built in-line with no hook for the class. Swapped in place for the plain one, with the
+        // effects renderer ahead of it so it wins track selection whenever it claims a format (see EffectsVideoRenderer).
+        fun builder() =
+            MediaCodecVideoRenderer.Builder(context)
+                .setCodecAdapterFactory(codecAdapterFactory)
+                .setMediaCodecSelector(mediaCodecSelector)
+                .setAllowedJoiningTimeMs(allowedVideoJoiningTimeMs)
+                .setEnableDecoderFallback(enableDecoderFallback)
+                .setEventHandler(eventHandler)
+                .setEventListener(eventListener)
+                .setMaxDroppedFramesToNotify(MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY)
+        val at = out.indexOfFirst { it is MediaCodecVideoRenderer }
+        out[at] = PlainVideoRenderer(builder())
+        out.add(at, EffectsVideoRenderer(builder()))
     }
 
     override fun buildAudioSink(

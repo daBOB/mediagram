@@ -132,6 +132,16 @@ class TvPlayerSettingsTest : TvPlayerScreenHarness() {
         compose.onNodeWithContentDescription("Framing").assert(hasText("Fill"))
     }
 
+    @Test
+    fun theFramingMenuEndsWithADeinterlaceRowThatSwitchesItOnAndCloses() {
+        openMenu("Framing")
+        inMenu("Deinterlace: Off").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        assertTrue(controller.get().playerViewModel.choices.value.deinterlace)
+        compose.onNodeWithTag(TvCardMenuTag).assertDoesNotExist()
+    }
+
     /** Back with a menu open closes that menu and nothing else: the controls, the title and the player all stay. */
     @Test
     fun backClosesOnlyTheMenuOntoItsToolThenPutsTheControlsAwayThenLeaves() {

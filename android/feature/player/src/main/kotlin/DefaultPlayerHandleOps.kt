@@ -4,7 +4,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import playback.applyVideoFilter
+import playback.routeVideo
 import playback.setUri
 
 /**
@@ -19,9 +19,10 @@ import playback.setUri
  * corrects it to whatever this profile remembered once it knows one, but
  * this is the floor under that, so a title never inherits a leftover speed.
  */
-internal fun Player.openReal(setId: String, startAtMs: Long, playWhenReady: Boolean) {
+internal fun Player.openReal(setId: String, startAtMs: Long, playWhenReady: Boolean, deinterlace: Boolean) {
     setMediaItem(MediaItem.fromUri(setUri(setId)), startAtMs)
-    (this as? ExoPlayer)?.let(::applyVideoFilter)
+    // Before prepare, so the first frame already goes through the right video renderer.
+    (this as? ExoPlayer)?.routeVideo(deinterlace)
     prepare()
     this.playWhenReady = playWhenReady
     setPlaybackSpeed(1f)

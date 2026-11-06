@@ -80,9 +80,16 @@ internal fun TvFramingSection(
     framing: Framing,
     onChosen: (Framing) -> Unit,
     current: FocusRequester? = null,
+    /** The Deinterlace row's state, or null to leave the row out (an HDR title). */
+    deinterlace: Boolean? = null,
+    onDeinterlace: (Boolean) -> Unit = {},
 ) {
     for (option in Framing.entries) {
         TvChoiceRow(label = option.label, selected = option == framing, onClick = { onChosen(option) }, focusRequester = current?.takeIf { option == framing })
+    }
+    // Not a radio of the framings above: its own on/off, so it reads "Deinterlace: On" rather than a mark that means "chosen".
+    if (deinterlace != null) {
+        TvChoiceRow(label = "Deinterlace: ${if (deinterlace) "On" else "Off"}", selected = deinterlace, onClick = { onDeinterlace(!deinterlace) })
     }
 }
 

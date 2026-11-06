@@ -37,6 +37,7 @@ import designsystem.Spacing
 import player.PlayerChoices
 import player.PlayerViewModel
 import player.chooseAudioTrack
+import player.chooseDeinterlace
 import player.chooseFraming
 import player.chooseSubtitleLanguage
 import player.nudgeSubtitleOffset
@@ -114,7 +115,14 @@ internal fun BoxScope.TvCardMenuOverlay(
         when (menu) {
             TvCardMenu.Speed -> TvSpeedSection(speed = choices.speed, onChosen = { viewModel.setSpeed(it); onClose() }, current = current)
             TvCardMenu.Audio -> TvAudioSection(options = choices.audioOptions, onChosen = { viewModel.chooseAudioTrack(it); onClose() }, current = current)
-            TvCardMenu.Framing -> TvFramingSection(framing = choices.framing, onChosen = { viewModel.chooseFraming(it); onClose() }, current = current)
+            TvCardMenu.Framing ->
+                TvFramingSection(
+                    framing = choices.framing,
+                    onChosen = { viewModel.chooseFraming(it); onClose() },
+                    current = current,
+                    deinterlace = choices.deinterlaceRow,
+                    onDeinterlace = { viewModel.chooseDeinterlace(it); onClose() },
+                )
             TvCardMenu.Subtitles -> TvSubtitleMenu(choices, viewModel, current, onClose, onSwitch)
             TvCardMenu.SubtitleStyle ->
                 TvSubtitleStyleSection(

@@ -63,7 +63,11 @@ export function cueStyle({ size = 100, backing = "shadow" } = {}) {
     parts.push("text-shadow: none");
   }
 
-  return `video::cue { ${parts.join("; ")}; }`;
+  // Two rules, not one selector list: a browser without `::cue` would drop the
+  // whole list. The second styles the deinterlace filter's own cue layer, which
+  // stands in for the native cues its canvas covers.
+  const body = `{ ${parts.join("; ")}; }`;
+  return `video::cue ${body} .deinterlace-cues > span ${body}`;
 }
 
 /**

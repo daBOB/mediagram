@@ -74,6 +74,13 @@ class FakePlayerHandle : PlayerHandle {
         speedCalls += rate
     }
 
+    /** Every state [setDeinterlace] was asked for, in order. */
+    val deinterlaceCalls: MutableList<Boolean> = mutableListOf()
+
+    override fun setDeinterlace(on: Boolean) {
+        deinterlaceCalls += on
+    }
+
     override fun setListener(listener: PlayerHandle.Listener?) {
         this.listener = listener
     }

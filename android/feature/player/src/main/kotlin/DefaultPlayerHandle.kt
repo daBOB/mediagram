@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import playback.routeVideo
 
 /**
  * Wraps the app's single [ExoPlayer], translating its events into
@@ -56,6 +57,9 @@ class DefaultPlayerHandle(
     /** A speed requested through [setPlaybackSpeed] before the player finished building. */
     private var pendingSpeed: Float? = null
     private val pendingMetadata = PendingMetadata()
+
+    /** Whether the open title is meant to play through the deinterlacing filter; every [open] starts it off. */
+    private var deinterlace = false
 
     private val playerListener = PlayerHandleListener(
         isCurrentlyPlaying = { _player.value?.isPlaying ?: false },
@@ -121,12 +125,14 @@ class DefaultPlayerHandle(
         if (current == null) {
             pendingOpen = PendingOpen(setId, startAtMs, playWhenReady)
             currentSet.value = setId
+            deinterlace = false
             return
         }
         if (setId == currentSet.value && current.playbackState != Player.STATE_IDLE) {
             republishPlaybackState(current)
             return
         }
+        deinterlace = false
         openOn(current, setId, startAtMs, playWhenReady)
     }
 
@@ -182,6 +188,12 @@ class DefaultPlayerHandle(
         _player.value?.setPlaybackSpeed(rate) ?: run { pendingSpeed = rate }
     }
 
+    override fun setDeinterlace(on: Boolean) {
+        if (on == deinterlace) return
+        deinterlace = on
+        (_player.value as? ExoPlayer)?.routeVideo(on)
+    }
+
     override fun setMetadata(metadata: MediaMetadata) {
         pendingMetadata.remember(metadata)
         _player.value?.setMetadataReal(metadata)
@@ -189,7 +201,7 @@ class DefaultPlayerHandle(
 
     private fun openOn(player: Player, setId: String, startAtMs: Long, playWhenReady: Boolean) {
         currentSet.value = setId
-        player.openReal(setId, startAtMs, playWhenReady)
+        player.openReal(setId, startAtMs, playWhenReady, deinterlace)
         pendingMetadata.reapply(player)
     }
 

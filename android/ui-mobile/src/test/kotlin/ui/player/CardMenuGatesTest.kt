@@ -73,6 +73,7 @@ class CardMenuGatesTest {
                                 onNudge = { chosen += "nudge=$it" },
                                 onResetOffset = { chosen += "reset" },
                                 onFraming = { chosen += "framing=${it.stored}" },
+                                onDeinterlace = { chosen += "deinterlace=$it" },
                             ),
                         onOpen = { opened = it },
                         onDone = { done++ },
@@ -162,14 +163,41 @@ class CardMenuGatesTest {
     }
 
     @Test
+    fun theFramingMenuOffersADeinterlaceSwitchThatFlipsAndCloses() {
+        show(CardMenu.Framing, PlayerChoices(deinterlaceOffered = true))
+
+        compose.onNodeWithText("Deinterlace").performClick()
+
+        assertEquals(listOf("deinterlace=true"), chosen)
+        assertEquals(1, done)
+    }
+
+    @Test
+    fun aDeinterlacedTitleOffersToSwitchItOff() {
+        show(CardMenu.Framing, PlayerChoices(deinterlace = true, deinterlaceOffered = true))
+
+        compose.onNodeWithText("Deinterlace").performClick()
+
+        assertEquals(listOf("deinterlace=false"), chosen)
+    }
+
+    @Test
+    fun anHdrTitleHasNoDeinterlaceRow() {
+        show(CardMenu.Framing, PlayerChoices(deinterlaceOffered = false))
+
+        compose.onNodeWithText("Deinterlace").assertDoesNotExist()
+    }
+
+    @Test
     fun everyMenuRowMeetsTheTouchTargetFloor() {
         val twoTracks = listOf(AudioOption(0, 0, "en", "English", true), AudioOption(1, 0, "de", "German", false))
-        val choices = PlayerChoices(audioOptions = twoTracks, subtitleOptions = english, subtitleStyleVisible = true)
+        val choices = PlayerChoices(audioOptions = twoTracks, subtitleOptions = english, subtitleStyleVisible = true, deinterlaceOffered = true)
         val rows =
             listOf(
                 CardMenu.Speed to "1×",
                 CardMenu.Audio to "German",
                 CardMenu.Framing to "Fill",
+                CardMenu.Framing to "Deinterlace",
                 CardMenu.Subtitles to "English",
                 CardMenu.Subtitles to "Style…",
                 CardMenu.SubtitleStyle to "Reset",

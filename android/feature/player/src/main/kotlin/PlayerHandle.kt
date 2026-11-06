@@ -75,6 +75,13 @@ interface PlayerHandle {
     fun setPlaybackSpeed(rate: Float)
 
     /**
+     * Whether the open title plays through the deinterlacing filter. Off at
+     * every [open]; a viewer's switch turns it on afterwards. Queued rather
+     * than dropped when there is no player yet, like [setPlaybackSpeed].
+     */
+    fun setDeinterlace(on: Boolean)
+
+    /**
      * Updates the open title's metadata — what `PlaybackService`'s
      * `MediaSession` publishes to the lock screen, the notification and a
      * headset's own display. Applied to the open title now, and remembered

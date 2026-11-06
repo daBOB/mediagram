@@ -5,6 +5,18 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.144.0 — A Deinterlace switch for combed old TV shows
+
+**Added** (web player, Android TV, tablet and phone)
+
+- **Framing → Deinterlace**:
+  - **Why:** some DVD rips are field-interlaced video flagged progressive. Roseanne S02–S09 is one: a German PAL release. No player ever deinterlaces such a file. The box's Realtek decoder logs `nEnableDeInterlace:0 interlace:0`, browsers never do it, and every movement shows comb lines.
+  - **The switch:** the Framing menu on every surface now ends in an on/off "Deinterlace" row. It is remembered per show under the shared `deinterlace` preference, so turning it on on the TV turns it on for the web as well.
+  - **The filter:** a single-frame comb filter on the GPU, with the same maths in WebGL and in a media3 GL effect. Where a line sticks out from both neighbours the same way, it becomes their average; elsewhere it is left alone. Still areas keep their full sharpness and the frame rate is unchanged.
+  - **Limits:** it is not as good as re-encoding with bwdif, which is what was done for Roseanne itself. It is not offered for HDR titles.
+- **Android plays a filtered title through its own video renderer.** media3 builds an effects graph in a renderer the first time it is enabled with effects and never drops it. A second renderer that only effects titles may claim is what keeps every other title, 4K and HDR included, on the direct path after a filtered one. Turning the switch on mid-title re-buffers at the current position. The debug sharpening property (`debug.mediagram.videofilter`) uses the same renderer. Known limit: media3's GL output draws darker than the direct path. The sharpening spike measured 3.6% on the box, and the emulator's software GPU about 8%. Only a title with the switch on pays it. Checked on the Google TV emulator with Roseanne S3E5: the route switched, the shader compiled and drew, and comb lines on a moving head were gone.
+- **Web subtitles while the filter is on**: the canvas covers the video's native cues. A layer above it shows the active cues instead, styled by the same size and backing rule as `::cue`.
+
 ## 0.143.0 — The artwork fetch says how far it has got
 
 **Added** (Android TV, tablet and phone)

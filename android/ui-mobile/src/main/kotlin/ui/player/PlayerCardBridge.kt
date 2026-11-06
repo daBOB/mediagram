@@ -2,6 +2,7 @@ package ui.player
 
 import player.PlayerViewModel
 import player.chooseAudioTrack
+import player.chooseDeinterlace
 import player.chooseFraming
 import player.createListAndAdd
 import player.chooseSubtitleLanguage
@@ -58,6 +59,7 @@ internal fun PlayerViewModel.cardMenuActions(): CardMenuActions =
         onNudge = this::nudgeSubtitleOffset,
         onResetOffset = this::resetSubtitleOffset,
         onFraming = this::chooseFraming,
+        onDeinterlace = this::chooseDeinterlace,
     )
 
 /** The marks' writes for the top bar's [PlayerMarks], beside the card's, so the screen hands over one call. */

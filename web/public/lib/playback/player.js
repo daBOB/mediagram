@@ -12,7 +12,7 @@ import { playbackFor } from "../link.js";
 import { conversionNote } from "../playable.js";
 import { playTranscoded } from "./streaming/hls-playback.js";
 import { sourceBitrate, watchPlayback } from "./streaming/adapt-playback.js";
-import { clockTime, endsAt, titleLine } from "../format.js";
+import { clockTime, endsAt, hdrLabel, titleLine } from "../format.js";
 import { audioItems, defaultTrack, loadAudioTracks, trackIndexForLanguage } from "./audio-chooser.js";
 import { bufferedAhead } from "./preload-readout.js";
 import { seekModel, skipTo } from "./seek-model.js";
@@ -656,7 +656,7 @@ function mountPlayer() {
     attachSubtitles(set);
     placeSubtitles();
     transport.recallSpeed();
-    transport.recallFraming();
+    transport.recallFraming({ hdr: hdrLabel(set) !== null });
     transport.refresh();
     void thumbs.open(set, signal);
     void notes.open(set);
