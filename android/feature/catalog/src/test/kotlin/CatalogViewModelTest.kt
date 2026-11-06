@@ -9,10 +9,12 @@ import data.WatchStateRepository
 import data.settings.InMemoryTmdbSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -50,6 +52,8 @@ private fun catalogViewModel(
     enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings()),
     filmPreloader: FilmPreloading = FilmPreloading.Noop,
     heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
+    // The test's own main, so the shelves are built on the scheduler the test advances.
+    shelving: CoroutineDispatcher = Dispatchers.Main.immediate,
     // Last so existing trailing-lambda call sites (`catalogViewModel(a, b) { pushed }`,
     // LibraryEvents being a fun interface) keep binding to this one.
     events: LibraryEvents = LibraryEvents.None,
@@ -62,6 +66,7 @@ private fun catalogViewModel(
         filmPreloader = filmPreloader,
         heldSets = heldSets,
         togetherLive = FakeTogetherLive(),
+        shelving = shelving,
     )
 
 private val ANA = Profile("a", "Ana")
@@ -97,6 +102,29 @@ class CatalogViewModelTest {
                 assertTrue(during.shelves.isNotEmpty())
                 gate.complete(Unit)
                 assertFalse((awaitItem() as CatalogUiState.Ready).refreshing)
+            }
+        }
+
+    /**
+     * The shelves are built off the main thread. Grouping and sorting a
+     * library of twenty thousand sets there froze the cold start's countdown
+     * for most of a second, and nothing else could draw meanwhile. Here the
+     * shelving dispatcher is held still: main alone must not be able to
+     * finish the shelves.
+     */
+    @Test
+    fun theShelvesAreBuiltOnTheShelvingDispatcherNotOnMain() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val shelving = StandardTestDispatcher(TestCoroutineScheduler())
+            val vm = catalogViewModel(FakeCatalogRepository(movies = 1), WatchStateFixture().repository, shelving = shelving)
+            vm.state.test {
+                assertEquals(CatalogUiState.Loading, awaitItem())
+                advanceUntilIdle()
+                expectNoEvents()
+                shelving.scheduler.advanceUntilIdle()
+                assertTrue(awaitItem() is CatalogUiState.Ready)
+                cancelAndIgnoreRemainingEvents()
             }
         }
 

@@ -5,6 +5,40 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.142.2 — Measuring a file's end reads only its last frames
+
+**Fixed** (uploader)
+
+- **The end-of-file read from 0.142.1 starts at the container's end**, not a minute before it: ffprobe seeks back to the last keyframe on its own, so only the final frames are read, which matters for a file probed over the network. If that read fails, the container's duration stands instead of the whole probe failing.
+
+## 0.142.1 — A file whose tracks carry no length is measured, not guessed
+
+**Fixed** (uploader)
+
+- **Where no video or audio track declares a length, `prepare` reads the last frames** instead of falling back to the container's duration, which also counts subtitles left running past the end. The Expanse S05E03's picture and sound end at 3117.1 s, but its subtitles, and so its container, at 3118.5 s; a faithful MP4 looked 1.4 s short and was rejected. ffprobe reads the last minute's packets (0.1 s on that file), only for files that need it.
+
+## 0.142.0 — The ⓘ overlay names what is playing
+
+**Added** (web player, phone, tablet, TV)
+
+- **A `title` row heads the playback statistics**: show · episode · title, as the top bar names it (`titleLine`), so a screenshot of the numbers says whose they are. Android's rows come from the one `playbackStats` list, so phone, tablet and TV gain it together; on the web the overlay now wraps a long title instead of stretching across the picture.
+
+**Fixed** (web player)
+
+- **A title opened by hand starts itself once it holds a minute**, as on Android: it warms up under the leader ("Warming up · 0:42 of 1:00") and plays once the minute is held, the browser stops loading, or 45 s pass. Before, only the next episode did; anything opened from a shelf sat paused at a full buffer until the viewer pressed play. Pressing play still skips the wait, and a watch-together session still starts the picture itself.
+
+**Fixed** (phone, tablet, TV)
+
+- **The cold start's countdown no longer freezes while the library loads**: grouping and sorting twenty thousand sets into shelves ran on the main thread and held every frame for most of a second. `CatalogViewModel` builds the shelves, and every profile's projection of them, on a background dispatcher (`shelving`); tests pass their own main so they still advance it.
+
+**Fixed** (uploader)
+
+- **A removed set stays removed when the channel index is merged**: Telegram answers a deleted channel message with `messageEmpty`, which grammers returns as a message of the channel asked about, so `fetch_messages` counted it as present. `pull-index` and every publish then took the removed set back from the channel, and `verify` saw a part with no document instead of a missing one. Deleted messages are now dropped where they are fetched. Found when TNG S6E8's out-of-sync copy, removed and replaced, came back in the 20:09 channel index.
+- **`prepare --mp4 --replace` names the result `.mp4`**: it wrote MP4 bytes back under the source's `.mkv` name, and since the container is read from the extension, the upload would have captioned and served the file as Matroska. The replacement now lands beside the source as `.mp4` and the `.mkv` goes once it has passed every check; an `.mp4` already there, perhaps another version of the same title, is left alone along with its `.mkv`. Found preparing the bytefortress staging folder, which used `--out <same folder> --delete-source` instead.
+- **`add-show` reads an episode code joined to the name by hyphens** (`tvr-marco-polo-s02e07-1080p.mp4`): the file-name grammar took only a space, a dot or ` - ` before `sNNeNN`, so whole seasons were reported as "no episodes" — and that report exits 0. Found on Marco Polo and Super Happy Magic Forest (73 files).
+- **`prepare` measures how long the picture and sound run**, not the container: Matroska's duration also counts a subtitle cue left running past the last frame, so a faithful MP4 of The Capture S01E05 looked 3 s short and was rejected. Each video and audio track's own length is read (MP4's stream duration, Matroska's `DURATION` tag), the container's only where none says.
+- **`prepare --mp4` converts Dolby Atmos audio**: it decodes as 5.1.2 (or 7.1.4), which ffmpeg's AAC encoder refuses outright instead of converting, so a film whose German track was Atmos could not be prepared at all. The encoder is now offered the layouts it takes, and ffmpeg folds the height channels into 5.1 or 7.1. Stereo, 5.1 and 7.1 come out as before; a 5.1 with side surrounds is now labelled back surrounds, which AAC cannot tell apart anyway. Found on One Battle After Another.
+
 ## 0.141.1 — The next episode starts on the web without the long wait
 
 **Fixed** (web player)

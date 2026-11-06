@@ -75,7 +75,11 @@ pub fn apply_seen(conn: &Connection, chat_id: i64, seen: &[Seen]) -> Result<Resc
         let caption = match mlib_spec::parse(&msg.caption) {
             Ok(caption) => caption,
             Err(mlib_spec::CaptionError::UnsupportedVersion(version)) => {
-                tracing::warn!(message_id = msg.message_id, version, "skipping a caption from a newer uploader");
+                tracing::warn!(
+                    message_id = msg.message_id,
+                    version,
+                    "skipping a caption from a newer uploader"
+                );
                 newer_version += 1;
                 continue;
             }

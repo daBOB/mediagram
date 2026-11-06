@@ -421,10 +421,7 @@ mod resume_and_recovery {
         let (_db_dir, conn, set_row, _plan) = seeded_index(&caption).await;
 
         let transport = FakeTransport::new();
-        transport.seed(format!(
-            "#mlib v=99\n{{\"set\":\"{}\"}}",
-            set_row.set_id
-        ));
+        transport.seed(format!("#mlib v=99\n{{\"set\":\"{}\"}}", set_row.set_id));
 
         let err = run_set(&conn, &transport, 0, &set_row, &src, None)
             .await

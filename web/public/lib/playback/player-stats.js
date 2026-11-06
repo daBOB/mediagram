@@ -8,7 +8,7 @@
  */
 
 import { el } from "../dom.js";
-import { bitrateLabel, clockTime, hdrLabel } from "../format.js";
+import { bitrateLabel, clockTime, hdrLabel, titleLine } from "../format.js";
 import { languageLabel } from "../language-label.js";
 import { channelLabel } from "./audio-chooser.js";
 import { downloadRows } from "./download-rows.js";
@@ -34,6 +34,8 @@ export function statsRows({ fields, set, audio, size, download = null }) {
     : [set?.acodec];
   const dropped = Number(fields.dropped);
   const rows = [
+    // What is playing, named as the top bar names it, for a screenshot of these numbers to say whose they are.
+    ["title", [set ? titleLine(set) : null]],
     ["video", [resolution, set?.vcodec, set ? hdrLabel(set) : null, set ? bitrateLabel(set) : null]],
     ["audio", sound],
     ["buffer", [fields.held ? "cached" : `${clockTime(fields.ahead)} ahead`]],

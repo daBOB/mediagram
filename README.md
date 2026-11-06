@@ -209,7 +209,7 @@ and subtitle tracks that are not German or English (`--audio`, `--subs`).
 ```sh
 mediagram prepare "Mad Men (2007)"                          # report only
 mediagram prepare "Mad Men (2007)" --mp4 --out ~/prepared   # copies, originals kept
-mediagram prepare "Mad Men (2007)" --mp4 --replace          # rewrite in place
+mediagram prepare "Mad Men (2007)" --mp4 --replace          # rewrite in place, .mkv -> .mp4
 ```
 
 HEVC video cannot be helped this way, because the picture is never
@@ -271,7 +271,7 @@ de-duplicates across machines until the next merge.
 | `add-docu <path> [--dry-run] [--category <name>]` | Upload a documentary, or a folder of them as one collection. Re-running skips what finished. `--category` files it into a row on the Documentaries department page. |
 | `resume [--no-push]` | Finish every set an interrupted upload left `pending`, adopting parts already in the channel instead of sending them again. |
 | `status` | What the library holds and what is going in: the set on the wire with its progress, the queue, each show against what TMDB says exists, and anything unfinished. Read-only. |
-| `prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 (Matroska → mp4, audio → AAC, picture copied untouched). `--replace` rewrites in place, and only after the result passes every check. |
+| `prepare <path> [--replace \| --out <dir>] [--mp4] [--audio a,b] [--subs a,b]` | Drop unwanted audio and subtitle tracks. `--mp4` also converts to a browser-playable mp4 (Matroska → mp4, audio → AAC, picture copied untouched). `--replace` rewrites in place, and only after the result passes every check; with `--mp4` an `.mkv` becomes `.mp4`, and an `.mp4` already beside it is left alone. |
 | `push-index [--force]` | Pull the channel index in, then snapshot `library.db` and pin it in the channel. A publish landing from another machine meanwhile is pulled in too. `--force` replaces the channel index as it is, pulling nothing. |
 | `pull-index [--dry-run]` | Merge the channel index into this one, so titles uploaded from another machine are known here. Backs up the local index first; `--dry-run` only reports what would change (what `push-index --check` used to answer). |
 | `sync-index [--refresh-older-than <days>]` | The whole round trip: `pull-index`, `metadata`, `posters`, then a push. A failed artwork fetch is reported and the push goes ahead. |

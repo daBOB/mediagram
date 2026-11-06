@@ -129,6 +129,7 @@ internal fun PlayerTopChrome(
             player?.let { current ->
                 PlaybackStatsOverlay(
                     player = current,
+                    title = titleLine(openSet),
                     totals = totals,
                     held = held,
                     download = download,

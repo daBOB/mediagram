@@ -126,12 +126,16 @@ async fn redo_with(push: bool) -> (Vec<i64>, i64, i64) {
     let input = Input::File(video);
     send_set(&mut run, SET, &input, false).await.unwrap();
     let old = subtitles::bundle_message(&conn, SET).unwrap().unwrap();
-    conn.execute("UPDATE subtitle_files SET uploaded_at = 1", []).unwrap();
+    conn.execute("UPDATE subtitle_files SET uploaded_at = 1", [])
+        .unwrap();
 
     let redone = send_set(&mut run, SET, &input, true).await.unwrap();
     assert!(matches!(redone, Sent::Bundled(_)));
     // Done in this run now: a second redo of it is skipped.
-    assert_eq!(send_set(&mut run, SET, &input, true).await.unwrap(), Sent::Skipped);
+    assert_eq!(
+        send_set(&mut run, SET, &input, true).await.unwrap(),
+        Sent::Skipped
+    );
     run.finish().await.unwrap();
 
     let new = subtitles::bundle_message(&conn, SET).unwrap().unwrap();

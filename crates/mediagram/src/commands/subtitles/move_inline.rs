@@ -49,7 +49,10 @@ pub async fn run(cfg: &Config, args: MoveInlineArgs) -> Result<()> {
         let done = move_sets(session, &sets).await?;
         println!("moved {}, mismatched {}", done.moved, done.mismatched.len());
         if done.mismatched.len() >= MAX_MISMATCHES {
-            bail!("stopped after {MAX_MISMATCHES} bundles that did not read back the same: {:?}", done.mismatched);
+            bail!(
+                "stopped after {MAX_MISMATCHES} bundles that did not read back the same: {:?}",
+                done.mismatched
+            );
         }
         Ok(())
     })

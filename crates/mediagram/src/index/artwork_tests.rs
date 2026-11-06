@@ -24,7 +24,10 @@ fn put_get_and_clear_round_trip() {
 
     assert!(clear(&conn, "title-terra-x").unwrap());
     assert!(get(&conn, "title-terra-x").unwrap().is_none());
-    assert!(!clear(&conn, "title-terra-x").unwrap(), "nothing left to clear");
+    assert!(
+        !clear(&conn, "title-terra-x").unwrap(),
+        "nothing left to clear"
+    );
 }
 
 #[test]

@@ -111,7 +111,7 @@ test("shipped HTML mounts the actual application and its player controls respond
   expect(env.node("stats-toggle").getAttribute("aria-pressed")).toBe("true");
   env.video.fire("progress");
   expect(env.node("stats-panel").children.filter((node) => node.tagName === "DT").map((node) => node.textContent))
-    .toEqual(["video", "audio", "buffer", "cache"]);
+    .toEqual(["title", "video", "audio", "buffer", "cache"]);
   pick("style");
   expect(env.node("cc-menu").getAttribute("aria-expanded")).toBe("true");
   expect(env.document.querySelector(".cue-panel")!.hidden).toBe(false);

@@ -194,6 +194,6 @@ class FailureDiagnosticsTest {
 
     private fun catalogModel(repository: CatalogRepository): CatalogViewModel {
         val enrichment = CatalogEnrichmentFetcher(mockk(), InMemoryTmdbSettings())
-        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment), togetherLive = FakeTogetherLive())
+        return CatalogViewModel(repository, WatchStateFixture().repository, LibraryUpdateCoordinator(repository, enrichment), togetherLive = FakeTogetherLive(), shelving = Dispatchers.Main.immediate)
     }
 }

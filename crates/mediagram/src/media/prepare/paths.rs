@@ -21,6 +21,30 @@ pub fn working_path(destination: &Path) -> PathBuf {
     destination.with_file_name(format!("{stem}{PREPARE_WORKING_SUFFIX}"))
 }
 
+/// Where `--replace` puts a source's replacement: over the source, or beside
+/// it as `.mp4` when converting, because the uploader reads the container
+/// from the extension and would send MP4 bytes named `.mkv` as Matroska.
+///
+/// An `.mp4` already there may be another version of the same title, so it
+/// is refused rather than overwritten. Checked per file just before its
+/// rewrite, which also catches one written earlier in the same run.
+pub fn replaced(file: &Path, to_mp4: bool) -> Result<PathBuf> {
+    let already_mp4 = file
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("mp4"));
+    if !to_mp4 || already_mp4 {
+        return Ok(file.to_path_buf());
+    }
+    let dest = file.with_extension("mp4");
+    if dest.exists() {
+        bail!(
+            "{} already exists; move one of the two aside",
+            dest.display()
+        );
+    }
+    Ok(dest)
+}
+
 /// Where a source file lands under `--out`, keeping the tree it came from.
 ///
 /// A file named directly has no tree to mirror — stripping the root off it

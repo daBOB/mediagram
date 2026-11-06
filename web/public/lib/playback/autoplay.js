@@ -2,9 +2,9 @@
  * When a title that started itself may actually begin.
  *
  * A viewer who pressed play is watching the screen and wants the picture; one
- * whose episode ended thirty seconds ago is not, and would rather the next one
- * arrive whole than arrive immediately and stop again ten seconds in. So an
- * unattended start waits for a buffer, and an asked-for one does not.
+ * who opened a title, or whose episode ended thirty seconds ago, would rather
+ * it arrive whole than arrive immediately and stop again ten seconds in. So
+ * those starts wait for a buffer, and a pressed play does not.
  *
  * The waiting has to be able to end even when the buffer never fills, which is
  * why there are three ways out rather than one.
@@ -12,7 +12,7 @@
 
 import { clockTime } from "../format.js";
 
-/** The buffer an unattended start waits for. */
+/** The buffer a warm-up waits for. */
 export const READY_SECONDS = 60;
 
 /**

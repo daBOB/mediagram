@@ -53,7 +53,11 @@ fn target(row: &SetRow) -> Result<(Kind, u64)> {
     match row.kind {
         Kind::Movie | Kind::Ep => Ok((row.kind, tmdb)),
         Kind::Tut | Kind::Doc | Kind::Docu => {
-            bail!("set {} is a {}; only films and series can be anime", row.set_id, row.kind)
+            bail!(
+                "set {} is a {}; only films and series can be anime",
+                row.set_id,
+                row.kind
+            )
         }
     }
 }
@@ -66,7 +70,11 @@ pub fn run(conn: &Connection, row: &SetRow, choice: AnimeChoice, dry_run: bool) 
         bail!("already says {}; nothing to do", label(current));
     }
 
-    let name = row.show.as_deref().or(row.title.as_deref()).unwrap_or(&row.set_id);
+    let name = row
+        .show
+        .as_deref()
+        .or(row.title.as_deref())
+        .unwrap_or(&row.set_id);
     println!(
         "set {} — {name} (tmdb-{}-{tmdb}: every set of this title)",
         row.set_id,

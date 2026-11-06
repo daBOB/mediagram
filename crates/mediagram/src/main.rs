@@ -40,7 +40,9 @@ async fn main() -> Result<()> {
         Cmd::Edit(args) => commands::edit::run(&cfg, args).await,
         Cmd::Resume { no_push } => commands::resume::run(&cfg, no_push).await,
         Cmd::PushIndex(args) => commands::push_index::run(&cfg, args).await,
-        Cmd::PublishApp { apk, profile } => commands::publish_app::run(&cfg, &apk, profile.as_deref()).await,
+        Cmd::PublishApp { apk, profile } => {
+            commands::publish_app::run(&cfg, &apk, profile.as_deref()).await
+        }
         Cmd::PullIndex(args) => commands::pull_index::run(&cfg, args).await,
         Cmd::SyncIndex(args) => commands::sync_index::run(&cfg, args).await,
         Cmd::Verify {

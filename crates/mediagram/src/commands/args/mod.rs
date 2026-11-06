@@ -86,7 +86,8 @@ pub struct AddArgs {
 pub struct PrepareArgs {
     /// A video file, or a folder to walk
     pub path: PathBuf,
-    /// Rewrite the files in place. Without this, prepare only reports
+    /// Rewrite the files in place; with --mp4 a `.mkv` becomes `.mp4`.
+    /// Without this, prepare only reports
     #[arg(long)]
     pub replace: bool,
     /// Audio languages to keep, comma separated

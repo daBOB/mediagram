@@ -650,8 +650,14 @@ fn a_channel_only_category_is_inserted_and_a_local_only_one_is_kept() {
     let report = merge_from(&local, &channel_path, keep_all).unwrap();
 
     assert_eq!(report.categories_taken, 1);
-    assert_eq!(category_row(&local, "title-a"), (Some("Trading".to_string()), 1_700_000_000));
-    assert_eq!(category_row(&local, "title-b"), (Some("Nature".to_string()), 1_700_000_000));
+    assert_eq!(
+        category_row(&local, "title-a"),
+        (Some("Trading".to_string()), 1_700_000_000)
+    );
+    assert_eq!(
+        category_row(&local, "title-b"),
+        (Some("Nature".to_string()), 1_700_000_000)
+    );
 }
 
 #[test]
@@ -665,7 +671,10 @@ fn a_newer_channel_category_replaces_the_local_one() {
     let report = merge_from(&local, &channel_path, keep_all).unwrap();
 
     assert_eq!(report.categories_taken, 1);
-    assert_eq!(category_row(&local, "title-a"), (Some("Finance".to_string()), 1_700_000_100));
+    assert_eq!(
+        category_row(&local, "title-a"),
+        (Some("Finance".to_string()), 1_700_000_100)
+    );
 }
 
 #[test]
@@ -679,7 +688,10 @@ fn an_older_channel_category_does_not_replace_the_local_one() {
     let report = merge_from(&local, &channel_path, keep_all).unwrap();
 
     assert_eq!(report.categories_taken, 0);
-    assert_eq!(category_row(&local, "title-a"), (Some("Trading".to_string()), 1_700_000_100));
+    assert_eq!(
+        category_row(&local, "title-a"),
+        (Some("Trading".to_string()), 1_700_000_100)
+    );
 }
 
 /// A newer clear (`category` back to `NULL`) is a value like any other

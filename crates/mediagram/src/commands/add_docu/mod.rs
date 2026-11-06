@@ -65,7 +65,10 @@ async fn run_file(cfg: &Config, args: AddDocuArgs) -> Result<()> {
         println!("documentary: {}", resolved.title.as_deref().unwrap_or("-"));
         println!("file:        {}", args.path.display());
         if let Some(category) = &category {
-            println!("category:    {}", category.category.as_deref().unwrap_or("-"));
+            println!(
+                "category:    {}",
+                category.category.as_deref().unwrap_or("-")
+            );
         }
         return Ok(());
     }

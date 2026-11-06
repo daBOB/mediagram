@@ -14,7 +14,14 @@ fn a_unit_nobody_categorised_reads_as_none() {
 #[test]
 fn setting_a_category_is_read_back() {
     let conn = db();
-    set(&conn, "tutorials", "title-rust-course", Some("Trading"), 1_700_000_000).unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-rust-course",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
     assert_eq!(
         get(&conn, "tutorials", "title-rust-course").unwrap(),
         Some("Trading".to_string())
@@ -26,7 +33,14 @@ fn setting_a_category_is_read_back() {
 #[test]
 fn clearing_keeps_the_row_but_reads_back_as_none() {
     let conn = db();
-    set(&conn, "tutorials", "title-rust-course", Some("Trading"), 1_700_000_000).unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-rust-course",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
     set(&conn, "tutorials", "title-rust-course", None, 1_700_000_100).unwrap();
 
     assert_eq!(get(&conn, "tutorials", "title-rust-course").unwrap(), None);
@@ -39,8 +53,22 @@ fn clearing_keeps_the_row_but_reads_back_as_none() {
 #[test]
 fn setting_it_again_replaces_rather_than_duplicates() {
     let conn = db();
-    set(&conn, "tutorials", "title-rust-course", Some("Trading"), 1_700_000_000).unwrap();
-    set(&conn, "tutorials", "title-rust-course", Some("Finance"), 1_700_000_100).unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-rust-course",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-rust-course",
+        Some("Finance"),
+        1_700_000_100,
+    )
+    .unwrap();
 
     assert_eq!(
         get(&conn, "tutorials", "title-rust-course").unwrap(),
@@ -58,8 +86,22 @@ fn setting_it_again_replaces_rather_than_duplicates() {
 #[test]
 fn a_course_and_a_documentary_of_the_same_slug_hold_separate_categories() {
     let conn = db();
-    set(&conn, "tutorials", "title-everest", Some("Trading"), 1_700_000_000).unwrap();
-    set(&conn, "documentaries", "title-everest", Some("Nature"), 1_700_000_000).unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-everest",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
+    set(
+        &conn,
+        "documentaries",
+        "title-everest",
+        Some("Nature"),
+        1_700_000_000,
+    )
+    .unwrap();
 
     assert_eq!(
         get(&conn, "tutorials", "title-everest").unwrap(),
@@ -74,9 +116,30 @@ fn a_course_and_a_documentary_of_the_same_slug_hold_separate_categories() {
 #[test]
 fn in_use_excludes_the_callers_own_key_and_cleared_rows() {
     let conn = db();
-    set(&conn, "tutorials", "title-rust-course", Some("Trading"), 1_700_000_000).unwrap();
-    set(&conn, "tutorials", "title-geldhochschule", Some("Trading"), 1_700_000_000).unwrap();
-    set(&conn, "tutorials", "title-cleared-course", None, 1_700_000_000).unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-rust-course",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-geldhochschule",
+        Some("Trading"),
+        1_700_000_000,
+    )
+    .unwrap();
+    set(
+        &conn,
+        "tutorials",
+        "title-cleared-course",
+        None,
+        1_700_000_000,
+    )
+    .unwrap();
 
     let mut in_use = in_use(&conn, "tutorials", "title-rust-course").unwrap();
     in_use.sort();

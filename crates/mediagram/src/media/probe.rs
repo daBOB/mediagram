@@ -28,6 +28,9 @@ pub(crate) struct RawStream {
     pub codec_name: Option<String>,
     // ffprobe reports numbers as strings.
     pub bit_rate: Option<String>,
+    /// Seconds, where the container records it per stream (MP4 does,
+    /// Matroska leaves it to the `DURATION` tag).
+    pub duration: Option<String>,
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub color_transfer: Option<String>,
@@ -40,6 +43,9 @@ pub(crate) struct RawStream {
 pub(crate) struct RawTags {
     pub language: Option<String>,
     pub title: Option<String>,
+    /// Matroska's per-track length, `HH:MM:SS.nnnnnnnnn`.
+    #[serde(rename = "DURATION")]
+    pub duration: Option<String>,
 }
 
 /// The flags a muxer can set on a stream; ffprobe prints each as 0 or 1.
@@ -67,6 +73,21 @@ pub(crate) struct RawFormat {
 impl RawStream {
     pub fn language(&self) -> Option<&str> {
         self.tags.as_ref().and_then(|t| t.language.as_deref())
+    }
+
+    /// The stream's own length in seconds, when the container says.
+    pub fn duration(&self) -> Option<f64> {
+        if let Some(seconds) = self.duration.as_deref().and_then(|d| d.parse().ok()) {
+            return Some(seconds);
+        }
+        let tag = self.tags.as_ref()?.duration.as_deref()?;
+        let mut parts = tag.splitn(3, ':');
+        let (h, m, s) = (parts.next()?, parts.next()?, parts.next()?);
+        Some(
+            h.parse::<f64>().ok()? * 3600.0
+                + m.parse::<f64>().ok()? * 60.0
+                + s.parse::<f64>().ok()?,
+        )
     }
 }
 
@@ -104,16 +125,47 @@ pub(crate) fn network_args(target: &Path) -> &'static [&'static str] {
 
 /// Probes a file on disk, or a URL.
 pub(crate) async fn run(path: &Path) -> Result<Report> {
+    let json = ffprobe(path, &["-show_format", "-show_streams"]).await?;
+    parse(&json).with_context(|| format!("probing {}", path.display()))
+}
+
+#[derive(Deserialize)]
+struct Packets {
+    #[serde(default)]
+    packets: Vec<RawPacket>,
+}
+
+#[derive(Deserialize)]
+struct RawPacket {
+    codec_type: Option<String>,
+    pts_time: Option<String>,
+    duration_time: Option<String>,
+}
+
+/// Where the picture and sound end, from the packets after the keyframe before
+/// `near`: for streams with no length, where the container's may count subtitles.
+pub(crate) async fn media_end(path: &Path, near: f64) -> Result<Option<f64>> {
+    // shortcut: the last pts, not a length; subtract format start_time if a file not starting at 0 turns up.
+    let start = format!("{near}%");
+    let entries = "packet=codec_type,pts_time,duration_time";
+    let json = ffprobe(path, &["-read_intervals", &start, "-show_entries", entries]).await?;
+    let packets: Packets = serde_json::from_slice(&json)
+        .with_context(|| format!("reading the last packets of {}", path.display()))?;
+    let seconds = |s: &Option<String>| s.as_deref().and_then(|s| s.parse::<f64>().ok());
+    Ok(packets
+        .packets
+        .iter()
+        .filter(|p| matches!(p.codec_type.as_deref(), Some("video" | "audio")))
+        .filter_map(|p| Some(seconds(&p.pts_time)? + seconds(&p.duration_time).unwrap_or(0.0)))
+        .reduce(f64::max))
+}
+
+/// Runs `ffprobe` with `args` on `path` and returns its JSON.
+async fn ffprobe(path: &Path, args: &[&str]) -> Result<Vec<u8>> {
     let output = tokio::process::Command::new("ffprobe")
         .args(network_args(path))
-        .args([
-            "-v",
-            "error",
-            "-print_format",
-            "json",
-            "-show_format",
-            "-show_streams",
-        ])
+        .args(["-v", "error", "-print_format", "json"])
+        .args(args)
         .arg(path)
         // Ctrl-C is for mediagram, not for the probe under it.
         .process_group(0)
@@ -129,7 +181,7 @@ pub(crate) async fn run(path: &Path) -> Result<Report> {
             String::from_utf8_lossy(&output.stderr).trim()
         );
     }
-    parse(&output.stdout).with_context(|| format!("probing {}", path.display()))
+    Ok(output.stdout)
 }
 
 #[cfg(test)]

@@ -14,7 +14,11 @@ use rusqlite::{Connection, OptionalExtension, params};
 /// The category on `(department, item_key)`, or `None` when no row exists or
 /// the row is a cleared `NULL` — the two read the same to a caller asking
 /// whether a unit is categorised.
-pub fn get(conn: &Connection, department: &str, item_key: &str) -> rusqlite::Result<Option<String>> {
+pub fn get(
+    conn: &Connection,
+    department: &str,
+    item_key: &str,
+) -> rusqlite::Result<Option<String>> {
     conn.query_row(
         "SELECT category FROM categories WHERE department = ?1 AND item_key = ?2",
         params![department, item_key],
@@ -46,13 +50,19 @@ pub fn set(
 /// Every distinct, non-`NULL` category already set in `department`, other
 /// than `except_key`'s own row — so re-setting a unit's category to itself
 /// is never mistaken for adopting a different unit's spelling.
-pub fn in_use(conn: &Connection, department: &str, except_key: &str) -> rusqlite::Result<Vec<String>> {
+pub fn in_use(
+    conn: &Connection,
+    department: &str,
+    except_key: &str,
+) -> rusqlite::Result<Vec<String>> {
     let mut stmt = conn.prepare(
         "SELECT DISTINCT category FROM categories
          WHERE department = ?1 AND item_key != ?2 AND category IS NOT NULL",
     )?;
-    stmt.query_map(params![department, except_key], |row| row.get::<_, String>(0))?
-        .collect()
+    stmt.query_map(params![department, except_key], |row| {
+        row.get::<_, String>(0)
+    })?
+    .collect()
 }
 
 #[cfg(test)]

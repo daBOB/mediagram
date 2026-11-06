@@ -40,7 +40,7 @@ static JUNK: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)[\s\.\-\[\(]*\b(2160p|1080p|720p|480p|4k|uhd|web-?dl|webrip|bluray|blu-ray|bdrip|hdrip|dvdrip|remux|x264|x265|h\.?264|h\.?265|hevc|avc|aac|ac3|eac3|dts(?:-hd)?|truehd|atmos|hdr10\+?|dovi|proper|repack|amzn|nf|dsnp|atvp)\b.*$").unwrap()
 });
 static EP: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(?P<show>.+?)(?:\s*\((?P<year>\d{4})\))?(?:\s+-\s+|\s+|\.)s(?P<s>\d{1,2})e(?P<e>\d{1,3})(?:-?e(?P<e2>\d{1,3}))?(?:\s*-\s*|\s+)?(?P<extra>.+?)?\s*$").unwrap()
+    Regex::new(r"(?i)^(?P<show>.+?)(?:\s*\((?P<year>\d{4})\))?(?:\s+-\s+|\s+|[._-])s(?P<s>\d{1,2})e(?P<e>\d{1,3})(?:-?e(?P<e2>\d{1,3}))?(?:\s*-\s*|\s+)?(?P<extra>.+?)?\s*$").unwrap()
 });
 static MOVIE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(?P<title>.+?)\s*[\(\s](?P<year>(?:19|20)\d{2})\)?(?:\s+-\s+(?P<extra>.+?))?\s*$")

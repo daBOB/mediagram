@@ -249,6 +249,7 @@ internal class TvAppFixture(
                 LibraryUpdateCoordinator(repository, enrichment),
                 heldSets = HeldIds(heldIds),
                 togetherLive = together,
+                shelving = Dispatchers.Main.immediate,
             )
         fetch = FetchViewModel(enrichment)
         search = SearchViewModel(repository)

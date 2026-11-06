@@ -36,7 +36,11 @@ pub async fn run(cfg: &Config, apk: &Path, profile: Option<&Path>) -> Result<()>
         badging.version_name,
         badging.version_code,
         bytes.len(),
-        if profile.is_some() { ", with its profile" } else { "" }
+        if profile.is_some() {
+            ", with its profile"
+        } else {
+            ""
+        }
     );
     Ok(())
 }

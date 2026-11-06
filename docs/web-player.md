@@ -607,12 +607,12 @@ Android has a system screen and a playback-stats overlay
   frames — covered on the device doing the playing. The web's version exists
   because the web *can* be asked about a device it is not running on; Android
   cannot watch itself from across the room.
-- **A warm-up holds back different starts.** Android opens every title
-  paused and starts it once its buffer is full, saying "Warming up · 0:12 of
-  0:50" under the leader. The web never starts a title opened by hand — the
-  viewer presses play, and the seek bar's buffered band and ⓘ say how full it
-  is — so it warms up only the starts it makes itself (an unattended next
-  episode, against 60 s). A file played directly never reaches that minute:
+- **A warm-up holds back the same starts.** Both open every title paused and
+  start it once its buffer is full, saying "Warming up · 0:12 of …" under the
+  leader — Android against 50 s, the web against 60 s — for a title opened by
+  hand as for the next episode. Pressing play skips it, as ⏭ and Up next's
+  Play do, and a watch-together session starts and stops the picture itself,
+  so it never warms up. A file played directly never reaches that minute:
   paused, Chrome loads a few seconds (3–15 s) and stops (`suspend`), so the
   wait also ends once the browser has stopped loading with anything held —
   Android's `loaderStopped`, the same rule. A conversion's hls.js keeps

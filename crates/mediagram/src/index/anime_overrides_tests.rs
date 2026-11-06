@@ -30,9 +30,7 @@ fn setting_auto_keeps_the_row_but_reads_back_as_automatic() {
 
     assert_eq!(get(&conn, Kind::Ep, 46348).unwrap(), None);
     let rows: i64 = conn
-        .query_row("SELECT COUNT(*) FROM anime_overrides", [], |row| {
-            row.get(0)
-        })
+        .query_row("SELECT COUNT(*) FROM anime_overrides", [], |row| row.get(0))
         .unwrap();
     assert_eq!(rows, 1, "a cleared override stays a row, not a deletion");
 }
@@ -57,9 +55,7 @@ fn setting_it_again_replaces_rather_than_duplicates() {
 
     assert_eq!(get(&conn, Kind::Ep, 46348).unwrap(), Some(false));
     let rows: i64 = conn
-        .query_row("SELECT COUNT(*) FROM anime_overrides", [], |row| {
-            row.get(0)
-        })
+        .query_row("SELECT COUNT(*) FROM anime_overrides", [], |row| row.get(0))
         .unwrap();
     assert_eq!(rows, 1);
 }

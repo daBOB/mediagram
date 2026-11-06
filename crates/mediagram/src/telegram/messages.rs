@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use grammers_client::Client;
 use grammers_client::message::Message;
 use grammers_session::types::PeerRef;
+use grammers_tl_types as tl;
 
 use super::retry::with_retry;
 
@@ -31,10 +32,53 @@ pub async fn fetch_messages(
         .await
         .context("fetching part messages by id")?;
         for (id, message) in chunk.iter().zip(results) {
-            if let Some(message) = message {
+            if let Some(message) = message
+                && !is_deleted(&message.raw)
+            {
                 map.insert(*id, message);
             }
         }
     }
     Ok(map)
+}
+
+/// A deleted channel message comes back as `messageEmpty`, not as a missing
+/// entry: grammers files it under the channel it was asked about, so without
+/// this a removed set reads as still in the channel and a merge revives it.
+fn is_deleted(raw: &tl::enums::Message) -> bool {
+    matches!(raw, tl::enums::Message::Empty(_))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_empty_message_is_deleted_and_a_real_one_is_not() {
+        let empty = tl::enums::Message::Empty(tl::types::MessageEmpty {
+            id: 17136,
+            peer_id: None,
+        });
+        assert!(is_deleted(&empty));
+
+        let service = tl::enums::Message::Service(tl::types::MessageService {
+            out: false,
+            mentioned: false,
+            media_unread: false,
+            reactions_are_possible: false,
+            silent: false,
+            post: true,
+            legacy: false,
+            id: 1,
+            from_id: None,
+            peer_id: tl::enums::Peer::Channel(tl::types::PeerChannel { channel_id: 1 }),
+            saved_peer_id: None,
+            reply_to: None,
+            date: 0,
+            action: tl::enums::MessageAction::Empty,
+            reactions: None,
+            ttl_period: None,
+        });
+        assert!(!is_deleted(&service));
+    }
 }

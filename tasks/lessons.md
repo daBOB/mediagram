@@ -101,3 +101,32 @@ trade-off. Rule: an effect the user designed (the glow sits *behind* the page) k
 layering; when two of the user's complaints seem to conflict, look for the fix that meets
 both (here: cut the glow away around the art) before asking them to pick one, and show it on
 the device before calling it done.
+
+## 2026-11-04 — Clipping seen in 4 frames is clipping, not "brushing"
+
+I checked the fox avatar's clips at 20/40/60/80 % and reported the cheer's paws as
+"brushing the ear tips". The user played it: "cheers with both hands .. here the hands
+get inside the head". Twelve moments per clip, from front, side and back, showed it
+plainly, and showed the wave rubbing the head too, which the four frames had missed.
+Rule: check an animation at a dozen or more moments and from more than one side before
+calling it clean, and report any overlap as the defect it is. Softening the wording only
+hands the finding back to the user to discover.
+
+## 2026-11-04 — A clip left out of a fix still needs the check
+
+I left Head_Hold_in_Pain out of the arm fix, because its hands are meant to touch the head.
+I then left it out of the dense checks as well. The user's screenshot showed the paws 16 cm
+inside the cheeks for the whole clip. Rule: deciding that a fix does not apply to something
+is not a reason to stop checking it. Every clip gets the same dense, multi-side check before
+I call an avatar clean, and the clips a fix skips get it first.
+
+## 2026-11-04 — A computed fix is judged by the motion, not by the number it optimises
+
+For the avatar clips I wrote a measure of how far the arms reach into the head and a search that
+moves the arm until the measure says "clear". I showed the user the result. Their screenshots then
+showed two things. The sleeves were still in the cheeks, because the measure only counted vertices
+weighted 90 % to the head, and Meshy weights the lower cheeks 50–90 %. And the whole arm bent and
+twisted, because the search swung the elbow up to 60° and held the paw at a fixed angle.
+Rule: before showing a computed correction, test the measure against rendered frames where the
+answer is known, at the places it could be wrong (here: the lower cheeks), and watch the corrected
+motion at full size for distortion. A fix that only satisfies its own number is not a fix.

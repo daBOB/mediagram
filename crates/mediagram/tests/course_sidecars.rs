@@ -70,10 +70,7 @@ fn a_lesson_with_nothing_beside_it_has_no_sidecars() {
 /// original stem, and it must still find them.
 #[test]
 fn a_remuxed_video_still_finds_the_originals_sidecars() {
-    let dir = folder(&[
-        ("L.faststart.mp4", "video"),
-        ("L.summary.md", "kurz"),
-    ]);
+    let dir = folder(&[("L.faststart.mp4", "video"), ("L.summary.md", "kurz")]);
 
     let found = find_sidecars(&dir.path().join("L.faststart.mp4"));
 

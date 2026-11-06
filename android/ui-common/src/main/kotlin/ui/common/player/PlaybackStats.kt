@@ -48,6 +48,9 @@ data class PlaybackStat(
  * recorded; where the title's own technical line disagrees with these rows,
  * this is the one that watched it happen.
  *
+ * [title] is what is playing, named as the top bar names it ([player.titleLine]),
+ * so a screenshot of these numbers says whose they are; blank leaves the row out.
+ *
  * [held] is whether this device holds the title in full, which turns the
  * buffer row into "cached" — see [bufferStatLine].
  *
@@ -58,6 +61,7 @@ data class PlaybackStat(
 @Composable
 fun playbackStats(
     player: Player,
+    title: String,
     totals: () -> PlaybackTotals,
     held: Boolean = false,
     download: suspend () -> DownloadFacts = { DownloadFacts() },
@@ -97,6 +101,7 @@ fun playbackStats(
         } ?: 0
 
     return listOfNotNull(
+        title.takeIf { it.isNotBlank() }?.let { PlaybackStat(label = "title", value = it) },
         PlaybackStat(
             label = "video",
             // A width or height of zero is no more a size than media3's own
