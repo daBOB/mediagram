@@ -12,6 +12,8 @@ import { COLS, HUD_FONT, ROWS, cellOf, printCards } from "./cards-print";
 
 /** Enough meshes for eight full fans, the piles and every card in flight. */
 const POOL = 150;
+/** Piles lying side by side that get a shadow (the deck has one more). */
+const MAX_PILES = 3;
 
 const image = (url: string) =>
   new Promise<HTMLImageElement>((ok, fail) => {
@@ -112,7 +114,7 @@ export interface World {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   cards: CardPool;
-  /** One soft shadow patch per seat, then the deck's and the discards'. */
+  /** One soft shadow patch per seat, then the deck's and one per pile. */
   blobs: THREE.Mesh[];
   /** Glow under the active seat. */
   glow: THREE.Mesh;
@@ -184,7 +186,7 @@ export async function buildWorld(canvas: HTMLCanvasElement, seats: number): Prom
     scene.add(m);
     return m;
   };
-  const blobs = Array.from({ length: seats + 2 }, () => flatMesh(blobMat, 0.004, 1, 1));
+  const blobs = Array.from({ length: seats + 1 + MAX_PILES }, () => flatMesh(blobMat, 0.004, 1, 1));
   const glowTex = canvasTexture(radial(128, [[0, "rgba(255,214,120,0.55)"], [0.6, "rgba(255,200,90,0.25)"], [1, "rgba(255,200,90,0)"]]), false);
   const glow = flatMesh(new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false }), 0.008, 7, 3.2);
 

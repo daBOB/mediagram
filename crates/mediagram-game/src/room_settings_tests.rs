@@ -51,6 +51,16 @@ fn mau_mau_needs_two_to_eight_players() {
 }
 
 #[test]
+fn schwimmen_needs_two_to_eight_players() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Schwimmen, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::SCHWIMMEN_TOO_FEW));
+    hello(&mut r, 2, "Ben", None);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+}
+
+#[test]
 fn poster_game_needs_posters() {
     let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
     hello(&mut r, 1, "Ana", None);

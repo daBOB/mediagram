@@ -8,7 +8,7 @@ import type { CardsScene } from "../../protocol/CardsScene";
 import { RANKS, SUITS } from "../../ui/card-face";
 import type { CardsHud } from "./cards-hud";
 import {
-  DECK_AT, DISCARD_AT, LAYER, TABLE_Y, WISH_AT, fanCard, openCard, pileCard, yawFacing, type Placed, type Spot,
+  DECK_AT, LAYER, TABLE_Y, WISH_AT, fanCard, openCard, pileAt, pileCard, yawFacing, type Placed, type Spot,
 } from "./cards-layout";
 import type { World } from "./cards-world";
 
@@ -78,21 +78,22 @@ export class CardsMotion {
     for (let i = 0; i < layers; i++) cards.put(null, { x: DECK_AT.x, z: DECK_AT.z, yaw: 0, y: TABLE_Y + 0.02 + i * LAYER * 3 });
 
     // discards, the one still flying in left out until it lands
-    const landing = flights.find((fl) => fl.ev.kind.kind === "play");
-    scene.piles.forEach((pile) => {
+    const landing = (c: { suit: string; rank: string }) => flights.some((fl) => fl.ev.kind.kind === "play" && seedOf(fl.ev.kind.card) === seedOf(c));
+    scene.piles.forEach((pile, pi) => {
+      const at = pileAt(pi, scene.piles.length);
       pile.cards.forEach((c, i) => {
         const last = i === pile.cards.length - 1;
-        if (last && landing && landing.ev.kind.kind === "play" && seedOf(landing.ev.kind.card) === seedOf(c)) return;
-        cards.put(c, pileCard(DISCARD_AT, seedOf(c), i));
+        if (last && landing(c)) return;
+        cards.put(c, pileCard(at, seedOf(c), i));
       });
     });
     for (const fl of flights) {
       if (fl.ev.kind.kind !== "play") continue;
       const si = seatOf(fl.ev.player), spot = this.spots[si];
       if (!spot) continue;
-      const card = fl.ev.kind.card, pile = scene.piles[fl.ev.kind.pile] ?? scene.piles[0];
+      const card = fl.ev.kind.card, pi = scene.piles[fl.ev.kind.pile] ? fl.ev.kind.pile : 0, pile = scene.piles[pi];
       const from: Placed = { x: spot.x, z: spot.z, yaw: yawFacing(spot.dx, spot.dz), y: TABLE_Y + 0.1 };
-      cards.put(card, between(from, pileCard(DISCARD_AT, seedOf(card), pile.cards.length - 1), fl.f), Math.sin(fl.f * Math.PI) * LIFT);
+      cards.put(card, between(from, pileCard(pileAt(pi, scene.piles.length), seedOf(card), pile.cards.length - 1), fl.f), Math.sin(fl.f * Math.PI) * LIFT);
     }
     cards.end();
 
@@ -116,11 +117,15 @@ export class CardsMotion {
       b.visible = seat.cards > 0;
     });
     const n = scene.seats.length;
-    for (const [k, at] of [DECK_AT, DISCARD_AT].entries()) {
-      const b = blobs[n + k];
+    // the deck, then one patch under each pile
+    const spots = [DECK_AT, ...scene.piles.map((_, i) => pileAt(i, scene.piles.length))];
+    blobs.slice(n).forEach((b, k) => {
+      const at = spots[k];
+      b.visible = !!at;
+      if (!at) return;
       b.position.set(at.x + 0.08, TABLE_Y + 0.004, at.z + 0.1);
       b.scale.set(2.3, 1, 2.9);
-    }
+    });
     const turn = scene.turn === null ? -1 : seatOf(scene.turn);
     glow.visible = turn >= 0;
     if (turn >= 0) {

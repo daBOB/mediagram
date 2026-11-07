@@ -29,6 +29,9 @@ const CARDS_MIN: u8 = 2;
 const CARDS_MAX: u8 = 8;
 pub(crate) const CARDS_TOO_FEW: &str = "Mau-Mau braucht mindestens 2 Spieler.";
 pub(crate) const CARDS_TOO_MANY: &str = "Mau-Mau geht mit höchstens 8 Spielern.";
+/// Schwimmen deals 3 cards to each and 3 to the middle from 32.
+pub(crate) const SCHWIMMEN_TOO_FEW: &str = "Schwimmen braucht mindestens 2 Spieler.";
+pub(crate) const SCHWIMMEN_TOO_MANY: &str = "Schwimmen geht mit höchstens 8 Spielern.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -67,6 +70,10 @@ impl Room {
             GameKind::Race => {
                 let players = self.connected_count();
                 return (players < RACE_MIN).then_some(RACE_TOO_FEW).or((players > RACE_MAX).then_some(RACE_TOO_MANY));
+            }
+            GameKind::Schwimmen => {
+                let players = self.connected_count();
+                return (players < CARDS_MIN).then_some(SCHWIMMEN_TOO_FEW).or((players > CARDS_MAX).then_some(SCHWIMMEN_TOO_MANY));
             }
             GameKind::MauMau => {
                 let players = self.connected_count();

@@ -29,4 +29,24 @@ const MAU_MAU: GameTexts = {
   marker: ["Mau!"],
 };
 
-export const textsFor = (game: string): GameTexts => (game === "Mau-Mau" ? MAU_MAU : { banner: [" ist dran", " gewinnt!"], note: [], marker: [] });
+const SCHWIMMEN: GameTexts = {
+  banner: [
+    " ist dran",
+    " tauscht eine Karte",
+    " tauscht alle drei Karten",
+    " schiebt",
+    " schiebt – neue Karten in der Mitte",
+    " klopft!",
+    " verliert ein Leben",
+    " schwimmt jetzt",
+    " scheidet aus",
+    " und alle mit gleichem Blatt verlieren",
+    " und alle anderen sind gleichauf",
+    " gewinnt!",
+  ],
+  note: ["Geklopft – letzte Runde", "Aufgedeckt", "Feuer – 31!"],
+  // the reveal adds a hand's value to these, drawn when first shown
+  marker: ["●●●", "●●○", "●○○", "schwimmt", "●●● · klopft", "●●○ · klopft", "●○○ · klopft", "schwimmt · klopft", "raus"],
+};
+
+export const textsFor = (game: string): GameTexts => (game === "Mau-Mau" ? MAU_MAU : game === "Schwimmen" ? SCHWIMMEN : { banner: [" ist dran", " gewinnt!"], note: [], marker: [] });

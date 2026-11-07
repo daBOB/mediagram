@@ -16,11 +16,11 @@ pub(crate) fn wish_id(suit: Suit) -> String {
     format!("wish_{}", format!("{suit:?}").to_lowercase())
 }
 
-fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
+pub(crate) fn button(id: &str, label: &str, needs: ButtonNeeds, primary: bool) -> DeskButton {
     DeskButton { id: id.into(), label: label.into(), needs, primary, suit: None }
 }
 
-fn name(view: &ViewCtx, id: PlayerId) -> String {
+pub(crate) fn name(view: &ViewCtx, id: PlayerId) -> String {
     view.players.iter().find(|p| p.id == id).map_or_else(|| "Jemand".into(), |p| p.name.clone())
 }
 

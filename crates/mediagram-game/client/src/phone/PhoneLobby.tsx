@@ -73,10 +73,10 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           </div>
         )}
       </div>
-      {(["poster", "race", "mau_mau"] as const).map((game) => (
+      {(["poster", "race", "mau_mau", "schwimmen"] as const).map((game) => (
         <div key={game} className={`game${settings.game === game ? " is-selected" : ""}`}>
           <button className="game-pick" aria-pressed={settings.game === game} onClick={() => configure({ game })}>
-            {game === "poster" ? "Poster-Raten" : game === "race" ? "Heimlauf" : "Mau-Mau"}
+            {game === "poster" ? "Poster-Raten" : game === "race" ? "Heimlauf" : game === "mau_mau" ? "Mau-Mau" : "Schwimmen"}
           </button>
         </div>
       ))}

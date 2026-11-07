@@ -37,6 +37,11 @@ mod room_loop;
 mod room_seats;
 mod room_settings;
 mod room_views;
+mod schwimmen;
+mod schwimmen_round;
+mod schwimmen_rules;
+mod schwimmen_turn;
+mod schwimmen_views;
 mod server;
 mod titles;
 

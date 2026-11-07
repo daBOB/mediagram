@@ -17,6 +17,7 @@ use crate::quiz::Quiz;
 use crate::quiz_config::{Question, QuizConfig};
 use crate::quiz_mix::quiz_questions;
 use crate::race::{RaceConfig, RaceGame};
+use crate::schwimmen::{SchwimmenConfig, SchwimmenGame};
 use crate::titles::TitlePool;
 
 /// The lobby blocks starting a game its pool cannot supply, so neither arm
@@ -29,6 +30,9 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
         }
         if settings.game == GameKind::MauMau {
             return Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
+        }
+        if settings.game == GameKind::Schwimmen {
+            return Box::new(SchwimmenGame::new(SchwimmenConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
         }
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);
