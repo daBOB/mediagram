@@ -33,7 +33,8 @@ class RefreshLogTest {
             val log = RefreshLog()
             val repository = DefaultCatalogRepository(FakeCoreProvider(core), settingsWithAChosenLibrary(), log)
             val outcome = repository.refresh()
-            kotlin.test.assertSame(refusal, outcome.exceptionOrNull())
+            // Under test the coroutine debug mode rethrows a copy across withContext, caused by the original.
+            kotlin.test.assertTrue(generateSequence(outcome.exceptionOrNull()) { it.cause }.any { it === refusal })
             assertEquals(RefreshOutcome.Refused("Could not refresh the library"), log.last())
         }
 

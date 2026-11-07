@@ -5,6 +5,7 @@ import data.CoreProvider
 import data.settings.InMemoryTmdbSettings
 import data.settings.TmdbSettings
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
 private fun fetchViewModel(
     provider: CoreProvider,
     settings: TmdbSettings,
-) = FetchViewModel(CatalogEnrichmentFetcher(provider, settings))
+) = FetchViewModel(CatalogEnrichmentFetcher(provider, settings, dispatcher = Dispatchers.Unconfined))
 
 class FetchViewModelTest {
     @get:Rule

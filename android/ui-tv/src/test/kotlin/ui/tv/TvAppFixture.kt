@@ -54,6 +54,7 @@ import setup.SettingsUiState
 import setup.SettingsViewModel
 import setup.SetupViewModel
 import setup.login.LoginViewModel
+import games.GameNightAnnouncer
 import games.GameNightViewModel
 import stats.AchievementDotViewModel
 import stats.InMemoryAchievementsSeen
@@ -343,7 +344,7 @@ internal class TvAppFixture(
                 TitlePreloadViewModel::class.java to titlePreload,
                 StatsViewModel::class.java to stats,
                 // TvGamesFrame resolves it through hiltViewModel(); a core of its own, so a test can steer Back.
-                GameNightViewModel::class.java to GameNightViewModel(FakeCoreProvider(gameCore), viewer.repository, repository, InMemoryTmdbSettings(), Dispatchers.Unconfined, CoroutineScope(Dispatchers.Unconfined)),
+                GameNightViewModel::class.java to GameNightViewModel(FakeCoreProvider(gameCore), viewer.repository, repository, InMemoryTmdbSettings(), Dispatchers.Unconfined, CoroutineScope(Dispatchers.Unconfined), SilentAnnouncer),
                 // The library's daily-limit door, resolved beside the catalog on every draw.
                 LibraryPlayGate::class.java to LibraryPlayGate(viewer.repository, together),
                 // TvLibraryHomeFrame resolves the dot's ViewModel through hiltViewModel(); every library test reaches it.
@@ -390,4 +391,11 @@ private class HeldIds(
     override suspend fun heldIds(sets: List<Pair<String, Long>>): Set<String> = sets.map { it.first }.filterTo(HashSet()) { it in held }
 
     override suspend fun heldBytes(setId: String, totalBytes: Long): Long = if (setId in held) totalBytes else 0L
+}
+
+/** The TV tests drive game night without a network; nothing is announced. */
+private object SilentAnnouncer : GameNightAnnouncer {
+    override fun announce(joinUrl: String) = Unit
+
+    override fun withdraw() = Unit
 }

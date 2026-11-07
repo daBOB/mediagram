@@ -49,7 +49,7 @@ import kotlin.test.assertTrue
 private fun catalogViewModel(
     repository: CatalogRepository,
     watchState: WatchStateRepository,
-    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings()),
+    enrichment: CatalogEnrichmentFetcher = CatalogEnrichmentFetcher(FakeCoreProvider(FakeCore()), InMemoryTmdbSettings(), dispatcher = Dispatchers.Unconfined),
     filmPreloader: FilmPreloading = FilmPreloading.Noop,
     heldSets: HeldSetsQuery = HeldSetsQuery.Noop,
     // The test's own main, so the shelves are built on the scheduler the test advances.
@@ -204,7 +204,7 @@ class CatalogViewModelTest {
                         return FetchReport(1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
-            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }, dispatcher = Dispatchers.Unconfined)
             val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             vm.update()
             runCurrent()
@@ -244,7 +244,7 @@ class CatalogViewModelTest {
                         return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                     }
                 }
-            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+            val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }, dispatcher = Dispatchers.Unconfined)
             val vm = catalogViewModel(repository, WatchStateFixture().repository, enrichment)
             val gate = CompletableDeferred<Unit>()
             vm.state.test {
@@ -647,7 +647,7 @@ class CatalogViewModelTest {
                             return FetchReport(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u)
                         }
                     }
-                val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") })
+                val enrichment = CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }, dispatcher = Dispatchers.Unconfined)
                 val vm =
                     catalogViewModel(
                         FakeCatalogRepository(movies = 1, refreshFails = fails),
