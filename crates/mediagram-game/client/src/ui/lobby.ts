@@ -16,4 +16,6 @@ export const gameBadge = (s: LobbySettings) =>
         ? "Mau-Mau · 2–8 Spieler"
         : s.game === "schwimmen"
           ? "Schwimmen · 2–8 Spieler"
-          : "Poster-Raten";
+          : s.game === "durak"
+            ? "Durak · 2–6 Spieler"
+            : "Poster-Raten";

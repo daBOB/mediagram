@@ -3,7 +3,7 @@
 // sends (maumau.rs, maumau_views.rs); a text not listed still shows, drawn at
 // first use.
 
-import { SUIT_NAME, SUITS } from "../../ui/card-face";
+import { SUIT_NAME, SUIT_SYMBOL, SUITS } from "../../ui/card-face";
 
 export interface GameTexts {
   /** What follows a player's name in the banner. */
@@ -49,4 +49,24 @@ const SCHWIMMEN: GameTexts = {
   marker: ["●●●", "●●○", "●○○", "schwimmt", "●●● · klopft", "●●○ · klopft", "●○○ · klopft", "schwimmt · klopft", "raus"],
 };
 
-export const textsFor = (game: string): GameTexts => (game === "Mau-Mau" ? MAU_MAU : game === "Schwimmen" ? SCHWIMMEN : { banner: [" ist dran", " gewinnt!"], note: [], marker: [] });
+const DURAK: GameTexts = {
+  banner: [
+    " greift an",
+    " verteidigt",
+    " schlägt",
+    " legt dazu",
+    " darf dazulegen",
+    " darf noch dazulegen",
+    " nimmt auf",
+    " nimmt die Karten auf",
+    " hat alles geschlagen – Bito!",
+    " ist der Durak!",
+    " – keiner ist Durak!",
+  ],
+  note: SUITS.map((s) => `Trumpf ${SUIT_SYMBOL[s]} ${SUIT_NAME[s]}`),
+  marker: ["Angreifer", "Verteidiger", "Raus", "Durak"],
+};
+
+const TEXTS: Record<string, GameTexts> = { "Mau-Mau": MAU_MAU, Schwimmen: SCHWIMMEN, Durak: DURAK };
+
+export const textsFor = (game: string): GameTexts => (TEXTS[game] ?? { banner: [" ist dran", " gewinnt!"], note: [], marker: [] });

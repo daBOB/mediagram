@@ -15,6 +15,8 @@ pub enum GameKind {
     MauMau,
     /// Schwimmen (31) on the card table.
     Schwimmen,
+    /// Durak (throw-in) on the card table.
+    Durak,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

@@ -8,6 +8,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::game::{Game, GameFactory};
+use crate::durak::{DurakConfig, DurakGame};
 use crate::maumau::{MauMauConfig, MauMauGame};
 use crate::poster::PosterGame;
 use crate::poster_config::PosterConfig;
@@ -33,6 +34,9 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
         }
         if settings.game == GameKind::Schwimmen {
             return Box::new(SchwimmenGame::new(SchwimmenConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
+        }
+        if settings.game == GameKind::Durak {
+            return Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
         }
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);
