@@ -7,9 +7,11 @@ export const QUIZ_MODES: { mode: QuizMode; label: string }[] = [
   { mode: "mixed", label: "Gemischt" },
 ];
 
+export const GAME_NAMES = { poster: "Poster-Raten", race: "Heimlauf", bauherr: "Bauherr" } as const;
+
 export const gameBadge = (s: LobbySettings) =>
   s.game === "quiz"
     ? `Buzzer-Quiz · ${QUIZ_MODES.find((m) => m.mode === s.quiz_mode)?.label}`
-    : s.game === "race"
-      ? "Heimlauf · 2–4 Spieler"
-      : "Poster-Raten";
+    : s.game === "poster"
+      ? GAME_NAMES.poster
+      : `${GAME_NAMES[s.game]} · 2–4 Spieler`;
