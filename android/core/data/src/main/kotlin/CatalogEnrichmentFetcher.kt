@@ -3,6 +3,8 @@ package data
 import android.util.Log
 import data.settings.TmdbSettings
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import uniffi.mediagram_core.FetchProgress
 import uniffi.mediagram_core.FetchReport
 import java.util.Locale
@@ -37,6 +40,10 @@ class CatalogEnrichmentFetcher
         // (see `DataModule.provideBackdropWidth`); the default here only
         // spares every existing test constructor a third argument.
         private val backdropWidth: BackdropWidth = BackdropWidth { 780 },
+        // The core does its database and disk work inside each poll of
+        // `fetchMissing`; on the caller's main thread that froze the screen
+        // for seconds and starved the progress poll beside it.
+        private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) {
         private val fallbackLanguage = Locale.getDefault().toLanguageTag()
         private val fetching = Mutex()
@@ -118,7 +125,7 @@ class CatalogEnrichmentFetcher
                                 }
                             }
                         try {
-                            core.fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt())
+                            withContext(dispatcher) { core.fetchMissing(key, fallbackLanguage, backdropWidth.pixels().toUInt()) }
                         } finally {
                             watching.cancel()
                         }

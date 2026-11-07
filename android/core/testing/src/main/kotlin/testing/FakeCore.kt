@@ -248,6 +248,10 @@ class FakeCore(
     var lastLanguage: String? = null
         private set
 
+    /** The thread [fetchMissing] last ran on; the real core does disk work inside the call. */
+    var fetchThread: Thread? = null
+        private set
+
     private var readings = 0
 
     /**
@@ -403,6 +407,7 @@ class FakeCore(
 
     override suspend fun fetchMissing(tmdbKey: String, language: String, backdropWidth: UInt): FetchReport {
         fetchCalls++
+        fetchThread = Thread.currentThread()
         lastKey = tmdbKey
         lastLanguage = language
         gate?.await()

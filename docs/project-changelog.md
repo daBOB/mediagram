@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.150.1 — The fetch's progress shows, and Update no longer freezes the screen
+
+**Fixed** (Android TV, tablet and phone)
+
+- **The app read the channel and fetched artwork on the screen's own thread.** The core does its database and disk work inside those calls. On the TV box, Update froze the picture for 2.5 s while reading the channel and for 8.7 s while fetching (`Skipped 514 frames`). The screen sat on "Fetching details and artwork…", and the 0.147.0 progress poll could not run beside it. Both calls now run on a background thread, like the rest of the catalog's reads.
+
 ## 0.148.0 — A Deinterlace switch for combed old TV shows
 
 **Added** (web player, Android TV, tablet and phone)

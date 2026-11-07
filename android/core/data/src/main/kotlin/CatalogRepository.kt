@@ -128,11 +128,15 @@ class DefaultCatalogRepository(
         runCatching {
             val handle = settings.read() ?: error("No library has been chosen on this device")
             val core = coreProvider.awaitCore()
-            val before = core.catalogFacts().publishedAt
-            val sets = core.refreshLibrary(handle).toInt()
-            val after = core.catalogFacts().publishedAt
-            refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
-            sets
+            // Off the caller's thread, like every other read here: the core
+            // installs the index inside the call, which froze the screen.
+            withContext(dispatcher) {
+                val before = core.catalogFacts().publishedAt
+                val sets = core.refreshLibrary(handle).toInt()
+                val after = core.catalogFacts().publishedAt
+                refreshes.record(if (after == before) RefreshOutcome.AlreadyCurrent else RefreshOutcome.Updated)
+                sets
+            }
         }.onFailure {
             if (it is CancellationException) throw it
             refreshes.record(RefreshOutcome.Refused(it.refreshSentence()))
