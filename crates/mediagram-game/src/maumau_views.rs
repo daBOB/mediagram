@@ -52,7 +52,9 @@ impl MauMauGame {
             (Stage::Drawn { card, .. }, true) => {
                 let mut buttons = self.play_buttons(me);
                 buttons.push(button("keep", "Behalten", ButtonNeeds::Nothing, false));
-                ("Die gezogene Karte passt".into(), hand.iter().map(|c| c == card).collect(), buttons)
+                let fits = playable(top, 0, *card);
+                let prompt = if fits { "Die gezogene Karte passt" } else { "Die gezogene Karte passt nicht" };
+                (prompt.into(), hand.iter().map(|c| c == card && fits).collect(), buttons)
             }
             (_, true) => {
                 let suits = Suit::ALL.map(|s| DeskButton { suit: Some(s), ..button(&wish_id(s), &format!("{} {}", s.symbol(), s.name()), ButtonNeeds::Nothing, true) });
@@ -87,7 +89,11 @@ impl MauMauGame {
 
     pub(crate) fn tv_view(&self, view: &ViewCtx) -> TvScene {
         let over = matches!(self.stage, Stage::Final { .. });
-        let banner = match &self.banner {
+        let shown = match &self.queued {
+            Some((b, from)) if view.now >= *from => Some((b, *from)),
+            _ => self.banner.as_ref().map(|(b, at)| (b, *at)),
+        };
+        let banner = match shown {
             Some((b, at)) if over || view.now < at + self.cfg.banner_ms => b.clone(),
             _ => CardsBanner { player: self.player_at(self.turn), text: " ist dran".into() },
         };
@@ -102,6 +108,7 @@ impl MauMauGame {
                         player,
                         cards: h.len() as u8,
                         open: vec![],
+                        worth: None,
                         marker: (h.len() == 1).then(|| "Mau!".into()),
                     })
                     .collect(),
