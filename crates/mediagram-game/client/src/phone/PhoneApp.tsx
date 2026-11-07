@@ -7,29 +7,13 @@ import { ANSWER_MARKS } from "../ui/answers";
 import { CardsDesk } from "./CardsDesk";
 import { PhoneLobby } from "./PhoneLobby";
 import { PhoneSheet } from "./PhoneSheet";
+import { buzz, memory as store } from "./app-bridge";
 import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
+import { buzzFor } from "./buzz-moments";
 import { goFullscreen } from "./phone-fullscreen";
 
 const NAME_KEY = "spieltisch.name";
 const TOKEN_KEY = "spieltisch.token";
-
-const store = {
-  get: (k: string) => {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  set: (k: string, v: string | null) => {
-    try {
-      if (v === null) localStorage.removeItem(k);
-      else localStorage.setItem(k, v);
-    } catch {
-      /* private mode: seat is just not remembered */
-    }
-  },
-};
 
 export function PhoneApp() {
   const [name, setName] = useState(() => store.get(NAME_KEY) ?? "");
@@ -39,6 +23,7 @@ export function PhoneApp() {
   const [toast, setToast] = useState<string | null>(null);
   const joinedRef = useRef(joined);
   joinedRef.current = joined;
+  const lastScreen = useRef<PhoneScreen | null>(null);
   // a phone rejoining its seat by itself goes fullscreen too: without a tap this only arms it, the first tap enters
   useEffect(() => {
     if (joined) goFullscreen();
@@ -52,6 +37,11 @@ export function PhoneApp() {
       case "phone":
         // the first avatar a phone gets is its choice until its player picks one themselves
         if (msg.view.me.avatar) rememberAvatar(msg.view.me.avatar, true);
+        {
+          const kind = buzzFor(lastScreen.current, msg.view.screen);
+          lastScreen.current = msg.view.screen;
+          if (kind) buzz(kind);
+        }
         setView(msg.view);
         break;
       case "error":
@@ -211,7 +201,7 @@ function ChoiceScreen({ screen, conn }: { screen: Choice; conn: Connection }) {
     // would leave the button dead with no clock to end the wait. The host
     // ignores a repeat, and its next screen replaces this one.
     if (timed) setLocalPick(index);
-    navigator.vibrate?.(25);
+    // no buzz on the tap itself: the host taking the pick buzzes ("accepted")
     conn.send({ t: "action", action: { t: "choose", index, at } });
   };
 
