@@ -34,7 +34,7 @@ building pieces or rent table of the MB/Hasbro game.
 | 03 | [Bauherr rules, host and phone](phase-03-bauherr-rules-host-phone.md) | `../mediagram-bauherr` (feat/bauherr) | done, merged 10:18; review fixes 10:36 |
 | 04 | [Bauherr look test](phase-04-bauherr-look-test.md) | spike pages + box | done: round 1 rejected (toy-like); round 2 → user picked D Abendsonne, dice on the square (12:55) |
 | 05 | [Bauherr TV board](phase-05-bauherr-tv-board.md) | after 03 + user's look pick | pending |
-| 06 | [Merge, verify, version](phase-06-merge-verify-version.md) | feat/spieltisch | in progress (cards + Bauherr rules → 0.152.0) |
+| 06 | [Merge, verify, version](phase-06-merge-verify-version.md) | feat/spieltisch | 0.152.0 done (13:40): cards + Bauherr rules, check.sh green, box sideload + card table measured; Bauherr board after 05 |
 
 01, 03 and 04 run in parallel. 02 starts when 01 is merged into feat/spieltisch;
 05 when 03 is merged and the user picked a look.
@@ -58,4 +58,13 @@ building pieces or rent table of the MB/Hasbro game.
 
 ## Results
 
-(to be filled in)
+- 0.152.0 on feat/spieltisch (4b44fec7), unpushed: Mau-Mau, Schwimmen, Durak, Bauherr rules/host/phone with a
+  plain 2D TV board. 277 game tests; `scripts/check.sh` green after splitting seven modules under 200 lines (6ed4f3a5).
+- Box 192.168.0.37, release 0.152.0 sideloaded (install-dm, speed-profile), not published to the channel. Real
+  game night, 8 scripted phones over the LAN at human pace (1.2–2.4 s per move), `dumpsys gfxinfo` from deal to
+  ranking:
+  - Mau-Mau, 8 players: 183 s, 10 962 frames = 59.9 fps, janky 7 (0.06 %), p50 10 ms, p99 25 ms, 0 missed vsync.
+  - Schwimmen, 8 players (reveals incl.): 661 s, 39 740 frames = 60.1 fps, janky 11 (0.03 %), p50 24 ms,
+    p99 31 ms, 0 missed vsync. Heavier per frame than Mau-Mau but no dropped frames.
+- Box left on the game lobby. The box only lets its own WebView be the TV (`not_allowed` for a LAN TV socket).
+- Open: Bauherr 3D board (phase 05), its box measurement; Durak not measured on the box (6 seats < Mau-Mau's 8).

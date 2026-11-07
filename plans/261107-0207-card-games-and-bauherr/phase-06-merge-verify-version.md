@@ -1,6 +1,6 @@
 # Phase 06 — Merge, verify, version
 
-**Status:** pending. Lead's job, per finished game.
+**Status:** cards + Bauherr rules done as 0.152.0 (results in plan.md); the Bauherr board follows phase 05. Lead's job, per finished game.
 
 - Merge the phase branch into feat/spieltisch; resolve the additive conflicts
   (GameKind, factory, room_settings, lobby, TvApp/PhoneApp); rerun `cargo test` so
