@@ -10,6 +10,11 @@ export const LAYER = 0.012;
 
 export const DECK_AT = { x: -1.6, z: 0.1 } as const;
 export const DISCARD_AT = { x: 1.6, z: 0.1 } as const;
+/** Gap between piles lying side by side. */
+const PILE_GAP = 1.65;
+/** Where pile `i` of `n` lies: a lone pile (the discards) at `DISCARD_AT`, several in a row across the middle. */
+export const pileAt = (i: number, n: number) =>
+  n <= 1 ? DISCARD_AT : { x: DISCARD_AT.x + (i - (n - 1) / 2) * PILE_GAP, z: DISCARD_AT.z };
 /** Where the wished suit's badge stands, beside the discards. */
 export const WISH_AT = { x: 4.0, z: 0.1 } as const;
 

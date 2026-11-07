@@ -239,7 +239,7 @@ export class CardsHud {
     this.bannerKey = null;
     if (banner) this.setBanner(...banner);
     else this.banner.mesh.visible = false;
-    this.noteKey = null;
+    this.noteKey = ""; // not null, so a restored "no note" still hides the last pre-drawn one
     this.setNote(note);
     this.place();
   }

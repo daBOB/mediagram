@@ -2,7 +2,7 @@
 import { expect, test } from "bun:test";
 import { RANKS, SUITS } from "../src/ui/card-face";
 import { BACK_CELL, cellOf } from "../src/tv/cards/cards-print";
-import { fanCard, seatSpot, yawFacing } from "../src/tv/cards/cards-layout";
+import { DISCARD_AT, fanCard, pileAt, seatSpot, yawFacing } from "../src/tv/cards/cards-layout";
 import { textsFor } from "../src/tv/cards/cards-texts";
 
 test("every card has its own atlas cell and the back comes after them", () => {
@@ -40,4 +40,19 @@ test("the table pre-draws what Mau-Mau says", () => {
   expect(t.banner).toContain(" vergisst Mau – Strafkarte!");
   expect(t.banner).toContain(" wünscht Herz");
   expect(t.note).toContain("Zieh 8");
+});
+
+test("a lone pile lies where the discards do, several lie in a row centred on them", () => {
+  expect(pileAt(0, 1)).toEqual(DISCARD_AT);
+  const row = [0, 1, 2].map((i) => pileAt(i, 3));
+  expect(row[1].x).toBeCloseTo(DISCARD_AT.x);
+  expect(row[1].x - row[0].x).toBeCloseTo(row[2].x - row[1].x);
+  expect(row[2].x - row[0].x).toBeGreaterThan(2 * 1.25);
+});
+
+test("every text the Schwimmen host sends for seats and the table is pre-drawn", () => {
+  const t = textsFor("Schwimmen");
+  expect(t.banner).toContain(" klopft!");
+  expect(t.note).toContain("Feuer – 31!");
+  expect(t.marker).toContain("●●● · klopft");
 });
