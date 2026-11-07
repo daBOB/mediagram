@@ -1,0 +1,36 @@
+# Phase 04 — Android controller app
+
+**Priority:** core deliverable. **Status:** todo. New module `:controller` in `android/`, package `com.mediagram.controller`.
+
+**Files:**
+- Modify: `android/settings.gradle.kts` (`include(":controller")`), `android/gradle/libs.versions.toml` (add `play-services-code-scanner`, current stable)
+- Create: `android/controller/build.gradle.kts`, `src/main/AndroidManifest.xml`, `src/main/res/xml/network_security_config.xml`, launcher icon
+- Create (`src/main/kotlin/`): `LanGameUrl.kt`, `ControllerScreen.kt`, `BoxFinder.kt`, `AppBridge.kt`, `Buzzer.kt`, `GameWebView.kt`, `ControllerActivity.kt`
+- Test (`src/test/kotlin/`): `LanGameUrlTest.kt`, `ControllerScreenTest.kt`, `AppBridgeTest.kt`
+
+**Interfaces:**
+- Consumes: plan.md § Contracts (bridge, DNS-SD, LAN URL rule, same box, reducer).
+- Produces: `fun lanGameUrl(raw: String): String?`; `fun sameBox(a: String, b: String): Boolean`; `sealed interface ControllerScreen { data class Searching(val notice: String? = null); data class Playing(val url: String) }`; `sealed interface ControllerEvent { data class Found(val url: String); data class Scanned(val raw: String); data class PageFailed(val url: String) }`; `fun startScreen(remembered: String?): ControllerScreen`; `fun ControllerScreen.after(event: ControllerEvent): ControllerScreen`; `class BoxFinder(context: Context) { fun found(): Flow<String> }`; `class AppBridge(prefs: SharedPreferences, buzzer: Buzzer)`; `class Buzzer(context: Context) { fun buzz(kind: String) }`.
+
+### Task 4.1: Module + pure logic
+
+- [ ] **Step 1: Module skeleton.** `build.gradle.kts` with plugins `app.android.application` + `app.android.application.compose`; `namespace`/`applicationId` `com.mediagram.controller`; `versionName` read from the first `^version = "x.y.z"` line of the root `Cargo.toml` (no new manifest), `versionCode` with the same formula as `android/app/build.gradle.kts`'s `versionCodeOf`; release signed with the `mediagram.signing.*` properties when present (copy the app's pattern), not minified (the bridge is reached by reflection). Deps: activity-compose, compose material3, coroutines-android, code scanner; `testImplementation` robolectric. Verify: `./gradlew :controller:assembleDebug` succeeds.
+- [ ] **Step 2: Write the failing tests.**
+  - `LanGameUrlTest` (table): accepts `http://192.168.0.37:8080/`, `http://10.0.0.5:8080/`, `http://172.20.1.2:8080/x.html` (path kept), `http://spieltisch.local:8080/`; rejects `https://192.168.0.37/`, `http://8.8.8.8:8080/`, `http://172.32.0.1/`, `http://192.168.0.37.evil.com/`, `javascript:alert(1)`, `""`, `http://example.com/`, `WIFI:S:home;T:WPA;P:x;;`. `sameBox`: `http://192.168.0.37:8080/` vs `http://192.168.0.37:8080/avatars/x.webp` → true; vs `http://192.168.0.37:8081/` → false; vs `http://example.com/` → false.
+  - `ControllerScreenTest`: `startScreen(null) == Searching()`; `startScreen(u) == Playing(u)`; `Searching + Found(u) == Playing(u)`; **`boxMovedSinceLastNight`**: `Playing(a) + Found(b) == Playing(b)`; `Playing(a) + Found(a) == Playing(a)`; **`tvRestartedGameNight`**: `Playing(a) + PageFailed(a) == Searching()`, then `+ Found(a) == Playing(a)`; `Playing(b) + PageFailed(a) == Playing(b)`; **`foreignQrCode`**: `Searching() + Scanned("https://example.com") == Searching("Das ist nicht der Code vom Fernseher.")`; `Searching() + Scanned("http://192.168.0.37:8080/") == Playing(...)`.
+  - `AppBridgeTest` (Robolectric, fake `Buzzer`): `getMemory()` on empty prefs → `"{}"`; `setMemory("spieltisch.name","Ada")` then `getMemory()` parses to `{"spieltisch.name":"Ada"}`; `setMemory(k, null)` removes it; values survive a new `AppBridge` on the same prefs; `vibrate("won")` reaches the buzzer with `"won"`.
+- [ ] **Step 3: Run** `./gradlew :controller:testDebugUnitTest` → FAIL.
+- [ ] **Step 4: Implement** `LanGameUrl.kt`, `ControllerScreen.kt`, `AppBridge.kt` (`@JavascriptInterface` on all three methods; memory keys stored with a `page.` prefix so they never mix with the app's own `box.url`).
+- [ ] **Step 5: Run** → PASS.
+
+### Task 4.2: Device side
+
+- [ ] **Step 1: `Buzzer`** — `VibratorManager`/`Vibrator`, a distinct `VibrationEffect` per kind (your call), unknown kind and no vibrator → nothing.
+- [ ] **Step 2: `BoxFinder.found()`** — `callbackFlow` over `NsdManager.discoverServices("_mediagram-game._tcp", PROTOCOL_DNS_SD, …)`; resolve each found service (use `registerServiceInfoCallback` on API 34+, `resolveService` below), read TXT `url`, pass through `lanGameUrl`, emit valid ones; stop discovery in `awaitClose`. Hold a `WifiManager.MulticastLock` while collecting (manifest `CHANGE_WIFI_MULTICAST_STATE`).
+- [ ] **Step 3: `GameWebView`** — Compose `AndroidView` WebView: JavaScript + DOM storage on, zoom off (`setSupportZoom(false)`, no built-in controls), `overScrollMode = OVER_SCROLL_NEVER`, `keepScreenOn = true`, `addJavascriptInterface(bridge, "mediagramApp")`; `shouldOverrideUrlLoading` allows only `sameBox(current, target)`; main-frame `onReceivedError` → `PageFailed(url)`. Android caps gesture exclusion at 200 dp per edge and the app cannot know where a canvas sits, so system back-swipe edges stay as they are (the drawing game can revisit). The web view survives configuration changes (keep it out of recomposition churn) so a rotation never drops the seat.
+- [ ] **Step 4: `ControllerActivity`** — state = `startScreen(prefs "box.url")`; collect `BoxFinder` whenever `Searching` (restart on entering it) and keep collecting while `Playing` so a moved box is followed; store `box.url` on every `Playing(url)`. `Searching` screen (German): heading "Spieltisch", text "Warte auf den Fernseher …", sub-text "Starte auf dem Fernseher den Spieleabend.", button "QR-Code scannen" (Google code scanner → `Scanned(raw)`), the notice when present. Edge-to-edge, both orientations. Manifest: `INTERNET`, `VIBRATE`, `CHANGE_WIFI_MULTICAST_STATE`, `android:networkSecurityConfig` with `base-config cleartextTrafficPermitted="true"` (box IP is whatever DHCP hands out — same reasoning as the media app's config), label "Spieltisch".
+- [ ] **Step 5: Device walk** (Pad 5 Pro `d54bc94f` or a household phone; never the box): dev host + `avahi-publish` (plan.md) → `ANDROID_SERIAL=<serial> ./gradlew :controller:installDebug` → open app → lobby within a few seconds without typing (after the first name entry); answer a quiz question with a bot or second browser → buzz on new question, on pick, on wrong answer; win → buzz. Stop the dev host → app returns to "Warte auf den Fernseher …"; restart it → app rejoins. Leave the phone untouched past its screen timeout → screen stays on. Kill `avahi-publish`, scan a QR (`qrencode -t ANSIUTF8 http://<lan-ip>:8080/`) → joins; scan `qrencode -t ANSIUTF8 https://example.com` → notice.
+- [ ] **Step 6: Drawing check.** Serve a throwaway canvas page from the scratchpad (`python3 -m http.server`, pointer-event logging, `touch-action: none`) and open it by scanning its QR: finger strokes draw, nothing zooms, scrolls or bounces, long-press shows no menu.
+- [ ] **Step 7: Verify + commit.** `./gradlew :controller:testDebugUnitTest :controller:lint` → PASS; bump patch; `feat(android): Spieltisch controller app finds the TV and keeps the phone awake`.
+
+**Success:** unit tests pass; the device walk shows every behaviour above.
