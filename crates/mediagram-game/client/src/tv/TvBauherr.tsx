@@ -1,72 +1,99 @@
 import { useEffect, useRef, useState } from "react";
-import { useServerNow, type Connection } from "../net";
+import type { Connection } from "../net";
 import type { BauherrScene } from "../protocol/BauherrScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
-import { Token } from "../ui/Token";
-import { H, W, drawBauherr, taler } from "./bauherr/bauherr-draw";
-import { describeTurn } from "./bauherr/bauherr-status";
+import type { BauherrHandle } from "./bauherr/bauherr-stage";
 import { TvFinal } from "./TvFinal";
+import { TvSettingsPanel } from "./settings/TvSettingsPanel";
 
-/** How long the finished board stays up before the awards. */
+/** How long the finished board stays up, with the winner in the banner, before the awards. */
 const CHEER_MS = 4000;
 
 /**
- * A plain top-down board: a 2D canvas for the ring, hotels and pawns, and a
- * side panel with the round, the turn in words and everyone's money. It
- * follows a whole game; the 3D board will replace it.
+ * The Bauherr board: a full-screen WebGL canvas with the round, the turn and the players drawn inside it (no HTML
+ * over the canvas while playing, it cost the box frames). three.js and the baked town load with this scene only.
  */
 export function TvBauherr({ scene, players, conn }: { scene: BauherrScene; players: PlayerInfo[]; conn: Connection }) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const now = useServerNow(conn);
+  const stage = useRef<HTMLDivElement>(null);
+  const handle = useRef<BauherrHandle | null>(null);
+  const live = useRef({ scene, players });
+  live.current = { scene, players };
+  const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
   const [cheered, setCheered] = useState(false);
-  const over = scene.turn.stage === "final";
+  const [settings, setSettings] = useState(false);
+  const cheeredRef = useRef(false);
+  cheeredRef.current = cheered;
+  // bumped when a new game starts on a board already swapped for the ranking
+  const [round, setRound] = useState(0);
+  const final = scene.turn.stage === "final" ? scene.turn : null;
+
+  const stop = () => {
+    handle.current?.dispose();
+    handle.current = null;
+  };
 
   useEffect(() => {
-    const g = canvas.current?.getContext("2d");
-    if (g && !cheered) drawBauherr(g, scene, players, now);
-  }, [scene, players, now, cheered]);
+    let gone = false;
+    setState("loading");
+    import("./bauherr/bauherr-stage")
+      .then((m) => m.startBauherr(stage.current!, () => live.current, () => conn.serverNow()))
+      .then((h) => {
+        // the ranking may have taken over while the box was still building the board
+        if (gone || cheeredRef.current) h.dispose();
+        else {
+          handle.current = h;
+          setState("ready");
+        }
+      })
+      .catch((e) => {
+        console.error("bauherr board", e);
+        if (!gone) setState("failed");
+      });
+    return () => {
+      gone = true;
+      stop();
+    };
+  }, [conn, round]);
 
+  // OK on the remote opens the settings over the board; the game runs on underneath
   useEffect(() => {
-    if (!over) {
-      setCheered(false);
-      return;
+    const onKey = (e: KeyboardEvent) => {
+      // not on a held OK: the one that started the game would open the panel over the new board
+      if (e.key === "Enter" && !e.repeat && !cheeredRef.current) setSettings(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const over = final !== null;
+  useEffect(() => {
+    if (over && !cheered) {
+      const t = window.setTimeout(() => {
+        stop(); // the ranking replaces the board: no more frames drawn behind it
+        setSettings(false); // else it would reopen over the next round's board
+        setCheered(true);
+      }, CHEER_MS);
+      return () => clearTimeout(t);
     }
-    const t = window.setTimeout(() => setCheered(true), CHEER_MS);
-    return () => clearTimeout(t);
-  }, [over]);
+    if (!over && cheered) {
+      // the same table started again without this TV seeing the lobby
+      setCheered(false);
+      setRound((r) => r + 1);
+    }
+  }, [over, cheered]);
 
-  if (cheered && scene.turn.stage === "final") {
+  if (final && cheered) {
     // the game's own ranking: unseated joiners are not in it, and the broke rank by who lasted longer
-    const order = new Map(scene.turn.ranking.map((id, i) => [id, i]));
+    const order = new Map(final.ranking.map((id, i) => [id, i]));
     const ranked = players.filter((p) => order.has(p.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-    return <TvFinal players={ranked} conn={conn} ranked />;
+    return <TvFinal players={ranked} conn={conn} ranked jingle={false} />;
   }
-
-  const { text, die } = describeTurn(scene, players, now);
-  const onTurn = "player" in scene.turn ? scene.turn.player : null;
   return (
-    <section className="tv-bauherr">
-      <canvas ref={canvas} className="tv-bauherr-board" width={W} height={H} />
-      <aside className="tv-bauherr-side">
-        <h1 className="tv-bauherr-round">
-          Runde {scene.round} von {scene.rounds}
-        </h1>
-        <ul className="tv-bauherr-seats">
-          {scene.seats.map((s) => {
-            const p = players.find((q) => q.id === s.player);
-            return (
-              <li key={s.player} className={`tv-bauherr-seat${s.player === onTurn ? " is-on" : ""}${s.out ? " is-out" : ""}`}>
-                {p && <Token player={p} size="sm" />}
-                <span className="tv-bauherr-name">{p?.name}</span>
-                <span className="tv-bauherr-cash">{s.out ? "raus" : taler(s.cash)}</span>
-                <span className="tv-bauherr-worth">Vermögen {taler(s.worth)}</span>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="tv-bauherr-text">{text}</p>
-        {die && <p className="tv-bauherr-die">{die}</p>}
-      </aside>
+    <section className="tv-race" ref={stage}>
+      {state !== "ready" && (
+        <p className="tv-race-wait">{state === "failed" ? "Das Spielbrett konnte nicht geladen werden." : "Das Spielbrett wird aufgebaut …"}</p>
+      )}
+      {settings && <TvSettingsPanel onClose={() => setSettings(false)} />}
     </section>
   );
 }

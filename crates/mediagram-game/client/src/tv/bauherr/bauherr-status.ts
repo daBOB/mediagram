@@ -1,6 +1,7 @@
 import type { BauherrScene } from "../../protocol/BauherrScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
-import { taler } from "./bauherr-draw";
+
+export const taler = (n: number, short = false) => `${n.toLocaleString("de-DE")} ${short ? "T" : "Taler"}`;
 
 const PERMIT_WORD = {
   approved: "Genehmigt!",

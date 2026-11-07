@@ -5,7 +5,7 @@
 
 import type { RaceScene } from "../../protocol/RaceScene";
 import { effectsGain, getSettings, musicVolume, subscribeSettings, type TvSettings } from "../settings/tv-settings";
-import { stageCues, type SoundName } from "./race-sound-cues";
+import { stageCues, type Cue, type SoundName } from "./race-sound-cues";
 
 const DIR = "/race/sound/";
 const EFFECTS: Record<SoundName, { files: string[]; gain: number }> = {
@@ -77,8 +77,12 @@ export class RaceSound {
 
   /** Called every frame: schedules the sounds of the scene's stage, once per stage. `now`: host time, ms. */
   update(scene: RaceScene, now: number) {
+    this.tick(stageCues(scene, now), scene.stage.stage === "final", now);
+  }
+
+  /** The same for any board: `plan` holds the cues of the current stage; `final` is set once the game is over. */
+  tick(plan: { key: string; cues: Cue[] } | null, final: boolean, now: number) {
     this.measureLag();
-    const plan = stageCues(scene, now);
     if (!plan || plan.key === this.scheduled) return;
     this.scheduled = plan.key;
     const lagMs = Number.isNaN(this.lagMs) ? (this.ctx.outputLatency || this.ctx.baseLatency || 0) * 1000 : this.lagMs;
@@ -88,7 +92,7 @@ export class RaceSound {
       if (when >= this.ctx.currentTime - LATE_S) this.play(sound, Math.max(this.ctx.currentTime, when));
     }
     // the board gives way to the ranking 4 s after the win: the music fades out under the jingle
-    if (scene.stage.stage === "final") {
+    if (final) {
       this.ending = true;
       this.fade(0, 3500);
     }
