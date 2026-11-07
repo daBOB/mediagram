@@ -3,6 +3,7 @@ import type { Connection } from "../net";
 import type { LobbySettings } from "../protocol/LobbySettings";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
+import { inApp } from "./app-bridge";
 import { AvatarPicker } from "./AvatarPicker";
 import { GAME_NAMES, QUIZ_MODES } from "../ui/lobby";
 import { Token } from "../ui/Token";
@@ -13,11 +14,14 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
   const { settings } = screen;
   const style = { "--player": me.color } as CSSProperties;
   // A plain-HTTP page cannot keep the screen on (no Wake Lock outside HTTPS, and Chrome ignored a
-  // hidden looping video), so the player turns the phone's screen timeout off themselves.
+  // hidden looping video), so the player turns the phone's screen timeout off themselves. The
+  // controller apps keep the screen on, so they skip the hint.
   const picker = (
     <>
       <AvatarPicker avatars={screen.avatars} mine={me.avatar} conn={conn} />
-      <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
+      {!inApp() && (
+        <p className="hint">Tipp: Schalte für den Spieleabend die automatische Bildschirmsperre deines Handys aus, sonst geht es mitten im Spiel aus.</p>
+      )}
     </>
   );
 

@@ -34,6 +34,20 @@ private class SetsOnly(
     override suspend fun titleInfo(posterKey: String): TitleInfo? = null
 }
 
+/** Remembers what the view model asked to announce on the network. */
+private class RecordingAnnouncer : GameNightAnnouncer {
+    val announced = mutableListOf<String>()
+    var withdrawals = 0
+
+    override fun announce(joinUrl: String) {
+        announced += joinUrl
+    }
+
+    override fun withdraw() {
+        withdrawals++
+    }
+}
+
 class GameNightViewModelTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
@@ -41,9 +55,10 @@ class GameNightViewModelTest {
     private val provider = FakeCoreProvider(core)
     private val watch = DefaultWatchStateRepository(provider, Dispatchers.Unconfined)
     private val tmdb = InMemoryTmdbSettings()
+    private val announcer = RecordingAnnouncer()
 
     private fun model(scope: kotlinx.coroutines.CoroutineScope) =
-        GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f16", "16"))), tmdb, Dispatchers.Unconfined, scope)
+        GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f16", "16"))), tmdb, Dispatchers.Unconfined, scope, announcer)
 
     @Test
     fun startPassesTheConfigAndShowsTheTvPage() =
@@ -95,7 +110,7 @@ class GameNightViewModelTest {
             core.profiles = listOf(kid)
             core.chosen = "k"
             watch.reload()
-            val model = GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f12", "12"))), tmdb, Dispatchers.Unconfined, backgroundScope)
+            val model = GameNightViewModel(provider, watch, SetsOnly(listOf(film("f0", "0"), film("f12", "12"))), tmdb, Dispatchers.Unconfined, backgroundScope, announcer)
 
             model.start()
             model.state.first { it !is GameNightUi.Starting }
@@ -131,6 +146,44 @@ class GameNightViewModelTest {
             val config = core.gameNightStarts.single()
             assertTrue(config.kidsLocked)
             assertEquals(listOf("f0"), config.kidsSetIds)
+        }
+
+    @Test
+    fun startAnnouncesTheJoinUrl() =
+        runTest {
+            watch.reload()
+            val model = model(backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertEquals(listOf("http://192.168.0.2:8080/"), announcer.announced)
+        }
+
+    @Test
+    fun failedStartAnnouncesNothing() =
+        runTest {
+            watch.reload()
+            core.gameNightStartFailure = IllegalStateException("port taken")
+            val model = model(backgroundScope)
+
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            assertEquals(emptyList(), announcer.announced)
+        }
+
+    @Test
+    fun stopWithdrawsTheAnnouncement() =
+        runTest {
+            watch.reload()
+            val model = model(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined))
+            model.start()
+            model.state.first { it !is GameNightUi.Starting }
+
+            model.stop()
+
+            assertEquals(1, announcer.withdrawals)
         }
 
     @Test

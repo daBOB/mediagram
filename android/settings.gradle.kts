@@ -40,6 +40,9 @@ rootProject.name = "mediagram-android"
 // App module - picks touch or television surface at launch
 include(":app")
 
+// The Spieltisch controller: a phone or tablet joining the TV's game night
+include(":controller")
+
 // Surface modules - Compose UI per form factor, both render feature UiState
 include(":ui-mobile")
 include(":ui-tv")

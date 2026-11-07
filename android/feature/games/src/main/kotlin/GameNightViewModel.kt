@@ -45,6 +45,7 @@ class GameNightViewModel
         private val tmdb: TmdbSettings,
         private val dispatcher: CoroutineDispatcher,
         @AppScope private val appScope: CoroutineScope,
+        private val announcer: GameNightAnnouncer,
     ) : ViewModel() {
         private val _state = MutableStateFlow<GameNightUi>(GameNightUi.Starting)
         val state: StateFlow<GameNightUi> = _state.asStateFlow()
@@ -72,6 +73,7 @@ class GameNightViewModel
                                 val config = gameNightConfig(catalog.sets(), profile, watchState.snapshot.value.kidsMarks)
                                 coreProvider.awaitCore().startGameNight(config.copy(tmdbKey = tmdb.read()))
                             }
+                        announcer.announce(urls.joinUrl)
                         GameNightUi.Ready(urls.tvUrl)
                     } catch (e: CancellationException) {
                         throw e
@@ -90,6 +92,8 @@ class GameNightViewModel
          * The state goes back to [GameNightUi.Starting], so coming back never shows the ended night's page.
          */
         fun stop() {
+            // Phones stop looking at a night that is ending, before the host goes away under them.
+            announcer.withdraw()
             _state.value = GameNightUi.Starting
             // Going to the background and leaving the screen both stop; the second has nothing left to end.
             if (startJob == null && stopJob != null) return

@@ -3,6 +3,8 @@
 // phone that left fullscreen (a swipe, a notification) is back on its next
 // tap. iPhones cannot put a page fullscreen at all; there it does nothing.
 
+import { inApp } from "./app-bridge";
+
 let wanted = false;
 
 function enter() {
@@ -12,6 +14,8 @@ function enter() {
 
 /** Call from a tap: fullscreen now and after every tap that finds it left. */
 export function goFullscreen() {
+  // the controller apps are fullscreen already
+  if (inApp()) return;
   wanted = true;
   enter();
 }
