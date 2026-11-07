@@ -8,7 +8,8 @@ import { LIGHT_MAX, geometryOf, shareGeometry, type HotelRec } from "./bauherr-d
 import { CAMERA, GROUND } from "./bauherr-layout";
 import { haloMaterial, ownerMaterial, shadowMaterial, townMaterial } from "./bauherr-materials";
 
-export const SKY = "#e7c49c";
+/** The warm haze that stands where the sky would be: the far land fades into it. */
+export const SKY = "#efb27c";
 type Mesh = THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
 
 export interface HotelView {
@@ -18,6 +19,8 @@ export interface HotelView {
   rise: Mesh;
   scaf: Mesh;
   owner: Mesh;
+  /** The plot sign: the owner pieces' last range, drawn only before the first stage. */
+  sign: Mesh;
   /** Shadow decals; `shade` holds each decal vertex's strength (a stage's shadow fades in as it rises). */
   shadow: Mesh;
   shade: Float32Array;
@@ -87,12 +90,13 @@ function hotelView(scene: THREE.Scene, a: Assets, i: number): HotelView {
   shadowGeo.setAttribute("color", new THREE.BufferAttribute(shade, 3).setUsage(THREE.DynamicDrawUsage));
   const shadow = new THREE.Mesh(shadowGeo, shadowMaterial(a.shadows[i], true));
   shadow.renderOrder = 1;
-  for (const m of [base, rise, scaf, owner, shadow]) {
+  const sign = new THREE.Mesh(shareGeometry(ownerGeo), material);
+  for (const m of [base, rise, scaf, owner, sign, shadow]) {
     m.frustumCulled = false; // draw ranges change what the bounds hold, and the town is always in view
     scene.add(m);
   }
   rise.visible = scaf.visible = false;
-  return { rec, base, rise, scaf, owner, shadow, shade, riseClip, scafClip, tint, tintKey: "", built: 0, rising: null, owned: null };
+  return { rec, base, rise, scaf, owner, sign, shadow, shade, riseClip, scafClip, tint, tintKey: "", built: 0, rising: null, owned: null };
 }
 
 export function buildWorld(renderer: THREE.WebGLRenderer, a: Assets): World {
@@ -101,7 +105,7 @@ export function buildWorld(renderer: THREE.WebGLRenderer, a: Assets): World {
   renderer.localClippingEnabled = true;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(SKY);
-  scene.fog = new THREE.Fog(SKY, 24, 120);
+  scene.fog = new THREE.Fog(SKY, 18, 85);
   const camera = new THREE.PerspectiveCamera(CAMERA.fov, 16 / 9, 0.5, 300);
   camera.position.set(...CAMERA.pos);
   camera.lookAt(...CAMERA.at);
@@ -114,8 +118,14 @@ export function buildWorld(renderer: THREE.WebGLRenderer, a: Assets): World {
   const o = a.rec.outer, beyond = new THREE.Mesh(new THREE.PlaneGeometry(o.x1 - o.x0, o.z1 - o.z0).rotateX(-Math.PI / 2), townMaterial(a.outer));
   beyond.geometry.setAttribute("color", ground.getAttribute("color"));
   beyond.position.set((o.x0 + o.x1) / 2, -0.03, (o.z0 + o.z1) / 2);
+  // three draws opaque things by material, not by depth, so the two big ground planes would be shaded first and then covered by
+  // every building and hill; drawn last, the GPU skips every pixel something stands on (the nearer ground before the far)
+  floor.renderOrder = 10;
+  beyond.renderOrder = 11;
   const town = new THREE.Mesh(geometryOf(a.buf, a.rec.town), townMaterial(a.town));
   town.frustumCulled = false;
-  scene.add(beyond, floor, town, haloMesh(a.rec.halos));
+  const land = new THREE.Mesh(geometryOf(a.buf, a.rec.terrain), townMaterial(a.terrain));
+  land.frustumCulled = false;
+  scene.add(beyond, floor, land, town, haloMesh(a.rec.halos));
   return { scene, camera, hotels: a.rec.hotels.map((_, i) => hotelView(scene, a, i)), assets: a };
 }

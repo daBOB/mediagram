@@ -3,6 +3,7 @@ import type { Connection } from "../net";
 import type { BauherrScene } from "../protocol/BauherrScene";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import type { BauherrHandle } from "./bauherr/bauherr-stage";
+import { mark } from "./bauherr/bauherr-timing";
 import { TvFinal } from "./TvFinal";
 import { TvSettingsPanel } from "./settings/TvSettingsPanel";
 
@@ -35,6 +36,7 @@ export function TvBauherr({ scene, players, conn }: { scene: BauherrScene; playe
   useEffect(() => {
     let gone = false;
     setState("loading");
+    mark("mount");
     import("./bauherr/bauherr-stage")
       .then((m) => m.startBauherr(stage.current!, () => live.current, () => conn.serverNow()))
       .then((h) => {

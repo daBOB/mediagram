@@ -8,21 +8,12 @@ import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import type { Dice } from "./bauherr-dice";
 import { FIELD_SIZE, LOTS, roadPoint } from "./bauherr-layout";
 import { MARK_COLORS, type Blobs, type Pieces } from "./bauherr-pieces";
+import { pawnPlace } from "./bauherr-pawn-place";
 import { stepHotel } from "./bauherr-stages";
 import type { World } from "./bauherr-world";
 
-const HOP_LIFT = 0.55;
 /** A pawn's place on its field by seat (along the walk, across it), so up to four share a field. */
 const SLOTS = [[-0.4, -0.22], [0.4, -0.22], [-0.4, 0.3], [0.4, 0.3]];
-
-/** Where a pawn is: its field, or mid-hop while its owner walks (one field per `hop_ms`); `lift` is the hop's height. */
-export function pawnPlace(scene: BauherrScene, seat: number, now: number): { u: number; lift: number } {
-  const s = scene.seats[seat], t = scene.turn;
-  if (t.stage !== "walking" || t.player !== s.player) return { u: s.field, lift: 0 };
-  const progress = Math.min(Math.max((now - t.started_at) / t.hop_ms, 0), t.value);
-  const whole = Math.floor(progress), f = progress - whole;
-  return { u: t.from + progress, lift: whole >= t.value ? 0 : Math.sin(f * Math.PI) * HOP_LIFT };
-}
 
 export class BauherrMotion {
   private m = new THREE.Matrix4();
@@ -44,7 +35,7 @@ export class BauherrMotion {
     this.pawns(scene, now);
     this.dice.update(scene.turn, now);
     const dice = [this.dice.number.mesh.position, this.dice.permit.mesh.position];
-    dice.forEach((d, k) => this.blobs.set(scene.seats.length + k, d.x, d.z, 1.5 / (1 + (d.y - 0.4) * 0.5)));
+    dice.forEach((d, k) => this.blobs.set(scene.seats.length + k, d.x, d.z, 2.3 / (1 + (d.y - 0.6) * 0.5)));
     this.markers(scene, t);
   }
 

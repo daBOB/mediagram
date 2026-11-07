@@ -6,6 +6,7 @@ import * as THREE from "three";
 import type { BauherrScene } from "../../protocol/BauherrScene";
 import type { PlayerInfo } from "../../protocol/PlayerInfo";
 import { HUD_FONT } from "../race/race-hud";
+import { RESULT_PILL } from "./bauherr-layout";
 import { describeTurn, taler } from "./bauherr-status";
 
 export interface TagLook {
@@ -32,6 +33,10 @@ export class BauherrHud {
   private result: Label;
   private tags: Label[];
   private tagW = 0;
+  /** The width of the result pill as drawn, so it can sit against the right margin. */
+  private resultW = 0;
+  /** How many labels were drawn again, for the frame log: a redraw is a texture upload. */
+  repaints = 0;
 
   constructor(private renderer: THREE.WebGLRenderer, private seats: TagLook[]) {
     this.round = this.label(300, 66);
@@ -42,9 +47,7 @@ export class BauherrHud {
 
   private label(w: number, h: number): Label {
     const canvas = document.createElement("canvas"), tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.generateMipmaps = false;
-    tex.minFilter = THREE.LinearFilter;
+    Object.assign(tex, { colorSpace: THREE.SRGBColorSpace, generateMipmaps: false, minFilter: THREE.LinearFilter });
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0.5, -0.5, 0), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }));
     this.scene.add(mesh);
     return { mesh, canvas, tex, key: "", w, h };
@@ -52,10 +55,10 @@ export class BauherrHud {
   private paint(l: Label, key: string, draw: (g: CanvasRenderingContext2D, w: number, h: number) => void) {
     if (l.key === key) return;
     l.key = key;
+    this.repaints++;
     const w = Math.ceil(l.w * this.u), h = Math.ceil(l.h * this.u);
     if (l.canvas.width !== w || l.canvas.height !== h) {
-      l.canvas.width = w;
-      l.canvas.height = h;
+      Object.assign(l.canvas, { width: w, height: h });
     }
     const g = l.canvas.getContext("2d")!;
     g.clearRect(0, 0, w, h);
@@ -79,8 +82,7 @@ export class BauherrHud {
   layout(scene: BauherrScene, players: PlayerInfo[], now: number) {
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
     this.u = size.x / 1920;
-    this.camera.right = size.x;
-    this.camera.top = size.y;
+    Object.assign(this.camera, { right: size.x, top: size.y });
     this.camera.updateProjectionMatrix();
     for (const l of [this.round, this.banner, this.result, ...this.tags]) l.key = "";
     const n = this.seats.length;
@@ -89,8 +91,7 @@ export class BauherrHud {
     // every canvas gets its final size before its texture is uploaded: a texture cannot grow after that
     for (const l of [this.round, this.banner, this.result, ...this.tags]) {
       l.tex.dispose();
-      l.canvas.width = Math.ceil(l.w * this.u);
-      l.canvas.height = Math.ceil(l.h * this.u);
+      Object.assign(l.canvas, { width: Math.ceil(l.w * this.u), height: Math.ceil(l.h * this.u) });
       l.mesh.scale.set(l.canvas.width, l.canvas.height, 1);
     }
     this.update(scene, players, now);
@@ -134,13 +135,15 @@ export class BauherrHud {
       this.paint(this.result, show, (g, w, h) => {
         g.font = `800 ${60 * u}px ${HUD_FONT}`;
         const tw = Math.min(w, Math.max(240 * u, g.measureText(show).width + 90 * u)), x = (w - tw) / 2;
+        this.resultW = tw;
         this.pill(g, x, 0, tw, h);
         g.fillStyle = INK;
         g.textAlign = "center";
         g.textBaseline = "middle";
         g.fillText(show, w / 2, h / 2 + 4 * u);
       });
-      this.place(this.result, size.x * 0.84 - this.result.canvas.width / 2, size.y * 0.34);
+      // low in the right corner, on the lawn below the road: the pawns walk the road, and the pill must never cover them
+      this.place(this.result, size.x - m - this.resultW / 2 - this.result.canvas.width / 2, size.y * (1 - RESULT_PILL.top));
     }
 
     const hotels = new Map<number, number>();
