@@ -51,3 +51,13 @@ User, after watching it on the TV, chose all of:
 - **Camera follows the turn** (user's words: "move slightly the camera to the current figure and zoom
   out the overview after the figure moves").
 Plus, regardless: first frame ≤ ~5 s on the box, and no stalls during hops, stage rises and dice.
+
+## Second pass (merged 638fb10d, 2026-11-07 17:30)
+
+All five asks built; report `plans/reports/bauherr-261107-tv-board-second-pass-report.md`. Box: board mounted → first
+frame 3.84 s (KTX2/ETC1S in a worker, scene and shaders built while images arrive); janky 0.35–0.37 %, p90 34, p99 40 ms
+(gfxinfo's floor is 33); the page itself 59.8 fps. The old "20–24 s" start was the PNG screencaps slowing the box.
+
+Lead's calls on the report's open questions (not user decisions): keep MSAA (quality first, 60 fps held); no lobby
+preload (start already under 5 s); keep the silent frame log. Owed to the user on the TV: the camera lean amplitude
+(15 % pan, 5 % zoom) and whether to rest at the overview between turns.

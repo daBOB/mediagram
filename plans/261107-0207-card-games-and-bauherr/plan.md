@@ -33,7 +33,7 @@ building pieces or rent table of the MB/Hasbro game.
 | 02 | [Schwimmen and Durak](phase-02-schwimmen-and-durak.md) | `../mediagram-schwimmen`, `../mediagram-durak` | done, merged 10:14; review fixes merged 11:55 (hidden-information prompts, reveal values, bigger hand) |
 | 03 | [Bauherr rules, host and phone](phase-03-bauherr-rules-host-phone.md) | `../mediagram-bauherr` (feat/bauherr) | done, merged 10:18; review fixes 10:36 |
 | 04 | [Bauherr look test](phase-04-bauherr-look-test.md) | spike pages + box | done: round 1 rejected (toy-like); round 2 → user picked D Abendsonne, dice on the square (12:55) |
-| 05 | [Bauherr TV board](phase-05-bauherr-tv-board.md) | after 03 + user's look pick | pending |
+| 05 | [Bauherr TV board](phase-05-bauherr-tv-board.md) | after 03 + user's look pick | first build 0.153.0; second pass (user's 5 asks, load, stalls) merged 638fb10d; user's TV look owed |
 | 06 | [Merge, verify, version](phase-06-merge-verify-version.md) | feat/spieltisch | 0.152.0 done (13:40): cards + Bauherr rules, check.sh green, box sideload + card table measured; Bauherr board after 05 |
 
 01, 03 and 04 run in parallel. 02 starts when 01 is merged into feat/spieltisch;
@@ -68,4 +68,9 @@ building pieces or rent table of the MB/Hasbro game.
     p99 31 ms, 0 missed vsync. Heavier per frame than Mau-Mau but no dropped frames.
 - Box left on the game lobby. The box only lets its own WebView be the TV (`not_allowed` for a LAN TV socket).
   - Durak, 6 players: 466 s, 27 073 frames = 58.1 fps, janky 32 (0.12 %), p50 24 ms, p99 34 ms, 4 missed vsync.
-- 0.153.0 (fb3df002): Bauherr's 3D town board merged (6bdc2295); box measurement next.
+- 0.153.0 (fb3df002): Bauherr's 3D town board merged (6bdc2295). Box, 4 bots, 453 s: 58.1 fps, janky 0.61 %,
+  p90 36, p99 44 ms.
+- Second pass merged (638fb10d): real rock/snow, meadow and building-site lots, warmer evening, smaller plaza,
+  camera follows the turn, KTX2 textures. Box (local 0.154.1 build): first frame 3.84 s after the board mounts
+  (was ~6.2; board seen 4.8–6.0 s after start, was 7.6–7.8), janky 0.35–0.37 %, p90 34, p99 40 ms; the page's
+  own count 59.8 fps, 0.20 % of frames over 25 ms. Report: `plans/reports/bauherr-261107-tv-board-second-pass-report.md`.
