@@ -74,3 +74,5 @@ building pieces or rent table of the MB/Hasbro game.
   camera follows the turn, KTX2 textures. Box (local 0.154.1 build): first frame 3.84 s after the board mounts
   (was ~6.2; board seen 4.8–6.0 s after start, was 7.6–7.8), janky 0.35–0.37 %, p90 34, p99 40 ms; the page's
   own count 59.8 fps, 0.20 % of frames over 25 ms. Report: `plans/reports/bauherr-261107-tv-board-second-pass-report.md`.
+- 0.155.0 on the box (with another session's poster shelf, uncommitted), 18:20: board seen 2.6–3.6 s after start;
+  59.6 fps, janky 0.68–0.69 %, p90 38, p99 44–46 ms; the agent's 0.35 % did not reproduce (phase-05).

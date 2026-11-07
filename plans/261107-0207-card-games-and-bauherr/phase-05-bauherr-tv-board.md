@@ -61,3 +61,17 @@ frame 3.84 s (KTX2/ETC1S in a worker, scene and shaders built while images arriv
 Lead's calls on the report's open questions (not user decisions): keep MSAA (quality first, 60 fps held); no lobby
 preload (start already under 5 s); keep the silent frame log. Owed to the user on the TV: the camera lean amplitude
 (15 % pan, 5 % zoom) and whether to rest at the overview between turns.
+
+### On the box as 0.155.0 (2026-11-07 18:20)
+
+Built from the shared tree with the poster shelf (another session's, uncommitted), all four ABIs, release key,
+install-dm. Started from the shelf (Games → Bauherr → lobby), 4 bots, gfxinfo over 380 s from 90 s in, no screencaps
+inside the window; two runs:
+- Board seen 2.6–3.6 s after `start_game` (raw screencaps ~1 s apart).
+- 22 636 / 22 645 frames = 59.6 fps; janky 0.69 % / 0.68 %; p90 38, p99 46 / 44 ms; 1 missed vsync each.
+- Not the agent's final 0.35 % (p90 34, p99 40): the GPU histograms match its runs from before its GPU fixes
+  (cluster at 13–16 ms), though the Bauherr code is identical to what it measured, and the shelf is not composed
+  during play. Cause unknown (box state, or the agent's two final runs); a beacon build would show the page's own
+  slow-frame log.
+- check.sh: one flaky core test, `api::game_night::tests::start_twice_replaces_the_first` ("stopping must free the
+  port"), fails ~1 in 4 full parallel runs, passes alone and single-threaded; host and core unchanged since it last passed.
