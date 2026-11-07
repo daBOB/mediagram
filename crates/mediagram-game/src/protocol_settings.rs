@@ -13,6 +13,8 @@ pub enum GameKind {
     Race,
     /// Mau-Mau on the card table.
     MauMau,
+    /// Durak (throw-in) on the card table.
+    Durak,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

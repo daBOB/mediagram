@@ -30,6 +30,12 @@ const CARDS_MAX: u8 = 8;
 pub(crate) const CARDS_TOO_FEW: &str = "Mau-Mau braucht mindestens 2 Spieler.";
 pub(crate) const CARDS_TOO_MANY: &str = "Mau-Mau geht mit höchstens 8 Spielern.";
 
+/// Durak deals 36 cards, six each.
+const DURAK_MIN: u8 = 2;
+const DURAK_MAX: u8 = 6;
+pub(crate) const DURAK_TOO_FEW: &str = "Durak braucht mindestens 2 Spieler.";
+pub(crate) const DURAK_TOO_MANY: &str = "Durak geht mit höchstens 6 Spielern.";
+
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
 }
@@ -71,6 +77,10 @@ impl Room {
             GameKind::MauMau => {
                 let players = self.connected_count();
                 return (players < CARDS_MIN).then_some(CARDS_TOO_FEW).or((players > CARDS_MAX).then_some(CARDS_TOO_MANY));
+            }
+            GameKind::Durak => {
+                let players = self.connected_count();
+                return (players < DURAK_MIN).then_some(DURAK_TOO_FEW).or((players > DURAK_MAX).then_some(DURAK_TOO_MANY));
             }
         };
         (!ready).then_some(NOT_ENOUGH_POSTERS)
