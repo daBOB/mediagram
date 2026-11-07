@@ -1,0 +1,20 @@
+STAGE start engine=godot-gl_compatibility-opengl3 viewport=(1920.0, 1080.0)
+STAGE measuring engine=godot-gl_compatibility-opengl3 avatars=0
+STAGE result engine=godot-gl_compatibility-opengl3 avatars=0 frames=899 fps=45.0 p50=22.3 p95=26.1 p99=26.4 max=27.1 over20ms=627 over34ms=0 cpu_avg=2.15 gpu_avg=0.00
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=fox ms=1914
+STAGE measuring engine=godot-gl_compatibility-opengl3 avatars=1
+STAGE result engine=godot-gl_compatibility-opengl3 avatars=1 frames=792 fps=39.6 p50=25.2 p95=33.1 p99=33.5 max=34.0 over20ms=633 over34ms=0 cpu_avg=14.88 gpu_avg=0.00
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=frog ms=1754
+STAGE measuring engine=godot-gl_compatibility-opengl3 avatars=2
+STAGE result engine=godot-gl_compatibility-opengl3 avatars=2 frames=716 fps=35.8 p50=28.1 p95=35.7 p99=36.6 max=37.4 over20ms=713 over34ms=58 cpu_avg=12.67 gpu_avg=0.00
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=raccoon ms=1809
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=bear ms=1734
+STAGE measuring engine=godot-gl_compatibility-opengl3 avatars=4
+STAGE result engine=godot-gl_compatibility-opengl3 avatars=4 frames=593 fps=29.6 p50=33.6 p95=40.9 p99=43.3 max=44.2 over20ms=593 over34ms=245 cpu_avg=16.31 gpu_avg=0.00
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=cat ms=1843
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=bunny ms=1590
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=yeti ms=1932
+STAGE load engine=godot-gl_compatibility-opengl3 avatar=hedgehog ms=1732
+STAGE measuring engine=godot-gl_compatibility-opengl3 avatars=8
+STAGE result engine=godot-gl_compatibility-opengl3 avatars=8 frames=455 fps=22.8 p50=43.3 p95=50.7 p99=51.9 max=52.2 over20ms=455 over34ms=455 cpu_avg=13.92 gpu_avg=0.00
+STAGE done engine=godot-gl_compatibility-opengl3

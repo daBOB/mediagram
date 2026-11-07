@@ -1,0 +1,3 @@
+         Native Heap:   147752                         149988
+            Graphics:        0                              0
+           TOTAL PSS:   212035            TOTAL RSS:   308364      TOTAL SWAP (KB):        0

@@ -1,0 +1,20 @@
+STAGE start engine=godot-mobile-vulkan viewport=(1920.0, 1080.0)
+STAGE measuring engine=godot-mobile-vulkan avatars=0
+STAGE result engine=godot-mobile-vulkan avatars=0 frames=777 fps=38.9 p50=30.3 p95=35.3 p99=37.4 max=38.6 over20ms=445 over34ms=86 cpu_avg=1.40 gpu_avg=23.22
+STAGE load engine=godot-mobile-vulkan avatar=fox ms=2706
+STAGE measuring engine=godot-mobile-vulkan avatars=1
+STAGE result engine=godot-mobile-vulkan avatars=1 frames=709 fps=35.5 p50=33.0 p95=36.1 p99=38.1 max=39.0 over20ms=511 over34ms=98 cpu_avg=1.45 gpu_avg=25.70
+STAGE load engine=godot-mobile-vulkan avatar=frog ms=2070
+STAGE measuring engine=godot-mobile-vulkan avatars=2
+STAGE result engine=godot-mobile-vulkan avatars=2 frames=650 fps=32.5 p50=33.2 p95=36.6 p99=38.1 max=39.4 over20ms=559 over34ms=143 cpu_avg=1.48 gpu_avg=28.30
+STAGE load engine=godot-mobile-vulkan avatar=raccoon ms=1890
+STAGE load engine=godot-mobile-vulkan avatar=bear ms=1886
+STAGE measuring engine=godot-mobile-vulkan avatars=4
+STAGE result engine=godot-mobile-vulkan avatars=4 frames=551 fps=27.6 p50=33.8 p95=50.1 p99=51.4 max=55.0 over20ms=551 over34ms=242 cpu_avg=1.57 gpu_avg=33.84
+STAGE load engine=godot-mobile-vulkan avatar=cat ms=2311
+STAGE load engine=godot-mobile-vulkan avatar=bunny ms=1800
+STAGE load engine=godot-mobile-vulkan avatar=yeti ms=2199
+STAGE load engine=godot-mobile-vulkan avatar=hedgehog ms=1865
+STAGE measuring engine=godot-mobile-vulkan avatars=8
+STAGE result engine=godot-mobile-vulkan avatars=8 frames=415 fps=20.8 p50=50.0 p95=53.5 p99=55.3 max=58.3 over20ms=415 over34ms=387 cpu_avg=1.67 gpu_avg=45.71
+STAGE done engine=godot-mobile-vulkan

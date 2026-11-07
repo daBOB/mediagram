@@ -73,7 +73,7 @@ Read: resolution barely matters here; triangle count (×2.2), real-time shadows 
 
 ### Reaction round 3: KTX2 copies (mediagram-39) and blob shadow
 
-KTX2 copies = 15.0k tris, 1K KTX2 (ETC1S colour, UASTC normal), no metal/rough map, quantized vertices, all 33 clips (`/home/andre/Workspace/mediagram-stage-spike/results/slim/`, tool `tools/gltf/slim-avatar-for-tv.mjs`).
+KTX2 copies = 15.0k tris, 1K KTX2 (ETC1S colour, UASTC normal), no metal/rough map, quantized vertices, all 33 clips (contact sheets in `benchmark-261105-1611-tv-box-3d-framework-spike-results/slim/sheets/`; tool `crates/mediagram-game/tools/slim-avatar-for-tv.mjs`, which writes the 22 `assets/game-night/avatars/<id>/<id>-tv.glb`).
 
 | Avatars | Material | MSAA | Shadow | fps |
 |---|---|---|---|---|
@@ -183,7 +183,7 @@ Read: without sprite baking the board comes up in ~3.5 s (the look test needed 7
 
 ## Files
 
-Scratchpad `…/ad211121-…/scratchpad/spike3d/`: `godot/` (logcat-*, shot-*, mem-*), `filament/out/` (logcat-1608.txt = drawn-frame run), `webgl/` (run.log, webview-cfg*.png, mem-*), runners `run-*-on-box.sh`. mediagram-39: `/home/andre/Workspace/mediagram-stage-spike/results/`.
+Scratchpad `…/ad211121-…/scratchpad/spike3d/`: `godot/` (logcat-*, shot-*, mem-*), `filament/out/` (logcat-1608.txt = drawn-frame run), `webgl/` (run.log, webview-cfg*.png, mem-*), runners `run-*-on-box.sh`. mediagram-39: `benchmark-261105-1611-tv-box-3d-framework-spike-results/` beside this report (the spike folder itself was deleted 2026-11-07).
 
 ## Unresolved questions
 

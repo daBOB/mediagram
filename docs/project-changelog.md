@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.156.1 — The avatars' TV-copy tool lives in the repo
+
+**Changed** (game tools)
+
+- **`crates/mediagram-game/tools/slim-avatar-for-tv.mjs`** makes an avatar's TV copy, `assets/game-night/avatars/<id>/<id>-tv.glb` (15k triangles, 1K KTX2 textures, every clip), which `render-avatar-images.mjs` reads. It lived only in the 3D-framework spike's folder outside the repo, now deleted. Run from here on the fox, it reproduces the existing copy byte for byte. It needs `toktx` (KTX-Software 4.4.2) on PATH, and the game client gains `@gltf-transform/cli` as a dev dependency for it.
+- The spike's measurements and contact sheets sit beside its report, `plans/reports/benchmark-261105-1611-tv-box-3d-framework-spike-results/`.
+
 ## 0.156.0 — Game night reaches main, with controller apps for the phones
 
 **Added** (user, 2026-11-07: "to have more control over the device. awake, vibration, drawing on device"; merged with everything else at "collect ALL really ALL worktree and merge them to main")

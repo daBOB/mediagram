@@ -1,0 +1,20 @@
+STAGE measuring engine=filament-opengl avatars=0
+STAGE start engine=filament-opengl viewport=1920x1080
+STAGE result engine=filament-opengl avatars=0 frames=507 fps=25.4 p50=33.3 p95=66.7 p99=66.7 max=83.3 over20ms=323 over34ms=184 skipped=694 cpu_avg=0.56 gpu_avg=n/a
+STAGE load engine=filament-opengl avatar=fox ms=535
+STAGE measuring engine=filament-opengl avatars=1
+STAGE result engine=filament-opengl avatars=1 frames=328 fps=16.4 p50=66.7 p95=100.0 p99=100.0 max=116.7 over20ms=227 over34ms=227 skipped=873 cpu_avg=0.78 gpu_avg=n/a
+STAGE load engine=filament-opengl avatar=frog ms=480
+STAGE measuring engine=filament-opengl avatars=2
+STAGE result engine=filament-opengl avatars=2 frames=272 fps=13.6 p50=66.7 p95=83.3 p99=133.3 max=133.3 over20ms=268 over34ms=268 skipped=929 cpu_avg=0.94 gpu_avg=n/a
+STAGE load engine=filament-opengl avatar=raccoon ms=501
+STAGE load engine=filament-opengl avatar=bear ms=458
+STAGE measuring engine=filament-opengl avatars=4
+STAGE result engine=filament-opengl avatars=4 frames=168 fps=8.4 p50=116.7 p95=133.3 p99=133.3 max=133.3 over20ms=168 over34ms=168 skipped=1033 cpu_avg=1.35 gpu_avg=n/a
+STAGE load engine=filament-opengl avatar=cat ms=516
+STAGE load engine=filament-opengl avatar=bunny ms=453
+STAGE load engine=filament-opengl avatar=yeti ms=508
+STAGE load engine=filament-opengl avatar=hedgehog ms=490
+STAGE measuring engine=filament-opengl avatars=8
+STAGE result engine=filament-opengl avatars=8 frames=97 fps=4.9 p50=200.0 p95=216.7 p99=216.7 max=216.7 over20ms=97 over34ms=97 skipped=1104 cpu_avg=2.18 gpu_avg=n/a
+STAGE done engine=filament-opengl
