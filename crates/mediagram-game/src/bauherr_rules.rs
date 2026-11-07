@@ -9,7 +9,8 @@ use crate::protocol::{BauherrBoard, BauherrPermit, BauherrPlot, BauherrTileKind,
 pub const START_CASH: i32 = 12_000;
 pub const BANK_BONUS: i32 = 2_000;
 /// Turns all players take together; the round limit is this divided by the players.
-pub const TURN_BUDGET: u8 = 96;
+/// Tuned to a ~50 minute game at human pace (12-18 s a turn); re-time after the first real game.
+pub const TURN_BUDGET: u8 = 180;
 /// What an absent player keeps in hand when it plays itself.
 pub const RESERVE: i32 = 2_000;
 
@@ -19,6 +20,8 @@ pub struct Seat {
     pub cash: i32,
     pub field: u8,
     pub out: bool,
+    /// 1 for the first seat to go out, 2 for the next; 0 while in.
+    pub out_n: u8,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -53,7 +56,7 @@ pub fn rounds_for(players: usize) -> u8 {
 impl Table {
     pub fn new(players: &[PlayerId]) -> Self {
         let board = board();
-        let seats = players.iter().map(|&player| Seat { player, cash: START_CASH, field: 0, out: false }).collect();
+        let seats = players.iter().map(|&player| Seat { player, cash: START_CASH, field: 0, out: false, out_n: 0 }).collect();
         let (estates, entrances) = (vec![Estate::default(); board.plots.len()], vec![None; board.tiles.len()]);
         Self { board, seats, estates, entrances }
     }
@@ -171,7 +174,9 @@ impl Table {
             self.seats[to].cash += paid;
         }
         if paid < amount {
+            let outs = self.seats.iter().filter(|s| s.out).count() as u8;
             self.seats[seat].out = true;
+            self.seats[seat].out_n = outs + 1;
         }
         paid
     }
@@ -205,10 +210,11 @@ impl Table {
         self.seats[seat].cash + property
     }
 
-    /// Seat indices, first to last: players still in by net worth, then those out.
+    /// Seat indices, first to last: players still in by net worth, then those
+    /// out, whoever lasted longest first.
     pub fn standings(&self) -> Vec<usize> {
         let mut order: Vec<usize> = (0..self.seats.len()).collect();
-        order.sort_by_key(|&s| (self.seats[s].out, std::cmp::Reverse(self.worth(s)), s));
+        order.sort_by_key(|&s| (self.seats[s].out, std::cmp::Reverse(self.seats[s].out_n), std::cmp::Reverse(self.worth(s)), s));
         order
     }
 }

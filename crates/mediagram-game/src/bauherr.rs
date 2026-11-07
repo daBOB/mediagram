@@ -33,6 +33,9 @@ pub struct BauherrConfig {
     pub auto_ms: f64,
     /// A pick may arrive this long before its prompt opened by the host's clock.
     pub early_ms: f64,
+    /// A question that follows straight from a tap opens this long after it,
+    /// so the second tap of a double tap cannot answer it.
+    pub chain_ms: f64,
     pub seed: Option<u64>,
     /// Rolls used before the die itself, for tests.
     pub rolls: Vec<u8>,
@@ -48,6 +51,7 @@ impl Default for BauherrConfig {
             note_ms: 1400.0,
             auto_ms: 1500.0,
             early_ms: 150.0,
+            chain_ms: 400.0,
             seed: None,
             rolls: Vec::new(),
         }
@@ -176,3 +180,6 @@ impl Game for BauherrGame {
 #[cfg(test)]
 #[path = "bauherr_tests.rs"]
 mod tests;
+#[cfg(test)]
+#[path = "bauherr_visit_tests.rs"]
+mod visit_tests;

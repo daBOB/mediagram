@@ -29,6 +29,7 @@ impl BauherrGame {
                 format!("Bis {reached} · {}", if cost == 0 { "gratis".into() } else { taler(cost) })
             }
             Opt::Skip => "Lieber nicht".into(),
+            Opt::Done => "Fertig".into(),
         }
     }
 

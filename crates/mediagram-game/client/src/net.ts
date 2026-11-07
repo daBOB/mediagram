@@ -30,8 +30,16 @@ export class Connection {
     private onStatus: (s: Status) => void,
   ) {}
 
+  // a phone that slept re-syncs the moment it is looked at again
+  private onVisible = () => {
+    if (document.visibilityState !== "visible" || this.ws?.readyState !== WebSocket.OPEN) return;
+    this.samples = [];
+    for (let i = 0; i < SYNC_BURST; i++) this.later(() => this.ping(), i * 120);
+  };
+
   open() {
     this.closedByUs = false;
+    document.addEventListener("visibilitychange", this.onVisible);
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${proto}://${location.host}/ws`);
     this.ws = ws;
@@ -39,6 +47,7 @@ export class Connection {
 
     ws.onopen = () => {
       this.retryMs = 500;
+      this.samples = []; // the old estimate may predate a sleep
       this.onStatus("open");
       this.rehello();
       for (let i = 0; i < SYNC_BURST; i++) this.later(() => this.ping(), i * 120);
@@ -68,6 +77,7 @@ export class Connection {
 
   close() {
     this.closedByUs = true;
+    document.removeEventListener("visibilitychange", this.onVisible);
     this.clearTimers();
     this.ws?.close();
   }

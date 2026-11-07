@@ -35,7 +35,12 @@ export function TvBauherr({ scene, players, conn }: { scene: BauherrScene; playe
     return () => clearTimeout(t);
   }, [over]);
 
-  if (cheered) return <TvFinal players={players} conn={conn} />;
+  if (cheered && scene.turn.stage === "final") {
+    // the game's own ranking: unseated joiners are not in it, and the broke rank by who lasted longer
+    const order = new Map(scene.turn.ranking.map((id, i) => [id, i]));
+    const ranked = players.filter((p) => order.has(p.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+    return <TvFinal players={ranked} conn={conn} ranked />;
+  }
 
   const { text, die } = describeTurn(scene, players, now);
   const onTurn = "player" in scene.turn ? scene.turn.player : null;
