@@ -9,7 +9,8 @@ use crate::protocol::{BauherrBoard, BauherrPermit, BauherrPlot, BauherrTileKind,
 pub const START_CASH: i32 = 12_000;
 pub const BANK_BONUS: i32 = 2_000;
 /// Turns all players take together; the round limit is this divided by the players.
-pub const TURN_BUDGET: u8 = 96;
+/// Tuned to a ~50 minute game at human pace (12-18 s a turn); re-time after the first real game.
+pub const TURN_BUDGET: u8 = 180;
 /// What an absent player keeps in hand when it plays itself.
 pub const RESERVE: i32 = 2_000;
 
@@ -19,6 +20,8 @@ pub struct Seat {
     pub cash: i32,
     pub field: u8,
     pub out: bool,
+    /// 1 for the first seat to go out, 2 for the next; 0 while in.
+    pub out_n: u8,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -53,7 +56,7 @@ pub fn rounds_for(players: usize) -> u8 {
 impl Table {
     pub fn new(players: &[PlayerId]) -> Self {
         let board = board();
-        let seats = players.iter().map(|&player| Seat { player, cash: START_CASH, field: 0, out: false }).collect();
+        let seats = players.iter().map(|&player| Seat { player, cash: START_CASH, field: 0, out: false, out_n: 0 }).collect();
         let (estates, entrances) = (vec![Estate::default(); board.plots.len()], vec![None; board.tiles.len()]);
         Self { board, seats, estates, entrances }
     }
@@ -157,59 +160,6 @@ impl Table {
     pub fn host_at(&self, seat: usize, field: u8) -> Option<(usize, u8)> {
         let plot = self.entrances[usize::from(field)]?;
         self.owner(plot).filter(|&o| o != seat).map(|o| (o, plot))
-    }
-
-    /// `seat` pays `to` (the bank when `None`). Short of cash the host sells
-    /// property back to the bank at half price, top stages first and then plots,
-    /// dearest first; still short, the player pays what is left and is out.
-    /// Returns what was paid.
-    pub fn pay(&mut self, seat: usize, to: Option<usize>, amount: i32) -> i32 {
-        while self.seats[seat].cash < amount && self.sell_one(seat) {}
-        let paid = self.seats[seat].cash.min(amount);
-        self.seats[seat].cash -= paid;
-        if let Some(to) = to {
-            self.seats[to].cash += paid;
-        }
-        if paid < amount {
-            self.seats[seat].out = true;
-        }
-        paid
-    }
-
-    fn sell_one(&mut self, seat: usize) -> bool {
-        let top = |t: &Self, p: u8| t.plot(p).levels[usize::from(t.levels(p)) - 1].cost;
-        let built = self.owned(seat).filter(|&p| self.levels(p) > 0).max_by_key(|&p| top(self, p));
-        if let Some(plot) = built {
-            self.seats[seat].cash += top(self, plot) / 2;
-            let e = &mut self.estates[usize::from(plot)];
-            e.levels -= 1;
-            if e.levels == 0 {
-                self.entrances.iter_mut().filter(|e| **e == Some(plot)).for_each(|e| *e = None);
-            }
-            return true;
-        }
-        let Some(plot) = self.owned(seat).max_by_key(|&p| self.plot(p).land) else {
-            return false;
-        };
-        self.seats[seat].cash += self.plot(plot).land / 2;
-        self.estates[usize::from(plot)].owner = None;
-        true
-    }
-
-    /// Cash + land + built stages.
-    pub fn worth(&self, seat: usize) -> i32 {
-        let property: i32 = self
-            .owned(seat)
-            .map(|p| self.plot(p).land + self.plot(p).levels[..usize::from(self.levels(p))].iter().map(|l| l.cost).sum::<i32>())
-            .sum();
-        self.seats[seat].cash + property
-    }
-
-    /// Seat indices, first to last: players still in by net worth, then those out.
-    pub fn standings(&self) -> Vec<usize> {
-        let mut order: Vec<usize> = (0..self.seats.len()).collect();
-        order.sort_by_key(|&s| (self.seats[s].out, std::cmp::Reverse(self.worth(s)), s));
-        order
     }
 }
 

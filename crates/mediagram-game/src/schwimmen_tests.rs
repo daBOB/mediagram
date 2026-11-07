@@ -184,7 +184,7 @@ fn a_hand_worth_31_ends_the_round_at_once() {
     assert_eq!(g.lives, vec![2, 3, 3], "Ana's 9 is the lowest");
     let s = scene(&g, &p, 2.0);
     assert_eq!(s.note.as_deref(), Some("Feuer – 31!"));
-    assert_eq!(s.seats[1].marker.as_deref(), Some("●●● · 31"));
+    assert_eq!(s.seats[1].marker.as_deref(), Some("●●●"));
 }
 
 #[test]
@@ -211,7 +211,8 @@ fn three_of_a_kind_is_30_and_a_half_and_beats_every_ordinary_hand() {
     pass(&mut g, &mut p, CEM, 3.0);
     assert_eq!(g.lives, vec![3, 3, 2], "Cem's 11 is lowest");
     let marker = scene(&g, &p, 3.0).seats[0].marker.clone().unwrap();
-    assert!(marker.ends_with("30½"), "{marker}");
+    assert_eq!(marker, "●●●");
+    assert_eq!(scene(&g, &p, 3.0).seats[0].worth, Some(61), "30½ in half points");
 }
 
 #[test]
@@ -226,7 +227,8 @@ fn the_lowest_hand_loses_a_life_and_ties_cost_all_of_them() {
     assert_eq!(g.lives, vec![3, 2, 2]);
     let s = scene(&g, &p, 3.0);
     assert_eq!(s.banner.unwrap().text, " und alle mit gleichem Blatt verlieren");
-    assert_eq!(s.seats[1].marker.as_deref(), Some("●●○ · 11 · −1"));
+    assert_eq!(s.seats[1].marker.as_deref(), Some("●●○ · −1"));
+    assert_eq!(s.seats.iter().map(|x| x.worth).collect::<Vec<_>>(), [Some(2 * 30), Some(22), Some(22)], "values ride in the badge, in half points");
     assert_eq!(s.seats[0].open.len(), 3);
     assert_eq!(s.seats[0].cards, 0);
 }
@@ -239,7 +241,17 @@ fn a_round_where_everyone_ties_costs_nobody_a_life() {
     pass(&mut g, &mut p, BEN, 2.0);
     pass(&mut g, &mut p, CEM, 3.0);
     assert_eq!(g.lives, vec![3, 3, 3]);
-    assert_eq!(scene(&g, &p, 3.0).banner.unwrap().text, " und alle anderen sind gleichauf");
+    assert_eq!((g.lost.clone(), g.out.clone()), (vec![false; 3], vec![false; 3]), "nobody loses, nobody is out");
+    let s = scene(&g, &p, 3.0);
+    assert_eq!(s.banner.unwrap().text, " und alle anderen sind gleichauf");
+    assert!(s.seats.iter().all(|x| x.marker.as_deref() == Some("●●●")), "no loss on any seat");
+    assert!(matches!(g.stage, Stage::Reveal { .. }), "the game goes on");
+    // the same with swimmers: everyone at no life left and tied is still not out
+    let (mut g, mut p) = rig(vec![vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Nine)]; 2], middle_dull());
+    g.lives = vec![0, 0];
+    act(&mut g, &mut p, ANA, "knock", &[], None, 1.0).unwrap();
+    pass(&mut g, &mut p, BEN, 2.0);
+    assert_eq!((g.lives.clone(), g.out.clone()), (vec![0, 0], vec![false, false]));
 }
 
 #[test]
@@ -268,7 +280,7 @@ fn losing_the_last_life_means_swimming_and_the_next_loss_is_out() {
     pass(&mut g, &mut p, CEM, 3.0);
     assert_eq!((g.lives[0], g.out[0]), (0, false), "swimming");
     assert_eq!(scene(&g, &p, 3.0).banner.unwrap().text, " schwimmt jetzt");
-    assert_eq!(scene(&g, &p, 3.0).seats[0].marker.as_deref(), Some("schwimmt · 4 · −1"));
+    assert_eq!(scene(&g, &p, 3.0).seats[0].marker.as_deref(), Some("schwimmt · −1"));
     // one more round with Ana still lowest
     g.hands = three_dull();
     g.hands[0] = vec![c(Hearts, Two), c(Spades, Three), c(Clubs, Four)];

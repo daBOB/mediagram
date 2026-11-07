@@ -18,6 +18,8 @@ pub(crate) enum Opt {
     /// Build `count` stages for `cost`.
     Levels { plot: u8, count: u8, cost: i32 },
     Skip,
+    /// Ends a Rathaus visit after an errand.
+    Done,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -59,19 +61,42 @@ impl Table {
                 let p = plot.filter(|&p| self.can_build(seat, p))?;
                 Some(ask(format!("Auf deiner Baustelle: {} ausbauen?", self.plot(p).name), Some(p), vec![Opt::Build(p)]))
             }
-            BauherrTileKind::Rathaus => {
-                let mut opts = Vec::new();
-                if !self.plots_where(seat, |p| self.can_build(seat, p)).is_empty() {
-                    opts.push(Opt::BuildMenu);
-                }
-                if !self.plots_where(seat, |p| self.can_enter(seat, p, false)).is_empty() {
-                    opts.push(Opt::Entrances);
-                }
-                (!opts.is_empty()).then(|| ask("Im Rathaus: Was möchtest du erledigen?", None, opts))
-            }
+            BauherrTileKind::Rathaus => self.rathaus_ask(seat, None),
+
             BauherrTileKind::Eingang => self.hotel_ask(seat, true),
             _ => None,
         }
+    }
+
+    /// The Rathaus menu; after an errand `done` says what happened and the
+    /// last option becomes "Fertig".
+    pub(crate) fn rathaus_ask(&self, seat: usize, done: Option<&str>) -> Option<Ask> {
+        let mut opts = Vec::new();
+        if !self.plots_where(seat, |p| self.can_build(seat, p)).is_empty() {
+            opts.push(Opt::BuildMenu);
+        }
+        if !self.plots_where(seat, |p| self.can_enter(seat, p, false)).is_empty() {
+            opts.push(Opt::Entrances);
+        }
+        if opts.is_empty() {
+            return None;
+        }
+        let Some(done) = done else {
+            return Some(ask("Im Rathaus: Was möchtest du erledigen?", None, opts));
+        };
+        let mut a = ask(format!("{done} Noch etwas im Rathaus?"), None, opts);
+        *a.opts.last_mut().expect("ask adds a last option") = Opt::Done;
+        Some(a)
+    }
+
+    /// The cheapest hotel stage `seat` can build now.
+    fn cheapest_build(&self, seat: usize) -> Option<i32> {
+        self.owned(seat).filter(|&p| self.can_build(seat, p)).filter_map(|p| self.next_cost(p)).min()
+    }
+
+    /// The cheapest entrance `seat` can pay for now.
+    fn cheapest_entrance(&self, seat: usize) -> Option<i32> {
+        self.owned(seat).filter(|&p| self.can_enter(seat, p, false)).map(|p| self.plot(p).entrance).min()
     }
 
     pub(crate) fn build_menu_ask(&self, seat: usize) -> Ask {
@@ -109,17 +134,22 @@ impl Table {
     /// hand, the cheapest entrance, else skip.
     pub(crate) fn auto_index(&self, seat: usize, ask: &Ask) -> usize {
         let cash = self.seats[seat].cash;
-        let keeps = |cost: i32| cash - cost >= RESERVE;
+        // a visit that already did its errand ends
+        if ask.opts.last() == Some(&Opt::Done) {
+            return ask.opts.len() - 1;
+        }
+        // free things ignore the reserve
+        let keeps = |cost: i32| cost == 0 || cash - cost >= RESERVE;
         let best = ask.opts.iter().enumerate().filter_map(|(i, o)| {
             let (prio, cost) = match *o {
                 Opt::Buy(p) => (5, self.plot(p).land),
                 Opt::Build(p) => (4, self.next_cost(p)?),
-                Opt::BuildMenu => (4, 0),
-                Opt::Entrances => (3, 0),
+                Opt::BuildMenu => (4, self.cheapest_build(seat)?),
+                Opt::Entrances => (3, self.cheapest_entrance(seat)?),
                 Opt::Hotel { plot, free } => (3, if free { 0 } else { self.plot(plot).entrance }),
                 Opt::Place { plot, free, .. } => (3, if free { 0 } else { self.plot(plot).entrance }),
                 Opt::Levels { count, cost, .. } => (2 + i32::from(count), cost),
-                Opt::Skip => return None,
+                Opt::Skip | Opt::Done => return None,
             };
             keeps(cost).then_some((i, (prio, -cost)))
         });

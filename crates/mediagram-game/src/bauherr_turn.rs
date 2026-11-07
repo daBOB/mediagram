@@ -4,7 +4,7 @@ use crate::bauherr::{BauherrGame, Stage, name, taler};
 use crate::bauherr_asks::{Ask, Opt};
 use crate::bauherr_rules::{Table, permit_for};
 use crate::game::GameCtx;
-use crate::protocol::{BauherrPermit, ServerTime};
+use crate::protocol::{BauherrPermit, BauherrTileKind, ServerTime};
 use crate::room_seats::Player;
 
 impl BauherrGame {
@@ -68,7 +68,7 @@ impl BauherrGame {
         let hotel = |t: &Table, p: u8| t.plot(p).name.clone();
         let who = name(ctx.players, self.player_at(s));
         match opt {
-            Opt::Skip => self.end_turn(now, None),
+            Opt::Skip | Opt::Done => self.end_turn(now, None),
             Opt::Buy(p) => {
                 self.table.buy(s, p);
                 self.end_turn(now, Some(format!("{who} kauft {}.", hotel(&self.table, p))));
@@ -79,26 +79,37 @@ impl BauherrGame {
             }
             Opt::BuildMenu => {
                 let ask = self.table.build_menu_ask(s);
-                self.ask(now, Some(ask), permit);
+                self.ask(now + self.cfg.chain_ms, Some(ask), permit);
             }
             Opt::Entrances => {
                 let ask = self.table.hotel_ask(s, false);
-                self.ask(now, ask, permit);
+                self.ask(now + self.cfg.chain_ms, ask, permit);
             }
             Opt::Hotel { plot, free } => {
                 let ask = self.table.place_ask(plot, free);
-                self.ask(now, Some(ask), permit);
+                self.ask(now + self.cfg.chain_ms, Some(ask), permit);
             }
             Opt::Place { plot, field, free } => {
                 let price = if free { 0 } else { self.table.plot(plot).entrance };
                 self.table.place_entrance(s, plot, field, price);
-                self.end_turn(now, Some(format!("{who} baut einen Eingang für {}.", hotel(&self.table, plot))));
+                let text = format!("{who} baut einen Eingang für {}.", hotel(&self.table, plot));
+                self.errand_done(now, text);
             }
             Opt::Levels { plot, count, cost } => {
                 self.table.build(s, plot, count, cost);
                 let text = format!("{who} baut {}: jetzt {} Stufen.", hotel(&self.table, plot), self.table.levels(plot));
-                self.end_turn(now, Some(text));
+                self.errand_done(now, text);
             }
+        }
+    }
+
+    /// An errand is done: at the Rathaus the menu comes back for the next one,
+    /// anywhere else (or when nothing is left to do) the turn ends with `text`.
+    fn errand_done(&mut self, now: ServerTime, text: String) {
+        let at_rathaus = self.table.kind(self.table.seats[self.turn].field) == BauherrTileKind::Rathaus;
+        match at_rathaus.then(|| self.table.rathaus_ask(self.turn, Some(&text))).flatten() {
+            Some(ask) => self.ask(now + self.cfg.chain_ms, Some(ask), BauherrPermit::Approved),
+            None => self.end_turn(now, Some(text)),
         }
     }
 
@@ -139,8 +150,13 @@ impl BauherrGame {
                     let who = name(ctx.players, self.player_at(self.turn));
                     self.end_turn(now, Some(format!("{who}: Genehmigung abgelehnt.")));
                 } else {
-                    let ask = self.table.levels_ask(self.turn, plot, outcome);
-                    self.ask(now, ask, outcome);
+                    match self.table.levels_ask(self.turn, plot, outcome) {
+                        None => {
+                            let who = name(ctx.players, self.player_at(self.turn));
+                            self.end_turn(now, Some(format!("{who} kann sich das Doppelte nicht leisten.")));
+                        }
+                        ask => self.ask(now, ask, outcome),
+                    }
                 }
             }
             Stage::Ask { ask, since, permit } if auto_after(since).is_some_and(|at| now >= at) => {

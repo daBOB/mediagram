@@ -22,8 +22,12 @@
 | 06 | [Core binding: start, back, stop from Kotlin; textless posters](phase-06-core-binding.md) | done |
 | 07 | [TV app: Games entry and screen](phase-07-tv-games-screen.md) | done |
 | 08 | [Docs, version, box walk](phase-08-docs-version-box-walk.md) | done (kids-profile check skipped by the user) |
+| 09 | [Heimlauf — the race game](../261106-0907-race-game/plan.md) | done (shipped 0.144.0; its sound pass is [separate](../261106-1740-heimlauf-sound/plan.md)) |
+| 10 | [Kartenspiel — card games](../261106-1808-card-games/plan.md) | in progress: Mau-Mau, Schwimmen, Durak and Bauherr's rules in 0.152.0 ([run](../261107-0207-card-games-and-bauherr/plan.md)) |
 
-Order: 01 → 02 → 03 → 04 → 06 → 07 → 08. Phase 05 is content work that can run any time after 03.
+Order: 01 → 02 → 03 → 04 → 06 → 07 → 08 → 09 → 10. Phase 05 is content work that can run any time after 03.
+
+09 and 10 live in their own plan directories, not as `phase-NN-*.md` files here: both grew past one phase each and each carries its own phase list. The board-game backlog is the same shape again — `../261106-1830-board-games/plan.md`, not yet numbered, because it is a list to build from rather than a phase to execute.
 
 ## Global Constraints
 

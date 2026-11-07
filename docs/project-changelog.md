@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.152.0 — Card games and Bauherr
+
+**Added** (TV game night, user 2026-11-07: "lets start to build the card games and our hotel clone")
+
+- A card table shared by three traditional games, one lobby entry each: **Mau-Mau** (2–8; 7 draws 2 and stacks, 8 skips, the Jack wishes a suit, a "Mau!" button with the second-to-last card or a penalty card; 32 cards up to 5 players, 52 above), **Schwimmen** (2–8; swap one or all, pass, knock, 31 ends the round, 30½ for three of a kind, three lives and one round swimming) and **Durak** (2–6; 36 cards, trump under the deck, throw-in by rank). Your hand is on your phone; the TV shows the table with Heimlauf's wood, music and sound settings.
+- The table never gives a hand away: in Durak everyone with cards is asked whether to throw in, and in Mau-Mau a drawn card always offers *Spielen* or *Behalten*, whether it fits or not (user: hidden information over pace).
+- The phone hand is bigger: cards fan over two rows instead of scrolling, and the table cards fill the space above them. At Schwimmen's reveal the TV shows each hand's value on its seat.
+- **Bauherr**, an own hotel-building board game with Hotel's mechanics: buy plots, build with a permit die, place entrances, guests pay per night. 2–4 players, about 45–60 minutes on a round limit, richest by net worth wins. The phone shows your Taler and hotels on a new money sheet. The TV board is a plain 2D plan for now; a realistic 3D town is in its look test.
+
+**Fixed**
+
+- A phone that slept re-syncs its clock with the host at once, instead of having dead buttons for up to a minute.
+
 ## 0.151.0 — The avatars in their viewer's light
 
 Numbered above main's 0.150.0, which went onto the TV box in between.

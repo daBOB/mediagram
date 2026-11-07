@@ -14,24 +14,8 @@ use crate::game::{ActionError, Game, GameCtx, ViewCtx};
 use crate::maumau_rules::sort_hand;
 use crate::protocol::{Action, CardsBanner, CardsEvent, CardsEventKind, PhoneScreen, PlayerId, ServerTime, TvScene};
 use crate::room_seats::Player;
+pub use crate::schwimmen_config::SchwimmenConfig;
 use crate::schwimmen_rules::{FEUER, HAND, KNOCK_AT, LIVES, Swap, best_swap, value};
-
-#[derive(Debug, Clone)]
-pub struct SchwimmenConfig {
-    /// An absent player's move happens after this.
-    pub auto_ms: f64,
-    /// How long the banner keeps naming the last happening.
-    pub banner_ms: f64,
-    /// How long the revealed hands stay before the next round is dealt.
-    pub reveal_ms: f64,
-    pub seed: Option<u64>,
-}
-
-impl Default for SchwimmenConfig {
-    fn default() -> Self {
-        Self { auto_ms: 1500.0, banner_ms: 2600.0, reveal_ms: 8000.0, seed: None }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {

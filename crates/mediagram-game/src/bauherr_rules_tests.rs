@@ -136,7 +136,7 @@ fn net_worth_is_cash_plus_land_plus_built_stages() {
 
 #[test]
 fn the_round_limit_comes_from_the_turn_budget() {
-    assert_eq!([2, 3, 4].map(rounds_for), [48, 32, 24]);
+    assert_eq!([2, 3, 4].map(rounds_for), [90, 60, 45]);
 }
 
 #[test]
@@ -146,4 +146,14 @@ fn standings_rank_by_worth_and_put_the_broke_last() {
     t.seats[0].cash = 0;
     t.seats[0].out = true;
     assert_eq!(t.standings(), [2, 1, 0]);
+}
+
+#[test]
+fn those_who_lasted_longer_rank_higher_among_the_broke() {
+    let mut t = Table::new(&[0, 1, 2]);
+    t.seats[0].cash = 0;
+    t.seats[1].cash = 0;
+    t.pay(0, None, 1);
+    t.pay(1, None, 1);
+    assert_eq!(t.standings(), [2, 1, 0], "seat 1 went out last");
 }

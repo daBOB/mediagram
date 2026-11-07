@@ -119,8 +119,8 @@ export class CardsHud {
     if (this.tagState[seat] !== state) {
       this.tagState[seat] = state;
       this.drawTag(seat, active, marker);
+      this.place();
     }
-    this.place();
   }
 
   private drawTag(seat: number, active: boolean, marker: string | null) {

@@ -9,4 +9,9 @@ cards: number,
 /**
  * Cards this player shows face up.
  */
-open: Array<Card>, marker: string | null, };
+open: Array<Card>, 
+/**
+ * A hand's value in half points, shown in the count badge in place of the
+ * card count (Schwimmen, once the hands are open).
+ */
+worth: number | null, marker: string | null, };

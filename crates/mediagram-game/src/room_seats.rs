@@ -5,6 +5,17 @@ use rand::Rng;
 use crate::protocol::{ErrorCode, PlayerId, Role, ServerMsg, ServerTime};
 use crate::room::{ConnId, Room, error};
 
+/// One open connection to the room.
+#[derive(Default)]
+pub(crate) struct Conn {
+    pub(crate) role: Option<Role>,
+    pub(crate) player: Option<PlayerId>,
+    /// The peer is a loopback connection, i.e. the box itself.
+    pub(crate) local: bool,
+    /// Last view sent, so unchanged views are not resent on every tick.
+    pub(crate) last_view: Option<String>,
+}
+
 const PLAYER_COLORS: [&str; 8] = [
     "#ef476f", "#06d6a0", "#118ab2", "#ffd166", "#9b5de5", "#f15bb5", "#00bbf9", "#fb8500",
 ];

@@ -950,7 +950,8 @@ AirPlay code.
 ### Game night
 
 The TV box hosts party games for phones on the same network: a buzzer quiz, a
-poster-guessing game and a race board game. It is a feature of the TV app only, and it is the one
+poster-guessing game, two board games (Heimlauf, Bauherr) and three card games
+(Mau-Mau, Schwimmen, Durak). It is a feature of the TV app only, and it is the one
 place the app serves something rather than only fetching.
 
 **The host lives in the core.** `mediagram-game` is a self-contained crate (an
@@ -1089,6 +1090,46 @@ night is a personal project, so a sound is picked by fit, not licence; its
 source is still written here. The music is normalised to
 -18 LUFS and Opus 56 kbps (2.6 MB in all, embedded with the client in each
 ABI's core library).
+
+**Card games share one table.** Mau-Mau (2–8), Schwimmen (2–8) and Durak
+(2–6) are traditional games and keep their names; one `GameKind` each, so the
+lobby lists them beside the board games. `cards.rs` holds a French-suited pack
+of 52 and every game deals a subset by lowest rank (`deck_from`: 7 → 32, 6 →
+36). The hand is hidden information, and the `Game` trait already keeps it so:
+`phone_screen(player)` gives each phone its own hand and `tv_scene` never
+carries one (Schwimmen's reveal is the only public moment). Phones stay thin:
+`PhoneScreen::Cards { desk }` is a generic desk — hand, selectable table cards,
+buttons that say whether they need a hand card, several, or a hand card plus a
+table card — answered with `Action::Cards { button, hand, table }`; nothing on
+the phone knows the rules. The TV gets `TvScene::Cards` (seats with card counts,
+open cards and a marker, centre piles, deck, trump, note, banner, the last four
+events with server times). Where the rules would let the table read a hand — a
+Durak player asked to throw in only when a rank fits, a Mau-Mau turn pausing
+only when the drawn card fits — every player gets the same prompt with the
+button disabled instead (user decision 2026-11-07: hidden information beats
+pace). Absent players play themselves after `auto_ms`, like Heimlauf. The TV
+table (`tv/cards/`) reuses Heimlauf's lacquered table, music and settings; the
+52 faces and the back are one canvas atlas drawn at load, and every banner,
+note and seat text is pre-drawn (`cards-texts.ts`), so no texture is made
+mid-game. Rules and decisions per game: `plans/261107-0207-card-games-and-bauherr/`.
+
+**Bauherr, the hotel game.** An own game with Hotel's mechanics only (plots,
+a permit die, entrances, guests paying per night) — own name, hotels, board and
+prices. 2–4 players, currency Taler. The board is data (`bauherr_board.rs`): a
+36-field ring with Bank, Rathaus, Bauplatz, Baustelle and Freier Eingang fields
+and 8 hotel plots, each bordering its own fields; the scene carries it, so the
+TV has one source of truth. The permit die decides a build (genehmigt ×3,
+abgelehnt, gratis = first chosen stage free, doppelt = every chosen stage
+double); guests roll for nights and pay nights × the hotel's current rate; a
+player who cannot pay is sold out to the bank at half price, top stages first,
+and goes out if that is not enough. The game ends on a round limit
+(`TURN_BUDGET` 180 turns shared by the players, tuned to ~50 min at human pace)
+or when one player is left; net worth (cash + land + stage costs) is the score.
+A follow-up question that a tap opens (the Rathaus menu repeats until *Fertig*)
+opens 400 ms later on the host, so a double tap cannot answer it. The phone uses
+`PhoneScreen::Sheet`, a generic money sheet (lines, prompt, options answered by
+`Action::Choose`) meant for later money games too. The TV board is a plain 2D
+canvas (`TvBauherr.tsx`) until the realistic 3D town from the look test replaces it.
 
 **Every player has an avatar.** The host owns the catalogue of 22
 (`avatars.rs`; ids are the folder names under `assets/game-night/avatars/`)
