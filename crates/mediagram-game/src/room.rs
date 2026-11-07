@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::game::{ActionError, Game, GameCtx, GameFactory};
 use crate::protocol::{Action, ClientMsg, ErrorCode, LobbySettings, PlayerId, Role, ServerMsg, ServerTime};
-use crate::room_seats::{LOBBY_GRACE_MS, Player};
+use crate::room_seats::{Conn, LOBBY_GRACE_MS, Player};
 use crate::room_settings::{Readiness, initial_settings};
 
 pub type ConnId = u64;
@@ -19,16 +19,6 @@ pub struct RoomConfig {
     /// Set when a kids profile started the night: the toggle stays on.
     pub kids_locked: bool,
     pub readiness: Readiness,
-}
-
-#[derive(Default)]
-pub(crate) struct Conn {
-    pub(crate) role: Option<Role>,
-    pub(crate) player: Option<PlayerId>,
-    /// The peer is a loopback connection, i.e. the box itself.
-    local: bool,
-    /// Last view sent, so unchanged views are not resent on every tick.
-    pub(crate) last_view: Option<String>,
 }
 
 /// Transport-agnostic room state. The server feeds it connection events and

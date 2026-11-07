@@ -1,5 +1,5 @@
 use super::*;
-use crate::protocol::{ButtonNeeds, CardDesk, CardsScene};
+use crate::protocol::{ButtonNeeds, CardDesk, CardsEventKind, CardsScene};
 use Rank::*;
 use Suit::*;
 
