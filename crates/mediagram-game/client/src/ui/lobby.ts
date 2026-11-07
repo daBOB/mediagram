@@ -12,4 +12,6 @@ export const gameBadge = (s: LobbySettings) =>
     ? `Buzzer-Quiz · ${QUIZ_MODES.find((m) => m.mode === s.quiz_mode)?.label}`
     : s.game === "race"
       ? "Heimlauf · 2–4 Spieler"
-      : "Poster-Raten";
+      : s.game === "mau_mau"
+        ? "Mau-Mau · 2–8 Spieler"
+        : "Poster-Raten";
