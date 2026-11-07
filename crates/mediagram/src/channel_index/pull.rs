@@ -6,10 +6,11 @@ use anyhow::{Context, Result, ensure};
 use rusqlite::Connection;
 
 use super::backup_path::free_backup_path;
-use super::live::live_sets;
+use super::live::{gone_sets, live_sets};
 use super::remote::{Candidate, ChannelRemote};
 use super::{conflicts, report};
 use crate::clock::{backup_timestamp, now_unix};
+use crate::index::merge::removed_elsewhere::{drop_removed, local_candidates};
 use crate::index::merge::{self, MergeReport};
 use crate::index::{db, pins, snapshot};
 
@@ -111,15 +112,18 @@ async fn merge_in(
     snapshot::copy_to(&local, &backup_path).context("backing up the local index before merging")?;
     println!("backed up the local index to {}", backup_path.display());
 
+    let gone = gone_sets(remote, &local_candidates(&local, channel_path)?).await?;
     let live = live_sets(remote, &merge::channel_candidates(&local, channel_path)?).await?;
     let merged = merge::merge_from(&local, channel_path, |_| Ok(live))
         .context("merging the channel index")?;
+    let dropped = drop_removed(&local, &gone)?;
     if merged.channel_lacks_subtitles {
         pins::owe_publish(&local).context("recording the subtitle re-publish owed")?;
     }
     // Reported before the re-read: the merge has committed, and a failure
     // re-reading captions must not hide what it already changed.
     report::print(&merged, false);
+    report::print_dropped(dropped.len(), false);
     let summary = conflicts::resolve(&local, remote, &merged.conflicts).await?;
     report::print_conflicts(merged.conflicts.len(), &summary);
     Ok(Merged {
@@ -137,19 +141,23 @@ async fn dry_run_merge(
     channel_path: &Path,
 ) -> Result<()> {
     let real = db::open(data_dir)?;
+    let gone = gone_sets(remote, &local_candidates(&real, channel_path)?).await?;
     let live = live_sets(remote, &merge::channel_candidates(&real, channel_path)?).await?;
     let scratch_path = data_dir.join(format!(
         "library.pull-index-dry-run.{}.db",
         std::process::id()
     ));
-    let outcome = (|| -> Result<MergeReport> {
+    let outcome = (|| -> Result<(MergeReport, Vec<String>)> {
         snapshot::copy_to(&real, &scratch_path).context("copying the local index for a dry run")?;
         let scratch = open_scratch(&scratch_path)?;
-        merge::merge_from(&scratch, channel_path, |_| Ok(live)).context("merging the channel index")
+        let merged = merge::merge_from(&scratch, channel_path, |_| Ok(live))
+            .context("merging the channel index")?;
+        Ok((merged, drop_removed(&scratch, &gone)?))
     })();
     let _ = std::fs::remove_file(&scratch_path);
-    let merged = outcome?;
+    let (merged, dropped) = outcome?;
     report::print(&merged, true);
+    report::print_dropped(dropped.len(), true);
     if !merged.conflicts.is_empty() {
         println!(
             "{} conflicting set(s) would be re-read from their captions",

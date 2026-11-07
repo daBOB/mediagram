@@ -5,6 +5,14 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.150.2 — A set removed on one uploader no longer comes back from another
+
+**Fixed** (uploader)
+
+- **A pull drops local sets that another machine removed.** `remove` deletes a set's messages and its rows on the machine that runs it. Every other uploader kept the rows, and the merge before its next publish took them for sets it had uploaded and not yet published. So that publish listed the removed title again. On 2026-11-07 this put Roseanne in the library twice: 221 re-encoded episodes, plus the 198 originals they had replaced.
+- **What happens now:** every pull, and so every publish, asks the channel about the sets only this machine has. A set none of whose part messages are left in the channel is dropped from the local index, with its parts and assets. The pull says `dropped N local set(s) removed from the channel elsewhere`, and `--dry-run` says `would drop`.
+- **When it keeps a set:** the check is one-sided, because it deletes rows. A set with any part still posted, a part with no message recorded, or a part in another chat is kept. So is a set still uploading. If the lookup fails, the pull stops instead of dropping anything.
+
 ## 0.150.1 — The fetch's progress shows, and Update no longer freezes the screen
 
 **Fixed** (Android TV, tablet and phone)
