@@ -5,6 +5,12 @@
 
 pub mod avatars;
 mod cards;
+mod bauherr;
+mod bauherr_asks;
+mod bauherr_board;
+mod bauherr_rules;
+mod bauherr_turn;
+mod bauherr_views;
 mod factory;
 mod film_questions;
 pub mod game;
@@ -13,6 +19,7 @@ pub mod host;
 pub mod lan;
 pub mod protocol;
 mod protocol_cards;
+mod protocol_bauherr;
 mod protocol_choice;
 mod protocol_poster;
 mod protocol_quiz;

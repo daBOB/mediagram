@@ -5,6 +5,7 @@ import type { QuizScene } from "../protocol/QuizScene";
 import type { TvView } from "../protocol/TvView";
 import { ANSWER_COLORS, ANSWER_MARKS } from "../ui/answers";
 import { Token } from "../ui/Token";
+import { TvBauherr } from "./TvBauherr";
 import { TvFinal } from "./TvFinal";
 import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
@@ -37,6 +38,8 @@ export function TvApp() {
         <TvRace key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "cards" ? (
         <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "bauherr" ? (
+        <TvBauherr key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}

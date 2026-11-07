@@ -6,6 +6,7 @@ import type { ServerMsg } from "../protocol/ServerMsg";
 import { ANSWER_MARKS } from "../ui/answers";
 import { CardsDesk } from "./CardsDesk";
 import { PhoneLobby } from "./PhoneLobby";
+import { PhoneSheet } from "./PhoneSheet";
 import { rememberAvatar, rememberedAvatar } from "./avatar-memory";
 import { goFullscreen } from "./phone-fullscreen";
 
@@ -158,6 +159,8 @@ function Screen({ view, conn }: { view: PhoneView; conn: Connection }) {
       return <ChoiceScreen key={screen.opens_at} screen={screen} conn={conn} />;
     case "cards":
       return <CardsDesk desk={screen.desk} conn={conn} />;
+    case "sheet":
+      return <PhoneSheet screen={screen} conn={conn} />;
     case "outcome":
       return (
         <section className={`screen outcome tone-${screen.tone}`}>

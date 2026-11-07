@@ -4,16 +4,8 @@ import type { LobbySettings } from "../protocol/LobbySettings";
 import type { PhoneScreen } from "../protocol/PhoneScreen";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { AvatarPicker } from "./AvatarPicker";
-import { QUIZ_MODES } from "../ui/lobby";
+import { GAME_NAMES, QUIZ_MODES } from "../ui/lobby";
 import { Token } from "../ui/Token";
-
-const GAME_LABEL = {
-  poster: "Poster-Raten",
-  race: "Heimlauf",
-  mau_mau: "Mau-Mau",
-  schwimmen: "Schwimmen",
-  durak: "Durak",
-} as const;
 
 type Lobby = Extract<PhoneScreen, { kind: "lobby" }>;
 
@@ -81,10 +73,10 @@ export function PhoneLobby({ me, screen, conn }: { me: PlayerInfo; screen: Lobby
           </div>
         )}
       </div>
-      {(["poster", "race", "mau_mau", "schwimmen", "durak"] as const).map((game) => (
+      {(["poster", "race", "bauherr", "mau_mau", "schwimmen", "durak"] as const).map((game) => (
         <div key={game} className={`game${settings.game === game ? " is-selected" : ""}`}>
           <button className="game-pick" aria-pressed={settings.game === game} onClick={() => configure({ game })}>
-            {GAME_LABEL[game]}
+            {GAME_NAMES[game]}
           </button>
         </div>
       ))}

@@ -17,6 +17,8 @@ pub enum GameKind {
     Schwimmen,
     /// Durak (throw-in) on the card table.
     Durak,
+    /// Bauherr, the hotel-building board game.
+    Bauherr,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

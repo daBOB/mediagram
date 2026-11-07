@@ -1,4 +1,4 @@
-//! Builds the chosen game, a quiz, a poster game or the race board game, from
+//! Builds the chosen game, a quiz, a poster game or a board game, from
 //! the lobby settings, remembering what was asked and shown tonight.
 
 use std::collections::HashSet;
@@ -7,6 +7,7 @@ use std::sync::Arc;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 
+use crate::bauherr::{BauherrConfig, BauherrGame};
 use crate::game::{Game, GameFactory};
 use crate::durak::{DurakConfig, DurakGame};
 use crate::maumau::{MauMauConfig, MauMauGame};
@@ -37,6 +38,9 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
         }
         if settings.game == GameKind::Durak {
             return Box::new(DurakGame::new(DurakConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
+        }
+        if settings.game == GameKind::Bauherr {
+            return Box::new(BauherrGame::new(BauherrConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
         }
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);
