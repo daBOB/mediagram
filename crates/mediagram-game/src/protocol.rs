@@ -11,6 +11,10 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 pub use crate::avatars::AvatarSlot;
+pub use crate::cards::{Card, Rank, Suit};
+pub use crate::protocol_cards::{
+    ButtonNeeds, CardDesk, CardsBanner, CardsEvent, CardsEventKind, CardsPile, CardsScene, CardsSeat, DeskButton, DeskCard,
+};
 pub use crate::protocol_choice::{AnswerColor, ChoiceOption, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
@@ -75,6 +79,13 @@ pub enum Action {
     Choose {
         index: u8,
         at: ServerTime,
+    },
+    /// A button of a `PhoneScreen::Cards` desk, with the cards picked for it
+    /// (indices into the desk's hand and table).
+    Cards {
+        button: String,
+        hand: Vec<u8>,
+        table: Option<u8>,
     },
 }
 
@@ -162,6 +173,10 @@ pub enum PhoneScreen {
         tone: Tone,
         points: i32,
     },
+    /// A card table: own hand, buttons and what is on the table.
+    Cards {
+        desk: CardDesk,
+    },
     Final {
         rank: u8,
         of: u8,
@@ -196,4 +211,5 @@ pub enum TvScene {
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },
     Race { scene: RaceScene },
+    Cards { scene: CardsScene },
 }

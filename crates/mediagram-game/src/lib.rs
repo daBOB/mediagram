@@ -4,6 +4,7 @@
 //! Transport agnostic and synchronous; a server wraps it in sockets.
 
 pub mod avatars;
+mod cards;
 mod factory;
 mod film_questions;
 pub mod game;
@@ -11,11 +12,15 @@ pub mod general;
 pub mod host;
 pub mod lan;
 pub mod protocol;
+mod protocol_cards;
 mod protocol_choice;
 mod protocol_poster;
 mod protocol_quiz;
 mod protocol_race;
 mod protocol_settings;
+mod maumau;
+mod maumau_rules;
+mod maumau_views;
 mod poster;
 mod poster_config;
 mod poster_lookup;

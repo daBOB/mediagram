@@ -24,6 +24,11 @@ const RACE_MIN: u8 = 2;
 const RACE_MAX: u8 = 4;
 pub(crate) const RACE_TOO_FEW: &str = "Heimlauf braucht mindestens 2 Spieler.";
 pub(crate) const RACE_TOO_MANY: &str = "Heimlauf geht mit höchstens 4 Spielern.";
+/// 32 cards deal five to five players, the 52-card deck to eight.
+const CARDS_MIN: u8 = 2;
+const CARDS_MAX: u8 = 8;
+pub(crate) const CARDS_TOO_FEW: &str = "Mau-Mau braucht mindestens 2 Spieler.";
+pub(crate) const CARDS_TOO_MANY: &str = "Mau-Mau geht mit höchstens 8 Spielern.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -62,6 +67,10 @@ impl Room {
             GameKind::Race => {
                 let players = self.connected_count();
                 return (players < RACE_MIN).then_some(RACE_TOO_FEW).or((players > RACE_MAX).then_some(RACE_TOO_MANY));
+            }
+            GameKind::MauMau => {
+                let players = self.connected_count();
+                return (players < CARDS_MIN).then_some(CARDS_TOO_FEW).or((players > CARDS_MAX).then_some(CARDS_TOO_MANY));
             }
         };
         (!ready).then_some(NOT_ENOUGH_POSTERS)

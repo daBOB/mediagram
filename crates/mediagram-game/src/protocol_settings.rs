@@ -11,6 +11,8 @@ pub enum GameKind {
     Poster,
     /// Heimlauf, the race board game.
     Race,
+    /// Mau-Mau on the card table.
+    MauMau,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
