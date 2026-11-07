@@ -1134,7 +1134,11 @@ The TV board (`client/src/tv/bauherr/`, `TvBauherr.tsx`) is three.js drawing a
 town painted offline: `tools/bauherr-bake/` builds the winding 36-field road, the
 eight hotels stage by stage and their landscapes in headless Chrome and writes
 `client/public/bauherr/` (`world.json` + `world.bin` + images, Poly Haven CC0, see
-`SOURCES.md`), so the box decodes images instead of painting at load. A hotel's
+`SOURCES.md`), so the box decodes images instead of painting at load. The big images
+are Basis ETC1S KTX2 with mipmaps, transcoded in a worker (`public/bauherr/basis/`),
+and the scene and its shaders are built while they arrive (`bauherr-assets.ts`); the
+start is about 4 s on the box. The camera (`bauherr-camera.ts`) leans toward the pawn
+whose turn it is and eases back to the overview. A hotel's
 stages lie one after another in its mesh, so building a stage moves a draw range
 (it rises in a scaffold). Owner colours (awnings, flags, signs, property lines,
 canopies) are baked white and tinted on the TV, so one bake serves every player.
