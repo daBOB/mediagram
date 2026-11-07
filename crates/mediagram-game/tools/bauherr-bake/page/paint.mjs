@@ -8,7 +8,8 @@ export const TEX = {};
 export const litLog = { rect: null };
 const image = (url) => new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => fail(new Error(url)); i.src = url; });
 export const TEXTURES = ['plastered_wall_04', 'large_red_bricks', 'sandstone_blocks_05', 'stone_wall', 'clay_roof_tiles_02', 'roof_slates_02',
-  'weathered_plank_siding', 'cobblestone_square', 'cobblestone_floor_001', 'asphalt_02', 'sparse_grass', 'forest_leaves_02', 'gravel_floor', 'square_tiles', 'wood_floor_deck'];
+  'weathered_plank_siding', 'cobblestone_square', 'cobblestone_floor_001', 'asphalt_02', 'sparse_grass', 'forest_leaves_02', 'gravel_floor', 'square_tiles', 'wood_floor_deck',
+  'rock_face_03', 'rocky_terrain', 'snow_02', 'seaside_rock', 'grass_ground', 'park_dirt'];
 export async function loadTextures() { await Promise.all(TEXTURES.concat(NORMALS).map((n) => image(`/tex/${n}.jpg`).then((i) => { TEX[n] = i; }))); }
 // roof normal maps (Poly Haven nor_gl), baked into the atlases as relief under the look's sun (Atlas.relief)
 export const NORMALS = ['clay_roof_tiles_02-normal', 'roof_slates_02-normal'];

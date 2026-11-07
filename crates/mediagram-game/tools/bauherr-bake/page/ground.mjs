@@ -76,7 +76,7 @@ function fields(g) {
   });
 }
 /** sh: static shadow casters { polys, trees, lines, ao }; lamps: [x, z] */
-export function paintGround(light, sh) {
+export function paintGround(light, sh, terrainShadows = []) {
   const c = canvas(BW, BH), g = c.getContext('2d');
   g.fillStyle = pat(g, over('sparse_grass', look.grass, 'soft-light', 2), 1.6); g.fillRect(0, 0, BW, BH);
   for (let i = 0; i < 90; i++) { const x = rand() * BW, y = rand() * BH, r = (0.8 + rand() * 2) * GS, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, rand() < 0.5 ? 'rgba(210,200,120,0.10)' : 'rgba(20,40,10,0.12)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
@@ -92,11 +92,19 @@ export function paintGround(light, sh) {
   fields(g);
   g.save(); g.globalCompositeOperation = 'multiply'; g.imageSmoothingQuality = 'high';
   g.drawImage(shadowLayer(BW, BH, (x, z) => [px(x), pz(z)], sh, light, look, 2), 0, 0, BW, BH); g.restore();
+  // what mountains, hill and rocks cast on the flat ground round them
+  for (const t of terrainShadows) {
+    const m = canvas(t.w, t.h), mg = m.getContext('2d'), img = mg.createImageData(t.w, t.h), r = light.shadowRatio;
+    for (let i = 0; i < t.w * t.h; i++) for (let q = 0; q < 3; q++) img.data[i * 4 + q] = 255 * (1 - t.data[i] * (1 - r[q]));
+    for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+    mg.putImageData(img, 0, 0);
+    g.save(); g.globalCompositeOperation = 'multiply'; g.imageSmoothingQuality = 'high'; g.drawImage(m, px(t.x0), pz(t.z0), (t.x1 - t.x0) * GS, (t.z1 - t.z0) * GS); g.restore();
+  }
   return c;
 }
 
 /** The land beyond the print, at a few pixels per unit: lawn and the same water, fading into the haze. */
-export const OUTER = { x0: -120, x1: 120, z0: -100, z1: 60, px: 6 };
+export const OUTER = { x0: -120, x1: 120, z0: -100, z1: 60, px: 3 };
 export function paintOuter() {
   const { x0, x1, z0, z1, px: k } = OUTER, c = canvas((x1 - x0) * k, (z1 - z0) * k), g = c.getContext('2d');
   g.fillStyle = '#7d9156'; g.fillRect(0, 0, c.width, c.height);

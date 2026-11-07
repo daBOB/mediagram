@@ -30,6 +30,7 @@ const server = Bun.serve({
   hostname: '127.0.0.1',
   fetch(req) {
     const path = new URL(req.url).pathname;
+    if (req.method === 'POST' && path === '/log') return req.text().then((t) => { console.log(t); return new Response('ok'); });
     if (path === '/') return new Response(PAGE, { headers: { 'content-type': 'text/html' } });
     if (path === '/entry.js') return new Response(SCRIPT, { headers: { 'content-type': 'text/javascript' } });
     if (path.startsWith('/font/') && safe.test(path.slice(6))) return file(FONT_DIR + path.slice(6));

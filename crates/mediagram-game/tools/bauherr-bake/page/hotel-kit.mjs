@@ -7,6 +7,7 @@ import { facade, flat, plaster, material, windowAt, poolWater } from './paint.mj
 import { rand } from './util.mjs';
 import * as K from './props.mjs';
 import * as OP from './owner-props.mjs';
+import { meadow, site } from './lot-states.mjs';
 
 export const SCALE = 2.0;
 export const SLOT = {
@@ -68,8 +69,8 @@ export function pool(P, b, deck, color = '#e9e4d8', n = 3) {
 
 /**
  * Builds a hotel into its own atlas. def: { name, stages: [(c) => { top, cast?, foot?, scaf?, axis? }] }.
- * Index order in the base part: for-sale group, raw lot ground, stage 1..n, scaffolds; in the owner part: property
- * line and plot sign, then each stage's owner pieces. Heights are returned in world units.
+ * Index order in the base part: the meadow of a lot for sale, the building site, stage 1..n, scaffolds; in the owner part: property
+ * fence and plot sign, then each stage's owner pieces. Heights are returned in world units.
  */
 export function buildHotel(def, lot, light, look, atlasSize = [2048, 1024]) {
   const A = new Atlas(atlasSize[0], atlasSize[1], 240), place = { rot: lot.rot, x: lot.x, z: lot.z, scale: SCALE };
@@ -77,39 +78,15 @@ export function buildHotel(def, lot, light, look, atlasSize = [2048, 1024]) {
   const c = { P, O, A, name: def.name, lit: look.lit, glowK: look.glowK, signLit: look.signLit, lamp: look.lamp, leaves: A.face(1, 1, K.leavesPaint(look.leaves), 256), conifer: A.face(1, 1, K.leavesPaint(look.firs), 256) };
   const hw = lot.w / SCALE / 2, hd = lot.d / SCALE / 2;
   const span = (part, fn) => { const s = part.mark; const r = fn(); return { range: [s, part.mark - s], r }; };
-  const sale = span(P, () => forSaleSign(P, def.name, hd)).range;
-  const overlay = span(P, () => { const m = hw - 0.12, n = hd - 0.12; slab(P, { x0: -m, x1: m, z0: -n, z1: n }, 0.012, rawGround(m, n)); siteProps(P, m, n); }).range;
-  const own0 = span(O, () => { OP.propertyLine(O, hw * 2 - 0.1, hd * 2 - 0.1); OP.plotSign(O, -0.9, hd - 0.2, def.name); }).range;
+  const sale = span(P, () => meadow(c, hw, hd, def.name)).range;
+  const overlay = span(P, () => site(c, hw, hd)).range;
+  const own0 = span(O, () => OP.fence(O, hw, hd)).range;
   const stages = def.stages.map((build) => {
     const po = O.mark, p = span(P, () => build(c));
     return { ...p.r, p: p.range, o: [po, O.mark - po] };
   });
+  // the plot sign is last in the owner part: it stands only while nothing is built, so it is a range of its own
+  const sign = span(O, () => OP.plotSign(O, -0.8, hd - 0.1, def.name)).range;
   stages.forEach((s) => { if (s.scaf) s.scafRange = span(P, () => K.scaffold(P, s.scaf.box, s.scaf.h, 0.2)).range; });
-  return { A, P, O, sale, overlay, own0, stages, hw, hd };
-}
-
-// the board of a lot for sale: a blue and white estate sign facing the road
-function forSaleSign(P, name, hd) {
-  const x = 0, z = hd - 0.25, board = (g, wu, hu) => {
-    g.fillStyle = '#f4f0e6'; g.fillRect(-0.1, -0.1, wu + 0.2, hu + 0.2); g.fillStyle = '#2f5d8a'; g.fillRect(-0.1, -0.1, wu + 0.2, hu * 0.34 + 0.1);
-    const s = wu / 300; g.save(); g.scale(s, s); const H = hu / s; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = '#fff'; g.font = `800 ${H * 0.24}px "Bricolage Grotesque", sans-serif`; g.fillText('Zu verkaufen', 150, H * 0.17, 280);
-    g.fillStyle = '#2a2f3a'; g.font = `800 ${H * 0.3}px "Bricolage Grotesque", sans-serif`; g.fillText(name, 150, H * 0.62, 280); g.restore();
-  };
-  for (const s of [-0.34, 0.34]) P.box(x + s - 0.012, 0, z - 0.012, x + s + 0.012, 0.52, z + 0.012, '#e9e4d8');
-  P.box(x - 0.46, 0.26, z + 0.012, x + 0.46, 0.56, z + 0.03, '#e9e4d8', { front: board, faces: 'pz px nx py' });
-}
-// a lot not yet built on: raw gravel, a surveyor's string with stakes
-const rawGround = (m, n) => (g, wu, hu) => {
-  material(g, { mat: 'gravel', tile: 0.8 }, -0.05, -0.05, wu + 0.1, hu + 0.1);
-  g.fillStyle = 'rgba(205,205,208,0.42)'; g.fillRect(-0.05, -0.05, wu + 0.1, hu + 0.1);
-  g.strokeStyle = 'rgba(250,250,240,0.8)'; g.lineWidth = 0.012; g.strokeRect(0.1, 0.1, wu - 0.2, hu - 0.2);
-  g.fillStyle = '#d9cfb8'; for (const [a, b] of [[0.1, 0.1], [wu - 0.1, 0.1], [wu - 0.1, hu - 0.1], [0.1, hu - 0.1]]) { g.beginPath(); g.arc(a, b, 0.03, 0, 7); g.fill(); }
-};
-// what a building site has lying about: a cabin, pallets of bricks, a heap of sand, traffic cones
-function siteProps(P, m, n) {
-  P.box(-m + 0.15, 0.012, -n + 0.15, -m + 0.7, 0.2, -n + 0.45, '#6f8aa0'); P.box(-m + 0.13, 0.2, -n + 0.13, -m + 0.72, 0.215, -n + 0.47, '#e6e1d6', { faces: 'px nx py pz nz' });
-  for (const [x, z] of [[m - 0.5, -n + 0.3], [m - 0.25, -n + 0.45]]) { P.box(x - 0.11, 0.012, z - 0.07, x + 0.11, 0.04, z + 0.07, '#a07a4a'); P.box(x - 0.1, 0.04, z - 0.065, x + 0.1, 0.12, z + 0.065, '#a65a43'); }
-  P.cyl(0.2, -n + 0.35, 0.26, 0.02, 0.012, 0.2, 10, '#d8c79a');
-  for (const x of [-0.7, 0, 0.7]) P.cyl(x, n - 0.2, 0.03, 0.008, 0.012, 0.09, 6, '#e8742a');
+  return { A, P, O, sale, overlay, own0, sign, stages, hw, hd };
 }

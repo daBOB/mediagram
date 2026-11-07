@@ -6,11 +6,11 @@ import { project, shadowLayer } from './shadow-layer.mjs';
 import { canvas } from './util.mjs';
 import { look } from './look.mjs';
 
-const PX = 30, Y = 0.012;   // shadow tile pixels per unit; quads lie just above the ground print
+const PX = 22, Y = 0.012;   // shadow tile pixels per unit; quads lie just above the ground print
 
 /** H: a built hotel (kit), light: the baked light. Returns the atlas canvas, quad geometry and each stage's [start, count] index range. */
 export function hotelShadows(H, light) {
-  const SA = new Atlas(1024, 512, PX, "#000"), rects = H.stages.map((s) => {
+  const SA = new Atlas(768, 384, PX, "#000"), rects = H.stages.map((s) => {
     const world = (s.cast ?? []).map((q) => H.P.world(q)), foot = (s.foot ?? []).map(([x, z]) => { const w = H.P.world([x, 0, z]); return [w[0], w[2]]; });
     if (!world.length) return null;
     const hull = project(world, light.drop), xs = hull.map((q) => q[0]).concat(foot.map((q) => q[0])), zs = hull.map((q) => q[1]).concat(foot.map((q) => q[1]));

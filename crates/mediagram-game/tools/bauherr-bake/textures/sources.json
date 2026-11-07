@@ -274,5 +274,133 @@
     "bytes": 611114
    }
   }
+ },
+ "rock_face_03": {
+  "page": "https://polyhaven.com/a/rock_face_03",
+  "authors": [
+   "Dario Barresi",
+   "Rico Cilliers"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "rock_face_03/diffuse-1k.jpg",
+    "bytes": 927082
+   },
+   "AO": {
+    "file": "rock_face_03/ao-1k.jpg",
+    "bytes": 689257
+   }
+  }
+ },
+ "rocky_terrain": {
+  "page": "https://polyhaven.com/a/rocky_terrain",
+  "authors": [
+   "Amal Kumar"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "rocky_terrain/diffuse-1k.jpg",
+    "bytes": 905179
+   },
+   "AO": {
+    "file": "rocky_terrain/ao-1k.jpg",
+    "bytes": 585716
+   }
+  }
+ },
+ "snow_02": {
+  "page": "https://polyhaven.com/a/snow_02",
+  "authors": [
+   "Rob Tuytel"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "snow_02/diffuse-1k.jpg",
+    "bytes": 325497
+   },
+   "AO": {
+    "file": "snow_02/ao-1k.jpg",
+    "bytes": 289832
+   }
+  }
+ },
+ "seaside_rock": {
+  "page": "https://polyhaven.com/a/seaside_rock",
+  "authors": [
+   "Dimitrios Savva"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "seaside_rock/diffuse-1k.jpg",
+    "bytes": 954872
+   },
+   "AO": {
+    "file": "seaside_rock/ao-1k.jpg",
+    "bytes": 666384
+   }
+  }
+ },
+ "rock_boulder_cracked": {
+  "page": "https://polyhaven.com/a/rock_boulder_cracked",
+  "authors": [
+   "Dario Barresi",
+   "Dimitrios Savva"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "rock_boulder_cracked/diffuse-1k.jpg",
+    "bytes": 998110
+   },
+   "AO": {
+    "file": "rock_boulder_cracked/ao-1k.jpg",
+    "bytes": 489666
+   }
+  }
+ },
+ "park_dirt": {
+  "page": "https://polyhaven.com/a/park_dirt",
+  "authors": [
+   "Christopher Melani"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "park_dirt/diffuse-1k.jpg",
+    "bytes": 1146359
+   },
+   "AO": {
+    "file": "park_dirt/ao-1k.jpg",
+    "bytes": 1076529
+   }
+  }
+ },
+ "grass_ground": {
+  "page": "https://polyhaven.com/a/grass_ground",
+  "authors": [
+   "Charlotte Baglioni"
+  ],
+  "licence": "CC0 1.0",
+  "res": "1k",
+  "maps": {
+   "Diffuse": {
+    "file": "grass_ground/diffuse-1k.jpg",
+    "bytes": 876584
+   },
+   "AO": {
+    "file": "grass_ground/ao-1k.jpg",
+    "bytes": 968681
+   }
+  }
  }
 }

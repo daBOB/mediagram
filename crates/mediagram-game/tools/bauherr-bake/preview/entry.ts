@@ -34,4 +34,33 @@ if (initial.turn) for (const k of ["rolled_at", "lands_at", "started_at", "paid_
 scene = { ...scene, ...initial };
 const box = document.getElementById("stage")!;
 const flag = window as unknown as { ready?: boolean; failed?: string; info?: () => unknown };
-startBauherr(box, () => ({ scene, players }), now).then((h) => { flag.info = h.stats; flag.ready = true; }, (e) => { flag.failed = String(e?.stack ?? e); });
+// ?report posts the start's timing marks (ms since navigation) to the server's /log, for runs on the TV box
+const report = (m: string) => void fetch("/log", { method: "POST", body: m });
+// a fixed camera ({ pos, at }) for looking at one corner of the town: in the address as "cam", or set later on window.camPose
+const flagCam = window as unknown as { camPose?: { pos: [number, number, number]; at: [number, number, number] } | null };
+flagCam.camPose = initial.cam ?? null;
+// ?stress=N draws the town N more times a frame, and ?report then also posts the frame rate over 15 s: the room the GPU has left
+const stress = Number(new URLSearchParams(location.search).get("stress")) || 0;
+startBauherr(box, () => ({ scene, players }), now, { camera: () => flagCam.camPose ?? null, extraPasses: stress }).then((h) => {
+  flag.info = h.stats;
+  flag.ready = true;
+  if (location.search.includes("report")) {
+    // two more frames, then the marks
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const marks = performance.getEntriesByType("mark").filter((e) => e.name.startsWith("bauherr:")).map((e) => `${e.name.slice(8)} ${(e.startTime / 1000).toFixed(2)}`);
+      report(`MARKS ${innerWidth}x${innerHeight}@${devicePixelRatio} ${marks.join(" | ")}`);
+      // five seconds to settle, then count frames for fifteen
+      setTimeout(() => {
+        let n = 0, slow = 0, last = performance.now();
+        const t0 = last, tick = (t: number) => {
+          n++;
+          if (t - last > 25) slow++;
+          last = t;
+          if (t - t0 < 15000) requestAnimationFrame(tick);
+          else report(`FPS ${(n / ((t - t0) / 1000)).toFixed(1)} slow(>25ms) ${slow} stress ${stress} ${location.search}`);
+        };
+        requestAnimationFrame(tick);
+      }, 5000);
+    }));
+  }
+}, (e) => { flag.failed = String(e?.stack ?? e); report(`FAILED ${flag.failed}`); });
