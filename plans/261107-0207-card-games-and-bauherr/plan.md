@@ -67,4 +67,5 @@ building pieces or rent table of the MB/Hasbro game.
   - Schwimmen, 8 players (reveals incl.): 661 s, 39 740 frames = 60.1 fps, janky 11 (0.03 %), p50 24 ms,
     p99 31 ms, 0 missed vsync. Heavier per frame than Mau-Mau but no dropped frames.
 - Box left on the game lobby. The box only lets its own WebView be the TV (`not_allowed` for a LAN TV socket).
-- Open: Bauherr 3D board (phase 05), its box measurement; Durak not measured on the box (6 seats < Mau-Mau's 8).
+  - Durak, 6 players: 466 s, 27 073 frames = 58.1 fps, janky 32 (0.12 %), p50 24 ms, p99 34 ms, 4 missed vsync.
+- 0.153.0 (fb3df002): Bauherr's 3D town board merged (6bdc2295); box measurement next.
