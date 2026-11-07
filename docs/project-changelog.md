@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.156.0 — Game night reaches main, with controller apps for the phones
+
+**Added** (user, 2026-11-07: "to have more control over the device. awake, vibration, drawing on device"; merged with everything else at "collect ALL really ALL worktree and merge them to main")
+
+- Game night (quiz, poster guessing, Heimlauf, Mau-Mau, Schwimmen, Durak, Bauherr, avatars and the awards ceremony, entries 0.149.0–0.155.0 below) is on `main` for the first time.
+- **Spieltisch**, a controller app for Android (`android/controller`, `com.mediagram.controller`) and for iPhone and iPad (`ios/controller`, built on Linux with xtool). It finds the TV on the Wi-Fi by itself and opens its phone page, keeps the screen on, and accepts only addresses on the home network. A QR scan is the fallback.
+- The phone page vibrates inside the apps at four moments: your turn, buzzer accepted, wrong answer, game won. A screen the host re-sends does not buzz again. The page keeps the player's name, token and avatar in the app. Guests in a plain browser see no change.
+- The TV announces game night on the local network (`_mediagram-game._tcp`, with the join URL) while it runs.
+- Not yet walked on real devices: the controller apps and the announcement still owe the box, phone and iPad walk (`plans/261107-1322-controller-apps/phase-06-box-walk-docs-and-versioning.md`).
+
 ## 0.155.0 — A poster shelf for the games
 
 **Added** (user, 2026-11-07: "lets add also a poster overview in the games section and then load the game"; posters and backdrops made by the user)
