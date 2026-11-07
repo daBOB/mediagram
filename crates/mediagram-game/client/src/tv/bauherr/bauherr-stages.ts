@@ -1,5 +1,5 @@
-// Which parts of each hotel are shown, and how a stage rises: an unowned lot shows its for-sale sign, a bought one its
-// raw ground with the owner's property line and sign, then each stage that stands adds its walls, owner pieces and
+// Which parts of each hotel are shown, and how a stage rises: an unowned lot shows its meadow and for-sale board, a bought one its
+// building site with the owner's fence and sign, then each stage that stands adds its walls, owner pieces and
 // shadow. A new stage goes up inside a scaffold in 2.8 s (walls rise from the ground; a facility is laid out along the lot).
 
 import type { BauherrEstate } from "../../protocol/BauherrEstate";
@@ -23,7 +23,7 @@ const span = (stages: HotelRec["stages"], n: number, key: "p" | "o"): Range => (
 
 /** What is drawn of a hotel with `built` stages standing; `owned` false shows the lot for sale. */
 export function shownRanges(h: HotelRec, owned: boolean, built: number, shadowStages = built): Shown {
-  const base: Range = !owned ? [h.sale[0], h.sale[1] + h.overlay[1]] : built === 0 ? h.overlay : span(h.stages, built, "p");
+  const base: Range = !owned ? h.sale : built === 0 ? h.overlay : span(h.stages, built, "p");
   const ownerEnd = owned ? h.own0[1] + (built > 0 ? span(h.stages, built, "o")[1] : 0) : 0;
   const withShadow = h.stages.slice(0, shadowStages).filter((s) => s.shadow[1] > 0);
   const last = withShadow[withShadow.length - 1];
@@ -53,6 +53,12 @@ export function stepHotel(h: HotelView, estate: BauherrEstate | undefined, color
   h.base.geometry.setDrawRange(...shown.base);
   h.owner.geometry.setDrawRange(...shown.owner);
   h.shadow.geometry.setDrawRange(...shown.shadow);
+  // a mesh with nothing to draw still costs the box a draw call's set-up: leave it out
+  h.base.visible = shown.base[1] > 0;
+  h.owner.visible = shown.owner[1] > 0;
+  h.shadow.visible = shown.shadow[1] > 0;
+  h.sign.visible = owned && h.built === 0;
+  if (h.sign.visible) h.sign.geometry.setDrawRange(...rec.sign);
   const r = h.rising;
   h.rise.visible = h.scaf.visible = r !== null;
   if (!r) return;

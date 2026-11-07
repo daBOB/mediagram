@@ -13,7 +13,8 @@ export const PERMIT_FACES = ["ok", "no", "ok", "free", "ok", "x2"] as const;
 const PERMIT_FACE: Record<BauherrPermit, (typeof PERMIT_FACES)[number]> = { approved: "ok", rejected: "no", free: "free", double: "x2" };
 /** The turn that brings box face k to the top. */
 export const FACE_UP: [number, number, number][] = [[0, 0, Math.PI / 2], [0, 0, -Math.PI / 2], [0, 0, 0], [Math.PI, 0, 0], [-Math.PI / 2, 0, 0], [Math.PI / 2, 0, 0]];
-const SIZE = 0.8, REST_Y = SIZE / 2;
+export const DIE_SIZE = 1.2;
+const SIZE = DIE_SIZE, REST_Y = SIZE / 2;
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 function dieGeometry() {
@@ -74,7 +75,7 @@ export class Dice {
   private throwTo(d: Die, face: number, side: number, rolledAt: number) {
     d.thrown = rolledAt;
     const yaw = this.yaws[face] + (Math.random() - 0.5) * 0.4;
-    d.from.set(d.rest.x + side * 3.6, d.rest.y + 2.6, d.rest.z + (Math.random() - 0.5) * 0.6);
+    d.from.set(d.rest.x + side * 3.4, d.rest.y + 3.2, d.rest.z + (Math.random() - 0.5) * 0.6);
     d.to.set(d.rest.x + (Math.random() - 0.5) * 0.4, d.rest.y, d.rest.z + (Math.random() - 0.5) * 0.3);
     d.q.setFromEuler(new THREE.Euler(...FACE_UP[face])).premultiply(new THREE.Quaternion().setFromAxisAngle(Y_AXIS, yaw));
     d.axis.set(Math.random() - 0.5, 0.3, Math.random() - 0.5).normalize();

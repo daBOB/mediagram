@@ -92,11 +92,17 @@ export function lotToWorld(lot: Lot, lx: number, lz: number): [number, number] {
   return [lot.x + lx * c + lz * s, lot.z - lx * s + lz * c];
 }
 
-/** The paved plaza in front of the board, where the dice roll. */
-export const PLAZA = { x0: -3.5, x1: 10.5, z0: 6.0, z1: 14 };
-export const DICE_AT = { number: [1.0, 6.9], permit: [4.4, 6.9] } as const;
-
-export const CAMERA = { pos: [0, 18, 25], at: [0, 0, -2.2], fov: 36 } as const;
+/** The paved pad in front of the road, where the dice roll: just big enough for two large dice. */
+export const PLAZA = { x0: -4.4, x1: 4.4, z0: 5.65, z1: 8.0 };
+export const DICE_AT = { number: [-1.45, 6.6], permit: [1.45, 6.6] } as const;
+/** The overview: the whole road with its caps across the frame, the back row of lots near the top. */
+/** Where the evening sun stands (towards it): low, from the left and a little from the viewer. The bake and the TV light by it. */
+export const SUN_DIR = [-0.87, 0.28, 0.42] as const;
+export const CAMERA = { pos: [0, 16.8, 23.6], at: [0, 0, -1.8], fov: 36 } as const;
+/** The rows of the screen (fractions from the top) the HUD keeps: the turn banner above `top`, the player tags below `bottom`. */
+export const HUD_BAND = { top: 0.105, bottom: 0.883 };
+/** The die's result pill (fractions of the screen): low in the right corner, on the lawn below the road, where no pawn walks. */
+export const RESULT_PILL = { left: 0.7, top: 0.79, right: 0.978, bottom: 0.886 };
 /** The ground print covers this rectangle. */
 export const GROUND = { x0: -27, x1: 27, z0: -23, z1: 15 };
 

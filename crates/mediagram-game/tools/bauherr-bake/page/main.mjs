@@ -1,6 +1,6 @@
 // Entry of the bake page: builds the hotels, the landscape and the ground print, then hands every image and the geometry
 // to the driver. Runs once in headless Chrome (tools/bauherr-bake/bake.mjs); the TV never paints any of this.
-import { FIELDS, LOTS, HOTEL_NAMES, GROUND } from '../../../client/src/tv/bauherr/bauherr-layout.ts';
+import { FIELDS, LOTS, HOTEL_NAMES, GROUND, CAMERA } from '../../../client/src/tv/bauherr/bauherr-layout.ts';
 import { makeLight } from './light.mjs';
 import { loadTextures, setLight } from './paint.mjs';
 import { Atlas, Part } from './atlas.mjs';
@@ -8,12 +8,13 @@ import { buildHotel, SCALE } from './hotel-kit.mjs';
 import { hotelShadows } from './hotel-shadows.mjs';
 import { kastanienhof, seeblick, waldhaus, alpenrose } from './hotels-a.mjs';
 import { stadtpalais, sternwarte, kurhaus, leuchtturm } from './hotels-b.mjs';
-import { mountains, hill, coast, cityBlocks, bridge } from './scenery-terrain.mjs';
+import { cityBlocks, bridge } from './scenery-terrain.mjs';
+import { bakeTerrain } from './terrain-bake.mjs';
 import { plant, lamps, plaza, park } from './scenery-trees.mjs';
 import { paintGround, paintOuter, OUTER } from './ground.mjs';
 import * as K from './props.mjs';
 import * as OP from './owner-props.mjs';
-import { Pack, saveImage } from './export.mjs';
+import { Pack, frontToBack, saveImage, saveKtx } from './export.mjs';
 import { ivoryDie, oakDie } from './dice-faces.mjs';
 import { look } from './look.mjs';
 import { log, post, save, reseed } from './util.mjs';
@@ -35,12 +36,12 @@ async function main() {
     H.A.pack();
     const base = pack.mesh(H.P.finish()), owner = pack.mesh(H.O.finish()), shadows = hotelShadows(H, light);
     const image = `hotel-${lot.plot}`;
-    await saveImage(image, H.A.draw());
+    await saveKtx(image, H.A.draw());
     await saveImage(`${image}-shadow`, shadows.canvas, 0.8);
     const shadow = pack.mesh({ pos: shadows.pos, uv: shadows.uv, idx: shadows.idx });
     const c = Math.cos(lot.rot), s = Math.sin(lot.rot);
     world.hotels.push({
-      plot: lot.plot, name, x: lot.x, z: lot.z, rot: lot.rot, dir: [c, -s], image, base, owner, shadow, sale: H.sale, overlay: H.overlay, own0: H.own0,
+      plot: lot.plot, name, x: lot.x, z: lot.z, rot: lot.rot, dir: [c, -s], image, base, owner, shadow, sale: H.sale, overlay: H.overlay, own0: H.own0, sign: H.sign,
       stages: H.stages.map((st, i) => ({ p: st.p, o: st.o, top: +((st.top ?? 0.3) * SCALE).toFixed(3), axis: st.axis ?? 'y', x0: +((st.x0 ?? 0) * SCALE).toFixed(3), x1: +((st.x1 ?? 0) * SCALE).toFixed(3),
         scaf: st.scafRange ?? [0, 0], scafTop: st.scaf ? +(st.scaf.h * SCALE).toFixed(3) : 0, shadow: shadows.ranges[i] })),
     });
@@ -50,13 +51,19 @@ async function main() {
   // ---------- the landscape round the board ----------
   const TA = new Atlas(2048, 2048, 200), TP = new Part(TA, light);
   const faces = { leaves: TA.face(1, 1, K.leavesPaint(look.leaves), 256), firs: TA.face(1, 1, K.leavesPaint(look.firs), 256) };
-  mountains(TP, sh); hill(TP, sh); coast(TP, sh); cityBlocks(TP, sh, look); bridge(TP, sh);
+  cityBlocks(TP, sh, look); bridge(TP, sh);
   plant(TP, sh, faces);
   world.halos = [...lamps(TP, sh), ...plaza(TP, sh), ...park(TP, sh)];
   TA.pack();
-  await saveImage('town', TA.draw());
-  world.town = pack.mesh(TP.finish());
+  await saveKtx('town', TA.draw());
+  world.town = pack.mesh(frontToBack(TP.finish(), CAMERA.pos));
   mark(`town: ${TP.idx.length / 3} triangles, atlas ${Math.round(TA.used * 100)} % used`);
+
+  // the land that rises above the lawn: mountains, hill, coast rocks
+  const terrain = bakeTerrain(light);
+  await saveKtx('terrain', terrain.canvas, true);
+  world.terrain = pack.mesh(frontToBack(terrain.mesh, CAMERA.pos));
+  mark(`terrain: ${terrain.mesh.idx.length / 3} triangles`);
 
   // entrance canopies, drawn once at the origin and placed by the TV in each owner's colour
   const CA = new Atlas(512, 512, 200), CO = new Part(CA, light, { tint: 1 });
@@ -66,9 +73,9 @@ async function main() {
   world.canopy = pack.mesh(CO.finish());
 
   // ---------- the ground print, with every static shadow in it ----------
-  const ground = paintGround(light, sh);
+  const ground = paintGround(light, sh, terrain.shadows);
   mark('ground painted');
-  await saveImage('ground', ground, 0.84);
+  await saveKtx('ground', ground, true);
   await saveImage('outer', paintOuter(), 0.8);
   world.outer = OUTER;
 

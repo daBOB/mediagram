@@ -49,6 +49,8 @@ export interface HotelRec {
   overlay: Range;
   /** The property line and plot sign in the owner mesh. */
   own0: Range;
+  /** The plot sign in the owner mesh, which stands only while no stage is built. */
+  sign: Range;
   stages: StageRec[];
 }
 export interface WorldRec {
@@ -57,6 +59,8 @@ export interface WorldRec {
   /** Glow discs: x, y, z, radius, strength, colour. */
   halos: [number, number, number, number, number, string][];
   town: MeshRec;
+  /** Mountains, hill and coast rocks: lit at bake time, one image. */
+  terrain: MeshRec;
   canopy: MeshRec;
   /** The baked light on an upward surface (linear rgb), which the ground print is multiplied by. */
   up: [number, number, number];
@@ -79,6 +83,7 @@ export function parseWorld(raw: unknown, hotelStages: number[]): WorldRec {
     inside(h.sale, h.base, "sale");
     inside(h.overlay, h.base, "overlay");
     inside(h.own0, h.owner, "own0");
+    inside(h.sign, h.owner, "sign");
     h.stages.forEach((s, k) => {
       inside(s.p, h.base, `hotel ${i} stage ${k}`);
       inside(s.scaf, h.base, `hotel ${i} scaffold ${k}`);
@@ -87,6 +92,7 @@ export function parseWorld(raw: unknown, hotelStages: number[]): WorldRec {
     });
   });
   if (!Array.isArray(w.fields) || w.fields.length !== 36 || !Array.isArray(w.up) || w.up.length !== 3) throw new Error("world.json: fields or light missing");
+  if (!w.terrain || !w.town || !w.canopy) throw new Error("world.json: a mesh is missing");
   return w;
 }
 

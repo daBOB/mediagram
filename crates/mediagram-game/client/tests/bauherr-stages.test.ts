@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parseWorld, type WorldRec } from "../src/tv/bauherr/bauherr-data";
 import { shownRanges } from "../src/tv/bauherr/bauherr-stages";
-import { pawnPlace } from "../src/tv/bauherr/bauherr-motion";
+import { pawnPlace } from "../src/tv/bauherr/bauherr-pawn-place";
 import type { BauherrScene } from "../src/protocol/BauherrScene";
 import type { BauherrTurn } from "../src/protocol/BauherrTurn";
 
@@ -36,9 +36,9 @@ test("a hotel's stages are laid out one after another, so showing n of them is o
   }
 });
 
-test("a lot for sale shows its sign and raw ground; a bought one only the ground and the owner's line", () => {
+test("a lot for sale shows its meadow and board; a bought one the building site, the owner's fence and sign", () => {
   const h = world.hotels[3];
-  expect(shownRanges(h, false, 0).base).toEqual([h.sale[0], h.sale[1] + h.overlay[1]]);
+  expect(shownRanges(h, false, 0).base).toEqual(h.sale);
   expect(shownRanges(h, false, 0).owner[1]).toBe(0);
   expect(shownRanges(h, true, 0).base).toEqual(h.overlay);
   expect(shownRanges(h, true, 0).owner).toEqual([0, h.own0[1]]);
@@ -59,6 +59,15 @@ test("each stage built adds its walls, owner pieces and shadow, up to the hotel'
     expect(shownRanges(h, true, 1).shadow[1]).toBeLessThanOrEqual(all.shadow[1]);
     // a stage still rising has its shadow drawn but its walls come from the rise mesh
     expect(shownRanges(h, true, 1, 2).shadow[1]).toBeGreaterThanOrEqual(shownRanges(h, true, 1).shadow[1]);
+  }
+});
+
+test("the plot sign comes after every stage's owner pieces, so a built stage never draws it", () => {
+  for (const h of world.hotels) {
+    const last = h.stages[h.stages.length - 1].o;
+    expect(h.sign[1]).toBeGreaterThan(0);
+    expect(h.sign[0]).toBe(last[0] + last[1]);
+    expect(shownRanges(h, true, h.stages.length).owner[1]).toBeLessThanOrEqual(h.sign[0]);
   }
 });
 

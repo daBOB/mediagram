@@ -44,22 +44,32 @@ export function canopy(O, w = 0.62, d = 0.34, h = 0.46) {
   }
   O.box(-w / 2 - 0.01, h - 0.012, -d / 2 - 0.01, w / 2 + 0.01, h, d / 2 + 0.03, IRON, { faces: 'pz px nx', tint: 0 });
 }
-// a painted property line round a lot (lot-local rectangle), with a post at every corner
-export function propertyLine(O, w, d, t = 0.1) {
-  const y = 0.02, hw = w / 2, hd = d / 2;
-  for (const [x0, z0, x1, z1] of [[-hw, hd - t, hw, hd], [-hw, -hd, hw, -hd + t], [-hw, -hd, -hw + t, hd], [hw - t, -hd, hw, hd]]) O.poly([[x0, y, z1], [x1, y, z1], [x1, y, z0], [x0, y, z0]], WHITE, { tint: 1 });
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) O.box(sx * hw - 0.03, 0, sz * hd - 0.03, sx * hw + 0.03, 0.2, sz * hd + 0.03, WHITE, { faces: 'px nx pz nz py', tint: 1 });
+// a picket fence round a lot (half sizes hw, hd), open at a gate in the middle of the front: posts and two rails in the owner's colour, cream caps
+export function fence(O, hw, hd, gate = 0.34) {
+  const e = 0.06, x1 = hw - e, z1 = hd - e, h = 0.15, t = 0.014, step = 0.26;
+  const post = (x, z) => { O.box(x - t, 0, z - t, x + t, h, z + t, WHITE, { faces: 'px nx pz nz', tint: 1 }); O.box(x - t - 0.004, h, z - t - 0.004, x + t + 0.004, h + 0.012, z + t + 0.004, CREAM, { faces: 'px nx pz nz py', tint: 0 }); };
+  const run = (xa, za, xb, zb) => {
+    const n = Math.max(1, Math.round(Math.hypot(xb - xa, zb - za) / step));
+    for (let i = 0; i <= n; i++) post(xa + ((xb - xa) * i) / n, za + ((zb - za) * i) / n);
+    for (const y of [0.04, 0.1]) {
+      if (xa === xb) O.box(xa - 0.006, y, Math.min(za, zb), xa + 0.006, y + 0.018, Math.max(za, zb), WHITE, { faces: 'px nx py', tint: 1 });
+      else O.box(Math.min(xa, xb), y, za - 0.006, Math.max(xa, xb), y + 0.018, za + 0.006, WHITE, { faces: 'pz nz py', tint: 1 });
+    }
+  };
+  run(-x1, z1, -gate, z1); run(gate, z1, x1, z1); run(-x1, -z1, x1, -z1); run(-x1, -z1, -x1, z1); run(x1, -z1, x1, z1);
+  for (const x of [-gate, gate]) O.box(x - 0.02, 0, z1 - 0.02, x + 0.02, h + 0.05, z1 + 0.02, WHITE, { faces: 'px nx pz nz py', tint: 1 });   // gateposts
 }
 // the sign of a bought lot: a board on two posts, the owner's colour as its header band
-export function plotSign(O, x, z, name) {
+export function plotSign(O, x, z, name, k = 1.35) {
   const body = (g, wu, hu) => {
     g.fillStyle = '#f4f0e6'; g.fillRect(-0.05, -0.05, wu + 0.1, hu + 0.1);
     const s = wu / 300; g.save(); g.scale(s, s); const H = hu / s; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = '#2a2f3a'; g.font = `800 ${H * 0.32}px "Bricolage Grotesque", sans-serif`; g.fillText(name, 150, H * 0.34, 280);
     g.font = `700 ${H * 0.2}px "Bricolage Grotesque", sans-serif`; g.fillStyle = '#6a5a48'; g.fillText('Hier baut', 150, H * 0.72, 280); g.restore();
   };
-  for (const s of [-0.4, 0.4]) O.box(x + s - 0.016, 0, z - 0.016, x + s + 0.016, 0.62, z + 0.016, '#e9e4d8', { tint: 0 });
-  O.wall(x - 0.5, z + 0.02, x + 0.5, z + 0.02, 0.28, 0.52, body, { tint: 0 });
-  O.wall(x - 0.5, z + 0.02, x + 0.5, z + 0.02, 0.52, 0.62, WHITE, { tint: 1 });
-  O.box(x - 0.5, 0.28, z, x + 0.5, 0.62, z + 0.02, '#e9e4d8', { faces: 'px nx py nz', tint: 0 });
+  const w = 0.5 * k, y0 = 0.28 * k, y1 = 0.52 * k, y2 = 0.62 * k, d = 0.02 * k;
+  for (const s of [-0.4 * k, 0.4 * k]) O.box(x + s - 0.016, 0, z - 0.016, x + s + 0.016, y2, z + 0.016, '#e9e4d8', { tint: 0 });
+  O.wall(x - w, z + d, x + w, z + d, y0, y1, body, { tint: 0 });
+  O.wall(x - w, z + d, x + w, z + d, y1, y2, WHITE, { tint: 1 });
+  O.box(x - w, y0, z, x + w, y2, z + d, '#e9e4d8', { faces: 'px nx py nz', tint: 0 });
 }
