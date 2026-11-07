@@ -3,7 +3,7 @@
 
 use crate::cards::Card;
 use crate::durak::{DurakGame, Stage};
-use crate::durak_rules::{DEAL, attack_limit, can_throw};
+use crate::durak_rules::{DEAL, attack_limit};
 use crate::game::GameCtx;
 use crate::protocol::{CardsEventKind, ServerTime};
 
@@ -75,14 +75,16 @@ impl DurakGame {
         self.seek(now, taking);
     }
 
-    fn can_add(&self, seat: usize) -> bool {
-        seat != self.defender() && self.bout.len() < self.limit && self.hands[seat].iter().any(|&c| can_throw(&self.table(), c))
+    /// Everyone who still holds cards is asked, whether or not a card fits: skipping the
+    /// ones who cannot would tell the table who can. Only the public limit ends the round early.
+    fn is_asked(&self, seat: usize) -> bool {
+        seat != self.defender() && self.bout.len() < self.limit && !self.hands[seat].is_empty()
     }
 
-    /// Moves on to the next player who can add a card; when nobody can, the bout is over.
+    /// Moves on to the next player who is asked to add a card; when nobody can, the bout is over.
     fn seek(&mut self, now: ServerTime, taking: bool) {
         let n = self.ids.len();
-        while self.thrower < n && !self.can_add(self.thrower_seat()) {
+        while self.thrower < n && !self.is_asked(self.thrower_seat()) {
             self.thrower += 1;
         }
         self.stage = if self.thrower < n {

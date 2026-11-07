@@ -88,6 +88,9 @@ pub struct CardsSeat {
     pub cards: u8,
     /// Cards this player shows face up.
     pub open: Vec<Card>,
+    /// A hand's value in half points, shown in the count badge in place of the
+    /// card count (Schwimmen, once the hands are open).
+    pub worth: Option<u8>,
     pub marker: Option<String>,
 }
 

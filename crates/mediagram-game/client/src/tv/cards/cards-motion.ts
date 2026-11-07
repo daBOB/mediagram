@@ -8,6 +8,7 @@ import type { CardsScene } from "../../protocol/CardsScene";
 import { RANKS, SUITS } from "../../ui/card-face";
 import { TRUMP_AT, isDurak, pairCard } from "./cards-durak";
 import type { CardsHud } from "./cards-hud";
+import { worthCell } from "./cards-print";
 import {
   DECK_AT, LAYER, TABLE_Y, WISH_AT, fanCard, openCard, pileAt, pileCard, yawFacing, type Placed, type Spot,
 } from "./cards-layout";
@@ -71,7 +72,7 @@ export class CardsMotion {
         const from: Placed = { x: DECK_AT.x, z: DECK_AT.z, yaw: 0, y: TABLE_Y + 0.12 };
         cards.put(null, between(from, slot, fl.f), Math.sin(fl.f * Math.PI) * LIFT);
       });
-      this.hud.setTag(si, scene.turn === seat.player, seat.marker, seat.cards);
+      this.hud.setTag(si, scene.turn === seat.player, seat.marker, seat.worth === null ? seat.cards : worthCell(seat.worth));
     });
 
     // deck: a few layers say how much is left

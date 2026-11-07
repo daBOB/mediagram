@@ -18,6 +18,7 @@ const MAU_MAU: GameTexts = {
   banner: [
     " ist dran",
     " zieht eine Karte",
+    " zieht keine Karte",
     ...[2, 3, 4, 5, 6, 7, 8].map((n) => ` zieht ${n} Karten`),
     " setzt aus",
     ...SUITS.map((s) => ` wünscht ${SUIT_NAME[s]}`),
@@ -45,8 +46,8 @@ const SCHWIMMEN: GameTexts = {
     " gewinnt!",
   ],
   note: ["Geklopft – letzte Runde", "Aufgedeckt", "Feuer – 31!"],
-  // the reveal adds a hand's value to these, drawn when first shown
-  marker: ["●●●", "●●○", "●○○", "schwimmt", "●●● · klopft", "●●○ · klopft", "●○○ · klopft", "schwimmt · klopft", "raus"],
+  // the reveal adds only the loss; the hand's value rides in the count badge
+  marker: ["●●●", "●●○", "●○○", "schwimmt", "●●● · klopft", "●●○ · klopft", "●○○ · klopft", "schwimmt · klopft", "●●○ · −1", "●○○ · −1", "schwimmt · −1", "raus"],
 };
 
 const DURAK: GameTexts = {

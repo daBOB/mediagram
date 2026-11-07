@@ -146,7 +146,11 @@ export function printCards(): HTMLCanvasElement {
 }
 
 const NUMBER_CELL = 64;
-/** The numbers 0..55 in white on dark discs, for the card counts beside the seats. */
+/** The last cell reads 30½ (three of a kind in Schwimmen); no hand has 55 cards, so it is free. */
+export const HALF_CELL = COLS * ROWS - 1;
+/** The badge cell for a Schwimmen hand worth `half` half points. */
+export const worthCell = (half: number) => (half % 2 ? HALF_CELL : half / 2);
+/** The numbers 0..54 and 30½ in white on dark discs, for the counts and hand values beside the seats. */
 export function printNumbers(): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = COLS * NUMBER_CELL;
@@ -164,8 +168,8 @@ export function printNumbers(): HTMLCanvasElement {
     g.strokeStyle = "#f0e0be";
     g.stroke();
     g.fillStyle = "#fff4e2";
-    g.font = `800 ${n > 9 ? 32 : 36}px ${HUD_FONT}`;
-    g.fillText(String(n), x, y + 2);
+    g.font = `800 ${n === HALF_CELL ? 24 : n > 9 ? 32 : 36}px ${HUD_FONT}`;
+    g.fillText(n === HALF_CELL ? "30½" : String(n), x, y + 2);
   }
   return c;
 }

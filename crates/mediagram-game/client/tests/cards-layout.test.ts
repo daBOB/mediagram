@@ -1,7 +1,7 @@
 // Run with `bun test` in crates/mediagram-game/client.
 import { expect, test } from "bun:test";
 import { RANKS, SUITS } from "../src/ui/card-face";
-import { BACK_CELL, cellOf } from "../src/tv/cards/cards-print";
+import { BACK_CELL, COLS, ROWS, cellOf, worthCell } from "../src/tv/cards/cards-print";
 import { DISCARD_AT, fanCard, pileAt, seatSpot, yawFacing } from "../src/tv/cards/cards-layout";
 import { pairCard } from "../src/tv/cards/cards-durak";
 import { textsFor } from "../src/tv/cards/cards-texts";
@@ -71,4 +71,17 @@ test("every text the Schwimmen host sends for seats and the table is pre-drawn",
   expect(t.banner).toContain(" klopft!");
   expect(t.note).toContain("Feuer – 31!");
   expect(t.marker).toContain("●●● · klopft");
+});
+
+test("a Schwimmen reveal needs no new texture: loss markers are pre-drawn and values come from the number atlas", () => {
+  const t = textsFor("Schwimmen");
+  for (const m of ["●●○ · −1", "●○○ · −1", "schwimmt · −1", "raus"]) expect(t.marker).toContain(m);
+  // half points: whole values map to their own number, 30½ to the last cell, 31 to 31
+  expect([0, 44, 60, 62].map(worthCell)).toEqual([0, 22, 30, 31]);
+  expect(worthCell(61)).toBe(COLS * ROWS - 1);
+});
+
+test("every Mau-Mau draw banner is pre-drawn, from no card to a stack of eight", () => {
+  const t = textsFor("Mau-Mau");
+  for (const m of [" zieht keine Karte", " zieht eine Karte", " zieht 2 Karten", " zieht 8 Karten"]) expect(t.banner).toContain(m);
 });

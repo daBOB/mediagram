@@ -33,10 +33,23 @@ impl Default for MauMauConfig {
     }
 }
 
+const MAU: &str = " ruft Mau!";
+const PENALTY_START: &str = " vergisst Mau";
+const PENALTY: &str = " vergisst Mau – Strafkarte!";
+
+/// What the banner says after a forced draw of whatever number of cards was really dealt.
+fn drawn_text(n: usize) -> String {
+    match n {
+        0 => " zieht keine Karte".into(),
+        1 => " zieht eine Karte".into(),
+        n => format!(" zieht {n} Karten"),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Stage {
     Turn { since: ServerTime },
-    /// Drew a card that fits: play it or keep it.
+    /// Drew a card: play it if it fits, or keep it.
     Drawn { card: Card, since: ServerTime },
     /// Played a jack and picks the suit.
     Wish { since: ServerTime },
@@ -60,6 +73,8 @@ pub struct MauMauGame {
     pub(crate) stage: Stage,
     pub(crate) events: Vec<CardsEvent>,
     pub(crate) banner: Option<(CardsBanner, ServerTime)>,
+    /// A banner waiting for the one on show to be read, and when it may appear.
+    pub(crate) queued: Option<(CardsBanner, ServerTime)>,
     next_event: u32,
     rng: StdRng,
 }
@@ -84,6 +99,7 @@ impl MauMauGame {
             stage: Stage::Turn { since: now },
             events: Vec::new(),
             banner: None,
+            queued: None,
             next_event: 0,
             rng,
         };
@@ -120,6 +136,7 @@ impl MauMauGame {
 
     fn say(&mut self, now: ServerTime, player: PlayerId, text: impl Into<String>) {
         self.banner = Some((CardsBanner { player, text: text.into() }, now));
+        self.queued = None;
     }
 
     /// Next card of the draw pile; an empty pile is refilled from the discards under the top card.
@@ -132,36 +149,34 @@ impl MauMauGame {
         self.deck.pop()
     }
 
-    /// Deals up to `n` cards into a hand, as one event; returns the last one.
-    fn give(&mut self, now: ServerTime, seat: usize, n: u8) -> Option<Card> {
+    /// Deals up to `n` cards into a hand, as one event; returns the cards actually dealt.
+    fn give(&mut self, now: ServerTime, seat: usize, n: u8) -> Vec<Card> {
         let player = self.player_at(seat);
-        let mut last = None;
-        let mut count = 0;
+        let mut dealt = Vec::new();
         for _ in 0..n {
             let Some(card) = self.draw_one(now, player) else { break };
             self.hands[seat].push(card);
-            last = Some(card);
-            count += 1;
+            dealt.push(card);
         }
-        if count > 0 {
+        if !dealt.is_empty() {
             sort_hand(&mut self.hands[seat]);
-            self.event(now, player, CardsEventKind::Draw { count });
+            self.event(now, player, CardsEventKind::Draw { count: dealt.len() as u8 });
         }
-        last
+        dealt
     }
 
     fn draw(&mut self, now: ServerTime) {
         let (seat, player) = (self.turn, self.player_at(self.turn));
         if self.owed > 0 {
             let n = std::mem::take(&mut self.owed);
-            self.give(now, seat, n);
-            self.say(now, player, format!(" zieht {n} Karten"));
+            let drawn = self.give(now, seat, n).len();
+            self.say(now, player, drawn_text(drawn));
             return self.advance(now, 1);
         }
-        let top = self.top();
-        match self.give(now, seat, 1) {
-            Some(card) if playable(top, 0, card) => self.stage = Stage::Drawn { card, since: now },
-            _ => self.advance(now, 1),
+        // The turn pauses on every drawn card, so nobody can tell from outside whether it fits.
+        match self.give(now, seat, 1).first() {
+            Some(&card) => self.stage = Stage::Drawn { card, since: now },
+            None => self.advance(now, 1),
         }
         self.say(now, player, " zieht eine Karte");
     }
@@ -192,10 +207,11 @@ impl MauMauGame {
         }
         if self.hands[seat].len() == 1 {
             if mau {
-                self.say(now, player, " ruft Mau!");
+                self.say(now, player, MAU);
             } else {
+                // the old top card is still under the played one, so the pile never runs dry here
                 self.give(now, seat, 1);
-                self.say(now, player, " vergisst Mau – Strafkarte!");
+                self.say(now, player, PENALTY);
             }
         }
     }
@@ -214,7 +230,16 @@ impl MauMauGame {
     fn choose_suit(&mut self, now: ServerTime, suit: Suit) {
         self.suit = Some(suit);
         self.wish = Some(suit);
-        self.say(now, self.player_at(self.turn), format!(" wünscht {}", suit.name()));
+        let wish = format!(" wünscht {}", suit.name());
+        let player = self.player_at(self.turn);
+        // Mau, or the penalty for forgetting it, named a moment ago stays up its full time; the wish follows.
+        let pending = self.banner.as_ref().filter(|(b, at)| (b.text == MAU || b.text.starts_with(PENALTY_START)) && now < at + self.cfg.banner_ms).map(|&(_, at)| at);
+        match pending {
+            Some(at) => {
+                self.queued = Some((CardsBanner { player, text: wish }, at + self.cfg.banner_ms));
+            }
+            None => self.say(now, player, wish),
+        }
         self.advance(now, 1);
     }
 
@@ -274,7 +299,8 @@ impl Game for MauMauGame {
                 Some(i) => self.play(ctx, i, true),
                 None => self.draw(ctx.now),
             },
-            Stage::Drawn { card, .. } => self.play(ctx, self.index_of(card), true),
+            Stage::Drawn { card, .. } if playable(self.top(), 0, card) => self.play(ctx, self.index_of(card), true),
+            Stage::Drawn { .. } => self.advance(ctx.now, 1),
             Stage::Wish { .. } => self.choose_suit(ctx.now, most_held_suit(&self.hands[self.turn])),
             Stage::Final { .. } => {}
         }
