@@ -11,7 +11,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 pub use crate::avatars::AvatarSlot;
-pub use crate::protocol_choice::{AnswerColor, ChoiceOption, Tone};
+pub use crate::protocol_bauherr::{
+    BauherrBoard, BauherrEntrance, BauherrEstate, BauherrLevel, BauherrMark, BauherrPermit, BauherrPlot, BauherrScene,
+    BauherrSeat, BauherrTile, BauherrTileKind, BauherrTurn,
+};
+pub use crate::protocol_choice::{AnswerColor, ChoiceOption, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
 pub use crate::protocol_race::{RaceCapture, RaceMove, RaceScene, RaceSeat, RaceStage};
@@ -156,6 +160,16 @@ pub enum PhoneScreen {
         closes_at: Option<ServerTime>,
         picked: Option<u8>,
     },
+    /// A status sheet for money games: header lines (cash, holdings), a prompt
+    /// and options answered with `Action::Choose`. Without options it only
+    /// informs. Shown to every player, whoever's turn it is.
+    Sheet {
+        lines: Vec<SheetLine>,
+        prompt: Option<String>,
+        options: Vec<ChoiceOption>,
+        opens_at: ServerTime,
+        picked: Option<u8>,
+    },
     Outcome {
         title: String,
         text: Option<String>,
@@ -196,4 +210,5 @@ pub enum TvScene {
     Quiz { scene: QuizScene },
     Poster { scene: PosterScene },
     Race { scene: RaceScene },
+    Bauherr { scene: BauherrScene },
 }

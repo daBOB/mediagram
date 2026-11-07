@@ -19,11 +19,14 @@ impl Default for Readiness {
 }
 
 pub(crate) const NOT_ENOUGH_POSTERS: &str = "Nicht genug Poster für dieses Spiel.";
-/// The race board has four corners.
-const RACE_MIN: u8 = 2;
-const RACE_MAX: u8 = 4;
+/// The board games seat two to four: the race board has four corners, and
+/// Bauherr's round limit is tuned for that many.
+const BOARD_MIN: u8 = 2;
+const BOARD_MAX: u8 = 4;
 pub(crate) const RACE_TOO_FEW: &str = "Heimlauf braucht mindestens 2 Spieler.";
 pub(crate) const RACE_TOO_MANY: &str = "Heimlauf geht mit höchstens 4 Spielern.";
+pub(crate) const BAUHERR_TOO_FEW: &str = "Bauherr braucht mindestens 2 Spieler.";
+pub(crate) const BAUHERR_TOO_MANY: &str = "Bauherr geht mit höchstens 4 Spielern.";
 
 pub(crate) fn initial_settings(kids_locked: bool) -> LobbySettings {
     LobbySettings { game: GameKind::Quiz, quiz_mode: QuizMode::Mixed, kids_only: kids_locked, kids_locked }
@@ -59,9 +62,11 @@ impl Room {
             GameKind::Quiz => true,
             GameKind::Poster if s.kids_only => r.poster_kids,
             GameKind::Poster => r.poster,
-            GameKind::Race => {
+            GameKind::Race | GameKind::Bauherr => {
                 let players = self.connected_count();
-                return (players < RACE_MIN).then_some(RACE_TOO_FEW).or((players > RACE_MAX).then_some(RACE_TOO_MANY));
+                let (few, many) =
+                    if s.game == GameKind::Race { (RACE_TOO_FEW, RACE_TOO_MANY) } else { (BAUHERR_TOO_FEW, BAUHERR_TOO_MANY) };
+                return (players < BOARD_MIN).then_some(few).or((players > BOARD_MAX).then_some(many));
             }
         };
         (!ready).then_some(NOT_ENOUGH_POSTERS)

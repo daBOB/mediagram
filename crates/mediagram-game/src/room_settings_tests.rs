@@ -39,6 +39,20 @@ fn race_game_needs_two_to_four_players() {
 }
 
 #[test]
+fn bauherr_needs_two_to_four_players() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::Bauherr, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::BAUHERR_TOO_FEW));
+    hello(&mut r, 2, "Ben", None);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }));
+    for (conn, name) in [(3, "Cem"), (4, "Dana"), (5, "Eli")] {
+        hello(&mut r, conn, name, None);
+    }
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::BAUHERR_TOO_MANY));
+}
+
+#[test]
 fn poster_game_needs_posters() {
     let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
     hello(&mut r, 1, "Ana", None);
