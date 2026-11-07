@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The TV box serves game night over plain http on the home LAN, at whatever
+    address the router hands it. network_security_config cannot express a
+    CIDR range, only exact domains or IP literals, so cleartext is allowed
+    globally. The web view itself never leaves the box: ControllerActivity
+    only loads private-LAN http addresses (lanGameUrl) and blocks navigation
+    to anything that is not the same box (sameBox).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

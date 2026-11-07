@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A die showing five, on the adaptive icon's 108 dp canvas (safe zone: the middle 66 dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FBF8F1"
+        android:pathData="M40,32h28a8,8 0 0 1 8,8v28a8,8 0 0 1 -8,8h-28a8,8 0 0 1 -8,-8v-28a8,8 0 0 1 8,-8z" />
+    <path
+        android:fillColor="#0C2A22"
+        android:pathData="M43,43m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M65,43m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M54,54m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M43,65m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0 M65,65m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+</vector>
