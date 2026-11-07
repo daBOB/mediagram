@@ -32,7 +32,7 @@ building pieces or rent table of the MB/Hasbro game.
 | 01 | [Card table + Mau-Mau](phase-01-card-table-and-mau-mau.md) | `../mediagram-cards` (feat/card-games) | done, merged 02:48 (156 tests; box unmeasured) |
 | 02 | [Schwimmen and Durak](phase-02-schwimmen-and-durak.md) | `../mediagram-schwimmen`, `../mediagram-durak` | done, merged 10:14; review fixes merged 11:55 (hidden-information prompts, reveal values, bigger hand) |
 | 03 | [Bauherr rules, host and phone](phase-03-bauherr-rules-host-phone.md) | `../mediagram-bauherr` (feat/bauherr) | done, merged 10:18; review fixes 10:36 |
-| 04 | [Bauherr look test](phase-04-bauherr-look-test.md) | spike pages + box | round 1 shown 10:19 (rejected: too toy-like); round 2 (D/E realistic) in progress |
+| 04 | [Bauherr look test](phase-04-bauherr-look-test.md) | spike pages + box | done: round 1 rejected (toy-like); round 2 → user picked D Abendsonne, dice on the square (12:55) |
 | 05 | [Bauherr TV board](phase-05-bauherr-tv-board.md) | after 03 + user's look pick | pending |
 | 06 | [Merge, verify, version](phase-06-merge-verify-version.md) | feat/spieltisch | in progress (cards + Bauherr rules → 0.152.0) |
 

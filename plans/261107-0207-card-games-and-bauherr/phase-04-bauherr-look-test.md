@@ -1,6 +1,6 @@
 # Phase 04 — Bauherr look test
 
-**Status:** round 2 in progress. The user picks the look on the TV box; nothing here ships.
+**Status:** done — user picked D Abendsonne (12:55). The user picks the look on the TV box; nothing here ships.
 
 Three live town mockups as standalone three.js pages, built to the box rules from
 the start, measured on the box, shown to the user. Same method as the board-world
@@ -56,3 +56,11 @@ realistic textures. we need to push here the tv box to the limit."
 - Push the box: spend the budget on detail; ~32 fps is the floor (1 % low reported).
 - Variants: **D Abendsonne** (golden hour, long warm light, first windows lit) and **E Blaue Stunde**
   (after sunset, most windows and lamps lit, closest to C).
+
+## Round 2 result and the user's pick (2026-11-07 12:55, on the TV)
+
+Round 2 (D/E, both ~59.6 fps, 1 % low ~53, first frame 15–18 s on the box): report
+`plans/reports/look-test-261107-bauherr-realistic-round-2-report.md`.
+User picked **D Abendsonne** (golden hour) and kept the dice **on the cobbled square** (no table).
+Load time is the open cost: the TV board must ship the painted surfaces as images instead of
+painting them on the box.
