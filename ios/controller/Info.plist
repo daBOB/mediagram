@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged over xtool's defaults (device family iPhone + iPad, launch screen, iPad orientations). -->
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>Spieltisch</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.153.3</string>
+    <key>CFBundleVersion</key>
+    <string>153003</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Spieltisch sucht den Fernseher im WLAN.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_mediagram-game._tcp</string>
+    </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Zum Scannen des QR-Codes vom Fernseher.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- The TV box serves game night over plain http on the home LAN. -->
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIStatusBarHidden</key>
+    <true/>
+</dict>
+</plist>

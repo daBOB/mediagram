@@ -18,6 +18,18 @@ APK=$OUT/app-release.apk
 # earlier build must not stand in for it, nor its dex metadata for this one's.
 rm -rf "$OUT"/*.apk "$OUT"/baselineProfiles
 
+# The 3D avatars for the game-night ceremony are generated, gitignored and
+# built only where assets/game-night/avatars exists; without them the app
+# would ship flat figures and nobody would notice.
+AVATARS=android/app/src/main/assets/game-avatars
+if [ -d assets/game-night/avatars ]; then
+  bun crates/mediagram-game/tools/make-ceremony-avatars.mjs
+fi
+if [ "$(ls "$AVATARS"/*.glb 2>/dev/null | wc -l)" -ne 22 ]; then
+  echo "refusing to build: $AVATARS must hold all 22 .glb (bun crates/mediagram-game/tools/make-ceremony-avatars.mjs, needs assets/game-night/avatars)" >&2
+  exit 1
+fi
+
 scripts/build-android-core.sh
 (cd android && ./gradlew -q :app:assembleRelease)
 

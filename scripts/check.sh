@@ -23,6 +23,14 @@ cargo clippy --all-targets --all-features -- -D warnings
 step "cargo test"
 cargo test --all
 
+step "game protocol types are committed"
+# cargo test regenerates them from the Rust protocol (ts-rs); a diff means the client was built against stale ones.
+if ! git diff --exit-code -- crates/mediagram-game/client/src/protocol ||
+  [ -n "$(git ls-files --others --exclude-standard -- crates/mediagram-game/client/src/protocol)" ]; then
+  echo "the game protocol types changed: commit crates/mediagram-game/client/src/protocol"
+  exit 1
+fi
+
 step "bun test"
 # Skipped rather than failed when the player's dependencies are not installed:
 # the uploader is usable without them, and an absent node_modules is a setup
@@ -32,6 +40,13 @@ if [ -d web/node_modules ]; then
   (cd web && bun test)
 else
   echo "skipping: web dependencies are not installed (run 'cd web && bun install')"
+fi
+
+step "game client typecheck and tests"
+if [ -d crates/mediagram-game/client/node_modules ]; then
+  (cd crates/mediagram-game/client && bun run typecheck && bun test)
+else
+  echo "skipping: game client dependencies are not installed (run 'cd crates/mediagram-game/client && bun install')"
 fi
 
 step "gradle test and lint"

@@ -34,6 +34,7 @@ grammers-client.workspace = true
 grammers-mtsender.workspace = true
 grammers-tl-types.workspace = true
 hex = { workspace = true }
+mediagram-game = { path = "../mediagram-game" }
 mediagram-tmdb = { path = "../mediagram-tmdb" }
 mlib-spec = { path = "../mlib-spec" }
 # `rustls-no-provider`, not `rustls`: the latter pulls in `rustls-platform-verifier`

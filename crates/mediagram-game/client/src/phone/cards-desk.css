@@ -1,0 +1,184 @@
+/* The card desk: prompt and buttons up top where the thumb is, the hand fanned along the bottom. */
+.desk {
+  justify-content: flex-start;
+  gap: 0.9rem;
+  max-width: 30rem;
+  padding-top: 0.5rem;
+}
+
+.desk-head {
+  min-height: 4.4rem;
+}
+
+.desk-prompt {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(1.5rem, 7vw, 2.1rem);
+  line-height: 1.1;
+}
+
+.desk-info {
+  margin-top: 0.3rem;
+  color: var(--yellow);
+  font-weight: 700;
+}
+
+/* The middle of the screen belongs to the table cards; they shrink to wrap rows once several pairs lie there. */
+.desk-table {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.desk-table .pcard {
+  width: 5.6rem;
+  height: 7.8rem;
+}
+
+.desk-table[data-many="true"] {
+  gap: 0.3rem;
+}
+
+.desk-table[data-many="true"] .pcard {
+  width: 3.8rem;
+  height: 5.4rem;
+  padding: 0.25rem 0.3rem;
+}
+
+.desk-table[data-many="true"] .pcard-rank {
+  font-size: 1.3rem;
+}
+
+.desk-table[data-many="true"] .pcard-suit {
+  font-size: 1.2rem;
+}
+
+.desk-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+.desk-btn {
+  min-height: 3.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 18px;
+  background: var(--felt-deep);
+  border: 2px solid var(--felt-line);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+
+.desk-btn.is-primary {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--yellow-edge);
+}
+
+.desk-btn.is-red {
+  color: #c4213f;
+}
+
+.desk-btn[aria-disabled="true"] {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.desk-btn:only-child {
+  grid-column: 1 / -1;
+}
+
+.desk-btn:nth-child(odd):last-child {
+  grid-column: 1 / -1;
+}
+
+/* The hand: big cards that overlap just enough to fit the width (`--n` per row, set inline), a second row from eight cards on. */
+.desk-hand {
+  --cw: 6.6rem;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: auto;
+  padding: 1.4rem 0.4rem max(1rem, env(safe-area-inset-bottom));
+  scrollbar-width: none;
+}
+
+.desk-hand::-webkit-scrollbar {
+  display: none;
+}
+
+.desk-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* a lower row covers the foot of the one above; the corner index stays in view */
+.desk-row + .desk-row {
+  margin-top: -4.2rem;
+}
+
+.desk-row .pcard {
+  flex: none;
+  width: var(--cw);
+  height: 9.2rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 12px;
+}
+
+.desk-row .pcard + .pcard {
+  margin-left: clamp(calc(2.5rem - var(--cw)), calc((100% - var(--cw)) / (var(--n) - 1) - var(--cw)), 0.4rem);
+}
+
+.desk-row .pcard-rank {
+  font-size: 2.2rem;
+}
+
+.desk-row .pcard-suit {
+  font-size: 2.1rem;
+}
+
+.pcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.35rem 0.4rem;
+  border-radius: 10px;
+  background: var(--card);
+  color: #1b1b22;
+  border: 1px solid var(--card-edge);
+  box-shadow: -3px 2px 6px rgba(0, 0, 0, 0.3);
+  font-family: var(--display);
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 90ms ease-out, opacity 150ms;
+}
+
+.pcard.is-red {
+  color: #c4213f;
+}
+
+.pcard-rank {
+  font-size: 1.7rem;
+}
+
+.pcard-suit {
+  font-size: 1.6rem;
+}
+
+.pcard.is-picked {
+  transform: translateY(-1rem);
+  box-shadow: 0 0 0 3px var(--yellow), -3px 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.pcard.is-off {
+  filter: brightness(0.72);
+}

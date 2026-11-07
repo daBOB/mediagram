@@ -2,7 +2,7 @@
 
 `mediagram` is a Rust CLI (edition 2024) that uploads a personal video
 library into one private Telegram channel and keeps a local SQLite index of
-it. It is split into five crates so the wire format, the TMDB client and the
+it. It is split into six crates so the wire format, the TMDB client and the
 byte path can be reused by other clients — the Android app among them (see
 [§9](#9-backend-portability)).
 
@@ -19,6 +19,10 @@ crates/
 │                     app calls, the catalog store, the range-planned byte
 │                     path over Telegram, and the one HTTP client both
 │                     programs build (ring + webpki roots)
+├── mediagram-game/   game night: the party-game host (rooms, the buzzer quiz,
+│                     the poster game, the race board game, the phone and TV
+│                     pages); depends on
+│                     nothing else in the workspace
 ├── mediagram/        the CLI: media inspection, upload pipeline, local
 │                     index, verify, and `serve`
 └── mediagram-cache/  the LAN chunk store (§12); depends on none of the
@@ -26,7 +30,8 @@ crates/
 ```
 
 Dependencies run one way: `mediagram` → `mediagram-core` → `mediagram-tmdb`
-→ `mlib-spec`, with `mediagram` also using the two below directly; nothing
+→ `mlib-spec`, with `mediagram` also using the two below directly (and
+`mediagram-core` using `mediagram-game`); nothing
 depends on `mediagram`. The web
 player ([§7](#7-playback-the-web-player)) lives in `web/` and depends on
 neither: it reimplements what it needs of the format in TypeScript. The
@@ -942,6 +947,291 @@ dropping brings the video back to the device, paused.
 an AirPlay TV is deferred until it can be probed on an Apple device; there is no
 AirPlay code.
 
+### Game night
+
+The TV box hosts party games for phones on the same network: a buzzer quiz, a
+poster-guessing game, two board games (Heimlauf, Bauherr) and three card games
+(Mau-Mau, Schwimmen, Durak). It is a feature of the TV app only, and it is the one
+place the app serves something rather than only fetching.
+
+**The host lives in the core.** `mediagram-game` is a self-contained crate (an
+axum server with the React phone and TV pages embedded in the binary) that
+`mediagram-core` links; Kotlin starts and stops it through
+`Core::start_game_night`, `game_night_back` and `stop_game_night`
+(`crates/mediagram-core/src/api/game_night.rs`). Starting binds port 8080, or
+any free port when that is taken, and returns the TV page's address
+(`http://127.0.0.1:<port>/tv`) and the join address with the box's current LAN
+IP, since DHCP moves it. A second start stops the first, so the port is free.
+A stop gives open requests 2 s and then cuts them off (`host.rs`): axum sets
+no header-read timeout, and one connection stalled mid-request would otherwise
+hold the stop, and with it every later night, which waits on the same slot.
+Nothing runs in the background: the Games screen opening starts the host,
+leaving it, or the app going to the background, stops it
+(`android/ui-tv/.../games/TvGamesFrame.kt`, a full-screen WebView of the
+loopback TV page that keeps the screen on). The background stop is called from
+the lifecycle's ON_STOP itself, since Compose draws no frame while the app is
+stopped and the screen's dispose may only run on return. `GameNightViewModel`
+runs the start off the main thread (UniFFI runs it on the calling thread, and
+it reads the whole catalog), and a start waits out any stop still under way,
+so leaving and coming straight back never has the old night's stop end the new
+one or show its page. Back first steps a running game to the lobby and leaves
+only when there was nothing to step back from.
+
+**Phones join by browser; the TV page is the box's alone.** The lobby's QR code
+(`/qr.svg`) points at the join address; a phone types a name and gets a seat
+and colour, up to 8. A reconnect token in the phone's storage returns a phone
+that slept to its seat until the game ends. The first to join is the starter
+and picks the game and settings; the TV remote's OK can start as well. The
+`tv` role on the WebSocket (`/ws`) and the images (`/img/{i}/{which}`) are
+served to loopback connections only (`room.rs`, `server.rs`): a phone that
+claimed to be the TV would otherwise see every answer, and phones are never
+sent an image, so nobody can zoom into a poster. Everything the players see is
+German.
+
+**Which titles, and the kids rule.** `crates/mediagram-core/src/game_titles.rs`
+maps the catalog to titles: a film is one title per set, a series one title per
+show (episodes grouped by `show`, as the web player groups them), and courses
+and documents are left out. A series counts as kid-safe only when every one of
+its episode sets is, because a question shows the show and cannot show only its
+safe half. *Nur für Kinder* is decided in Kotlin, never in Rust
+(`android/feature/games/.../GameNightConfig.kt`, using `forKidsProfile`): a kids
+profile gets its own limit with the toggle locked on, since kids profiles have
+no PIN and an open toggle would be a way past it; a grown-up gets limit 12 with
+the toggle free and off to start. A profile that is missing after a reload is
+treated as locked at 12. Core receives the set ids that pass and a locked flag,
+and with the toggle on every title used (answers, wrong options, images) is
+one of them. Sections the profile hides stay hidden here too: Kotlin passes
+the set ids in the sections it sees (`sectionKey()` against `hiddenFrom`, as
+the library, Cast and Watch together filter), and a series is kept when any of
+its episodes is, as the library builds its shows from the visible sets. A game
+night writes nothing to profile state: no positions, history, stats or
+daily-limit time.
+
+**Buzzer quiz.** 8 questions; the question shows 3.5 s, then all four answer
+buttons go live at once for 12 s; a right answer scores 1000 down to 500 by
+speed. Taps carry the phone's estimate of host time, trusted at most 400 ms
+before arrival. Film questions (`film_questions.rs`) are built from the library
+on the box: a still, the year, the director, the cast; wrong options come from
+the same kind of title. The general pack (`questions/allgemein.json`, 311
+German questions, each with the source it was checked against) is embedded in
+the binary. *Filme*, *Allgemein* and *Gemischt* choose the mix (`quiz_mix.rs`).
+
+**Poster game.** 10 rounds. The poster is pixelated in 8 sharpness steps, one
+every 2 s, then stays sharp for 3 s grace; a right tap scores 1000 at the first
+step down to 500 at the last, and a wrong tap only locks that player out of the
+round. The earliest claimed right tap wins, within the same 400 ms claim lag.
+Titles with a poster only. A title readable on the artwork would give itself
+away before the last step, so `game_posters.rs` fetches TMDB's textless poster
+into `{data_dir}/game-posters/` (one fetch per title at a time, so the
+prefetch and the image route never write one file together), and the normal
+poster is used when there is none, no TMDB key, or the textless one is not on
+disk within 300 ms (`poster_lookup.rs`): a cached file answers at once, and a
+fetch still under way would otherwise leave the round's first steps blank. A
+title counts as playable when its kind has four distinct poster-bearing names,
+counted in one pass, since the box runs the check on every start. The TV page
+draws each round on a fresh canvas, so the last poster never shows while the
+next loads.
+
+**Race board game (Heimlauf).** 2–4 players (the lobby blocks other counts),
+four pieces each, the classic cross-and-circle race rules in `race_rules.rs`:
+a 6 must bring a piece out while the own start field is free, a piece on the
+start field must clear it while others wait at home, no landing on an own
+piece, landing on an opponent sends it home (not forced), the goal needs an
+exact count with no jumping over own pieces, a 6 rolls again, and with nothing
+movable a player gets three tries for a 6. The first with all four in the goal
+wins and the game ends there; the rest rank by pieces in the goal, then by
+fields walked. A turn (`race.rs`) is an untimed "Würfeln" button, the die's
+flight on the TV (1.15 s), then the player picks a move; a single legal move
+plays itself and none passes. Pieces are told apart by marker, not number: the
+TV rings each movable piece and its target in the colour and shape of the
+matching phone button. An absent player's turns play themselves after 1.5 s,
+so a sleeping phone never stalls the table. `PhoneScreen::Choice` gained an
+optional `closes_at` for this: without it the phone shows no clock.
+
+**The race board is three.js in the same WebView.** The TV page loads
+`tv/race/` as its own chunk (three.js stays out of the other pages) and draws
+the wooden board from the look test measured on the box (`plans/reports/`
+benchmark 261105-1611): the 2048² board print, a lacquered table, a turned
+pawn per piece in the player colour, the die rolling on the table beside the
+board so it never passes through a piece, and the tags and banner as quads
+inside the canvas. The box rules from that test hold: no HTML over the canvas
+during play, every tag and banner state drawn and uploaded at load, the big
+flat surfaces unlit with their light baked in, no alpha-tested cut-outs, no
+blur filters or per-dot noise on big canvases. Everything moving is derived
+from the scene and the host clock, so a TV that reconnects mid-turn picks up
+the throw or hop where it is. Measured on the box: 59.9 fps at 1080p with
+MSAA, the board up 3.4 s after the start. The wood textures are Poly Haven's
+(CC0), shrunk to 1024 px in `client/public/race/`. The game end shows the
+winner's banner on the board for 4 s, then the shared final ranking.
+
+**The race board has sound, on the TV only.** `race-sound-cues.ts` turns each
+stage into timed cues from the host's times alone (the die's clatter at its
+first touch of the table, a knock per hop, thunk and jingle at a capture, a
+jingle into the goal, the winner's jingle); `race-sound.ts` schedules them
+once per stage on the Web Audio clock and skips any already past, so a TV
+that reconnects never replays a backlog. Each sound starts early by the
+speaker delay, read every frame from `getOutputTimestamp()` and smoothed: the
+box's WebView takes ~370 ms (±50) from start to speaker. That is longer than
+a hop, so the host starts a move `lead_ms` (200) after deciding it; without
+that lead the first knock of every move could only come late. The background music is an `<audio>`
+element fed blob URLs, two tracks in turn: decoded into Web Audio, three
+minutes of music would hold ~77 MB on the box. Sound loads beside the board
+and never holds it back; if it fails the board plays silent. The TV app's
+WebView sets `mediaPlaybackRequiresUserGesture = false`, since nobody taps a
+TV; a desktop browser acting as the TV starts sound at its first key or click.
+The files are in `client/public/race/sound/`: Kenney's Casino Audio, Impact
+Sounds and Music Jingles; the Wilhelm scream for a capture (Wikimedia
+Commons, from the SSE library on the Internet Archive); the winner's jingle
+is "Classic fanfare lick" by fvcalderan with "Well Done" applause by qubodup
+mixed in (OpenGameArt, CC0; Kenney's falling sax jingle sounded sad); "Apple
+Cider" by Zane Little Music and "Cozy Puzzle In-Game 2" by MintoDog from
+OpenGameArt. Game
+night is a personal project, so a sound is picked by fit, not licence; its
+source is still written here. The music is normalised to
+-18 LUFS and Opus 56 kbps (2.6 MB in all, embedded with the client in each
+ABI's core library).
+
+**Card games share one table.** Mau-Mau (2–8), Schwimmen (2–8) and Durak
+(2–6) are traditional games and keep their names; one `GameKind` each, so the
+lobby lists them beside the board games. `cards.rs` holds a French-suited pack
+of 52 and every game deals a subset by lowest rank (`deck_from`: 7 → 32, 6 →
+36). The hand is hidden information, and the `Game` trait already keeps it so:
+`phone_screen(player)` gives each phone its own hand and `tv_scene` never
+carries one (Schwimmen's reveal is the only public moment). Phones stay thin:
+`PhoneScreen::Cards { desk }` is a generic desk — hand, selectable table cards,
+buttons that say whether they need a hand card, several, or a hand card plus a
+table card — answered with `Action::Cards { button, hand, table }`; nothing on
+the phone knows the rules. The TV gets `TvScene::Cards` (seats with card counts,
+open cards and a marker, centre piles, deck, trump, note, banner, the last four
+events with server times). Where the rules would let the table read a hand — a
+Durak player asked to throw in only when a rank fits, a Mau-Mau turn pausing
+only when the drawn card fits — every player gets the same prompt with the
+button disabled instead (user decision 2026-11-07: hidden information beats
+pace). Absent players play themselves after `auto_ms`, like Heimlauf. The TV
+table (`tv/cards/`) reuses Heimlauf's lacquered table, music and settings; the
+52 faces and the back are one canvas atlas drawn at load, and every banner,
+note and seat text is pre-drawn (`cards-texts.ts`), so no texture is made
+mid-game. Rules and decisions per game: `plans/261107-0207-card-games-and-bauherr/`.
+
+**Bauherr, the hotel game.** An own game with Hotel's mechanics only (plots,
+a permit die, entrances, guests paying per night) — own name, hotels, board and
+prices. 2–4 players, currency Taler. The board is data (`bauherr_board.rs`): a
+36-field ring with Bank, Rathaus, Bauplatz, Baustelle and Freier Eingang fields
+and 8 hotel plots, each bordering its own fields; the scene carries it, so the
+TV has one source of truth. The permit die decides a build (genehmigt ×3,
+abgelehnt, gratis = first chosen stage free, doppelt = every chosen stage
+double); guests roll for nights and pay nights × the hotel's current rate; a
+player who cannot pay is sold out to the bank at half price, top stages first,
+and goes out if that is not enough. The game ends on a round limit
+(`TURN_BUDGET` 180 turns shared by the players, tuned to ~50 min at human pace)
+or when one player is left; net worth (cash + land + stage costs) is the score.
+A follow-up question that a tap opens (the Rathaus menu repeats until *Fertig*)
+opens 400 ms later on the host, so a double tap cannot answer it. The phone uses
+`PhoneScreen::Sheet`, a generic money sheet (lines, prompt, options answered by
+`Action::Choose`) meant for later money games too.
+
+The TV board (`client/src/tv/bauherr/`, `TvBauherr.tsx`) is three.js drawing a
+town painted offline: `tools/bauherr-bake/` builds the winding 36-field road, the
+eight hotels stage by stage and their landscapes in headless Chrome and writes
+`client/public/bauherr/` (`world.json` + `world.bin` + images, Poly Haven CC0, see
+`SOURCES.md`), so the box decodes images instead of painting at load. The big images
+are Basis ETC1S KTX2 with mipmaps, transcoded in a worker (`public/bauherr/basis/`),
+and the scene and its shaders are built while they arrive (`bauherr-assets.ts`); the
+start is about 4 s on the box. The camera (`bauherr-camera.ts`) leans toward the pawn
+whose turn it is and eases back to the overview. A hotel's
+stages lie one after another in its mesh, so building a stage moves a draw range
+(it rises in a scaffold). Owner colours (awnings, flags, signs, property lines,
+canopies) are baked white and tinted on the TV, so one bake serves every player.
+`bauherr-layout.ts` is the one map from the rules' fields and hotels to positions;
+the bake and the TV both read it, and a test checks it against `bauherr_board.rs`.
+
+**Every player has an avatar.** The host owns the catalogue of 22
+(`avatars.rs`; ids are the folder names under `assets/game-night/avatars/`)
+and keeps them unique: a hello may carry the phone's remembered avatar, which
+it gets if free, else a random free one; `Action::PickAvatar` swaps in the
+lobby only; a reconnect keeps it and leaving the room frees it.
+`PlayerInfo.avatar` names it and `PhoneScreen::Lobby.avatars` lists all 22
+with who-else-has-it, for the phone's picker grid. Every player marker is the
+one `Token` component, so the head replaced the initial everywhere at once;
+the race board draws it into its canvas tags. The pictures are rendered once,
+offline, from the TV copies of the 3D models
+(`tools/render-avatar-images.mjs`, matte, `Idle` pose): a 256² head and a
+256x384 standing figure per avatar, WebP, 458 KB in all, in
+`client/public/avatars/`.
+
+**Every game ends in an awards ceremony.** `TvFinal` is the ceremony for the
+quiz, the poster game and Heimlauf: the title above, a three.js band in the
+middle (`tv/ceremony/`, its own lazy chunk) with a podium for the top three,
+and the points strip with heads below; no HTML lies over the canvas. The
+flat figures stand on the podium from the first frame; each player's 3D
+avatar replaces its figure once loaded (GLTFLoader with MeshoptDecoder,
+shaders compiled and textures uploaded before it shows). The avatars have a
+studio look (`ceremony-studio-look.ts`): the light of the model-viewer page they
+were approved in (RoomEnvironment at exposure 1.1, diffuse only, no reflections
+— the user's call). It is rendered once onto a white sphere as the camera sees
+it, into an 8-bit sRGB picture holding half the light (half-float pictures
+dropped the box to 25 fps). A MeshMatcapMaterial then draws colour × that
+light, front faces only, under neutral tone mapping. With the camera fixed this
+matches real environment lighting, which ran at 14–17 fps. Meshy's untouched
+files ran at 17–20 fps even so (their scattered texture pieces are slow to
+sample), so the ceremony copies keep the re-laid maps.
+The winner plays `victory` and now and then `Happy_Jump`, second
+`Cheer_With_One_Hand_Up`, third `Shrug`, then `Idle_15` (Meshy's plain
+`Idle` turns the body by up to 81° and left avatars side-on); confetti and the
+winner jingle (through the TV settings) open it. The 22 ceremony avatars are
+cut from the 2K game copies (`<id>.glb`, not the 15k-triangle TV copies,
+whose ETC1S colour blotched and whose faces looked faceted close up) by
+`tools/make-ceremony-avatars.mjs`: five clips, all ~51k triangles,
+re-unwrapped by xatlas into fewer charts with gaps between them, with the 4K
+master's colour and normal maps baked onto them (`tools/rebake-texture-atlas.mjs`;
+Meshy's thousands of edge-to-edge islands bled into each other at every
+smaller mip level). Each normal is turned into the new chart's frame, the frame
+three.js derives on screen for a mesh without tangents. The output is a 2048
+WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
+`android/app/src/main/assets/game-avatars/` — generated,
+not committed, like the native libraries — and the TV app's WebView answers
+`/game-avatars/<id>.glb` from its APK assets (`TvGamesFrame.kt`), so they are
+in the app once instead of in the core per ABI, and the phones and the Rust
+host never see them. Quality comes first, with 30 fps as the floor (the
+user's call). The canvas draws at full resolution with MSAA, and the camera
+stands back so the winner and its block fill about two thirds of the band.
+Measured on the box with three avatars: 42–43 fps. The scale steps down by
+0.25, to 1.25 at the lowest, if 90 frames average under ~32 fps, leaving out
+the slowest tenth of them. Triangles, per-pixel lights, MSAA and double-sided
+faces set the cost, not vertices.
+
+**The phone page cannot keep the screen on; players switch the lock off.**
+The page is plain LAN HTTP, so the Wake Lock API is missing. The NoSleep
+library's fallback video was never attached to the page and kept nothing on;
+our own looping clip in the page (0.146.1, full-screen behind the content)
+did not hold the screen on the user's phones either, so it was removed in
+0.146.2. The phone lobby asks players to switch off the automatic screen
+lock instead. Only HTTPS (a real Wake Lock) would change this. The phone page
+goes fullscreen (`phone/phone-fullscreen.ts`): browsers allow it only from a
+gesture, so the join tap enters it and a later tap re-enters it after a swipe
+out; iPhones have no page fullscreen.
+
+**TV settings live on the TV.** `tv/settings/tv-settings.ts` holds *Ton*,
+*Musik*, *Effekte* (0–10) and *Spielfiguren* (pawns or avatars) in the TV
+page's localStorage, with a small subscribe store; the defaults reproduce the
+mix the sound was tuned with (music 4, effects 8). The panel opens from the
+lobby's *Einstellungen* button or with OK on the race board, and it catches
+the remote's keys in the capture phase while open. The TV app's Back asks the
+page first (`window.tvBack()`), so Back closes an open panel instead of
+leaving the game. The race board builds both figure styles up front (a pawn
+and an avatar sprite on a colour disc per piece), loads every picture and
+compiles both before the first frame, and switches them with visibility only:
+nothing is created mid-game.
+
+**The TV page scales with the screen.** The box's WebView lays the page out at
+960x540 CSS pixels (density 2), so the TV root font size follows the viewport
+alone (`styles.css`) and every scene is the 1920x1080 layout at half scale. A
+quiz still sits beside its question rather than above it; stacked, a still,
+two lines of question and eight seats are taller than a 16:9 screen.
+
+**Tools.** `crates/mediagram-game/tools/smoke.mjs` plays a night with bot
+phones against the dev binary `game-night-dev`.
+
 ### Reporting a broken video
 
 Every player has a Report button (the top bar everywhere, and beside Retry on
@@ -1388,6 +1678,10 @@ Parity rule (web is the reference; a gap on TV is a defect unless written here):
   benchmark build already returns to Home with 0 `Davey!`/`Choreographer … Skipped` frames
   without it, which was the phase's own real goal. Full account in
   `plans/260929-0215-tv-web-look-chrome-home-departments/phase-04-tv-home-kept-alive-measure-docs.md`.
+- **Game night is television only.** The box hosts it, phones join through a browser
+  page, and the web player never hosts one: it is not the table in the living room. The
+  Games entry sits on the television rail; the `Games` label is English like the rest of
+  the app, and everything inside a game is German.
 
 ## 9. Backend portability
 

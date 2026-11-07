@@ -19,6 +19,7 @@ android/*.hprof
 android/captures/
 android/.cxx/
 android/**/jniLibs/
+android/app/src/main/assets/game-avatars/
 *.apk
 *.aab
 *.jks
@@ -35,3 +36,7 @@ android/**/jniLibs/
 
 # desloppify local state
 .desloppify/
+
+# game night web client
+crates/mediagram-game/client/node_modules/
+crates/mediagram-game/client/dist/

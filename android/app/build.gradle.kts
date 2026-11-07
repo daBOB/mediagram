@@ -26,13 +26,16 @@ android {
 
     defaultConfig {
         applicationId = "com.mediagram.android"
-        versionName = "0.150.2"
+        versionName = "0.156.0"
         versionCode = versionCodeOf(versionName!!)
         // Only a release build updates itself; debug and benchmark builds are installed by adb.
         resValue("bool", "self_update", "false")
     }
 
     buildFeatures { resValues = true }
+
+    // game-avatars/*.glb are already compressed (meshopt, KTX2): store them, read them as they are
+    androidResources { noCompress += listOf("glb") }
 
     signingConfigs {
         if (releaseStoreFile != null) {

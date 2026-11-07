@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -222,6 +223,9 @@ internal fun LibraryBranches(
         FrameKind.MOVIES_PAGE -> MoviesPageFrame(at, catalogState, catalogViewModel, resolved.watch, columns, menuActions, profileBar, browse)
         FrameKind.PRELOADS -> PreloadsFrame(at, catalogState, menuActions, profileBar, browse)
         FrameKind.STATS -> StatsFrame(at, menuActions, profileBar, browse)
+
+        // Game night is the television's page; a phone never pushes it, so a stack that has one pops it.
+        FrameKind.GAMES -> LaunchedEffect(Unit) { at.pop() }
 
         // The remote of a cast, over the window as the player is; Next episode follows the title's run as there.
         FrameKind.REMOTE -> at.remoteId?.let { id ->

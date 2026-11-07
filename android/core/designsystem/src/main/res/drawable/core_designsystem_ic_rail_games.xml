@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rail's Games row — a game controller outline with a d-pad and two buttons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7 7.5h10a4.5 4.5 0 0 1 4.4 5.4l-0.6 3a2.6 2.6 0 0 1-4.4 1.3L14.6 15.5h-5.2l-1.8 2.2a2.6 2.6 0 0 1-4.4-1.3l-0.6-3A4.5 4.5 0 0 1 7 7.5zM8 10.2v3M6.5 11.7h3M16 11h0.01M18 12.5h0.01" />
+</vector>

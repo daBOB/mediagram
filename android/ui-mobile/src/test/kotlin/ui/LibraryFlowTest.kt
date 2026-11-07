@@ -177,6 +177,12 @@ class LibraryFlowTest {
         assertAtTheShelves()
     }
 
+    // Game night is hosted by the TV box; a phone has no page for it.
+    @Test fun phoneRailHasNoGames() {
+        compose.onNodeWithContentDescription("Stats").assertExists()
+        compose.onNodeWithContentDescription("Games").assertDoesNotExist()
+    }
+
     @Test fun openingSystemDirectlyLeavesBackToTheUnderlyingTitle() {
         title()
         menu("System")

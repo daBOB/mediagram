@@ -5,6 +5,59 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.156.0 — Game night reaches main, with controller apps for the phones
+
+**Added** (user, 2026-11-07: "to have more control over the device. awake, vibration, drawing on device"; merged with everything else at "collect ALL really ALL worktree and merge them to main")
+
+- Game night (quiz, poster guessing, Heimlauf, Mau-Mau, Schwimmen, Durak, Bauherr, avatars and the awards ceremony, entries 0.149.0–0.155.0 below) is on `main` for the first time.
+- **Spieltisch**, a controller app for Android (`android/controller`, `com.mediagram.controller`) and for iPhone and iPad (`ios/controller`, built on Linux with xtool). It finds the TV on the Wi-Fi by itself and opens its phone page, keeps the screen on, and accepts only addresses on the home network. A QR scan is the fallback.
+- The phone page vibrates inside the apps at four moments: your turn, buzzer accepted, wrong answer, game won. A screen the host re-sends does not buzz again. The page keeps the player's name, token and avatar in the app. Guests in a plain browser see no change.
+- The TV announces game night on the local network (`_mediagram-game._tcp`, with the join URL) while it runs.
+- Not yet walked on real devices: the controller apps and the announcement still owe the box, phone and iPad walk (`plans/261107-1322-controller-apps/phase-06-box-walk-docs-and-versioning.md`).
+
+## 0.155.0 — A poster shelf for the games
+
+**Added** (user, 2026-11-07: "lets add also a poster overview in the games section and then load the game"; posters and backdrops made by the user)
+
+- Games on the TV opens a row of game posters over the focused game's backdrop, at the film rows' plate size. The host starts behind the shelf, so most of its start is over by the time a poster is picked.
+- A poster opens the lobby with that game already set: the TV may now choose the game, as the leader's phone can (the kids lock still holds). Back goes game → lobby → shelf → out; the host keeps running on the shelf, so joined phones stay.
+- Heimlauf has no art yet and Bauherr no poster yet (the delivered one was titled "Hotel"); both show their name on the shelf meanwhile.
+
+**Changed** (user, 2026-11-07, after watching Bauherr's board on the TV: real mountains and rocks, a smaller plaza and a closer view, a warmer evening, nicer unbuilt lots, and "move slightly the camera to the current figure and zoom out the overview after the figure moves")
+
+- Bauherr's town: mountains, hills and coast in real rock, scree and snow; a lower, warmer sun with a warm haze in the distance; a smaller plaza with bigger dice, so the road fills the view. A plot for sale is a meadow; a bought one is a building site behind the owner's fence and sign until its first stage rises.
+- The camera leans toward the pawn whose turn it is, follows its walk, and eases back to the overview for the payment, the permit die and the entrance choice.
+- The board starts in about 4 s instead of 6: its images are compressed GPU textures unpacked off the main thread, and the scene is built while they arrive. Fewer slow frames in play.
+
+## 0.153.0 — Bauherr's town on the TV
+
+**Added** (user, 2026-11-07: golden-hour light; "hotels fill the board", own landscape per hotel, winding road, different hotel types, hotels and their plots upgradable)
+
+- Bauherr is played on a 3D town in the evening sun instead of the 2D plan: a winding road of 36 fields with a bridge, and eight hotels of their own kind, each in its own landscape (lake shore, forest, mountain, coast, spa park, city block, hilltop, chestnut garden). A plot shows a for-sale sign, then the owner's property lines and sign; every stage rises in a scaffold, and the last one lays out its pool, terrace, garden or deck on the plot. The owner's colour is on awnings, flags, lit name signs and entrance canopies. The dice roll on the plaza in front.
+- The town is painted once on the build machine (`tools/bauherr-bake/`) and shipped as images, so the box only decodes them.
+
+## 0.152.0 — Card games and Bauherr
+
+**Added** (TV game night, user 2026-11-07: "lets start to build the card games and our hotel clone")
+
+- A card table shared by three traditional games, one lobby entry each: **Mau-Mau** (2–8; 7 draws 2 and stacks, 8 skips, the Jack wishes a suit, a "Mau!" button with the second-to-last card or a penalty card; 32 cards up to 5 players, 52 above), **Schwimmen** (2–8; swap one or all, pass, knock, 31 ends the round, 30½ for three of a kind, three lives and one round swimming) and **Durak** (2–6; 36 cards, trump under the deck, throw-in by rank). Your hand is on your phone; the TV shows the table with Heimlauf's wood, music and sound settings.
+- The table never gives a hand away: in Durak everyone with cards is asked whether to throw in, and in Mau-Mau a drawn card always offers *Spielen* or *Behalten*, whether it fits or not (user: hidden information over pace).
+- The phone hand is bigger: cards fan over two rows instead of scrolling, and the table cards fill the space above them. At Schwimmen's reveal the TV shows each hand's value on its seat.
+- **Bauherr**, an own hotel-building board game with Hotel's mechanics: buy plots, build with a permit die, place entrances, guests pay per night. 2–4 players, about 45–60 minutes on a round limit, richest by net worth wins. The phone shows your Taler and hotels on a new money sheet. The TV board is a plain 2D plan for now; a realistic 3D town is in its look test.
+
+**Fixed**
+
+- A phone that slept re-syncs its clock with the host at once, instead of having dead buttons for up to a minute.
+
+## 0.151.0 — The avatars in their viewer's light
+
+Numbered above main's 0.150.0, which went onto the TV box in between.
+
+**Changed** (TV game night, user on 0.149.4: "this is cheap", "use the originals", "we don't need reflection")
+
+- The podium avatars are lit like the viewer they were approved in: model-viewer's neutral studio environment (three's RoomEnvironment) at exposure 1.1, diffuse only, with no reflections or highlights. It is still baked once into a light picture that each pixel looks up.
+- Why not the untouched Meshy files, measured on the box with three avatars: with reflections 14 fps. Without reflections 17–20 fps, at 4K or 2K alike: their thousands of scattered texture pieces are what this GPU samples slowly, and they cause the seam scratches. The same colours and normal maps from the 4K files, re-laid into fewer pieces, run at ~42 fps.
+
 ## 0.150.2 — A set removed on one uploader no longer comes back from another
 
 **Fixed** (uploader)
@@ -18,6 +71,132 @@ to `main`. Full phase-by-phase detail lives in
 **Fixed** (Android TV, tablet and phone)
 
 - **The app read the channel and fetched artwork on the screen's own thread.** The core does its database and disk work inside those calls. On the TV box, Update froze the picture for 2.5 s while reading the channel and for 8.7 s while fetching (`Skipped 514 frames`). The screen sat on "Fetching details and artwork…", and the 0.147.0 progress poll could not run beside it. Both calls now run on a background thread, like the rest of the catalog's reads.
+
+## 0.149.4 — Studio-lit avatars
+
+**Changed** (TV game night, user: "still bad quality", on asking what: "flat, cheap look" and "blurry or soft")
+
+- The podium avatars look like glossy vinyl toys instead of matte clay. This replaces the matte look chosen on 2026-11-05 for speed. The set's lights and a soft studio environment are rendered once onto a sphere as the ceremony camera sees it: one picture of the diffuse light and one of the highlights. Each avatar pixel then looks both up by its surface direction. It matches real physically based shading, which ran at 24.8 fps on the box.
+- The avatars are drawn front faces only. Meshy marks them double-sided, but on all 22 the back faces are never seen, capes and hoods included.
+- Full resolution holds 42–43 fps on the box with three avatars, so it no longer drops to a lower one. The step-down now leaves out the slowest tenth of each 90-frame window; one texture upload or garbage collection used to lower the resolution without cause.
+
+## 0.149.3 — Full-detail avatars on a smaller stage
+
+**Changed** (TV game night, user: "only below 30 fps is not acceptable", then "reduce also the size of the characters and stage")
+
+- Quality first, with 30 fps as the floor (0.149.2 had aimed at 60). The podium avatars keep all ~51k triangles and get their normal maps back (fabric folds, fur relief), baked onto the new charts from the 4K masters. Each normal is turned from the old chart's surface frame into the new one's, so the lighting matches the original. Colour 2048, normal map 1024: 40 MB for all 22.
+- The camera stands further back: the winner and its block fill about two thirds of the band's height instead of all of it.
+- The canvas draws at full resolution with MSAA: 36.4 fps on the box with three avatars. It steps down only if 90 frames average under ~32 fps.
+
+**Fixed**
+
+- An arriving avatar joins the scene only after its shaders are compiled; drawn while compiling, a frame blocked on it.
+- The first frame no longer counts as a 0.1 s one in the frame-rate average that sets the resolution.
+
+## 0.149.2 — Clean, sharp podium avatars
+
+**Fixed** (TV game night, on the box after 0.149.1: "the avatars are still bad quality")
+
+- No more white scratches along the avatars' seams. Meshy packs each colour map into thousands of tiny islands edge to edge, and every smaller mip level blended neighbouring islands. The ceremony tool now re-unwraps each simplified avatar with xatlas into fewer charts with gaps between them and bakes the colour onto them from the 4K master map (`tools/rebake-texture-atlas.mjs`).
+- No more blur. The canvas draws at 1.5 device pixels per CSS pixel with MSAA and never drops below 1.25; the adaptive scale used to fall to 1, a quarter of the screen's pixels. Measured on the box with three 30k-triangle avatars: 59.5 fps at 1.5. At 2 it fell to 51 fps with MSAA, and without MSAA the edges crawled.
+- The avatars face the room. They idle on `Idle_15` instead of Meshy's `Idle`, which turns the body by up to 81°: a third place stood side-on or with its back to the room. The per-frame turn-back is gone; it slid the feet around.
+- 22 avatars, 31.6 MB.
+
+## 0.149.1 — A ceremony worth watching
+
+**Changed** (TV game night, after the first look on the box: "the avatars at the ceremony are in a bad quality", the winner sound "sad")
+
+- The podium avatars are cut from the 2K game copies at 30k of their ~51k triangles with a 2048 WebP colour map (33 MB for all 22) instead of the 15k-triangle TV copies, whose compressed colours blotched and whose faces looked faceted close up. The full 51k dropped the box to ~43 fps, and the canvas scales its resolution down when frames run slow.
+- They stand about twice as tall (lower blocks, the camera closer), lit by a key, a fill and a light from behind, and always face the room: some animations turned an avatar away, so it is turned back as it plays.
+- The winner gets a rising fanfare with applause (a classic fanfare lick with clapping and cheering mixed in) instead of the falling sax jingle, on the race board and at the ceremony alike.
+
+**Fixed**
+
+- The quiz and poster ceremonies no longer redraw the whole page every frame; the first 3D avatar no longer stalls a frame (its shaders are compiled before it shows); leaving during loading builds nothing; Heimlauf plays its winner sound once; tied players share a place on the podium; a phone joining late no longer restarts the ceremony; a release refuses to build without the 22 ceremony avatars.
+
+## 0.149.0 — Game night: party games on the TV box, Heimlauf, avatars and an awards ceremony
+
+Built on the game-night branch as 0.143.0–0.146.2 and only ever sideloaded to the TV box; numbered 0.149.0 when main's 0.147.0 and 0.148.0 were merged in. The branch's entries follow as they were.
+
+### Awards ceremony after every game
+
+- When a game ends, the top three stand on a podium as their animated 3D avatars (the winner celebrates, second cheers, third shrugs), with confetti and the winner jingle, and everyone's points run in a strip below. Until a 3D avatar has loaded its flat figure stands in.
+- The 22 ceremony avatars (five animations each, meshopt-compressed, 26 MB) ship once inside the app; the TV app's WebView hands them to the game page.
+
+### Players switch off their phone's screen lock themselves (branch 0.146.2)
+
+*Changed*
+
+- The hidden keep-awake clip from 0.146.1 did not keep phones on in practice, so it is gone again. The phone lobby now says it plainly: switch off the automatic screen lock for the game night, or the phone goes dark mid-game.
+
+### Phones stay awake and go fullscreen during game night (branch 0.146.1)
+
+*Added*
+
+- The phone goes fullscreen on the join tap (no address bar, no status bar); a phone that left fullscreen is back on its next tap, and one that rejoined its seat by itself on its first. iPhones cannot put a web page fullscreen, so nothing changes there.
+
+*Fixed*
+
+- Phones went dark in the middle of a game. The page is plain LAN HTTP, so the Wake Lock API is missing, and the NoSleep library's fallback video was never part of the page, which Chrome on Android needs before it keeps the screen on. The phone page now loops its own tiny silent clip full-screen behind its content (in the page colour, nearly transparent), and also when a phone rejoins its seat by itself, not only after typing the name. NoSleep is gone.
+
+### Avatars for every player, and TV settings for sound and figures (branch 0.146.0)
+
+*Added* (Android TV game night)
+
+- **Pick an avatar on your phone** in the lobby: 22 characters (fox, panda, witch, yeti, granny, …), first come, first served. Whoever does not pick gets a free one, and the phone remembers yours for the next game night.
+- **The avatar's head replaces the initial** everywhere a player is shown: the TV lobby, the board's name tags, the scoreboards, the ranking and the phone.
+- **Settings on the TV, with the remote**: *Ton* on/off, *Musik* and *Effekte* each in 10 steps, and *Spielfiguren* — the wooden pawns or each player's avatar standing on the board. In the lobby through *Einstellungen* next to the start button; during Heimlauf OK opens them over the board and the game runs on. Back closes the panel first. The TV keeps them for the next game night.
+
+### The Wilhelm scream for a thrown-out piece (branch 0.145.3)
+
+*Changed*
+
+- When a piece is thrown out, the classic Wilhelm scream plays while it flies home, after the wooden thunk, instead of the falling pizzicato.
+
+### Heimlauf's hop knocks land with the pawn, the first one too (branch 0.145.2)
+
+*Fixed*
+
+- The knocks were still behind on the TV box: its WebView takes ~370 ms (±50) from starting a sound to the speaker, longer than the first hop takes, so the first knock of a move could only come late or be dropped. A move now starts 200 ms after it is decided, which gives the TV time to start every knock early enough, and the TV smooths the speaker delay over frames instead of trusting one jittery reading.
+
+### Heimlauf's hop knocks land with the pawn (branch 0.145.1)
+
+*Fixed*
+
+- The knock for each pawn hop came late on the TV box: its audio output buffers about 128 ms. Sounds are now timed by the speaker's own clock, so they are heard as the pawn lands.
+
+### Heimlauf sounds like a game evening (branch 0.145.0)
+
+*Added* (Android TV game night)
+
+- **Sound on the Heimlauf board**, from the TV: quiet cozy background music (two tracks taking turns), the die clattering as it lands, a wooden knock for every step a pawn hops, a thunk and a falling pizzicato when someone is thrown out, a rising one when a piece reaches its goal, and a saxophone jingle for the winner while the music fades. Phones stay silent.
+- All sounds are CC0: Kenney's Casino Audio, Impact Sounds and Music Jingles; the music is "Apple Cider" (Zane Little Music) and "Cozy Puzzle In-Game 2" (MintoDog) from OpenGameArt.
+
+### Heimlauf: a race board game for game night (branch 0.144.0)
+
+*Added* (Android TV game night)
+
+- **Heimlauf**, the third game in the lobby: the classic cross-and-circle race for 2–4 players, four pieces each. The TV shows a wooden board on a table in 3D; on your turn your phone shows *Würfeln*, the die rolls across the table, and when more than one move is possible your phone offers them as coloured buttons while the TV rings the matching pieces in the same colours and shapes.
+- Classic rules: a 6 brings a piece out and rolls again, the start field must be cleared, landing on an opponent sends it home, the goal needs an exact count, three tries for a 6 when nothing can move. The first with all four home wins.
+- A phone that drops out does not stall the table: its turns play themselves.
+
+*Changed*
+
+- A choice on the phone can be untimed: no clock, no countdown bar (the race game's buttons wait for you). A single button or a pair now fill the button area instead of leaving empty cells.
+
+### Game night on the TV box (branch 0.143.0)
+
+*Added* (Android TV, new `mediagram-game` crate)
+
+- **Party games on the TV box**: a *Games* entry on the television rail starts a game night. Phones on the same Wi-Fi scan the QR code, type a name and join, up to 8, with nothing to install. The first to join starts and picks the game; a phone that sleeps rejoins its seat.
+- **Buzzer-Quiz**: 8 questions, four answers on every phone at once, 1000 down to 500 points by speed. *Filme* asks about the library (a still, the year, the director, the cast), *Allgemein* draws on 311 German questions with their sources, *Gemischt* alternates.
+- **Poster-Raten**: 10 posters, pixelated and sharper every 2 s; the first right tap wins 1000 down to 500, a wrong tap only sits that player out. Posters use TMDB's textless artwork when it has one.
+- **Nur für Kinder**: on a kids profile it is on at that profile's own limit and locked; on a grown-up profile it starts off and means FSK 12. Every answer, wrong option and image is then a kid-safe title; a series counts only when all its episodes are.
+- A game night writes nothing to any profile: no history, positions, stats or daily limit. Leaving the screen, or the app going to the background, ends the night.
+
+*Changed*
+
+- Television only by design; the web player does not host a night (`docs/system-architecture.md`, "Game night").
 
 ## 0.148.0 — A Deinterlace switch for combed old TV shows
 

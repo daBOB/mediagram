@@ -6,6 +6,9 @@
     whatever a viewer's router hands out — so this is global rather than a
     fixed list that would go stale the moment a lease renews.
 
+    The game night page on 127.0.0.1 (the box talking to its own host) is the
+    other plain-http use.
+
     This app makes no other http:// calls: everything else is MTProto (the
     Telegram session) or TMDB/package downloads over https, so the
     widening reaches nothing that was cleartext-refused before.

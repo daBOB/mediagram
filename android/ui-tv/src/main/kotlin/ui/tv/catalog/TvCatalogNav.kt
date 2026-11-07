@@ -38,6 +38,9 @@ internal const val TvGenresRailKey = "rail:genres"
 /** The catalogue's restore key for "Stats was opened from the rail". */
 internal const val TvStatsRailKey = "rail:stats"
 
+/** The catalogue's restore key for "Games was opened from the rail". */
+internal const val TvGamesRailKey = "rail:games"
+
 /**
  * Where the departments bar's own pills and the restore-key sentinels
  * ([TvSearchEntryKey], [TvMenuEntryKey], [TvPillEntryKey], [TvLatestRailKey], [TvGenresRailKey],
@@ -102,6 +105,7 @@ internal fun rememberTvCatalogRestore(
             TvLatestRailKey -> RailItem.LATEST
             TvGenresRailKey -> RailItem.GENRES
             TvStatsRailKey -> RailItem.STATS
+            TvGamesRailKey -> RailItem.GAMES
             menuRestoreKey(MenuScreen.Settings) -> RailItem.SETTINGS
             menuRestoreKey(MenuScreen.System) -> RailItem.SYSTEM
             else -> null

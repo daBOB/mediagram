@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":feature:setup"))
     implementation(project(":feature:system"))
     implementation(project(":feature:stats"))
+    implementation(project(":feature:games"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
     implementation(project(":core:playback"))
