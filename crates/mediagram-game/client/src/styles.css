@@ -877,6 +877,19 @@ html[data-surface="tv"] {
   display: block;
 }
 
+.tv-cards {
+  position: fixed;
+  inset: 0;
+  background: #1a110b;
+}
+
+.tv-cards-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tv-cards-wait,
 .tv-race-wait {
   position: absolute;
   inset: 0;

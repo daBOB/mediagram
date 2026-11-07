@@ -39,6 +39,18 @@ fn race_game_needs_two_to_four_players() {
 }
 
 #[test]
+fn mau_mau_needs_two_to_eight_players() {
+    let mut r = room(8);
+    hello(&mut r, 1, "Ana", None);
+    configure(&mut r, 1, GameKind::MauMau, QuizMode::Mixed, false);
+    assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: false, blocked: Some(b), .. } if b == crate::room_settings::CARDS_TOO_FEW));
+    for (conn, name) in [(2, "Ben"), (3, "Cem"), (4, "Dana"), (5, "Eli"), (6, "Fay"), (7, "Gus"), (8, "Hal")] {
+        hello(&mut r, conn, name, None);
+        assert!(matches!(lobby_of(&mut r, 1), PhoneScreen::Lobby { can_start: true, blocked: None, .. }), "{name}");
+    }
+}
+
+#[test]
 fn poster_game_needs_posters() {
     let mut r = room_with(RoomConfig { readiness: Readiness { poster: true, poster_kids: false }, ..cfg(8) });
     hello(&mut r, 1, "Ana", None);

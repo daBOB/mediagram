@@ -8,6 +8,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 use crate::game::{Game, GameFactory};
+use crate::maumau::{MauMauConfig, MauMauGame};
 use crate::poster::PosterGame;
 use crate::poster_config::PosterConfig;
 use crate::poster_lookup::PosterLookup;
@@ -25,6 +26,9 @@ pub fn game_factory(pool: Arc<TitlePool>, general: Arc<Vec<Question>>, textless:
     Box::new(move |ctx, settings| {
         if settings.game == GameKind::Race {
             return Box::new(RaceGame::new(RaceConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
+        }
+        if settings.game == GameKind::MauMau {
+            return Box::new(MauMauGame::new(MauMauConfig::default(), ctx.players, ctx.now)) as Box<dyn Game>;
         }
         if settings.game == GameKind::Poster {
             let eligible = pool.eligible(settings.kids_only);

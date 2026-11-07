@@ -8,6 +8,7 @@ import { Token } from "../ui/Token";
 import { TvFinal } from "./TvFinal";
 import { TvLobby } from "./TvLobby";
 import { TvPoster } from "./TvPoster";
+import { TvCards } from "./TvCards";
 import { TvRace } from "./TvRace";
 
 /**
@@ -34,6 +35,8 @@ export function TvApp() {
       ) : view.scene.kind === "race" ? (
         // a new table of players is a new game: build the board afresh
         <TvRace key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
+      ) : view.scene.kind === "cards" ? (
+        <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (
         <Quiz scene={view.scene.scene} players={view.players} conn={conn} />
       )}
