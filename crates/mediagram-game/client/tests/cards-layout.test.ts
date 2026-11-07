@@ -3,7 +3,23 @@ import { expect, test } from "bun:test";
 import { RANKS, SUITS } from "../src/ui/card-face";
 import { BACK_CELL, cellOf } from "../src/tv/cards/cards-print";
 import { fanCard, seatSpot, yawFacing } from "../src/tv/cards/cards-layout";
+import { pairCard } from "../src/tv/cards/cards-durak";
 import { textsFor } from "../src/tv/cards/cards-texts";
+
+test("Durak pre-draws its banner, trump note and seat tags", () => {
+  const t = textsFor("Durak");
+  expect(t.banner).toContain(" hat alles geschlagen – Bito!");
+  expect(t.note).toContain("Trumpf ♠ Pik");
+  expect(t.marker).toContain("Verteidiger");
+});
+
+test("six Durak pairs lie apart and a defence card lies on its attack", () => {
+  const spots = Array.from({ length: 6 }, (_, p) => pairCard(p, 0));
+  expect(new Set(spots.map((s) => `${s.x}|${s.z}`)).size).toBe(6);
+  const [a, d] = [pairCard(2, 0), pairCard(2, 1)];
+  expect(d.y).toBeGreaterThan(a.y);
+  expect(Math.abs(d.x - a.x)).toBeLessThan(1.25);
+});
 
 test("every card has its own atlas cell and the back comes after them", () => {
   const cells = SUITS.flatMap((suit) => RANKS.map((rank) => cellOf({ suit, rank })));
