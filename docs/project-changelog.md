@@ -48,6 +48,12 @@ Numbered above main's 0.150.0, which went onto the TV box in between.
 - The podium avatars are lit like the viewer they were approved in: model-viewer's neutral studio environment (three's RoomEnvironment) at exposure 1.1, diffuse only, with no reflections or highlights. It is still baked once into a light picture that each pixel looks up.
 - Why not the untouched Meshy files, measured on the box with three avatars: with reflections 14 fps. Without reflections 17–20 fps, at 4K or 2K alike: their thousands of scattered texture pieces are what this GPU samples slowly, and they cause the seam scratches. The same colours and normal maps from the 4K files, re-laid into fewer pieces, run at ~42 fps.
 
+## 0.150.1 — The fetch's progress shows, and Update no longer freezes the screen
+
+**Fixed** (Android TV, tablet and phone)
+
+- **The app read the channel and fetched artwork on the screen's own thread.** The core does its database and disk work inside those calls. On the TV box, Update froze the picture for 2.5 s while reading the channel and for 8.7 s while fetching (`Skipped 514 frames`). The screen sat on "Fetching details and artwork…", and the 0.147.0 progress poll could not run beside it. Both calls now run on a background thread, like the rest of the catalog's reads.
+
 ## 0.149.4 — Studio-lit avatars
 
 **Changed** (TV game night, user: "still bad quality", on asking what: "flat, cheap look" and "blurry or soft")

@@ -15,6 +15,7 @@ import uniffi.mediagram_core.FetchStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -71,5 +72,14 @@ class CatalogEnrichmentFetcherTest {
             gate.complete(Unit)
             run.await()
             assertNull(enrichment.state.value.progress)
+        }
+
+    @Test
+    fun theCoreFetchRunsOffTheCallersThreadSoTheScreenAndItsProgressPollKeepGoing() =
+        runTest {
+            val core = FakeCore()
+            CatalogEnrichmentFetcher(FakeCoreProvider(core), InMemoryTmdbSettings().apply { write("key") }).fetch()
+
+            assertNotSame(Thread.currentThread(), core.fetchThread)
         }
 }
