@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.153.0 — Bauherr's town on the TV
+
+**Added** (user, 2026-11-07: golden-hour light; "hotels fill the board", own landscape per hotel, winding road, different hotel types, hotels and their plots upgradable)
+
+- Bauherr is played on a 3D town in the evening sun instead of the 2D plan: a winding road of 36 fields with a bridge, and eight hotels of their own kind, each in its own landscape (lake shore, forest, mountain, coast, spa park, city block, hilltop, chestnut garden). A plot shows a for-sale sign, then the owner's property lines and sign; every stage rises in a scaffold, and the last one lays out its pool, terrace, garden or deck on the plot. The owner's colour is on awnings, flags, lit name signs and entrance canopies. The dice roll on the plaza in front.
+- The town is painted once on the build machine (`tools/bauherr-bake/`) and shipped as images, so the box only decodes them.
+
 ## 0.152.0 — Card games and Bauherr
 
 **Added** (TV game night, user 2026-11-07: "lets start to build the card games and our hotel clone")

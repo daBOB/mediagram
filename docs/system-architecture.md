@@ -1128,8 +1128,18 @@ or when one player is left; net worth (cash + land + stage costs) is the score.
 A follow-up question that a tap opens (the Rathaus menu repeats until *Fertig*)
 opens 400 ms later on the host, so a double tap cannot answer it. The phone uses
 `PhoneScreen::Sheet`, a generic money sheet (lines, prompt, options answered by
-`Action::Choose`) meant for later money games too. The TV board is a plain 2D
-canvas (`TvBauherr.tsx`) until the realistic 3D town from the look test replaces it.
+`Action::Choose`) meant for later money games too.
+
+The TV board (`client/src/tv/bauherr/`, `TvBauherr.tsx`) is three.js drawing a
+town painted offline: `tools/bauherr-bake/` builds the winding 36-field road, the
+eight hotels stage by stage and their landscapes in headless Chrome and writes
+`client/public/bauherr/` (`world.json` + `world.bin` + images, Poly Haven CC0, see
+`SOURCES.md`), so the box decodes images instead of painting at load. A hotel's
+stages lie one after another in its mesh, so building a stage moves a draw range
+(it rises in a scaffold). Owner colours (awnings, flags, signs, property lines,
+canopies) are baked white and tinted on the TV, so one bake serves every player.
+`bauherr-layout.ts` is the one map from the rules' fields and hotels to positions;
+the bake and the TV both read it, and a test checks it against `bauherr_board.rs`.
 
 **Every player has an avatar.** The host owns the catalogue of 22
 (`avatars.rs`; ids are the folder names under `assets/game-night/avatars/`)
