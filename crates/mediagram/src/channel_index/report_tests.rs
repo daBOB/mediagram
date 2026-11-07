@@ -113,3 +113,18 @@ fn conflicts_say_how_many_were_settled_and_what_was_left() {
         "3 caption(s) among the conflicts use a newer #mlib version this build cannot read"
     );
 }
+
+/// Local sets dropped because another machine removed them are counted, and
+/// a pull that dropped none says nothing about it.
+#[test]
+fn local_sets_removed_elsewhere_are_counted() {
+    assert_eq!(
+        dropped_line(3, false).as_deref(),
+        Some("dropped 3 local set(s) removed from the channel elsewhere")
+    );
+    assert_eq!(
+        dropped_line(3, true).as_deref(),
+        Some("would drop 3 local set(s) removed from the channel elsewhere")
+    );
+    assert_eq!(dropped_line(0, false), None);
+}

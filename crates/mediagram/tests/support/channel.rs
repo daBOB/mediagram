@@ -29,6 +29,8 @@ pub struct Msg {
 #[derive(Default)]
 pub struct Channel {
     pub messages: Vec<Msg>,
+    /// Ids handed out so far: Telegram never reuses a deleted message's id.
+    pub posted: i32,
     pub downloads: usize,
     pub sends: usize,
     /// Unpin requests made, refused ones included.
@@ -49,7 +51,8 @@ impl Channel {
         pinned: bool,
         own_post: bool,
     ) -> i32 {
-        let id = i32::try_from(self.messages.len()).unwrap() + 1;
+        self.posted += 1;
+        let id = self.posted;
         self.messages.push(Msg {
             id,
             caption,

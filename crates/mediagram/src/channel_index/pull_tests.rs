@@ -140,6 +140,70 @@ async fn a_dry_run_writes_nothing() {
     assert_eq!(files_named(dir.path(), "library.pull-index-dry-run."), 0);
 }
 
+/// Deletes the channel messages of `set`'s parts, as a `remove` on another
+/// machine does.
+fn remove_elsewhere(channel: &FakeChannel, local: &Connection, set: &str) {
+    let ids: Vec<i64> = local
+        .prepare("SELECT message_id FROM parts WHERE set_id = ?1")
+        .unwrap()
+        .query_map([set], |row| row.get(0))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    channel.with(|c| c.messages.retain(|m| !ids.contains(&i64::from(m.id))));
+}
+
+/// A set another machine removed — messages gone, left out of the index it
+/// pushed — is dropped here, or this machine's next publish would list it
+/// again beside whatever replaced it. A local-only set still posted is an
+/// upload not yet published and stays; so does one the channel's index still
+/// lists, which is not this check's to judge, and one still uploading.
+#[tokio::test]
+async fn a_pull_drops_local_sets_removed_on_another_machine() {
+    let dir = tempfile::tempdir().unwrap();
+    let channel = FakeChannel::new();
+    let local = index_in(
+        dir.path(),
+        &channel,
+        &["removed", "unpublished", "shared", "uploading"],
+    );
+    remove_elsewhere(&channel, &local, "removed");
+    remove_elsewhere(&channel, &local, "shared");
+    remove_elsewhere(&channel, &local, "uploading");
+    local
+        .execute(
+            "UPDATE sets SET status = 'pending' WHERE set_id = 'uploading'",
+            [],
+        )
+        .unwrap();
+    let chosen = published(&channel, &["remote", "shared"]).await;
+
+    pull_from(&channel, dir.path(), Some(&chosen), true)
+        .await
+        .unwrap();
+    assert_eq!(
+        set_ids(&local),
+        ["removed", "shared", "unpublished", "uploading"],
+        "a dry run drops nothing"
+    );
+
+    pull_from(&channel, dir.path(), Some(&chosen), false)
+        .await
+        .unwrap();
+    assert_eq!(
+        set_ids(&local),
+        ["remote", "shared", "unpublished", "uploading"]
+    );
+    let parts: i64 = local
+        .query_row(
+            "SELECT count(*) FROM parts WHERE set_id = 'removed'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(parts, 0, "its parts go with it");
+}
+
 /// `setS` in both indexes under different titles, its one part posted with
 /// the caption given: a conflict the merge leaves for the captions to settle.
 async fn conflicting(channel: &FakeChannel, dir: &Path, part_caption: String) -> Candidate {
