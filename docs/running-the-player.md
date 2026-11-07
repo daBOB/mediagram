@@ -727,6 +727,10 @@ the whole filesystem read-only except the paths `CacheDirectory=`,
 outside the default would fail every write with a permission error that has
 nothing to do with actual file permissions.
 
+That volume must be formatted ext4 or btrfs. The server publishes every
+chunk with a hard link (`store/publish.rs`), which exFAT, FAT32 and NTFS do
+not support, so on a stick formatted for a camera or a PC every write fails.
+
 ### Pairing a device
 
 The pairing token is created once, at startup — not lazily on the first
