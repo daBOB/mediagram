@@ -23,16 +23,38 @@
   font-weight: 700;
 }
 
+/* The middle of the screen belongs to the table cards; they shrink to wrap rows once several pairs lie there. */
 .desk-table {
+  flex: 1;
   display: flex;
+  flex-wrap: wrap;
+  align-content: center;
   gap: 0.5rem;
   justify-content: center;
-  min-height: 6.8rem;
+  width: 100%;
 }
 
 .desk-table .pcard {
-  width: 4.6rem;
-  height: 6.5rem;
+  width: 5.6rem;
+  height: 7.8rem;
+}
+
+.desk-table[data-many="true"] {
+  gap: 0.3rem;
+}
+
+.desk-table[data-many="true"] .pcard {
+  width: 3.8rem;
+  height: 5.4rem;
+  padding: 0.25rem 0.3rem;
+}
+
+.desk-table[data-many="true"] .pcard-rank {
+  font-size: 1.3rem;
+}
+
+.desk-table[data-many="true"] .pcard-suit {
+  font-size: 1.2rem;
 }
 
 .desk-buttons {
@@ -40,7 +62,6 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
   width: 100%;
-  margin-top: auto;
 }
 
 .desk-btn {
@@ -78,12 +99,14 @@
   grid-column: 1 / -1;
 }
 
-/* Overlapping cards that scroll sideways once the hand outgrows the screen. */
+/* The hand: big cards that overlap just enough to fit the width (`--n` per row, set inline), a second row from eight cards on. */
 .desk-hand {
+  --cw: 6.6rem;
   display: flex;
+  flex-direction: column;
   width: 100%;
   overflow-x: auto;
-  padding: 1.2rem 0.4rem 0.8rem;
+  padding: 1.4rem 0.4rem max(1rem, env(safe-area-inset-bottom));
   scrollbar-width: none;
 }
 
@@ -91,19 +114,34 @@
   display: none;
 }
 
-.desk-hand .pcard {
+.desk-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* a lower row covers the foot of the one above; the corner index stays in view */
+.desk-row + .desk-row {
+  margin-top: -4.2rem;
+}
+
+.desk-row .pcard {
   flex: none;
-  width: 5rem;
-  height: 7rem;
-  margin-left: -1.9rem;
+  width: var(--cw);
+  height: 9.2rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 12px;
 }
 
-.desk-hand .pcard:first-child {
-  margin-left: auto;
+.desk-row .pcard + .pcard {
+  margin-left: clamp(calc(2.5rem - var(--cw)), calc((100% - var(--cw)) / (var(--n) - 1) - var(--cw)), 0.4rem);
 }
 
-.desk-hand .pcard:last-child {
-  margin-right: auto;
+.desk-row .pcard-rank {
+  font-size: 2.2rem;
+}
+
+.desk-row .pcard-suit {
+  font-size: 2.1rem;
 }
 
 .pcard {
