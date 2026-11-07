@@ -18,6 +18,8 @@ export interface Cue {
 const DIE_TOUCH = 0.6;
 /** The clatter's first hit sits this far into its file. */
 const CLATTER_ATTACK_MS = 70;
+/** When the clatter of a die thrown from `rolledAt` to `landsAt` starts, so its first hit meets the table. */
+export const clatterAt = (rolledAt: number, landsAt: number) => rolledAt + (landsAt - rolledAt) * DIE_TOUCH - CLATTER_ATTACK_MS;
 
 /**
  * The cues of the scene's stage, with a key naming that stage so its cues are
@@ -30,8 +32,7 @@ export function stageCues(scene: RaceScene, now: number): { key: string; cues: C
     case "roll":
       return null;
     case "rolled": {
-      const touch = st.rolled_at + (st.lands_at - st.rolled_at) * DIE_TOUCH;
-      return { key: `rolled ${st.rolled_at}`, cues: [{ sound: "die", at: touch - CLATTER_ATTACK_MS }] };
+      return { key: `rolled ${st.rolled_at}`, cues: [{ sound: "die", at: clatterAt(st.rolled_at, st.lands_at) }] };
     }
     case "moving": {
       const seat = scene.seats.find((s) => s.player === st.player);
