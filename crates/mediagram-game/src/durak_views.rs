@@ -107,7 +107,7 @@ impl DurakGame {
                     .iter()
                     .zip(&self.hands)
                     .enumerate()
-                    .map(|(seat, (&player, h))| CardsSeat { player, cards: h.len() as u8, open: vec![], marker: self.marker(seat) })
+                    .map(|(seat, (&player, h))| CardsSeat { player, cards: h.len() as u8, open: vec![], worth: None, marker: self.marker(seat) })
                     .collect(),
                 piles: self.bout.iter().map(pair).collect(),
                 deck: self.deck.len() as u16,

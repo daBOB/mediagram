@@ -66,15 +66,14 @@ impl SchwimmenGame {
         }
     }
 
-    /// Lives, then what the seat did or shows: knocking, the value at the reveal, the loss.
+    /// Lives, then what the seat did: knocking, or the loss at the reveal (the value rides in the badge).
     fn marker(&self, seat: usize) -> String {
         if self.out[seat] {
             return "raus".into();
         }
         let coins = COINS[usize::from(self.lives[seat])];
         if self.revealed {
-            let loss = if self.lost[seat] { " · −1" } else { "" };
-            return format!("{coins} · {}{loss}", value(&self.hands[seat]).show());
+            return if self.lost[seat] { format!("{coins} · −1") } else { coins.into() };
         }
         if self.knocker == Some(seat) { format!("{coins} · klopft") } else { coins.into() }
     }
@@ -99,6 +98,7 @@ impl SchwimmenGame {
                         player: self.player_at(s),
                         cards: if self.revealed { 0 } else { self.hands[s].len() as u8 },
                         open: if self.revealed { self.hands[s].clone() } else { vec![] },
+                        worth: (self.revealed && !self.hands[s].is_empty()).then(|| value(&self.hands[s]).0),
                         marker: Some(self.marker(s)),
                     })
                     .collect(),
