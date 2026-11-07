@@ -8,7 +8,7 @@
 //!
 //! | Table | Rule |
 //! |---|---|
-//! | `sets` | Channel-only, `complete`, and confirmed live (see [`merge_from`]). |
+//! | `sets` | Channel-only, `complete`, and confirmed live (see [`merge_from`]); local-only ones whose messages are all gone are dropped (see [`removed_elsewhere`]). |
 //! | `parts` | Every row of a set just added. |
 //! | `assets` | Missing `(set_id, kind, lang)` rows, added or shared alike. |
 //! | `shows` | Missing keys inserted; shared keys get their `NULL`s filled. |
@@ -36,6 +36,7 @@ pub mod conflicts;
 mod copy;
 mod credits;
 mod diff;
+pub mod removed_elsewhere;
 mod shows;
 mod subtitles;
 

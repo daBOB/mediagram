@@ -14,6 +14,19 @@ pub(super) fn print(report: &MergeReport, dry_run: bool) {
     }
 }
 
+/// Local sets dropped because another machine removed them; nothing when
+/// there were none.
+pub(super) fn print_dropped(count: usize, dry_run: bool) {
+    if let Some(line) = dropped_line(count, dry_run) {
+        println!("{line}");
+    }
+}
+
+fn dropped_line(count: usize, dry_run: bool) -> Option<String> {
+    let verb = if dry_run { "would drop" } else { "dropped" };
+    (count > 0).then(|| format!("{verb} {count} local set(s) removed from the channel elsewhere"))
+}
+
 /// What [`print`] says, a line per entry: what was added, then only the
 /// counts that are not zero.
 fn lines(report: &MergeReport, dry_run: bool) -> Vec<String> {

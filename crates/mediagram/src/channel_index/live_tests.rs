@@ -107,3 +107,55 @@ async fn a_failed_lookup_is_an_error() {
 
     assert!(live_sets(&channel, &[candidate]).await.is_err());
 }
+
+/// Every part deleted: the set was removed on another machine. The lookup
+/// is shared with the live check, so only the predicate differs.
+#[tokio::test]
+async fn a_local_set_whose_every_part_is_deleted_is_gone() {
+    let channel = FakeChannel::new();
+    let removed = posted_set(&channel, "removed", 2);
+    for (_, id) in &removed.messages {
+        delete(&channel, *id);
+    }
+    let unpublished = posted_set(&channel, "unpublished", 1);
+
+    let found = gone_sets(&channel, &[removed, unpublished]).await.unwrap();
+
+    assert_eq!(live(found), ["removed"]);
+}
+
+/// Gone drops rows, so it fails open: a part still posted, a part with no
+/// message, a part in another chat each keep the set.
+#[tokio::test]
+async fn a_local_set_is_kept_unless_the_channel_vouches_it_is_gone() {
+    let channel = FakeChannel::new();
+    let half = posted_set(&channel, "half", 2);
+    delete(&channel, half.messages[0].1);
+    let mut short = posted_set(&channel, "short", 2);
+    delete(&channel, short.messages[0].1);
+    short.messages.pop();
+    let mut elsewhere = posted_set(&channel, "elsewhere", 1);
+    delete(&channel, elsewhere.messages[0].1);
+    elsewhere.messages[0].0 = CHAT_ID - 1;
+    let empty = Candidate {
+        set_id: "empty".to_string(),
+        messages: Vec::new(),
+        part_count: 0,
+    };
+
+    let found = gone_sets(&channel, &[half, short, elsewhere, empty])
+        .await
+        .unwrap();
+
+    assert!(found.is_empty());
+}
+
+/// A failed lookup is an error, never "everything is gone".
+#[tokio::test]
+async fn a_failed_gone_lookup_is_an_error() {
+    let channel = FakeChannel::new();
+    let candidate = posted_set(&channel, "a", 1);
+    channel.with(|c| c.captions_fail = true);
+
+    assert!(gone_sets(&channel, &[candidate]).await.is_err());
+}
