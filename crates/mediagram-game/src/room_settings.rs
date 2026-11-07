@@ -52,15 +52,15 @@ impl Room {
         &self.settings
     }
 
-    /// Leader only, and only while no game runs. `false` if refused.
+    /// Leader or TV only, and only while no game runs. `false` if refused.
     pub(crate) fn configure(
         &mut self,
-        is_leader: bool,
+        allowed: bool,
         game: GameKind,
         quiz_mode: QuizMode,
         kids_only: bool,
     ) -> bool {
-        if !is_leader || self.game.is_some() {
+        if !allowed || self.game.is_some() {
             return false;
         }
         self.settings.game = game;

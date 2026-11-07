@@ -131,6 +131,16 @@ fn only_the_leader_configures() {
 }
 
 #[test]
+fn the_tv_picks_the_game_but_keeps_the_kids_lock() {
+    let mut r = room_with(RoomConfig { kids_locked: true, ..cfg(8) });
+    r.connect(9, true);
+    r.handle(9, r#"{"t":"hello","role":"tv","name":null,"token":null}"#, 0.0);
+    assert!(configure(&mut r, 9, GameKind::Durak, QuizMode::Mixed, false).is_empty());
+    assert_eq!(r.settings().game, GameKind::Durak);
+    assert!(r.settings().kids_only);
+}
+
+#[test]
 fn settings_survive_a_game() {
     let mut r = room(8);
     hello(&mut r, 1, "Ana", None);

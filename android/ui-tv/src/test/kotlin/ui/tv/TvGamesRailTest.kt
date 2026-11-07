@@ -4,6 +4,7 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -28,13 +29,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * The rail's Games row over the real [TvLibrary]: it opens game night as a
- * full-screen page showing the host's TV page, Back from a running game
- * stays on the page, and Back from the lobby leaves and stops the host.
+ * The rail's Games row over the real [TvLibrary]: it opens game night on its
+ * poster shelf, a poster opens the host's TV page with that game, Back from a
+ * running game stays on the page, Back from the lobby returns to the shelf
+ * with the host still running, and Back on the shelf leaves and stops it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w960dp-h540dp")
 class TvGamesRailTest {
+    private val durakPage = "http://127.0.0.1:8080/tv?game=durak"
+
     @get:Rule val compose = createEmptyComposeRule()
     private lateinit var fixture: TvAppFixture
     private lateinit var controller: ActivityController<TvAppTestActivity>
@@ -64,16 +68,20 @@ class TvGamesRailTest {
     }
 
     @Test
-    fun gamesOnTheRailOpensTheGamePage() {
+    fun gamesOnTheRailOpensTheShelfAndAPosterOpensItsGame() {
         press(compose.onNodeWithContentDescription("Games"))
+        compose.onNodeWithContentDescription("Buzzer-Quiz").assertExists()
+        assertEquals(null, webView())
 
-        assertEquals("http://127.0.0.1:8080/tv", shownUrl())
+        press(compose.onNodeWithContentDescription("Durak"))
+
+        assertEquals(durakPage, shownUrl())
     }
 
     // A WebView whose layout height is WRAP_CONTENT lays the page out at zero height: 100% and vh are 0.
     @Test
     fun theGamePageIsLaidOutAtTheFrameHeight() {
-        press(compose.onNodeWithContentDescription("Games"))
+        openDurak()
         shownUrl()
 
         val params = assertNotNull(webView()?.layoutParams)
@@ -82,7 +90,7 @@ class TvGamesRailTest {
 
     @Test
     fun goingToTheBackgroundEndsTheNightAndReturnsToTheLibrary() {
-        press(compose.onNodeWithContentDescription("Games"))
+        openDurak()
         shownUrl()
 
         compose.runOnUiThread { controller.pause().stop() }
@@ -97,10 +105,17 @@ class TvGamesRailTest {
     }
 
     @Test
-    fun backInTheLobbyLeavesAndStopsTheHost() {
+    fun backInTheLobbyReturnsToTheShelfAndBackThereLeavesAndStopsTheHost() {
         fixture.gameCore.gameNightBackAnswer = false
-        press(compose.onNodeWithContentDescription("Games"))
+        openDurak()
         shownUrl()
+
+        back()
+
+        // After the page's 400 ms to claim Back has run out.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasContentDescription("Durak")).fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(null, webView())
+        assertEquals(0, fixture.gameCore.gameNightStops)
 
         back()
 
@@ -111,13 +126,18 @@ class TvGamesRailTest {
     @Test
     fun backDuringAGameStaysOnThePage() {
         fixture.gameCore.gameNightBackAnswer = true
-        press(compose.onNodeWithContentDescription("Games"))
+        openDurak()
         shownUrl()
 
         back()
 
-        assertEquals("http://127.0.0.1:8080/tv", shownUrl())
+        assertEquals(durakPage, shownUrl())
         assertEquals(0, fixture.gameCore.gameNightStops)
+    }
+
+    private fun openDurak() {
+        press(compose.onNodeWithContentDescription("Games"))
+        press(compose.onNodeWithContentDescription("Durak"))
     }
 
     /** The URL the page's WebView loaded, waiting for the host to answer first. */

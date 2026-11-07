@@ -5,6 +5,20 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.155.0 — A poster shelf for the games
+
+**Added** (user, 2026-11-07: "lets add also a poster overview in the games section and then load the game"; posters and backdrops made by the user)
+
+- Games on the TV opens a row of game posters over the focused game's backdrop, at the film rows' plate size. The host starts behind the shelf, so most of its start is over by the time a poster is picked.
+- A poster opens the lobby with that game already set: the TV may now choose the game, as the leader's phone can (the kids lock still holds). Back goes game → lobby → shelf → out; the host keeps running on the shelf, so joined phones stay.
+- Heimlauf has no art yet and Bauherr no poster yet (the delivered one was titled "Hotel"); both show their name on the shelf meanwhile.
+
+**Changed** (user, 2026-11-07, after watching Bauherr's board on the TV: real mountains and rocks, a smaller plaza and a closer view, a warmer evening, nicer unbuilt lots, and "move slightly the camera to the current figure and zoom out the overview after the figure moves")
+
+- Bauherr's town: mountains, hills and coast in real rock, scree and snow; a lower, warmer sun with a warm haze in the distance; a smaller plaza with bigger dice, so the road fills the view. A plot for sale is a meadow; a bought one is a building site behind the owner's fence and sign until its first stage rises.
+- The camera leans toward the pawn whose turn it is, follows its walk, and eases back to the overview for the payment, the permit die and the entrance choice.
+- The board starts in about 4 s instead of 6: its images are compressed GPU textures unpacked off the main thread, and the scene is built while they arrive. Fewer slow frames in play.
+
 ## 0.153.0 — Bauherr's town on the TV
 
 **Added** (user, 2026-11-07: golden-hour light; "hotels fill the board", own landscape per hotel, winding road, different hotel types, hotels and their plots upgradable)

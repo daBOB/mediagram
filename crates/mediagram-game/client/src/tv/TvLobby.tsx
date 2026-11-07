@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Connection } from "../net";
+import type { GameKind } from "../protocol/GameKind";
 import type { TvScene } from "../protocol/TvScene";
 import type { TvView } from "../protocol/TvView";
 import { gameBadge } from "../ui/lobby";
@@ -8,7 +9,17 @@ import { TvSettingsPanel } from "./settings/TvSettingsPanel";
 
 type Lobby = Extract<TvScene, { kind: "lobby" }>;
 
+// The game the box's poster shelf picked (`/tv?game=durak`). Asked for once per page load: after
+// a game the room keeps whatever the leader's phone has chosen since. The host checks the name.
+let picked = new URLSearchParams(location.search).get("game") as GameKind | null;
+
 export function TvLobby({ view, scene, conn }: { view: TvView; scene: Lobby; conn: Connection }) {
+  useEffect(() => {
+    if (!picked) return;
+    const { quiz_mode, kids_only } = scene.settings;
+    if (picked !== scene.settings.game) conn.send({ t: "action", action: { t: "configure", game: picked, quiz_mode, kids_only } });
+    picked = null;
+  }, [conn, scene.settings]);
   const seated = view.players.filter((p) => p.connected);
   const canStart = seated.length >= scene.min_players && !scene.blocked;
   const [settings, setSettings] = useState(false);

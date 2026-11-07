@@ -15,6 +15,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,9 +41,10 @@ import java.io.IOException
 
 /**
  * Game night as one full-screen frame, drawn outside the catalogue's chrome
- * like the player. Back first steps a running game back to the lobby; only
- * when there was nothing to step back from does it leave, and leaving stops
- * the host.
+ * like the player. It opens on the poster shelf while the host starts behind
+ * it; a poster opens the lobby with that game set. Back steps a running game
+ * back to the lobby, the lobby back to the shelf (the host keeps running, so
+ * joined phones stay), and the shelf out, which stops the host.
  */
 @Composable
 internal fun TvGamesFrame(leave: () -> Unit) {
@@ -68,11 +70,17 @@ internal fun TvGamesFrame(leave: () -> Unit) {
         onDispose { lifecycle.removeObserver(observer) }
     }
     var page by remember { mutableStateOf<WebView?>(null) }
+    var chosen by remember { mutableStateOf<String?>(null) }
+    var focused by remember { mutableIntStateOf(0) }
     // The page's settings panel closes on Back before anything else happens, so ask it first:
     // it answers "true" when it had a panel open and took the key. A page too busy to answer
     // (the board still building on the box) must not swallow Back, so after 400 ms it counts as "no".
     BackHandler {
-        val stepBack = { scope.launch { if (!model.back()) leave() }; Unit }
+        if (chosen == null) {
+            leave()
+            return@BackHandler
+        }
+        val stepBack = { scope.launch { if (!model.back()) chosen = null }; Unit }
         val web = page
         if (web == null) {
             stepBack()
@@ -92,10 +100,19 @@ internal fun TvGamesFrame(leave: () -> Unit) {
         }
     }
 
+    val game = chosen
+    if (game == null) {
+        TvGamesShelf(focused, onFocus = { focused = it }) { picked ->
+            // A host that failed to start gets another go with the next pick.
+            if (state is GameNightUi.Failed) model.start()
+            chosen = picked.kind
+        }
+        return
+    }
     when (val ui = state) {
         GameNightUi.Starting -> Centred("Starting game night…")
         is GameNightUi.Failed -> Centred("${ui.message}\n\nPress Back to return")
-        is GameNightUi.Ready -> GamePage(ui.tvUrl) { page = it }
+        is GameNightUi.Ready -> GamePage("${ui.tvUrl}?game=$game") { page = it }
     }
 }
 
