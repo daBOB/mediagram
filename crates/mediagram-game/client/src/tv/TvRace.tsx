@@ -86,7 +86,7 @@ export function TvRace({ scene, players, conn }: { scene: RaceScene; players: Pl
   if (final && cheered) {
     const order = new Map(final.ranking.map((id, i) => [id, i]));
     const ranked = players.filter((p) => order.has(p.id)).sort((a, b) => order.get(a.id)! - order.get(b.id)!);
-    return <TvFinal players={ranked} conn={conn} ranked />;
+    return <TvFinal players={ranked} conn={conn} ranked jingle={false} />;
   }
   return (
     <section className="tv-race" ref={stage}>

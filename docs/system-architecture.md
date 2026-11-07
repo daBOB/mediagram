@@ -1080,8 +1080,11 @@ WebView sets `mediaPlaybackRequiresUserGesture = false`, since nobody taps a
 TV; a desktop browser acting as the TV starts sound at its first key or click.
 The files are in `client/public/race/sound/`: Kenney's Casino Audio, Impact
 Sounds and Music Jingles; the Wilhelm scream for a capture (Wikimedia
-Commons, from the SSE library on the Internet Archive); "Apple Cider" by Zane
-Little Music and "Cozy Puzzle In-Game 2" by MintoDog from OpenGameArt. Game
+Commons, from the SSE library on the Internet Archive); the winner's jingle
+is "Classic fanfare lick" by fvcalderan with "Well Done" applause by qubodup
+mixed in (OpenGameArt, CC0; Kenney's falling sax jingle sounded sad); "Apple
+Cider" by Zane Little Music and "Cozy Puzzle In-Game 2" by MintoDog from
+OpenGameArt. Game
 night is a personal project, so a sound is picked by fit, not licence; its
 source is still written here. The music is normalised to
 -18 LUFS and Opus 56 kbps (2.6 MB in all, embedded with the client in each
@@ -1100,6 +1103,47 @@ offline, from the TV copies of the 3D models
 (`tools/render-avatar-images.mjs`, matte, `Idle` pose): a 256² head and a
 256x384 standing figure per avatar, WebP, 458 KB in all, in
 `client/public/avatars/`.
+
+**Every game ends in an awards ceremony.** `TvFinal` is the ceremony for the
+quiz, the poster game and Heimlauf: the title above, a three.js band in the
+middle (`tv/ceremony/`, its own lazy chunk) with a podium for the top three,
+and the points strip with heads below; no HTML lies over the canvas. The
+flat figures stand on the podium from the first frame; each player's 3D
+avatar replaces its figure once loaded (GLTFLoader with MeshoptDecoder,
+shaders compiled and textures uploaded before it shows). The avatars have a
+studio look (`ceremony-studio-look.ts`): the light of the model-viewer page they
+were approved in (RoomEnvironment at exposure 1.1, diffuse only, no reflections
+— the user's call). It is rendered once onto a white sphere as the camera sees
+it, into an 8-bit sRGB picture holding half the light (half-float pictures
+dropped the box to 25 fps). A MeshMatcapMaterial then draws colour × that
+light, front faces only, under neutral tone mapping. With the camera fixed this
+matches real environment lighting, which ran at 14–17 fps. Meshy's untouched
+files ran at 17–20 fps even so (their scattered texture pieces are slow to
+sample), so the ceremony copies keep the re-laid maps.
+The winner plays `victory` and now and then `Happy_Jump`, second
+`Cheer_With_One_Hand_Up`, third `Shrug`, then `Idle_15` (Meshy's plain
+`Idle` turns the body by up to 81° and left avatars side-on); confetti and the
+winner jingle (through the TV settings) open it. The 22 ceremony avatars are
+cut from the 2K game copies (`<id>.glb`, not the 15k-triangle TV copies,
+whose ETC1S colour blotched and whose faces looked faceted close up) by
+`tools/make-ceremony-avatars.mjs`: five clips, all ~51k triangles,
+re-unwrapped by xatlas into fewer charts with gaps between them, with the 4K
+master's colour and normal maps baked onto them (`tools/rebake-texture-atlas.mjs`;
+Meshy's thousands of edge-to-edge islands bled into each other at every
+smaller mip level). Each normal is turned into the new chart's frame, the frame
+three.js derives on screen for a mesh without tangents. The output is a 2048
+WebP colour map and a 1024 normal map, with meshopt: 40 MB in all, into
+`android/app/src/main/assets/game-avatars/` — generated,
+not committed, like the native libraries — and the TV app's WebView answers
+`/game-avatars/<id>.glb` from its APK assets (`TvGamesFrame.kt`), so they are
+in the app once instead of in the core per ABI, and the phones and the Rust
+host never see them. Quality comes first, with 30 fps as the floor (the
+user's call). The canvas draws at full resolution with MSAA, and the camera
+stands back so the winner and its block fill about two thirds of the band.
+Measured on the box with three avatars: 42–43 fps. The scale steps down by
+0.25, to 1.25 at the lowest, if 90 frames average under ~32 fps, leaving out
+the slowest tenth of them. Triangles, per-pixel lights, MSAA and double-sided
+faces set the cost, not vertices.
 
 **The phone page cannot keep the screen on; players switch the lock off.**
 The page is plain LAN HTTP, so the Wake Lock API is missing. The NoSleep

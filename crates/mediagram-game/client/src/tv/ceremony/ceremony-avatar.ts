@@ -4,12 +4,15 @@
 import * as THREE from "three";
 import type { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-/** What each place does after the avatar appears, then Idle. */
+/** What each place does after the avatar appears, then the idle. */
 const INTRO = ["victory", "Cheer_With_One_Hand_Up", "Shrug"];
+/** A calm idle that keeps facing the room (hips within -3..21 degrees for every avatar); Meshy's plain "Idle"
+ *  wanders up to 81 degrees and left the third place standing side-on or with its back to the room. */
+const IDLE = "Idle_15";
 const JUMP = "Happy_Jump";
 const FADE = 0.3;
 
-/** Plays the place's clip, then Idle; the winner jumps now and then. A missing clip is skipped. */
+/** Plays the place's clip, then the idle; the winner jumps now and then. A missing clip is skipped. */
 export class Performer {
   readonly mixer: THREE.AnimationMixer;
   private readonly idle: THREE.AnimationAction | null;
@@ -23,7 +26,7 @@ export class Performer {
       const clip = THREE.AnimationClip.findByName(clips, name);
       return clip ? this.mixer.clipAction(clip) : null;
     };
-    this.idle = action("Idle");
+    this.idle = action(IDLE);
     this.jump = place === 0 ? action(JUMP) : null;
     this.mixer.addEventListener("finished", (e) => {
       if (e.action === this.current && this.current !== this.idle) this.switchTo(this.idle, false);
@@ -57,8 +60,8 @@ export class Performer {
   }
 }
 
-/** The loaded model dressed in matte Lambert (keeps the colour map), scaled to `height` and standing on y = 0. */
-export async function loadAvatar(loader: GLTFLoader, id: string, height: number) {
+/** The loaded model with each material replaced by `dress(old)`, scaled to `height` and standing on y = 0. */
+export async function loadAvatar(loader: GLTFLoader, id: string, height: number, dress: (old: THREE.MeshStandardMaterial) => THREE.Material) {
   const gltf = await loader.loadAsync(`/game-avatars/${id}.glb`);
   const root = gltf.scene;
   root.traverse((o) => {
@@ -66,14 +69,8 @@ export async function loadAvatar(loader: GLTFLoader, id: string, height: number)
     if (!mesh.isMesh) return;
     mesh.frustumCulled = false; // a jump leaves the bind-pose bounds
     const old = mesh.material as THREE.MeshStandardMaterial;
-    mesh.material = new THREE.MeshLambertMaterial({
-      map: old.map,
-      color: old.map ? 0xffffff : old.color,
-      side: old.side,
-      transparent: old.transparent,
-      alphaTest: old.alphaTest,
-    });
-    old.dispose();
+    mesh.material = dress(old);
+    if (mesh.material !== old) old.dispose();
   });
   root.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(root);

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { Connection } from "../net";
 import type { PlayerInfo } from "../protocol/PlayerInfo";
 import { Token } from "../ui/Token";
@@ -11,27 +11,37 @@ import "./ceremony/ceremony.css";
  * the canvas), everyone's points below.
  * `ranked`: `players` already come in finishing order (ties broken by the game), so rank by position.
  */
-export function TvFinal({ players, conn, ranked: inOrder = false }: { players: PlayerInfo[]; conn: Connection; ranked?: boolean }) {
+export const TvFinal = memo(function TvFinal({
+  players,
+  conn,
+  ranked: inOrder = false,
+  jingle = true,
+}: {
+  players: PlayerInfo[];
+  conn: Connection;
+  ranked?: boolean;
+  /** false: the game already played the winner jingle at the win. */
+  jingle?: boolean;
+}) {
   const ranked = inOrder ? players : [...players].sort((a, b) => b.score - a.score);
   const rankOf = (p: PlayerInfo) => (inOrder ? ranked.indexOf(p) : ranked.filter((o) => o.score > p.score).length) + 1;
   const band = useRef<HTMLDivElement>(null);
-  const top = ranked.slice(0, 3).map((p) => ({ name: p.name, color: p.color, avatar: p.avatar }));
-  const topKey = JSON.stringify(top);
+  // frozen at mount: a late joiner or a rename must not rebuild the 3D scene (the strip still updates)
+  const [top] = useState(() => ranked.slice(0, 3).map((p) => ({ name: p.name, color: p.color, avatar: p.avatar, place: rankOf(p) })));
 
   useEffect(() => {
     if (top.length === 0) return;
     let handle: CeremonyHandle | null = null, gone = false;
     import("./ceremony/ceremony-stage")
-      .then((m) => m.startCeremony(band.current!, top))
-      .then((h) => (gone ? h.dispose() : (handle = h)))
+      .then((m) => (band.current && !gone ? m.startCeremony(band.current, top, () => gone, jingle) : null))
+      .then((h) => h && (gone ? h.dispose() : (handle = h)))
       .catch((e) => console.error("awards ceremony", e)); // the title and the points still stand
     return () => {
       gone = true;
       handle?.dispose();
     };
-    // `top` is rebuilt every render; its content (topKey) is what restarts the scene
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topKey]);
+  }, []);
 
   return (
     <section className="ceremony">
@@ -54,4 +64,4 @@ export function TvFinal({ players, conn, ranked: inOrder = false }: { players: P
       </ol>
     </section>
   );
-}
+});

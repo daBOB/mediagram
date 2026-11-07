@@ -21,7 +21,7 @@ export class CeremonySound {
     const buffer = await ctx.decodeAudioData(data);
     if (this.disposed) return;
     const master = ctx.createGain();
-    master.gain.value = gain;
+    master.gain.value = gain * 0.8; // the race board's gain for the same jingle: as loud there as here
     master.connect(ctx.destination);
     const source = (this.source = ctx.createBufferSource());
     source.buffer = buffer;

@@ -4,12 +4,15 @@
 
 import * as THREE from "three";
 
-/** Places 1, 2, 3: where each stands and how high its block is. */
-export const SLOTS = [
-  { x: 0, h: 1.7, color: "#f6c731" },
-  { x: -2.55, h: 1.15, color: "#d9dde3" },
-  { x: 2.55, h: 0.75, color: "#d69a5c" },
+/** Places 1, 2, 3: how high the block is and its colour. */
+export const PLACES = [
+  // low blocks: the avatars are the show (the first cut's tall podium left them a third of the screen)
+  { h: 1.0, color: "#f6c731" },
+  { h: 0.65, color: "#d9dde3" },
+  { h: 0.35, color: "#d69a5c" },
 ] as const;
+/** Where the `i`-th of `n` contenders stands: the first in the middle, then left, right; two sit side by side. */
+export const slotX = (i: number, n: number) => (n === 2 ? (i ? 1.3 : -1.3) : [0, -2.55, 2.55][i]);
 const BLOCK_W = 2.3;
 const CONFETTI = 260;
 const PALETTE = ["#f6c731", "#e5487f", "#2c8fd6", "#13c48f", "#f7f3ea"];
@@ -46,12 +49,14 @@ export interface CeremonySet {
   dispose(): void;
 }
 
-/** `places`: how many blocks to build (one to three). */
-export function buildSet(places: number): CeremonySet {
+/** `places`: the place (1 to 3) of each block to build, in standing order; tied contenders share one. */
+export function buildSet(places: number[]): CeremonySet {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 16 / 5, 0.1, 100);
-  camera.position.set(0, 3.7, 10);
-  camera.lookAt(0, 2.15, 0);
+  // far enough back that the winner and its block fill about two thirds of the band's height (closer, they
+  // filled it and crowded the screen)
+  camera.position.set(0, 2.9, 11.5);
+  camera.lookAt(0, 2.05, 0);
 
   // the page's felt, brighter in the middle, the page colour at the edges so the band blends in
   scene.background = canvasTexture(512, 256, (g) => {
@@ -65,9 +70,15 @@ export function buildSet(places: number): CeremonySet {
     g.fillRect(-256, -256, 512, 512);
   });
 
+  // a warm key from the front left, a cool fill from the front right and a light from behind that
+  // traces the silhouettes against the felt: one light alone left the matte avatars flat
   const key = new THREE.DirectionalLight(0xfff0d8, 2.4);
   key.position.set(-4, 9, 8);
-  scene.add(key, new THREE.HemisphereLight(0xeafff4, 0x0a3d2e, 1.5));
+  const fill = new THREE.DirectionalLight(0xdcecff, 0.9);
+  fill.position.set(6, 4, 6);
+  const back = new THREE.DirectionalLight(0xffffff, 1.6);
+  back.position.set(1, 6, -7);
+  scene.add(key, fill, back, new THREE.HemisphereLight(0xeafff4, 0x0a3d2e, 1.1));
 
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(10, 3.4).rotateX(-Math.PI / 2),
@@ -88,15 +99,16 @@ export function buildSet(places: number): CeremonySet {
   shadow.position.set(0, 0.01, 0.2);
   scene.add(shadow);
 
-  for (let i = 0; i < places; i++) {
-    const { x, h, color } = SLOTS[i];
+  places.forEach((place, i) => {
+    const { h, color } = PLACES[place - 1];
+    const x = slotX(i, places.length);
     const plain = new THREE.MeshLambertMaterial({ color });
-    const front = new THREE.MeshLambertMaterial({ map: frontFace(i + 1, h, color) });
+    const front = new THREE.MeshLambertMaterial({ map: frontFace(place, h, color) });
     // BoxGeometry faces: +x -x +y -y +z -z
     const block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_W, h, 1.7), [plain, plain, plain, plain, front, plain]);
     block.position.set(x, h / 2, 0);
     scene.add(block);
-  }
+  });
 
   const pos = new Float32Array(CONFETTI * 3), col = new Float32Array(CONFETTI * 3);
   const fall = new Float32Array(CONFETTI), phase = new Float32Array(CONFETTI);

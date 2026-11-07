@@ -5,6 +5,57 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.151.0 — The avatars in their viewer's light
+
+Numbered above main's 0.150.0, which went onto the TV box in between.
+
+**Changed** (TV game night, user on 0.149.4: "this is cheap", "use the originals", "we don't need reflection")
+
+- The podium avatars are lit like the viewer they were approved in: model-viewer's neutral studio environment (three's RoomEnvironment) at exposure 1.1, diffuse only, with no reflections or highlights. It is still baked once into a light picture that each pixel looks up.
+- Why not the untouched Meshy files, measured on the box with three avatars: with reflections 14 fps. Without reflections 17–20 fps, at 4K or 2K alike: their thousands of scattered texture pieces are what this GPU samples slowly, and they cause the seam scratches. The same colours and normal maps from the 4K files, re-laid into fewer pieces, run at ~42 fps.
+
+## 0.149.4 — Studio-lit avatars
+
+**Changed** (TV game night, user: "still bad quality", on asking what: "flat, cheap look" and "blurry or soft")
+
+- The podium avatars look like glossy vinyl toys instead of matte clay. This replaces the matte look chosen on 2026-11-05 for speed. The set's lights and a soft studio environment are rendered once onto a sphere as the ceremony camera sees it: one picture of the diffuse light and one of the highlights. Each avatar pixel then looks both up by its surface direction. It matches real physically based shading, which ran at 24.8 fps on the box.
+- The avatars are drawn front faces only. Meshy marks them double-sided, but on all 22 the back faces are never seen, capes and hoods included.
+- Full resolution holds 42–43 fps on the box with three avatars, so it no longer drops to a lower one. The step-down now leaves out the slowest tenth of each 90-frame window; one texture upload or garbage collection used to lower the resolution without cause.
+
+## 0.149.3 — Full-detail avatars on a smaller stage
+
+**Changed** (TV game night, user: "only below 30 fps is not acceptable", then "reduce also the size of the characters and stage")
+
+- Quality first, with 30 fps as the floor (0.149.2 had aimed at 60). The podium avatars keep all ~51k triangles and get their normal maps back (fabric folds, fur relief), baked onto the new charts from the 4K masters. Each normal is turned from the old chart's surface frame into the new one's, so the lighting matches the original. Colour 2048, normal map 1024: 40 MB for all 22.
+- The camera stands further back: the winner and its block fill about two thirds of the band's height instead of all of it.
+- The canvas draws at full resolution with MSAA: 36.4 fps on the box with three avatars. It steps down only if 90 frames average under ~32 fps.
+
+**Fixed**
+
+- An arriving avatar joins the scene only after its shaders are compiled; drawn while compiling, a frame blocked on it.
+- The first frame no longer counts as a 0.1 s one in the frame-rate average that sets the resolution.
+
+## 0.149.2 — Clean, sharp podium avatars
+
+**Fixed** (TV game night, on the box after 0.149.1: "the avatars are still bad quality")
+
+- No more white scratches along the avatars' seams. Meshy packs each colour map into thousands of tiny islands edge to edge, and every smaller mip level blended neighbouring islands. The ceremony tool now re-unwraps each simplified avatar with xatlas into fewer charts with gaps between them and bakes the colour onto them from the 4K master map (`tools/rebake-texture-atlas.mjs`).
+- No more blur. The canvas draws at 1.5 device pixels per CSS pixel with MSAA and never drops below 1.25; the adaptive scale used to fall to 1, a quarter of the screen's pixels. Measured on the box with three 30k-triangle avatars: 59.5 fps at 1.5. At 2 it fell to 51 fps with MSAA, and without MSAA the edges crawled.
+- The avatars face the room. They idle on `Idle_15` instead of Meshy's `Idle`, which turns the body by up to 81°: a third place stood side-on or with its back to the room. The per-frame turn-back is gone; it slid the feet around.
+- 22 avatars, 31.6 MB.
+
+## 0.149.1 — A ceremony worth watching
+
+**Changed** (TV game night, after the first look on the box: "the avatars at the ceremony are in a bad quality", the winner sound "sad")
+
+- The podium avatars are cut from the 2K game copies at 30k of their ~51k triangles with a 2048 WebP colour map (33 MB for all 22) instead of the 15k-triangle TV copies, whose compressed colours blotched and whose faces looked faceted close up. The full 51k dropped the box to ~43 fps, and the canvas scales its resolution down when frames run slow.
+- They stand about twice as tall (lower blocks, the camera closer), lit by a key, a fill and a light from behind, and always face the room: some animations turned an avatar away, so it is turned back as it plays.
+- The winner gets a rising fanfare with applause (a classic fanfare lick with clapping and cheering mixed in) instead of the falling sax jingle, on the race board and at the ceremony alike.
+
+**Fixed**
+
+- The quiz and poster ceremonies no longer redraw the whole page every frame; the first 3D avatar no longer stalls a frame (its shaders are compiled before it shows); leaving during loading builds nothing; Heimlauf plays its winner sound once; tied players share a place on the podium; a phone joining late no longer restarts the ceremony; a release refuses to build without the 22 ceremony avatars.
+
 ## 0.149.0 — Game night: party games on the TV box, Heimlauf, avatars and an awards ceremony
 
 Built on the game-night branch as 0.143.0–0.146.2 and only ever sideloaded to the TV box; numbered 0.149.0 when main's 0.147.0 and 0.148.0 were merged in. The branch's entries follow as they were.
