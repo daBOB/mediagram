@@ -20,6 +20,10 @@ pub use crate::protocol_bauherr::{
     BauherrSeat, BauherrTile, BauherrTileKind, BauherrTurn,
 };
 pub use crate::protocol_client::{Action, ClientMsg, Role};
+pub use crate::protocol_grand_allee::{
+    GrandAlleeAuction, GrandAlleeBoard, GrandAlleeEntrance, GrandAlleeEstate, GrandAlleeFieldKind, GrandAlleeHotel, GrandAlleeMark,
+    GrandAlleePermit, GrandAlleeScene, GrandAlleeSeat, GrandAlleeStage, GrandAlleeTurn,
+};
 pub use crate::protocol_choice::{AnswerColor, ChoiceOption, SheetLine, Tone};
 pub use crate::protocol_poster::{PosterScene, PosterStage};
 pub use crate::protocol_quiz::{QuizQuestionView, QuizResult, QuizScene, QuizStage};
@@ -163,4 +167,5 @@ pub enum TvScene {
     Race { scene: RaceScene },
     Cards { scene: CardsScene },
     Bauherr { scene: BauherrScene },
+    GrandAllee { scene: GrandAlleeScene },
 }

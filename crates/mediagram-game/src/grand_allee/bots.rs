@@ -72,6 +72,11 @@ impl Bot {
         Some((hotel, count))
     }
 
+    /// For a free entrance: the hotel that earns most per night.
+    pub fn pick_free_entrance(&self, t: &Table, hotels: &[u8]) -> Option<u8> {
+        hotels.iter().copied().max_by_key(|&h| t.rate(h))
+    }
+
     /// For a free stage: the dearest one on offer.
     pub fn pick_free_stage(&self, t: &Table, hotels: &[u8]) -> Option<u8> {
         hotels.iter().copied().max_by_key(|&h| HOTELS[usize::from(h)].stages[usize::from(t.estate(h).levels)].0)

@@ -5,6 +5,16 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.160.0 — Grand Allee plays live in the room
+
+**Added** (user, 2026-11-08: "start phase 4")
+
+- `GameKind::GrandAllee`: Grand Allee is in the lobby for 2–8 players and plays from the phones. Each turn: roll (with the leisure wing offered first), walk, Rathaus offer, the guest pays, then the field's action (buy or force-buy a plot, permit die on a Baustelle, Freier Eingang, Gratis bauen). A 6 rolls again; the game ends at the round limit or with one player left, ranked by net worth.
+- Every phone ask has a 20 s clock. On timeout, or 1.5 s after a player's phone drops, the house bot decides for them.
+- Debts are settled by auction: sealed bids on every other phone at once for 15 s, ties to the bidder nearest after the seller, the bank pays its share when nobody bids. Bids are fixed steps (10–100 % of the value) until the phone gets its own controls.
+- The TV shows a plain debug board (`TvGrandAllee.tsx`) until the 3D board lands. The Android TV games shelf lists the game.
+- The live game and the simulator share one engine (`offers.rs`, `money.rs`). The simulator's output over 300 games is unchanged.
+
 ## 0.159.0 — Grand Allee's ten hotels as 3D models
 
 **Added** (user, 2026-11-08: "we need the types from the original", "u can use blender when creating the 3d models")

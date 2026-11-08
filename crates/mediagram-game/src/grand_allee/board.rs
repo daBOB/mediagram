@@ -1,12 +1,17 @@
 //! Grand Allee's board as data: a closed oval of 40 fields with ten hotels on
 //! both sides of its two straights. Hotels, prices and names are our own.
 
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
 /// Fields on the loop, clockwise from the Bank.
 pub const FIELDS: u8 = 40;
 pub const BANK: u8 = 0;
 pub const RATHAUS: u8 = 20;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, rename = "GrandAlleeFieldKind")]
 pub enum Field {
     Bank,
     Rathaus,
