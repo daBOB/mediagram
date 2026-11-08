@@ -5,6 +5,10 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.159.1 — First update a tablet takes from the channel
+
+- No code change: published so the Mi Pad 7, on 0.159.0 since 2026-11-08 with Play Protect's app scan off, proves it updates itself from the channel.
+
 ## 0.159.0 — Phones and tablets update from the channel too
 
 **Changed** (user, 2026-11-08: "no i wanted to update through the channel"; chose turning off Play Protect's app scan over registering with Google or staying on adb)
