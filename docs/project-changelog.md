@@ -5,6 +5,12 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.160.2 — Gipfelsturm climbs a mountain
+
+**Changed** (user, 2026-11-08: "gipfelsturm change it to a climbing mountain")
+
+- The Kopfnuss finale on the TV is a mountain instead of lanes: a back range, the peak with its shaded side and snowcap, a switchback trail with a numbered station per step and a flag on the summit. Every player stands on their station and walks up the trail as they climb; players on one station stand side by side. The range and the ground run edge to edge across the TV (user: "make the mountain range go edge to edge"). Drawn as one light SVG, no 3D and no filters, so it stays cheap on the box.
+
 ## 0.160.1 — Kopfnuss on the TV box
 
 **Fixed** (first simulated game on the box, 2026-11-08: three scripted phones over Wi-Fi, two more that left mid-game)
