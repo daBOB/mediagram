@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { Performer, flatFigure, loadAvatar, loadFigure } from "./ceremony-avatar";
+import { hangCurtain } from "./ceremony-curtain";
 import { CeremonySound } from "./ceremony-sound";
 import { PLACES, buildSet, slotX } from "./ceremony-set";
 import { type StudioLook, bakeStudioLook } from "./ceremony-studio-look";
@@ -26,6 +27,9 @@ const SLOW_FRAME = 1 / 32;
 const MIN_SCALE = 1.25;
 /** Frames per measuring window (~2.5 s at 36 fps; a multiple of 10, for the tenth left out). */
 const WINDOW = 90;
+/** The curtain opens by then even if an avatar is still loading; the flat figure stands in for it. Measured on the
+ *  box: all three avatars in after 3.8–4.7 s. */
+const MAX_CLOSED_S = 8;
 /** Avatar height in world units: tall enough to read from the couch, short of the band's top for a jump. */
 const AVATAR_HEIGHT = 3.0;
 const FONT = '"Bricolage Grotesque"';
@@ -59,7 +63,7 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
   const canvas = document.createElement("canvas");
   container.prepend(canvas);
   const sound = new CeremonySound();
-  let disposed = false, frame = 0;
+  let disposed = false, frame = 0, cap = 0;
   const performers: Performer[] = [];
   let renderer: THREE.WebGLRenderer | null = null, look: StudioLook | null = null;
   const resize = () => {
@@ -73,6 +77,7 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
   const dispose = () => {
     disposed = true;
     cancelAnimationFrame(frame);
+    clearTimeout(cap);
     observer.disconnect();
     sound.dispose();
     performers.forEach((p) => p.dispose());
@@ -97,12 +102,30 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
       set.scene.add(flat);
       return flat;
     });
+    set.scene.add(set.camera); // the curtain hangs from it
+    const curtain = hangCurtain(set.camera, renderer);
     renderer.compile(set.scene, set.camera);
     for (const f of flats) if (f instanceof THREE.Sprite) renderer.initTexture(f.material.map!);
     renderer.initTexture(set.scene.background as THREE.Texture);
 
     observer.observe(canvas);
     resize();
+
+    // The curtain opens on the finished stage: once every avatar has arrived or failed, at the latest after
+    // MAX_CLOSED_S. The places' clips and the jingle start with it, so nothing plays to a closed curtain.
+    const waiting: (() => void)[] = [];
+    let revealed = false, loading = contenders.filter((c) => c.avatar).length;
+    const reveal = () => {
+      if (revealed || disposed) return;
+      revealed = true;
+      clearTimeout(cap);
+      curtain.open(performance.now() / 1000);
+      waiting.splice(0).forEach((start) => start());
+      if (jingle) sound.play().catch((e) => console.warn("ceremony sound", e));
+    };
+    const settled = () => --loading <= 0 && reveal();
+    cap = window.setTimeout(reveal, MAX_CLOSED_S * 1000);
+    if (loading === 0) reveal();
 
     // `last` starts now: from 0 the first frame counted as a 0.1 s one and skewed the first average
     let last = performance.now() / 1000, scale = Math.min(devicePixelRatio, RENDER_SCALE), n = 0, seen = 0;
@@ -113,8 +136,9 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
       last = t;
       // the device sets its own sharpness: slower than ~32 fps over a window drops the scale a step. An arriving
       // avatar starts a new window, and the slowest tenth of each is left out: one texture upload or garbage
-      // collection is no measure, and it had dropped the box from full resolution without cause.
-      if (performers.length !== seen) (seen = performers.length), (n = 0);
+      // collection is no measure, and it had dropped the box from full resolution without cause. Nothing is
+      // measured until the curtain is open: the closed stage says nothing about the open one.
+      if (performers.length !== seen || !curtain.opened) (seen = performers.length), (n = 0);
       else if (((times[n] = dt), ++n === WINDOW)) {
         const kept = times.slice().sort().subarray(0, WINDOW - WINDOW / 10);
         if (kept.reduce((a, b) => a + b, 0) / kept.length > SLOW_FRAME && scale > MIN_SCALE) {
@@ -126,10 +150,10 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
       }
       for (const p of performers) p.update(dt, t);
       set.update(dt, t);
+      curtain.update(t);
       renderer!.render(set.scene, set.camera);
     };
     frame = requestAnimationFrame(draw);
-    if (jingle) sound.play().catch((e) => console.warn("ceremony sound", e));
 
     // 3D avatars: never awaited by the screen; a missing file just leaves the flat figure
     const r = renderer;
@@ -153,9 +177,13 @@ export async function startCeremony(container: HTMLElement, top: Contender[], go
               for (const map of [mat?.map, mat?.normalMap]) if (map) r.initTexture(map);
             });
             flats[i].visible = false;
-            performers.push(new Performer(root, clips, c.place - 1, performance.now() / 1000));
+            // behind a closed curtain the clip waits for the reveal; an avatar later than that joins at once
+            const start = () => performers.push(new Performer(root, clips, c.place - 1, performance.now() / 1000));
+            if (revealed) start();
+            else waiting.push(start);
           })
-          .catch((e) => console.warn(`avatar ${c.avatar}`, e));
+          .catch((e) => console.warn(`avatar ${c.avatar}`, e))
+          .finally(settled);
     });
   } catch (e) {
     dispose();

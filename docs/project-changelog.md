@@ -5,6 +5,13 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.157.0 — A curtain opens on the champions
+
+**Changed** (user, 2026-11-08: "the initial model quality is very low and its replaced by a higher quality. if its takes a bit more time to load then add a curtain to hide and then we reveal the champions")
+
+- The awards ceremony starts behind a red velvet curtain while the 3D avatars load, so the low-detail flat figures are never seen. It opens once every avatar is in, at the latest after 8 s (on the TV box all three arrived after 3.8–5.6 s), and draws aside in 1.6 s; the winner's `victory`, the other places' clips and the jingle start as it opens. A flat figure still stands in for an avatar that fails or arrives later.
+- The curtain is drawn inside the ceremony's canvas and hidden once open: 43.6 fps on the box with it, as without.
+
 ## 0.156.1 — The avatars' TV-copy tool lives in the repo
 
 **Changed** (game tools)

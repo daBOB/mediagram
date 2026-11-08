@@ -1162,10 +1162,16 @@ offline, from the TV copies of the 3D models
 **Every game ends in an awards ceremony.** `TvFinal` is the ceremony for the
 quiz, the poster game and Heimlauf: the title above, a three.js band in the
 middle (`tv/ceremony/`, its own lazy chunk) with a podium for the top three,
-and the points strip with heads below; no HTML lies over the canvas. The
-flat figures stand on the podium from the first frame; each player's 3D
-avatar replaces its figure once loaded (GLTFLoader with MeshoptDecoder,
-shaders compiled and textures uploaded before it shows). The avatars have a
+and the points strip with heads below; no HTML lies over the canvas. A red
+velvet curtain (`ceremony-curtain.ts`) covers the band while the 3D avatars
+load (GLTFLoader with MeshoptDecoder, shaders compiled and textures uploaded
+behind it), so the low-detail flat figures are never seen (the user's call). It
+opens once every avatar has arrived or failed, at the latest after 8 s (measured
+on the box: all three in after 3.8–5.6 s), and draws aside in 1.6 s; the places'
+clips and the jingle start with it. The curtain is two unlit panels hung from
+the camera inside the canvas, hidden once open: 43.6 fps with it, as without.
+A flat figure still stands in for an avatar that fails or comes later than the
+curtain. The avatars have a
 studio look (`ceremony-studio-look.ts`): the light of the model-viewer page they
 were approved in (RoomEnvironment at exposure 1.1, diffuse only, no reflections
 — the user's call). It is rendered once onto a white sphere as the camera sees
@@ -1178,7 +1184,7 @@ sample), so the ceremony copies keep the re-laid maps.
 The winner plays `victory` and now and then `Happy_Jump`, second
 `Cheer_With_One_Hand_Up`, third `Shrug`, then `Idle_15` (Meshy's plain
 `Idle` turns the body by up to 81° and left avatars side-on); confetti and the
-winner jingle (through the TV settings) open it. The 22 ceremony avatars are
+winner jingle (through the TV settings) open it as the curtain parts. The 22 ceremony avatars are
 cut from the 2K game copies (`<id>.glb`, not the 15k-triangle TV copies,
 whose ETC1S colour blotched and whose faces looked faceted close up) by
 `tools/make-ceremony-avatars.mjs`: five clips, all ~51k triangles,

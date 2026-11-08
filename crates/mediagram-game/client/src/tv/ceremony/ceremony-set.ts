@@ -17,7 +17,7 @@ const BLOCK_W = 2.3;
 const CONFETTI = 260;
 const PALETTE = ["#f6c731", "#e5487f", "#2c8fd6", "#13c48f", "#f7f3ea"];
 
-const canvasTexture = (w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) => {
+export const canvasTexture = (w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) => {
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
