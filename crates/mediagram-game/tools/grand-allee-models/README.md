@@ -25,9 +25,10 @@ Design: spieltisch `design/grand-allee-design.md`; plan:
 | `board_ink.py` | Flat decals for the bakes only: polygons on a plane, pen strokes, ribbons, dashes, letters, and the icons (Bauherr's coin, pediment, staked plot, crane, door with star; the gift; the permit die's tick and cross) |
 | `board_ground.py` | The ground as the top-down bake sees it: terrain with the river, pond and beach sunk in, water, town paving and gardens, plot lawns, park paths, the road's joints, setts, inlays, icons and names; kerbs and plot edging (also in the GLB) |
 | `board_town.py` | The Bank (field 0) and the Rathaus (field 20), our own designs in the hotels' style, and the bridges' parapets and railings over fields 1 and 21 |
+| `board_houses.py` | The small town on the town side: terraced townhouses and cottages (≤ 7.4 m), a market square with stalls round a fountain, front gardens; placed where they hide no road, plot or building from the TV and shade no plot, building or special field |
 | `board_trees.py` | Trees placed off the road, water, plots and paths, where neither their shadow nor their crown (from the TV) covers a plot, building or special field |
 | `board.py` | Builds the board in the hotels' evening light (`--preview` renders it lit, before any bake) |
-| `board_bake.py` | Bakes the board (ground: orthographic top-down render, 2048 × 1536; 3D parts: 1024² atlas) and exports `board.glb` (`board_ground`, `board_parts`, unlit) |
+| `board_bake.py` | Bakes the board (ground: orthographic top-down render, 2048 × 1536; 3D parts: 1024² atlas) and exports `board.glb` (`board_ground`, `board_parts`, `board_town` with its own 1024² atlas, unlit) |
 | `dice.py` | The ivory number die and the oak permit die: rounded cubes painted by a selected-to-active bake, 256² atlases, `die-number.glb` / `die-permit.glb` with `face_*` empties at the face centres |
 | `board_review.py` | Renders the exported board with all hotels, close-ups and the dice the way the TV draws them; checks every GLB is unlit and counts triangles |
 | `fingerprint.py`, `fingerprint-all.sh` | A hash of every part's name, material and vertices per stage: identical before and after a refactor means the models did not change (no re-bake needed) |
@@ -64,8 +65,8 @@ cp /tmp/baked/*.glb ../../client/public/grand-allee/   # what the game ships
   `zfight_visible.py` exists.
 - **Budgets** (TV box, measured): ≤ 6 000 triangles per hotel fully built;
   one atlas per hotel, 1024² for the outer plots and 2048² for the wide park
-  plots. The board ≤ 15 000 triangles, a 2048 × 1536 ground atlas and a 1024²
-  parts atlas; each die ≤ 1 500 triangles and 256².
+  plots. The board ≤ 15 000 triangles, a 2048 × 1536 ground atlas and two 1024²
+  atlases (parts, town); each die ≤ 1 500 triangles and 256².
 - **Own designs**: the hotels are themed on places around the world with our
   own names and architecture; none is a hotel of the classic board game.
 

@@ -40,7 +40,7 @@ export function TvApp() {
       ) : view.scene.kind === "cards" ? (
         <TvCards key={view.scene.scene.game + view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "grand_allee" ? (
-        <TvGrandAllee scene={view.scene.scene} players={view.players} conn={conn} />
+        <TvGrandAllee key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : view.scene.kind === "bauherr" ? (
         <TvBauherr key={view.scene.scene.seats.map((s) => s.player).join()} scene={view.scene.scene} players={view.players} conn={conn} />
       ) : (

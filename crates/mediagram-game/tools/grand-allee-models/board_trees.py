@@ -21,11 +21,11 @@ import parts as p
 from board_kit import BANK, BEACH, FIELD_KINDS, KERB_W, PATH_W, SUN, SUN_UP, TV_PITCH, to_line
 
 KINDS = {"round": (4.6, 1.5), "poplar": (6.0, 0.9)}  # height, crown radius
-MAX_TREES = 70
+MAX_TREES = 95
 
 
-def spots(L, paths, seed=7, spacing=4.0):
-    """[(kind, x, y, size factor)] for every tree that fits."""
+def spots(L, paths, avoid=(), seed=7, spacing=4.0):
+    """[(kind, x, y, size factor)] for every tree that fits; `avoid`: more boxes to keep off (the town's houses)."""
     rng = random.Random(seed)
     w, h = bp.BOARD
     C = np.array([(x + rng.uniform(-1.4, 1.4), y + rng.uniform(-1.4, 1.4))
@@ -40,7 +40,8 @@ def spots(L, paths, seed=7, spacing=4.0):
         ok &= L.road(C) > bp.ROAD / 2 + KERB_W + r + 0.2
         ok &= L.water(C) > BANK + 0.6 * r
         ok &= C[:, 1] < bp.SEA_Y - BEACH - 0.5
-        ok &= ~L.in_boxes(C, L.plot_boxes(1.0) + [(x0 - 1, y0 - 1, x1 + 1, y1 + 1) for x0, y0, x1, y1 in L.buildings])
+        ok &= ~L.in_boxes(C, L.plot_boxes(1.0) + [(x0 - 1, y0 - 1, x1 + 1, y1 + 1) for x0, y0, x1, y1 in L.buildings]
+                          + [(x0 - 1.8, y0 - 1.8, x1 + 1.8, y1 + 1.8) for x0, y0, x1, y1 in avoid])
         for line in paths:
             ok &= to_line(C, line) > PATH_W / 2 + 0.5
         keep_out = L.plot_boxes(0.3) + L.buildings

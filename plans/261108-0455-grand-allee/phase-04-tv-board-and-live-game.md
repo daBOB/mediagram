@@ -67,7 +67,7 @@ of the north road at 55°; the 4c camera leans in when a pawn walks there.
 
 - [x] 4a game in the room (0.160.0)
 - [x] 4b board and dice (0.161.0)
-- [ ] 4c TV scene
+- [x] 4c TV scene (0.162.0)
 - [ ] 4d box run — first: KTX2 for the hotel and board atlases (six 1024² and
   four 2048² WebP atlases are ~117 MB on the GPU with mipmaps and decode on the
   box's main thread; Bauherr ships KTX2)

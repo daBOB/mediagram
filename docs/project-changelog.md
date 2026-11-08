@@ -5,6 +5,19 @@ to `main`. Full phase-by-phase detail lives in
 `plans/260914-1954-telegram-linux-uploader-mlib-spec-v2/plan.md`'s
 "Implementation log" sections.
 
+## 0.162.0 — Grand Allee on the TV, and a town on the board
+
+**Added** (user, 2026-11-08: "start phase 4"; for the town: "Fill it with a small town")
+
+- The TV draws Grand Allee in three.js (`client/src/tv/grand-allee/`), replacing the debug board. It shows the board and dice, the hotels with their built stages in the owner's colour (a new stage rises), owner frames round bought plots, entrances as gates in the owner's colour, and avatar pawns hopping field by field (counting the occupied fields the engine skips).
+- The dice land on the thrown face. Coins fly from the payer to the owner's hotel, and every cash change flashes on the player's tag.
+- The camera looks 55° down over the whole board, leans towards the mover, and leans in closer on the north road behind the tall park hotels.
+- The HUD is drawn in the canvas: round, banner, players' cash and hotels, question and auction countdowns, sealed auction answers. Sound uses the existing race sounds.
+- A TV that pauses or reconnects picks up the current state instead of replaying what it missed. The board frees its GPU memory when rebuilt.
+- 26–51 draw calls and 10–32 k triangles per frame in the review scenes. `tools/grand-allee-preview/` renders preset scenes to 1920×1080 for review.
+- The board's town side has a small town of our own design: terraced townhouses and cottages (≤ 7.4 m, so they hide no road or hotel from the TV), a market square with stalls round a fountain, and front gardens. The board is now 8 602 triangles with a third 1024² atlas, 1.38 MB.
+- Tests pin the shipped models: unlit materials, one `stage_n` per rule stage, the dice face names, and the atlas budgets.
+
 ## 0.161.0 — Grand Allee's board and dice
 
 **Added** (user, 2026-11-08: "remember this is the board layout", then "Yes, build this one")
